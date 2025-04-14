@@ -28,13 +28,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tooljet/mcp.git"
+    "url": "git+https://github.com/ToolJet/tooljet-mcp.git"
   },
   "publishConfig": {
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/tooljet/mcp/issues"
+    "url": "https://github.com/ToolJet/tooljet-mcp/issues"
   },
-  "homepage": "https://github.com/tooljet/mcp#readme"
+  "homepage": "https://github.com/ToolJet/tooljet-mcp#readme"
 }
