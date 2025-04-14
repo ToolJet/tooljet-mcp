@@ -31,9 +31,9 @@ npm install -g @tooljet/mcp
 
 ### Configuration
 
-#### Step 1: Generate an Access Token
+#### Step 1: Get an Access Token
 
-Create an access token in your ToolJet admin panel to authenticate the MCP server.
+Get an access token of your ToolJet instance that you've setup up in your environment variables. You'll need this token to authenticate the MCP server. Refer to the [ToolJet API](https://docs.tooljet.ai/docs/tooljet-api#enabling-tooljet-api) documentation for more details.
 
 #### Step 2: Set Up Your AI Assistant
 
