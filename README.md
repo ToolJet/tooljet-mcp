@@ -23,12 +23,18 @@ ToolJet MCP is a bridge that connects AI assistants to your ToolJet platform thr
 
 ### Installation
 
-The easiest way to use ToolJet MCP is through NPX:
+You can install the ToolJet MCP package globally:
 
 ```bash
-# This is executed by your AI assistant, not meant to be run directly
-npx tooljet-mcp
+npm install -g @tooljet/mcp
 ```
+
+Or use it directly with npx:
+
+```bash
+npx @tooljet/mcp
+```
+
 
 ### Configuration
 
@@ -45,7 +51,7 @@ Configure your AI assistant to use the ToolJet MCP server. Here's a typical conf
   "mcpServers": {
     "tooljet": {
       "command": "npx",
-      "args": ["tooljet-mcp"],
+      "args": ["@tooljet/mcp"],
       "env": {
         "TOOLJET_ACCESS_TOKEN": "your-access-token",
         "TOOLJET_HOST": "https://your-tooljet-instance.com"
@@ -55,18 +61,17 @@ Configure your AI assistant to use the ToolJet MCP server. Here's a typical conf
 }
 ```
 
-Alternatively, you can pass these as command-line arguments:
+Alternatively, you can use the package directly if you have it installed globally:
 
 ```json
 {
   "mcpServers": {
     "tooljet": {
-      "command": "npx",
-      "args": [
-        "tooljet-mcp",
-        "--access-token", "your-access-token",
-        "--host", "https://your-tooljet-instance.com"
-      ]
+      "command": "tooljet-mcp",
+      "env": {
+        "TOOLJET_ACCESS_TOKEN": "your-access-token",
+        "TOOLJET_HOST": "https://your-tooljet-instance.com"
+      }
     }
   }
 }
@@ -86,10 +91,12 @@ If you're using Windows, prefix the command with `cmd /c`:
       "args": [
         "/c",
         "npx",
-        "tooljet-mcp",
-        "--access-token", "your-access-token",
-        "--host", "https://your-tooljet-instance.com"
-      ]
+        "@tooljet/mcp"
+      ],
+      "env": {
+        "TOOLJET_ACCESS_TOKEN": "your-access-token",
+        "TOOLJET_HOST": "https://your-tooljet-instance.com"
+      }
     }
   }
 }
@@ -136,10 +143,10 @@ Want to contribute to ToolJet MCP? Here's how to set up the development environm
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tooljet-mcp.git
+git clone https://github.com/ToolJet/tooljet-mcp
 
 # Install dependencies
-cd tooljet-mcp
+cd mcp
 npm install
 
 # Build the project
