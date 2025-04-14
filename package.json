@@ -1,21 +1,22 @@
 {
-  "name": "tooljet-mcp",
+  "name": "@tooljet/mcp",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "build/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "NODE_ENV=development tsc && chmod 755 build/index.js"
+    "build": "rm -rf build && NODE_ENV=development tsc && chmod 755 build/index.js",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["tooljet", "mcp", "model context protocol"],
+  "author": "ToolJet",
+  "license": "MIT",
+  "description": "ToolJet Model Context Protocol implementation",
   "files": [
     "build"
   ],
   "bin": {
-      "tooljet-mcp": "./build/index.js"
+    "tooljet-mcp": "./build/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
@@ -24,9 +25,16 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "typescript": "^5.8.3"
-  }
-
-   
-    
-   
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ToolJet/tooljet-mcp.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/ToolJet/tooljet-mcp/issues"
+  },
+  "homepage": "https://github.com/ToolJet/tooljet-mcp#readme"
 }
