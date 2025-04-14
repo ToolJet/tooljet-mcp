@@ -29,13 +29,6 @@ You can install the ToolJet MCP package globally:
 npm install -g @tooljet/mcp
 ```
 
-Or use it directly with npx:
-
-```bash
-npx @tooljet/mcp
-```
-
-
 ### Configuration
 
 #### Step 1: Generate an Access Token
@@ -50,7 +43,7 @@ Configure your AI assistant to use the ToolJet MCP server. Here's a typical conf
 {
   "mcpServers": {
     "tooljet": {
-      "command": "npx",
+      "command": "npm",
       "args": ["@tooljet/mcp"],
       "env": {
         "TOOLJET_ACCESS_TOKEN": "your-access-token",
@@ -90,7 +83,7 @@ If you're using Windows, prefix the command with `cmd /c`:
       "command": "cmd",
       "args": [
         "/c",
-        "npx",
+        "npm",
         "@tooljet/mcp"
       ],
       "env": {
@@ -158,7 +151,3 @@ npm run build
 - [ToolJet Documentation](https://docs.tooljet.com/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [ToolJet GitHub Repository](https://github.com/ToolJet/ToolJet)
-
-## License
-
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
