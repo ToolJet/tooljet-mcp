@@ -1,7 +1,5 @@
 # ToolJet MCP
 
-![ToolJet Logo](https://docs.tooljet.com/img/logo.svg)
-
 Empower your AI assistants with direct access to your ToolJet platform. This MCP (Model Context Protocol) integration enables AI tools like Claude, Cursor, and other MCP-compatible assistants to interact with your ToolJet instance.
 
 ## What is ToolJet MCP?
@@ -37,30 +35,18 @@ Get an access token of your ToolJet instance that you've setup up in your enviro
 
 #### Step 2: Set Up Your AI Assistant
 
-Configure your AI assistant to use the ToolJet MCP server. Here's a typical configuration:
+
+Configure your MCP client (such as Claude, Cursor, etc.) to use this server. Most MCP clients store the configuration as JSON in the following format:
 
 ```json
 {
   "mcpServers": {
     "tooljet": {
-      "command": "npm",
-      "args": ["@tooljet/mcp"],
-      "env": {
-        "TOOLJET_ACCESS_TOKEN": "your-access-token",
-        "TOOLJET_HOST": "https://your-tooljet-instance.com"
-      }
-    }
-  }
-}
-```
-
-Alternatively, you can use the package directly if you have it installed globally:
-
-```json
-{
-  "mcpServers": {
-    "tooljet": {
-      "command": "tooljet-mcp",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tooljet/mcp"
+      ],
       "env": {
         "TOOLJET_ACCESS_TOKEN": "your-access-token",
         "TOOLJET_HOST": "https://your-tooljet-instance.com"
@@ -83,7 +69,8 @@ If you're using Windows, prefix the command with `cmd /c`:
       "command": "cmd",
       "args": [
         "/c",
-        "npm",
+        "npx",
+        "-y",
         "@tooljet/mcp"
       ],
       "env": {
