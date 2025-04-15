@@ -34,3 +34,24 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Build output
+/build
+/dist
+
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
