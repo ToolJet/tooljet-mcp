@@ -19,14 +19,6 @@ ToolJet MCP is a bridge that connects AI assistants to your ToolJet platform thr
 - A ToolJet instance with admin access
 - An MCP-compatible AI assistant (Claude, Cursor, etc.)
 
-### Installation
-
-You can install the ToolJet MCP package globally:
-
-```bash
-npm install -g @tooljet/mcp
-```
-
 ### Configuration
 
 #### Step 1: Get an Access Token
