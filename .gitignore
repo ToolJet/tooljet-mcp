@@ -1,3 +1,40 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Dependency directories
+bower_components/
+
+# Build output
+dist/
+build/
+
+# Coverage reports
+coverage/
+
+# Optional npm cache
+.npm/
+
+# TypeScript
+*.tsbuildinfo
+
 # Build output
 /build
 /dist
