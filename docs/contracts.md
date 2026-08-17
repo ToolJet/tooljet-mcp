@@ -170,3 +170,10 @@ Key properties (each `{ value }`):
 4. §5 whether `columns` can be omitted for auto-generation.
 
 Everything auth/app/route-level is verified live; the open items are shape details resolved by creating one example in the UI and copying its stored JSON.
+
+---
+
+## E2E result (2026-06-26)
+Ran `scripts/e2e-drive.mjs` — an MCP client that spawns the built server over stdio (exactly as Codex would) and calls `create_app → list_datasources → add_query → add_component` against live ToolJet. All succeeded. DB verification confirmed: the app has the `list_tickets` tjdb query (`runOnPageLoad: true`) and a `Table` (`ticketsTable`) whose `data` binds to `{{queries.list_tickets.data}}`, with desktop+mobile layouts, against the seeded 10-row `tickets` table. Result app: `http://localhost:8082/apps/58be26b8-4309-4ee9-879d-51d036c4f9e3`.
+
+The full stack is proven end-to-end through the MCP protocol. Final visual render (Table showing the 10 rows) is confirmed by opening the app URL in a logged-in browser.
