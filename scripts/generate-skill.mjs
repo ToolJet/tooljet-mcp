@@ -5,7 +5,7 @@
 // Usage: node scripts/generate-skill.mjs
 //   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
 //        TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
@@ -49,6 +49,24 @@ function readGridConstants() {
   return { columns: num('NO_OF_GRIDS') ?? 43, rowSnapPx: num('GRID_HEIGHT') ?? 10 };
 }
 
+// --- 2b. Harvest the built-in component catalog (name + purpose) from ToolJet widget defs ---
+function readWidgetCatalog() {
+  const dir = resolve(TOOLJET, 'frontend/src/AppBuilder/WidgetManager/widgets');
+  const files = readdirSync(dir).filter((f) => /\.(js|ts)$/.test(f) && f !== 'index.js');
+  const items = [];
+  for (const f of files) {
+    const txt = readFileSync(resolve(dir, f), 'utf8');
+    const name = txt.match(/\bname:\s*'([^']+)'/)?.[1];
+    const desc = txt.match(/\bdescription:\s*'([^']+)'/)?.[1];
+    if (name && desc) items.push({ name, description: desc });
+  }
+  // de-dupe by name, sort
+  const seen = new Set();
+  return items
+    .filter((i) => (seen.has(i.name) ? false : seen.add(i.name)))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // --- 3. De-agent: strip references to the agent's internal pipeline from a rule string ---
 // Strip references to the agent's internal multi-pass pipeline so each rule reads as a
 // standalone component fact for a single tool-calling agent (Codex).
@@ -76,7 +94,10 @@ function deAgent(text) {
 // --- 4. Assemble the skill ---
 const rules = extractBindingRules();
 const grid = readGridConstants();
+const catalog = readWidgetCatalog();
 const componentList = Object.keys(rules).sort();
+
+const catalogSection = catalog.map((c) => `| \`${c.name}\` | ${c.description} |`).join('\n');
 
 const componentSection = componentList
   .map((name) => `### ${name}\n${deAgent(rules[name])}`)
@@ -89,6 +110,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
     - TJ-AI COMPONENT_BINDING_RULES (${componentList.length} components)
+    - ToolJet WidgetManager catalog (${catalog.length} built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
 
@@ -115,6 +137,20 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - app → version → page → component. \`create_app\` gives one app + version + a "Home" page.
 - A component has **properties**; each property value is \`{ "value": <val> }\`. Values starting with \`{{ … }}\` are **bindings** evaluated at runtime.
 - A query exposes its result as \`queries.<queryName>.data\`. Bind a component property to it, e.g. a Table's \`data.value = "{{queries.<queryName>.data}}"\`.
+
+## Component selection — ALWAYS prefer built-in components over HTML
+
+ToolJet's value is **visually-editable, governed low-code config**. Built-in components can be edited in ToolJet's visual builder by anyone; a raw \`HTML\`/\`Text\` component with hand-written markup **cannot** — it becomes an opaque blob the user can't tweak without code. So:
+
+- **Map every piece of your design to a built-in component first.** A KPI/metric tile → \`Statistics\` (not an HTML card). A chart or bar/graph → \`Chart\` (not HTML/SVG). A data grid → \`Table\`. Labels/headings → \`Text\`. Inputs → \`TextInput\`/\`NumberInput\`/\`DropdownV2\`/etc. Forms → \`Form\`. Progress → \`CircularProgressbar\`.
+- Use \`HTML\` (or \`Text\` with HTML) **only as a last resort** — when ToolJet genuinely has no built-in component for what you need. Do not build tiles, charts, tables, or layouts out of HTML when a built-in exists.
+- The full built-in palette (with purposes) is below — check it before reaching for HTML.
+
+### Built-in components (use these first)
+
+| Component (\`type\`) | Purpose |
+|---|---|
+${catalogSection}
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 

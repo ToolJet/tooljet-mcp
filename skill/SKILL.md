@@ -5,6 +5,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
     - TJ-AI COMPONENT_BINDING_RULES (22 components)
+    - ToolJet WidgetManager catalog (83 built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
 
@@ -31,6 +32,102 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - app → version → page → component. `create_app` gives one app + version + a "Home" page.
 - A component has **properties**; each property value is `{ "value": <val> }`. Values starting with `{{ … }}` are **bindings** evaluated at runtime.
 - A query exposes its result as `queries.<queryName>.data`. Bind a component property to it, e.g. a Table's `data.value = "{{queries.<queryName>.data}}"`.
+
+## Component selection — ALWAYS prefer built-in components over HTML
+
+ToolJet's value is **visually-editable, governed low-code config**. Built-in components can be edited in ToolJet's visual builder by anyone; a raw `HTML`/`Text` component with hand-written markup **cannot** — it becomes an opaque blob the user can't tweak without code. So:
+
+- **Map every piece of your design to a built-in component first.** A KPI/metric tile → `Statistics` (not an HTML card). A chart or bar/graph → `Chart` (not HTML/SVG). A data grid → `Table`. Labels/headings → `Text`. Inputs → `TextInput`/`NumberInput`/`DropdownV2`/etc. Forms → `Form`. Progress → `CircularProgressbar`.
+- Use `HTML` (or `Text` with HTML) **only as a last resort** — when ToolJet genuinely has no built-in component for what you need. Do not build tiles, charts, tables, or layouts out of HTML when a built-in exists.
+- The full built-in palette (with purposes) is below — check it before reaching for HTML.
+
+### Built-in components (use these first)
+
+| Component (`type`) | Purpose |
+|---|---|
+| `Accordion` | Group components |
+| `AudioRecorder` | Records audio |
+| `BoundedBox` | An infinitely customizable image annotation widget |
+| `Button` | Trigger actions: queries, alerts, set variables etc. |
+| `ButtonGroup` | Group of buttons |
+| `ButtonGroupLegacy` | Group of buttons |
+| `Calendar` | Display calendar events |
+| `Camera` | Captures video & photos from camera |
+| `Cascader` | Hierarchical single item selector |
+| `Chart` | Visualize data |
+| `Chat` | Chat interface with message history |
+| `Checkbox` | Single checkbox toggle |
+| `CircularProgressBar` | Show circular progress |
+| `CodeEditor` | Edit source code |
+| `ColorPicker` | Choose colors from a palette |
+| `Container` | Group components |
+| `CurrencyInput` | Currency input field |
+| `CustomComponent` | Create React components |
+| `DatePicker` | Choose date |
+| `DatePickerLegacy` | Choose date and time |
+| `DateRangePicker` | Choose date ranges |
+| `DatetimePicker` | Choose date and time |
+| `Dropdown` | Single item selector |
+| `DropdownLegacy` | Single item selector |
+| `EmailInput` | Email input field |
+| `FileButton` | A button that triggers file selection. Label updates to show selected file count after selection. |
+| `FileInput` | File input |
+| `FilePicker` | File Picker |
+| `FlexContainer` | Auto-layout flex container |
+| `Form` | Wrapper for multiple components |
+| `HorizontalDivider` | Separator between components |
+| `Html` | View HTML content |
+| `Icon` | Icon |
+| `Iframe` | Embed external content |
+| `Image` | Show image files |
+| `JSONEditor` | Edit JSON data |
+| `JSONExplorer` | Explore JSON data |
+| `Kanban` | Task management board |
+| `KanbanBoard` | Task management board |
+| `KeyValuePair` | Display data in key-value format |
+| `Link` | Add link to the text |
+| `Listview` | List multiple items |
+| `Map` | Display map locations |
+| `Modal` | Show pop-up windows |
+| `ModalLegacy` | Show pop-up windows |
+| `ModuleContainer` | Module Container |
+| `ModuleViewer` | Module |
+| `Multiselect` | Multiple item selector |
+| `MultiselectLegacy` | Multiple item selector |
+| `Navigation` | Create custom navigation menus |
+| `NumberInput` | Numeric input field |
+| `Pagination` | Navigate pages |
+| `PasswordInput` | Secure text input |
+| `PDF` | Embed PDF documents |
+| `PhoneInput` | Phone input field |
+| `PopoverMenu` | Popover Menu |
+| `ProgressBar` | Show progress |
+| `QrScanner` | Scan QR codes and hold its data |
+| `RadioButton` | Select one from multiple choices |
+| `RadioButtonLegacy` | Select one from multiple choices |
+| `RangeSlider` | Adjust value range |
+| `RangeSliderLegacy` | Adjust value range |
+| `ReorderableList` | Reorderable List |
+| `RichTextEditor` | Rich text editor |
+| `Spinner` | Indicate loading state |
+| `StarRating` | Star rating |
+| `Statistics` | Show key metrics |
+| `Steps` | Step-by-step navigation aid |
+| `SvgImage` | Display SVG graphics |
+| `Table` | Display paginated tabular data |
+| `Tabs` | Organize content in tabs |
+| `Tags` | Display tag labels |
+| `TagsInput` | Tag input with create, select, and delete functionality |
+| `Text` | Display text or HTML |
+| `Textarea` | Multi-line text input |
+| `TextInput` | User text input field |
+| `Timeline` | Show event timeline |
+| `TimePicker` | Choose date and time |
+| `Timer` | Countdown or stopwatch |
+| `ToggleSwitch` | User-controlled on-off switch |
+| `ToggleSwitchLegacy` | User-controlled on-off switch |
+| `TreeSelect` | Hierarchical item selector |
+| `VerticalDivider` | Vertical line separator |
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
