@@ -36,16 +36,33 @@ Response body (relevant fields):
 
 ---
 
-## 1. List datasources
+## 1. List datasources (verified live) — TWO endpoints; tjdb only in the app-scoped one
 
-The ToolJet-DB datasource is global and already exists:
+**Gotcha:** the plain global-list endpoint EXCLUDES static datasources (tjdb/restapi/runjs/runpy). The ToolJet-DB datasource (`kind: tooljetdb`, id `2d78b02a-ced0-4f23-8ce3-09972d66035a`) appears ONLY in the app-scoped list. Slice 1 uses tjdb, so use the app-scoped endpoint.
+
+### a) Global configured datasources (excludes tjdb)
 ```
-id:   2d78b02a-ced0-4f23-8ce3-09972d66035a
-name: tooljetdbdefault
-kind: tooljetdb
-scope: global
+GET /api/data-sources/:organizationId          Headers: Cookie + tj-workspace-id
+→ 200 { "data_sources": [ { id, name, kind, scope }, ... ] }   // snowflake, servicenow, postgresql — NO tjdb
 ```
-**(CONFIRM)** exact GET path for listing org datasources (a data-sources controller GET; scoped by `tj-workspace-id`). For slice 1 the tooljetdb id above can be used directly, but `list_datasources` should still hit the real endpoint. Confirm path during Task 4 by reading `server/src/modules/data-sources/*controller*.ts` and testing with the cookie+header.
+
+### b) App-scoped datasources (INCLUDES tjdb + static) — use this for slice 1
+```
+GET /api/data-sources/:organizationId/environments/:environmentId/versions/:versionId
+Headers: Cookie + tj-workspace-id
+→ 200 { "data_sources": [
+     { "kind":"tooljetdb", "name":"tooljetdbdefault", "id":"2d78b02a-ced0-4f23-8ce3-09972d66035a" },
+     { "kind":"restapi", ... }, { "kind":"runjs", ... }, { "kind":"servicenow", ... }, { "kind":"postgresql", ... } ] }
+```
+
+### Resolving the environment id (needed for the app-scoped list)
+```
+GET /api/app-environments        Headers: Cookie + tj-workspace-id
+→ 200; find env with name === 'development' → id (this org: 2138e019-dbcd-45d1-8b84-7d5afeb77d08)
+(Also: GET /api/app-environments/default.)
+```
+
+**`list_datasources` design:** takes a `version_id` (from `create_app`); internally resolves the development env id via `/api/app-environments`, then calls the app-scoped endpoint (1b) → returns the datasource list including the tjdb id. `add_query` passes the chosen datasource id into the create-query route (§3), which needs NO env id. Resolve the tjdb id at runtime; don't hardcode.
 
 ---
 
