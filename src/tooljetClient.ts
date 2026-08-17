@@ -54,6 +54,7 @@ export interface ToolJetClient {
   getApp(appId: string): Promise<any>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
+  listTables(): Promise<Array<{ id: string; table_name: string }>>;
   createQuery(params: CreateQueryParams): Promise<CreateQueryResult>;
   createComponent(params: CreateComponentParams): Promise<CreateComponentResult>;
 }
@@ -78,7 +79,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       body: JSON.stringify({ name, type: 'front-end' }),
     });
     await assertOk(createRes, 'createApp');
-    const created = (await createRes.json()) as { id: string };
+    const created = (await createRes.json()) as { id: string; slug?: string };
 
     const app = await getApp(created.id);
     const versionId: string = app.editing_version.id;
@@ -88,12 +89,24 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       throw new Error('ToolJet createApp failed: app has no pages');
     }
 
+    // Editor URL is /<workspace-slug>/apps/<app-slug> — the workspace segment is required.
+    const orgSlug = await auth.getOrganizationSlug();
+    const appSlug = created.slug ?? created.id;
+
     return {
       app_id: created.id,
       version_id: versionId,
       home_page_id: homePage.id,
-      app_url: `${config.appUrl}/apps/${created.id}`,
+      app_url: `${config.appUrl}/${orgSlug}/apps/${appSlug}`,
     };
+  }
+
+  async function listTables(): Promise<Array<{ id: string; table_name: string }>> {
+    const orgId = await auth.getOrganizationId();
+    const res = await auth.authedFetch(`/api/tooljet-db/organizations/${orgId}/tables`);
+    await assertOk(res, 'listTables');
+    const body = (await res.json()) as { result: Array<{ id: string; table_name: string }> };
+    return body.result ?? [];
   }
 
   async function getDevelopmentEnvironmentId(): Promise<string> {
@@ -161,5 +174,5 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { component_id: componentId };
   }
 
-  return { createApp, getApp, getDevelopmentEnvironmentId, listDatasources, createQuery, createComponent };
+  return { createApp, getApp, getDevelopmentEnvironmentId, listDatasources, listTables, createQuery, createComponent };
 }

@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
 import { createAppTool } from './createApp.js';
 import { listDatasourcesTool } from './listDatasources.js';
+import { listTablesTool } from './listTables.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getAppTool } from './getApp.js';
 import { addQueryTool } from './addQuery.js';
@@ -12,6 +13,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
     createAppTool(client),
     listDatasourcesTool(client),
+    listTablesTool(client),
     getComponentCatalogTool(client),
     getAppTool(client),
     addQueryTool(client),

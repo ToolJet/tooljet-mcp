@@ -33,15 +33,16 @@ Goal: an app whose Home page shows the rows of a ToolJet-DB table (e.g. `tickets
 1. `create_app("Tickets Dashboard")` → keep `app_id`, `version_id`, `home_page_id`, `app_url`.
 2. `list_datasources(version_id)` → find the entry with `kind === "tooljetdb"`; keep its `id` (the datasource id).
 3. `add_query`:
+   First call `list_tables()` → `[{ id, table_name }]` and find the `id` of the `tickets` table. A ToolJet-DB query references the table by **`table_id`** (the id), NOT the table name — using a name errors at runtime. Then:
    ```json
    {
      "version_id": "<version_id>",
      "datasource_id": "<tooljetdb datasource id>",
      "name": "list_tickets",
-     "options": { "operation": "list_rows", "table_name": "tickets", "list_rows": {}, "runOnPageLoad": true }
+     "options": { "operation": "list_rows", "table_id": "<tickets table id from list_tables>", "list_rows": {}, "runOnPageLoad": true }
    }
    ```
-   - `operation: "list_rows"` + `table_name` (the plain table name) lists all rows.
+   - `operation: "list_rows"` + `table_id` (the table's id) lists all rows. **Do NOT use `table_name`** in the options — the tjdb runner reads `table_id`.
    - `runOnPageLoad: true` makes the query run when the app opens, so the Table populates automatically.
 4. `add_component` — a Table bound to the query:
    ```json

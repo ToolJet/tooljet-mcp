@@ -43,11 +43,15 @@ const datasources = await call('list_datasources', { version_id: app.version_id 
 const tjdb = datasources.find((d) => d.kind === 'tooljetdb');
 console.error('tjdb datasource →', tjdb.id);
 
+const tables = await call('list_tables', {});
+const tickets = tables.find((t) => t.table_name === 'tickets');
+console.error('tickets table →', tickets.id);
+
 const query = await call('add_query', {
   version_id: app.version_id,
   datasource_id: tjdb.id,
   name: 'list_tickets',
-  options: { operation: 'list_rows', table_name: 'tickets', list_rows: {}, runOnPageLoad: true },
+  options: { operation: 'list_rows', table_id: tickets.id, list_rows: {}, runOnPageLoad: true },
 });
 console.error('add_query →', query);
 

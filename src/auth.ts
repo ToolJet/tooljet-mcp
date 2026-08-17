@@ -5,11 +5,13 @@ const COOKIE_PREFIX = 'tj_auth_token=';
 export interface Auth {
   authedFetch(path: string, init?: RequestInit): Promise<Response>;
   getOrganizationId(): Promise<string>;
+  getOrganizationSlug(): Promise<string>;
 }
 
 export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
   let token: string | undefined;
   let workspaceId: string | undefined;
+  let workspaceSlug: string | undefined;
 
   async function login(): Promise<void> {
     const res = await fetchImpl(`${config.apiUrl}/api/authenticate`, {
@@ -25,8 +27,9 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     }
     token = cookie.slice(COOKIE_PREFIX.length).split(';')[0];
 
-    const body = (await res.json()) as { current_organization_id?: string };
+    const body = (await res.json()) as { current_organization_id?: string; current_organization_slug?: string };
     workspaceId = body.current_organization_id;
+    workspaceSlug = body.current_organization_slug;
   }
 
   async function doFetch(path: string, init?: RequestInit): Promise<Response> {
@@ -66,5 +69,15 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return workspaceId;
   }
 
-  return { authedFetch, getOrganizationId };
+  async function getOrganizationSlug(): Promise<string> {
+    if (!workspaceSlug) {
+      await login();
+    }
+    if (!workspaceSlug) {
+      throw new Error('ToolJet getOrganizationSlug failed: no organization slug available after login');
+    }
+    return workspaceSlug;
+  }
+
+  return { authedFetch, getOrganizationId, getOrganizationSlug };
 }

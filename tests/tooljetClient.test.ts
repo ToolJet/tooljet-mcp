@@ -26,6 +26,7 @@ function makeAuth(): Auth & { authedFetch: ReturnType<typeof vi.fn>; getOrganiza
   return {
     authedFetch: vi.fn(),
     getOrganizationId: vi.fn().mockResolvedValue('org1'),
+    getOrganizationSlug: vi.fn().mockResolvedValue('myworkspace'),
   };
 }
 
@@ -72,7 +73,7 @@ describe('createClient', () => {
         app_id: 'app1',
         version_id: 'ver1',
         home_page_id: 'page-home',
-        app_url: 'http://localhost:8082/apps/app1',
+        app_url: 'http://localhost:8082/myworkspace/apps/app1',
       });
     });
 
