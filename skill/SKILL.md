@@ -1,81 +1,130 @@
 ---
 name: tooljet-app-builder
-description: "Build a ToolJet app end-to-end via the tooljet-mcp tools — create an app, add a query against a datasource, and add components (e.g. a Table) bound to that query. Use whenever the user asks to build/scaffold a ToolJet app, dashboard, or internal tool, or to add pages/components/queries to one. Slice 1 covers a single-page app with a Table bound to a ToolJet-DB query."
+description: "Build ToolJet apps end-to-end via the tooljet-mcp tools — create apps, add datasource queries, and add components bound to them. Use whenever asked to build/scaffold a ToolJet app, dashboard, or internal tool, or to add pages/components/queries. This is a KNOWLEDGE reference (component binding rules, canvas mechanics, query schemas); YOU make all layout and design decisions."
 metadata:
-  slice: 1
-  source_spec: docs/specs/2026-06-26-tooljet-mcp-slice1-design.md
+  generated_by: scripts/generate-skill.mjs
+  sources:
+    - TJ-AI COMPONENT_BINDING_RULES (22 components)
+    - ToolJet appCanvasConstants (grid mechanics)
 ---
 
-## What this skill does
+<!-- GENERATED FILE — do not edit by hand. Run `node scripts/generate-skill.mjs` to regenerate. -->
 
-You build ToolJet apps by calling the `tooljet-mcp` tools. Every tool call goes through ToolJet's own governed API (your session, your permissions) — you never touch the database directly. ToolJet apps are **configuration over a fixed component library**, not code: you create an app, add queries on datasources, and add components whose properties bind to those queries.
+## What this skill is
 
-## The ToolJet app model (what you're assembling)
+Facts you need to build ToolJet apps through the `tooljet-mcp` tools — the component binding rules, the canvas coordinate system, and query schemas. It contains **no design opinions**: which components to use, how to lay them out, and how they look are **your** decisions. Aim for a clean, polished, enterprise-grade result.
 
-- An **app** has a **version** and one or more **pages**. `create_app` gives you one app + a version + a "Home" page.
-- A **component** (Table, Text, …) lives on a page and has **properties**. Property values that start with `{{ … }}` are **bindings** evaluated at runtime.
-- A **query** runs against a **datasource** and exposes its result as `queries.<queryName>.data`.
-- You wire data by binding a component property to a query: e.g. a Table's `data` property = `{{queries.<queryName>.data}}`.
+Every tool call goes through ToolJet's governed API (your session + permissions). ToolJet apps are configuration over a fixed component library, not code.
 
 ## The tools
 
-- `create_app(name)` → `{ app_id, version_id, home_page_id, app_url }`. Call this first; keep all four values.
-- `list_datasources(version_id)` → `[{ id, name, kind }]`. Find the datasource you need. ToolJet DB is `kind: "tooljetdb"`.
-- `get_component_catalog()` → the component types you can place and their key properties.
-- `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`. Creates a query. Use a clear `name` (letters/underscores) — you'll reference it in bindings as `{{queries.<name>.data}}`.
-- `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. Places a component. `name` is REQUIRED.
-- `get_app(app_id)` → the current app structure (for inspection).
+- `create_app(name)` → `{ app_id, version_id, home_page_id, app_url }`. Call first; keep all four.
+- `list_datasources(version_id)` → `[{ id, name, kind }]`. ToolJet DB is `kind: "tooljetdb"`.
+- `list_tables()` → `[{ id, table_name }]`. A ToolJet-DB query needs the table's **id** as `table_id`.
+- `get_component_catalog()` → placeable component types + key props.
+- `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`.
+- `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. `name` is required.
+- `get_app(app_id)` → current app structure.
 
-## Recipe: a Table bound to a ToolJet-DB table
+## App model & binding syntax
 
-Goal: an app whose Home page shows the rows of a ToolJet-DB table (e.g. `tickets`).
+- app → version → page → component. `create_app` gives one app + version + a "Home" page.
+- A component has **properties**; each property value is `{ "value": <val> }`. Values starting with `{{ … }}` are **bindings** evaluated at runtime.
+- A query exposes its result as `queries.<queryName>.data`. Bind a component property to it, e.g. a Table's `data.value = "{{queries.<queryName>.data}}"`.
 
-1. `create_app("Tickets Dashboard")` → keep `app_id`, `version_id`, `home_page_id`, `app_url`.
-2. `list_datasources(version_id)` → find the entry with `kind === "tooljetdb"`; keep its `id` (the datasource id).
-3. `add_query`:
-   First call `list_tables()` → `[{ id, table_name }]` and find the `id` of the `tickets` table. A ToolJet-DB query references the table by **`table_id`** (the id), NOT the table name — using a name errors at runtime. Then:
-   ```json
-   {
-     "version_id": "<version_id>",
-     "datasource_id": "<tooljetdb datasource id>",
-     "name": "list_tickets",
-     "options": { "operation": "list_rows", "table_id": "<tickets table id from list_tables>", "list_rows": {}, "runOnPageLoad": true }
-   }
-   ```
-   - `operation: "list_rows"` + `table_id` (the table's id) lists all rows. **Do NOT use `table_name`** in the options — the tjdb runner reads `table_id`.
-   - `runOnPageLoad: true` makes the query run when the app opens, so the Table populates automatically.
-4. `add_component` — a Table bound to the query:
-   ```json
-   {
-     "app_id": "<app_id>",
-     "version_id": "<version_id>",
-     "page_id": "<home_page_id>",
-     "name": "ticketsTable",
-     "type": "Table",
-     "properties": {
-       "data": { "value": "{{queries.list_tickets.data}}" },
-       "dataSourceSelector": { "value": "rawJson" },
-       "autogenerateColumns": { "value": true, "generateNestedColumns": true }
-     },
-     "layout": { "top": 10, "left": 2, "width": 40, "height": 400 }
-   }
-   ```
-   - `layout` is in ToolJet grid units (width max ~43). `name` is required.
+## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
-### ⚠️ Table binding rule (authoritative — from the agent's `COMPONENT_BINDING_RULES["Table"]`)
-A Table renders data ONLY if you set **all three** together:
-- `data.value` = `{{queries.<queryName>.data}}` — the row array binding
-- `dataSourceSelector.value` = `"rawJson"` — **REQUIRED**; without it the table renders nothing even with `data` set
-- `autogenerateColumns.value` = `true` (never `false`) — so columns render from the query rows automatically
+ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.
 
-Setting only `data` produces a **blank table**. (This is exactly the kind of hard-won rule that lives in the agent's binding rules — the MCP skill mirrors it.)
-5. Tell the user: **open `app_url`** in the browser — the Table should render the table's rows.
+- The canvas is **43 columns** wide. A component's `left` and `width` are in **columns** (0–43). Full width = `left: 0, width: 43`.
+- `top` and `height` are in **pixels**, snapped to a **10px** vertical grid. A typical input is ~40px tall; a data table ~300–500px.
+- Every component's `layout` must be given for **both resolutions**: `{ desktop: {top,left,width,height}, mobile: {top,left,width,height} }`.
+- **Stacking rule (prevents overlap):** to place component B below component A, set `B.top = A.top + A.height + gap` (gap ~10–20px). Never reuse the same `top` for two components in the same area — the later one draws over the earlier one.
+- Left-align a column of components at the same `left`; span the full width with `width: 43` when appropriate.
 
-## Rules & gotchas
+## Component binding reference (22 components)
+
+Authoritative rules for binding each component correctly (what must be set, or it renders nothing / wrong). Choose whichever components best fit the app you're building.
+
+### Button
+isDisabled: bind to form validity (`{{components.form1.isValid}}`) or other conditional logic. isVisible: bind to conditional expressions to show/hide contextually. isLoading: bind to `{{queries.queryName.isLoading}}` to reflect query execution state.
+
+### Calendar
+`dateFormat` MUST match all event start/end date strings — mismatch causes events to not render. Default: 'MM-DD-YYYY HH:mm:ss A Z'. Always reformat query dates with moment(): `{{queries.q.data.map(e=>({title:e.title,start:moment(e.start).format('MM-DD-YYYY HH:mm:ss A Z'),end:moment(e.end).format('MM-DD-YYYY HH:mm:ss A Z'),allDay:false}))}}`. selectedSlots.start/.end: pre-fill new-event form on slot click. selectedEvent: read clicked event fields for edit/delete queries.
+
+### Chart
+jsonDescription takes a Plotly JSON schema string — use JavaScript transformation within {{}} to map query arrays to Plotly series format. clickedDataPoint exposes {xAxisLabel, yAxisLabel, dataLabel, dataValue} for drill-down queries.
+
+### Chat
+loadingResponse property fxActive MUST be set to `{{queries.<queryName>.isLoading}}` — this shows the typing indicator while the AI query runs. Feed user message to query: bind prompt to `{{components.chatName.lastMessage.message}}`. appendHistory action (called on query success) expects: {message, messageId, timestamp, name, avatar, type:'response'}. For multi-turn: map history to OpenAI role format — `{{components.chatName.history.map(m => ({role: m.type === 'message' ? 'user' : 'assistant', content: m.message}))}}`.
+
+### DatePickerV2
+defaultValue is the ONLY bindable value field — there is no separate `value` property. Prefill from query: defaultValue=`{{queries.queryName.data[0].fieldName}}`. Prefill inside a modal opened from a table row (determine table-connected vs standalone via the app's the current state — never from component naming): defaultValue=`{{components.tableName.selectedRow.fieldName}}` — NOT `queries.name.data[0]`, which is the first row of the table's list query, not the clicked row. Use a static string/date literal only when the modal is confirmed standalone (no prefill needed).
+
+### DatetimePickerV2
+defaultValue is the ONLY bindable value field — there is no separate `value` property. Prefill from query: defaultValue=`{{queries.queryName.data[0].fieldName}}`. Prefill inside a modal opened from a table row (determine table-connected vs standalone via the app's the current state — never from component naming): defaultValue=`{{components.tableName.selectedRow.fieldName}}` — NOT `queries.name.data[0]`, which is the first row of the table's list query, not the clicked row. Use a static string/date literal only when the modal is confirmed standalone (no prefill needed).
+
+### DropdownV2
+TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: advanced=`{{false}}`, options=[{label:'X', value:1, disable:{value:false}, visible:{value:true}}]. Do NOT set schema. (2) QUERY-BOUND: advanced=`{{true}}`, schema=`{{queries.queryName.data}}`. Do NOT set options. Query data must be an array of {label, value, disable, visible} objects — transform at the query level if needed. Exposed variable is `.label` (the selected option label) — DropdownV2 has NO `.value` exposed variable. PREFILL: there is no `value`/`defaultValue` input property. The initially selected item is whichever entry in the bound `schema`/`options` array has `default: true` — set it via a transform, e.g. when prefilling from a table row inside a modal: `schema: {{ queries.queryName.data.map(o => ({...o, default: o.value === components.tableName.selectedRow.fieldName})) }}`. When the dropdown edits a table column with a fixed set of values, bind `schema` to a dedicated lookup query (same datasource as the table, filtered to the relevant scope) — never hardcode static `options` for a database-backed column.
+
+### Form
+Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`.
+
+### KanbanBoard
+Bind cardData from query array shaped as [{id, title, columnId}]; bind columnData from query array shaped as [{id, title}]. lastCardMovement exposes {cardId, sourceColumn, destinationColumn} — use in update queries triggered by onCardMoved event to persist reordering.
+
+### KeyValuePair
+Bind data property to a query object for display/edit: `{{queries.queryName.data[0]}}`. changeSet exposes only the modified key-value pairs — use in update queries rather than the full data object.
+
+### Listview
+Bind data property to a query array: `{{queries.queryName.data}}`. Child components inside the list access the current row via the list's data binding context.
+
+### Modal
+show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
+
+### ModalV2
+show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
+
+### MultiselectV2
+Only `.searchText` is exposed — there is no `.values` or `.selected` variable on MultiselectV2.
+
+### NumberInput
+Use debounce: 300 on onChange events that trigger queries. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
+
+### Pagination
+currentPageIndex is 1-based (starts at 1, not 0). Wire to Table: add a control-component event that calls setPage with value=`{{components.paginationName.currentPageIndex}}`. Bind numberOfPages to the total record count from a COUNT query.
+
+### RadioButtonV2
+Exposed variable is `.label` — there is NO `.value` on RadioButtonV2. Use `{{components.radioName.label}}` to read the selected option.
+
+### Statistics
+primaryValue must be a scalar — bind `queries.name.data[0].fieldName` from an aggregate query, never the full array. secondarySignDisplay accepted values: 'positive', 'negative', 'none' — never a boolean. icon is MANDATORY — always set it; never leave empty. primaryPrefixText / primarySuffixText are static strings only — do not bind expressions here. Statistics is display-only — its exposed variables are read-back values, not filter inputs.
+
+### Table
+Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector.value=`"rawJson"` — both MUST be set together or the table renders nothing. NEVER set the table-level `autogenerateColumns.value` to false — it must always be true so columns render from the query rows automatically; false makes the table show ONLY the explicit `columns` array and blanks out on any key mismatch. This is separate from a column's own `autogenerated` field — individual columns may have `autogenerated: false` (that is normal for custom columns); only the table-level `autogenerateColumns` flag must never be false. pageIndex is 0-based: SQL offset = pageIndex * pageSize. selectedRow columns come from actual query result fields — never fabricate column names. Columns support JavaScript transforms on query fields. Dynamic columns: only set `useDynamicColumn`/`columnData` for a FLAT, build-time column list. `columnData` is evaluated once with no row in scope, so it MUST NOT reference `rowData`/`cellValue`, MUST NOT contain nested `{{ }}`, and cannot express per-cell conditions — any conditional `cellBackgroundColor`/`textColor`/`isEditable`/`dynamicOptions`/etc. MUST go on static `columns` (resolved per cell). Otherwise the table renders ZERO columns.
+
+### TagsInput
+Bind schema to a query for dynamic tag options: schema=`{{queries.queryName.data}}` (array of {label, value}). selectedTags exposes only the checked tags; values exposes all current tags.
+
+### TextArea
+Use debounce: 300 on onChange events that trigger queries. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
+
+### TextInput
+Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
+
+## Datasource query reference
+
+### ToolJet DB (`kind: "tooljetdb"`)
+- Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
+- List all rows: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }`.
+- `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
+- `list_rows` may carry `limit`, `offset`, `where_filters`, `order_filters` for filtering/sorting.
+
+(Other datasources — postgresql, mongodb, servicenow, etc. — have their own query schemas; ask for the specific one when needed.)
+
+## Build guidance
 
 - Always `create_app` first; thread `app_id` / `version_id` / `home_page_id` into later calls.
-- A component `name` is required (a missing name is rejected).
-- Bind by query **name**: `{{queries.<name>.data}}` (the name you passed to `add_query`).
-- Bindings are strings wrapped in `{{ }}`; a Table's `data` must resolve to an array of row objects.
-- You can fan out: independent `add_query` / `add_component` calls can be made in parallel once you have the app + version ids.
-- Report the `app_url` back to the user so they can see the result.
+- Give each component a `name`; bind data by query name: `{{queries.<name>.data}}`.
+- Use the grid mechanics above to lay components out without overlap. Design the layout yourself — make it clean and enterprise-grade.
+- Report the `app_url` back to the user.
