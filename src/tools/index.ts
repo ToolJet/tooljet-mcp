@@ -9,6 +9,7 @@ import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getAppTool } from './getApp.js';
+import { addPageTool } from './addPage.js';
 import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
@@ -24,6 +25,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     insertRowsTool(client),
     getComponentCatalogTool(client),
     getAppTool(client),
+    addPageTool(client),
     addQueryTool(client),
     addQueriesTool(client),
     addComponentTool(client),

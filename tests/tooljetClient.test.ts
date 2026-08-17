@@ -338,6 +338,23 @@ describe('createClient', () => {
     });
   });
 
+  describe('createPage', () => {
+    it('appends after existing pages, slugifies the handle, uses a client-generated id', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home' }] } })) // getApp
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: {} })); // create page
+
+      const client = createClient(auth, config);
+      const result = await client.createPage({ appId: 'app1', versionId: 'ver1', name: 'Details View' });
+
+      const [path, init] = auth.authedFetch.mock.calls[1];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/pages');
+      const body = JSON.parse(init.body);
+      expect(body).toMatchObject({ id: 'component-uuid-1', name: 'Details View', handle: 'details-view', index: 1 });
+      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Details View' });
+    });
+  });
+
   describe('createTable', () => {
     it('normalizes types, sets constraints, and auto-adds a serial id PK when none given', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't1', table_name: 'people' } } }));

@@ -138,6 +138,7 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 
 **Batch for the build, singular for edits.** When first building an app, create everything with \`add_queries\` + \`add_components\` (far fewer round-trips). Use the singular \`add_query\`/\`add_component\` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
 - \`get_app(app_id)\` → current app structure.
+- \`add_page({ app_id, version_id, name })\` → \`{ page_id, name }\`. Add a page; pass its \`page_id\` to add_component(s). ToolJet renders cross-page navigation automatically.
 
 ## Before you build — clarify a vague request first
 
@@ -147,7 +148,7 @@ If the user already gave a detailed spec, don't interrogate — build directly. 
 
 ## App model & binding syntax
 
-- app → version → page → component. \`create_app\` gives one app + version + a "Home" page.
+- app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add more pages with \`add_page\` when the app benefits (e.g. list + detail, or separate dashboard/admin views); ToolJet auto-renders navigation between pages. Don't fragment a simple app across many pages — a single well-laid-out page is often best.
 - A component has **properties**; each property value is \`{ "value": <val> }\`. Values starting with \`{{ … }}\` are **bindings** evaluated at runtime.
 - A query exposes its result as \`queries.<queryName>.data\`. Bind a component property to it, e.g. a Table's \`data.value = "{{queries.<queryName>.data}}"\`.
 

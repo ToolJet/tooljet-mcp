@@ -108,9 +108,21 @@ export interface InsertRowsParams {
   rows: Array<Record<string, unknown>>;
 }
 
+export interface CreatePageParams {
+  appId: string;
+  versionId: string;
+  name: string;
+}
+
+export interface CreatePageResult {
+  page_id: string;
+  name: string;
+}
+
 export interface ToolJetClient {
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
+  createPage(params: CreatePageParams): Promise<CreatePageResult>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
   listTables(): Promise<Array<{ id: string; table_name: string }>>;
@@ -205,6 +217,26 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await assertOk(res, 'listTables');
     const body = (await res.json()) as { result: Array<{ id: string; table_name: string }> };
     return body.result ?? [];
+  }
+
+  async function createPage(params: CreatePageParams): Promise<CreatePageResult> {
+    // Page order = append after existing pages. The client generates the page id (like components).
+    const app = await getApp(params.appId);
+    const index = (app.pages ?? []).length;
+    const pageId = randomUUID();
+    const handle =
+      params.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 50) || 'page';
+    const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: pageId, name: params.name, handle, index }),
+    });
+    await assertOk(res, 'createPage');
+    return { page_id: pageId, name: params.name };
   }
 
   async function getDevelopmentEnvironmentId(): Promise<string> {
@@ -383,6 +415,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   return {
     createApp,
     getApp,
+    createPage,
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
