@@ -18,7 +18,7 @@ describe('buildServer', () => {
 
     const registered = (server as any)._registeredTools;
     if (registered) {
-      expect(Object.keys(registered)).toHaveLength(13);
+      expect(Object.keys(registered)).toHaveLength(14);
     }
   });
 });

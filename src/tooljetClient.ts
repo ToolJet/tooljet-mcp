@@ -119,10 +119,27 @@ export interface CreatePageResult {
   name: string;
 }
 
+/** One event handler: a trigger on a component + an action to run. */
+export interface EventSpec {
+  /** The component the event is attached to. */
+  componentId: string;
+  /** The trigger event id, e.g. 'onClick' (Button), 'onRowClicked' (Table). */
+  trigger: string;
+  /** The action: { actionId, ...params }, e.g. { actionId: 'run-query', queryId, queryName }. */
+  action: Record<string, unknown>;
+}
+
+export interface CreateEventsParams {
+  appId: string;
+  versionId: string;
+  events: EventSpec[];
+}
+
 export interface ToolJetClient {
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
+  createEvents(params: CreateEventsParams): Promise<{ created: number }>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
   listTables(): Promise<Array<{ id: string; table_name: string }>>;
@@ -237,6 +254,31 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
     await assertOk(res, 'createPage');
     return { page_id: pageId, name: params.name };
+  }
+
+  async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {
+    // Each event → { event: { eventId: <trigger>, ...action }, eventType: 'component', attachedTo, index }.
+    // index is per-component ordering; for a fresh build start at 0 and increment per component.
+    const indexByComponent: Record<string, number> = {};
+    const events = params.events.map((e) => {
+      const index = indexByComponent[e.componentId] ?? 0;
+      indexByComponent[e.componentId] = index + 1;
+      return {
+        // name is NOT NULL server-side (the DTO marks it optional but the column requires it).
+        name: `${e.trigger} → ${(e.action.actionId as string) ?? 'action'}`,
+        event: { eventId: e.trigger, ...e.action },
+        eventType: 'component',
+        attachedTo: e.componentId,
+        index,
+      };
+    });
+    const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/events/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events }),
+    });
+    await assertOk(res, 'createEvents');
+    return { created: events.length };
   }
 
   async function getDevelopmentEnvironmentId(): Promise<string> {
@@ -416,6 +458,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createApp,
     getApp,
     createPage,
+    createEvents,
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,

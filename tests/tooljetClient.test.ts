@@ -338,6 +338,30 @@ describe('createClient', () => {
     });
   });
 
+  describe('createEvents', () => {
+    it('bulk-posts events with eventId merged into action, per-component index', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: {} }));
+      const client = createClient(auth, config);
+      const result = await client.createEvents({
+        appId: 'app1',
+        versionId: 'ver1',
+        events: [
+          { componentId: 'btn1', trigger: 'onClick', action: { actionId: 'run-query', queryName: 'save' } },
+          { componentId: 'btn1', trigger: 'onClick', action: { actionId: 'show-alert', message: 'Saved', alertType: 'success' } },
+          { componentId: 'tbl1', trigger: 'onRowClicked', action: { actionId: 'switch-page', pageId: 'p2', queryParams: [['id', '{{x}}']] } },
+        ],
+      });
+
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/events/bulk');
+      const body = JSON.parse(init.body);
+      expect(body.events[0]).toMatchObject({ eventType: 'component', attachedTo: 'btn1', index: 0, event: { eventId: 'onClick', actionId: 'run-query', queryName: 'save' } });
+      expect(body.events[1]).toMatchObject({ attachedTo: 'btn1', index: 1 }); // second event on same component → index 1
+      expect(body.events[2]).toMatchObject({ attachedTo: 'tbl1', index: 0, event: { eventId: 'onRowClicked', actionId: 'switch-page', pageId: 'p2' } });
+      expect(result).toEqual({ created: 3 });
+    });
+  });
+
   describe('createPage', () => {
     it('appends after existing pages, slugifies the handle, uses a client-generated id', async () => {
       auth.authedFetch

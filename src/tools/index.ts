@@ -14,6 +14,7 @@ import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
 import { addComponentsTool } from './addComponents.js';
+import { addEventsTool } from './addEvents.js';
 
 export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
@@ -30,6 +31,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     addQueriesTool(client),
     addComponentTool(client),
     addComponentsTool(client),
+    addEventsTool(client),
   ];
 
   for (const tool of tools) {

@@ -30,6 +30,7 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - `add_queries({ version_id, queries: [...] })` → `[{ query_id, name }]`. **Create ALL an app's queries in one call.**
 - `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. Single component; `name` required.
 - `add_components({ app_id, version_id, page_id, components: [...] })` → `[{ component_id, name }]`. **Place ALL of a page's components in one call.**
+- `add_events({ app_id, version_id, events: [...] })` → wire interactivity (each event = a trigger on a component + an action). This is how the app DOES things. Create all events in one call. See "Interactivity" below.
 
 **Batch for the build, singular for edits.** When first building an app, create everything with `add_queries` + `add_components` (far fewer round-trips). Use the singular `add_query`/`add_component` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
 - `get_app(app_id)` → current app structure.
@@ -272,6 +273,26 @@ The `Chart` component fails in a specific, common way: **ToolJet's chart-propert
 4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with `JSON.stringify(...)`.
 
 Rule of thumb: **an empty chart means the binding was too complex.** Replace dynamic detection with explicit field names + simple `.filter().length` / `.map()`.
+
+## Interactivity — wire events so the app DOES things (not just displays)
+
+Components and queries alone make a *static* app. Use `add_events` to add behavior. Each event = **a trigger on a component + an action**: `{ component_id, trigger, action }`.
+
+**Triggers** (the `trigger` = the component's event id): Button → `onClick`; Table → `onRowClicked`, `onSearch`, `onPageChanged`, `onBulkUpdate`; text/number inputs → `onChange`, `onEnterPressed`; Form → `onSubmit`. (A component's exact events are in `get_component_catalog(type)` / its widget definition.)
+
+**Actions** (`action = { actionId, ...params }`):
+- **Run a query:** `{ actionId: 'run-query', queryId: '<query id>', queryName: '<name>' }`
+- **Switch page + pass variables:** `{ actionId: 'switch-page', pageId: '<target page id>', queryParams: [['id', '{{components.table1.selectedRow.id}}']] }` — `queryParams` is an array of `[key, value]` pairs; the value can be a binding, and the target page reads them from its page params. **This is how you pass data between pages.**
+- **Show alert:** `{ actionId: 'show-alert', message: 'Saved', alertType: 'success' | 'info' | 'warning' | 'error' }`
+- **Show/close modal:** `{ actionId: 'show-modal', modal: '<modal component id>' }`
+- **Set variable:** `{ actionId: 'set-variable', key: '...', value: '...' }`
+
+**Common recipes:**
+- **Form submit → insert + refresh:** on the submit Button's `onClick`, two events: `run-query` (the insert/create query), then `run-query` (the list query, to refresh the table). Add a `show-alert` success for good UX.
+- **Master → detail:** Table `onRowClicked` → `switch-page` to a detail page, passing `queryParams: [['id', '{{components.<table>.selectedRow.<pkField>}}']]`; the detail page's query filters by that param.
+- **Refresh on filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose `where_filters` reference the input.
+
+Wire events AFTER the components and queries exist (you need their ids). Prefer one `add_events` call for all of an app's events.
 
 ## Build guidance
 
