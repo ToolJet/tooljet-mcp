@@ -7,7 +7,9 @@ import { listTablesTool } from './listTables.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getAppTool } from './getApp.js';
 import { addQueryTool } from './addQuery.js';
+import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
+import { addComponentsTool } from './addComponents.js';
 
 export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
@@ -17,7 +19,9 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     getComponentCatalogTool(client),
     getAppTool(client),
     addQueryTool(client),
+    addQueriesTool(client),
     addComponentTool(client),
+    addComponentsTool(client),
   ];
 
   for (const tool of tools) {

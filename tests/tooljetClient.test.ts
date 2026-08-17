@@ -3,7 +3,8 @@ import { createClient } from '../src/tooljetClient.js';
 import type { Config } from '../src/config.js';
 import type { Auth } from '../src/auth.js';
 
-vi.mock('node:crypto', () => ({ randomUUID: () => 'component-uuid-1' }));
+const { uuidState } = vi.hoisted(() => ({ uuidState: { n: 0 } }));
+vi.mock('node:crypto', () => ({ randomUUID: () => `component-uuid-${++uuidState.n}` }));
 
 const config: Config = {
   apiUrl: 'http://localhost:3000',
@@ -35,6 +36,7 @@ describe('createClient', () => {
 
   beforeEach(() => {
     auth = makeAuth();
+    uuidState.n = 0;
   });
 
   describe('createApp', () => {
@@ -302,7 +304,60 @@ describe('createClient', () => {
           type: 'Table',
           properties: {},
         })
-      ).rejects.toThrow(/ToolJet createComponent failed \(400\): bad component/);
+      ).rejects.toThrow(/ToolJet createComponents failed \(400\): bad component/);
+    });
+  });
+
+  describe('createComponents (batch)', () => {
+    it('sends all components in ONE request as a diff keyed by unique ids', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+
+      const client = createClient(auth, config);
+      const result = await client.createComponents({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        components: [
+          { name: 'title', type: 'Text', properties: { text: { value: 'Hi' } }, layout: { top: 0, left: 2, width: 40, height: 40 } },
+          { name: 'grid', type: 'Table', properties: { data: { value: '{{queries.q.data}}' } }, layout: { top: 60, left: 2, width: 40, height: 300 } },
+        ],
+      });
+
+      // exactly one HTTP call for both components
+      expect(auth.authedFetch).toHaveBeenCalledTimes(1);
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/components');
+      const body = JSON.parse(init.body);
+      expect(Object.keys(body.diff)).toEqual(['component-uuid-1', 'component-uuid-2']);
+      expect(body.diff['component-uuid-1']).toMatchObject({ name: 'title', type: 'Text' });
+      expect(body.diff['component-uuid-2']).toMatchObject({ name: 'grid', type: 'Table' });
+      expect(result).toEqual([
+        { component_id: 'component-uuid-1', name: 'title' },
+        { component_id: 'component-uuid-2', name: 'grid' },
+      ]);
+    });
+  });
+
+  describe('createQueries (batch)', () => {
+    it('fans out to one create call per query and returns all results', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q1', name: 'a' } }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q2', name: 'b' } }));
+
+      const client = createClient(auth, config);
+      const result = await client.createQueries({
+        versionId: 'ver1',
+        queries: [
+          { dataSourceId: 'ds1', name: 'a', options: { operation: 'list_rows' } },
+          { dataSourceId: 'ds1', name: 'b', options: { operation: 'list_rows' } },
+        ],
+      });
+
+      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
+      expect(result).toEqual([
+        { query_id: 'q1', name: 'a' },
+        { query_id: 'q2', name: 'b' },
+      ]);
     });
   });
 });

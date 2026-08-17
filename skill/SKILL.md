@@ -23,8 +23,12 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - `list_datasources(version_id)` → `[{ id, name, kind }]`. ToolJet DB is `kind: "tooljetdb"`.
 - `list_tables()` → `[{ id, table_name }]`. A ToolJet-DB query needs the table's **id** as `table_id`.
 - `get_component_catalog()` → the component palette (every type + purpose). `get_component_catalog(type)` → that component's **full property schema** (props with type + default, defaultSize, styles). **Always call `get_component_catalog(type)` before configuring a component** so you set real properties, not guesses.
-- `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`.
-- `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. `name` is required.
+- `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`. Single query.
+- `add_queries({ version_id, queries: [...] })` → `[{ query_id, name }]`. **Create ALL an app's queries in one call.**
+- `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. Single component; `name` required.
+- `add_components({ app_id, version_id, page_id, components: [...] })` → `[{ component_id, name }]`. **Place ALL of a page's components in one call.**
+
+**Batch for the build, singular for edits.** When first building an app, create everything with `add_queries` + `add_components` (far fewer round-trips). Use the singular `add_query`/`add_component` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
 - `get_app(app_id)` → current app structure.
 
 ## Before you build — clarify a vague request first

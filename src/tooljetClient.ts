@@ -49,6 +49,33 @@ export interface CreateComponentResult {
   component_id: string;
 }
 
+/** One component in a batch (no app/version/page — those are shared across the batch). */
+export interface ComponentSpec {
+  name: string;
+  type: string;
+  properties: Record<string, unknown>;
+  layout?: ComponentLayout;
+}
+
+export interface CreateComponentsParams {
+  appId: string;
+  versionId: string;
+  pageId: string;
+  components: ComponentSpec[];
+}
+
+/** One query in a batch (versionId is shared across the batch). */
+export interface QuerySpec {
+  dataSourceId: string;
+  name: string;
+  options: Record<string, unknown>;
+}
+
+export interface CreateQueriesParams {
+  versionId: string;
+  queries: QuerySpec[];
+}
+
 export interface ToolJetClient {
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
@@ -56,7 +83,9 @@ export interface ToolJetClient {
   listDatasources(versionId: string): Promise<Datasource[]>;
   listTables(): Promise<Array<{ id: string; table_name: string }>>;
   createQuery(params: CreateQueryParams): Promise<CreateQueryResult>;
+  createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]>;
   createComponent(params: CreateComponentParams): Promise<CreateComponentResult>;
+  createComponents(params: CreateComponentsParams): Promise<Array<CreateComponentResult & { name: string }>>;
 }
 
 async function assertOk(res: Response, method: string): Promise<void> {
@@ -145,34 +174,68 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { query_id: body.id, name: body.name };
   }
 
-  async function createComponent(params: CreateComponentParams): Promise<CreateComponentResult> {
-    const componentId = randomUUID();
-    const componentDto: Record<string, unknown> = {
-      name: params.name,
-      type: params.type,
-      properties: params.properties,
+  // Batch: create many queries in one tool call. No native bulk-create endpoint, so fan out
+  // (in parallel) to the single-create route — saves model round-trips even though it's N HTTP calls.
+  async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
+    return Promise.all(
+      params.queries.map((q) =>
+        createQuery({ versionId: params.versionId, dataSourceId: q.dataSourceId, name: q.name, options: q.options })
+      )
+    );
+  }
+
+  function buildComponentDto(spec: ComponentSpec): Record<string, unknown> {
+    const dto: Record<string, unknown> = {
+      name: spec.name,
+      type: spec.type,
+      properties: spec.properties,
       styles: {},
       validation: {},
       others: {},
     };
     // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...}
     // returns 422 "invalid input value for enum layout_type". Apply the same layout to both.
-    if (params.layout) {
-      componentDto.layouts = { desktop: params.layout, mobile: params.layout };
-    }
+    if (spec.layout) dto.layouts = { desktop: spec.layout, mobile: spec.layout };
+    return dto;
+  }
+
+  // Batch: create many components on one page in a SINGLE request. ToolJet's create endpoint
+  // takes a diff MAP keyed by component id, so N components = one HTTP call.
+  async function createComponents(
+    params: CreateComponentsParams
+  ): Promise<Array<CreateComponentResult & { name: string }>> {
+    const entries = params.components.map((spec) => ({ id: randomUUID(), spec }));
+    const diff: Record<string, unknown> = {};
+    for (const e of entries) diff[e.id] = buildComponentDto(e.spec);
 
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        is_user_switched_version: false,
-        pageId: params.pageId,
-        diff: { [componentId]: componentDto },
-      }),
+      body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff }),
     });
-    await assertOk(res, 'createComponent');
-    return { component_id: componentId };
+    await assertOk(res, 'createComponents');
+    return entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
   }
 
-  return { createApp, getApp, getDevelopmentEnvironmentId, listDatasources, listTables, createQuery, createComponent };
+  async function createComponent(params: CreateComponentParams): Promise<CreateComponentResult> {
+    const [r] = await createComponents({
+      appId: params.appId,
+      versionId: params.versionId,
+      pageId: params.pageId,
+      components: [{ name: params.name, type: params.type, properties: params.properties, layout: params.layout }],
+    });
+    return { component_id: r.component_id };
+  }
+
+  return {
+    createApp,
+    getApp,
+    getDevelopmentEnvironmentId,
+    listDatasources,
+    listTables,
+    createQuery,
+    createQueries,
+    createComponent,
+    createComponents,
+  };
 }
