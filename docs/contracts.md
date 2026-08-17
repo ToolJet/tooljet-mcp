@@ -103,12 +103,13 @@ Body (CreateDataQueryDto):
 - `:dataSourceId` = the tooljetdb datasource id (§1). `:versionId` = the app's `editing_version.id` (§2).
 - DTO fields: `kind` (req), `name` (req), `options` (req, object), `type?`, `query?`, `app_version_id?`, `folder_id?`.
 
-### tjdb "list rows" options (shape from `frontend/.../TooljetDatabase/util.js` + operations.json)
+### tjdb "list rows" options — CONFIRMED LIVE (query created 201, options stored verbatim)
 ```json
-{ "operation": "list_rows", "table_name": "tickets", "list_rows": { } }
+{ "operation": "list_rows", "table_name": "tickets", "list_rows": {}, "runOnPageLoad": true }
 ```
-- Top-level `operation: "list_rows"`; the target table is `table_name`; per-operation params nest under a key named after the operation (`list_rows: { where_filters?, order_filters?, limit? }`).
-- **(CONFIRM live in Task 8/11):** exact top-level key for the table (`table_name` vs `table_id`) and whether `list_rows` may be empty. No tjdb table exists yet, so create one tjdb list query in the UI after seeding `tickets` and copy its stored `options` verbatim into the skill.
+- `operation: "list_rows"`; target table is `table_name` (NOT table_id — plain name works); per-operation params nest under `list_rows` (empty `{}` = all rows).
+- **`runOnPageLoad: true`** lives in `options` (confirmed key from `frontend/.../QueryManager/constants.js`) — set it so the query runs when the app opens and the Table populates without user action.
+- The direct `POST /api/data-queries/:id/versions/:versionId/run/:envId` endpoint errors on `rawBody` via plain curl (needs ToolJet's rawBody middleware) — irrelevant to the MCP, which never runs queries; the app runtime runs them on page load. Validation of actual data rendering is the Task 11 browser check.
 - **run-on-page-load (CONFIRM):** determine whether it's `options.runOnPageLoad: true` or a separate field, by inspecting a UI-created query's stored row. The Table should render on load either way if the query is set to run on load.
 
 ---
