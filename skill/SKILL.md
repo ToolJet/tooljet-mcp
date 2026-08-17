@@ -27,6 +27,12 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. `name` is required.
 - `get_app(app_id)` → current app structure.
 
+## Before you build — clarify a vague request first
+
+If the user's request is short or underspecified (e.g. "build a tickets dashboard"), ask **2–4 focused questions before building**, then proceed. Good things to confirm: which fields/columns matter most, what actions or filters/segments they need, whether they want summary metrics/charts, and any layout, density, or branding preferences. This makes the first result match their intent and saves iteration — and the user feels involved.
+
+If the user already gave a detailed spec, don't interrogate — build directly. Never block on questions the user has effectively already answered.
+
 ## App model & binding syntax
 
 - app → version → page → component. `create_app` gives one app + version + a "Home" page.
@@ -138,7 +144,17 @@ ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — t
 - `top` and `height` are in **pixels**, snapped to a **10px** vertical grid. A typical input is ~40px tall; a data table ~300–500px.
 - Every component's `layout` must be given for **both resolutions**: `{ desktop: {top,left,width,height}, mobile: {top,left,width,height} }`.
 - **Stacking rule (prevents overlap):** to place component B below component A, set `B.top = A.top + A.height + gap` (gap ~10–20px). Never reuse the same `top` for two components in the same area — the later one draws over the earlier one.
-- Left-align a column of components at the same `left`; span the full width with `width: 43` when appropriate.
+- The full canvas is 43 columns; how you use that space is a design choice (see Design defaults below) — don't reflexively span edge-to-edge.
+
+## Design defaults — make apps look enterprise-grade by default (the user can override)
+
+Apply these unless the user specifies otherwise. If the user states any layout, spacing, density, or brand preference, **the user always wins** — these are only defaults so that apps look clean and professional even when the user doesn't ask.
+
+- **Polish:** aim for a clean, consistent, enterprise-ready result — clear section headings, aligned components, sensible grouping of related content. No overlaps, no cramped or lopsided layouts.
+- **Canvas padding:** don't run content edge-to-edge across all 43 columns. Leave a consistent side gutter — put top-level content roughly in columns **2–41** (≈2 columns of breathing room on the left and right). Use full-bleed only if the user asks.
+- **Consistent margins:** use ONE consistent vertical gap between stacked sections (~16–24px) and ONE shared left edge for all top-level components. Don't let each component pick its own margins — consistency reads as "enterprise".
+- **Peer components:** components in the same row (e.g. KPI tiles, filters) should have **equal widths and equal gaps** between them, and align on the same top.
+- **Hierarchy:** lead with a title/header row; put summary metrics (Statistics) and charts (Chart) above detailed tables; keep primary actions visible.
 
 ## Component binding reference (22 components)
 
