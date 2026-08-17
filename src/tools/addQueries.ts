@@ -6,6 +6,7 @@ const querySchema = z.object({
   datasource_id: z.string(),
   name: z.string(),
   options: z.record(z.string(), z.any()),
+  kind: z.string().optional(),
 });
 
 export function addQueriesTool(client: ToolJetClient): ToolDef {
@@ -24,7 +25,7 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: {
       version_id: string;
-      queries: Array<{ datasource_id: string; name: string; options: Record<string, unknown> }>;
+      queries: Array<{ datasource_id: string; name: string; options: Record<string, unknown>; kind?: string }>;
     }) {
       try {
         const result = await client.createQueries({
@@ -33,6 +34,7 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
             dataSourceId: q.datasource_id,
             name: q.name,
             options: q.options,
+            kind: q.kind,
           })),
         });
         return ok(result);

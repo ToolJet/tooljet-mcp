@@ -232,6 +232,7 @@ describe('createClient', () => {
         dataSourceId: 'ds1',
         name: 'getUsers',
         options: { operation: 'list_rows', table_name: 'users' },
+        kind: 'tooljetdb',
       });
 
       const [path, init] = auth.authedFetch.mock.calls[0];
@@ -246,11 +247,26 @@ describe('createClient', () => {
       expect(result).toEqual({ query_id: 'query1', name: 'getUsers' });
     });
 
+    it('resolves the kind from the datasource when not given (any datasource works)', async () => {
+      auth.authedFetch
+        // listDatasources → app-environments, then app-scoped datasources
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { environments: [{ id: 'env-dev', name: 'development' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { data_sources: [{ id: 'ds-snow', name: 'servicenow', kind: 'servicenow' }] } }))
+        // the create
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q9', name: 'snq' } }));
+
+      const client = createClient(auth, config);
+      await client.createQuery({ versionId: 'ver1', dataSourceId: 'ds-snow', name: 'snq', options: { operation: 'list_records' } });
+
+      const createInit = auth.authedFetch.mock.calls[2][1];
+      expect(JSON.parse(createInit.body).kind).toBe('servicenow'); // resolved from the datasource, NOT hardcoded tjdb
+    });
+
     it('throws when non-2xx', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 422, text: 'invalid options' }));
       const client = createClient(auth, config);
       await expect(
-        client.createQuery({ versionId: 'ver1', dataSourceId: 'ds1', name: 'q', options: {} })
+        client.createQuery({ versionId: 'ver1', dataSourceId: 'ds1', name: 'q', options: {}, kind: 'tooljetdb' })
       ).rejects.toThrow(/ToolJet createQuery failed \(422\): invalid options/);
     });
   });
@@ -450,8 +466,8 @@ describe('createClient', () => {
       const result = await client.createQueries({
         versionId: 'ver1',
         queries: [
-          { dataSourceId: 'ds1', name: 'a', options: { operation: 'list_rows' } },
-          { dataSourceId: 'ds1', name: 'b', options: { operation: 'list_rows' } },
+          { dataSourceId: 'ds1', name: 'a', options: { operation: 'list_rows' }, kind: 'tooljetdb' },
+          { dataSourceId: 'ds1', name: 'b', options: { operation: 'list_rows' }, kind: 'tooljetdb' },
         ],
       });
 

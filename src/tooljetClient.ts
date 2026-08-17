@@ -20,6 +20,8 @@ export interface CreateQueryParams {
   dataSourceId: string;
   name: string;
   options: Record<string, unknown>;
+  /** Query kind = the datasource's kind (tooljetdb/postgresql/runjs/servicenow/…). Resolved from the datasource if omitted. */
+  kind?: string;
 }
 
 export interface CreateQueryResult {
@@ -69,6 +71,7 @@ export interface QuerySpec {
   dataSourceId: string;
   name: string;
   options: Record<string, unknown>;
+  kind?: string;
 }
 
 export interface CreateQueriesParams {
@@ -387,13 +390,22 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { processed_rows: body.result?.processed_rows ?? rows.length };
   }
 
+  // The query's kind must match its datasource's kind. Resolve it from the datasource list
+  // when the caller didn't pass one (so it works for any datasource, not just ToolJet DB).
+  async function resolveDatasourceKind(versionId: string, dataSourceId: string): Promise<string> {
+    const ds = (await listDatasources(versionId)).find((d) => d.id === dataSourceId);
+    if (!ds) throw new Error(`ToolJet createQuery failed: datasource ${dataSourceId} not found for this app version`);
+    return ds.kind;
+  }
+
   async function createQuery(params: CreateQueryParams): Promise<CreateQueryResult> {
+    const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'tooljetdb', name: params.name, options: params.options }),
+        body: JSON.stringify({ kind, name: params.name, options: params.options }),
       }
     );
     await assertOk(res, 'createQuery');
@@ -404,9 +416,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // Batch: create many queries in one tool call. No native bulk-create endpoint, so fan out
   // (in parallel) to the single-create route — saves model round-trips even though it's N HTTP calls.
   async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
+    // Resolve datasource kinds once for the whole batch (only if any query omitted its kind), then fan out.
+    const needResolve = params.queries.some((q) => !q.kind);
+    const dsList = needResolve ? await listDatasources(params.versionId) : [];
+    const kindOf = (id: string): string | undefined => dsList.find((d) => d.id === id)?.kind;
     return Promise.all(
       params.queries.map((q) =>
-        createQuery({ versionId: params.versionId, dataSourceId: q.dataSourceId, name: q.name, options: q.options })
+        createQuery({
+          versionId: params.versionId,
+          dataSourceId: q.dataSourceId,
+          name: q.name,
+          options: q.options,
+          kind: q.kind ?? kindOf(q.dataSourceId),
+        })
       )
     );
   }

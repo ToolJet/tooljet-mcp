@@ -237,6 +237,13 @@ Use debounce: 300 on onChange events that trigger queries — prevents excessive
 
 ## Datasource query reference
 
+`add_query`/`add_queries` work on **any** connected datasource — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call `list_datasources` to see each datasource's `kind`). Only the `options` differ per kind:
+- **tooljetdb** — `{ operation: "list_rows", table_id: "<id>", list_rows: {}, runOnPageLoad: true }` (see below)
+- **postgresql / mysql** — `{ mode: "sql", query: "SELECT …", query_params: [], run_on_page_load: true }`
+- **runjs** — `{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }` (great for chart aggregation — reference other queries' data, return a shaped value)
+- **servicenow** — `{ operation: "list_records", table: "incident", … }`
+Ask for a specific datasource's full option schema when you need it.
+
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
 1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
