@@ -147,14 +147,14 @@ If the user's request is short or underspecified (e.g. "build a tickets dashboar
 
 If the user already gave a detailed spec, don't interrogate — build directly. Never block on questions the user has effectively already answered.
 
-## Building big apps — work in visible phases
+## Building big apps — ship usable iterations, not layers
 
-For a **large** app (multiple tables, several pages, many components, or lots of interactivity), don't build the whole thing in one long silent pass — split it into **phases** and show progress after each, so the user stays engaged and can course-correct early. A sensible phasing:
-1. **Data model + a working main page** — create the table(s), seed a little data, and build the primary list/dashboard page so there's something real to see fast.
-2. **Detail + actions** — secondary pages (detail views), forms, and the events that wire them (row-click → detail, submit → insert + refresh).
-3. **Analytics + polish** — charts, summary metrics, and layout/styling refinement.
+For a **large** app, don't build it in one long silent pass — but phase it by **usable increments, NOT by layer.** Each phase must be a **complete, working, already-decent-looking slice** the user could actually use — never "skeleton first, features next, polish last." Polish is **not** a phase: apply the Design defaults to every phase as you go, so the app looks finished at each step.
 
-After each phase, briefly tell the user what's done and what's next (and share the app URL early so they can watch it take shape). **But**: if the user says they'd rather just wait for the finished app, honor that and build it end-to-end. For a **small/simple** app, skip the phasing and build in one pass — don't over-ceremony it.
+- **Phase 1 = the smallest complete version of the core use case, working end-to-end** — its data (create/seed the table), its page (styled header + the main view), AND its key interactivity, all functioning and presentable. The user can *use* it after phase 1.
+- **Each later phase = one more usable capability**, again end-to-end. E.g. for a tickets app: (1) browse tickets — list page that works and looks right → (2) open a ticket — row-click → detail page → (3) create/edit a ticket — form + insert/update + refresh → (4) analytics — a dashboard page with charts/metrics. Each phase is independently useful and reasonably polished.
+
+After each phase, briefly say what now works and what's next, and share the app URL early so the user watches real, usable value appear. **But**: if the user would rather wait for the finished app, honor that and build end-to-end. For a **small/simple** app, skip phasing and build in one pass — don't over-ceremony it.
 
 ## App model & binding syntax
 
