@@ -36,7 +36,7 @@ const call = async (name, args) => {
   return parse(res);
 };
 
-const app = await call('create_app', { name: 'Tickets Dashboard (e2e)' });
+const app = await call('create_app', { name: `Tickets Dashboard (e2e ${Date.now()})` });
 console.error('create_app →', app);
 
 const datasources = await call('list_datasources', { version_id: app.version_id });
@@ -57,7 +57,11 @@ const component = await call('add_component', {
   page_id: app.home_page_id,
   name: 'ticketsTable',
   type: 'Table',
-  properties: { data: { value: '{{queries.list_tickets.data}}' } },
+  properties: {
+    data: { value: '{{queries.list_tickets.data}}' },
+    dataSourceSelector: { value: 'rawJson' }, // REQUIRED with data or the table renders nothing
+    autogenerateColumns: { value: true, generateNestedColumns: true },
+  },
   layout: { top: 10, left: 2, width: 40, height: 400 },
 });
 console.error('add_component →', component);

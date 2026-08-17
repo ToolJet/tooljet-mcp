@@ -51,12 +51,23 @@ Goal: an app whose Home page shows the rows of a ToolJet-DB table (e.g. `tickets
      "page_id": "<home_page_id>",
      "name": "ticketsTable",
      "type": "Table",
-     "properties": { "data": { "value": "{{queries.list_tickets.data}}" } },
+     "properties": {
+       "data": { "value": "{{queries.list_tickets.data}}" },
+       "dataSourceSelector": { "value": "rawJson" },
+       "autogenerateColumns": { "value": true, "generateNestedColumns": true }
+     },
      "layout": { "top": 10, "left": 2, "width": 40, "height": 400 }
    }
    ```
-   - The Table's `data` property binds to the query result. Columns auto-generate from the row keys.
    - `layout` is in ToolJet grid units (width max ~43). `name` is required.
+
+### ⚠️ Table binding rule (authoritative — from the agent's `COMPONENT_BINDING_RULES["Table"]`)
+A Table renders data ONLY if you set **all three** together:
+- `data.value` = `{{queries.<queryName>.data}}` — the row array binding
+- `dataSourceSelector.value` = `"rawJson"` — **REQUIRED**; without it the table renders nothing even with `data` set
+- `autogenerateColumns.value` = `true` (never `false`) — so columns render from the query rows automatically
+
+Setting only `data` produces a **blank table**. (This is exactly the kind of hard-won rule that lives in the agent's binding rules — the MCP skill mirrors it.)
 5. Tell the user: **open `app_url`** in the browser — the Table should render the table's rows.
 
 ## Rules & gotchas
