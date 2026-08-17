@@ -4,6 +4,7 @@ const COOKIE_PREFIX = 'tj_auth_token=';
 
 export interface Auth {
   authedFetch(path: string, init?: RequestInit): Promise<Response>;
+  getOrganizationId(): Promise<string>;
 }
 
 export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
@@ -55,5 +56,15 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return res;
   }
 
-  return { authedFetch };
+  async function getOrganizationId(): Promise<string> {
+    if (!workspaceId) {
+      await login();
+    }
+    if (!workspaceId) {
+      throw new Error('ToolJet getOrganizationId failed: no organization id available after login');
+    }
+    return workspaceId;
+  }
+
+  return { authedFetch, getOrganizationId };
 }

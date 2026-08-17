@@ -114,4 +114,28 @@ describe('createAuth', () => {
     );
     expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
+
+  it('getOrganizationId logs in if needed and returns the captured org id', async () => {
+    fetchImpl.mockResolvedValueOnce(loginResponse('org1', 'TOKEN'));
+
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    const orgId = await auth.getOrganizationId();
+
+    expect(orgId).toBe('org1');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][0]).toContain('/api/authenticate');
+  });
+
+  it('getOrganizationId reuses the org id from a prior login without logging in again', async () => {
+    fetchImpl
+      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
+      .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } }));
+
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    await auth.authedFetch('/api/some-resource');
+    const orgId = await auth.getOrganizationId();
+
+    expect(orgId).toBe('org1');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });
