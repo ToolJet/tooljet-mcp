@@ -22,6 +22,9 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - `create_app(name)` → `{ app_id, version_id, home_page_id, app_url }`. Call first; keep all four.
 - `list_datasources(version_id)` → `[{ id, name, kind }]`. ToolJet DB is `kind: "tooljetdb"`.
 - `list_tables()` → `[{ id, table_name }]`. A ToolJet-DB query needs the table's **id** as `table_id`.
+- `get_table_schema(table_name)` → a table's columns `[{ name, type, isPrimaryKey, isNotNull }]`. Read before building queries/columns/forms/filters on an existing table.
+- `create_table({ table_name, columns })` → create a ToolJet-DB table (column types: string/integer/number/bigint/boolean/timestamp/json/serial; a serial `id` PK is added if you don't mark one). Returns `{ table_id, table_name }`.
+- `insert_rows({ table_name, rows })` → seed sample rows so the app isn't empty (optional; integer/serial PKs auto-fill).
 - `get_component_catalog()` → the component palette (every type + purpose). `get_component_catalog(type)` → that component's **full property schema** (props with type + default, defaultSize, styles). **Always call `get_component_catalog(type)` before configuring a component** so you set real properties, not guesses.
 - `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`. Single query.
 - `add_queries({ version_id, queries: [...] })` → `[{ query_id, name }]`. **Create ALL an app's queries in one call.**
@@ -231,6 +234,14 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
 
 ## Datasource query reference
+
+### Building an app that needs a NEW data model (most real requests)
+Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
+1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
+2. `create_table` for each table.
+3. Optionally `insert_rows` to seed a handful of realistic sample rows so the app doesn't render empty (only if the user wants sample data).
+4. Then `add_queries` + `add_components` as usual.
+For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
 
 ### ToolJet DB (`kind: "tooljetdb"`)
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.

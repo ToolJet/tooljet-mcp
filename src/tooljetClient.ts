@@ -76,12 +76,47 @@ export interface CreateQueriesParams {
   queries: QuerySpec[];
 }
 
+/** A column when creating a ToolJet-DB table. */
+export interface TableColumn {
+  name: string;
+  /** tjdb data type. Common: "character varying", "integer", "bigint", "double precision", "boolean", "timestamp with time zone", "jsonb", "serial". Friendly aliases (string/number/bool/…) are normalized. */
+  type: string;
+  primaryKey?: boolean;
+  notNull?: boolean;
+  unique?: boolean;
+}
+
+export interface CreateTableParams {
+  tableName: string;
+  columns: TableColumn[];
+}
+
+export interface CreateTableResult {
+  table_id: string;
+  table_name: string;
+}
+
+export interface SchemaColumn {
+  name: string;
+  type: string;
+  isPrimaryKey: boolean;
+  isNotNull: boolean;
+}
+
+export interface InsertRowsParams {
+  tableName: string;
+  rows: Array<Record<string, unknown>>;
+}
+
 export interface ToolJetClient {
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
   listTables(): Promise<Array<{ id: string; table_name: string }>>;
+  createTable(params: CreateTableParams): Promise<CreateTableResult>;
+  getTableSchema(tableName: string): Promise<SchemaColumn[]>;
+  insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }>;
   createQuery(params: CreateQueryParams): Promise<CreateQueryResult>;
   createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]>;
   createComponent(params: CreateComponentParams): Promise<CreateComponentResult>;
@@ -92,6 +127,40 @@ async function assertOk(res: Response, method: string): Promise<void> {
   if (!res.ok) {
     throw new Error(`ToolJet ${method} failed (${res.status}): ${await res.text()}`);
   }
+}
+
+// Friendly aliases → tjdb data types, so callers can say "string"/"number"/"bool".
+const TYPE_ALIASES: Record<string, string> = {
+  string: 'character varying',
+  text: 'character varying',
+  varchar: 'character varying',
+  int: 'integer',
+  integer: 'integer',
+  number: 'double precision',
+  float: 'double precision',
+  decimal: 'double precision',
+  double: 'double precision',
+  bigint: 'bigint',
+  bool: 'boolean',
+  boolean: 'boolean',
+  timestamp: 'timestamp with time zone',
+  datetime: 'timestamp with time zone',
+  date: 'timestamp with time zone',
+  json: 'jsonb',
+  jsonb: 'jsonb',
+  serial: 'serial',
+};
+const normalizeType = (t: string): string => TYPE_ALIASES[t.trim().toLowerCase()] ?? t;
+
+function toCsv(headers: string[], rows: Array<Record<string, unknown>>): string {
+  const esc = (v: unknown): string => {
+    if (v === null || v === undefined) return '';
+    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [headers.join(',')];
+  for (const row of rows) lines.push(headers.map((h) => esc(row[h])).join(','));
+  return lines.join('\n') + '\n';
 }
 
 export function createClient(auth: Auth, config: Config): ToolJetClient {
@@ -158,6 +227,90 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await assertOk(res, 'listDatasources');
     const body = (await res.json()) as { data_sources: Datasource[] };
     return body.data_sources;
+  }
+
+  async function createTable(params: CreateTableParams): Promise<CreateTableResult> {
+    const orgId = await auth.getOrganizationId();
+    let cols = params.columns.map((c) => ({
+      column_name: c.name,
+      data_type: normalizeType(c.type),
+      constraints_type: {
+        is_not_null: !!c.notNull || !!c.primaryKey,
+        is_primary_key: !!c.primaryKey,
+        is_unique: !!c.unique || !!c.primaryKey,
+      },
+    }));
+    // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`.
+    if (!cols.some((c) => c.constraints_type.is_primary_key)) {
+      cols = [
+        {
+          column_name: 'id',
+          data_type: 'serial',
+          constraints_type: { is_not_null: true, is_primary_key: true, is_unique: true },
+        },
+        ...cols,
+      ];
+    }
+    const res = await auth.authedFetch(`/api/tooljet-db/organizations/${orgId}/table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table_name: params.tableName, columns: cols }),
+    });
+    await assertOk(res, 'createTable');
+    const body = (await res.json()) as { result: { id: string; table_name: string } };
+    return { table_id: body.result.id, table_name: body.result.table_name };
+  }
+
+  async function getTableSchema(tableName: string): Promise<SchemaColumn[]> {
+    const orgId = await auth.getOrganizationId();
+    const res = await auth.authedFetch(
+      `/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(tableName)}`
+    );
+    await assertOk(res, 'getTableSchema');
+    const body = (await res.json()) as {
+      result: {
+        columns: Array<{
+          column_name: string;
+          data_type: string;
+          constraints_type?: { is_primary_key?: boolean; is_not_null?: boolean };
+        }>;
+      };
+    };
+    return body.result.columns.map((c) => ({
+      name: c.column_name,
+      type: c.data_type,
+      isPrimaryKey: !!c.constraints_type?.is_primary_key,
+      isNotNull: !!c.constraints_type?.is_not_null,
+    }));
+  }
+
+  async function insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }> {
+    if (!params.rows.length) return { processed_rows: 0 };
+    const orgId = await auth.getOrganizationId();
+    const schema = await getTableSchema(params.tableName);
+    const pk = schema.find((c) => c.isPrimaryKey);
+    // bulk-upload upserts by PK and does NOT auto-fill serial ids — if the rows omit an
+    // integer PK, assign sequential values so seeding "just works".
+    const rows = params.rows.map((r) => ({ ...r }));
+    if (pk && !(pk.name in (rows[0] ?? {})) && /int|serial|numeric/i.test(pk.type)) {
+      rows.forEach((r, i) => (r[pk.name] = i + 1));
+    }
+    const keys = new Set<string>();
+    for (const r of rows) Object.keys(r).forEach((k) => keys.add(k));
+    const headers = [
+      ...schema.map((c) => c.name).filter((n) => keys.has(n)),
+      ...[...keys].filter((k) => !schema.some((c) => c.name === k)),
+    ];
+
+    const form = new FormData();
+    form.append('file', new Blob([toCsv(headers, rows)], { type: 'text/csv' }), 'seed.csv');
+    const res = await auth.authedFetch(
+      `/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(params.tableName)}/bulk-upload`,
+      { method: 'POST', body: form }
+    );
+    await assertOk(res, 'insertRows');
+    const body = (await res.json()) as { result?: { processed_rows?: number } };
+    return { processed_rows: body.result?.processed_rows ?? rows.length };
   }
 
   async function createQuery(params: CreateQueryParams): Promise<CreateQueryResult> {
@@ -233,6 +386,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
+    createTable,
+    getTableSchema,
+    insertRows,
     createQuery,
     createQueries,
     createComponent,

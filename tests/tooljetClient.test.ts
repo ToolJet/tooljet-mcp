@@ -338,6 +338,67 @@ describe('createClient', () => {
     });
   });
 
+  describe('createTable', () => {
+    it('normalizes types, sets constraints, and auto-adds a serial id PK when none given', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't1', table_name: 'people' } } }));
+
+      const client = createClient(auth, config);
+      const result = await client.createTable({
+        tableName: 'people',
+        columns: [
+          { name: 'name', type: 'string' },
+          { name: 'age', type: 'integer', notNull: true },
+        ],
+      });
+
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/tooljet-db/organizations/org1/table');
+      const body = JSON.parse(init.body);
+      expect(body.table_name).toBe('people');
+      // auto id PK prepended
+      expect(body.columns[0]).toMatchObject({ column_name: 'id', data_type: 'serial', constraints_type: { is_primary_key: true } });
+      // alias normalized + constraints set
+      expect(body.columns[1]).toMatchObject({ column_name: 'name', data_type: 'character varying' });
+      expect(body.columns[2]).toMatchObject({ column_name: 'age', data_type: 'integer', constraints_type: { is_not_null: true } });
+      expect(result).toEqual({ table_id: 't1', table_name: 'people' });
+    });
+  });
+
+  describe('getTableSchema', () => {
+    it('maps result.columns to a simplified schema', async () => {
+      auth.authedFetch.mockResolvedValueOnce(
+        mockResponse({
+          status: 200,
+          json: { result: { columns: [{ column_name: 'id', data_type: 'integer', constraints_type: { is_primary_key: true, is_not_null: true } }, { column_name: 'name', data_type: 'character varying' }] } },
+        })
+      );
+      const client = createClient(auth, config);
+      const schema = await client.getTableSchema('people');
+      expect(schema).toEqual([
+        { name: 'id', type: 'integer', isPrimaryKey: true, isNotNull: true },
+        { name: 'name', type: 'character varying', isPrimaryKey: false, isNotNull: false },
+      ]);
+    });
+  });
+
+  describe('insertRows', () => {
+    it('resolves schema, auto-fills the serial PK, then bulk-uploads', async () => {
+      auth.authedFetch
+        // getTableSchema
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'id', data_type: 'integer', constraints_type: { is_primary_key: true } }, { column_name: 'name', data_type: 'character varying' }] } } }))
+        // bulk-upload
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { processed_rows: 2 } } }));
+
+      const client = createClient(auth, config);
+      const result = await client.insertRows({ tableName: 'people', rows: [{ name: 'A' }, { name: 'B' }] });
+
+      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
+      expect(auth.authedFetch.mock.calls[1][0]).toBe('/api/tooljet-db/organizations/org1/table/people/bulk-upload');
+      expect(auth.authedFetch.mock.calls[1][1].method).toBe('POST');
+      expect(result).toEqual({ processed_rows: 2 });
+    });
+  });
+
   describe('createQueries (batch)', () => {
     it('fans out to one create call per query and returns all results', async () => {
       auth.authedFetch
