@@ -128,10 +128,20 @@ Body (CreateComponentDto):
 }
 ```
 - The body is a **diff keyed by component id** (client generates the UUID). One entry per component.
-- `ComponentDto` carries: `type`, `properties`, `styles`, `general`, `layouts`, `parent?`. **(CONFIRM)** the exact ComponentDto field list + whether layout is inline (`layouts: { desktop: {top,left,width,height}, mobile: {...} }`) or via the separate `PUT …/components/layout` — read `server/src/modules/apps/dto/component.ts` (`ComponentDto`) during Task 6.
+- **CONFIRMED LIVE (201):** the ComponentDto that works:
+  ```json
+  { "name": "table1", "type": "Table",
+    "properties": { "data": { "value": "{{queries.<name>.data}}" } },
+    "styles": {}, "validation": {}, "others": {},
+    "layouts": { "desktop": {"top":10,"left":2,"width":30,"height":300},
+                 "mobile":  {"top":10,"left":2,"width":30,"height":300} } }
+  ```
+  - **`name` is REQUIRED** — omitting it → `422 "name is required"` (NOT NULL, code 23502).
+  - **`layouts` is keyed by resolution type** (`desktop`/`mobile`) — a flat `{top,left,...}` → `422 "invalid input value for enum layout_type: 'top'"`. Apply the same rect to both.
+  - `styles: {}`, `validation: {}`, `others: {}` are accepted as empty objects.
+  - Verified: creates rows in `components` + `layouts` (desktop & mobile) tables. Table binds via `properties.data.value = "{{queries.<name>.data}}"`.
 - Property value shape (verified from a stored Text component): each property is `{ "value": <val>, "fxActive"?: ... }`.
-  - Example Text: `"properties": { "text": { "value": "<h2>…</h2>" }, "textFormat": { "value": "html" }, "dynamicHeight": { "value": "{{true}}" } }`
-- Layout units are grid units (verified: a Text row = `top:20 left:2 width:15 height:40`, resolution `desktop`).
+- Layout units are grid units (verified).
 
 ---
 

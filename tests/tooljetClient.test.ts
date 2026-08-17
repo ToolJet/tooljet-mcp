@@ -261,6 +261,7 @@ describe('createClient', () => {
         appId: 'app1',
         versionId: 'ver1',
         pageId: 'page-home',
+        name: 'usersTable',
         type: 'Table',
         properties: { title: 'Users' },
         layout: { top: 0, left: 0, width: 10, height: 20 },
@@ -277,9 +278,13 @@ describe('createClient', () => {
       expect(body.pageId).toBe('page-home');
       expect(Object.keys(body.diff)).toEqual(['component-uuid-1']);
       expect(body.diff['component-uuid-1']).toMatchObject({
+        name: 'usersTable',
         type: 'Table',
         properties: { title: 'Users' },
-        layouts: { top: 0, left: 0, width: 10, height: 20 },
+        layouts: {
+          desktop: { top: 0, left: 0, width: 10, height: 20 },
+          mobile: { top: 0, left: 0, width: 10, height: 20 },
+        },
       });
     });
 
@@ -292,6 +297,7 @@ describe('createClient', () => {
           appId: 'app1',
           versionId: 'ver1',
           pageId: 'page-home',
+          name: 'x',
           type: 'Table',
           properties: {},
         })

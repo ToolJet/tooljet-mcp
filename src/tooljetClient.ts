@@ -38,6 +38,8 @@ export interface CreateComponentParams {
   appId: string;
   versionId: string;
   pageId: string;
+  /** Component name — REQUIRED by ToolJet (NOT NULL); a missing name returns 422 "name is required". */
+  name: string;
   type: string;
   properties: Record<string, unknown>;
   layout?: ComponentLayout;
@@ -133,14 +135,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createComponent(params: CreateComponentParams): Promise<CreateComponentResult> {
     const componentId = randomUUID();
     const componentDto: Record<string, unknown> = {
+      name: params.name,
       type: params.type,
       properties: params.properties,
       styles: {},
       validation: {},
       others: {},
     };
+    // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...}
+    // returns 422 "invalid input value for enum layout_type". Apply the same layout to both.
     if (params.layout) {
-      componentDto.layouts = params.layout;
+      componentDto.layouts = { desktop: params.layout, mobile: params.layout };
     }
 
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
