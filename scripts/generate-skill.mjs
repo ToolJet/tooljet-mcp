@@ -127,7 +127,7 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - \`create_app(name)\` → \`{ app_id, version_id, home_page_id, app_url }\`. Call first; keep all four.
 - \`list_datasources(version_id)\` → \`[{ id, name, kind }]\`. ToolJet DB is \`kind: "tooljetdb"\`.
 - \`list_tables()\` → \`[{ id, table_name }]\`. A ToolJet-DB query needs the table's **id** as \`table_id\`.
-- \`get_component_catalog()\` → placeable component types + key props.
+- \`get_component_catalog()\` → the component palette (every type + purpose). \`get_component_catalog(type)\` → that component's **full property schema** (props with type + default, defaultSize, styles). **Always call \`get_component_catalog(type)\` before configuring a component** so you set real properties, not guesses.
 - \`add_query({ version_id, datasource_id, name, options })\` → \`{ query_id, name }\`.
 - \`add_component({ app_id, version_id, page_id, name, type, properties, layout })\` → \`{ component_id }\`. \`name\` is required.
 - \`get_app(app_id)\` → current app structure.
@@ -145,6 +145,7 @@ ToolJet's value is **visually-editable, governed low-code config**. Built-in com
 - **Map every piece of your design to a built-in component first.** A KPI/metric tile → \`Statistics\` (not an HTML card). A chart or bar/graph → \`Chart\` (not HTML/SVG). A data grid → \`Table\`. Labels/headings → \`Text\`. Inputs → \`TextInput\`/\`NumberInput\`/\`DropdownV2\`/etc. Forms → \`Form\`. Progress → \`CircularProgressbar\`.
 - Use \`HTML\` (or \`Text\` with HTML) **only as a last resort** — when ToolJet genuinely has no built-in component for what you need. Do not build tiles, charts, tables, or layouts out of HTML when a built-in exists.
 - The full built-in palette (with purposes) is below — check it before reaching for HTML.
+- Once you've picked a component, call \`get_component_catalog(type)\` to get its exact properties (names, types, defaults) and configure it precisely — don't guess property names.
 
 ### Built-in components (use these first)
 
