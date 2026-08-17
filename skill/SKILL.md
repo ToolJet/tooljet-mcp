@@ -252,6 +252,27 @@ For an **existing** table, call `get_table_schema(table_name)` first so you use 
 
 (Other datasources — postgresql, mongodb, servicenow, etc. — have their own query schemas; ask for the specific one when needed.)
 
+## Charts — how to make them render reliably (READ THIS before adding a Chart)
+
+The `Chart` component fails in a specific, common way: **ToolJet's chart-property evaluator silently returns EMPTY for complex expressions** — inline IIFEs, dynamic field-name detection, big reduces written inside the `{{ }}` binding. The chart then draws its axes/containers but receives **no data traces** (looks empty/broken). Avoid it:
+
+1. **Use the simple mode** (the default — keep `plotFromJson` false / don't set it). Set two properties:
+   - `type`: `"bar"` | `"line"` | `"pie"`
+   - `data`: an array of `{ x, y }` objects.
+2. **Build `data` with a SIMPLE, EXPLICIT binding.** First call `get_table_schema` (or `get_app`) to learn the **real field names** — never auto-detect them. Then use explicit filters/maps, no IIFE:
+   ```
+   data.value = "{{ [
+     { x: 'Open',        y: queries.getTickets.data.filter(r => r.status === 'Open').length },
+     { x: 'In Progress', y: queries.getTickets.data.filter(r => r.status === 'In Progress').length },
+     { x: 'Resolved',    y: queries.getTickets.data.filter(r => r.status === 'Resolved').length }
+   ] }}"
+   ```
+   For a straight mapping, `queries.q.data.map(r => ({ x: r.category, y: r.amount }))` is fine — simple and explicit.
+3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind `data` to a query that already returns `[{x,y}]` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: `{{queries.chartData.data}}`. Query engines evaluate JS reliably; the chart property evaluator does not.
+4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with `JSON.stringify(...)`.
+
+Rule of thumb: **an empty chart means the binding was too complex.** Replace dynamic detection with explicit field names + simple `.filter().length` / `.map()`.
+
 ## Build guidance
 
 - Always `create_app` first; thread `app_id` / `version_id` / `home_page_id` into later calls.
