@@ -126,6 +126,15 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
     expect(skill).toMatch(/Never fake it/i);
     expect(skill).toMatch(/tell the user plainly/i);
   });
+
+  it('explains it cannot connect a new datasource / third-party integration and gives fallbacks', () => {
+    expect(skill).toMatch(/cannot create or connect a new datasource or third-party integration/i);
+    expect(skill).toMatch(/already-connected/i);
+    // fallbacks: connect a REST datasource first, or build against a seeded tjdb placeholder
+    expect(skill).toMatch(/REST API datasource/);
+    expect(skill).toMatch(/seeded with representative sample data/i);
+    expect(skill).toMatch(/never handle credentials yourself/i);
+  });
 });
 
 describe('generated skill is synchronized with the generator', () => {
@@ -147,6 +156,7 @@ describe('generated skill is synchronized with the generator', () => {
     'validate_app(app_id)',
     'how many MCP tool calls it took',
     "don't say yes to everything",
+    'cannot create or connect a new datasource or third-party integration',
   ];
   for (const a of anchors) {
     it(`generator emits: "${a}"`, () => {
