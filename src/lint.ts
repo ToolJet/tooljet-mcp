@@ -110,6 +110,16 @@ function propVal(props: Record<string, unknown> | undefined, key: string): unkno
   return p && typeof p === 'object' && 'value' in p ? p.value : p;
 }
 
+function explicitlyProjectsTableData(value: unknown): boolean {
+  if (typeof value !== 'string' || !/\.map\s*\(/.test(value)) return false;
+  const arrowObject = value.match(/=>\s*\(\s*\{/);
+  const returnedObject = value.match(/=>\s*\{[\s\S]*?\breturn\s*\{/);
+  const projectionStart = arrowObject?.index ?? returnedObject?.index;
+  if (projectionStart === undefined) return false;
+  // An object spread preserves undeclared datasource fields, so autogeneration can still expose them.
+  return !value.slice(projectionStart).includes('...');
+}
+
 function recordValue(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
@@ -414,7 +424,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const autogen = propVal(props, 'autogenerateColumns');
     const columns = propVal(props, 'columns');
     const hasColumns = Array.isArray(columns);
-    const projectsDataKeys = typeof data === 'string' && /\.map\s*\(/.test(data);
+    const projectsDataKeys = explicitlyProjectsTableData(data);
     if (data !== undefined && selector !== 'rawJson') {
       warnings.push(
         `Table "${label}": binds \`data\` but dataSourceSelector is not "rawJson" — it may render blank. ` +
@@ -445,8 +455,9 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       if (isTruthyBinding(autogen) && !projectsDataKeys) {
         warnings.push(
           `Table "${label}": has an explicit columns array but autogenerateColumns is still true — ` +
-            `ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to only the intended column keys; ` +
-            `this is safer than disabling autogeneration, which can crash some ToolJet Table versions.`
+            `ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; ` +
+            `identity maps and object spreads are not safe projections. ` +
+            `This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`
         );
       }
       (columns as unknown[]).forEach((col, i) => {

@@ -276,6 +276,23 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('does not treat Table identity maps or object spreads as safe projections', () => {
+    const warningsFor = (data: string) => lintComponentSpec({
+      name: 'requests',
+      type: 'Table',
+      properties: {
+        data: { value: data },
+        dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        columns: { value: [{ name: 'Request', key: 'request' }] },
+      },
+    }).warnings.join(' ');
+
+    expect(warningsFor('{{queries.requests.data.map(r => r)}}')).toMatch(/identity maps and object spreads/);
+    expect(warningsFor('{{queries.requests.data.map(r => ({...r,request:r.request_number}))}}'))
+      .toMatch(/identity maps and object spreads/);
+  });
+
   it('warns when server-side Table pagination is missing its page size or total count', () => {
     const warnings = lintComponentSpec({
       name: 'orders',

@@ -14392,6 +14392,19 @@
       }
     ],
     "authoringHints": {
+      "runtimeCompatibility": {
+        "autogenerateColumns": true,
+        "useDynamicColumn": "{{false}}",
+        "rule": "For explicit static columns, keep table-level autogenerateColumns=true and useDynamicColumn=false. MCP normalizes these defaults because some ToolJet versions crash while generating column transformations when autogenerateColumns is false."
+      },
+      "dataProjection": {
+        "rule": "With explicit columns and autogenerateColumns=true, bind data to a new object containing only visible and behavior-needed keys. A .map(r => r) identity map or {...r} spread is not a projection and can leak undeclared datasource fields.",
+        "safeExample": "{{queries.listRows.data.map(r => ({id:r.id,name:r.name,status:r.status}))}}",
+        "unsafeExamples": [
+          "{{queries.listRows.data.map(r => r)}}",
+          "{{queries.listRows.data.map(r => ({...r,name:r.name}))}}"
+        ]
+      },
       "hiddenDataColumns": {
         "rule": "When a field is needed by row actions or selectedRow but must not display, keep it in Table data and declare it in columns with columnVisibility=false. This preserves the key while preventing autogenerateColumns from leaking it as a visible column.",
         "columnExample": {
