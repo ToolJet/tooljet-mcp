@@ -852,6 +852,40 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // RunJS code is stored as a plain JavaScript body. ToolJet does not register plain
+  // `queries.foo` reads inside that body as reactive bindings, so runOnDependencyChange can leave
+  // an aggregate at its first (often empty) result. Treat explicit source-query success chains as
+  // the reliable dependency graph.
+  const queryByName = new Map(summary.queries.flatMap((query) => query.name ? [[query.name, query] as const] : []));
+  for (const query of summary.queries.filter((candidate) => candidate.kind === 'runjs')) {
+    const options = recordValue(query.options);
+    const code = options?.code;
+    if (typeof code !== 'string' || !isTruthyBinding(propVal(options, 'runOnDependencyChange'))) continue;
+    const referencedNames = [...new Set([...code.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]!))];
+    if (!referencedNames.length) continue;
+    const explicitlyChained = new Set(
+      summary.events.flatMap((event) => {
+        if (event.target !== 'data_query') return [];
+        const payload = recordValue(event.event);
+        return payload?.eventId === 'onDataQuerySuccess' &&
+          payload.actionId === 'run-query' && payload.queryId === query.id
+          ? [event.sourceId]
+          : [];
+      })
+    );
+    const missing = referencedNames.filter((name) => {
+      const source = queryByName.get(name);
+      return source && !explicitlyChained.has(source.id);
+    });
+    if (missing.length) {
+      warnings.push(
+        `RunJS query "${query.name ?? query.id}" sets runOnDependencyChange=true but reads ${missing.map((name) => `queries.${name}`).join(', ')} ` +
+          'as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. ' +
+          'Run this query explicitly from each source query\'s onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.'
+      );
+    }
+  }
+
   // Dangling event references.
   for (const e of summary.events) {
     const name = e.name ?? e.id;

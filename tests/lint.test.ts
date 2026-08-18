@@ -550,6 +550,35 @@ describe('validateAppStructure', () => {
     );
   });
 
+  it('warns when RunJS relies on inferred query dependencies and accepts explicit success chains', () => {
+    const runjs: AppSummary = {
+      ...base,
+      queries: [
+        { id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true } },
+        {
+          id: 'q2', name: 'metrics', kind: 'runjs',
+          options: {
+            code: 'return queries.getRows.data.length;',
+            runOnDependencyChange: true,
+          },
+        },
+      ],
+      events: [],
+    };
+    expect(validateAppStructure(runjs).warnings.join(' ')).toMatch(
+      /RunJS query "metrics".*runOnDependencyChange=true.*queries\.getRows.*does not infer.*onDataQuerySuccess/i
+    );
+
+    const chained: AppSummary = {
+      ...runjs,
+      events: [{
+        id: 'e1', sourceId: 'q1', target: 'data_query',
+        event: { eventId: 'onDataQuerySuccess', actionId: 'run-query', queryId: 'q2', queryName: 'metrics' },
+      }],
+    };
+    expect(validateAppStructure(chained).warnings.join(' ')).not.toMatch(/does not infer.*reactive dependencies/i);
+  });
+
   it('errors on an event whose query no longer exists', () => {
     const bad: AppSummary = { ...base, events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'GONE' } }] };
     expect(validateAppStructure(bad).errors.join(' ')).toMatch(/runs a query \(GONE\) that no longer exists/);
