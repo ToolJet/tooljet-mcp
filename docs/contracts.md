@@ -1,6 +1,6 @@
 # ToolJet Endpoint Contracts (confirmed against live instance + source)
 
-**Confirmed:** 2026-06-26 against local ToolJet 3.21.50-beta (backend :3000).
+**Confirmed:** 2026-08-18 against the local ToolJet source and mocked MCP contract tests (backend :3000).
 All values below were verified live (curl) or from source unless marked **(CONFIRM)**.
 
 Base API: `http://localhost:3000/api`. Frontend (for user-facing app URLs): `http://localhost:8082`.
@@ -88,7 +88,7 @@ Headers: Cookie + tj-workspace-id
   "editing_version": { "id": "9656402d-..." },        // ← version_id to author on
   "pages": [ { "id": "6478536b-...", "name": "Home", "index": 1 } ] }  // ← home_page_id = the 'Home' page
 ```
-**`create_app` flow:** POST /apps → get `app_id`; GET /apps/:app_id → `version_id = editing_version.id`, `home_page_id = pages.find(name=='Home').id`; `app_url = ${TOOLJET_APP_URL}/apps/${app_id}`.
+**`create_app` flow:** POST /apps → get `app_id`; GET /apps/:app_id → `version_id = editing_version.id`, `home_page_id = pages.find(name=='Home').id`; `app_url = ${TOOLJET_APP_URL}/${workspaceSlug}/apps/${appSlug}`.
 
 ---
 
@@ -105,12 +105,12 @@ Body (CreateDataQueryDto):
 
 ### tjdb "list rows" options — CONFIRMED LIVE (query created 201, options stored verbatim)
 ```json
-{ "operation": "list_rows", "table_name": "tickets", "list_rows": {}, "runOnPageLoad": true }
+{ "operation": "list_rows", "table_id": "<ToolJet DB table id>", "list_rows": {}, "runOnPageLoad": true }
 ```
-- `operation: "list_rows"`; target table is `table_name` (NOT table_id — plain name works); per-operation params nest under `list_rows` (empty `{}` = all rows).
+- `operation: "list_rows"`; target table is `table_id` from `list_tables`; per-operation params nest under `list_rows` (empty `{}` = all rows).
 - **`runOnPageLoad: true`** lives in `options` (confirmed key from `frontend/.../QueryManager/constants.js`) — set it so the query runs when the app opens and the Table populates without user action.
-- The direct `POST /api/data-queries/:id/versions/:versionId/run/:envId` endpoint errors on `rawBody` via plain curl (needs ToolJet's rawBody middleware) — irrelevant to the MCP, which never runs queries; the app runtime runs them on page load. Validation of actual data rendering is the Task 11 browser check.
-- **run-on-page-load (CONFIRM):** determine whether it's `options.runOnPageLoad: true` or a separate field, by inspecting a UI-created query's stored row. The Table should render on load either way if the query is set to run on load.
+- `POST /api/data-queries/:id/versions/:versionId/run/:envId` executes a saved query. MCP uses it only when the caller explicitly selects a safe read; static `validate_app` never executes queries.
+- `runOnPageLoad` is the shared camelCase option. `run_on_page_load` is ignored and MCP now warns about it.
 
 ---
 
@@ -163,13 +163,16 @@ Key properties (each `{ value }`):
 
 ---
 
-## Open items to confirm during implementation (low risk, all have a fallback)
-1. §1 exact `list_datasources` GET path (tooljetdb id already known).
-2. §3 tjdb `options` exact keys + run-on-page-load placement → copy from a UI-created query after seeding.
-3. §4 `ComponentDto` exact field list + inline-layout vs separate `/layout` PUT.
-4. §5 whether `columns` can be omitted for auto-generation.
+## 6. Reliability/edit routes (confirmed from current ToolJet source)
 
-Everything auth/app/route-level is verified live; the open items are shape details resolved by creating one example in the UI and copying its stored JSON.
+- Page icons: `POST /api/v2/apps/:appId/versions/:versionId/pages` currently ignores `icon`; persist it with `PUT` to the same route using `{ pageId, diff: { icon } }`, then read the app back and verify it.
+- Query datasource repoint: `PUT /api/data-queries/:queryId/versions/:versionId/data-source` with `{ data_source_id }`.
+- Datasource metadata invocation: `POST /api/data-sources/:dataSourceId/invoke` with `{ method, environmentId, args? }`. Only invoke methods advertised in the plugin's operation metadata.
+- Add ToolJet DB column: `POST /api/tooljet-db/organizations/:organizationId/table/:tableName/column` with `{ column, foreign_keys }`.
+- Drop ToolJet DB column: `DELETE /api/tooljet-db/organizations/:organizationId/table/:tableName/column/:columnName`.
+- Drop ToolJet DB table: `DELETE /api/tooljet-db/organizations/:organizationId/table/:tableName`.
+
+MCP contract validation is static: it validates generated option fields, component/event compatibility, and references. It does not execute queries or prove browser delivery/rendering.
 
 ---
 

@@ -152,9 +152,10 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 ## The tools
 
-- \`get_datasource_query_schema({ kind? })\` → without a kind, list known datasource kinds/operations; with the \`kind\` from \`list_datasources\`, return its exact generated query \`options\` schema. **Call it before constructing queries for that kind.**
+- \`get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })\` → exact compact request **and response** contract for one connected datasource operation. Prefer datasource id so the kind is resolved for you; use \`requests:[...]\` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
+- \`inspect_datasource_schema({ version_id, datasource_id, method, schema?, table?, search?, page?, limit?, args? })\` → invoke one read-only metadata method advertised by that plugin (for example listSchemas/listTables/listColumns). Discover methods with schema \`sections:["introspection"]\`; request only what the current query needs.
 - \`get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })\` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one \`types\` batch, request only the relevant sections/keys, and reuse that result for the build. Request \`authoringHints\` for nested contracts such as Table row-action Button columns. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
-- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`.
+- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`; \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
 - \`generate_form_schema({ table_name, mode, initial_values_binding? })\` → a ready-to-place Form \`properties\` block plus field metadata. Prefer it for ToolJet DB create/edit forms so the MCP creates one Form instead of many nested fields.
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
@@ -168,7 +169,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`get_component_catalog()\` → the lightweight component palette. Typed/batched selective calls are described above.
 - \`add_query({ version_id, datasource_id, name, options })\` → \`{ query_id, name }\`. Single query.
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
-- \`run_query({ query_id, version_id })\` → \`{ status, data, ... }\`. **Run a saved query and see its REAL rows — no browser.** Use to verify a query works and to read actual values (statuses, categories) before writing chart series / dropdown options / filters. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure.
+- \`run_query({ query_id, version_id })\` → \`{ status, data, ... }\`. Run only an explicitly selected **safe, non-mutating, non-billable read** to inspect real rows. Never automatically execute mutations, AI calls, emails, or other side effects for validation. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure.
 - \`add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })\` → \`{ component_id, warnings }\`. Single component; \`name\` required. Put styling in \`styles\` (NOT \`properties\`).
 - \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique \`client_ref\` and each child the matching \`parent_ref\`; MCP resolves real IDs atomically and lints overlaps within the correct parent.
 - Both return a **\`warnings\`** array of non-blocking lint hints — a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
@@ -187,9 +188,9 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`get_component(app_id, component_id)\` → one component's values + its \`page_id\`.
 - \`update_components({ app_id, version_id, page_id, updates:[{ component_id, definition:{properties?,styles?,...} }] })\` → edit in place. Send only CHANGED leaves (deep-merged); arrays like Table \`columns\` / dropdown \`options\` are REPLACED. Rename/reparent via \`name\`/\`parent\` (separate from \`definition\`).
 - \`delete_components({ app_id, version_id, page_id, component_ids:[...] })\` · \`update_layout({ ..., layouts:[{ component_id, desktop?, mobile? }] })\` (move/resize).
-- \`update_query({ query_id, version_id, options })\` (options REPLACE wholesale) · \`delete_query({ query_id, version_id })\`.
+- \`update_query({ query_id, version_id, app_id?, datasource_id?, options })\` (options REPLACE wholesale; optional datasource repoint is contract-validated and rollback-aware) · \`delete_query({ query_id, version_id })\`.
 - \`list_events({ app_id, version_id, source_id? })\` · \`update_events({ ..., events:[{ event_id, name, event }] })\` · \`delete_event({ app_id, version_id, event_id })\`.
-- \`validate_app(app_id)\` → \`{ ok, errors, warnings }\`. Structural check with no browser — dangling event/query references, ambiguous duplicate names, bindings to non-existent queries/components, and per-component render traps. Run it before you call the app done.
+- \`validate_app(app_id)\` → static \`{ ok, checked, not_checked, errors, warnings }\`. It validates persisted references, component/event compatibility, and query option contracts **without executing queries**. A clean result does not prove external APIs, mutations, browser event delivery, or rendering work.
 
 **A single wrong value is a one-call fix, not a rebuild.** When something is off, \`get_app_summary\` → \`update_*\`/\`delete_*\` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
 - \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
@@ -313,7 +314,7 @@ Most customers view these on desktop. **Don't build or tune a mobile layout for 
 
 Use server-side behavior for large/remote datasets; keep client-side behavior for small fully loaded arrays. Do not hardcode one datasource's pagination syntax into the component layer.
 
-1. Call \`get_datasource_query_schema(kind)\`. Create a **page query** and a **total-count/metadata query** using that datasource's real options.
+1. Batch-fetch only the page/count operation contracts with \`get_datasource_query_schema({requests:[...]})\`. Create a **page query** and a **total-count/metadata query** using that datasource's real options.
 2. Configure Table with \`dataSourceSelector="rawJson"\`, \`data\` bound to the page query, \`serverSidePagination=true\`, \`serverSideRowsPerPage\`, and \`totalRecords\` bound to the count query. ToolJet's exposed \`pageIndex\` is **1-based**; offset is \`(components.<table>.pageIndex - 1) * pageSize\`.
 3. Attach Table \`onPageChanged\` to re-run the page query. If \`serverSideSearch\`, \`serverSideSort\`, or \`serverSideFilter\` is enabled, also attach \`onSearch\`, \`onSort\`, or \`onFilterChanged\` respectively. Read the Table contract first for \`searchText\`, \`sortApplied\`, and \`filters\` shapes.
 4. Keep translation at the query boundary: SQL/TJDB use limit+offset and a count query; page-number APIs send page+size; cursor/token APIs store the returned cursor and drive \`enableNextButton\`/\`enablePrevButton\`. Do not pretend a cursor API supports random page offsets.
@@ -354,7 +355,7 @@ Any element backed by a query is **not done** until its states are handled. Thes
 
 ## Reference — look these up as you build
 
-The full **per-component binding rules** and **built-in component palette** are in **\`references/tooljet-reference.md\`**. For live contracts, call selective \`get_component_catalog({ type | types })\` and \`get_datasource_query_schema(kind)\`.
+The full **per-component binding rules** and **built-in component palette** are in **\`references/tooljet-reference.md\`**. For live contracts, call selective \`get_component_catalog({ type | types })\` and operation-scoped \`get_datasource_query_schema({ datasource_id, version_id, operation })\`.
 
 The gotchas that most often break a build, inlined so you don't miss them:
 - **Table:** set \`data.value = {{queries.<q>.data}}\` **and** \`dataSourceSelector.value = "rawJson"\` (both, or it renders blank). For a curated grid, keep \`autogenerateColumns\` true for runtime compatibility but project \`data\` to only the intended explicit column keys. Modern row actions are \`columnType:"button"\` columns plus \`table_column\` events; never new legacy \`properties.actions\`. A Button-column click sets \`selectedRow\` before its handler, so the event can read the full selected record even when the visible data was projected. Exposed \`pageIndex\` is 1-based.
@@ -395,9 +396,9 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 ## Verify your work — browser-free checks first, then a real browser pass
 
 **Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
-- After creating a data query, call \`run_query(query_id, version_id)\` to confirm it returns rows and to READ real values — statuses, categories, ranges — before you hardcode chart series, dropdown options, or filter values. Don't guess a status is "Open/Closed"; run the query and see.
+- For a safe, non-mutating, non-billable read query, call \`run_query(query_id, version_id)\` to confirm it returns rows and inspect real values before hardcoding chart series/options. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
 - Inspect with a **scoped** \`get_app_summary\` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; \`update_*\` anything wrong.
-- Run \`validate_app(app_id)\` — it catches dangling references, ambiguous duplicate names, bindings to non-existent queries/components, and render traps (unbound Table, Chart clipping title, bad headerCasing) with no browser. Fix every \`error\`; review the \`warnings\`.
+- Run \`validate_app(app_id)\` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every \`error\`; review the \`warnings\`. Its explicit \`not_checked\` list still needs targeted runtime/browser verification.
 
 **Then run one page-level browser QA loop for each completed page/primary flow.** Open the **VIEWER** URL (\`.../applications/<appId>/<pageHandle>?env=development&version=v1\`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). In the first pass, inspect the whole page and exercise its key flow (row click, filter, submit); **collect every issue before editing** unless a blank/error/blocker prevents further inspection. Group fixes by page/tool, apply the smallest number of batched \`update_components\` / \`update_layout\` / \`update_events\` calls, then do **one confirmation pass**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
 
@@ -425,6 +426,10 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - **Query-backed UI with no loading / empty / error state** — those are required parts of the feature, not polish.
 - **A mutation button that can be double-fired** — disable it while the mutation runs.
 
+### Datasource contract failures — one compact rule
+
+ToolJet plugins are wrappers, so upstream API knowledge can be actively misleading (for example, a plugin may accept \`prompt\` even when the vendor API accepts \`messages\`). Fetch the exact operation contract by datasource id; heed MCP's missing/unknown/misplaced-key warnings; and treat only a successful result as runtime confirmation. A vendor 4xx/429 proves the request reached an upstream layer, **not** that every option was accepted. If a generated contract is genuinely incomplete, inspect its \`raw\` section and make at most one minimal, user-approved safe probe—never a billable or mutating probe. Report the gap instead of cycling through guesses.
+
 ## Build guidance
 
 - Always \`create_app\` first; thread \`app_id\` / \`version_id\` / \`home_page_id\` into later calls.
@@ -435,7 +440,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 
 ---
 
-**Technical reference:** exact per-component binding rules and the full built-in palette are in \`references/tooljet-reference.md\`. Datasource option schemas are served on demand by \`get_datasource_query_schema(kind)\`.
+**Technical reference:** exact per-component binding rules and the full built-in palette are in \`references/tooljet-reference.md\`. Datasource request/response contracts are served on demand by \`get_datasource_query_schema\`.
 `;
 
 // --- Technical reference (the lookup material — kept out of the workflow core so it stays prominent) ---
@@ -527,7 +532,7 @@ Workspace-connected datasources available to the current user and selected envir
 - **postgresql / mysql** — \`{ mode: "sql", query: "SELECT …", query_params: [], runOnPageLoad: true }\`
 - **runjs** — \`{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }\` (great for chart aggregation — reference other queries' data, return a shaped value)
 - **servicenow** — \`{ operation: "list_records", table: "incident", … }\`
-Call \`get_datasource_query_schema(kind)\` for the exact first-party option schema; do not infer one datasource's fields from another.
+Call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` for that ToolJet wrapper's exact compact request/response contract; batch related operations with \`requests\`. Do not infer fields from another datasource—or from the upstream vendor API. Use \`sections:["introspection"]\` plus \`inspect_datasource_schema\` to fetch only the schemas/tables/columns/collections needed for the current query.
 
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
@@ -536,6 +541,7 @@ Many requests ("build a CRM", "an expense tracker") come with **no table yet** �
 3. Optionally \`insert_rows\` to seed a handful of realistic sample rows so the app doesn't render empty (only if the user wants sample data).
 4. Then \`add_queries\` + \`add_components\` as usual.
 For an **existing** table, call \`get_table_schema(table_name)\` first so you use its real column names and types.
+Use \`add_table_column\` to evolve a ToolJet DB table in place. Dropping a column/table is irreversible: inspect dependencies and obtain explicit approval for the exact target before \`drop_table_column(..., confirm:true)\` or \`drop_table(..., confirm:true)\`.
 
 ### ToolJet DB (\`kind: "tooljetdb"\`)
 - Resolve the table id with \`list_tables()\` — the query references the table by **\`table_id\`** (the id), NOT the name.
@@ -550,7 +556,11 @@ For an **existing** table, call \`get_table_schema(table_name)\` first so you us
   - Delete: \`{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }\`
 - After a write succeeds, re-run list/count queries from the mutation's \`onDataQuerySuccess\` event.
 
-(Other datasources have their own generated query schemas; call \`get_datasource_query_schema\` with the connected datasource's \`kind\`.)
+(Other datasources have their own generated query schemas; resolve the contract from the connected \`datasource_id\` and requested operation.)
+
+### SQL response values and aggregation
+
+SQL driver output is type-dependent: values without a registered parser (commonly some numeric/decimal types) may arrive as strings. Do not assume every value is a string or every numeric-looking value is a number; cast in SQL or convert deliberately before JavaScript arithmetic. When the source is SQL, perform grouping/count/sum in SQL and return the small chart/table shape directly instead of downloading rows for a fragile client-side reduction.
 
 ## Charts — how to make them render reliably (READ THIS before adding a Chart)
 

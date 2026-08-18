@@ -61,17 +61,19 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace |
 | `create_app(name)` | New app + version + Home page → `{ app_id, version_id, home_page_id, app_url }` |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps; no per-app linking |
-| `get_datasource_query_schema({kind?})` | List datasource kinds or return one kind's generated query-options schema |
+| `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact operation-specific request/response contracts; also supports kind lookup and batches |
+| `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
 | `list_tables()` / `get_table_schema(table_name)` | Inspect ToolJet DB tables, constraints, defaults, and relationships |
-| `create_table({table_name, columns, foreign_keys?})` / `insert_rows(...)` | Create and seed ToolJet DB data models |
+| `create_table(...)` / `add_table_column(...)` / `insert_rows(...)` | Create, evolve, and seed ToolJet DB data models |
+| `drop_table_column(..., confirm:true)` / `drop_table(..., confirm:true)` | Explicitly confirmed destructive ToolJet DB cleanup |
 | `get_component_catalog({type?, types?, sections?, ...})` | Component palette or selective one/batched contracts, including nested `authoringHints` |
 | `generate_form_schema({table_name, mode, ...})` | Generate one schema-driven create/edit Form from a ToolJet DB table |
-| `get_app_summary({app_id, sections?, filters?, *_fields?})` / `validate_app(app_id)` | Selectively inspect only needed app values; structurally validate the whole app |
+| `get_app_summary({app_id, sections?, filters?, *_fields?})` / `validate_app(app_id)` | Selectively inspect values; statically validate references, events, components, and query contracts |
 | `add_page(..., icon)` | Add a page with its required left-sidebar Tabler icon |
 | `add_query(...)` / `add_queries(...)` | Create datasource queries; use the schema tool for `options` |
 | `add_component(...)` / `add_components(...)` | Place components, including atomic parent/child batches |
 | `add_events(...)` | Add component, query/page lifecycle, and Table Button-column (`table_column`) behavior |
-| `update_*` / `delete_*` / `run_query(...)` | Repair apps in place and verify saved queries |
+| `update_*` / `delete_*` / `run_query(...)` | Repair apps in place; execute only explicitly selected safe reads for verification |
 
 ## Development
 

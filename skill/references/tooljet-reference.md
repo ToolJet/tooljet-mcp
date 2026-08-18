@@ -230,7 +230,7 @@ Workspace-connected datasources available to the current user and selected envir
 - **postgresql / mysql** — `{ mode: "sql", query: "SELECT …", query_params: [], runOnPageLoad: true }`
 - **runjs** — `{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }` (great for chart aggregation — reference other queries' data, return a shaped value)
 - **servicenow** — `{ operation: "list_records", table: "incident", … }`
-Call `get_datasource_query_schema(kind)` for the exact first-party option schema; do not infer one datasource's fields from another.
+Call `get_datasource_query_schema({ datasource_id, version_id, operation })` for that ToolJet wrapper's exact compact request/response contract; batch related operations with `requests`. Do not infer fields from another datasource—or from the upstream vendor API. Use `sections:["introspection"]` plus `inspect_datasource_schema` to fetch only the schemas/tables/columns/collections needed for the current query.
 
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
@@ -239,6 +239,7 @@ Many requests ("build a CRM", "an expense tracker") come with **no table yet** �
 3. Optionally `insert_rows` to seed a handful of realistic sample rows so the app doesn't render empty (only if the user wants sample data).
 4. Then `add_queries` + `add_components` as usual.
 For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
+Use `add_table_column` to evolve a ToolJet DB table in place. Dropping a column/table is irreversible: inspect dependencies and obtain explicit approval for the exact target before `drop_table_column(..., confirm:true)` or `drop_table(..., confirm:true)`.
 
 ### ToolJet DB (`kind: "tooljetdb"`)
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
@@ -253,7 +254,11 @@ For an **existing** table, call `get_table_schema(table_name)` first so you use 
   - Delete: `{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }`
 - After a write succeeds, re-run list/count queries from the mutation's `onDataQuerySuccess` event.
 
-(Other datasources have their own generated query schemas; call `get_datasource_query_schema` with the connected datasource's `kind`.)
+(Other datasources have their own generated query schemas; resolve the contract from the connected `datasource_id` and requested operation.)
+
+### SQL response values and aggregation
+
+SQL driver output is type-dependent: values without a registered parser (commonly some numeric/decimal types) may arrive as strings. Do not assume every value is a string or every numeric-looking value is a number; cast in SQL or convert deliberately before JavaScript arithmetic. When the source is SQL, perform grouping/count/sum in SQL and return the small chart/table shape directly instead of downloading rows for a fragile client-side reduction.
 
 ## Charts — how to make them render reliably (READ THIS before adding a Chart)
 
