@@ -108,11 +108,19 @@ describe('generated skill — mobile & verification caveats', () => {
 });
 
 describe('generated skill — modal form layout', () => {
-  it('documents atomic modal parenting, top labels, and grid-compatible spacing', () => {
+  it('documents atomic modal parenting, rendered input height, and modal sizing', () => {
     expect(skill).toMatch(/client_ref/);
     expect(skill).toMatch(/parent_ref/);
     expect(skill).toMatch(/styles\.alignment\.value = "top"/);
-    expect(skill).toMatch(/20px.*vertical gap/i);
+    expect(skill).toMatch(/renderedHeight.*height \+ 20px/is);
+    expect(skill).toMatch(/62px.*92px/is);
+    expect(skill).toMatch(/modalHeight >= lowest child top \+ renderedHeight/i);
+  });
+
+  it('uses a two-axis DOM overlap check for form and modal verification', () => {
+    expect(skill).toMatch(/id=<component_id>/);
+    expect(skill).toMatch(/getBoundingClientRect/);
+    expect(skill).toMatch(/both axes.*xOverlap && yOverlap/is);
   });
 });
 
@@ -252,7 +260,8 @@ describe('generated skill — async states & density guardrails', () => {
     expect(skill).toMatch(/## Forms & modals — field layout/);
     expect(skill).toContain('styles.alignment.value = "top"');
     expect(skill).toMatch(/60[–-]70px/);
-    expect(skill).toMatch(/20px/);
+    expect(skill).toMatch(/80[–-]90px/);
+    expect(skill).toMatch(/62px authored \+ 20px increment \+ 10px gap/i);
     expect(skill).toMatch(/relative to the modal body/i);
   });
 
@@ -288,6 +297,9 @@ describe('generated skill is synchronized with the generator', () => {
     "don't overcrowd; split instead",
     '## Forms & modals — field layout',
     'relative to the modal body',
+    'Stack using rendered height',
+    'modalHeight >= lowest child top + renderedHeight',
+    'getBoundingClientRect()',
     '13–15 columns',
     '110–120px',
     'HTML where it makes the UI better',

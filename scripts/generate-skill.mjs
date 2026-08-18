@@ -46,7 +46,11 @@ function readGridConstants() {
     const m = txt.match(new RegExp(`${name}\\s*=\\s*(\\d+)`));
     return m ? Number(m[1]) : null;
   };
-  return { columns: num('NO_OF_GRIDS') ?? 43, rowSnapPx: num('GRID_HEIGHT') ?? 10 };
+  return {
+    columns: num('NO_OF_GRIDS') ?? 43,
+    rowSnapPx: num('GRID_HEIGHT') ?? 10,
+    topAlignmentHeightIncrement: num('TOP_ALIGNMENT_HEIGHT_INCREMENT') ?? 20,
+  };
 }
 
 // Legacy components hidden from agents — a modern V2 replacement exists. Keep in sync with
@@ -264,9 +268,9 @@ The full built-in palette (every \`type\` + purpose) is in **\`references/toolje
 ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.
 
 - The canvas is **${grid.columns} columns** wide. A component's \`left\` and \`width\` are in **columns** (0–${grid.columns}). Full width = \`left: 0, width: ${grid.columns}\`.
-- \`top\` and \`height\` are in **pixels**, snapped to a **${grid.rowSnapPx}px** vertical grid. A typical input is ~40px tall; a data table ~300–500px.
+- \`top\` and \`height\` are in **pixels**, snapped to a **${grid.rowSnapPx}px** vertical grid. A data table is commonly ~300–500px tall.
 - Every component's \`layout\` must be given for **both resolutions**: \`{ desktop: {top,left,width,height}, mobile: {top,left,width,height} }\`.
-- **Stacking rule (prevents overlap):** to place component B below component A, set \`B.top = A.top + A.height + gap\` (gap ~10–20px). Never reuse the same \`top\` for two components in the same area — the later one draws over the earlier one.
+- **Stack using rendered height:** \`B.top = A.top + A.renderedHeight + gap\` (gap ~10–20px). Most widgets—including Text, Button, Html, Chart, Table, and Statistics—render at the authored \`height\`. ToolJet's top-aligned labelled form-input widgets render at **\`height + ${grid.topAlignmentHeightIncrement}px\`**. A 62px top-aligned input followed by a 10px gap needs the next \`top\` **92px** lower, not 72px. Raising the authored height does not absorb the increment: 82px renders as 102px.
 - The full canvas is ${grid.columns} columns; how you use that space is a design choice (see Design defaults below) — don't reflexively span edge-to-edge.
 
 ## Design — decide before you build, then apply the visual defaults
@@ -334,10 +338,11 @@ Verify page 1, a middle page, the last/partial page, zero results, a changed sea
 Form inputs default to a **side-aligned label** (\`styles.alignment = "side"\`) — the label sits to the LEFT of the input and eats its width. In a modal or a narrow column, a long label ("Requested amount (USD)") leaves a uselessly narrow input. Lay forms out deliberately:
 
 - **Top-align labels in forms and modals.** Set \`styles.alignment.value = "top"\` on every input (\`TextInput\`/\`NumberInput\`/\`CurrencyInput\`/\`DropdownV2\`/\`MultiselectV2\`/\`DatePickerV2\`/\`DatetimePickerV2\`/\`TextArea\`/…) — the label goes ABOVE the control so it gets the **full field width**. (\`alignment\` is a **style**, not a property.)
-- **Field sizing:** give each field ~**60–70px** height (room for the top label + the control) and a **20px** vertical gap between fields (ToolJet snaps to a 10px vertical grid). 50px rows placed 60px apart (a 10px gap) read as cramped.
+- **Field sizing:** use an authored **60–70px** height for typical top-aligned fields; ToolJet renders those input wrappers at **80–90px** because it adds ${grid.topAlignmentHeightIncrement}px. Space the next row from the rendered bottom (for example, 62px authored + 20px increment + 10px gap = a 92px top-to-top step). Do not increase \`height\` to compensate—the increment is added to the new value too.
 - **Two-column forms:** reserve ~**2 grid columns** of gutter between the two columns, and give both columns' fields consistent widths.
 - **Full-width fields** (Description, notes) must share the **same left AND right edge** as the columns above them — with top-aligned labels they line up naturally; side-aligned ones begin at different x positions.
 - **Modal-local coordinates:** a component parented to a modal is positioned **relative to the modal body** (0,0 = modal body top-left), NOT the 43-column canvas. Size its children to the modal body width, not the full canvas.
+- **Modal sizing:** set \`modalHeight >= lowest child top + renderedHeight + visible headerHeight + visible footerHeight + ~20px bottom slack\`. ModalV2's default header/footer are 80px each; with only the header visible, that is the child's rendered bottom + ~100px. Undersized content can be clipped or forced into unintended scrolling.
 - **Prefer flat composition.** Page-level components are faster to generate, inspect, and repair. For forms, prefer the Form component's \`rawJson\`/\`jsonSchema\` generation instead of creating many nested field components.
 - **Use nesting only when the component semantics require it** (custom Modal/Form children, Container/FlexContainer, Tabs, Listview, expandable rows). When it is required, create the hierarchy atomically in one \`add_components\` call with \`client_ref\`/\`parent_ref\`; keep it one level deep where practical.
 
@@ -401,6 +406,8 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - Run \`validate_app(app_id)\` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every \`error\`; review the \`warnings\`. Its explicit \`not_checked\` list still needs targeted runtime/browser verification.
 
 **Then run one page-level browser QA loop for each completed page/primary flow.** Open the **VIEWER** URL (\`.../applications/<appId>/<pageHandle>?env=development&version=v1\`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). In the first pass, inspect the whole page and exercise its key flow (row click, filter, submit); **collect every issue before editing** unless a blank/error/blocker prevents further inspection. Group fixes by page/tool, apply the smallest number of batched \`update_components\` / \`update_layout\` / \`update_events\` calls, then do **one confirmation pass**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
+
+**For every form/modal, measure geometry once—screenshots can hide small overlaps.** ToolJet widget wrappers use \`id=<component_id>\`, so one browser evaluation can collect each child's \`getBoundingClientRect()\`. A real collision requires overlap on **both axes** (\`xOverlap && yOverlap\`), which avoids false positives for side-by-side fields; also compare child bottoms with the modal body/bounds. MCP warnings from \`add_components\`, \`update_components\`, \`update_layout\`, and \`validate_app\` catch static rendered-height/modal sizing mistakes, while this DOM check confirms runtime/dynamic layout.
 
 **Triage before repairing:**
 - **Always fix:** blank/error rendering, incorrect or unbound data, broken navigation, failed primary actions, misleading values, unreadable core charts/tables, and missing loading/error behavior that breaks the workflow.
