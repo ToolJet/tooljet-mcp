@@ -49,6 +49,8 @@ export interface ComponentSchema {
   defaultChildren?: unknown[];
   /** Curated sizing/readability hints for components that have them (e.g. Chart, Statistics). */
   renderingHints?: Record<string, unknown>;
+  /** Source-verified nested authoring contracts not represented by the flat property schema. */
+  authoringHints?: Record<string, unknown>;
 }
 
 // Resolves to <repo>/data/... whether running from src (tsx) or dist (built).

@@ -205,7 +205,7 @@ export interface AppSummary {
   app_id: string;
   name?: string;
   version_id?: string;
-  pages: Array<{ id: string; name?: string; handle?: string; components: ComponentSummary[] }>;
+  pages: Array<{ id: string; name?: string; handle?: string; icon?: string; components: ComponentSummary[] }>;
   queries: Array<{ id: string; name?: string; kind?: string; data_source_id?: string; options?: unknown }>;
   events: Array<{ id: string; name?: string; sourceId?: string; target?: string; event?: unknown }>;
 }
@@ -376,6 +376,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       id: p.id,
       name: p.name,
       handle: p.handle,
+      icon: p.icon,
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
     }));
     const queries = (full.data_queries ?? []).map((q: any) => ({
