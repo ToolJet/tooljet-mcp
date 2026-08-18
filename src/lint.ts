@@ -664,6 +664,33 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // The native Home page is entered during initial app load. A query with runOnPageLoad=true that
+  // is also run by Home.onPageLoad executes twice and can noticeably delay first paint.
+  const homePage = summary.pages.find((page) => page.handle === 'home' || page.name === 'Home');
+  if (homePage) {
+    const appLoadQueryIds = new Set(
+      summary.queries
+        .filter((query) => isTruthyBinding(propVal(recordValue(query.options), 'runOnPageLoad')))
+        .map((query) => query.id)
+    );
+    for (const event of summary.events) {
+      if (event.target !== 'page' || event.sourceId !== homePage.id) continue;
+      const value = recordValue(event.event);
+      if (
+        value?.eventId === 'onPageLoad' &&
+        value.actionId === 'run-query' &&
+        typeof value.queryId === 'string' &&
+        appLoadQueryIds.has(value.queryId)
+      ) {
+        const query = summary.queries.find((candidate) => candidate.id === value.queryId);
+        warnings.push(
+          `Query "${query?.name ?? value.queryId}" has runOnPageLoad=true and is also run by Home.onPageLoad, ` +
+            'so the initial page executes it twice. Keep one lifecycle path; use focused page events for later navigation refreshes.'
+        );
+      }
+    }
+  }
+
   // Dangling event references.
   for (const e of summary.events) {
     const name = e.name ?? e.id;

@@ -470,6 +470,23 @@ describe('validateAppStructure', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('warns when Home runs an app-load query a second time', () => {
+    const duplicateLoad: AppSummary = {
+      ...base,
+      queries: [{ ...base.queries[0], options: { runOnPageLoad: true } }],
+      events: [{
+        id: 'e1',
+        name: 'refresh rows',
+        sourceId: 'p1',
+        target: 'page',
+        event: { eventId: 'onPageLoad', actionId: 'run-query', queryId: 'q1', queryName: 'getRows' },
+      }],
+    };
+    expect(validateAppStructure(duplicateLoad).warnings.join(' ')).toMatch(
+      /getRows.*runOnPageLoad=true.*Home\.onPageLoad.*executes it twice/i
+    );
+  });
+
   it('errors on an event whose query no longer exists', () => {
     const bad: AppSummary = { ...base, events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'GONE' } }] };
     expect(validateAppStructure(bad).errors.join(' ')).toMatch(/runs a query \(GONE\) that no longer exists/);
