@@ -9,12 +9,21 @@ const layoutSchema = z.object({
   height: z.number(),
 });
 
+const layoutsSchema = z.object({
+  desktop: layoutSchema.optional(),
+  mobile: layoutSchema.optional(),
+});
+
 export function addComponentTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_component',
     description:
       'Place a component on an app page. `name` is required. A Table binds data via ' +
-      'properties.data.value = "{{queries.<queryName>.data}}".',
+      'properties.data.value = "{{queries.<queryName>.data}}". ' +
+      'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
+      'in the top-level `styles` object, NOT under `properties` — ToolJet silently ignores styles nested ' +
+      'in properties (and this tool will reject them). Provide either `layout` (one rectangle applied to ' +
+      'both resolutions) or `layouts:{desktop,mobile}` for per-resolution placement.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -22,7 +31,11 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       name: z.string(),
       type: z.string(),
       properties: z.record(z.string(), z.any()),
-      layout: layoutSchema,
+      styles: z.record(z.string(), z.any()).optional(),
+      validation: z.record(z.string(), z.any()).optional(),
+      others: z.record(z.string(), z.any()).optional(),
+      layout: layoutSchema.optional(),
+      layouts: layoutsSchema.optional(),
     },
     async handler(args: {
       app_id: string;
@@ -31,7 +44,14 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       name: string;
       type: string;
       properties: Record<string, unknown>;
-      layout: { top: number; left: number; width: number; height: number };
+      styles?: Record<string, unknown>;
+      validation?: Record<string, unknown>;
+      others?: Record<string, unknown>;
+      layout?: { top: number; left: number; width: number; height: number };
+      layouts?: {
+        desktop?: { top: number; left: number; width: number; height: number };
+        mobile?: { top: number; left: number; width: number; height: number };
+      };
     }) {
       try {
         const result = await client.createComponent({
@@ -41,7 +61,11 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
           name: args.name,
           type: args.type,
           properties: args.properties,
+          styles: args.styles,
+          validation: args.validation,
+          others: args.others,
           layout: args.layout,
+          layouts: args.layouts,
         });
         return ok(result);
       } catch (err) {

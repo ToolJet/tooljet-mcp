@@ -44,7 +44,11 @@ export interface CreateComponentParams {
   name: string;
   type: string;
   properties: Record<string, unknown>;
+  styles?: Record<string, unknown>;
+  validation?: Record<string, unknown>;
+  others?: Record<string, unknown>;
   layout?: ComponentLayout;
+  layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
 }
 
 export interface CreateComponentResult {
@@ -56,8 +60,35 @@ export interface ComponentSpec {
   name: string;
   type: string;
   properties: Record<string, unknown>;
+  /** Native styling (textSize, fontWeight, textColor, backgroundColor, …). Read by ToolJet's
+   *  renderer from `definition.styles` — putting these under `properties` is silently ignored. */
+  styles?: Record<string, unknown>;
+  validation?: Record<string, unknown>;
+  /** e.g. `{ showOnMobile: {...}, showOnDesktop: {...} }`. */
+  others?: Record<string, unknown>;
+  /** Convenience: one rectangle applied to both resolutions. */
   layout?: ComponentLayout;
+  /** Explicit per-resolution layout; takes precedence over `layout` for the resolution it sets. */
+  layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
 }
+
+/** Style-ish keys that ToolJet's renderer reads from `definition.styles`, NOT `properties`.
+ *  If any appear under `properties` we reject with an actionable error instead of silently dropping them. */
+const STYLE_KEYS_IN_PROPERTIES = new Set([
+  'styles',
+  'textSize',
+  'fontWeight',
+  'textColor',
+  'backgroundColor',
+  'borderColor',
+  'borderRadius',
+  'boxShadow',
+  'textAlign',
+  'fontVariant',
+  'padding',
+  'accentColor',
+  'iconColor',
+]);
 
 export interface CreateComponentsParams {
   appId: string;
@@ -302,8 +333,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       `/api/data-sources/${orgId}/environments/${envId}/versions/${versionId}`
     );
     await assertOk(res, 'listDatasources');
-    const body = (await res.json()) as { data_sources: Datasource[] };
-    return body.data_sources;
+    // The API returns fully-hydrated datasource objects (options, plugin, scope, …) — ~22KB in a
+    // typical app. The agent only needs {id,name,kind}; strip the rest at runtime (the TS type does
+    // NOT strip fields on its own).
+    const body = (await res.json()) as { data_sources: Array<Datasource & Record<string, unknown>> };
+    return body.data_sources.map((d) => ({ id: d.id, name: d.name, kind: d.kind }));
   }
 
   async function createTable(params: CreateTableParams): Promise<CreateTableResult> {
@@ -434,17 +468,31 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   function buildComponentDto(spec: ComponentSpec): Record<string, unknown> {
+    // Guard: styling nested under `properties` is silently discarded by ToolJet (its renderer
+    // reads styles from `definition.styles`). Reject early with an actionable message.
+    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+    if (misplaced.length) {
+      throw new Error(
+        `Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, ` +
+          `where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`
+      );
+    }
     const dto: Record<string, unknown> = {
       name: spec.name,
       type: spec.type,
       properties: spec.properties,
-      styles: {},
-      validation: {},
-      others: {},
+      styles: spec.styles ?? {},
+      validation: spec.validation ?? {},
+      others: spec.others ?? {},
     };
-    // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...}
-    // returns 422 "invalid input value for enum layout_type". Apply the same layout to both.
-    if (spec.layout) dto.layouts = { desktop: spec.layout, mobile: spec.layout };
+    // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...} returns 422
+    // "invalid input value for enum layout_type". Explicit per-resolution `layouts` wins; otherwise
+    // the flat `layout` convenience is applied to both.
+    const desktop = spec.layouts?.desktop ?? spec.layout;
+    const mobile = spec.layouts?.mobile ?? spec.layout;
+    if (desktop || mobile) {
+      dto.layouts = { ...(desktop ? { desktop } : {}), ...(mobile ? { mobile } : {}) };
+    }
     return dto;
   }
 
@@ -471,7 +519,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       appId: params.appId,
       versionId: params.versionId,
       pageId: params.pageId,
-      components: [{ name: params.name, type: params.type, properties: params.properties, layout: params.layout }],
+      components: [
+        {
+          name: params.name,
+          type: params.type,
+          properties: params.properties,
+          styles: params.styles,
+          validation: params.validation,
+          others: params.others,
+          layout: params.layout,
+          layouts: params.layouts,
+        },
+      ],
     });
     return { component_id: r.component_id };
   }

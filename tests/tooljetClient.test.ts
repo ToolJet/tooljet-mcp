@@ -183,9 +183,19 @@ describe('createClient', () => {
           mockResponse({
             status: 200,
             json: {
+              // Real responses are fully hydrated — options/plugin/scope/timestamps etc. The client
+              // must strip these to {id,name,kind} at runtime (the TS type alone does not).
               data_sources: [
-                { id: 'ds1', name: 'tjdb', kind: 'tooljetdb' },
-                { id: 'ds2', name: 'restapi1', kind: 'restapi' },
+                {
+                  id: 'ds1',
+                  name: 'tjdb',
+                  kind: 'tooljetdb',
+                  options: { foo: 'bar' },
+                  plugin: { id: 'p1', manifest: {} },
+                  scope: 'global',
+                  created_at: '2020-01-01',
+                },
+                { id: 'ds2', name: 'restapi1', kind: 'restapi', options: {}, plugin: null },
               ],
             },
           })
@@ -200,6 +210,7 @@ describe('createClient', () => {
         2,
         '/api/data-sources/org1/environments/env-dev/versions/ver1'
       );
+      // exactly {id,name,kind} — bulky fields stripped
       expect(datasources).toEqual([
         { id: 'ds1', name: 'tjdb', kind: 'tooljetdb' },
         { id: 'ds2', name: 'restapi1', kind: 'restapi' },
@@ -304,6 +315,70 @@ describe('createClient', () => {
           desktop: { top: 0, left: 0, width: 10, height: 20 },
           mobile: { top: 0, left: 0, width: 10, height: 20 },
         },
+      });
+    });
+
+    it('passes styles/validation/others through instead of hardcoding empty objects', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+
+      const client = createClient(auth, config);
+      await client.createComponent({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        name: 'title',
+        type: 'Text',
+        properties: { text: { value: 'Hello' } },
+        styles: { textSize: { value: 24 }, fontWeight: { value: 'bold' } },
+        validation: { customRule: { value: null } },
+        others: { showOnMobile: { value: '{{true}}' } },
+        layout: { top: 0, left: 0, width: 10, height: 4 },
+      });
+
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      const dto = body.diff['component-uuid-1'];
+      expect(dto.styles).toEqual({ textSize: { value: 24 }, fontWeight: { value: 'bold' } });
+      expect(dto.validation).toEqual({ customRule: { value: null } });
+      expect(dto.others).toEqual({ showOnMobile: { value: '{{true}}' } });
+    });
+
+    it('rejects style keys placed under properties (ToolJet silently drops them)', async () => {
+      const client = createClient(auth, config);
+      await expect(
+        client.createComponent({
+          appId: 'app1',
+          versionId: 'ver1',
+          pageId: 'page-home',
+          name: 'title',
+          type: 'Text',
+          properties: { text: { value: 'Hi' }, textColor: { value: '#111' } },
+        })
+      ).rejects.toThrow(/style keys \["textColor"\] were placed under `properties`/);
+      // never hit the network
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
+
+    it('honors explicit per-resolution layouts (does not duplicate a flat rectangle)', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+
+      const client = createClient(auth, config);
+      await client.createComponent({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        name: 'card',
+        type: 'Text',
+        properties: {},
+        layouts: {
+          desktop: { top: 0, left: 0, width: 20, height: 6 },
+          mobile: { top: 0, left: 0, width: 43, height: 6 },
+        },
+      });
+
+      const dto = JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff['component-uuid-1'];
+      expect(dto.layouts).toEqual({
+        desktop: { top: 0, left: 0, width: 20, height: 6 },
+        mobile: { top: 0, left: 0, width: 43, height: 6 },
       });
     });
 

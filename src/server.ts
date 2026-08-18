@@ -9,7 +9,7 @@ export function buildServer(): McpServer {
   const auth = createAuth(config);
   const client = createClient(auth, config);
 
-  const server = new McpServer({ name: 'tooljet-mcp', version: '0.1.0' });
+  const server = new McpServer({ name: 'tooljet-mcp', version: '0.2.0' });
 
   registerTools(server, client);
 
