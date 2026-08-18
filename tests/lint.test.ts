@@ -45,6 +45,36 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('warns when a narrow form input keeps a side-aligned label; clean when top-aligned or wide', () => {
+    // narrow + default (side) alignment → warn
+    const narrow = lintComponentSpec({
+      name: 'amount',
+      type: 'CurrencyInput',
+      properties: { label: { value: 'Requested amount (USD)' } },
+      layout: { top: 0, left: 0, width: 12, height: 5 },
+    });
+    expect(narrow.warnings.join(' ')).toMatch(/SIDE-aligned label .* eats the input width.*alignment.*"top"/);
+
+    // narrow but explicitly top-aligned (style) → clean
+    const topAligned = lintComponentSpec({
+      name: 'amount',
+      type: 'CurrencyInput',
+      styles: { alignment: { value: 'top' } },
+      properties: {},
+      layout: { top: 0, left: 0, width: 12, height: 5 },
+    });
+    expect(topAligned.warnings).toEqual([]);
+
+    // wide field → side label is fine, no warning
+    const wide = lintComponentSpec({
+      name: 'amount',
+      type: 'CurrencyInput',
+      properties: {},
+      layout: { top: 0, left: 0, width: 30, height: 5 },
+    });
+    expect(wide.warnings).toEqual([]);
+  });
+
   it('validates explicit Table columns shape and headerCasing enum', () => {
     const r = lintComponentSpec({
       name: 't',

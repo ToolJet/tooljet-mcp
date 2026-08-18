@@ -268,6 +268,18 @@ Then hold to these:
 ### 5. Mobile — skip it by default
 Most customers view these on desktop. **Don't build or tune a mobile layout for the initial build unless the user explicitly asks.** When they do, treat mobile as **recomposition** — rethink what leads and what collapses on a narrow screen — not blind vertical stacking of the desktop layout. And note: **resizing a browser window does NOT prove ToolJet's mobile layout rendered** — that is a structural guess, not real mobile visual validation; only claim mobile works if you verified it the way ToolJet actually renders mobile.
 
+## Forms & modals — field layout (avoid cramped, misaligned fields)
+
+Form inputs default to a **side-aligned label** (\`styles.alignment = "side"\`) — the label sits to the LEFT of the input and eats its width. In a modal or a narrow column, a long label ("Requested amount (USD)") leaves a uselessly narrow input. Lay forms out deliberately:
+
+- **Top-align labels in forms and modals.** Set \`styles.alignment.value = "top"\` on every input (\`TextInput\`/\`NumberInput\`/\`CurrencyInput\`/\`DropdownV2\`/\`MultiselectV2\`/\`DatePickerV2\`/\`DatetimePickerV2\`/\`TextArea\`/…) — the label goes ABOVE the control so it gets the **full field width**. (\`alignment\` is a **style**, not a property.)
+- **Field sizing:** give each field ~**60–70px** height (room for the top label + the control) and a ~**14–16px** vertical gap between fields (next field's \`top\` = previous \`top\` + previous \`height\` + 14–16). 50px rows placed 60px apart (a 10px gap) read as cramped.
+- **Two-column forms:** reserve ~**2 grid columns** of gutter between the two columns, and give both columns' fields consistent widths.
+- **Full-width fields** (Description, notes) must share the **same left AND right edge** as the columns above them — with top-aligned labels they line up naturally; side-aligned ones begin at different x positions.
+- **Modal-local coordinates:** a component parented to a modal is positioned **relative to the modal body** (0,0 = modal body top-left), NOT the 43-column canvas. Size its children to the modal body width, not the full canvas.
+
+**Browser QA for any form/modal:** confirm no label is truncating its input, every control has a usable width, field left/right edges line up, and there's breathing room above the footer/action buttons.
+
 ## Async & UI states — required, not polish
 
 Any element backed by a query is **not done** until its states are handled. These are part of building the feature, not a later polish pass:

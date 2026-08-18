@@ -173,6 +173,14 @@ describe('generated skill — async states & density guardrails', () => {
     expect(skill).toMatch(/progressive disclosure/i);
   });
 
+  it('has a forms & modals field-layout recipe (top-aligned labels, spacing, modal-local coords)', () => {
+    expect(skill).toMatch(/## Forms & modals — field layout/);
+    expect(skill).toContain('styles.alignment.value = "top"');
+    expect(skill).toMatch(/60[–-]70px/);
+    expect(skill).toMatch(/14[–-]16px/);
+    expect(skill).toMatch(/relative to the modal body/i);
+  });
+
   it('lists the new overcrowding / skeleton / missing-state anti-patterns', () => {
     expect(skill).toMatch(/Dumping every requested capability onto one page/i);
     expect(skill).toMatch(/Skeleton or placeholder pages/i);
@@ -197,6 +205,8 @@ describe('generated skill is synchronized with the generator', () => {
     'page architecture and phasing are SEPARATE decisions',
     'Async & UI states — required, not polish',
     "don't overcrowd; split instead",
+    '## Forms & modals — field layout',
+    'relative to the modal body',
     '13–15 columns',
     '110–120px',
     'HTML where it makes the UI better',

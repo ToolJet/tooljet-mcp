@@ -29,6 +29,27 @@ export const STYLE_KEYS_IN_PROPERTIES = new Set([
 /** ToolJet Table column header casing — the ONLY valid values (table.js: 'As typed' / 'AA'). */
 export const VALID_HEADER_CASING = new Set(['none', 'uppercase']);
 
+/** Form inputs that carry a label \`alignment\` style ('side' default / 'top'). A narrow one with a
+ *  side label wastes most of its width on the label — warn and suggest top alignment. */
+export const FORM_INPUT_TYPES = new Set([
+  'TextInput',
+  'NumberInput',
+  'CurrencyInput',
+  'PasswordInput',
+  'EmailInput',
+  'PhoneInput',
+  'TextArea',
+  'DropdownV2',
+  'MultiselectV2',
+  'DatePickerV2',
+  'DatetimePickerV2',
+  'TimePicker',
+  'TreeSelect',
+  'RadioButtonV2',
+]);
+/** At or below this width (grid columns), a side-aligned label leaves too little room for the input. */
+const NARROW_SIDE_LABEL_COLS = 18;
+
 interface Rect {
   top?: number;
   left?: number;
@@ -129,6 +150,18 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           );
         }
       });
+    }
+  }
+
+  // Form input: a narrow field with a side-aligned label (the default) wastes width on the label.
+  if (FORM_INPUT_TYPES.has(spec.type ?? '')) {
+    const align = propVal(spec.styles, 'alignment'); // `alignment` is a STYLE, not a property
+    const width = (spec.layouts?.desktop ?? spec.layout)?.width;
+    if ((align === undefined || align === 'side') && typeof width === 'number' && width <= NARROW_SIDE_LABEL_COLS) {
+      warnings.push(
+        `${spec.type} "${label}": narrow (${width} cols) with a SIDE-aligned label (the default) — the label ` +
+          `eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`
+      );
     }
   }
 
