@@ -22,6 +22,7 @@ import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
 import { validateAppTool } from './validateApp.js';
+import { lintAppSpecTool } from './lintAppSpec.js';
 import { addPageTool } from './addPage.js';
 import { addPagesTool } from './addPages.js';
 import { addQueryTool } from './addQuery.js';
@@ -63,6 +64,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
+    lintAppSpecTool(client),
     addPageTool(client),
     addPagesTool(client),
     addQueryTool(client),
