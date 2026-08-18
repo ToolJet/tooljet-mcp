@@ -50,7 +50,8 @@ export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_datasource_query_schema',
     description:
-      'Get compact, operation-specific request AND response contracts for query options. Call with no selector for the ' +
+      'Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent ' +
+      'responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the ' +
       'datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. ' +
       'Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one ' +
       'operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts.',

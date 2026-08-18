@@ -53,6 +53,40 @@ describe('datasource query catalog', () => {
     expect(anthropic.response.type).toBe('array<object>');
   });
 
+  it('publishes source-derived SQL response shapes and explicit uncertainty', () => {
+    const postgres = selectDatasourceQuerySchema('postgresql', { operation: 'list_rows' }) as any;
+    expect(postgres.response).toMatchObject({
+      type: 'array<object>',
+      status: 'known',
+      source: 'curated-tooljet-source',
+    });
+
+    const mysqlDelete = selectDatasourceQuerySchema('mysql', { operation: 'delete_rows' }) as any;
+    expect(mysqlDelete.response).toMatchObject({
+      type: 'object',
+      status: 'known',
+      shape: { deletedRecords: 'number' },
+    });
+
+    const runjs = selectDatasourceQuerySchema('runjs', { operation: 'default' }) as any;
+    expect(runjs.response).toMatchObject({
+      type: 'unknown',
+      status: 'runtime-dependent',
+      source: 'user-code',
+    });
+  });
+
+  it('gives every generated operation an honest response status', () => {
+    for (const source of getDatasourceCatalog()) {
+      const schema = getDatasourceQuerySchema(source.kind)!;
+      for (const contract of Object.values(schema.contracts)) {
+        expect(contract.response).toBeDefined();
+        expect(['known', 'runtime-dependent', 'unknown']).toContain(contract.response!.status);
+        expect(contract.response!.source).toBeTruthy();
+      }
+    }
+  });
+
   it('tool returns a compact palette, operation contract, and datasource-resolved batch', async () => {
     const client = {
       listDatasources: async () => [

@@ -15,6 +15,106 @@
       }
     }
   },
+  "databricks": {
+    "response_groups": [
+      {
+        "operations": ["sql", "list_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the Databricks statement result formatter."
+        }
+      },
+      {
+        "operations": ["create_row"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsCreated": "number" }
+        }
+      },
+      {
+        "operations": ["update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsAffected": "number" }
+        }
+      }
+    ]
+  },
+  "mariadb": {
+    "response_groups": [
+      {
+        "operations": ["list_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the MariaDB list query."
+        }
+      },
+      {
+        "operations": ["create_row"],
+        "response": {
+          "type": "object",
+          "shape": { "insertId": "number|null" }
+        }
+      },
+      {
+        "operations": ["update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "affectedRows": "number" }
+        }
+      }
+    ]
+  },
+  "mssql": {
+    "response_groups": [
+      {
+        "operations": ["list_rows", "create_row", "update_rows", "upsert_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the MSSQL query or OUTPUT clause."
+        }
+      },
+      {
+        "operations": ["delete_rows"],
+        "response": {
+          "type": "object",
+          "shape": { "deletedRecords": "number" }
+        }
+      },
+      {
+        "operations": ["bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "affectedRows": "number" }
+        }
+      }
+    ]
+  },
+  "mysql": {
+    "response_groups": [
+      {
+        "operations": ["list_rows", "create_row", "update_rows", "upsert_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the MySQL query; write helpers select and return the affected rows."
+        }
+      },
+      {
+        "operations": ["delete_rows"],
+        "response": {
+          "type": "object",
+          "shape": { "deletedRecords": "number" }
+        }
+      },
+      {
+        "operations": ["bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "array<object>",
+          "description": "An array of MySQL driver result packets, one per executed statement."
+        }
+      }
+    ]
+  },
   "openai": {
     "operations": {
       "chat": {
@@ -40,7 +140,84 @@
       }
     }
   },
+  "postgresql": {
+    "response_groups": [
+      {
+        "operations": ["sql", "list_rows", "create_row", "update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "array<object>",
+          "description": "PostgreSQL rows. GUI writes use RETURNING and return the affected rows; SQL mode returns the driver's rows array."
+        }
+      }
+    ]
+  },
+  "snowflake": {
+    "response_groups": [
+      {
+        "operations": ["sql", "list_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the Snowflake statement."
+        }
+      },
+      {
+        "operations": ["create_row"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsCreated": "number" }
+        }
+      },
+      {
+        "operations": ["update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsAffected": "number" }
+        }
+      }
+    ]
+  },
   "tooljetdb": {
+    "response_groups": [
+      {
+        "operations": ["list_rows", "create_row", "update_rows", "delete_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by ToolJet DB/PostgREST with return=representation."
+        }
+      },
+      {
+        "operations": ["join_tables"],
+        "response": {
+          "type": "object",
+          "shape": { "result": "array<object>" }
+        }
+      },
+      {
+        "operations": ["sql_execution"],
+        "response": {
+          "type": "object",
+          "shape": { "results": "array<object>" }
+        }
+      },
+      {
+        "operations": ["bulk_update_with_primary_key"],
+        "response": {
+          "type": "array<object>",
+          "description": "The rows updated by primary key."
+        }
+      },
+      {
+        "operations": ["bulk_upsert_with_primary_key"],
+        "response": {
+          "type": "object",
+          "shape": {
+            "inserted": "number",
+            "updated": "number",
+            "data": "array<object>"
+          }
+        }
+      }
+    ],
     "operations": {
       "list_rows": {
         "response": {

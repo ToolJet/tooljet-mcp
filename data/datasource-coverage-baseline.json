@@ -1,0 +1,13 @@
+{
+  "minimums": {
+    "datasource_kinds": 94,
+    "contract_count": 470,
+    "known_response_contracts": 64,
+    "response_contracts_present": 470
+  },
+  "maximums": {
+    "missing_response_contracts": 0,
+    "kinds_without_contracts": 0,
+    "opaque_endpoint_kinds": 13
+  }
+}

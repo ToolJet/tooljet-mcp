@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 
 import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildDatasourceCoverage } from './datasource-coverage.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLJET = process.env.TOOLJET_ROOT || resolve(homedir(), 'Claude/Projects/ToolJet/ToolJet');
@@ -161,10 +162,26 @@ function introspectionMethods(properties) {
 }
 
 function applyOverrides(kind, contracts) {
-  const kindOverrides = overrides[kind]?.operations || {};
-  for (const [operation, operationOverride] of Object.entries(kindOverrides)) {
+  const kindOverride = overrides[kind] || {};
+  for (const group of kindOverride.response_groups || []) {
+    for (const operation of group.operations || []) {
+      if (!contracts[operation]) continue;
+      contracts[operation].response = {
+        status: 'known',
+        source: 'curated-tooljet-source',
+        ...group.response,
+      };
+    }
+  }
+  for (const [operation, operationOverride] of Object.entries(kindOverride.operations || {})) {
     const contract = contracts[operation] || { operation, variants: [] };
-    if (operationOverride.response) contract.response = operationOverride.response;
+    if (operationOverride.response) {
+      contract.response = {
+        status: 'known',
+        source: 'curated-tooljet-source',
+        ...operationOverride.response,
+      };
+    }
     if (operationOverride.notes) contract.notes = operationOverride.notes;
     for (const variant of contract.variants) {
       if (Array.isArray(operationOverride.required)) {
@@ -175,6 +192,59 @@ function applyOverrides(kind, contracts) {
       }
     }
     contracts[operation] = contract;
+  }
+  return contracts;
+}
+
+function fallbackResponse(kind, type, contract) {
+  if (kind === 'runjs' || kind === 'runpy') {
+    return {
+      type: 'unknown',
+      status: 'runtime-dependent',
+      source: 'user-code',
+      description: 'The query data is the value returned by user-authored code; inspect a safe successful run before binding nested fields.',
+    };
+  }
+
+  const fields = contract.variants.flatMap((variant) => Object.values(variant.fields));
+  if (fields.some((field) => String(field.type || '').startsWith('react-component-api-endpoint'))) {
+    return {
+      type: 'unknown',
+      status: 'runtime-dependent',
+      source: 'remote-api',
+      description: 'The selected remote API endpoint defines the query data. This generated contract does not yet expose endpoint-specific response fields.',
+    };
+  }
+
+  if (['restapi', 'graphql', 'openapi', 'grpc', 'grpcv2'].includes(kind)) {
+    return {
+      type: 'unknown',
+      status: 'runtime-dependent',
+      source: 'remote-api',
+      description: 'The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields.',
+    };
+  }
+
+  if (contract.operation === 'sql') {
+    return {
+      type: 'array<object>|object',
+      status: 'runtime-dependent',
+      source: 'sql-statement',
+      description: 'The SQL statement and driver determine the query data. SELECT commonly returns rows; writes may return driver metadata.',
+    };
+  }
+
+  return {
+    type: 'unknown',
+    status: 'unknown',
+    source: type ? `tooljet-${type}-plugin` : 'tooljet-plugin',
+    description: 'No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields.',
+  };
+}
+
+function finalizeResponses(kind, type, contracts) {
+  for (const contract of Object.values(contracts)) {
+    contract.response ||= fallbackResponse(kind, type, contract);
   }
   return contracts;
 }
@@ -375,10 +445,20 @@ for (const [kind, schema] of Object.entries(staticSchemas)) {
   schemas[kind] = schema;
 }
 
+for (const schema of Object.values(schemas)) {
+  schema.contracts = finalizeResponses(schema.kind, schema.type, schema.contracts);
+}
+
 const sorted = sortedObject(schemas);
 mkdirSync(resolve(root, 'data'), { recursive: true });
 writeFileSync(resolve(root, 'data/datasource-schemas.json'), JSON.stringify(sorted, null, 2) + '\n');
+const coverage = buildDatasourceCoverage(sorted);
+writeFileSync(resolve(root, 'data/datasource-coverage.json'), JSON.stringify(coverage, null, 2) + '\n');
 console.log(
   `Harvested ${Object.keys(sorted).length} datasource kinds from ${pluginDefinitions} plugin definitions ` +
   `(${Object.keys(sorted).filter((kind) => sorted[kind].sources.some((source) => source.collection === 'marketplace')).length} marketplace kinds).`
+);
+console.log(
+  `Response coverage: ${coverage.response_contracts.known}/${coverage.contract_count} known; ` +
+  `${coverage.response_contracts.runtime_dependent} runtime-dependent; ${coverage.response_contracts.unknown} unknown.`
 );

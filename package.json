@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "test": "vitest run",
+    "test": "npm run check:datasource-catalog && vitest run",
+    "check:datasource-catalog": "node scripts/datasource-coverage.mjs --check",
     "generate:catalogs": "node scripts/generate-catalog.mjs && node scripts/generate-datasource-catalog.mjs",
     "generate:skill": "node scripts/generate-skill.mjs",
     "sync:skill": "node scripts/sync-skill.mjs --all"

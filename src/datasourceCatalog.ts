@@ -36,6 +36,8 @@ export interface DatasourceContractVariant {
 
 export interface DatasourceResponseContract {
   type: string;
+  status: 'known' | 'runtime-dependent' | 'unknown';
+  source: string;
   description?: string;
   shape?: Record<string, unknown>;
 }
@@ -102,6 +104,7 @@ function operationSummary(contract: DatasourceOperationContract): Record<string,
     required: [...required].sort(),
     variants: contract.variants.length,
     ...(contract.response ? { response_type: contract.response.type } : {}),
+    ...(contract.response ? { response_status: contract.response.status } : {}),
   };
 }
 
@@ -150,6 +153,8 @@ export function selectDatasourceQuerySchema(
     if (sections.has('response')) {
       result.response = contract.response ?? {
         type: 'unknown',
+        status: 'unknown',
+        source: 'tooljet-plugin',
         description: 'This plugin does not publish a stable response contract. Run a safe read query and inspect data.',
       };
     }
