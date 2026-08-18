@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
+import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
   it('ERRORS when style keys are placed under properties', () => {
@@ -73,6 +74,50 @@ describe('lintComponentSpec', () => {
       layout: { top: 0, left: 0, width: 30, height: 5 },
     });
     expect(wide.warnings).toEqual([]);
+  });
+
+  it('warns when DropdownV2 custom data is authored on the inactive option surface', () => {
+    const inactiveSchema = lintComponentSpec({
+      name: 'priority',
+      type: 'DropdownV2',
+      properties: {
+        schema: { value: '{{queries.priorities.data}}' },
+        advanced: { value: '{{false}}' },
+      },
+    });
+    expect(inactiveSchema.warnings.join(' ')).toMatch(/custom `schema` is silently ignored.*advanced.*true/i);
+
+    const inactiveOptions = lintComponentSpec({
+      name: 'priority',
+      type: 'DropdownV2',
+      properties: {
+        options: { value: [{ label: 'High', value: 'high' }] },
+        advanced: { value: '{{true}}' },
+      },
+    });
+    expect(inactiveOptions.warnings.join(' ')).toMatch(/custom `options` are silently ignored.*advanced is true/i);
+  });
+
+  it('accepts the active DropdownV2 surface and its harmless persisted defaults', () => {
+    expect(lintComponentSpec({
+      name: 'priority',
+      type: 'DropdownV2',
+      properties: {
+        schema: { value: '{{queries.priorities.data}}' },
+        advanced: { value: '{{true}}' },
+      },
+    }).warnings).toEqual([]);
+
+    const dropdown = getComponentSchema('DropdownV2')!;
+    expect(lintComponentSpec({
+      name: 'priority',
+      type: 'DropdownV2',
+      properties: {
+        schema: { value: dropdown.properties.find((property) => property.key === 'schema')?.default },
+        options: { value: dropdown.properties.find((property) => property.key === 'options')?.default },
+        advanced: { value: '{{false}}' },
+      },
+    }).warnings).toEqual([]);
   });
 
   it('validates explicit Table columns shape and headerCasing enum', () => {

@@ -115,7 +115,7 @@ function readNamedLiteral(file, variableName) {
   return value;
 }
 
-function extractProps(config) {
+function extractProps(config, componentType) {
   // (1) editor `properties` schema → prop type + label (+ a fallback default)
   const meta = {};
   const order = [];
@@ -144,7 +144,10 @@ function extractProps(config) {
     for (const pr of defProps.properties) {
       if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
       const key = keyName(pr);
-      const val = trimDefault(literal(prop(pr.value, 'value')));
+      const rawValue = literal(prop(pr.value, 'value'));
+      // DropdownV2's exact built-in schema is needed by validate_app to distinguish the harmless
+      // persisted default from a custom dynamic schema left inactive. It is only ~250 characters.
+      const val = componentType === 'DropdownV2' && key === 'schema' ? rawValue : trimDefault(rawValue);
       if (!meta[key]) {
         order.push(key);
         meta[key] = { key, label: undefined, valueType: undefined, default: val };
@@ -243,7 +246,7 @@ for (const f of files) {
     name,
     description: strProp(config, 'description'),
     defaultSize: literal(prop(config, 'defaultSize')),
-    properties: extractProps(config),
+    properties: extractProps(config, type),
     styles: extractStyles(config),
     events: extractEvents(config),
     actions: extractActions(config),

@@ -99,6 +99,7 @@ describe('catalog', () => {
       requires: { advanced: '{{true}}' },
       mutuallyExclusiveWith: ['options'],
     });
+    expect(String(schema?.default)).not.toContain('…');
     expect(options).toMatchObject({
       requires: { advanced: '{{false}}' },
       mutuallyExclusiveWith: ['schema'],

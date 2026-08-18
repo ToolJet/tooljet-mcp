@@ -2,6 +2,7 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
+import { getComponentSchema } from './catalog.js';
 
 export interface LintResult {
   errors: string[];
@@ -110,6 +111,12 @@ function isFalseBinding(v: unknown): boolean {
   return v === false || v === '{{false}}' || v === 'false';
 }
 
+function differsFromCatalogDefault(type: string, key: string, value: unknown): boolean {
+  if (value === undefined) return false;
+  const defaultValue = getComponentSchema(type)?.properties.find((property) => property.key === key)?.default;
+  return defaultValue === undefined || JSON.stringify(value) !== JSON.stringify(defaultValue);
+}
+
 function staticNumber(v: unknown, fallback: number): number {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
   if (typeof v === 'string') {
@@ -177,6 +184,35 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       warnings.push(
         `Chart "${label}": native title "${title}" can clip at dashboard sizes — prefer properties.title.value = "" ` +
           `+ a separate Text heading (enable a native title only after visual verification).`
+      );
+    }
+  }
+
+  // DropdownV2 has two mutually exclusive option surfaces. ToolJet persists defaults for both, so
+  // compare with the exact catalog defaults and warn only when the caller authored a custom value.
+  if (spec.type === 'DropdownV2') {
+    const advanced = propVal(props, 'advanced');
+    const schema = propVal(props, 'schema');
+    const options = propVal(props, 'options');
+    const customSchema = differsFromCatalogDefault('DropdownV2', 'schema', schema);
+    const customOptions = differsFromCatalogDefault('DropdownV2', 'options', options);
+
+    if (customSchema && customOptions) {
+      warnings.push(
+        `DropdownV2 "${label}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. ` +
+          `Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`
+      );
+    }
+    if (customSchema && (advanced === undefined || isFalseBinding(advanced))) {
+      warnings.push(
+        `DropdownV2 "${label}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ` +
+          `ToolJet will render the static options instead.`
+      );
+    }
+    if (customOptions && isTruthyBinding(advanced)) {
+      warnings.push(
+        `DropdownV2 "${label}": custom \`options\` are silently ignored while properties.advanced is true; ` +
+          `use \`schema\` for dynamic mode or set advanced="{{false}}".`
       );
     }
   }
