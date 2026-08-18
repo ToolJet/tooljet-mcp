@@ -49,7 +49,14 @@ function readGridConstants() {
   return { columns: num('NO_OF_GRIDS') ?? 43, rowSnapPx: num('GRID_HEIGHT') ?? 10 };
 }
 
-// --- 2b. Harvest the built-in component catalog (name + purpose) from ToolJet widget defs ---
+// Legacy components hidden from agents — a modern V2 replacement exists. Keep in sync with
+// generate-catalog.mjs's LEGACY_EXCLUDED (DropDown -> DropdownV2, Multiselect -> MultiselectV2).
+const LEGACY_EXCLUDED = new Set(['DropDown', 'Multiselect']);
+
+// --- 2b. Harvest the built-in component catalog from ToolJet widget defs ---
+// Capture the callable `component` TYPE (what add_component wants) alongside the display name +
+// purpose — the palette must show the type, not the display name (they differ: name 'Dropdown'
+// -> type 'DropdownV2'), or the agent calls add_component with an identifier ToolJet rejects.
 function readWidgetCatalog() {
   const dir = resolve(TOOLJET, 'frontend/src/AppBuilder/WidgetManager/widgets');
   const files = readdirSync(dir).filter((f) => /\.(js|ts)$/.test(f) && f !== 'index.js');
@@ -58,13 +65,14 @@ function readWidgetCatalog() {
     const txt = readFileSync(resolve(dir, f), 'utf8');
     const name = txt.match(/\bname:\s*'([^']+)'/)?.[1];
     const desc = txt.match(/\bdescription:\s*'([^']+)'/)?.[1];
-    if (name && desc) items.push({ name, description: desc });
+    const type = txt.match(/\bcomponent:\s*'([^']+)'/)?.[1] || name;
+    if (name && desc && !LEGACY_EXCLUDED.has(type)) items.push({ type, name, description: desc });
   }
-  // de-dupe by name, sort
+  // de-dupe by type, sort by type
   const seen = new Set();
   return items
-    .filter((i) => (seen.has(i.name) ? false : seen.add(i.name)))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .filter((i) => (seen.has(i.type) ? false : seen.add(i.type)))
+    .sort((a, b) => a.type.localeCompare(b.type));
 }
 
 // --- 3. De-agent: strip references to the agent's internal pipeline from a rule string ---
@@ -97,7 +105,9 @@ const grid = readGridConstants();
 const catalog = readWidgetCatalog();
 const componentList = Object.keys(rules).sort();
 
-const catalogSection = catalog.map((c) => `| \`${c.name}\` | ${c.description} |`).join('\n');
+const catalogSection = catalog
+  .map((c) => `| \`${c.type}\` | ${c.name} — ${c.description} |`)
+  .join('\n');
 
 const componentSection = componentList
   .map((name) => `### ${name}\n${deAgent(rules[name])}`)
@@ -133,19 +143,30 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - \`get_component_catalog()\` → the component palette (every type + purpose). \`get_component_catalog(type)\` → that component's **full property schema** (props with type + default, defaultSize, styles). **Always call \`get_component_catalog(type)\` before configuring a component** so you set real properties, not guesses.
 - \`add_query({ version_id, datasource_id, name, options })\` → \`{ query_id, name }\`. Single query.
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
-- \`add_component({ app_id, version_id, page_id, name, type, properties, layout })\` → \`{ component_id }\`. Single component; \`name\` required.
+- \`run_query({ query_id, version_id })\` → \`{ status, data, ... }\`. **Run a saved query and see its REAL rows — no browser.** Use to verify a query works and to read actual values (statuses, categories) before writing chart series / dropdown options / filters. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure.
+- \`add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })\` → \`{ component_id }\`. Single component; \`name\` required. Put styling in \`styles\` (NOT \`properties\`).
 - \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`[{ component_id, name }]\`. **Place ALL of a page's components in one call.**
 - \`add_events({ app_id, version_id, events: [...] })\` → wire interactivity (each event = a trigger on a component + an action). This is how the app DOES things. Create all events in one call. See "Interactivity" below.
 
 **Batch for the build, singular for edits.** When first building an app, create everything with \`add_queries\` + \`add_components\` (far fewer round-trips). Use the singular \`add_query\`/\`add_component\` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
-- \`get_app(app_id)\` → current app structure.
+
+### Inspect & edit in place — fix mistakes, NEVER rebuild the app
+- \`get_app_summary(app_id)\` → compact \`{ pages:[{id,name,components:[{id,name,type,layouts,properties,styles,others}]}], queries, events }\` — actual bound values only. **Use this for routine inspection** (\`get_app\` returns the full 100KB+ raw app; avoid it).
+- \`get_component(app_id, component_id)\` → one component's values + its \`page_id\`.
+- \`update_components({ app_id, version_id, page_id, updates:[{ component_id, definition:{properties?,styles?,...} }] })\` → edit in place. Send only CHANGED leaves (deep-merged); arrays like Table \`columns\` / dropdown \`options\` are REPLACED. Rename/reparent via \`name\`/\`parent\` (separate from \`definition\`).
+- \`delete_components({ app_id, version_id, page_id, component_ids:[...] })\` · \`update_layout({ ..., layouts:[{ component_id, desktop?, mobile? }] })\` (move/resize).
+- \`update_query({ query_id, version_id, options })\` (options REPLACE wholesale) · \`delete_query({ query_id, version_id })\`.
+- \`list_events({ app_id, version_id, source_id? })\` · \`update_events({ ..., events:[{ event_id, name, event }] })\` · \`delete_event({ app_id, version_id, event_id })\`.
+
+**A single wrong value is a one-call fix, not a rebuild.** When something is off, \`get_app_summary\` → \`update_*\`/\`delete_*\` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
+- \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
 - \`add_page({ app_id, version_id, name })\` → \`{ page_id, name }\`. Add a page; pass its \`page_id\` to add_component(s). ToolJet renders cross-page navigation automatically.
 
-## Before you build — clarify a vague request first
+## Before you build — prefer safe defaults; ask only when it changes what you build
 
-If the user's request is short or underspecified (e.g. "build a tickets dashboard"), ask **2–4 focused questions before building**, then proceed. Good things to confirm: which fields/columns matter most, what actions or filters/segments they need, whether they want summary metrics/charts, and any layout, density, or branding preferences. This makes the first result match their intent and saves iteration — and the user feels involved.
+Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table**, safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, add a few KPI \`Statistics\` tiles + a chart or two, and neutral ToolJet-native styling. Ship it, then refine.
 
-If the user already gave a detailed spec, don't interrogate — build directly. Never block on questions the user has effectively already answered.
+**Ask 1–3 focused questions only when the answer genuinely changes what you build** — a NEW data model (what fields/types), destructive or write operations (edit/delete flows), permissions, or a genuinely divergent product choice. Don't block a read-only dashboard on questions with obvious defaults. If the user already gave a detailed spec, build directly.
 
 ## Building big apps — ship usable iterations, not layers
 
@@ -229,6 +250,11 @@ For an **existing** table, call \`get_table_schema(table_name)\` first so you us
 - List all rows: \`options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }\`.
 - \`runOnPageLoad: true\` runs the query when the app opens so bound components populate automatically.
 - \`list_rows\` may carry \`limit\`, \`offset\`, \`where_filters\`, \`order_filters\` for filtering/sorting.
+- **Write operations** (for edit/create flows) use indexed-object option shapes:
+  - Create: \`{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }\`
+  - Update: \`{ "operation": "update_rows", "table_id": "<id>", "update_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "columns": { "0": { "column": "status", "value": "{{...}}" } } } }\`
+  - Delete: \`{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }\`
+- After a write, re-run the list query to refresh the UI (see the "Form submit → insert + refresh" recipe).
 
 (Other datasources — postgresql, mongodb, servicenow, etc. — have their own query schemas; ask for the specific one when needed.)
 
@@ -259,19 +285,43 @@ Components and queries alone make a *static* app. Use \`add_events\` to add beha
 
 **Triggers** (the \`trigger\` = the component's event id): Button → \`onClick\`; Table → \`onRowClicked\`, \`onSearch\`, \`onPageChanged\`, \`onBulkUpdate\`; text/number inputs → \`onChange\`, \`onEnterPressed\`; Form → \`onSubmit\`. (A component's exact events are in \`get_component_catalog(type)\` / its widget definition.)
 
-**Actions** (\`action = { actionId, ...params }\`):
+**Actions** (\`action = { actionId, ...params }\`) — use these exact \`actionId\` strings (invalid ids silently do nothing):
 - **Run a query:** \`{ actionId: 'run-query', queryId: '<query id>', queryName: '<name>' }\`
-- **Switch page + pass variables:** \`{ actionId: 'switch-page', pageId: '<target page id>', queryParams: [['id', '{{components.table1.selectedRow.id}}']] }\` — \`queryParams\` is an array of \`[key, value]\` pairs; the value can be a binding, and the target page reads them from its page params. **This is how you pass data between pages.**
+- **Switch page:** \`{ actionId: 'switch-page', pageId: '<target page id>' }\` (see master→detail below for passing data).
 - **Show alert:** \`{ actionId: 'show-alert', message: 'Saved', alertType: 'success' | 'info' | 'warning' | 'error' }\`
-- **Show/close modal:** \`{ actionId: 'show-modal', modal: '<modal component id>' }\`
-- **Set variable:** \`{ actionId: 'set-variable', key: '...', value: '...' }\`
+- **Show modal:** \`{ actionId: 'show-modal', modal: '<modal component id>' }\` · **Close modal:** \`{ actionId: 'close-modal', modal: '<modal component id>' }\`
+- **Set a custom variable:** \`{ actionId: 'set-custom-variable', key: 'selectedTicket', value: '{{components.<table>.selectedRow}}' }\` — the id is **\`set-custom-variable\`** (NOT \`set-variable\`, which does not exist); read it back as \`{{variables.selectedTicket}}\`. Also: \`unset-custom-variable\`.
+- **Control a component:** \`{ actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue' | 'clear' | 'setVisibility' | 'setDisable' | 'setLoading', ... }\` — reset/prefill an input, toggle visibility, etc.
+- **Export data:** \`{ actionId: 'generate-file', ... }\` (CSV/PDF) · **Copy:** \`{ actionId: 'copy-to-clipboard', ... }\`.
+
+(Other valid ids include \`set-table-page\`, \`set-page-variable\`, \`open-webpage\`, \`go-to-app\`, \`logout\`, \`set-localstorage-value\`, \`scroll-component-into-view\`.)
 
 **Common recipes:**
-- **Form submit → insert + refresh:** on the submit Button's \`onClick\`, two events: \`run-query\` (the insert/create query), then \`run-query\` (the list query, to refresh the table). Add a \`show-alert\` success for good UX.
-- **Master → detail:** Table \`onRowClicked\` → \`switch-page\` to a detail page, passing \`queryParams: [['id', '{{components.<table>.selectedRow.<pkField>}}']]\`; the detail page's query filters by that param.
+- **Form submit → insert + refresh:** on the submit Button's \`onClick\`, two events: \`run-query\` (the insert/create query), then \`run-query\` (the list query, to refresh the table). Add \`show-alert\` success, and \`close-modal\` if the form is in a modal.
+- **Master → detail (IMPORTANT — the naive way silently fails):** on Table \`onRowClicked\`, FIRST \`set-custom-variable\` (key e.g. \`selectedTicket\`, value \`{{components.<table>.selectedRow}}\`), THEN \`switch-page\` to the detail page. Bind the detail page's components to \`{{variables.selectedTicket.<field>}}\`. **Do NOT** filter a detail query on \`{{globals.urlparams.*}}\` and rely on \`runOnPageLoad\` — a \`runOnPageLoad\` query does NOT re-run on an in-app page switch (only the page's own load event fires), so that detail query never runs. Prefer binding straight to the passed \`{{variables…}}\` row; if you truly need a fresh query, trigger it from a component action on the detail page.
 - **Refresh on filter:** an input's \`onChange\`/\`onEnterPressed\` → \`run-query\` on the list query whose \`where_filters\` reference the input.
 
 Wire events AFTER the components and queries exist (you need their ids). Prefer one \`add_events\` call for all of an app's events.
+
+## Verify your work — browser-free checks first, then a real browser pass
+
+**Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
+- After creating a data query, call \`run_query(query_id, version_id)\` to confirm it returns rows and to READ real values — statuses, categories, ranges — before you hardcode chart series, dropdown options, or filter values. Don't guess a status is "Open/Closed"; run the query and see.
+- Inspect with \`get_app_summary\` (not \`get_app\`) to confirm bindings/values are what you intended; \`update_*\` anything wrong.
+
+**Then verify in a browser — at least once, before you call the app done.** Open the **VIEWER** URL (\`.../applications/<appId>/<pageHandle>?env=development&version=v1\`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). Confirm: the page renders, queries populated real data, there are no console errors, and the key interactions work (row click, filter, submit). Also do a browser check at **genuine risk points while building** — after adding a \`Chart\`, a custom/dense layout, or multi-step interactivity — not just at the very end.
+
+**When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with \`get_app_summary\` / \`run_query\`, then fix in place with \`update_components\` / \`update_query\` / \`update_events\`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
+
+## Avoid these (they silently fail or force rebuilds)
+
+- **Styling under \`properties\`.** Native styling goes in the top-level \`styles\` object; ToolJet ignores styles nested in \`properties\` (and \`add_component\` will reject them).
+- **Filtering on \`DropdownV2.label\`.** \`.label\` is the field TITLE. The selection is \`.value\` (display text is \`.selectedOption.label\`).
+- **\`set-variable\`.** Not a real action id — use \`set-custom-variable\`.
+- **Master→detail via urlparams + \`runOnPageLoad\`.** It won't re-run on page switch; pass the row via \`set-custom-variable\` and bind to \`{{variables…}}\`.
+- **External dropdown filters as the first cut** when the Table's built-in search/sort/filter already covers status/priority/assignee. Add external filters only as a deliberate enhancement once verified.
+- **Rebuilding to fix a mistake.** Use \`update_components\` / \`update_query\` / \`update_events\` — never create a second app or duplicate components to "correct" something.
+- **A Table showing demo columns (photo/email/…).** That means its \`data\` binding resolved empty — fix the query binding, not the columns.
 
 ## Build guidance
 

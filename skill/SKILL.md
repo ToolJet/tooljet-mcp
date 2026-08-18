@@ -5,7 +5,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
     - TJ-AI COMPONENT_BINDING_RULES (22 components)
-    - ToolJet WidgetManager catalog (83 built-in components)
+    - ToolJet WidgetManager catalog (81 built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
 
@@ -28,19 +28,30 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - `get_component_catalog()` → the component palette (every type + purpose). `get_component_catalog(type)` → that component's **full property schema** (props with type + default, defaultSize, styles). **Always call `get_component_catalog(type)` before configuring a component** so you set real properties, not guesses.
 - `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`. Single query.
 - `add_queries({ version_id, queries: [...] })` → `[{ query_id, name }]`. **Create ALL an app's queries in one call.**
-- `add_component({ app_id, version_id, page_id, name, type, properties, layout })` → `{ component_id }`. Single component; `name` required.
+- `run_query({ query_id, version_id })` → `{ status, data, ... }`. **Run a saved query and see its REAL rows — no browser.** Use to verify a query works and to read actual values (statuses, categories) before writing chart series / dropdown options / filters. Check `status` ("ok"/"failed") — HTTP is 200 even on failure.
+- `add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })` → `{ component_id }`. Single component; `name` required. Put styling in `styles` (NOT `properties`).
 - `add_components({ app_id, version_id, page_id, components: [...] })` → `[{ component_id, name }]`. **Place ALL of a page's components in one call.**
 - `add_events({ app_id, version_id, events: [...] })` → wire interactivity (each event = a trigger on a component + an action). This is how the app DOES things. Create all events in one call. See "Interactivity" below.
 
 **Batch for the build, singular for edits.** When first building an app, create everything with `add_queries` + `add_components` (far fewer round-trips). Use the singular `add_query`/`add_component` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
-- `get_app(app_id)` → current app structure.
+
+### Inspect & edit in place — fix mistakes, NEVER rebuild the app
+- `get_app_summary(app_id)` → compact `{ pages:[{id,name,components:[{id,name,type,layouts,properties,styles,others}]}], queries, events }` — actual bound values only. **Use this for routine inspection** (`get_app` returns the full 100KB+ raw app; avoid it).
+- `get_component(app_id, component_id)` → one component's values + its `page_id`.
+- `update_components({ app_id, version_id, page_id, updates:[{ component_id, definition:{properties?,styles?,...} }] })` → edit in place. Send only CHANGED leaves (deep-merged); arrays like Table `columns` / dropdown `options` are REPLACED. Rename/reparent via `name`/`parent` (separate from `definition`).
+- `delete_components({ app_id, version_id, page_id, component_ids:[...] })` · `update_layout({ ..., layouts:[{ component_id, desktop?, mobile? }] })` (move/resize).
+- `update_query({ query_id, version_id, options })` (options REPLACE wholesale) · `delete_query({ query_id, version_id })`.
+- `list_events({ app_id, version_id, source_id? })` · `update_events({ ..., events:[{ event_id, name, event }] })` · `delete_event({ app_id, version_id, event_id })`.
+
+**A single wrong value is a one-call fix, not a rebuild.** When something is off, `get_app_summary` → `update_*`/`delete_*` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
+- `get_app(app_id)` → the FULL raw app (large; prefer `get_app_summary`).
 - `add_page({ app_id, version_id, name })` → `{ page_id, name }`. Add a page; pass its `page_id` to add_component(s). ToolJet renders cross-page navigation automatically.
 
-## Before you build — clarify a vague request first
+## Before you build — prefer safe defaults; ask only when it changes what you build
 
-If the user's request is short or underspecified (e.g. "build a tickets dashboard"), ask **2–4 focused questions before building**, then proceed. Good things to confirm: which fields/columns matter most, what actions or filters/segments they need, whether they want summary metrics/charts, and any layout, density, or branding preferences. This makes the first result match their intent and saves iteration — and the user feels involved.
+Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table**, safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, add a few KPI `Statistics` tiles + a chart or two, and neutral ToolJet-native styling. Ship it, then refine.
 
-If the user already gave a detailed spec, don't interrogate — build directly. Never block on questions the user has effectively already answered.
+**Ask 1–3 focused questions only when the answer genuinely changes what you build** — a NEW data model (what fields/types), destructive or write operations (edit/delete flows), permissions, or a genuinely divergent product choice. Don't block a read-only dashboard on questions with obvious defaults. If the user already gave a detailed spec, build directly.
 
 ## Building big apps — ship usable iterations, not layers
 
@@ -70,89 +81,87 @@ ToolJet's value is **visually-editable, governed low-code config**. Built-in com
 
 | Component (`type`) | Purpose |
 |---|---|
-| `Accordion` | Group components |
-| `AudioRecorder` | Records audio |
-| `BoundedBox` | An infinitely customizable image annotation widget |
-| `Button` | Trigger actions: queries, alerts, set variables etc. |
-| `ButtonGroup` | Group of buttons |
-| `ButtonGroupLegacy` | Group of buttons |
-| `Calendar` | Display calendar events |
-| `Camera` | Captures video & photos from camera |
-| `Cascader` | Hierarchical single item selector |
-| `Chart` | Visualize data |
-| `Chat` | Chat interface with message history |
-| `Checkbox` | Single checkbox toggle |
-| `CircularProgressBar` | Show circular progress |
-| `CodeEditor` | Edit source code |
-| `ColorPicker` | Choose colors from a palette |
-| `Container` | Group components |
-| `CurrencyInput` | Currency input field |
-| `CustomComponent` | Create React components |
-| `DatePicker` | Choose date |
-| `DatePickerLegacy` | Choose date and time |
-| `DateRangePicker` | Choose date ranges |
-| `DatetimePicker` | Choose date and time |
-| `Dropdown` | Single item selector |
-| `DropdownLegacy` | Single item selector |
-| `EmailInput` | Email input field |
-| `FileButton` | A button that triggers file selection. Label updates to show selected file count after selection. |
-| `FileInput` | File input |
-| `FilePicker` | File Picker |
-| `FlexContainer` | Auto-layout flex container |
-| `Form` | Wrapper for multiple components |
-| `HorizontalDivider` | Separator between components |
-| `Html` | View HTML content |
-| `Icon` | Icon |
-| `Iframe` | Embed external content |
-| `Image` | Show image files |
-| `JSONEditor` | Edit JSON data |
-| `JSONExplorer` | Explore JSON data |
-| `Kanban` | Task management board |
-| `KanbanBoard` | Task management board |
-| `KeyValuePair` | Display data in key-value format |
-| `Link` | Add link to the text |
-| `Listview` | List multiple items |
-| `Map` | Display map locations |
-| `Modal` | Show pop-up windows |
-| `ModalLegacy` | Show pop-up windows |
-| `ModuleContainer` | Module Container |
-| `ModuleViewer` | Module |
-| `Multiselect` | Multiple item selector |
-| `MultiselectLegacy` | Multiple item selector |
-| `Navigation` | Create custom navigation menus |
-| `NumberInput` | Numeric input field |
-| `Pagination` | Navigate pages |
-| `PasswordInput` | Secure text input |
-| `PDF` | Embed PDF documents |
-| `PhoneInput` | Phone input field |
-| `PopoverMenu` | Popover Menu |
-| `ProgressBar` | Show progress |
-| `QrScanner` | Scan QR codes and hold its data |
-| `RadioButton` | Select one from multiple choices |
-| `RadioButtonLegacy` | Select one from multiple choices |
-| `RangeSlider` | Adjust value range |
-| `RangeSliderLegacy` | Adjust value range |
-| `ReorderableList` | Reorderable List |
-| `RichTextEditor` | Rich text editor |
-| `Spinner` | Indicate loading state |
-| `StarRating` | Star rating |
-| `Statistics` | Show key metrics |
-| `Steps` | Step-by-step navigation aid |
-| `SvgImage` | Display SVG graphics |
-| `Table` | Display paginated tabular data |
-| `Tabs` | Organize content in tabs |
-| `Tags` | Display tag labels |
-| `TagsInput` | Tag input with create, select, and delete functionality |
-| `Text` | Display text or HTML |
-| `Textarea` | Multi-line text input |
-| `TextInput` | User text input field |
-| `Timeline` | Show event timeline |
-| `TimePicker` | Choose date and time |
-| `Timer` | Countdown or stopwatch |
-| `ToggleSwitch` | User-controlled on-off switch |
-| `ToggleSwitchLegacy` | User-controlled on-off switch |
-| `TreeSelect` | Hierarchical item selector |
-| `VerticalDivider` | Vertical line separator |
+| `Accordion` | Accordion — Group components |
+| `AudioRecorder` | AudioRecorder — Records audio |
+| `BoundedBox` | BoundedBox — An infinitely customizable image annotation widget |
+| `Button` | Button — Trigger actions: queries, alerts, set variables etc. |
+| `ButtonGroup` | ButtonGroupLegacy — Group of buttons |
+| `ButtonGroupV2` | ButtonGroup — Group of buttons |
+| `Calendar` | Calendar — Display calendar events |
+| `Camera` | Camera — Captures video & photos from camera |
+| `Cascader` | Cascader — Hierarchical single item selector |
+| `Chart` | Chart — Visualize data |
+| `Chat` | Chat — Chat interface with message history |
+| `Checkbox` | Checkbox — Single checkbox toggle |
+| `CircularProgressBar` | CircularProgressBar — Show circular progress |
+| `CodeEditor` | CodeEditor — Edit source code |
+| `ColorPicker` | ColorPicker — Choose colors from a palette |
+| `Container` | Container — Group components |
+| `CurrencyInput` | CurrencyInput — Currency input field |
+| `CustomComponent` | CustomComponent — Create React components |
+| `Datepicker` | DatePickerLegacy — Choose date and time |
+| `DatePickerV2` | DatePicker — Choose date |
+| `DaterangePicker` | DateRangePicker — Choose date ranges |
+| `DatetimePickerV2` | DatetimePicker — Choose date and time |
+| `Divider` | HorizontalDivider — Separator between components |
+| `DropdownV2` | Dropdown — Single item selector |
+| `EmailInput` | EmailInput — Email input field |
+| `FileButton` | FileButton — A button that triggers file selection. Label updates to show selected file count after selection. |
+| `FileInput` | FileInput — File input |
+| `FilePicker` | FilePicker — File Picker |
+| `FlexContainer` | FlexContainer — Auto-layout flex container |
+| `Form` | Form — Wrapper for multiple components |
+| `Html` | Html — View HTML content |
+| `Icon` | Icon — Icon |
+| `IFrame` | Iframe — Embed external content |
+| `Image` | Image — Show image files |
+| `JSONEditor` | JSONEditor — Edit JSON data |
+| `JSONExplorer` | JSONExplorer — Explore JSON data |
+| `Kanban` | Kanban — Task management board |
+| `KanbanBoard` | KanbanBoard — Task management board |
+| `KeyValuePair` | KeyValuePair — Display data in key-value format |
+| `Link` | Link — Add link to the text |
+| `Listview` | Listview — List multiple items |
+| `Map` | Map — Display map locations |
+| `Modal` | ModalLegacy — Show pop-up windows |
+| `ModalV2` | Modal — Show pop-up windows |
+| `ModuleContainer` | ModuleContainer — Module Container |
+| `ModuleViewer` | ModuleViewer — Module |
+| `MultiselectV2` | Multiselect — Multiple item selector |
+| `Navigation` | Navigation — Create custom navigation menus |
+| `NumberInput` | NumberInput — Numeric input field |
+| `Pagination` | Pagination — Navigate pages |
+| `PasswordInput` | PasswordInput — Secure text input |
+| `PDF` | PDF — Embed PDF documents |
+| `PhoneInput` | PhoneInput — Phone input field |
+| `PopoverMenu` | PopoverMenu — Popover Menu |
+| `ProgressBar` | ProgressBar — Show progress |
+| `QrScanner` | QrScanner — Scan QR codes and hold its data |
+| `RadioButton` | RadioButtonLegacy — Select one from multiple choices |
+| `RadioButtonV2` | RadioButton — Select one from multiple choices |
+| `RangeSlider` | RangeSliderLegacy — Adjust value range |
+| `RangeSliderV2` | RangeSlider — Adjust value range |
+| `ReorderableList` | ReorderableList — Reorderable List |
+| `RichTextEditor` | RichTextEditor — Rich text editor |
+| `Spinner` | Spinner — Indicate loading state |
+| `StarRating` | StarRating — Star rating |
+| `Statistics` | Statistics — Show key metrics |
+| `Steps` | Steps — Step-by-step navigation aid |
+| `SvgImage` | SvgImage — Display SVG graphics |
+| `Table` | Table — Display paginated tabular data |
+| `Tabs` | Tabs — Organize content in tabs |
+| `Tags` | Tags — Display tag labels |
+| `TagsInput` | TagsInput — Tag input with create, select, and delete functionality |
+| `Text` | Text — Display text or HTML |
+| `TextArea` | Textarea — Multi-line text input |
+| `TextInput` | TextInput — User text input field |
+| `Timeline` | Timeline — Show event timeline |
+| `TimePicker` | TimePicker — Choose date and time |
+| `Timer` | Timer — Countdown or stopwatch |
+| `ToggleSwitch` | ToggleSwitchLegacy — User-controlled on-off switch |
+| `ToggleSwitchV2` | ToggleSwitch — User-controlled on-off switch |
+| `TreeSelect` | TreeSelect — Hierarchical item selector |
+| `VerticalDivider` | VerticalDivider — Vertical line separator |
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
@@ -201,7 +210,7 @@ defaultValue is the ONLY bindable value field — there is no separate `value` p
 defaultValue is the ONLY bindable value field — there is no separate `value` property. Prefill from query: defaultValue=`{{queries.queryName.data[0].fieldName}}`. Prefill inside a modal opened from a table row (determine table-connected vs standalone via the app's the current state — never from component naming): defaultValue=`{{components.tableName.selectedRow.fieldName}}` — NOT `queries.name.data[0]`, which is the first row of the table's list query, not the clicked row. Use a static string/date literal only when the modal is confirmed standalone (no prefill needed).
 
 ### DropdownV2
-TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: advanced=`{{false}}`, options=[{label:'X', value:1, disable:{value:false}, visible:{value:true}}]. Do NOT set schema. (2) QUERY-BOUND: advanced=`{{true}}`, schema=`{{queries.queryName.data}}`. Do NOT set options. Query data must be an array of {label, value, disable, visible} objects — transform at the query level if needed. Exposed variable is `.label` (the selected option label) — DropdownV2 has NO `.value` exposed variable. PREFILL: there is no `value`/`defaultValue` input property. The initially selected item is whichever entry in the bound `schema`/`options` array has `default: true` — set it via a transform, e.g. when prefilling from a table row inside a modal: `schema: {{ queries.queryName.data.map(o => ({...o, default: o.value === components.tableName.selectedRow.fieldName})) }}`. When the dropdown edits a table column with a fixed set of values, bind `schema` to a dedicated lookup query (same datasource as the table, filtered to the relevant scope) — never hardcode static `options` for a database-backed column.
+TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: advanced=`{{false}}`, options=[{label:'X', value:1, disable:{value:false}, visible:{value:true}}]. Do NOT set schema. (2) QUERY-BOUND: advanced=`{{true}}`, schema=`{{queries.queryName.data}}`. Do NOT set options. Query data must be an array of {label, value, disable, visible} objects — transform at the query level if needed. Exposed variables: the CURRENT SELECTION is `.value` (e.g. `{{components.name.value}}`) — use this for filtering, conditions and reading the choice; the selected option's display text is `.selectedOption.label`. The `label` PROPERTY is the field's TITLE (e.g. 'Status'), NOT the selection — NEVER compare data against `.label` (it silently matches zero rows). PREFILL: there is no `value`/`defaultValue` input property. The initially selected item is whichever entry in the bound `schema`/`options` array has BOTH `visible: true` AND `default: true` (the default-picker requires `visible === true && default === true`, so an option missing `visible` never preselects even with `default: true`). Set it via a transform, e.g. when prefilling from a table row inside a modal: `schema: {{ queries.queryName.data.map(o => ({...o, visible: true, default: o.value === components.tableName.selectedRow.fieldName})) }}`. When the dropdown edits a table column with a fixed set of values, bind `schema` to a dedicated lookup query (same datasource as the table, filtered to the relevant scope) — never hardcode static `options` for a database-backed column.
 
 ### Form
 Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`.
@@ -237,7 +246,7 @@ Exposed variable is `.label` — there is NO `.value` on RadioButtonV2. Use `{{c
 primaryValue must be a scalar — bind `queries.name.data[0].fieldName` from an aggregate query, never the full array. secondarySignDisplay accepted values: 'positive', 'negative', 'none' — never a boolean. icon is MANDATORY — always set it; never leave empty. primaryPrefixText / primarySuffixText are static strings only — do not bind expressions here. Statistics is display-only — its exposed variables are read-back values, not filter inputs.
 
 ### Table
-Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector.value=`"rawJson"` — both MUST be set together or the table renders nothing. NEVER set the table-level `autogenerateColumns.value` to false — it must always be true so columns render from the query rows automatically; false makes the table show ONLY the explicit `columns` array and blanks out on any key mismatch. This is separate from a column's own `autogenerated` field — individual columns may have `autogenerated: false` (that is normal for custom columns); only the table-level `autogenerateColumns` flag must never be false. pageIndex is 0-based: SQL offset = pageIndex * pageSize. selectedRow columns come from actual query result fields — never fabricate column names. Columns support JavaScript transforms on query fields. Dynamic columns: only set `useDynamicColumn`/`columnData` for a FLAT, build-time column list. `columnData` is evaluated once with no row in scope, so it MUST NOT reference `rowData`/`cellValue`, MUST NOT contain nested `{{ }}`, and cannot express per-cell conditions — any conditional `cellBackgroundColor`/`textColor`/`isEditable`/`dynamicOptions`/etc. MUST go on static `columns` (resolved per cell). Otherwise the table renders ZERO columns.
+Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector.value=`"rawJson"` — both MUST be set together or the table renders nothing. NEVER set the table-level `autogenerateColumns.value` to false — it must always be true so columns render from the query rows automatically; false makes the table show ONLY the explicit `columns` array and blanks out on any key mismatch. This is separate from a column's own `autogenerated` field — individual columns may have `autogenerated: false` (that is normal for custom columns); only the table-level `autogenerateColumns` flag must never be false. pageIndex is 0-based: SQL offset = pageIndex * pageSize. selectedRow columns come from actual query result fields — never fabricate column names. Columns support JavaScript transforms on query fields. Dynamic columns: only set `useDynamicColumn`/`columnData` for a FLAT, build-time column list. `columnData` is evaluated once with no row in scope, so it MUST NOT reference `rowData`/`cellValue`, MUST NOT contain nested `{{ }}`, and cannot express per-cell conditions — any conditional `cellBackgroundColor`/`textColor`/`isEditable`/`dynamicOptions`/etc. MUST go on static `columns` (resolved per cell). Otherwise the table renders ZERO columns. Explicit `columns` entries are objects `{name, key, id, columnType, columnSize, autogenerated: false}` — set `autogenerated: false` on custom columns so they PERSIST; an `autogenerated: true` column whose `key` does not match a query field is dropped. MISLEADING FAILURE: if the table shows unrelated demo columns (e.g. photo/email/name) that you never defined, its `data` binding resolved EMPTY — that is a broken DATA binding (wrong query name, or the query returned nothing), NOT a column problem. Fix the data binding; do not touch columns.
 
 ### TagsInput
 Bind schema to a query for dynamic tag options: schema=`{{queries.queryName.data}}` (array of {label, value}). selectedTags exposes only the checked tags; values exposes all current tags.
@@ -270,6 +279,11 @@ For an **existing** table, call `get_table_schema(table_name)` first so you use 
 - List all rows: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }`.
 - `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
 - `list_rows` may carry `limit`, `offset`, `where_filters`, `order_filters` for filtering/sorting.
+- **Write operations** (for edit/create flows) use indexed-object option shapes:
+  - Create: `{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }`
+  - Update: `{ "operation": "update_rows", "table_id": "<id>", "update_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "columns": { "0": { "column": "status", "value": "{{...}}" } } } }`
+  - Delete: `{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }`
+- After a write, re-run the list query to refresh the UI (see the "Form submit → insert + refresh" recipe).
 
 (Other datasources — postgresql, mongodb, servicenow, etc. — have their own query schemas; ask for the specific one when needed.)
 
@@ -300,19 +314,43 @@ Components and queries alone make a *static* app. Use `add_events` to add behavi
 
 **Triggers** (the `trigger` = the component's event id): Button → `onClick`; Table → `onRowClicked`, `onSearch`, `onPageChanged`, `onBulkUpdate`; text/number inputs → `onChange`, `onEnterPressed`; Form → `onSubmit`. (A component's exact events are in `get_component_catalog(type)` / its widget definition.)
 
-**Actions** (`action = { actionId, ...params }`):
+**Actions** (`action = { actionId, ...params }`) — use these exact `actionId` strings (invalid ids silently do nothing):
 - **Run a query:** `{ actionId: 'run-query', queryId: '<query id>', queryName: '<name>' }`
-- **Switch page + pass variables:** `{ actionId: 'switch-page', pageId: '<target page id>', queryParams: [['id', '{{components.table1.selectedRow.id}}']] }` — `queryParams` is an array of `[key, value]` pairs; the value can be a binding, and the target page reads them from its page params. **This is how you pass data between pages.**
+- **Switch page:** `{ actionId: 'switch-page', pageId: '<target page id>' }` (see master→detail below for passing data).
 - **Show alert:** `{ actionId: 'show-alert', message: 'Saved', alertType: 'success' | 'info' | 'warning' | 'error' }`
-- **Show/close modal:** `{ actionId: 'show-modal', modal: '<modal component id>' }`
-- **Set variable:** `{ actionId: 'set-variable', key: '...', value: '...' }`
+- **Show modal:** `{ actionId: 'show-modal', modal: '<modal component id>' }` · **Close modal:** `{ actionId: 'close-modal', modal: '<modal component id>' }`
+- **Set a custom variable:** `{ actionId: 'set-custom-variable', key: 'selectedTicket', value: '{{components.<table>.selectedRow}}' }` — the id is **`set-custom-variable`** (NOT `set-variable`, which does not exist); read it back as `{{variables.selectedTicket}}`. Also: `unset-custom-variable`.
+- **Control a component:** `{ actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue' | 'clear' | 'setVisibility' | 'setDisable' | 'setLoading', ... }` — reset/prefill an input, toggle visibility, etc.
+- **Export data:** `{ actionId: 'generate-file', ... }` (CSV/PDF) · **Copy:** `{ actionId: 'copy-to-clipboard', ... }`.
+
+(Other valid ids include `set-table-page`, `set-page-variable`, `open-webpage`, `go-to-app`, `logout`, `set-localstorage-value`, `scroll-component-into-view`.)
 
 **Common recipes:**
-- **Form submit → insert + refresh:** on the submit Button's `onClick`, two events: `run-query` (the insert/create query), then `run-query` (the list query, to refresh the table). Add a `show-alert` success for good UX.
-- **Master → detail:** Table `onRowClicked` → `switch-page` to a detail page, passing `queryParams: [['id', '{{components.<table>.selectedRow.<pkField>}}']]`; the detail page's query filters by that param.
+- **Form submit → insert + refresh:** on the submit Button's `onClick`, two events: `run-query` (the insert/create query), then `run-query` (the list query, to refresh the table). Add `show-alert` success, and `close-modal` if the form is in a modal.
+- **Master → detail (IMPORTANT — the naive way silently fails):** on Table `onRowClicked`, FIRST `set-custom-variable` (key e.g. `selectedTicket`, value `{{components.<table>.selectedRow}}`), THEN `switch-page` to the detail page. Bind the detail page's components to `{{variables.selectedTicket.<field>}}`. **Do NOT** filter a detail query on `{{globals.urlparams.*}}` and rely on `runOnPageLoad` — a `runOnPageLoad` query does NOT re-run on an in-app page switch (only the page's own load event fires), so that detail query never runs. Prefer binding straight to the passed `{{variables…}}` row; if you truly need a fresh query, trigger it from a component action on the detail page.
 - **Refresh on filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose `where_filters` reference the input.
 
 Wire events AFTER the components and queries exist (you need their ids). Prefer one `add_events` call for all of an app's events.
+
+## Verify your work — browser-free checks first, then a real browser pass
+
+**Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
+- After creating a data query, call `run_query(query_id, version_id)` to confirm it returns rows and to READ real values — statuses, categories, ranges — before you hardcode chart series, dropdown options, or filter values. Don't guess a status is "Open/Closed"; run the query and see.
+- Inspect with `get_app_summary` (not `get_app`) to confirm bindings/values are what you intended; `update_*` anything wrong.
+
+**Then verify in a browser — at least once, before you call the app done.** Open the **VIEWER** URL (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). Confirm: the page renders, queries populated real data, there are no console errors, and the key interactions work (row click, filter, submit). Also do a browser check at **genuine risk points while building** — after adding a `Chart`, a custom/dense layout, or multi-step interactivity — not just at the very end.
+
+**When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with `get_app_summary` / `run_query`, then fix in place with `update_components` / `update_query` / `update_events`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
+
+## Avoid these (they silently fail or force rebuilds)
+
+- **Styling under `properties`.** Native styling goes in the top-level `styles` object; ToolJet ignores styles nested in `properties` (and `add_component` will reject them).
+- **Filtering on `DropdownV2.label`.** `.label` is the field TITLE. The selection is `.value` (display text is `.selectedOption.label`).
+- **`set-variable`.** Not a real action id — use `set-custom-variable`.
+- **Master→detail via urlparams + `runOnPageLoad`.** It won't re-run on page switch; pass the row via `set-custom-variable` and bind to `{{variables…}}`.
+- **External dropdown filters as the first cut** when the Table's built-in search/sort/filter already covers status/priority/assignee. Add external filters only as a deliberate enhancement once verified.
+- **Rebuilding to fix a mistake.** Use `update_components` / `update_query` / `update_events` — never create a second app or duplicate components to "correct" something.
+- **A Table showing demo columns (photo/email/…).** That means its `data` binding resolved empty — fix the query binding, not the columns.
 
 ## Build guidance
 
