@@ -138,4 +138,72 @@ describe('createAuth', () => {
     expect(orgId).toBe('org1');
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
+
+  describe('workspaces', () => {
+    const orgList = {
+      organizations: [
+        { id: 'org1', name: 'Acme', slug: 'acme', is_default: true },
+        { id: 'org2', name: 'Beta', slug: 'beta', is_default: false },
+      ],
+    };
+
+    it('listWorkspaces maps the org list and marks the current one', async () => {
+      fetchImpl
+        .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: orgList }));
+
+      const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+      const ws = await auth.listWorkspaces();
+
+      expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/organizations?status=active');
+      expect(ws).toEqual([
+        { id: 'org1', name: 'Acme', slug: 'acme', is_default: true, is_current: true },
+        { id: 'org2', name: 'Beta', slug: 'beta', is_default: false, is_current: false },
+      ]);
+    });
+
+    it('switchWorkspace hits /api/switch/:id, re-captures the cookie, and later calls use the new workspace', async () => {
+      fetchImpl
+        .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
+        .mockResolvedValueOnce(
+          mockResponse({
+            status: 200,
+            setCookie: ['tj_auth_token=TOKEN2; Path=/; HttpOnly'],
+            json: { current_organization_id: 'org2', current_organization_slug: 'beta', current_organization_name: 'Beta' },
+          })
+        )
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } }));
+
+      const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+      const active = await auth.switchWorkspace('org2');
+      expect(active).toEqual({ id: 'org2', name: 'Beta', slug: 'beta', is_current: true });
+      expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/switch/org2');
+
+      await auth.authedFetch('/api/apps');
+      const [, init] = fetchImpl.mock.calls[2];
+      const headers = new Headers(init.headers);
+      expect(headers.get('Cookie')).toBe('tj_auth_token=TOKEN2');
+      expect(headers.get('tj-workspace-id')).toBe('org2');
+    });
+
+    it('pins the configured workspace (TOOLJET_WORKSPACE_ID) at login', async () => {
+      fetchImpl
+        .mockResolvedValueOnce(loginResponse('org1', 'TOKEN')) // authenticate → default org1
+        .mockResolvedValueOnce(
+          mockResponse({
+            status: 200,
+            setCookie: ['tj_auth_token=TOKEN2; Path=/; HttpOnly'],
+            json: { current_organization_id: 'org2', current_organization_slug: 'beta', current_organization_name: 'Beta' },
+          })
+        ) // switch → org2
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } })); // actual request
+
+      const auth = createAuth({ ...config, workspaceId: 'org2' }, fetchImpl as unknown as typeof fetch);
+      await auth.authedFetch('/api/apps');
+
+      expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/switch/org2');
+      const [, init] = fetchImpl.mock.calls[2];
+      expect(new Headers(init.headers).get('tj-workspace-id')).toBe('org2');
+    });
+  });
 });

@@ -138,6 +138,8 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 ## The tools
 
+- \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
+- \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug }\`.
 - \`create_app(name)\` → \`{ app_id, version_id, home_page_id, app_url }\`. Call first; keep all four.
 - \`list_datasources(version_id)\` → \`[{ id, name, kind }]\`. ToolJet DB is \`kind: "tooljetdb"\`.
 - \`list_tables()\` → \`[{ id, table_name }]\`. A ToolJet-DB query needs the table's **id** as \`table_id\`.
@@ -149,7 +151,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
 - \`run_query({ query_id, version_id })\` → \`{ status, data, ... }\`. **Run a saved query and see its REAL rows — no browser.** Use to verify a query works and to read actual values (statuses, categories) before writing chart series / dropdown options / filters. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure.
 - \`add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })\` → \`{ component_id, warnings }\`. Single component; \`name\` required. Put styling in \`styles\` (NOT \`properties\`).
-- \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.**
+- \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique \`client_ref\` and each child the matching \`parent_ref\`; MCP resolves real IDs atomically and lints overlaps within the correct parent.
 - Both return a **\`warnings\`** array of non-blocking lint hints — a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
 - \`add_events({ app_id, version_id, events: [...] })\` → wire interactivity (each event = a trigger on a component + an action). This is how the app DOES things. Create all events in one call. See "Interactivity" below.
 
@@ -167,6 +169,10 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 **A single wrong value is a one-call fix, not a rebuild.** When something is off, \`get_app_summary\` → \`update_*\`/\`delete_*\` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
 - \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
 - \`add_page({ app_id, version_id, name, icon })\` → \`{ page_id, name }\`. Add a page; pass its \`page_id\` to add_component(s), and a Tabler \`icon\` (see App model). ToolJet renders cross-page navigation automatically.
+
+## Workspace — confirm which one first
+
+A ToolJet user can belong to **multiple workspaces**, and every app/table/datasource is scoped to the **active** one. At the start of a session, call \`list_workspaces\`. If there's **more than one**, ask the user which to use and \`use_workspace(id)\` **before creating anything** — building in the wrong workspace means redoing it. If there's only one (or a default is already active, \`is_current: true\`), just proceed. The user can ask to switch at any time (\`use_workspace\`); a fixed default can also be pinned via the \`TOOLJET_WORKSPACE_ID\` env at install.
 
 ## Before you build — prefer safe defaults; ask only when it changes what you build
 
@@ -273,10 +279,11 @@ Most customers view these on desktop. **Don't build or tune a mobile layout for 
 Form inputs default to a **side-aligned label** (\`styles.alignment = "side"\`) — the label sits to the LEFT of the input and eats its width. In a modal or a narrow column, a long label ("Requested amount (USD)") leaves a uselessly narrow input. Lay forms out deliberately:
 
 - **Top-align labels in forms and modals.** Set \`styles.alignment.value = "top"\` on every input (\`TextInput\`/\`NumberInput\`/\`CurrencyInput\`/\`DropdownV2\`/\`MultiselectV2\`/\`DatePickerV2\`/\`DatetimePickerV2\`/\`TextArea\`/…) — the label goes ABOVE the control so it gets the **full field width**. (\`alignment\` is a **style**, not a property.)
-- **Field sizing:** give each field ~**60–70px** height (room for the top label + the control) and a ~**14–16px** vertical gap between fields (next field's \`top\` = previous \`top\` + previous \`height\` + 14–16). 50px rows placed 60px apart (a 10px gap) read as cramped.
+- **Field sizing:** give each field ~**60–70px** height (room for the top label + the control) and a **20px** vertical gap between fields (ToolJet snaps to a 10px vertical grid). 50px rows placed 60px apart (a 10px gap) read as cramped.
 - **Two-column forms:** reserve ~**2 grid columns** of gutter between the two columns, and give both columns' fields consistent widths.
 - **Full-width fields** (Description, notes) must share the **same left AND right edge** as the columns above them — with top-aligned labels they line up naturally; side-aligned ones begin at different x positions.
 - **Modal-local coordinates:** a component parented to a modal is positioned **relative to the modal body** (0,0 = modal body top-left), NOT the 43-column canvas. Size its children to the modal body width, not the full canvas.
+- **Create the hierarchy atomically:** in one \`add_components\` call, set \`client_ref\` on the modal and the same \`parent_ref\` on every modal child. Do not create children as page-level siblings and reparent them later; that produces misleading page-overlap lint and makes modal layout harder to review.
 
 **Browser QA for any form/modal:** confirm no label is truncating its input, every control has a usable width, field left/right edges line up, and there's breathing room above the footer/action buttons.
 

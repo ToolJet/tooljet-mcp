@@ -97,6 +97,25 @@ describe('generated skill — mobile & verification caveats', () => {
   });
 });
 
+describe('generated skill — modal form layout', () => {
+  it('documents atomic modal parenting, top labels, and grid-compatible spacing', () => {
+    expect(skill).toMatch(/client_ref/);
+    expect(skill).toMatch(/parent_ref/);
+    expect(skill).toMatch(/styles\.alignment\.value = "top"/);
+    expect(skill).toMatch(/20px.*vertical gap/i);
+  });
+});
+
+describe('generated skill — workspaces', () => {
+  it('tells the agent to confirm the workspace before building (multi-workspace users)', () => {
+    expect(skill).toMatch(/## Workspace — confirm which one first/);
+    expect(skill).toMatch(/list_workspaces/);
+    expect(skill).toMatch(/use_workspace\(id\)/);
+    expect(skill).toMatch(/before creating anything/i);
+    expect(skill).toContain('TOOLJET_WORKSPACE_ID');
+  });
+});
+
 describe('generated skill — HTML usage, page icons, validation, efficiency', () => {
   it('nuances HTML usage (built-in for interactive; HTML for display/custom markup)', () => {
     expect(skill).toMatch(/HTML where it makes the UI better/i);
@@ -177,7 +196,7 @@ describe('generated skill — async states & density guardrails', () => {
     expect(skill).toMatch(/## Forms & modals — field layout/);
     expect(skill).toContain('styles.alignment.value = "top"');
     expect(skill).toMatch(/60[–-]70px/);
-    expect(skill).toMatch(/14[–-]16px/);
+    expect(skill).toMatch(/20px/);
     expect(skill).toMatch(/relative to the modal body/i);
   });
 
@@ -193,6 +212,7 @@ describe('generated skill is synchronized with the generator', () => {
   // Guards against the skill being hand-edited out of sync with scripts/generate-skill.mjs:
   // every load-bearing phrase asserted above must also be emitted by the generator source.
   const anchors = [
+    '## Workspace — confirm which one first',
     'page mode',
     'Monitor',
     'internal design critique',

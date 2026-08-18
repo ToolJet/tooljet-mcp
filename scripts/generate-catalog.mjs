@@ -186,7 +186,20 @@ const RENDERING_HINTS = {
   Statistics: {
     recommendedMinHeightPx: '≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content',
   },
+  ModalV2: {
+    childCoordinateSpace: 'Modal-local 43-column grid; child (0,0) is the modal body top-left.',
+    recommendedFieldAlignment: 'top',
+    recommendedFieldHeightPx: '60–70',
+    recommendedVerticalGapPx: '20 (the canvas snaps to 10px)',
+    recommendedTwoColumnGutterCols: 2,
+  },
 };
+for (const t of ['TextInput', 'NumberInput', 'CurrencyInput', 'EmailInput', 'TextArea', 'DropdownV2', 'MultiselectV2', 'DatePickerV2', 'DatetimePickerV2']) {
+  RENDERING_HINTS[t] = {
+    ...(RENDERING_HINTS[t] ?? {}),
+    formLabelAlignment: 'Use styles.alignment.value="top" in forms, modals, and fields 18 columns or narrower.',
+  };
+}
 for (const [t, hints] of Object.entries(RENDERING_HINTS)) {
   if (schemas[t]) schemas[t].renderingHints = hints;
 }

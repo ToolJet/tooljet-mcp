@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 
 describe('lintComponentSpec', () => {
@@ -107,6 +107,25 @@ describe('detectOverlaps', () => {
         { name: 'b', layout: { top: 0, left: 10, width: 10, height: 10 } },
       ])
     ).toEqual([]);
+  });
+
+  it('does not compare rectangles that belong to different parents', () => {
+    expect(detectOverlaps([
+      { name: 'modal', clientRef: 'm', layout: { top: 0, left: 0, width: 20, height: 200 } },
+      { name: 'field', parentRef: 'm', layout: { top: 0, left: 0, width: 20, height: 60 } },
+    ])).toEqual([]);
+  });
+});
+
+describe('lintModalChildren', () => {
+  it('warns for side labels and less than one 20px grid gap inside a modal', () => {
+    const warnings = lintModalChildren([
+      { name: 'modal', type: 'ModalV2', clientRef: 'm', properties: {} },
+      { name: 'first', type: 'TextInput', parentRef: 'm', properties: {}, layout: { top: 20, left: 2, width: 18, height: 60 } },
+      { name: 'second', type: 'TextInput', parentRef: 'm', properties: {}, layout: { top: 90, left: 2, width: 18, height: 60 } },
+    ]);
+    expect(warnings.join(' ')).toMatch(/SIDE-aligned label/);
+    expect(warnings.join(' ')).toMatch(/only 10px vertical gap/);
   });
 });
 

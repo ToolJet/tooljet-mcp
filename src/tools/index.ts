@@ -1,6 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
+import { listWorkspacesTool } from './listWorkspaces.js';
+import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
 import { listDatasourcesTool } from './listDatasources.js';
 import { listTablesTool } from './listTables.js';
@@ -30,6 +32,8 @@ import { deleteEventTool } from './deleteEvent.js';
 
 export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
+    listWorkspacesTool(client),
+    useWorkspaceTool(client),
     createAppTool(client),
     listDatasourcesTool(client),
     listTablesTool(client),

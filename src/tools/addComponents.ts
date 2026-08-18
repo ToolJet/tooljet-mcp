@@ -24,6 +24,9 @@ const componentSchema = z.object({
   others: z.record(z.string(), z.any()).optional(),
   layout: layoutSchema.optional(),
   layouts: layoutsSchema.optional(),
+  client_ref: z.string().optional(),
+  parent_ref: z.string().optional(),
+  parent: z.string().optional(),
 });
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -37,7 +40,9 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in each component’s top-level `styles` object, NOT under `properties` — ToolJet silently ignores ' +
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
-      'for both resolutions) or `layouts:{desktop,mobile}`.',
+      'for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children ' +
+      'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
+      'coordinates are relative to that parent.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -60,16 +65,24 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
           desktop?: { top: number; left: number; width: number; height: number };
           mobile?: { top: number; left: number; width: number; height: number };
         };
+        client_ref?: string;
+        parent_ref?: string;
+        parent?: string;
       }>;
     }) {
-      const { errors, warnings } = lintComponents(args.components);
+      const components = args.components.map(({ client_ref, parent_ref, ...component }) => ({
+        ...component,
+        clientRef: client_ref,
+        parentRef: parent_ref,
+      }));
+      const { errors, warnings } = lintComponents(components);
       if (errors.length) return fail(new Error(errors.join(' ')));
       try {
         const result = await client.createComponents({
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          components: args.components,
+          components,
         });
         return ok({ components: result, warnings });
       } catch (err) {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Auth } from './auth.js';
+import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
 
@@ -71,6 +71,12 @@ export interface ComponentSpec {
   layout?: ComponentLayout;
   /** Explicit per-resolution layout; takes precedence over `layout` for the resolution it sets. */
   layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
+  /** Caller-stable reference used only inside one createComponents batch. */
+  clientRef?: string;
+  /** Parent another component in the same batch by its clientRef. */
+  parentRef?: string;
+  /** Parent an already-existing component by its ToolJet component id. */
+  parent?: string;
 }
 
 
@@ -165,6 +171,7 @@ export interface ComponentSummary {
   properties?: Record<string, unknown>;
   styles?: Record<string, unknown>;
   others?: Record<string, unknown>;
+  parent?: string;
 }
 
 /** Compact projection of a whole app — what an authoring agent needs, without the ~10× schema bloat
@@ -179,6 +186,8 @@ export interface AppSummary {
 }
 
 export interface ToolJetClient {
+  listWorkspaces(): Promise<Workspace[]>;
+  useWorkspace(workspaceId: string): Promise<Workspace>;
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
@@ -332,6 +341,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       properties: def.properties,
       styles: def.styles,
       others: def.others,
+      parent: c.parent,
     };
   }
 
@@ -372,6 +382,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     throw new Error(
       `ToolJet getComponent failed: component ${componentId} not found in app ${appId}`
     );
+  }
+
+  async function listWorkspaces(): Promise<Workspace[]> {
+    return auth.listWorkspaces();
+  }
+
+  async function useWorkspace(workspaceId: string): Promise<Workspace> {
+    return auth.switchWorkspace(workspaceId);
   }
 
   async function createApp(name: string): Promise<CreateAppResult> {
@@ -649,8 +667,29 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     params: CreateComponentsParams
   ): Promise<Array<CreateComponentResult & { name: string }>> {
     const entries = params.components.map((spec) => ({ id: randomUUID(), spec }));
+    const refToId = new Map<string, string>();
+    for (const e of entries) {
+      if (!e.spec.clientRef) continue;
+      if (refToId.has(e.spec.clientRef)) {
+        throw new Error(`createComponents: duplicate clientRef "${e.spec.clientRef}".`);
+      }
+      refToId.set(e.spec.clientRef, e.id);
+    }
     const diff: Record<string, unknown> = {};
-    for (const e of entries) diff[e.id] = buildComponentDto(e.spec);
+    for (const e of entries) {
+      if (e.spec.parent && e.spec.parentRef) {
+        throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
+      }
+      const dto = buildComponentDto(e.spec);
+      const resolvedParent = e.spec.parentRef ? refToId.get(e.spec.parentRef) : e.spec.parent;
+      if (e.spec.parentRef && !resolvedParent) {
+        throw new Error(
+          `createComponents "${e.spec.name}": parentRef "${e.spec.parentRef}" does not match a clientRef in this batch.`
+        );
+      }
+      if (resolvedParent) dto.parent = resolvedParent;
+      diff[e.id] = dto;
+    }
 
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: 'POST',
@@ -872,6 +911,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    listWorkspaces,
+    useWorkspace,
     createApp,
     getApp,
     getAppSummary,

@@ -63,6 +63,9 @@ export interface LintComponent {
   styles?: Record<string, unknown>;
   layout?: Rect;
   layouts?: { desktop?: Rect; mobile?: Rect };
+  clientRef?: string;
+  parentRef?: string;
+  parent?: string;
 }
 
 /** Read a property whose value is wrapped as `{ value: X }` (ToolJet's shape), or a bare value. */
@@ -172,10 +175,15 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 export function detectOverlaps(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const items = components
-    .map((c) => ({ name: c.name ?? c.type ?? '?', r: c.layouts?.desktop ?? c.layout }))
-    .filter((x): x is { name: string; r: Rect } => !!x.r);
+    .map((c) => ({
+      name: c.name ?? c.type ?? '?',
+      r: c.layouts?.desktop ?? c.layout,
+      parent: c.parentRef ?? c.parent ?? '__page__',
+    }))
+    .filter((x): x is { name: string; r: Rect; parent: string } => !!x.r);
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
+      if (items[i].parent !== items[j].parent) continue;
       const a = items[i].r;
       const b = items[j].r;
       const ax = a.left ?? 0,
@@ -194,6 +202,49 @@ export function detectOverlaps(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Batch-only modal checks: parent type is knowable from clientRef before the write. */
+export function lintModalChildren(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const refs = new Map(components.filter((c) => c.clientRef).map((c) => [c.clientRef!, c]));
+  const modalChildren = components.filter((c) => {
+    const parent = c.parentRef ? refs.get(c.parentRef) : undefined;
+    return parent?.type === 'ModalV2' || parent?.type === 'Modal';
+  });
+
+  for (const child of modalChildren) {
+    if (!FORM_INPUT_TYPES.has(child.type ?? '')) continue;
+    const align = propVal(child.styles, 'alignment');
+    if (align === undefined || align === 'side') {
+      warnings.push(
+        `${child.type} "${child.name ?? child.type}": modal form child uses a SIDE-aligned label — ` +
+          `set styles.alignment.value = "top" so the control gets the full field width.`
+      );
+    }
+  }
+
+  for (let i = 0; i < modalChildren.length; i++) {
+    for (let j = i + 1; j < modalChildren.length; j++) {
+      const a = modalChildren[i];
+      const b = modalChildren[j];
+      if (a.parentRef !== b.parentRef || !FORM_INPUT_TYPES.has(a.type ?? '') || !FORM_INPUT_TYPES.has(b.type ?? '')) continue;
+      const ar = a.layouts?.desktop ?? a.layout;
+      const br = b.layouts?.desktop ?? b.layout;
+      if (!ar || !br) continue;
+      const ax = ar.left ?? 0, aw = ar.width ?? 0, ay = ar.top ?? 0, ah = ar.height ?? 0;
+      const bx = br.left ?? 0, bw = br.width ?? 0, by = br.top ?? 0, bh = br.height ?? 0;
+      if (!(ax < bx + bw && bx < ax + aw)) continue;
+      const gap = by >= ay + ah ? by - (ay + ah) : ay >= by + bh ? ay - (by + bh) : -1;
+      if (gap >= 0 && gap < 20) {
+        warnings.push(
+          `Modal fields "${a.name ?? a.type}" and "${b.name ?? b.type}" have only ${gap}px vertical gap — ` +
+            `use at least 20px on ToolJet's 10px vertical grid.`
+        );
+      }
+    }
+  }
+  return warnings;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -204,6 +255,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     warnings.push(...r.warnings);
   }
   warnings.push(...detectOverlaps(components));
+  warnings.push(...lintModalChildren(components));
   return { errors, warnings };
 }
 
@@ -264,9 +316,18 @@ export function validateAppStructure(summary: AppSummary): LintResult {
         warnings.push(`Component "${c.name ?? c.id}" binds {{components.${m[1]}…}} but no component is named "${m[1]}".`);
       }
     }
-    const r = lintComponentSpec({ name: c.name ?? c.id, type: c.type, properties: c.properties });
+    const r = lintComponentSpec({
+      name: c.name ?? c.id,
+      type: c.type,
+      properties: c.properties,
+      styles: c.styles,
+      layouts: c.layouts as LintComponent['layouts'],
+      parent: c.parent,
+    });
     warnings.push(...r.warnings); // errors (styles-in-properties) can't occur post-persist
   }
+
+  for (const p of summary.pages) warnings.push(...detectOverlaps(p.components as LintComponent[]));
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }

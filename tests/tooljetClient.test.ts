@@ -528,6 +528,20 @@ describe('createClient', () => {
         { component_id: 'component-uuid-2', name: 'grid' },
       ]);
     });
+
+    it('resolves parentRef to a same-batch clientRef in the single create request', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'modal', type: 'ModalV2', clientRef: 'new-modal', properties: {}, layout: { top: 0, left: 0, width: 10, height: 10 } },
+          { name: 'field', type: 'TextInput', parentRef: 'new-modal', properties: {}, styles: { alignment: { value: 'top' } }, layout: { top: 20, left: 2, width: 18, height: 60 } },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
+    });
   });
 
   describe('createEvents', () => {
