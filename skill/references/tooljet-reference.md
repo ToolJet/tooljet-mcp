@@ -265,7 +265,7 @@ Workspace-connected datasources available to the current user and selected envir
 - **postgresql / mysql** — `{ mode: "sql", query: "SELECT …", query_params: [], runOnPageLoad: true }`
 - **runjs** — `{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }` (great for chart aggregation — reference other queries' data, return a shaped value)
 - **servicenow** — `{ operation: "list_records", table: "incident", … }`
-Call `get_datasource_query_schema({ datasource_id, version_id, operation })` for that ToolJet wrapper's exact compact request/response contract; batch related operations with `requests`. Do not infer fields from another datasource—or from the upstream vendor API. Use `sections:["introspection"]` plus `inspect_datasource_schema` to fetch only the schemas/tables/columns/collections needed for the current query.
+Call `get_datasource_query_schema({ datasource_id, version_id, operation })` for that ToolJet wrapper's exact compact request contract and its response shape/status when known; batch related operations with `requests`. If the response is `runtime-dependent` or `unknown`, inspect a safe successful run or the remote schema before binding nested fields. Do not infer fields from another datasource—or from the upstream vendor API. Use `sections:["introspection"]` plus `inspect_datasource_schema` to fetch only the schemas/tables/columns/collections needed for the current query.
 
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:

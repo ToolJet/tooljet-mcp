@@ -23,7 +23,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 ## The tools
 
-- `get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })` → exact compact request **and response** contract for one connected datasource operation. Prefer datasource id so the kind is resolved for you; use `requests:[...]` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
+- `get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })` → exact compact request contract plus a response shape and `status` when known. A response marked `runtime-dependent` or `unknown` still requires a safe successful run or the remote schema before binding nested fields. Prefer datasource id so the kind is resolved for you; use `requests:[...]` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
 - `inspect_datasource_schema({ version_id, datasource_id, method, schema?, table?, search?, page?, limit?, args? })` → invoke one read-only metadata method advertised by that plugin (for example listSchemas/listTables/listColumns). Discover methods with schema `sections:["introspection"]`; request only what the current query needs.
 - `get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one `types` batch, request only the relevant sections/keys, and reuse that result for the build. Request `authoringHints` for nested contracts such as Table columns/actions, Kanban card children, and Form JSON-schema field types. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
 - ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: `get_table_schema(table_name)`; `create_table({ table_name, columns, foreign_keys? })`; `create_tables({ tables:[...] })`; `add_table_column(...)`. `drop_table_column` and `drop_table` are destructive and require explicit user approval plus `confirm:true`.
@@ -340,4 +340,4 @@ ToolJet plugins are wrappers, so upstream API knowledge can be actively misleadi
 
 ---
 
-**Technical reference:** exact per-component binding rules and the full built-in palette are in `references/tooljet-reference.md`. Datasource request/response contracts are served on demand by `get_datasource_query_schema`.
+**Technical reference:** exact per-component binding rules and the full built-in palette are in `references/tooljet-reference.md`. Datasource request contracts and known response shapes/statuses are served on demand by `get_datasource_query_schema`.

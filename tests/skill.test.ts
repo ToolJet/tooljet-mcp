@@ -185,6 +185,12 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
     expect(skill).toMatch(/array of non-blocking lint hints/);
   });
 
+  it('does not overstate datasource response coverage', () => {
+    expect(skill).toMatch(/response shape and `status` when known/i);
+    expect(skill).toMatch(/`runtime-dependent` or `unknown`.*safe successful run/is);
+    expect(reference).toMatch(/response shape\/status when known/i);
+  });
+
   it('tells the agent to report tool-call count and only real token usage', () => {
     expect(skill).toMatch(/how many MCP tool calls it took/);
     expect(skill).toMatch(/token usage only if your runtime actually surfaces it/i);

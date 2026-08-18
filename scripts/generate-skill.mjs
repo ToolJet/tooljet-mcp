@@ -156,7 +156,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 ## The tools
 
-- \`get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })\` → exact compact request **and response** contract for one connected datasource operation. Prefer datasource id so the kind is resolved for you; use \`requests:[...]\` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
+- \`get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })\` → exact compact request contract plus a response shape and \`status\` when known. A response marked \`runtime-dependent\` or \`unknown\` still requires a safe successful run or the remote schema before binding nested fields. Prefer datasource id so the kind is resolved for you; use \`requests:[...]\` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
 - \`inspect_datasource_schema({ version_id, datasource_id, method, schema?, table?, search?, page?, limit?, args? })\` → invoke one read-only metadata method advertised by that plugin (for example listSchemas/listTables/listColumns). Discover methods with schema \`sections:["introspection"]\`; request only what the current query needs.
 - \`get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })\` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one \`types\` batch, request only the relevant sections/keys, and reuse that result for the build. Request \`authoringHints\` for nested contracts such as Table columns/actions, Kanban card children, and Form JSON-schema field types. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
 - ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`; \`create_tables({ tables:[...] })\`; \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
@@ -473,7 +473,7 @@ ToolJet plugins are wrappers, so upstream API knowledge can be actively misleadi
 
 ---
 
-**Technical reference:** exact per-component binding rules and the full built-in palette are in \`references/tooljet-reference.md\`. Datasource request/response contracts are served on demand by \`get_datasource_query_schema\`.
+**Technical reference:** exact per-component binding rules and the full built-in palette are in \`references/tooljet-reference.md\`. Datasource request contracts and known response shapes/statuses are served on demand by \`get_datasource_query_schema\`.
 `;
 
 // --- Technical reference (the lookup material — kept out of the workflow core so it stays prominent) ---
@@ -600,7 +600,7 @@ Workspace-connected datasources available to the current user and selected envir
 - **postgresql / mysql** — \`{ mode: "sql", query: "SELECT …", query_params: [], runOnPageLoad: true }\`
 - **runjs** — \`{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }\` (great for chart aggregation — reference other queries' data, return a shaped value)
 - **servicenow** — \`{ operation: "list_records", table: "incident", … }\`
-Call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` for that ToolJet wrapper's exact compact request/response contract; batch related operations with \`requests\`. Do not infer fields from another datasource—or from the upstream vendor API. Use \`sections:["introspection"]\` plus \`inspect_datasource_schema\` to fetch only the schemas/tables/columns/collections needed for the current query.
+Call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` for that ToolJet wrapper's exact compact request contract and its response shape/status when known; batch related operations with \`requests\`. If the response is \`runtime-dependent\` or \`unknown\`, inspect a safe successful run or the remote schema before binding nested fields. Do not infer fields from another datasource—or from the upstream vendor API. Use \`sections:["introspection"]\` plus \`inspect_datasource_schema\` to fetch only the schemas/tables/columns/collections needed for the current query.
 
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:

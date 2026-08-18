@@ -61,7 +61,7 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace |
 | `create_app(name)` | New app + version + Home page → `{ app_id, version_id, home_page_id, app_url }` |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps; no per-app linking |
-| `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact operation-specific request/response contracts; also supports kind lookup and batches |
+| `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |
 | `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
 | `list_tables()` / `get_table_schema(table_name)` | Inspect ToolJet DB tables, constraints, defaults, and relationships |
 | `create_table(...)` / `create_tables(...)` / `add_table_column(...)` | Create or evolve ToolJet DB data models; the batch preflights dependencies before writes |
