@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
+import { validateTableBatch } from '../tableValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const columnSchema = z.object({
@@ -56,6 +57,8 @@ export function createTableTool(client: ToolJetClient): ToolDef {
       }>;
     }) {
       try {
+        const errors = validateTableBatch([{ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys }]);
+        if (errors.length) return fail(new Error(errors.join(' ')));
         return ok(
           await client.createTable({ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys })
         );

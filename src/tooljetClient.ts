@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 
 export interface CreateAppResult {
   app_id: string;
@@ -114,10 +115,6 @@ export interface TableColumn {
   configurations?: Record<string, unknown>;
 }
 
-/** Column names the ToolJet DB API has explicitly rejected as reserved keywords. Keep this list
- * evidence-based: add names only after the API identifies them as reserved. */
-export const TOOLJET_DB_RESERVED_COLUMN_NAMES = new Set(['action', 'comment']);
-
 function assertAllowedToolJetDbColumnNames(operation: 'createTable' | 'addTableColumn', columns: TableColumn[]): void {
   const reserved = columns
     .map((column) => column.name)
@@ -151,6 +148,10 @@ export interface CreateTableResult {
   table_name: string;
 }
 
+export interface CreateTablesParams {
+  tables: CreateTableParams[];
+}
+
 export interface SchemaColumn {
   name: string;
   type: string;
@@ -165,6 +166,15 @@ export interface SchemaColumn {
 export interface InsertRowsParams {
   tableName: string;
   rows: Array<Record<string, unknown>>;
+}
+
+export interface InsertRowsBatchParams {
+  tables: InsertRowsParams[];
+}
+
+export interface InsertRowsBatchResult {
+  table_name: string;
+  processed_rows: number;
 }
 
 export interface CreatePageParams {
@@ -182,6 +192,12 @@ export interface CreatePageResult {
   name: string;
   icon?: string;
   hidden?: boolean;
+}
+
+export interface CreatePagesParams {
+  appId: string;
+  versionId: string;
+  pages: Array<{ name: string; icon?: string; hidden?: boolean }>;
 }
 
 export interface AddTableColumnParams {
@@ -261,16 +277,19 @@ export interface ToolJetClient {
   getAppSummary(appId: string): Promise<AppSummary>;
   getComponent(appId: string, componentId: string): Promise<ComponentSummary & { page_id: string }>;
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
+  createPages(params: CreatePagesParams): Promise<CreatePageResult[]>;
   createEvents(params: CreateEventsParams): Promise<{ created: number }>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
   listTables(): Promise<Array<{ id: string; table_name: string }>>;
   createTable(params: CreateTableParams): Promise<CreateTableResult>;
+  createTables(params: CreateTablesParams): Promise<CreateTableResult[]>;
   addTableColumn(params: AddTableColumnParams): Promise<{ added: boolean }>;
   dropTableColumn(params: { tableName: string; columnName: string }): Promise<{ dropped: boolean }>;
   dropTable(params: { tableName: string }): Promise<{ dropped: boolean }>;
   getTableSchema(tableName: string): Promise<SchemaColumn[]>;
   insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }>;
+  insertRowsBatch(params: InsertRowsBatchParams): Promise<InsertRowsBatchResult[]>;
   createQuery(params: CreateQueryParams): Promise<CreateQueryResult>;
   createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]>;
   createComponent(params: CreateComponentParams): Promise<CreateComponentResult>;
@@ -528,67 +547,101 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return body.result ?? [];
   }
 
-  async function createPage(params: CreatePageParams): Promise<CreatePageResult> {
-    // Page order = append after existing pages. The client generates the page id (like components).
+  async function createPages(params: CreatePagesParams): Promise<CreatePageResult[]> {
+    // Page order = append after existing pages. Precompute ids/indexes and create the batch concurrently.
     const app = await getApp(params.appId);
-    const index = (app.pages ?? []).length;
-    const pageId = randomUUID();
-    const handle =
-      params.name
+    const startIndex = (app.pages ?? []).length;
+    const handleOf = (name: string): string =>
+      name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 50) || 'page';
-    const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: pageId,
-        name: params.name,
-        handle,
-        index,
-        ...(params.icon ? { icon: params.icon } : {}),
-      }),
+    const existingNames = new Set((app.pages ?? []).map((page: any) => String(page.name).toLowerCase()));
+    const existingHandles = new Set((app.pages ?? []).map((page: any) => String(page.handle).toLowerCase()));
+    const seenNames = new Set<string>();
+    const seenHandles = new Set<string>();
+    const entries = params.pages.map((page, offset) => {
+      const nameKey = page.name.toLowerCase();
+      const handle = handleOf(page.name);
+      if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
+        throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
+      }
+      if (existingHandles.has(handle) || seenHandles.has(handle)) {
+        throw new Error(`ToolJet createPages failed: page "${page.name}" resolves to duplicate handle "${handle}".`);
+      }
+      seenNames.add(nameKey);
+      seenHandles.add(handle);
+      return { ...page, id: randomUUID(), handle, index: startIndex + offset };
     });
-    await assertOk(res, 'createPage');
+
+    await Promise.all(entries.map(async (page) => {
+      const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: page.id,
+          name: page.name,
+          handle: page.handle,
+          index: page.index,
+          ...(page.icon ? { icon: page.icon } : {}),
+        }),
+      });
+      await assertOk(res, `createPages "${page.name}"`);
+    }));
 
     // ToolJet's create-page service ignores `icon` and `hidden`, even though the DTO accepts them.
     // Persist them via the update route — which applies a single-field diff (a diff with >1 key throws
     // "Can not update multiple pages"), so send ONE field per call. `hidden: { value: true }` removes the
     // page from the sidebar nav. Read back afterwards so a silent drop cannot look successful.
-    const persistField = async (field: string, value: unknown, label: string): Promise<void> => {
-      const r = await auth.authedFetch(
-        `/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageId, diff: { [field]: value } }),
-        }
-      );
-      await assertOk(r, label);
-    };
-    if (params.icon) await persistField('icon', params.icon, 'createPage icon update');
-    if (params.hidden) await persistField('hidden', { value: true }, 'createPage hidden update');
-    if (params.icon || params.hidden) {
+    await Promise.all(entries.flatMap((page) => [
+      ...(page.icon
+        ? [persistFieldForPage(page.id, 'icon', page.icon, `createPages "${page.name}" icon update`)]
+        : []),
+      ...(page.hidden
+        ? [persistFieldForPage(page.id, 'hidden', { value: true }, `createPages "${page.name}" hidden update`)]
+        : []),
+    ]));
+    if (entries.some((page) => page.icon || page.hidden)) {
       const refreshed = await getApp(params.appId);
-      const page = (refreshed.pages ?? []).find((candidate: any) => candidate.id === pageId);
-      if (params.icon && page?.icon !== params.icon) {
-        throw new Error(
-          `ToolJet createPage failed: page was created, but sidebar icon "${params.icon}" did not persist.`
-        );
-      }
-      if (params.hidden && page?.hidden?.value !== true) {
-        throw new Error(
-          'ToolJet createPage failed: page was created, but hidden-from-sidebar did not persist.'
-        );
+      for (const entry of entries) {
+        const page = (refreshed.pages ?? []).find((candidate: any) => candidate.id === entry.id);
+        if (entry.icon && page?.icon !== entry.icon) {
+          throw new Error(
+            `ToolJet createPages failed: page "${entry.name}" was created, but sidebar icon "${entry.icon}" did not persist.`
+          );
+        }
+        if (entry.hidden && page?.hidden?.value !== true) {
+          throw new Error(
+            `ToolJet createPages failed: page "${entry.name}" was created, but hidden-from-sidebar did not persist.`
+          );
+        }
       }
     }
-    return {
-      page_id: pageId,
-      name: params.name,
-      ...(params.icon ? { icon: params.icon } : {}),
-      ...(params.hidden ? { hidden: true } : {}),
-    };
+    return entries.map((page) => ({
+      page_id: page.id,
+      name: page.name,
+      ...(page.icon ? { icon: page.icon } : {}),
+      ...(page.hidden ? { hidden: true } : {}),
+    }));
+
+    async function persistFieldForPage(pageId: string, field: string, value: unknown, label: string): Promise<void> {
+      const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageId, diff: { [field]: value } }),
+      });
+      await assertOk(r, label);
+    }
+  }
+
+  async function createPage(params: CreatePageParams): Promise<CreatePageResult> {
+    const [page] = await createPages({
+      appId: params.appId,
+      versionId: params.versionId,
+      pages: [{ name: params.name, icon: params.icon, hidden: params.hidden }],
+    });
+    return page;
   }
 
   async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {
@@ -688,6 +741,27 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await assertOk(res, 'createTable');
     const body = (await res.json()) as { result: { id: string; table_name: string } };
     return { table_id: body.result.id, table_name: body.result.table_name };
+  }
+
+  async function createTables(params: CreateTablesParams): Promise<CreateTableResult[]> {
+    const levels = tableCreationLevels(params.tables);
+    const created: CreateTableResult[] = [];
+    for (const level of levels) {
+      const settled = await Promise.allSettled(level.map((table) => createTable(table)));
+      const failures: string[] = [];
+      settled.forEach((result, index) => {
+        if (result.status === 'fulfilled') created.push(result.value);
+        else failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+      });
+      if (failures.length) {
+        throw new Error(
+          `ToolJet createTables partially failed. Created: ${created.map((table) => table.table_name).join(', ') || 'none'}. ` +
+            `Failed: ${failures.join(' | ')}. Existing tables were not deleted automatically.`
+        );
+      }
+    }
+    const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
+    return params.tables.map((table) => byName.get(table.tableName.toLowerCase())!);
   }
 
   async function addTableColumn(params: AddTableColumnParams): Promise<{ added: boolean }> {
@@ -826,6 +900,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await assertOk(res, 'insertRows');
     const body = (await res.json()) as { result?: { processed_rows?: number } };
     return { processed_rows: body.result?.processed_rows ?? rows.length };
+  }
+
+  async function insertRowsBatch(params: InsertRowsBatchParams): Promise<InsertRowsBatchResult[]> {
+    const results: InsertRowsBatchResult[] = [];
+    for (const table of params.tables) {
+      const result = await insertRows(table);
+      results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
+    }
+    return results;
   }
 
   // The query's kind must match its datasource's kind. Resolve it from the datasource list
@@ -1197,16 +1280,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     getAppSummary,
     getComponent,
     createPage,
+    createPages,
     createEvents,
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
     createTable,
+    createTables,
     addTableColumn,
     dropTableColumn,
     dropTable,
     getTableSchema,
     insertRows,
+    insertRowsBatch,
     createQuery,
     createQueries,
     createComponent,

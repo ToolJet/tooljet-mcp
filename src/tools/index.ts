@@ -7,11 +7,13 @@ import { createAppTool } from './createApp.js';
 import { listDatasourcesTool } from './listDatasources.js';
 import { listTablesTool } from './listTables.js';
 import { createTableTool } from './createTable.js';
+import { createTablesTool } from './createTables.js';
 import { addTableColumnTool } from './addTableColumn.js';
 import { dropTableColumnTool } from './dropTableColumn.js';
 import { dropTableTool } from './dropTable.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
+import { insertRowsBatchTool } from './insertRowsBatch.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
 import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
@@ -21,6 +23,7 @@ import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
 import { validateAppTool } from './validateApp.js';
 import { addPageTool } from './addPage.js';
+import { addPagesTool } from './addPages.js';
 import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
@@ -44,11 +47,13 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     listDatasourcesTool(client),
     listTablesTool(client),
     createTableTool(client),
+    createTablesTool(client),
     addTableColumnTool(client),
     dropTableColumnTool(client),
     dropTableTool(client),
     getTableSchemaTool(client),
     insertRowsTool(client),
+    insertRowsBatchTool(client),
     getDatasourceQuerySchemaTool(client),
     inspectDatasourceSchemaTool(client),
     generateFormSchemaTool(client),
@@ -58,6 +63,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     getComponentTool(client),
     validateAppTool(client),
     addPageTool(client),
+    addPagesTool(client),
     addQueryTool(client),
     addQueriesTool(client),
     updateQueryTool(client),
