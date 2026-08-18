@@ -114,6 +114,22 @@ export interface TableColumn {
   configurations?: Record<string, unknown>;
 }
 
+/** Column names the ToolJet DB API has explicitly rejected as reserved keywords. Keep this list
+ * evidence-based: add names only after the API identifies them as reserved. */
+export const TOOLJET_DB_RESERVED_COLUMN_NAMES = new Set(['action', 'comment']);
+
+function assertAllowedToolJetDbColumnNames(operation: 'createTable' | 'addTableColumn', columns: TableColumn[]): void {
+  const reserved = columns
+    .map((column) => column.name)
+    .filter((name) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name.toLowerCase()));
+  if (reserved.length) {
+    throw new Error(
+      `ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? '' : 's'}: ${reserved.join(', ')}. ` +
+        'Use a descriptive name such as step_action or result_comment.'
+    );
+  }
+}
+
 export type ForeignKeyAction = 'RESTRICT' | 'NO ACTION' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
 
 export interface TableForeignKey {
@@ -630,7 +646,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createTable(params: CreateTableParams): Promise<CreateTableResult> {
-    const orgId = await auth.getOrganizationId();
+    assertAllowedToolJetDbColumnNames('createTable', params.columns);
     const columnNames = new Set(params.columns.map((column) => column.name));
     for (const foreignKey of params.foreignKeys ?? []) {
       if (foreignKey.columns.length !== foreignKey.referencedColumns.length) {
@@ -643,6 +659,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`ToolJet createTable failed: foreign key references missing local columns: ${missing.join(', ')}`);
       }
     }
+    const orgId = await auth.getOrganizationId();
     let cols = params.columns.map(tableColumnDto);
     // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`.
     if (!params.columns.some((column) => column.primaryKey)) {
@@ -674,6 +691,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function addTableColumn(params: AddTableColumnParams): Promise<{ added: boolean }> {
+    assertAllowedToolJetDbColumnNames('addTableColumn', [params.column]);
     for (const foreignKey of params.foreignKeys ?? []) {
       if (!foreignKey.columns.includes(params.column.name)) {
         throw new Error(

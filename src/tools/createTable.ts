@@ -28,6 +28,7 @@ export function createTableTool(client: ToolJetClient): ToolDef {
       'Create a ToolJet-DB table. Give table_name and columns (name, type, optional primaryKey/notNull/unique/defaultValue/configurations). ' +
       'Optional foreign_keys supports single or composite relationships with columns, referencedTable, referencedColumns, onDelete, and onUpdate. ' +
       'Types accept tjdb values or friendly aliases: string, integer, number, bigint, boolean, timestamp, json, serial. ' +
+      'Known ToolJet DB reserved column names are rejected locally with a rename suggestion before any API request. ' +
       'If no column is marked primaryKey, a serial `id` primary key is added automatically. Returns { table_id, table_name }. ' +
       'For a NEW app, confirm the data model with the user before creating tables.',
     inputSchema: {

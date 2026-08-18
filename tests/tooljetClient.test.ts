@@ -712,6 +712,21 @@ describe('createClient', () => {
       })).rejects.toThrow(/missing local columns: missing/);
       expect(auth.authedFetch).not.toHaveBeenCalled();
     });
+
+    it('rejects ToolJet DB reserved column names before sending a request', async () => {
+      const client = createClient(auth, config);
+      await expect(client.createTable({
+        tableName: 'test_steps',
+        columns: [{ name: 'action', type: 'string' }],
+      })).rejects.toThrow(/reserved column name: action.*step_action/i);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+
+      await expect(client.addTableColumn({
+        tableName: 'test_results',
+        column: { name: 'comment', type: 'string' },
+      })).rejects.toThrow(/reserved column name: comment.*result_comment/i);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
   });
 
   describe('ToolJet DB schema maintenance', () => {
