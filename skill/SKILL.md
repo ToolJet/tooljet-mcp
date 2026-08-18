@@ -49,13 +49,13 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 
 ## Before you build — prefer safe defaults; ask only when it changes what you build
 
-Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table**, safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, add a few KPI `Statistics` tiles + a chart or two, and neutral ToolJet-native styling. Ship it, then refine.
+Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table**, safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, surface the signals that actually matter as `Statistics`/`Chart` (only what answers a real question — see the design framework), and neutral ToolJet-native styling. Ship it, then refine.
 
 **Ask 1–3 focused questions only when the answer genuinely changes what you build** — a NEW data model (what fields/types), destructive or write operations (edit/delete flows), permissions, or a genuinely divergent product choice. Don't block a read-only dashboard on questions with obvious defaults. If the user already gave a detailed spec, build directly.
 
 ## Building big apps — ship usable iterations, not layers
 
-For a **large** app, don't build it in one long silent pass — but phase it by **usable increments, NOT by layer.** Each phase must be a **complete, working, already-decent-looking slice** the user could actually use — never "skeleton first, features next, polish last." Polish is **not** a phase: apply the Design defaults to every phase as you go, so the app looks finished at each step.
+**If a request is too big to do well in one pass, say so** — tell the user the scope is large, propose a short phase breakdown (what each phase delivers), and build phase by phase rather than attempting everything at once. Phase it by **usable increments, NOT by layer.** Each phase must be a **complete, working, already-decent-looking slice** the user could actually use — never "skeleton first, features next, polish last." Polish is **not** a phase: apply the design framework + visual defaults to every phase as you go, so the app looks finished at each step.
 
 - **Phase 1 = the small-but-high-impact core, working end-to-end** — not necessarily the *smallest* possible; pick the slice that delivers the **most usefulness for the least build** (the capability the user cares about most). It ships complete: its data (create/seed the table), a styled page, AND its key interactivity, all functioning and presentable. The user gets something genuinely valuable after phase 1.
 - **Each later phase = one more usable capability**, again end-to-end. E.g. for a tickets app: (1) browse tickets — list page that works and looks right → (2) open a ticket — row-click → detail page → (3) create/edit a ticket — form + insert/update + refresh → (4) analytics — a dashboard page with charts/metrics. Each phase is independently useful and reasonably polished.
@@ -173,19 +173,39 @@ ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — t
 - **Stacking rule (prevents overlap):** to place component B below component A, set `B.top = A.top + A.height + gap` (gap ~10–20px). Never reuse the same `top` for two components in the same area — the later one draws over the earlier one.
 - The full canvas is 43 columns; how you use that space is a design choice (see Design defaults below) — don't reflexively span edge-to-edge.
 
-## Design defaults — make apps look enterprise-grade by default (the user can override)
+## Design — decide before you build, then apply the visual defaults
 
-Apply these unless the user specifies otherwise. If the user states any layout, spacing, density, or brand preference, **the user always wins** — these are only defaults so that apps look clean and professional even when the user doesn't ask.
+A good ToolJet app comes from a content-aware decision, not a fixed template. Work in layers: frame the page, apply the house visual defaults, respect the rendering guardrails. If the user states any layout, spacing, density, or brand preference, **the user always wins.**
 
-- **Polish:** the result must read as a **designed app, not components dropped on a canvas** — visual hierarchy, grouped sections, and consistent spacing are what make it look "enterprise." Clear headings, aligned components, no overlaps, no cramped or lopsided layouts.
-- **Page header (do this on every page):** start with a title + a one-line subtitle, **styled so it reads as a header** — a plain default-styled Text as a title looks unfinished. Use the Text's *native* styles (editable in the builder), e.g.:
-  - Title: a `Text` with `styles.textSize` ≈ `{{24}}`, `styles.fontWeight` = `bold`, `styles.textColor` a strong dark (e.g. `#111827`).
-  - Subtitle: a `Text` directly below with `styles.textSize` ≈ `{{14}}`, `styles.textColor` a muted grey (e.g. `#6b7280`); small ~8px gap under the title, then a larger ~24px gap before the content.
-  (Get the exact style keys from `get_component_catalog("Text")`.)
-- **Canvas padding:** don't run content edge-to-edge across all 43 columns. Leave a consistent side gutter — put top-level content roughly in columns **2–41** (≈2 columns of breathing room on the left and right). Use full-bleed only if the user asks.
-- **Consistent margins:** use ONE consistent vertical gap between stacked sections (~16–24px) and ONE shared left edge for all top-level components. Don't let each component pick its own margins — consistency reads as "enterprise".
-- **Peer components:** components in the same row (e.g. KPI tiles, filters) should have **equal widths and equal gaps** between them, and align on the same top.
-- **Hierarchy:** lead with a title/header row; put summary metrics (Statistics) and charts (Chart) above detailed tables; keep primary actions visible.
+### 1. Frame the page (before creating any component)
+Infer, in one quick pass:
+- the **primary user** (who opens this), the **primary object** (what it's about), the page's **single main job**, the **primary action** if any, and the **one signal or decision** that matters most.
+- the **page mode** — pick one: **Monitor** (is anything wrong?), **Explore** (find/slice records), **Operate** (act on items), **Inspect** (understand one record), **Edit** (change data), or **Configure** (settings). The mode drives the layout.
+
+Then hold to these:
+- **One dominant region and at most one dominant action** per page; everything else is clearly secondary.
+- **Every component answers a distinct user question.** Remove anything that repeats information already communicated adequately.
+- **Size regions by importance, information density, and label length** — not reflexive equal widths. The main region gets the space.
+- **One primary accent**, taken from the user's branding or the domain; keep other surfaces neutral and reserve semantic colors (green/amber/red) for actual state, not decoration.
+- **Human-readable identity first** in tables — lead with the name/title/human field, not the technical id.
+- **Headings name the user's decision or context** ("Needs attention today"), not the component type ("Table").
+- **Quick internal design critique before building** — one line each: hierarchy (is the main thing biggest?), redundancy (anything duplicated?), density (too cramped or too empty?), responsive order (what should lead on a narrow screen?), visual signature (one accent, not five?). Fix it before you create components.
+
+### 2. Visual defaults (apply unless the user says otherwise)
+- **Polish:** it must read as a **designed app, not components dropped on a canvas** — real hierarchy, grouped sections, consistent spacing, aligned edges, no overlaps.
+- **Page header (every page):** a title + one-line subtitle, styled via the Text's *native* styles so it reads as a header (a default-styled Text looks unfinished). Title `Text` ≈ `styles.textSize {{24}}`, `fontWeight bold`, `textColor` a strong dark (e.g. `#111827`); subtitle `Text` ≈ `textSize {{14}}`, muted grey (e.g. `#6b7280`); ~8px under the title, ~24px before content. (Exact keys from `get_component_catalog("Text")`.)
+- **Canvas padding:** don't run edge-to-edge across all 43 columns — keep a consistent side gutter (top-level content ≈ columns **2–41**). Full-bleed only if asked.
+- **Consistent spacing:** ONE vertical gap between stacked sections (~16–24px) and ONE shared left edge for all top-level components.
+- **Peer components** in a row (KPI tiles, filters) share equal widths, equal gaps and a common top — unless importance or label length justifies otherwise (see framing).
+
+### 3. ToolJet rendering guardrails (these prevent real render bugs)
+- **Chart titles clip** at common dashboard sizes. **Default: leave `Chart.title` empty and put a separate `Text` heading above the chart**, with its own heading slot + spacing. Enable a native chart title only after you've visually verified it doesn't clip at that size.
+- **Chart widths** (defaults, not hard limits): a compact few-category pie/donut ≈ **13–15 columns**; a categorical bar with longer labels ≈ **20–24 columns**; at most **two** normal analytical charts in one ~39-column content row unless labels are short and readability is verified.
+- **Statistics height:** a compact tile with no visible secondary content ≈ **110–120px**; with useful secondary content ≈ **130–150px**.
+- **Table columns:** when presentation matters, set an **explicit, complete `columns` array** in the order you want. Do **not** rely on the property order of a transformed query object to reorder existing ToolJet columns — it won't reorder them. Natural header casing is fine: **`headerCasing: "none"` is a valid value** (keeps human labels like "Due date" instead of forcing Title/UPPER casing).
+
+### 4. Mobile — skip it by default
+Most customers view these on desktop. **Don't build or tune a mobile layout for the initial build unless the user explicitly asks.** When they do, treat mobile as **recomposition** — rethink what leads and what collapses on a narrow screen — not blind vertical stacking of the desktop layout. And note: **resizing a browser window does NOT prove ToolJet's mobile layout rendered** — that is a structural guess, not real mobile visual validation; only claim mobile works if you verified it the way ToolJet actually renders mobile.
 
 ## Component binding reference (22 components)
 
@@ -338,7 +358,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - After creating a data query, call `run_query(query_id, version_id)` to confirm it returns rows and to READ real values — statuses, categories, ranges — before you hardcode chart series, dropdown options, or filter values. Don't guess a status is "Open/Closed"; run the query and see.
 - Inspect with `get_app_summary` (not `get_app`) to confirm bindings/values are what you intended; `update_*` anything wrong.
 
-**Then verify in a browser — at least once, before you call the app done.** Open the **VIEWER** URL (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). Confirm: the page renders, queries populated real data, there are no console errors, and the key interactions work (row click, filter, submit). Also do a browser check at **genuine risk points while building** — after adding a `Chart`, a custom/dense layout, or multi-step interactivity — not just at the very end.
+**Then verify in a browser — at least once, before you call the app done.** Open the **VIEWER** URL (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). Confirm: the page renders, queries populated real data, there are no console errors, and the key interactions work (row click, filter, submit). Also do a browser check at **genuine risk points while building** — after adding a `Chart`, a custom/dense layout, or multi-step interactivity — not just at the very end. **Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
 
 **When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with `get_app_summary` / `run_query`, then fix in place with `update_components` / `update_query` / `update_events`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
 
