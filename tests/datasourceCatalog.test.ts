@@ -27,6 +27,20 @@ describe('datasource query catalog', () => {
     expect(tooljetdb.properties).toHaveProperty('list_rows.fields.offset');
   });
 
+  it('expands ToolJet DB list_rows nested records and aggregate response aliases', () => {
+    const listRows = selectDatasourceQuerySchema('tooljetdb', { operation: 'list_rows' }) as any;
+    const fields = listRows.request.variants[0].fields;
+
+    expect(fields['list_rows.where_filters'].shape['<filter-id>']).toMatchObject({
+      column: 'string',
+      operator: expect.stringContaining('ilike'),
+    });
+    expect(fields['list_rows.order_filters'].shape['<sort-id>'].order).toBe('asc|desc');
+    expect(fields['list_rows.aggregates'].shape['<aggregate-id>'].aggFx).toBe('sum|count');
+    expect(fields['list_rows.group_by'].example).toEqual({ 'group-status': ['status'] });
+    expect(listRows.response.description).toContain('<table_name>_<column>_<aggFx>');
+  });
+
   it('publishes wrapper-specific AI request and response contracts', () => {
     const openai = selectDatasourceQuerySchema('openai', { operation: 'chat' }) as any;
     expect(openai.request.variants[0].required).toEqual(expect.arrayContaining(['operation', 'model', 'prompt']));

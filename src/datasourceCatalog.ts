@@ -24,6 +24,8 @@ export interface DatasourceFieldContract {
   description?: string;
   required?: boolean;
   allowedValues?: string[];
+  shape?: Record<string, unknown>;
+  example?: unknown;
 }
 
 export interface DatasourceContractVariant {

@@ -49286,11 +49286,35 @@
             "fields": {
               "list_rows.aggregates": {
                 "path": "list_rows.aggregates",
-                "type": "record"
+                "type": "record",
+                "description": "Map of stable ids to ToolJet DB aggregate clauses. ToolJet DB list_rows supports sum and count.",
+                "shape": {
+                  "<aggregate-id>": {
+                    "column": "string",
+                    "aggFx": "sum|count"
+                  }
+                },
+                "example": {
+                  "count-id": {
+                    "column": "id",
+                    "aggFx": "count"
+                  }
+                }
               },
               "list_rows.group_by": {
                 "path": "list_rows.group_by",
-                "type": "record"
+                "type": "record",
+                "description": "Map of stable ids to arrays of column names included in the grouped result.",
+                "shape": {
+                  "<group-id>": [
+                    "string"
+                  ]
+                },
+                "example": {
+                  "group-status": [
+                    "status"
+                  ]
+                }
               },
               "list_rows.limit": {
                 "path": "list_rows.limit",
@@ -49302,11 +49326,45 @@
               },
               "list_rows.order_filters": {
                 "path": "list_rows.order_filters",
-                "type": "record"
+                "type": "record",
+                "description": "Map of stable ids to sort clauses.",
+                "shape": {
+                  "<sort-id>": {
+                    "column": "string",
+                    "order": "asc|desc",
+                    "id?": "string",
+                    "jsonpath?": "string"
+                  }
+                },
+                "example": {
+                  "sort-created": {
+                    "id": "sort-created",
+                    "column": "created_at",
+                    "order": "desc"
+                  }
+                }
               },
               "list_rows.where_filters": {
                 "path": "list_rows.where_filters",
-                "type": "record"
+                "type": "record",
+                "description": "Map of stable ids to filter clauses. `id` is optional metadata; `jsonpath` is optional for JSONB columns.",
+                "shape": {
+                  "<filter-id>": {
+                    "column": "string",
+                    "operator": "eq|gt|gte|lt|lte|neq|like|ilike|match|imatch|in|is",
+                    "value": "unknown|binding (use null or not_null with operator is)",
+                    "id?": "string",
+                    "jsonpath?": "string"
+                  }
+                },
+                "example": {
+                  "filter-status": {
+                    "id": "filter-status",
+                    "column": "status",
+                    "operator": "eq",
+                    "value": "Open"
+                  }
+                }
               },
               "operation": {
                 "path": "operation",
@@ -49322,6 +49380,14 @@
               "table_id"
             ]
           }
+        ],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows from the selected table. Aggregate fields are aliased as <table_name>_<column>_<aggFx>; grouped columns are returned alongside them."
+        },
+        "notes": [
+          "The map keys inside where_filters, order_filters, aggregates, and group_by are caller-chosen stable ids.",
+          "For generic server-side tables, bind limit/offset/filter values to the Table but keep these datasource-specific record shapes in the query contract."
         ]
       },
       "create_row": {
@@ -49569,16 +49635,74 @@
         "type": "object",
         "fields": {
           "where_filters": {
-            "type": "record"
+            "type": "record",
+            "description": "Map of stable ids to filter clauses. `id` is optional metadata; `jsonpath` is optional for JSONB columns.",
+            "shape": {
+              "<filter-id>": {
+                "column": "string",
+                "operator": "eq|gt|gte|lt|lte|neq|like|ilike|match|imatch|in|is",
+                "value": "unknown|binding (use null or not_null with operator is)",
+                "id?": "string",
+                "jsonpath?": "string"
+              }
+            },
+            "example": {
+              "filter-status": {
+                "id": "filter-status",
+                "column": "status",
+                "operator": "eq",
+                "value": "Open"
+              }
+            }
           },
           "order_filters": {
-            "type": "record"
+            "type": "record",
+            "description": "Map of stable ids to sort clauses.",
+            "shape": {
+              "<sort-id>": {
+                "column": "string",
+                "order": "asc|desc",
+                "id?": "string",
+                "jsonpath?": "string"
+              }
+            },
+            "example": {
+              "sort-created": {
+                "id": "sort-created",
+                "column": "created_at",
+                "order": "desc"
+              }
+            }
           },
           "aggregates": {
-            "type": "record"
+            "type": "record",
+            "description": "Map of stable ids to ToolJet DB aggregate clauses. ToolJet DB list_rows supports sum and count.",
+            "shape": {
+              "<aggregate-id>": {
+                "column": "string",
+                "aggFx": "sum|count"
+              }
+            },
+            "example": {
+              "count-id": {
+                "column": "id",
+                "aggFx": "count"
+              }
+            }
           },
           "group_by": {
-            "type": "record"
+            "type": "record",
+            "description": "Map of stable ids to arrays of column names included in the grouped result.",
+            "shape": {
+              "<group-id>": [
+                "string"
+              ]
+            },
+            "example": {
+              "group-status": [
+                "status"
+              ]
+            }
           },
           "limit": {
             "type": "number|binding"

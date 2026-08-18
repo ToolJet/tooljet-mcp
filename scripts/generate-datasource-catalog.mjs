@@ -259,13 +259,51 @@ const tooljetCommon = [
   field('operation', 'string'),
   field('table_id', 'string'),
 ];
+const tooljetWhereFilters = {
+  type: 'record',
+  description: 'Map of stable ids to filter clauses. `id` is optional metadata; `jsonpath` is optional for JSONB columns.',
+  shape: {
+    '<filter-id>': {
+      column: 'string',
+      operator: 'eq|gt|gte|lt|lte|neq|like|ilike|match|imatch|in|is',
+      value: 'unknown|binding (use null or not_null with operator is)',
+      'id?': 'string',
+      'jsonpath?': 'string',
+    },
+  },
+  example: {
+    'filter-status': { id: 'filter-status', column: 'status', operator: 'eq', value: 'Open' },
+  },
+};
+const tooljetOrderFilters = {
+  type: 'record',
+  description: 'Map of stable ids to sort clauses.',
+  shape: {
+    '<sort-id>': { column: 'string', order: 'asc|desc', 'id?': 'string', 'jsonpath?': 'string' },
+  },
+  example: {
+    'sort-created': { id: 'sort-created', column: 'created_at', order: 'desc' },
+  },
+};
+const tooljetAggregates = {
+  type: 'record',
+  description: 'Map of stable ids to ToolJet DB aggregate clauses. ToolJet DB list_rows supports sum and count.',
+  shape: { '<aggregate-id>': { column: 'string', aggFx: 'sum|count' } },
+  example: { 'count-id': { column: 'id', aggFx: 'count' } },
+};
+const tooljetGroupBy = {
+  type: 'record',
+  description: 'Map of stable ids to arrays of column names included in the grouped result.',
+  shape: { '<group-id>': ['string'] },
+  example: { 'group-status': ['status'] },
+};
 const tooljetContracts = {
   list_rows: oneVariant('list_rows', [
     ...tooljetCommon,
-    field('list_rows.where_filters', 'record'),
-    field('list_rows.order_filters', 'record'),
-    field('list_rows.aggregates', 'record'),
-    field('list_rows.group_by', 'record'),
+    field('list_rows.where_filters', tooljetWhereFilters.type, tooljetWhereFilters),
+    field('list_rows.order_filters', tooljetOrderFilters.type, tooljetOrderFilters),
+    field('list_rows.aggregates', tooljetAggregates.type, tooljetAggregates),
+    field('list_rows.group_by', tooljetGroupBy.type, tooljetGroupBy),
     field('list_rows.limit', 'number|binding'),
     field('list_rows.offset', 'number|binding'),
   ], ['operation', 'table_id'], { operation: 'list_rows' }),
@@ -322,7 +360,7 @@ const staticSchemas = {
     operations: Object.keys(tooljetContracts), contracts: tooljetContracts,
     properties: {
       operation: { type: 'string' }, table_id: { type: 'string' },
-      list_rows: { type: 'object', fields: { where_filters: { type: 'record' }, order_filters: { type: 'record' }, aggregates: { type: 'record' }, group_by: { type: 'record' }, limit: { type: 'number|binding' }, offset: { type: 'number|binding' } } },
+      list_rows: { type: 'object', fields: { where_filters: tooljetWhereFilters, order_filters: tooljetOrderFilters, aggregates: tooljetAggregates, group_by: tooljetGroupBy, limit: { type: 'number|binding' }, offset: { type: 'number|binding' } } },
       create_row: { type: 'record' },
       update_rows: { type: 'object', fields: { columns: { type: 'record' }, where_filters: { type: 'record' } } },
       delete_rows: { type: 'object', fields: { where_filters: { type: 'record' }, limit: { type: 'number|binding' }, order_column: { type: 'string' } } },
