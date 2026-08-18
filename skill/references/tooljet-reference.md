@@ -245,7 +245,7 @@ Use `add_table_column` to evolve a ToolJet DB table in place. Dropping a column/
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
 - List all rows: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }`.
 - `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
-- `list_rows` may carry `limit`, `offset`, `where_filters`, `order_filters` for filtering/sorting.
+- `list_rows` may carry `limit`, `offset`, `where_filters`, `order_filters` for filtering/sorting. Fetch `get_datasource_query_schema(..., operation:"list_rows")` for their exact nested record shapes instead of guessing.
 - Aggregates/grouping live under `list_rows.aggregates` / `list_rows.group_by`. Multi-table reads use `operation: "join_tables"` with `join_table` (joins, fields, filters, ordering, aggregates, grouping, limit, offset).
 - Primary-key batches use `bulk_update_with_primary_key` with `rows_update`, or `bulk_upsert_with_primary_key` with `rows`. Read the generated schema before composing these shapes.
 - **Write operations** (for edit/create flows) use indexed-object option shapes:

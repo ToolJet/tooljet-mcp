@@ -40,7 +40,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - `get_component_catalog()` → the lightweight component palette. Typed/batched selective calls are described above.
 - `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`. Single query.
 - `add_queries({ version_id, queries: [...] })` → `[{ query_id, name }]`. **Create ALL an app's queries in one call.**
-- `run_query({ query_id, version_id })` → `{ status, data, ... }`. Run only an explicitly selected **safe, non-mutating, non-billable read** to inspect real rows. Never automatically execute mutations, AI calls, emails, or other side effects for validation. Check `status` ("ok"/"failed") — HTTP is 200 even on failure.
+- `run_query({ query_id, version_id })` → `{ status, data, warnings?, ... }`. Run only an explicitly selected **safe, non-mutating, non-billable read** to inspect real rows. Never automatically execute mutations, AI calls, emails, or other side effects for validation. Check `status` ("ok"/"failed") — HTTP is 200 even on failure. A `components.*` warning means the static datasource path passed but live pagination/filter values still require the viewer.
 - `add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })` → `{ component_id, warnings }`. Single component; `name` required. Put styling in `styles` (NOT `properties`).
 - `add_components({ app_id, version_id, page_id, components: [...] })` → `{ components: [{ component_id, name }], warnings }`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique `client_ref` and each child the matching `parent_ref`; MCP resolves real IDs atomically and lints overlaps within the correct parent.
 - Both return a **`warnings`** array of non-blocking lint hints — a Chart left with its clipping default title, a Table bound without `dataSourceSelector:"rawJson"`, overlapping components, an invalid `headerCasing`, etc. **Read them and fix**; they don't block the write. (Style keys under `properties` are a hard error, not a warning.)
@@ -195,7 +195,7 @@ Verify page 1, a middle page, the last/partial page, zero results, a changed sea
 
 ## Form generation — prefer schemas over nested children
 
-- For an existing ToolJet DB table, call `generate_form_schema` and pass its returned `properties` to a Form. It maps real column types/defaults, omits generated serial columns in create mode, locks primary keys in edit mode, and reports required/unique/foreign-key metadata for review. Read submitted direct values from `components.<form>.formData`.
+- For an existing ToolJet DB table, call `generate_form_schema` and pass its returned `properties` to a Form. It maps real column types/defaults, keeps create-mode date fields visually empty until selected, omits generated serial columns in create mode, locks primary keys in edit mode, and reports required/unique/foreign-key metadata for review. Read submitted direct values from `components.<form>.formData`.
 - For a quick object-shaped form, use `generateFormFrom="rawJson"` + `JSONData`. Use custom nested child components only when schema generation cannot express the interaction.
 - Map strings to TextInput/TextArea, integers/numbers to NumberInput, booleans to Checkbox/Toggle, timestamps to Date/Datetime, and enums/foreign keys to Dropdown. Omit serial/generated columns from create forms; lock immutable keys in edit forms.
 - Attach the Form's `onSubmit` to the mutation query and `onInvalid` to a validation alert. Put refresh/reset/close/success behavior on the mutation query's `onDataQuerySuccess`, not immediately after the submit action.
@@ -252,15 +252,17 @@ Components and queries alone make a *static* app. Use `add_events` for component
 - **Show modal:** `{ actionId: 'show-modal', modal: '<modal component id>' }` · **Close modal:** `{ actionId: 'close-modal', modal: '<modal component id>' }`
 - **Set a custom variable:** `{ actionId: 'set-custom-variable', key: 'selectedTicket', value: '{{components.<table>.selectedRow}}' }` — the id is **`set-custom-variable`** (NOT `set-variable`, which does not exist); read it back as `{{variables.selectedTicket}}`. Also: `unset-custom-variable`.
 - **Control a component:** `{ actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue' | 'clear' | 'setVisibility' | 'setDisable' | 'setLoading', ... }` — reset/prefill an input, toggle visibility, etc.
+- **Set a Table page:** `{ actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }`.
 - **Export data:** `{ actionId: 'generate-file', ... }` (CSV/PDF) · **Copy:** `{ actionId: 'copy-to-clipboard', ... }`.
 
-(Other valid ids include `set-table-page`, `set-page-variable`, `open-webpage`, `go-to-app`, `logout`, `set-localstorage-value`, `scroll-component-into-view`.)
+(Other valid ids include `set-page-variable`, `open-webpage`, `go-to-app`, `logout`, `set-localstorage-value`, `scroll-component-into-view`.)
 
 **Common recipes:**
 - **Mutation lifecycle (required):** the Button/Form event runs **only** the mutation. On that query's `onDataQuerySuccess`, run the list/count refresh queries, show success, reset the Form if appropriate, and close the modal. On `onDataQueryFailure`, show an error and keep the user's input. Never refresh or show success immediately after starting the mutation—the write may fail.
 - **Page initialization:** attach `onPageLoad` to the page when a query must run each time that page is entered. Use a page event instead of assuming app-level `runOnPageLoad` will re-run on in-app navigation.
 - **Master → detail:** on Table `onRowClicked`, FIRST `set-custom-variable` (key e.g. `selectedTicket`, value `{{components.<table>.selectedRow}}`), THEN `switch-page`. Bind directly to `{{variables.selectedTicket.<field>}}` when a snapshot is enough. If detail must be fresh, bind its query filter to the variable and run it from the detail page's `onPageLoad` event; do not rely on app-level `runOnPageLoad` re-running on navigation.
-- **Refresh on filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose `where_filters` reference the input.
+- **Refresh on an external filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose filter references the input.
+- **Server-side Table search/filter:** keep datasource-specific pagination/filter syntax in the query contract. Bind its page size and offset/cursor to the Table's exposed pagination state, bind `totalRecords` to a matching count query, and run the row query on `onPageChanged`. On `onSearch`/filter change, FIRST `set-table-page` to page 1, THEN run the row and count queries; otherwise a page-5 offset can make a valid filtered result look empty or fail.
 - **Prevent double-submit:** bind the submit Button's `Disable` to the mutation query's loading (`{{queries.<mutation>.isLoading}}`) so it can't fire twice, and show its native loading state while the mutation runs. (See "Async & UI states".)
 
 Wire events AFTER the components and queries exist (you need their ids). Prefer one `add_events` call for all of an app's events.
@@ -268,7 +270,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 ## Verify your work — browser-free checks first, then a real browser pass
 
 **Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
-- For a safe, non-mutating, non-billable read query, call `run_query(query_id, version_id)` to confirm it returns rows and inspect real values before hardcoding chart series/options. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
+- For a safe, non-mutating, non-billable read query, call `run_query(query_id, version_id)` to confirm it returns rows and inspect real values before hardcoding chart series/options. If it warns about `components.*`, verify those runtime-resolved values in the viewer. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
 - Inspect with a **scoped** `get_app_summary` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; `update_*` anything wrong.
 - Run `validate_app(app_id)` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every `error`; review the `warnings`. Its explicit `not_checked` list still needs targeted runtime/browser verification.
 
