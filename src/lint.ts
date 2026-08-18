@@ -126,12 +126,16 @@ function differsFromCatalogDefault(type: string, key: string, value: unknown): b
 }
 
 function staticNumber(v: unknown, fallback: number): number {
+  return optionalStaticNumber(v) ?? fallback;
+}
+
+function optionalStaticNumber(v: unknown): number | undefined {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
   if (typeof v === 'string') {
     const match = v.trim().match(/^(?:\{\{\s*)?(\d+(?:\.\d+)?)(?:\s*\}\})?(?:px)?$/);
     if (match) return Number(match[1]);
   }
-  return fallback;
+  return undefined;
 }
 
 /** ToolJet adds 20px outside the authored layout box for a top-aligned labelled form input.
@@ -150,6 +154,45 @@ export function renderedHeight(component: LintComponent, rect?: Rect): number {
     label === undefined ||
     (typeof label === 'string' ? label.trim().length > 0 : Boolean(label));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
+}
+
+/** Text renders inside 4px of canvas-wrapper padding plus its own 1px top/bottom border. A single
+ * line therefore needs fontSize * lineHeight + 6 authored pixels or descenders are clipped. */
+export function minimumTextHeight(component: LintComponent): number | undefined {
+  if (component.type !== 'Text') return undefined;
+  const dynamicHeight = propVal(component.properties, 'dynamicHeight');
+  if (isTruthyBinding(dynamicHeight)) return undefined;
+  if (typeof dynamicHeight === 'string' && /\{\{/.test(dynamicHeight) && !isFalseBinding(dynamicHeight)) return undefined;
+
+  const textSizeValue = propVal(component.styles, 'textSize');
+  const lineHeightValue = propVal(component.styles, 'lineHeight');
+  const textSize = textSizeValue === undefined ? 14 : optionalStaticNumber(textSizeValue);
+  const lineHeight = lineHeightValue === undefined ? 1.5 : optionalStaticNumber(lineHeightValue);
+  if (textSize === undefined || lineHeight === undefined) return undefined;
+  return Math.ceil(textSize * lineHeight + 6);
+}
+
+export function lintTextGeometry(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  for (const component of components) {
+    const minimum = minimumTextHeight(component);
+    if (minimum === undefined) continue;
+    const desktop = component.layouts?.desktop ?? component.layout;
+    const mobile = component.layouts?.mobile ?? component.layout;
+    const layouts: Array<[string, Rect]> = [];
+    if (desktop) layouts.push([component.layouts?.desktop ? 'desktop' : 'layout', desktop]);
+    if (mobile && mobile !== desktop) layouts.push(['mobile', mobile]);
+    const undersized = layouts.filter(([, rect]) => typeof rect.height === 'number' && rect.height < minimum);
+    if (!undersized.length) continue;
+    const recommended = Math.ceil(minimum / 10) * 10;
+    warnings.push(
+      `Text "${component.name ?? component.id ?? 'Text'}" is too short for its static font/line height: ` +
+        `${undersized.map(([resolution, rect]) => `${resolution} height ${rect.height}px`).join(', ')}; ` +
+        `a single line needs at least ${minimum}px (use ${recommended}px on ToolJet's 10px grid), otherwise ` +
+        `bold glyphs and descenders are clipped. Enable dynamicHeight for intentionally wrapping content.`
+    );
+  }
+  return warnings;
 }
 
 function componentKey(component: LintComponent): string | undefined {
@@ -537,7 +580,7 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 
 /** Geometry-only checks for a complete page after creates, property edits, or layout edits. */
 export function lintRenderedGeometry(components: LintComponent[]): string[] {
-  return [...detectOverlaps(components), ...lintModalChildren(components)];
+  return [...detectOverlaps(components), ...lintModalChildren(components), ...lintTextGeometry(components)];
 }
 
 /** Lint a batch: per-component checks + overlap detection across the batch. */

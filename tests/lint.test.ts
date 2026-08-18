@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -13,6 +13,34 @@ describe('lintComponentSpec', () => {
   it('warns when a Chart has no explicit (empty) title — the default clips', () => {
     const r = lintComponentSpec({ name: 'c', type: 'Chart', properties: { data: { value: [] } } });
     expect(r.warnings.join(' ')).toMatch(/native title defaults to a non-empty string that clips/);
+  });
+
+  it('warns when a large Text is shorter than its line box plus wrapper chrome', () => {
+    const title = {
+      name: 'pageTitle',
+      type: 'Text',
+      properties: { text: { value: 'Meridian Health · Security' } },
+      styles: {
+        textSize: { value: '{{24}}' },
+        lineHeight: { value: '{{1.5}}' },
+        fontWeight: { value: 'bold' },
+      },
+      layout: { top: 0, left: 2, width: 30, height: 40 },
+    };
+    expect(minimumTextHeight(title)).toBe(42);
+    expect(lintComponents([title]).warnings.join(' ')).toMatch(
+      /Text "pageTitle" is too short.*height 40px.*at least 42px.*use 50px.*descenders are clipped/i
+    );
+
+    expect(lintComponents([{ ...title, layout: { ...title.layout, height: 50 } }]).warnings).toEqual([]);
+    expect(lintComponents([{
+      ...title,
+      properties: { ...title.properties, dynamicHeight: { value: '{{true}}' } },
+    }]).warnings).toEqual([]);
+    expect(lintComponents([{
+      ...title,
+      styles: { ...title.styles, textSize: { value: '{{variables.headingSize}}' } },
+    }]).warnings).toEqual([]);
   });
 
   it('warns when a Chart keeps a non-empty title, but not when emptied', () => {

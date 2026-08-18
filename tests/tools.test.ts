@@ -172,6 +172,18 @@ describe('get_component_catalog tool', () => {
     expect(body).not.toHaveProperty('events');
   });
 
+  it('returns Text height guidance from the catalog', async () => {
+    const client = makeClient();
+    const result = await getComponentCatalogTool(client as unknown as ToolJetClient).handler({
+      type: 'Text',
+      sections: ['renderingHints'],
+    });
+
+    const body = textOf(result) as any;
+    expect(body.renderingHints.minimumSingleLineHeight).toMatch(/textSize \* lineHeight \+ 6px/);
+    expect(body.renderingHints.headingExamples['24px at 1.5 line-height']).toBe('50px authored height');
+  });
+
   it('returns only nested Table authoring hints when requested', async () => {
     const client = makeClient();
     const tool = getComponentCatalogTool(client as unknown as ToolJetClient);

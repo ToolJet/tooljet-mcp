@@ -295,6 +295,11 @@ if (schemas.DropdownV2) {
 // design guardrails reference, served as DATA via get_component_catalog(type) so the agent reads them
 // rather than relying on prose. Defaults, not hard limits.
 const RENDERING_HINTS = {
+  Text: {
+    minimumSingleLineHeight: 'ceil(textSize * lineHeight + 6px) for static height; round up to ToolJet\'s 10px grid',
+    headingExamples: { '24px at 1.5 line-height': '50px authored height', '32px at 1.5 line-height': '60px authored height' },
+    note: 'The canvas wrapper and Text border consume 6px. A 24px Text at the default 1.5 line-height needs 42px, so the default 40px component clips glyphs/descenders. Use 50px, or dynamicHeight for wrapping content.',
+  },
   Chart: {
     recommendedWidthCols: '≈13–15 for a compact few-category pie/donut; ≈20–24 for a categorical bar with longer labels',
     maxPerContentRow: 2,
