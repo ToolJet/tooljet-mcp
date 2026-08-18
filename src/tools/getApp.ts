@@ -5,7 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function getAppTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_app',
-    description: 'Fetch a ToolJet app by id, including its pages, versions, and editing version details.',
+    description:
+      'Fetch the FULL raw ToolJet app by id (pages, versions, every component with its complete widget ' +
+      'schema). This is large (100KB+ for a real app) — for routine inspection prefer get_app_summary, ' +
+      'which returns the same structure with actual values only. Use get_app only when you need raw fields ' +
+      'the summary omits.',
     inputSchema: {
       app_id: z.string(),
     },

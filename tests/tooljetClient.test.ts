@@ -131,6 +131,107 @@ describe('createClient', () => {
     });
   });
 
+  // The raw GET /api/apps/:id nests actual values under pages[].components[id].component.definition,
+  // with the full widget schema under component.properties. getAppSummary must project values only.
+  const rawAppResponse = {
+    id: 'app1',
+    name: 'My App',
+    editing_version: { id: 'ver1' },
+    pages: [
+      {
+        id: 'page-home',
+        name: 'Home',
+        handle: 'home',
+        components: {
+          'c-1': {
+            layouts: { desktop: { top: 0, left: 0, width: 20, height: 4 } },
+            component: {
+              name: 'title',
+              component: 'Text',
+              // full widget schema (the bulk) — must be dropped
+              properties: { text: { type: 'code', displayName: 'x', validation: {} } },
+              definition: {
+                properties: { text: { value: 'Dashboard' } },
+                styles: { textSize: { value: 24 } },
+                others: { showOnMobile: { value: '{{false}}' } },
+              },
+            },
+          },
+        },
+      },
+    ],
+    data_queries: [
+      { id: 'q1', name: 'getRows', kind: 'tooljetdb', data_source_id: 'ds1', options: { operation: 'list_rows' }, extra: 'drop' },
+    ],
+    events: [
+      { id: 'e1', name: 'onClick → run-query', sourceId: 'c-1', target: 'component', event: { eventId: 'onClick', actionId: 'run-query' }, appVersionId: 'ver1' },
+    ],
+  };
+
+  describe('getAppSummary', () => {
+    it('projects values-only components, compact queries and events', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: rawAppResponse }));
+      const client = createClient(auth, config);
+      const summary = await client.getAppSummary('app1');
+
+      expect(summary).toEqual({
+        app_id: 'app1',
+        name: 'My App',
+        version_id: 'ver1',
+        pages: [
+          {
+            id: 'page-home',
+            name: 'Home',
+            handle: 'home',
+            components: [
+              {
+                id: 'c-1',
+                name: 'title',
+                type: 'Text',
+                layouts: { desktop: { top: 0, left: 0, width: 20, height: 4 } },
+                properties: { text: { value: 'Dashboard' } },
+                styles: { textSize: { value: 24 } },
+                others: { showOnMobile: { value: '{{false}}' } },
+              },
+            ],
+          },
+        ],
+        queries: [
+          { id: 'q1', name: 'getRows', kind: 'tooljetdb', data_source_id: 'ds1', options: { operation: 'list_rows' } },
+        ],
+        events: [
+          { id: 'e1', name: 'onClick → run-query', sourceId: 'c-1', target: 'component', event: { eventId: 'onClick', actionId: 'run-query' } },
+        ],
+      });
+    });
+  });
+
+  describe('getComponent', () => {
+    it('returns one component projection with its page_id', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: rawAppResponse }));
+      const client = createClient(auth, config);
+      const c = await client.getComponent('app1', 'c-1');
+      expect(c).toEqual({
+        id: 'c-1',
+        name: 'title',
+        type: 'Text',
+        page_id: 'page-home',
+        layouts: { desktop: { top: 0, left: 0, width: 20, height: 4 } },
+        properties: { text: { value: 'Dashboard' } },
+        styles: { textSize: { value: 24 } },
+        others: { showOnMobile: { value: '{{false}}' } },
+      });
+    });
+
+    it('throws when the component id is not in any page', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: rawAppResponse }));
+      const client = createClient(auth, config);
+      await expect(client.getComponent('app1', 'nope')).rejects.toThrow(
+        /component nope not found in app app1/
+      );
+    });
+  });
+
   describe('getDevelopmentEnvironmentId', () => {
     it('finds the development environment from a top-level array response', async () => {
       auth.authedFetch.mockResolvedValueOnce(

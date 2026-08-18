@@ -169,9 +169,34 @@ export interface CreateEventsParams {
   events: EventSpec[];
 }
 
+/** Compact projection of one placed component — actual bound values only, no widget schema. */
+export interface ComponentSummary {
+  id: string;
+  name?: string;
+  type?: string;
+  layouts?: unknown;
+  /** Bound property values, e.g. { text: { value: 'Hello' } }. */
+  properties?: Record<string, unknown>;
+  styles?: Record<string, unknown>;
+  others?: Record<string, unknown>;
+}
+
+/** Compact projection of a whole app — what an authoring agent needs, without the ~10× schema bloat
+ *  that the raw GET /api/apps/:id carries (each component embeds its full widget property schema). */
+export interface AppSummary {
+  app_id: string;
+  name?: string;
+  version_id?: string;
+  pages: Array<{ id: string; name?: string; handle?: string; components: ComponentSummary[] }>;
+  queries: Array<{ id: string; name?: string; kind?: string; data_source_id?: string; options?: unknown }>;
+  events: Array<{ id: string; name?: string; sourceId?: string; target?: string; event?: unknown }>;
+}
+
 export interface ToolJetClient {
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
+  getAppSummary(appId: string): Promise<AppSummary>;
+  getComponent(appId: string, componentId: string): Promise<ComponentSummary & { page_id: string }>;
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
   createEvents(params: CreateEventsParams): Promise<{ created: number }>;
   getDevelopmentEnvironmentId(): Promise<string>;
@@ -231,6 +256,63 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
     return res.json();
+  }
+
+  // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
+  // { component: { name, component: <type>, definition: { properties, styles, others } }, layouts }.
+  // `component.definition` holds the ACTUAL bound values; `component.properties`/`styles` is the full
+  // widget schema (the bulk). Project to values-only.
+  function projectComponent(id: string, entry: any): ComponentSummary {
+    const c = entry?.component ?? {};
+    const def = c.definition ?? {};
+    return {
+      id,
+      name: c.name,
+      type: c.component,
+      layouts: entry?.layouts,
+      properties: def.properties,
+      styles: def.styles,
+      others: def.others,
+    };
+  }
+
+  async function getAppSummary(appId: string): Promise<AppSummary> {
+    const full = await getApp(appId);
+    const pages = (full.pages ?? []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      handle: p.handle,
+      components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
+    }));
+    const queries = (full.data_queries ?? []).map((q: any) => ({
+      id: q.id,
+      name: q.name,
+      kind: q.kind,
+      data_source_id: q.data_source_id,
+      options: q.options,
+    }));
+    const events = (full.events ?? []).map((e: any) => ({
+      id: e.id,
+      name: e.name,
+      sourceId: e.sourceId,
+      target: e.target,
+      event: e.event,
+    }));
+    return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
+  }
+
+  async function getComponent(
+    appId: string,
+    componentId: string
+  ): Promise<ComponentSummary & { page_id: string }> {
+    const full = await getApp(appId);
+    for (const p of full.pages ?? []) {
+      const entry = (p.components ?? {})[componentId];
+      if (entry) return { ...projectComponent(componentId, entry), page_id: p.id };
+    }
+    throw new Error(
+      `ToolJet getComponent failed: component ${componentId} not found in app ${appId}`
+    );
   }
 
   async function createApp(name: string): Promise<CreateAppResult> {
@@ -538,6 +620,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   return {
     createApp,
     getApp,
+    getAppSummary,
+    getComponent,
     createPage,
     createEvents,
     getDevelopmentEnvironmentId,
