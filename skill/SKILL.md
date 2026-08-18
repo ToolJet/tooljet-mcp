@@ -19,7 +19,7 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 
 ## Be honest about what's buildable — don't say yes to everything
 
-Build only what these MCP tools and ToolJet's **real** components/features actually support. If a request — or any part of it — can't be done with the standard tools (a component or property that doesn't exist, an interaction ToolJet doesn't support, a datasource that isn't connected, anything outside this tool surface), **tell the user plainly**: name what isn't supported and why, and offer the nearest supported alternative or a manual step in the visual builder. **Never fake it** — don't invent components/properties/actions, don't silently drop a requested feature and present the app as finished, and don't claim something works when you haven't verified it (use `run_query` / `validate_app` / the browser pass to actually check). Delivering the supported parts and clearly listing what you couldn't do — and why — is the honest, useful outcome; a broken or imaginary feature presented as working is not.
+Build only what these MCP tools and ToolJet's **real** components/features actually support. If a request — or any part of it — can't be done with the standard tools (a component or property that doesn't exist, an interaction ToolJet doesn't support, **a datasource or third-party integration that isn't connected — you cannot connect a new one from here**, anything outside this tool surface), **tell the user plainly**: name what isn't supported and why, and offer the nearest supported alternative or a manual step in the visual builder. (For an unconnected source like Strava/Stripe/a new API: offer to have the user connect it first, or build against a **seeded placeholder table**, clearly labelled — details in the reference. Never handle credentials yourself.) **Never fake it** — don't invent components/properties/actions, don't silently drop a requested feature and present the app as finished, and don't claim something works when you haven't verified it (use `run_query` / `validate_app` / the browser pass to actually check). Delivering the supported parts and clearly listing what you couldn't do — and why — is the honest, useful outcome; a broken or imaginary feature presented as working is not.
 
 ## The tools
 
@@ -55,22 +55,39 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 ## Before you build — prefer safe defaults; ask only when it changes what you build
 
-Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table**, safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, surface the signals that actually matter as `Statistics`/`Chart` (only what answers a real question — see the design framework), and neutral ToolJet-native styling. Ship it, then refine.
+Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table** (a single job), safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, surface the signals that actually matter as `Statistics`/`Chart` (only what answers a real question — see the design framework), and neutral ToolJet-native styling. Ship it, then refine. (For a **multi-domain** request, first plan the page architecture — see "Plan the app" — then these defaults apply *per page*.)
 
 **Ask 1–3 focused questions only when the answer genuinely changes what you build** — a NEW data model (what fields/types), destructive or write operations (edit/delete flows), permissions, or a genuinely divergent product choice. Don't block a read-only dashboard on questions with obvious defaults. If the user already gave a detailed spec, build directly.
 
-## Building big apps — ship usable iterations, not layers
+## Plan the app — information architecture BEFORE any component
 
-**If a request is too big to do well in one pass, say so** — tell the user the scope is large, propose a short phase breakdown (what each phase delivers), and build phase by phase rather than attempting everything at once. Phase it by **usable increments, NOT by layer.** Each phase must be a **complete, working, already-decent-looking slice** the user could actually use — never "skeleton first, features next, polish last." Polish is **not** a phase: apply the design framework + visual defaults to every phase as you go, so the app looks finished at each step.
+Decide the **page structure first.** This is the single biggest difference between a focused app and one crowded, slow-to-read page. Do this before creating anything.
 
-- **Phase 1 = the small-but-high-impact core, working end-to-end** — not necessarily the *smallest* possible; pick the slice that delivers the **most usefulness for the least build** (the capability the user cares about most). It ships complete: its data (create/seed the table), a styled page, AND its key interactivity, all functioning and presentable. The user gets something genuinely valuable after phase 1.
-- **Each later phase = one more usable capability**, again end-to-end. E.g. for a tickets app: (1) browse tickets — list page that works and looks right → (2) open a ticket — row-click → detail page → (3) create/edit a ticket — form + insert/update + refresh → (4) analytics — a dashboard page with charts/metrics. Each phase is independently useful and reasonably polished.
+1. **List the distinct user jobs the request implies.** "A personal hub with agenda, workouts, finances, and notes" is **four jobs**, not one screen. A CRM is "browse contacts / see a contact / log an activity". Each substantial job — its own data and its own workflow — is a candidate for its **own focused page**.
+2. **Words like "homepage", "dashboard", "portal", "hub", "app" name a PRODUCT, not a single page.** Don't take them literally as one page. A multi-domain request almost always means **one overview page + one focused page per major job** — never every feature stacked on one long scroll.
+3. **Design the page set:**
+   - an **Overview / Home page** — at-a-glance summaries (a few KPI tiles + the single most important item from each domain) and **navigation into** the focused pages. It orients the user; it does NOT contain every domain's full table and form.
+   - a **focused page per substantial workflow** — each does ONE job thoroughly (its list, its detail, its create/edit) with one obvious primary action.
+   - a **genuinely simple, single-job app → a single page.** Don't fragment something that is truly one job.
+4. **Map every capability to exactly ONE page.** If two unrelated capabilities are landing on the same page, that's the signal to split. Nothing unrelated piles onto the overview.
+5. Give each page a clear one-line job and a relevant `icon`, then design each page (see Design below).
 
-After each phase, briefly say what now works and **name the next phase** (what it will add and why), then share the app URL so the user watches real, usable value appear — this makes the next step an easy "yes". **When the planned phases are done, don't just stop:** proactively suggest **2–3 concrete, high-value things the app could grow into next**, grounded in its actual data and domain (e.g. an analytics/trends view, an edit/create flow, bulk actions, CSV export, a related object, role-based views). Give the user an obvious next move rather than leaving them at a dead end. **But**: if the user would rather wait for the finished app, honor that and build end-to-end. For a **small/simple** app, skip phasing and build in one pass — don't over-ceremony it.
+**State the page plan to the user first** — one line per page (`Home · overview` / `Workouts · log + history` / …). It's cheap, and it prevents the crowded-single-page failure before it happens.
+
+## Build in phases — page architecture and phasing are SEPARATE decisions
+
+Plan the whole page architecture up front (above); **build it in phases.** A phase is an *order-of-work* decision, not an architecture decision — **"phase 2" is the next capability built on the page where it belongs, NOT more stuff appended to the Home/overview page.**
+
+- **If the scope is large, say so** and propose the phase breakdown (one line each) before building.
+- **Deliver small, complete, POLISHED phases fast** — aim to give the user a **useful working loop within a few minutes** (view → act → feedback on one real page), not a broad skeleton. Polish is **not** a later phase; apply the design framework + async states to every phase as you go.
+- **Complete journeys over skeletons.** Build ONE page's full loop (data + UI + interactivity + async states + polish) before starting the next. Never stub out several empty pages or scatter disconnected placeholders.
+- **Phase 1 = the highest-value single job, fully working** on its own focused page (plus a minimal Home if the app is multi-domain). Each later phase = the next job's page, complete end-to-end.
+- **Verify each increment in the browser as you finish it** — not once at the very end.
+- After each phase, say what now works and **name the next phase**; when the planned phases are done, proactively suggest **2–3 concrete, high-value things the app could grow into next**, grounded in its real data/domain. **But** honor "just wait" (build end-to-end), and for a genuinely small app skip phasing.
 
 ## App model & binding syntax
 
-- app → version → page → component. `create_app` gives one app + version + a "Home" page. Add more pages with `add_page` when the app benefits (e.g. list + detail, or separate dashboard/admin views); ToolJet auto-renders navigation between pages. Don't fragment a simple app across many pages — a single well-laid-out page is often best.
+- app → version → page → component. `create_app` gives one app + version + a "Home" page. Add pages with `add_page` per the information architecture (above). ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
 - **In a multi-page app, give EVERY page a relevant icon** — pass `add_page`'s `icon` (a Tabler icon name, e.g. `IconLayoutDashboard`, `IconUsers`, `IconChartBar`, `IconListDetails`, `IconSettings`, `IconReportAnalytics`). The icon shows in the auto-generated nav; a page without one falls back to a generic file icon and the nav looks unfinished.
 - A component has **properties**; each property value is `{ "value": <val> }`. Values starting with `{{ … }}` are **bindings** evaluated at runtime.
 - A query exposes its result as `queries.<queryName>.data`. Bind a component property to it, e.g. a Table's `data.value = "{{queries.<queryName>.data}}"`.
@@ -84,93 +101,7 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 - **Custom markup inside a component's own properties** — many components take HTML in their content/cell/tooltip properties (a Table column rendered as HTML, a `Text` set to HTML, custom cell formatting). Use it to polish the UI in place.
 - **Rule of thumb:** built-in when it's **interactive, data-bound, or meant to be tweaked visually**; HTML when it's **static presentation or fine UI customization** and HTML expresses it more cleanly.
 
-The full built-in palette (with purposes) is below. Once you've picked a component, call `get_component_catalog(type)` for its exact properties (and, for `Chart`/`Statistics`, the `renderingHints` sizing defaults) — configure precisely, don't guess property names.
-
-### Built-in components (use these first)
-
-| Component (`type`) | Purpose |
-|---|---|
-| `Accordion` | Accordion — Group components |
-| `AudioRecorder` | AudioRecorder — Records audio |
-| `BoundedBox` | BoundedBox — An infinitely customizable image annotation widget |
-| `Button` | Button — Trigger actions: queries, alerts, set variables etc. |
-| `ButtonGroup` | ButtonGroupLegacy — Group of buttons |
-| `ButtonGroupV2` | ButtonGroup — Group of buttons |
-| `Calendar` | Calendar — Display calendar events |
-| `Camera` | Camera — Captures video & photos from camera |
-| `Cascader` | Cascader — Hierarchical single item selector |
-| `Chart` | Chart — Visualize data |
-| `Chat` | Chat — Chat interface with message history |
-| `Checkbox` | Checkbox — Single checkbox toggle |
-| `CircularProgressBar` | CircularProgressBar — Show circular progress |
-| `CodeEditor` | CodeEditor — Edit source code |
-| `ColorPicker` | ColorPicker — Choose colors from a palette |
-| `Container` | Container — Group components |
-| `CurrencyInput` | CurrencyInput — Currency input field |
-| `CustomComponent` | CustomComponent — Create React components |
-| `Datepicker` | DatePickerLegacy — Choose date and time |
-| `DatePickerV2` | DatePicker — Choose date |
-| `DaterangePicker` | DateRangePicker — Choose date ranges |
-| `DatetimePickerV2` | DatetimePicker — Choose date and time |
-| `Divider` | HorizontalDivider — Separator between components |
-| `DropdownV2` | Dropdown — Single item selector |
-| `EmailInput` | EmailInput — Email input field |
-| `FileButton` | FileButton — A button that triggers file selection. Label updates to show selected file count after selection. |
-| `FileInput` | FileInput — File input |
-| `FilePicker` | FilePicker — File Picker |
-| `FlexContainer` | FlexContainer — Auto-layout flex container |
-| `Form` | Form — Wrapper for multiple components |
-| `Html` | Html — View HTML content |
-| `Icon` | Icon — Icon |
-| `IFrame` | Iframe — Embed external content |
-| `Image` | Image — Show image files |
-| `JSONEditor` | JSONEditor — Edit JSON data |
-| `JSONExplorer` | JSONExplorer — Explore JSON data |
-| `Kanban` | Kanban — Task management board |
-| `KanbanBoard` | KanbanBoard — Task management board |
-| `KeyValuePair` | KeyValuePair — Display data in key-value format |
-| `Link` | Link — Add link to the text |
-| `Listview` | Listview — List multiple items |
-| `Map` | Map — Display map locations |
-| `Modal` | ModalLegacy — Show pop-up windows |
-| `ModalV2` | Modal — Show pop-up windows |
-| `ModuleContainer` | ModuleContainer — Module Container |
-| `ModuleViewer` | ModuleViewer — Module |
-| `MultiselectV2` | Multiselect — Multiple item selector |
-| `Navigation` | Navigation — Create custom navigation menus |
-| `NumberInput` | NumberInput — Numeric input field |
-| `Pagination` | Pagination — Navigate pages |
-| `PasswordInput` | PasswordInput — Secure text input |
-| `PDF` | PDF — Embed PDF documents |
-| `PhoneInput` | PhoneInput — Phone input field |
-| `PopoverMenu` | PopoverMenu — Popover Menu |
-| `ProgressBar` | ProgressBar — Show progress |
-| `QrScanner` | QrScanner — Scan QR codes and hold its data |
-| `RadioButton` | RadioButtonLegacy — Select one from multiple choices |
-| `RadioButtonV2` | RadioButton — Select one from multiple choices |
-| `RangeSlider` | RangeSliderLegacy — Adjust value range |
-| `RangeSliderV2` | RangeSlider — Adjust value range |
-| `ReorderableList` | ReorderableList — Reorderable List |
-| `RichTextEditor` | RichTextEditor — Rich text editor |
-| `Spinner` | Spinner — Indicate loading state |
-| `StarRating` | StarRating — Star rating |
-| `Statistics` | Statistics — Show key metrics |
-| `Steps` | Steps — Step-by-step navigation aid |
-| `SvgImage` | SvgImage — Display SVG graphics |
-| `Table` | Table — Display paginated tabular data |
-| `Tabs` | Tabs — Organize content in tabs |
-| `Tags` | Tags — Display tag labels |
-| `TagsInput` | TagsInput — Tag input with create, select, and delete functionality |
-| `Text` | Text — Display text or HTML |
-| `TextArea` | Textarea — Multi-line text input |
-| `TextInput` | TextInput — User text input field |
-| `Timeline` | Timeline — Show event timeline |
-| `TimePicker` | TimePicker — Choose date and time |
-| `Timer` | Timer — Countdown or stopwatch |
-| `ToggleSwitch` | ToggleSwitchLegacy — User-controlled on-off switch |
-| `ToggleSwitchV2` | ToggleSwitch — User-controlled on-off switch |
-| `TreeSelect` | TreeSelect — Hierarchical item selector |
-| `VerticalDivider` | VerticalDivider — Vertical line separator |
+The full built-in palette (every `type` + purpose) is in **`references/tooljet-reference.md`**; pick from built-ins first. Once you've picked one, call `get_component_catalog(type)` for its exact properties (and, for `Chart`/`Statistics`, the `renderingHints` sizing defaults) — configure precisely, don't guess property names.
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
@@ -213,133 +144,37 @@ Then hold to these:
 - **Statistics height:** a compact tile with no visible secondary content ≈ **110–120px**; with useful secondary content ≈ **130–150px**.
 - **Table columns:** when presentation matters, set an **explicit, complete `columns` array** in the order you want. Do **not** rely on the property order of a transformed query object to reorder existing ToolJet columns — it won't reorder them. Natural header casing is fine: **`headerCasing: "none"` is a valid value** (keeps human labels like "Due date" instead of forcing Title/UPPER casing).
 
-### 4. Mobile — skip it by default
+### 4. Density — don't overcrowd; split instead
+- A page should serve **~one primary job** (plus light supporting context). If you find yourself stacking full tables/forms for multiple **unrelated** domains on one page, STOP and split them into focused pages (see "Plan the app") — crowding is an **architecture** smell, not a layout problem.
+- Use **progressive disclosure**: push secondary detail behind a row-click → detail page or modal, and behind tabs/sections — don't lay everything inline at once.
+- Keep **one obvious primary action** per page and a clear visual hierarchy; if a user can't tell what this page is *for* in a glance, it's doing too much.
+- **But dense is fine when the job genuinely needs it.** A legitimate operational surface (a trading console, an ops monitor, an admin grid) can be information-dense — density is only a problem when it **mixes unrelated jobs** or **buries the primary action**. Judge by "one clear job + one obvious primary action + clean hierarchy", not a hard component count.
+
+### 5. Mobile — skip it by default
 Most customers view these on desktop. **Don't build or tune a mobile layout for the initial build unless the user explicitly asks.** When they do, treat mobile as **recomposition** — rethink what leads and what collapses on a narrow screen — not blind vertical stacking of the desktop layout. And note: **resizing a browser window does NOT prove ToolJet's mobile layout rendered** — that is a structural guess, not real mobile visual validation; only claim mobile works if you verified it the way ToolJet actually renders mobile.
 
-## Component binding reference (22 components)
+## Async & UI states — required, not polish
 
-Authoritative rules for binding each component correctly (what must be set, or it renders nothing / wrong). Choose whichever components best fit the app you're building.
+Any element backed by a query is **not done** until its states are handled. These are part of building the feature, not a later polish pass:
+- **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a `loadingState`), bound to the query's loading flag `{{queries.<q>.isLoading}}` — never leave a component blank while data loads.
+- **Empty:** a query can return zero rows. Show a clear empty state ("No workouts logged yet" via a Text/HTML block, or the Table's own empty message) — not a blank grid or a broken-looking chart.
+- **Error:** a query can fail. Surface it (a `show-alert` on the query's failure event, or a visible error state) — never present blank/stale as if it were fine.
+- **Refresh:** after any mutation (create/update/delete), **re-run the list query** so the UI reflects the change (see "Form submit → insert + refresh").
+- **Success:** confirm a mutation with a `show-alert` success (and `close-modal` if it was in a modal).
+- **Disabled / no double-fire:** while a mutation runs, **disable the button that triggered it** — bind its `Disable` to the mutation query's `{{queries.<mutation>.isLoading}}` (or `control-component` setDisable/setLoading around the action). A double-click must never fire the mutation twice.
 
-### Button
-isDisabled: bind to form validity (`{{components.form1.isValid}}`) or other conditional logic. isVisible: bind to conditional expressions to show/hide contextually. isLoading: bind to `{{queries.queryName.isLoading}}` to reflect query execution state.
+## Reference — look these up as you build
 
-### Calendar
-`dateFormat` MUST match all event start/end date strings — mismatch causes events to not render. Default: 'MM-DD-YYYY HH:mm:ss A Z'. Always reformat query dates with moment(): `{{queries.q.data.map(e=>({title:e.title,start:moment(e.start).format('MM-DD-YYYY HH:mm:ss A Z'),end:moment(e.end).format('MM-DD-YYYY HH:mm:ss A Z'),allDay:false}))}}`. selectedSlots.start/.end: pre-fill new-event form on slot click. selectedEvent: read clicked event fields for edit/delete queries.
+The full **per-component binding rules**, the **built-in component palette**, and **per-datasource query schemas** are in **`references/tooljet-reference.md`** — open it before configuring a component or writing a query. (Or call `get_component_catalog(type)` for one component's full schema.)
 
-### Chart
-jsonDescription takes a Plotly JSON schema string — use JavaScript transformation within {{}} to map query arrays to Plotly series format. clickedDataPoint exposes {xAxisLabel, yAxisLabel, dataLabel, dataValue} for drill-down queries.
-
-### Chat
-loadingResponse property fxActive MUST be set to `{{queries.<queryName>.isLoading}}` — this shows the typing indicator while the AI query runs. Feed user message to query: bind prompt to `{{components.chatName.lastMessage.message}}`. appendHistory action (called on query success) expects: {message, messageId, timestamp, name, avatar, type:'response'}. For multi-turn: map history to OpenAI role format — `{{components.chatName.history.map(m => ({role: m.type === 'message' ? 'user' : 'assistant', content: m.message}))}}`.
-
-### DatePickerV2
-defaultValue is the ONLY bindable value field — there is no separate `value` property. Prefill from query: defaultValue=`{{queries.queryName.data[0].fieldName}}`. Prefill inside a modal opened from a table row (determine table-connected vs standalone via the app's the current state — never from component naming): defaultValue=`{{components.tableName.selectedRow.fieldName}}` — NOT `queries.name.data[0]`, which is the first row of the table's list query, not the clicked row. Use a static string/date literal only when the modal is confirmed standalone (no prefill needed).
-
-### DatetimePickerV2
-defaultValue is the ONLY bindable value field — there is no separate `value` property. Prefill from query: defaultValue=`{{queries.queryName.data[0].fieldName}}`. Prefill inside a modal opened from a table row (determine table-connected vs standalone via the app's the current state — never from component naming): defaultValue=`{{components.tableName.selectedRow.fieldName}}` — NOT `queries.name.data[0]`, which is the first row of the table's list query, not the clicked row. Use a static string/date literal only when the modal is confirmed standalone (no prefill needed).
-
-### DropdownV2
-TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: advanced=`{{false}}`, options=[{label:'X', value:1, disable:{value:false}, visible:{value:true}}]. Do NOT set schema. (2) QUERY-BOUND: advanced=`{{true}}`, schema=`{{queries.queryName.data}}`. Do NOT set options. Query data must be an array of {label, value, disable, visible} objects — transform at the query level if needed. Exposed variables: the CURRENT SELECTION is `.value` (e.g. `{{components.name.value}}`) — use this for filtering, conditions and reading the choice; the selected option's display text is `.selectedOption.label`. The `label` PROPERTY is the field's TITLE (e.g. 'Status'), NOT the selection — NEVER compare data against `.label` (it silently matches zero rows). PREFILL: there is no `value`/`defaultValue` input property. The initially selected item is whichever entry in the bound `schema`/`options` array has BOTH `visible: true` AND `default: true` (the default-picker requires `visible === true && default === true`, so an option missing `visible` never preselects even with `default: true`). Set it via a transform, e.g. when prefilling from a table row inside a modal: `schema: {{ queries.queryName.data.map(o => ({...o, visible: true, default: o.value === components.tableName.selectedRow.fieldName})) }}`. When the dropdown edits a table column with a fixed set of values, bind `schema` to a dedicated lookup query (same datasource as the table, filtered to the relevant scope) — never hardcode static `options` for a database-backed column.
-
-### Form
-Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`.
-
-### KanbanBoard
-Bind cardData from query array shaped as [{id, title, columnId}]; bind columnData from query array shaped as [{id, title}]. lastCardMovement exposes {cardId, sourceColumn, destinationColumn} — use in update queries triggered by onCardMoved event to persist reordering.
-
-### KeyValuePair
-Bind data property to a query object for display/edit: `{{queries.queryName.data[0]}}`. changeSet exposes only the modified key-value pairs — use in update queries rather than the full data object.
-
-### Listview
-Bind data property to a query array: `{{queries.queryName.data}}`. Child components inside the list access the current row via the list's data binding context.
-
-### Modal
-show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
-
-### ModalV2
-show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
-
-### MultiselectV2
-Only `.searchText` is exposed — there is no `.values` or `.selected` variable on MultiselectV2.
-
-### NumberInput
-Use debounce: 300 on onChange events that trigger queries. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
-
-### Pagination
-currentPageIndex is 1-based (starts at 1, not 0). Wire to Table: add a control-component event that calls setPage with value=`{{components.paginationName.currentPageIndex}}`. Bind numberOfPages to the total record count from a COUNT query.
-
-### RadioButtonV2
-Exposed variable is `.label` — there is NO `.value` on RadioButtonV2. Use `{{components.radioName.label}}` to read the selected option.
-
-### Statistics
-primaryValue must be a scalar — bind `queries.name.data[0].fieldName` from an aggregate query, never the full array. secondarySignDisplay accepted values: 'positive', 'negative', 'none' — never a boolean. icon is MANDATORY — always set it; never leave empty. primaryPrefixText / primarySuffixText are static strings only — do not bind expressions here. Statistics is display-only — its exposed variables are read-back values, not filter inputs.
-
-### Table
-Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector.value=`"rawJson"` — both MUST be set together or the table renders nothing. NEVER set the table-level `autogenerateColumns.value` to false — it must always be true so columns render from the query rows automatically; false makes the table show ONLY the explicit `columns` array and blanks out on any key mismatch. This is separate from a column's own `autogenerated` field — individual columns may have `autogenerated: false` (that is normal for custom columns); only the table-level `autogenerateColumns` flag must never be false. pageIndex is 0-based: SQL offset = pageIndex * pageSize. selectedRow columns come from actual query result fields — never fabricate column names. Columns support JavaScript transforms on query fields. Dynamic columns: only set `useDynamicColumn`/`columnData` for a FLAT, build-time column list. `columnData` is evaluated once with no row in scope, so it MUST NOT reference `rowData`/`cellValue`, MUST NOT contain nested `{{ }}`, and cannot express per-cell conditions — any conditional `cellBackgroundColor`/`textColor`/`isEditable`/`dynamicOptions`/etc. MUST go on static `columns` (resolved per cell). Otherwise the table renders ZERO columns. Explicit `columns` entries are objects `{name, key, id, columnType, columnSize, autogenerated: false}` — set `autogenerated: false` on custom columns so they PERSIST; an `autogenerated: true` column whose `key` does not match a query field is dropped. MISLEADING FAILURE: if the table shows unrelated demo columns (e.g. photo/email/name) that you never defined, its `data` binding resolved EMPTY — that is a broken DATA binding (wrong query name, or the query returned nothing), NOT a column problem. Fix the data binding; do not touch columns.
-
-### TagsInput
-Bind schema to a query for dynamic tag options: schema=`{{queries.queryName.data}}` (array of {label, value}). selectedTags exposes only the checked tags; values exposes all current tags.
-
-### TextArea
-Use debounce: 300 on onChange events that trigger queries. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
-
-### TextInput
-Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
-
-## Datasource query reference
-
-`add_query`/`add_queries` work on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call `list_datasources` to see each datasource's `kind`). Only the `options` differ per kind:
-
-> **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in `list_datasources`:
-> - **Say so plainly** — ToolJet has no native integration for it (or it simply isn't connected), and you can't connect one from here. Don't fabricate a query against it or present placeholder data as if it were live.
-> - **Offer the real paths:** (a) the user connects it in ToolJet first — for a third-party API that usually means a **REST API datasource** pointed at that API; auth/OAuth is a manual setup step and you must **never handle credentials yourself** — then you build queries + UI against it; or (b) build the app's full UI and structure **now** against a **ToolJet DB table seeded with representative sample data**, clearly labelled as placeholder, so it's ready to rewire to the real source later. Confirm which the user prefers.
-- **tooljetdb** — `{ operation: "list_rows", table_id: "<id>", list_rows: {}, runOnPageLoad: true }` (see below)
-- **postgresql / mysql** — `{ mode: "sql", query: "SELECT …", query_params: [], run_on_page_load: true }`
-- **runjs** — `{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }` (great for chart aggregation — reference other queries' data, return a shaped value)
-- **servicenow** — `{ operation: "list_records", table: "incident", … }`
-Ask for a specific datasource's full option schema when you need it.
-
-### Building an app that needs a NEW data model (most real requests)
-Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
-1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
-2. `create_table` for each table.
-3. Optionally `insert_rows` to seed a handful of realistic sample rows so the app doesn't render empty (only if the user wants sample data).
-4. Then `add_queries` + `add_components` as usual.
-For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
-
-### ToolJet DB (`kind: "tooljetdb"`)
-- Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
-- List all rows: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }`.
-- `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
-- `list_rows` may carry `limit`, `offset`, `where_filters`, `order_filters` for filtering/sorting.
-- **Write operations** (for edit/create flows) use indexed-object option shapes:
-  - Create: `{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }`
-  - Update: `{ "operation": "update_rows", "table_id": "<id>", "update_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "columns": { "0": { "column": "status", "value": "{{...}}" } } } }`
-  - Delete: `{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }`
-- After a write, re-run the list query to refresh the UI (see the "Form submit → insert + refresh" recipe).
-
-(Other datasources — postgresql, mongodb, servicenow, etc. — have their own query schemas; ask for the specific one when needed.)
-
-## Charts — how to make them render reliably (READ THIS before adding a Chart)
-
-The `Chart` component fails in a specific, common way: **ToolJet's chart-property evaluator silently returns EMPTY for complex expressions** — inline IIFEs, dynamic field-name detection, big reduces written inside the `{{ }}` binding. The chart then draws its axes/containers but receives **no data traces** (looks empty/broken). Avoid it:
-
-1. **Use the simple mode** (the default — keep `plotFromJson` false / don't set it). Set two properties:
-   - `type`: `"bar"` | `"line"` | `"pie"`
-   - `data`: an array of `{ x, y }` objects.
-2. **Build `data` with a SIMPLE, EXPLICIT binding.** First call `get_table_schema` (or `get_app`) to learn the **real field names** — never auto-detect them. Then use explicit filters/maps, no IIFE:
-   ```
-   data.value = "{{ [
-     { x: 'Open',        y: queries.getTickets.data.filter(r => r.status === 'Open').length },
-     { x: 'In Progress', y: queries.getTickets.data.filter(r => r.status === 'In Progress').length },
-     { x: 'Resolved',    y: queries.getTickets.data.filter(r => r.status === 'Resolved').length }
-   ] }}"
-   ```
-   For a straight mapping, `queries.q.data.map(r => ({ x: r.category, y: r.amount }))` is fine — simple and explicit.
-3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind `data` to a query that already returns `[{x,y}]` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: `{{queries.chartData.data}}`. Query engines evaluate JS reliably; the chart property evaluator does not.
-4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with `JSON.stringify(...)`.
-
-Rule of thumb: **an empty chart means the binding was too complex.** Replace dynamic detection with explicit field names + simple `.filter().length` / `.map()`.
+The gotchas that most often break a build, inlined so you don't miss them:
+- **Table:** set `data.value = {{queries.<q>.data}}` **and** `dataSourceSelector.value = "rawJson"` (both, or it renders blank); keep table-level `autogenerateColumns` true unless you supply a full explicit `columns` array.
+- **DropdownV2:** the selection is `.value` (display text `.selectedOption.label`); `.label` is the field TITLE — never filter data on it. Bound options need `visible:true` + `default:true` to preselect.
+- **Styling** goes in the top-level `styles` object, **never** under `properties`.
+- **Chart:** empty native title + a separate `Text` heading; build `data` as a simple explicit `[{x,y}]` and do heavy aggregation in a **query**, not in the chart binding.
+- **Events:** the id is `set-custom-variable` (not `set-variable`); master→detail passes the row via `set-custom-variable` + `{{variables…}}` (a `runOnPageLoad` query does NOT re-run on an in-app page switch).
+- **tjdb queries** reference the table by `table_id` (from `list_tables()`), not by name; writes use indexed-object option shapes (see the reference).
+- **New data model:** for "build a CRM / expense tracker" with no table yet — **propose the tables+columns and confirm with the user** (schema is a commitment), then `create_table` → optional `insert_rows` → `add_queries`/`add_components`.
 
 ## Interactivity — wire events so the app DOES things (not just displays)
 
@@ -362,6 +197,7 @@ Components and queries alone make a *static* app. Use `add_events` to add behavi
 - **Form submit → insert + refresh:** on the submit Button's `onClick`, two events: `run-query` (the insert/create query), then `run-query` (the list query, to refresh the table). Add `show-alert` success, and `close-modal` if the form is in a modal.
 - **Master → detail (IMPORTANT — the naive way silently fails):** on Table `onRowClicked`, FIRST `set-custom-variable` (key e.g. `selectedTicket`, value `{{components.<table>.selectedRow}}`), THEN `switch-page` to the detail page. Bind the detail page's components to `{{variables.selectedTicket.<field>}}`. **Do NOT** filter a detail query on `{{globals.urlparams.*}}` and rely on `runOnPageLoad` — a `runOnPageLoad` query does NOT re-run on an in-app page switch (only the page's own load event fires), so that detail query never runs. Prefer binding straight to the passed `{{variables…}}` row; if you truly need a fresh query, trigger it from a component action on the detail page.
 - **Refresh on filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose `where_filters` reference the input.
+- **Prevent double-submit:** bind the submit Button's `Disable` to the mutation query's loading (`{{queries.<mutation>.isLoading}}`) so it can't fire twice, and show its native loading state while the mutation runs. (See "Async & UI states".)
 
 Wire events AFTER the components and queries exist (you need their ids). Prefer one `add_events` call for all of an app's events.
 
@@ -385,6 +221,10 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - **External dropdown filters as the first cut** when the Table's built-in search/sort/filter already covers status/priority/assignee. Add external filters only as a deliberate enhancement once verified.
 - **Rebuilding to fix a mistake.** Use `update_components` / `update_query` / `update_events` — never create a second app or duplicate components to "correct" something.
 - **A Table showing demo columns (photo/email/…).** That means its `data` binding resolved empty — fix the query binding, not the columns.
+- **Dumping every requested capability onto one page.** A multi-domain request = an overview + focused pages (see "Plan the app"), not one long crowded scroll.
+- **Skeleton or placeholder pages** with no working loop — build one complete journey before starting the next.
+- **Query-backed UI with no loading / empty / error state** — those are required parts of the feature, not polish.
+- **A mutation button that can be double-fired** — disable it while the mutation runs.
 
 ## Build guidance
 
@@ -393,3 +233,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - Use the grid mechanics above to lay components out without overlap. Design the layout yourself — make it clean and enterprise-grade.
 - Report the `app_url` back to the user.
 - **Close the loop with an efficiency note.** After building (and after each phase), tell the user roughly **how many MCP tool calls it took** — you can count your own calls, and fewer round-trips is the goal (batch with `add_components`/`add_queries`). Include **token usage only if your runtime actually surfaces it** to you; never fabricate a token number you don't have. Keep it to one line.
+
+---
+
+**Technical reference:** exact per-component binding rules, the full built-in palette, and per-datasource query schemas are in `references/tooljet-reference.md`. Open it before configuring a component or writing a query.

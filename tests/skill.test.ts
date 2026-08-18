@@ -5,6 +5,8 @@ import { resolve, dirname } from 'node:path';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const skill = readFileSync(resolve(root, 'skill/SKILL.md'), 'utf8');
+const reference = readFileSync(resolve(root, 'skill/references/tooljet-reference.md'), 'utf8');
+const both = skill + '\n' + reference;
 // The generator holds the skill body in a template literal, so backticks are escaped (\`) in source.
 // Unescape them so anchor comparisons match the rendered skill text.
 const generator = readFileSync(resolve(root, 'scripts/generate-skill.mjs'), 'utf8').replace(/\\`/g, '`');
@@ -90,8 +92,8 @@ describe('generated skill — mobile & verification caveats', () => {
     expect(skill).toMatch(/Test other viewports only if the user asks/i);
   });
 
-  it('proactively suggests phases when scope is too big', () => {
-    expect(skill).toMatch(/too big to do well in one pass/i);
+  it('proactively suggests phases when scope is large', () => {
+    expect(skill).toMatch(/If the scope is large, say so/i);
   });
 });
 
@@ -128,12 +130,54 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
   });
 
   it('explains it cannot connect a new datasource / third-party integration and gives fallbacks', () => {
-    expect(skill).toMatch(/cannot create or connect a new datasource or third-party integration/i);
-    expect(skill).toMatch(/already-connected/i);
-    // fallbacks: connect a REST datasource first, or build against a seeded tjdb placeholder
-    expect(skill).toMatch(/REST API datasource/);
-    expect(skill).toMatch(/seeded with representative sample data/i);
+    // brief version stays prominent in the core skill's honesty rule
+    expect(skill).toMatch(/you cannot connect a new one from here/i);
     expect(skill).toMatch(/never handle credentials yourself/i);
+    // full detail lives in the reference
+    expect(reference).toMatch(/cannot create or connect a new datasource or third-party integration/i);
+    expect(reference).toMatch(/already-connected/i);
+    expect(reference).toMatch(/REST API datasource/);
+    expect(reference).toMatch(/seeded with representative sample data/i);
+  });
+});
+
+describe('generated skill — information architecture & phasing (the crowded-page fix)', () => {
+  it('requires planning information architecture (pages) before components', () => {
+    expect(skill).toMatch(/information architecture BEFORE any component/i);
+    expect(skill).toMatch(/name a PRODUCT, not a single page/i);
+    expect(skill).toMatch(/one overview page \+ one focused page per major job/i);
+    expect(skill).toMatch(/Map every capability to exactly ONE page/i);
+  });
+
+  it('separates page architecture from phasing (no appending to the overview)', () => {
+    expect(skill).toMatch(/page architecture and phasing are SEPARATE decisions/i);
+    expect(skill).toMatch(/NOT more stuff appended to the Home\/overview page/i);
+    expect(skill).toMatch(/useful working loop within a few minutes/i);
+    expect(skill).toMatch(/Complete journeys over skeletons/i);
+  });
+});
+
+describe('generated skill — async states & density guardrails', () => {
+  it('requires the full set of async/query states incl. no-double-fire', () => {
+    expect(skill).toMatch(/## Async & UI states — required, not polish/);
+    for (const s of ['Loading:', 'Empty:', 'Error:', 'Refresh:', 'Success:', 'Disabled']) {
+      expect(skill).toContain(s);
+    }
+    expect(skill).toMatch(/must never fire the mutation twice/i);
+    expect(skill).toMatch(/isLoading/);
+  });
+
+  it('has a density guardrail that still allows legitimately dense operational UIs', () => {
+    expect(skill).toMatch(/don't overcrowd; split instead/i);
+    expect(skill).toMatch(/dense is fine when the job genuinely needs it/i);
+    expect(skill).toMatch(/progressive disclosure/i);
+  });
+
+  it('lists the new overcrowding / skeleton / missing-state anti-patterns', () => {
+    expect(skill).toMatch(/Dumping every requested capability onto one page/i);
+    expect(skill).toMatch(/Skeleton or placeholder pages/i);
+    expect(skill).toMatch(/no loading \/ empty \/ error state/i);
+    expect(skill).toMatch(/double-fired/i);
   });
 });
 
@@ -148,7 +192,11 @@ describe('generated skill is synchronized with the generator', () => {
     'headerCasing: "none"',
     "resizing a browser window does NOT prove ToolJet's mobile layout rendered",
     'Verify the default desktop render only',
-    'too big to do well in one pass',
+    'If the scope is large, say so',
+    'information architecture BEFORE any component',
+    'page architecture and phasing are SEPARATE decisions',
+    'Async & UI states — required, not polish',
+    "don't overcrowd; split instead",
     '13–15 columns',
     '110–120px',
     'HTML where it makes the UI better',
@@ -156,12 +204,14 @@ describe('generated skill is synchronized with the generator', () => {
     'validate_app(app_id)',
     'how many MCP tool calls it took',
     "don't say yes to everything",
+    // now in the reference file, not SKILL.md:
     'cannot create or connect a new datasource or third-party integration',
+    'Component binding reference',
   ];
   for (const a of anchors) {
-    it(`generator emits: "${a}"`, () => {
+    it(`generator emits + a skill file contains: "${a}"`, () => {
       expect(generator).toContain(a);
-      expect(skill).toContain(a);
+      expect(both).toContain(a);
     });
   }
 });
