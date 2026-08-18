@@ -230,6 +230,56 @@ describe('add_events tool', () => {
     });
     expect(textOf(result)).toEqual({ created: 1, warnings: [] });
   });
+
+  it('accepts and validates the exact set-table-page action contract', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{ id: 'tbl1', name: 'orders', type: 'Table' }] }],
+      queries: [],
+      events: [],
+    });
+    client.createEvents.mockResolvedValue({ created: 1 });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      events: [{
+        source_id: 'tbl1',
+        source_type: 'component',
+        trigger: 'onSearch',
+        action: { actionId: 'set-table-page', table: 'tbl1', pageIndex: '{{1}}' },
+      }],
+    });
+
+    expect(textOf(result)).toEqual({ created: 1, warnings: [] });
+    expect(client.createEvents).toHaveBeenCalled();
+  });
+
+  it('blocks set-table-page when its Table target or pageIndex is missing', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{ id: 'tbl1', name: 'orders', type: 'Table' }] }],
+      queries: [],
+      events: [],
+    });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      events: [{
+        source_id: 'tbl1',
+        source_type: 'component',
+        trigger: 'onSearch',
+        action: { actionId: 'set-table-page' },
+      }],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/set-table-page Table target.*pageIndex/i);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
 });
 
 describe('add_page tool', () => {

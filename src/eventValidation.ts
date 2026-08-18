@@ -128,6 +128,19 @@ export function validateEvents(summary: AppSummary, events: EventSpec[]): EventV
         errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
       }
     }
+    if (actionId === 'set-table-page') {
+      const tableId = event.action.table;
+      const table = typeof tableId === 'string' ? components.get(tableId) : undefined;
+      if (!table) {
+        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
+      } else if (table.type !== 'Table') {
+        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? 'unknown'}.`);
+      }
+      const pageIndex = event.action.pageIndex;
+      if (!['string', 'number'].includes(typeof pageIndex) || String(pageIndex).trim() === '') {
+        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
+      }
+    }
   });
 
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
