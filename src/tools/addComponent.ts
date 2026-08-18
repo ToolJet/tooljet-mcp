@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
 import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
+import { normalizeComponentSpec } from '../componentNormalization.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -67,7 +68,8 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
         layout: args.layout,
         layouts: args.layouts,
       };
-      const expanded = materializeRequiredDefaultChildren([requested]);
+      const normalized = normalizeComponentSpec(requested);
+      const expanded = materializeRequiredDefaultChildren([normalized.component]);
       const { errors, warnings } = lintComponents(expanded.components);
       if (errors.length) return fail(new Error(errors.join(' ')));
       try {
@@ -81,23 +83,24 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
           return ok({
             ...parent,
             default_children: defaultChildren,
-            warnings: [...expanded.warnings, ...warnings],
+            warnings: [...normalized.warnings, ...expanded.warnings, ...warnings],
           });
         }
+        const component = expanded.components[0]!;
         const result = await client.createComponent({
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          name: args.name,
-          type: args.type,
-          properties: args.properties,
-          styles: args.styles,
-          validation: args.validation,
-          others: args.others,
-          layout: args.layout,
-          layouts: args.layouts,
+          name: component.name,
+          type: component.type,
+          properties: component.properties,
+          styles: component.styles,
+          validation: component.validation,
+          others: component.others,
+          layout: component.layout,
+          layouts: component.layouts,
         });
-        return ok({ ...result, warnings: [...expanded.warnings, ...warnings] });
+        return ok({ ...result, warnings: [...normalized.warnings, ...expanded.warnings, ...warnings] });
       } catch (err) {
         return fail(err);
       }

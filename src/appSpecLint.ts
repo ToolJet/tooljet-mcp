@@ -5,6 +5,7 @@ import { issueMessages, validateQueryOptions } from './queryValidation.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
 import { encodeComponentParent } from './componentParent.js';
+import { normalizeComponentSpec } from './componentNormalization.js';
 import type {
   AppSummary,
   ComponentSpec,
@@ -113,7 +114,9 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
     registerRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
     if (!plannedPage.icon.trim()) errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
 
-    const expansion = materializeRequiredDefaultChildren(plannedPage.components ?? []);
+    const normalized = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component));
+    warnings.push(...normalized.flatMap((item) => item.warnings));
+    const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
     warnings.push(...expansion.warnings);
     const componentLint = lintComponents(expansion.components);
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));

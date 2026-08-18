@@ -128,6 +128,46 @@ describe('update_components validation', () => {
     expect(client.updateComponents).not.toHaveBeenCalled();
   });
 
+  it('normalizes an unsafe explicit Table update before persisting it', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{
+          id: 't1', name: 'tickets', type: 'Table',
+          properties: {
+            columns: { value: [{ name: 'Ticket', key: 'title' }] },
+          },
+        }] }],
+        queries: [],
+        events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      page_id: 'p1',
+      updates: [{
+        component_id: 't1',
+        definition: { properties: { autogenerateColumns: { value: false } } },
+      }],
+    });
+    expect(result.isError).not.toBe(true);
+    expect(client.updateComponents).toHaveBeenCalledWith(expect.objectContaining({
+      updates: [expect.objectContaining({
+        componentId: 't1',
+        definition: expect.objectContaining({
+          properties: expect.objectContaining({
+            autogenerateColumns: { value: true },
+            useDynamicColumn: expect.any(Object),
+            columnData: expect.any(Object),
+          }),
+        }),
+      })],
+    }));
+    expect(textOf(result).warnings.join(' ')).toMatch(/normalized autogenerateColumns from false to true/);
+  });
+
   it('warns when a style edit turns an authored-height gap into a rendered overlap', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

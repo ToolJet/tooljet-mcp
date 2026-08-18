@@ -591,6 +591,30 @@ describe('add_query tool', () => {
 });
 
 describe('add_component tool', () => {
+  it('normalizes explicit static Table definitions to runtime-compatible defaults', async () => {
+    const client = makeClient();
+    client.createComponent.mockResolvedValue({ component_id: 'c1' });
+    const result = await addComponentTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1', name: 'usersTable', type: 'Table',
+      properties: {
+        data: { value: '{{queries.users.data.map(r => ({id:r.id,name:r.name}))}}' },
+        dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: false },
+        columns: { value: [{ id: 'name', name: 'Name', key: 'name', columnType: 'string' }] },
+      },
+      layout: { top: 0, left: 0, width: 20, height: 300 },
+    });
+
+    expect(client.createComponent).toHaveBeenCalledWith(expect.objectContaining({
+      properties: expect.objectContaining({
+        autogenerateColumns: { value: true },
+        useDynamicColumn: { value: '{{false}}' },
+        columnData: { value: expect.any(String) },
+      }),
+    }));
+    expect(textOf(result).warnings.join(' ')).toMatch(/normalized autogenerateColumns.*runtime compatibility/i);
+  });
+
   it('maps snake_case args to client.createComponent params and returns the result', async () => {
     const client = makeClient();
     const created = { component_id: 'c1' };
@@ -620,7 +644,11 @@ describe('add_component tool', () => {
       pageId: 'p1',
       name: 'usersTable',
       type: 'Table',
-      properties,
+      properties: {
+        ...properties,
+        useDynamicColumn: { value: '{{false}}' },
+        columnData: { value: expect.any(String) },
+      },
       styles: undefined,
       validation: undefined,
       others: undefined,
@@ -726,6 +754,34 @@ describe('add_component tool', () => {
 });
 
 describe('add_components tool', () => {
+  it('normalizes each static Table before the atomic batch write', async () => {
+    const client = makeClient();
+    client.createComponents.mockResolvedValue([{ component_id: 'table-id', name: 'ordersTable' }]);
+    await addComponentsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      components: [{
+        name: 'ordersTable', type: 'Table',
+        properties: {
+          data: { value: '{{queries.orders.data.map(r => ({id:r.id}))}}' },
+          dataSourceSelector: { value: 'rawJson' },
+          autogenerateColumns: { value: false },
+          columns: { value: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }] },
+        },
+        layout: { top: 0, left: 0, width: 40, height: 400 },
+      }],
+    });
+
+    expect(client.createComponents).toHaveBeenCalledWith(expect.objectContaining({
+      components: [expect.objectContaining({
+        properties: expect.objectContaining({
+          autogenerateColumns: { value: true },
+          useDynamicColumn: { value: '{{false}}' },
+          columnData: { value: expect.any(String) },
+        }),
+      })],
+    }));
+  });
+
   it('maps slot_name to the logical same-batch child slot', async () => {
     const client = makeClient();
     client.createComponents.mockResolvedValue([

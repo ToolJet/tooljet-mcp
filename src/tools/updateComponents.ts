@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponentSlots, lintComponentSpec, lintRenderedGeometry, type LintComponent } from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { normalizeComponentSpec } from '../componentNormalization.js';
 
 const updateSchema = z.object({
   component_id: z.string(),
@@ -100,16 +101,35 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
               : current.parent,
             slotName: update.slot_name,
           };
-          projected.set(current.id, next);
+          const normalized = normalizeComponentSpec({
+            name: next.name ?? current.id,
+            type: next.type ?? current.type ?? '',
+            properties: next.properties ?? {},
+            styles: next.styles,
+            layouts: next.layouts,
+            parent: next.parent,
+          });
+          const normalizedNext = normalized.component as LintComponent;
+          projected.set(current.id, normalizedNext);
+          warnings.push(...normalized.warnings);
+          const normalizedDefinition = update.definition && normalized.patch.properties
+            ? {
+                ...update.definition,
+                properties: {
+                  ...((update.definition as { properties?: Record<string, unknown> }).properties ?? {}),
+                  ...normalized.patch.properties,
+                },
+              }
+            : update.definition;
           resolvedUpdates.push({
             componentId: update.component_id,
-            definition: update.definition,
+            definition: normalizedDefinition,
             name: update.name,
             parent,
             slotName: update.slot_name,
           });
           if (!update.definition) continue;
-          const lint = lintComponentSpec(next);
+          const lint = lintComponentSpec(normalizedNext);
           errors.push(...lint.errors);
           warnings.push(...lint.warnings);
         }

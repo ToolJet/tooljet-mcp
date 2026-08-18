@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
 import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
 import { COMPONENT_SLOT_NAMES } from '../componentParent.js';
+import { normalizeComponentSpec } from '../componentNormalization.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -83,7 +84,8 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         parentRef: parent_ref,
         slotName: slot_name,
       }));
-      const expanded = materializeRequiredDefaultChildren(requested);
+      const normalized = requested.map((component) => normalizeComponentSpec(component));
+      const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
       const components = expanded.components;
       const { errors, warnings } = lintComponents(components);
       if (errors.length) return fail(new Error(errors.join(' ')));
@@ -94,7 +96,10 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
           pageId: args.page_id,
           components,
         });
-        return ok({ components: result, warnings: [...expanded.warnings, ...warnings] });
+        return ok({
+          components: result,
+          warnings: [...normalized.flatMap((item) => item.warnings), ...expanded.warnings, ...warnings],
+        });
       } catch (err) {
         return fail(err);
       }
