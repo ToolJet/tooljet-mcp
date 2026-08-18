@@ -3905,7 +3905,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "CustomComponent": {
@@ -4361,7 +4363,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "DaterangePicker": {
@@ -5068,7 +5072,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "Divider": {
@@ -5500,7 +5506,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     },
     "authoringHints": {
       "optionModes": {
@@ -5776,7 +5784,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "FileButton": {
@@ -9647,8 +9657,10 @@
     "renderingHints": {
       "childCoordinateSpace": "Modal-local 43-column grid; child (0,0) is the modal body top-left.",
       "recommendedFieldAlignment": "top",
-      "recommendedFieldHeightPx": "60–70",
-      "recommendedVerticalGapPx": "20 (the canvas snaps to 10px)",
+      "recommendedSingleLineFieldHeightPx": 40,
+      "topAlignedRenderedFootprintPx": 60,
+      "recommendedFieldRowStepPx": "70 (40px authored + 20px label/validation footprint + 10px gap)",
+      "recommendedTextAreaHeightPx": "90–100",
       "recommendedTwoColumnGutterCols": 2
     },
     "authoringHints": {
@@ -10096,7 +10108,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "Navigation": {
@@ -10667,7 +10681,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "Pagination": {
@@ -15831,7 +15847,9 @@
       }
     ],
     "renderingHints": {
-      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+      "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
+      "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
+      "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
     }
   },
   "Timeline": {

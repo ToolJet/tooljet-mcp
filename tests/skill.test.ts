@@ -118,7 +118,7 @@ describe('generated skill — modal form layout', () => {
     expect(skill).toMatch(/parent_ref/);
     expect(skill).toMatch(/styles\.alignment\.value = "top"/);
     expect(skill).toMatch(/renderedHeight.*height \+ 20px/is);
-    expect(skill).toMatch(/62px.*92px/is);
+    expect(skill).toMatch(/40px.*60px.*70px/is);
     expect(skill).toMatch(/modalHeight >= lowest child top \+ renderedHeight/i);
     expect(skill).toMatch(/modal title Text.*slot_name:"header"/i);
     expect(skill).toMatch(/showHeader:true.*empty header.*second title row.*body/is);
@@ -297,9 +297,10 @@ describe('generated skill — async states & density guardrails', () => {
   it('has a forms & modals field-layout recipe (top-aligned labels, spacing, modal-local coords)', () => {
     expect(skill).toMatch(/## Forms & modals — field layout/);
     expect(skill).toContain('styles.alignment.value = "top"');
-    expect(skill).toMatch(/60[–-]70px/);
-    expect(skill).toMatch(/80[–-]90px/);
-    expect(skill).toMatch(/62px authored \+ 20px increment \+ 10px gap/i);
+    expect(skill).toMatch(/40px authored height/);
+    expect(skill).toMatch(/60px.*70px top-to-top row step/is);
+    expect(skill).toMatch(/90[–-]100px authored height.*TextArea/is);
+    expect(skill).toMatch(/no value-font-size style/i);
     expect(skill).toMatch(/relative to the modal body/i);
   });
 

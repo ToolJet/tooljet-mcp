@@ -65,7 +65,7 @@ describe('catalog', () => {
     expect(String(stat!.renderingHints!.secondaryValueUsage)).toMatch(/narrow delta slot.*number or percentage/i);
     const modal = getComponentSchema('ModalV2');
     expect(modal!.renderingHints!.recommendedFieldAlignment).toBe('top');
-    expect(String(modal!.renderingHints!.recommendedVerticalGapPx)).toMatch(/20/);
+    expect(String(modal!.renderingHints!.recommendedFieldRowStepPx)).toMatch(/70/);
   });
 
   it('serves the source-verified Table row-action Button-column contract', () => {
@@ -110,6 +110,20 @@ describe('catalog', () => {
       expect.arrayContaining(['value', 'selectedOption', 'options'])
     );
     expect((dropdown.authoringHints?.optionModes as any).rule).toMatch(/schema only when advanced=true/i);
+  });
+
+  it('keeps modal fields compact without losing the rendered-height rule', () => {
+    const modalHints = getComponentSchema('ModalV2')!.renderingHints as any;
+    expect(modalHints).toMatchObject({
+      recommendedSingleLineFieldHeightPx: 40,
+      topAlignedRenderedFootprintPx: 60,
+      recommendedTextAreaHeightPx: '90–100',
+    });
+    expect(modalHints.recommendedFieldRowStepPx).toMatch(/70.*40px authored.*20px.*10px gap/i);
+
+    const inputHints = getComponentSchema('TextInput')!.renderingHints as any;
+    expect(inputHints.compactFormHeight).toMatch(/defaultSize\.height.*40px.*60px.*70px/i);
+    expect(inputHints.valueTextSizing).toMatch(/does not enlarge.*value text.*labelFontSize/i);
   });
 
   it('serves the authoritative generated-Form field contract and FilePicker workaround', () => {

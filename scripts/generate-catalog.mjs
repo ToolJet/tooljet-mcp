@@ -312,8 +312,10 @@ const RENDERING_HINTS = {
   ModalV2: {
     childCoordinateSpace: 'Modal-local 43-column grid; child (0,0) is the modal body top-left.',
     recommendedFieldAlignment: 'top',
-    recommendedFieldHeightPx: '60–70',
-    recommendedVerticalGapPx: '20 (the canvas snaps to 10px)',
+    recommendedSingleLineFieldHeightPx: 40,
+    topAlignedRenderedFootprintPx: 60,
+    recommendedFieldRowStepPx: '70 (40px authored + 20px label/validation footprint + 10px gap)',
+    recommendedTextAreaHeightPx: '90–100',
     recommendedTwoColumnGutterCols: 2,
   },
 };
@@ -321,6 +323,14 @@ for (const t of ['TextInput', 'NumberInput', 'CurrencyInput', 'EmailInput', 'Tex
   RENDERING_HINTS[t] = {
     ...(RENDERING_HINTS[t] ?? {}),
     formLabelAlignment: 'Use styles.alignment.value="top" in forms, modals, and fields 18 columns or narrower.',
+  };
+}
+for (const t of ['TextInput', 'NumberInput', 'CurrencyInput', 'EmailInput', 'DropdownV2', 'MultiselectV2', 'DatePickerV2', 'DatetimePickerV2']) {
+  if (!schemas[t]) continue;
+  RENDERING_HINTS[t] = {
+    ...(RENDERING_HINTS[t] ?? {}),
+    compactFormHeight: 'Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.',
+    valueTextSizing: 'Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small.',
   };
 }
 for (const [t, hints] of Object.entries(RENDERING_HINTS)) {
