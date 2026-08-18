@@ -5180,7 +5180,13 @@
       {
         "key": "schema",
         "label": "Schema",
-        "default": "{{[ {label: 'option1',value: 1,caption: null,disable: false,visible: true,default: true},{label: 'option2',value: 2,caption: null,disable: false,visible: tru…"
+        "default": "{{[ {label: 'option1',value: 1,caption: null,disable: false,visible: true,default: true},{label: 'option2',value: 2,caption: null,disable: false,visible: tru…",
+        "requires": {
+          "advanced": "{{true}}"
+        },
+        "mutuallyExclusiveWith": [
+          "options"
+        ]
       },
       {
         "key": "optionsLoadingState",
@@ -5292,6 +5298,12 @@
               "value": false
             }
           }
+        ],
+        "requires": {
+          "advanced": "{{false}}"
+        },
+        "mutuallyExclusiveWith": [
+          "schema"
         ]
       }
     ],
@@ -5476,10 +5488,35 @@
       {
         "name": "label",
         "default": "Select"
+      },
+      {
+        "name": "value"
+      },
+      {
+        "name": "selectedOption"
+      },
+      {
+        "name": "options"
       }
     ],
     "renderingHints": {
       "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower."
+    },
+    "authoringHints": {
+      "optionModes": {
+        "rule": "ToolJet reads schema only when advanced=true; otherwise it silently renders options.",
+        "static": {
+          "modeProperty": "properties.advanced.value",
+          "modeValue": "{{false}}",
+          "dataProperty": "properties.options.value"
+        },
+        "dynamic": {
+          "modeProperty": "properties.advanced.value",
+          "modeValue": "{{true}}",
+          "dataProperty": "properties.schema.value"
+        },
+        "preselectionRule": "The selected option must have visible=true and default=true."
+      }
     }
   },
   "EmailInput": {

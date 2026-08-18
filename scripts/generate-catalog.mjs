@@ -256,6 +256,7 @@ for (const f of files) {
 // from the editor config. Keep these tiny, source-verified additions next to the generator rather
 // than teaching the skill stale prose.
 const RUNTIME_EXPOSED_VARIABLES = {
+  DropdownV2: [{ name: 'value' }, { name: 'selectedOption' }, { name: 'options' }],
   Form: [{ name: 'formData', default: {} }, { name: 'children', default: {} }],
   Table: [
     { name: 'currentData', default: [] },
@@ -270,6 +271,21 @@ for (const [type, variables] of Object.entries(RUNTIME_EXPOSED_VARIABLES)) {
   if (!schemas[type]) continue;
   const known = new Set((schemas[type].exposedVariables || []).map((variable) => variable.name));
   schemas[type].exposedVariables.push(...variables.filter((variable) => !known.has(variable.name)));
+}
+
+// Dependencies that ToolJet's flat inspector schema cannot express. Keep them on the individual
+// property so a selective property_keys lookup remains both small and sufficient to author safely.
+if (schemas.DropdownV2) {
+  const dynamicSchema = schemas.DropdownV2.properties.find((property) => property.key === 'schema');
+  if (dynamicSchema) {
+    dynamicSchema.requires = { advanced: '{{true}}' };
+    dynamicSchema.mutuallyExclusiveWith = ['options'];
+  }
+  const staticOptions = schemas.DropdownV2.properties.find((property) => property.key === 'options');
+  if (staticOptions) {
+    staticOptions.requires = { advanced: '{{false}}' };
+    staticOptions.mutuallyExclusiveWith = ['schema'];
+  }
 }
 
 // Curated rendering hints (not harvestable from the widget defs) — sizing/readability defaults the
@@ -307,6 +323,22 @@ for (const [t, hints] of Object.entries(RENDERING_HINTS)) {
 // not the deprecated Table action-buttons property and not the modern per-row Button-column shape.
 const TABLE_BUTTON_DEFAULTS = readNamedLiteral(tableButtonManager, 'DEFAULT_BUTTON');
 const AUTHORING_HINTS = {
+  DropdownV2: {
+    optionModes: {
+      rule: 'ToolJet reads schema only when advanced=true; otherwise it silently renders options.',
+      static: {
+        modeProperty: 'properties.advanced.value',
+        modeValue: '{{false}}',
+        dataProperty: 'properties.options.value',
+      },
+      dynamic: {
+        modeProperty: 'properties.advanced.value',
+        modeValue: '{{true}}',
+        dataProperty: 'properties.schema.value',
+      },
+      preselectionRule: 'The selected option must have visible=true and default=true.',
+    },
+  },
   Table: {
     rowActionButtons: {
       recommendedApproach: 'Add a column with columnType="button"; legacy properties.actions.value is deprecated.',

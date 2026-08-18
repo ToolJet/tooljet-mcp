@@ -90,4 +90,22 @@ describe('catalog', () => {
       trigger: 'onClick',
     });
   });
+
+  it('keeps selective DropdownV2 schema lookups complete and exposes its runtime selection', () => {
+    const dropdown = getComponentSchema('DropdownV2')!;
+    const schema = dropdown.properties.find((property) => property.key === 'schema');
+    const options = dropdown.properties.find((property) => property.key === 'options');
+    expect(schema).toMatchObject({
+      requires: { advanced: '{{true}}' },
+      mutuallyExclusiveWith: ['options'],
+    });
+    expect(options).toMatchObject({
+      requires: { advanced: '{{false}}' },
+      mutuallyExclusiveWith: ['schema'],
+    });
+    expect(dropdown.exposedVariables?.map((variable) => variable.name)).toEqual(
+      expect.arrayContaining(['value', 'selectedOption', 'options'])
+    );
+    expect((dropdown.authoringHints?.optionModes as any).rule).toMatch(/schema only when advanced=true/i);
+  });
 });

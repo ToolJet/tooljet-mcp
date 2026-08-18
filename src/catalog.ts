@@ -14,6 +14,10 @@ export interface ComponentProp {
   label?: string;
   valueType?: string;
   default?: unknown;
+  /** Other component properties required for this property to take effect. */
+  requires?: Record<string, unknown>;
+  /** Properties that should not be authored together with this one. */
+  mutuallyExclusiveWith?: string[];
 }
 
 export interface ComponentEvent {
