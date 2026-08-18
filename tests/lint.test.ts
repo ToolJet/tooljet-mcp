@@ -96,6 +96,29 @@ describe('lintComponentSpec', () => {
     }).warnings).toEqual([]);
   });
 
+  it('enforces readable Statistics widths for secondary and value-only tiles', () => {
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '42' } },
+      layout: { top: 0, left: 0, width: 9, height: 120 },
+    }).warnings.join(' ')).toMatch(/width 9 columns is too narrow.*visible secondary content.*at least 18.*two-column KPI grid/is);
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
+      layout: { top: 0, left: 0, width: 11, height: 120 },
+    }).warnings.join(' ')).toMatch(/value-only tile.*at least 12.*three tiles per content row/is);
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
+      layout: { top: 0, left: 0, width: 13, height: 120 },
+    }).warnings).toEqual([]);
+  });
+
   it('warns when a Table binds data without rawJson / without columns', () => {
     const r = lintComponentSpec({
       name: 't',

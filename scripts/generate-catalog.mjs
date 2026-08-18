@@ -307,6 +307,7 @@ const RENDERING_HINTS = {
   },
   Statistics: {
     recommendedMinHeightPx: '≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content',
+    recommendedMinWidthCols: 'At least 12 for a value-only tile with hideSecondary=true; at least 18 when secondary content is visible. Prefer at most three value-only or two secondary-content tiles per content row.',
     secondaryValueUsage: 'secondaryValue renders in a narrow delta slot: reserve it for a number or percentage. Put prose in secondaryValueLabel and leave secondaryValue empty.',
   },
   ModalV2: {

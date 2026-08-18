@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintComponentSlots, lintRenderedGeometry, type LintComponent } from '../lint.js';
+import { lintComponentSlots, lintComponentSpec, lintRenderedGeometry, type LintComponent } from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 
@@ -84,7 +84,13 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         });
         const slotErrors = lintComponentSlots(projected);
         if (slotErrors.length) return fail(new Error(slotErrors.join(' ')));
-        const warnings = [...new Set(lintRenderedGeometry(projected))];
+        const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const warnings = [...new Set([
+          ...projected
+            .filter((component) => component.id && changedIds.has(component.id))
+            .flatMap((component) => lintComponentSpec(component).warnings),
+          ...lintRenderedGeometry(projected),
+        ])];
         const result = await client.updateLayouts({
           appId: args.app_id,
           versionId: args.version_id,

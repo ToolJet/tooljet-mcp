@@ -197,6 +197,28 @@ describe('update_components validation', () => {
 });
 
 describe('update_layout geometry warnings', () => {
+  it('warns when a resize makes a Statistics tile unreadably narrow', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{
+          id: 'kpi', name: 'openCases', type: 'Statistics',
+          properties: { hideSecondary: { value: false } },
+          layouts: { desktop: { top: 0, left: 0, width: 18, height: 120 } },
+        }] }],
+        queries: [],
+        events: [],
+      }),
+      updateLayouts: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateLayoutTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      layouts: [{ component_id: 'kpi', desktop: { top: 0, left: 0, width: 9, height: 120 } }],
+    });
+    expect(textOf(result).warnings.join(' ')).toMatch(/width 9 columns is too narrow.*at least 18/is);
+    expect(client.updateLayouts).toHaveBeenCalled();
+  });
+
   it('checks the projected full-page layout before writing and returns overlap warnings', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

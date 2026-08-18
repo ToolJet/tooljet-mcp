@@ -82,6 +82,8 @@ export const TOP_ALIGNED_INPUT_TYPES = new Set([
 export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 /** At or below this width (grid columns), a side-aligned label leaves too little room for the input. */
 const NARROW_SIDE_LABEL_COLS = 18;
+const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
+const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
 
 interface Rect {
@@ -446,6 +448,18 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       warnings.push(
         `Statistics "${label}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot ` +
           'that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.'
+      );
+    }
+    const width = (spec.layouts?.desktop ?? spec.layout)?.width;
+    const secondaryHidden = isTruthyBinding(propVal(props, 'hideSecondary'));
+    const minimumWidth = secondaryHidden
+      ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS
+      : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
+    if (typeof width === 'number' && width < minimumWidth) {
+      warnings.push(
+        `Statistics "${label}": desktop width ${width} columns is too narrow; ` +
+          `${secondaryHidden ? 'a value-only tile' : 'a tile with visible secondary content'} needs at least ${minimumWidth} columns ` +
+          `to keep labels and values readable. ${secondaryHidden ? 'Use no more than three tiles per content row.' : 'Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns.'}`
       );
     }
   }
