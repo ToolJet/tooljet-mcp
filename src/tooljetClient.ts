@@ -164,14 +164,16 @@ export interface CreatePageResult {
   name: string;
 }
 
-export type EventSourceType = 'component' | 'data_query' | 'page';
+export type EventSourceType = 'component' | 'data_query' | 'page' | 'table_column' | 'table_action';
 
-/** One event handler: a trigger on a component, query, or page + an action to run. */
+/** One event handler: a trigger on a component, query, page, or component sub-element + an action. */
 export interface EventSpec {
-  /** The component, data query, or page id the event is attached to. */
+  /** The component, data query, or page id the event is attached to. Table sub-elements use the Table id. */
   sourceId: string;
-  /** Source kind. Query lifecycle events use data_query; page lifecycle events use page. */
+  /** Source kind. Modern Table row buttons use table_column; table_action is legacy/deprecated. */
   sourceType: EventSourceType;
+  /** Sub-element reference. Table Button columns use `<column key or name>::<button id>`. */
+  ref?: string;
   /** The trigger event id, e.g. onClick, onDataQuerySuccess, onDataQueryFailure, onPageLoad. */
   trigger: string;
   /** The action: { actionId, ...params }, e.g. { actionId: 'run-query', queryId, queryName }. */
@@ -482,17 +484,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {
-    // Each event → { event: { eventId: <trigger>, ...action }, eventType, attachedTo, index }.
-    // index is ordered independently for each source (component/query/page).
+    // Each event → { event: { eventId: <trigger>, ref?, ...action }, eventType, attachedTo, index }.
+    // index is ordered independently for each source; component sub-elements also scope it by ref,
+    // matching EventManager's per-button ordering for Table column buttons.
     const indexBySource: Record<string, number> = {};
     const events = params.events.map((e) => {
-      const sourceKey = `${e.sourceType}:${e.sourceId}`;
+      const sourceKey = `${e.sourceType}:${e.sourceId}:${e.ref ?? ''}`;
       const index = indexBySource[sourceKey] ?? 0;
       indexBySource[sourceKey] = index + 1;
       return {
         // name is NOT NULL server-side (the DTO marks it optional but the column requires it).
         name: e.name ?? `${e.trigger} → ${(e.action.actionId as string) ?? 'action'}`,
-        event: { eventId: e.trigger, ...e.action },
+        event: { eventId: e.trigger, ...(e.ref ? { ref: e.ref } : {}), ...e.action },
         eventType: e.sourceType,
         attachedTo: e.sourceId,
         index,
@@ -521,6 +524,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   async function listDatasources(versionId: string): Promise<Datasource[]> {
     const [orgId, envId] = await Promise.all([auth.getOrganizationId(), getDevelopmentEnvironmentId()]);
+    // The route retains versionId for API compatibility, but ToolJet resolves workspace/global sources
+    // available to this user + environment; a new app does not need a per-app datasource-link operation.
     const res = await auth.authedFetch(
       `/api/data-sources/${orgId}/environments/${envId}/versions/${versionId}`
     );

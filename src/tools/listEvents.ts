@@ -8,7 +8,9 @@ export function listEventsTool(client: ToolJetClient): ToolDef {
     description:
       'List event handlers for a version, optionally filtered to one source (component/query id). ' +
       'Returns [{ id, name, index, event, sourceId, target }] where `event` is the { eventId(trigger), ' +
-      'actionId, ...params } blob. Use the ids with update_events / delete_event to fix or remove wiring ' +
+      'ref?, actionId, ...params } blob. target may be component, data_query, page, table_column, or legacy ' +
+      'table_action. Table Button columns use ref=`<column key or name>::<button id>`. Use the ids with ' +
+      'update_events / delete_event to fix or remove wiring ' +
       'without rebuilding.',
     inputSchema: {
       app_id: z.string(),

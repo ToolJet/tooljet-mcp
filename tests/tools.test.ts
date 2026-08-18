@@ -4,8 +4,11 @@ import { createAppTool } from '../src/tools/createApp.js';
 import { listDatasourcesTool } from '../src/tools/listDatasources.js';
 import { getComponentCatalogTool } from '../src/tools/getComponentCatalog.js';
 import { getAppTool } from '../src/tools/getApp.js';
+import { getAppSummaryTool } from '../src/tools/getAppSummary.js';
 import { addQueryTool } from '../src/tools/addQuery.js';
 import { addComponentTool } from '../src/tools/addComponent.js';
+import { addEventsTool } from '../src/tools/addEvents.js';
+import { addPageTool } from '../src/tools/addPage.js';
 import { validateAppTool } from '../src/tools/validateApp.js';
 import { getCatalog } from '../src/catalog.js';
 
@@ -19,6 +22,8 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
     createQuery: vi.fn(),
     createComponent: vi.fn(),
     createComponents: vi.fn(),
+    createEvents: vi.fn(),
+    createPage: vi.fn(),
   };
 }
 
@@ -65,6 +70,7 @@ describe('list_datasources tool', () => {
     client.listDatasources.mockResolvedValue(datasources);
 
     const tool = listDatasourcesTool(client as unknown as ToolJetClient);
+    expect(tool.description).toMatch(/workspace-connected.*newly created apps.*no per-app attach\/link step/is);
     const result = await tool.handler({ version_id: 'v1' });
 
     expect(client.listDatasources).toHaveBeenCalledWith('v1');
@@ -91,6 +97,228 @@ describe('get_component_catalog tool', () => {
 
     expect(textOf(result)).toEqual(getCatalog());
     expect(result.isError).toBeUndefined();
+  });
+
+  it('batches distinct component types and returns only requested catalog sections', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      types: ['Table', 'Chart', 'Table', 'NotAComponent'],
+      sections: ['overview', 'events'],
+    });
+
+    const body = textOf(result) as any;
+    expect(body.components.map((component: any) => component.type)).toEqual(['Table', 'Chart']);
+    expect(body.components[0]).toHaveProperty('events');
+    expect(body.components[0]).not.toHaveProperty('properties');
+    expect(body.unknown_types).toEqual(['NotAComponent']);
+  });
+
+  it('can narrow property/style arrays for one component contract', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      type: 'Table',
+      sections: ['properties', 'styles'],
+      property_keys: ['data'],
+      style_keys: ['borderRadius'],
+    });
+
+    const body = textOf(result) as any;
+    expect(body.type).toBe('Table');
+    expect(body.properties.map((property: any) => property.key)).toEqual(['data']);
+    expect(body.styles.every((style: any) => style.key === 'borderRadius')).toBe(true);
+    expect(body).not.toHaveProperty('events');
+  });
+
+  it('returns only nested Table authoring hints when requested', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({ type: 'Table', sections: ['authoringHints'] });
+
+    const body = textOf(result) as any;
+    expect(body.authoringHints.rowActionButtons.columnExample.columnType).toBe('button');
+    expect(body.authoringHints.rowActionButtons.eventExample.ref).toBe('actions::view-action');
+    expect(body).not.toHaveProperty('properties');
+    expect(body).not.toHaveProperty('actions');
+  });
+});
+
+describe('add_events tool', () => {
+  it('passes Table Button-column target and compound ref to the client', async () => {
+    const client = makeClient();
+    client.createEvents.mockResolvedValue({ created: 1 });
+    const tool = addEventsTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      events: [
+        {
+          source_id: 'tbl1',
+          source_type: 'table_column',
+          ref: 'actions::view-action',
+          trigger: 'onClick',
+          action: { actionId: 'run-query', queryId: 'q1', queryName: 'viewOrder' },
+        },
+      ],
+    });
+
+    expect(client.createEvents).toHaveBeenCalledWith({
+      appId: 'app1',
+      versionId: 'v1',
+      events: [
+        {
+          sourceId: 'tbl1',
+          sourceType: 'table_column',
+          ref: 'actions::view-action',
+          trigger: 'onClick',
+          action: { actionId: 'run-query', queryId: 'q1', queryName: 'viewOrder' },
+        },
+      ],
+    });
+    expect(textOf(result)).toEqual({ created: 1 });
+  });
+});
+
+describe('add_page tool', () => {
+  it('requires a sidebar icon and passes it to the client', async () => {
+    const client = makeClient();
+    client.createPage.mockResolvedValue({ page_id: 'p2', name: 'Customers' });
+    const tool = addPageTool(client as unknown as ToolJetClient);
+
+    expect(tool.inputSchema.icon.safeParse(undefined).success).toBe(false);
+    expect(tool.inputSchema.icon.safeParse('IconUsers').success).toBe(true);
+
+    const result = await tool.handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      name: 'Customers',
+      icon: 'IconUsers',
+    });
+    expect(client.createPage).toHaveBeenCalledWith({
+      appId: 'app1',
+      versionId: 'v1',
+      name: 'Customers',
+      icon: 'IconUsers',
+    });
+    expect(textOf(result)).toEqual({ page_id: 'p2', name: 'Customers' });
+  });
+});
+
+describe('get_app_summary tool', () => {
+  const summary = {
+    app_id: 'app1',
+    name: 'Operations',
+    version_id: 'v1',
+    pages: [
+      {
+        id: 'p1',
+        name: 'Home',
+        handle: 'home',
+        icon: 'IconLayoutDashboard',
+        components: [
+          {
+            id: 'c1',
+            name: 'ordersTable',
+            type: 'Table',
+            layouts: { desktop: { top: 10, left: 2, width: 40, height: 300 } },
+            properties: {
+              data: { value: '{{queries.listOrders.data}}' },
+              columns: { value: [{ key: 'id' }, { key: 'status' }] },
+            },
+            styles: { borderRadius: { value: 8 } },
+          },
+          {
+            id: 'c2',
+            name: 'title',
+            type: 'Text',
+            layouts: { desktop: { top: 0, left: 2, width: 20, height: 4 } },
+            properties: { text: { value: 'Orders' } },
+          },
+        ],
+      },
+    ],
+    queries: [
+      {
+        id: 'q1',
+        name: 'listOrders',
+        kind: 'tooljetdb',
+        data_source_id: 'ds1',
+        options: { operation: 'list_rows', table_id: 'orders' },
+      },
+    ],
+    events: [
+      {
+        id: 'e1',
+        name: 'refresh',
+        sourceId: 'c1',
+        target: 'component',
+        event: { eventId: 'onPageChanged', actionId: 'run-query' },
+      },
+    ],
+  };
+
+  it('defaults to a bounded structural summary', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue(summary);
+    const tool = getAppSummaryTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({ app_id: 'app1' });
+
+    const body = textOf(result) as any;
+    expect(body.pages[0].components[0]).toEqual({
+      id: 'c1',
+      name: 'ordersTable',
+      type: 'Table',
+      layouts: { desktop: { top: 10, left: 2, width: 40, height: 300 } },
+    });
+    expect(body.queries[0]).not.toHaveProperty('options');
+    expect(body.events[0]).not.toHaveProperty('event');
+  });
+
+  it('filters sections/entities and returns exact dotted value paths', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue(summary);
+    const tool = getAppSummaryTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      app_id: 'app1',
+      sections: ['pages'],
+      page_names: ['Home'],
+      component_types: ['Table'],
+      app_fields: ['app_id'],
+      page_fields: ['id', 'name'],
+      component_fields: ['id', 'name', 'properties.data.value', 'styles.borderRadius.value'],
+    });
+
+    expect(textOf(result)).toEqual({
+      app_id: 'app1',
+      pages: [
+        {
+          id: 'p1',
+          name: 'Home',
+          components: [
+            {
+              id: 'c1',
+              name: 'ordersTable',
+              properties: { data: { value: '{{queries.listOrders.data}}' } },
+              styles: { borderRadius: { value: 8 } },
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('rejects unknown or unsafe field paths', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue(summary);
+    const tool = getAppSummaryTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      app_id: 'app1',
+      component_fields: ['properties.__proto__.polluted'],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/invalid path/i);
   });
 });
 

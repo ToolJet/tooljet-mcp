@@ -587,6 +587,30 @@ describe('createClient', () => {
       expect(body.events[1]).toMatchObject({ eventType: 'data_query', attachedTo: 'save1', index: 1, name: 'Refresh after save' });
       expect(body.events[2]).toMatchObject({ eventType: 'page', attachedTo: 'page1', index: 0, event: { eventId: 'onPageLoad' } });
     });
+
+    it('bulk-posts Table Button-column refs with per-button ordering', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: {} }));
+      const client = createClient(auth, config);
+      await client.createEvents({
+        appId: 'app1',
+        versionId: 'ver1',
+        events: [
+          { sourceId: 'tbl1', sourceType: 'table_column', ref: 'actions::view', trigger: 'onClick', action: { actionId: 'run-query', queryId: 'view1' } },
+          { sourceId: 'tbl1', sourceType: 'table_column', ref: 'actions::delete', trigger: 'onClick', action: { actionId: 'run-query', queryId: 'delete1' } },
+          { sourceId: 'tbl1', sourceType: 'table_column', ref: 'actions::view', trigger: 'onClick', action: { actionId: 'show-alert', message: 'Opened' } },
+        ],
+      });
+
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.events[0]).toMatchObject({
+        eventType: 'table_column',
+        attachedTo: 'tbl1',
+        index: 0,
+        event: { eventId: 'onClick', ref: 'actions::view', actionId: 'run-query' },
+      });
+      expect(body.events[1]).toMatchObject({ index: 0, event: { ref: 'actions::delete' } });
+      expect(body.events[2]).toMatchObject({ index: 1, event: { ref: 'actions::view' } });
+    });
   });
 
   describe('createPage', () => {

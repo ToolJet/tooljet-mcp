@@ -5,9 +5,10 @@ import { ok, fail, type ToolDef } from './types.js';
 const eventSchema = z
   .object({
     source_id: z.string().optional(),
-    source_type: z.enum(['component', 'data_query', 'page']).optional(),
+    source_type: z.enum(['component', 'data_query', 'page', 'table_column', 'table_action']).optional(),
     /** Backward-compatible shorthand for source_type=component. */
     component_id: z.string().optional(),
+    ref: z.string().min(1).optional(),
     trigger: z.string(),
     action: z.record(z.string(), z.any()),
     name: z.string().optional(),
@@ -17,12 +18,25 @@ const eventSchema = z
   })
   .refine((event) => !(event.source_id && event.component_id), {
     message: 'Use source_id or component_id, not both.',
+  })
+  .refine((event) => !event.component_id || !event.source_type || event.source_type === 'component', {
+    message: 'component_id can only be used with source_type=component; use source_id for query/page events.',
+  })
+  .refine(
+    (event) => !['table_column', 'table_action'].includes(event.source_type ?? '') || !!event.ref,
+    {
+      message: 'table_column/table_action events require ref; Button columns use `<column key or name>::<button id>`.',
+    }
+  )
+  .refine((event) => !event.ref || ['table_column', 'table_action'].includes(event.source_type ?? ''), {
+    message: 'ref is only valid with source_type=table_column or the deprecated table_action.',
   });
 
 type EventInput = {
   source_id?: string;
-  source_type?: 'component' | 'data_query' | 'page';
+  source_type?: 'component' | 'data_query' | 'page' | 'table_column' | 'table_action';
   component_id?: string;
+  ref?: string;
   trigger: string;
   action: Record<string, unknown>;
   name?: string;
@@ -32,9 +46,11 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_events',
     description:
-      'Wire interactivity and lifecycle behavior to components, data queries, or pages. Each event uses ' +
-      "{ source_id, source_type: 'component'|'data_query'|'page', trigger, action }; component_id remains a shorthand for component sources. " +
+      'Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses ' +
+      "{ source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. " +
       "trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). " +
+      "For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. " +
+      "The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. " +
       "Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. " +
       "action is { actionId, ...params } — use these EXACT ids (an invalid actionId silently does nothing):\n" +
       "  • run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n" +
@@ -65,6 +81,7 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
             events: args.events.map((event) => ({
               sourceId: event.source_id ?? event.component_id!,
               sourceType: event.source_type ?? 'component',
+              ref: event.ref,
               trigger: event.trigger,
               action: event.action,
               name: event.name,

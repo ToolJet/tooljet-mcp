@@ -125,6 +125,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const autogen = propVal(props, 'autogenerateColumns');
     const columns = propVal(props, 'columns');
     const hasColumns = Array.isArray(columns);
+    const projectsDataKeys = typeof data === 'string' && /\.map\s*\(/.test(data);
     if (data !== undefined && selector !== 'rawJson') {
       warnings.push(
         `Table "${label}": binds \`data\` but dataSourceSelector is not "rawJson" — it may render blank. ` +
@@ -137,6 +138,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       );
     }
     if (hasColumns) {
+      if (isTruthyBinding(autogen) && !projectsDataKeys) {
+        warnings.push(
+          `Table "${label}": has an explicit columns array but autogenerateColumns is still true — ` +
+            `ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to only the intended column keys; ` +
+            `this is safer than disabling autogeneration, which can crash some ToolJet Table versions.`
+        );
+      }
       (columns as unknown[]).forEach((col, i) => {
         const c = col as Record<string, unknown> | null;
         for (const req of ['name', 'key']) {
@@ -152,7 +160,49 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
             `Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid — use "none" (as typed) or "uppercase".`
           );
         }
+        if (c?.columnType === 'button') {
+          const buttons = c.buttons;
+          if (!Array.isArray(buttons) || buttons.length === 0) {
+            warnings.push(
+              `Table "${label}" column[${i}]: button column needs a non-empty \`buttons\` array; ` +
+                `read get_component_catalog({type:"Table",sections:["authoringHints"]}).`
+            );
+          } else {
+            const ids = new Set<string>();
+            buttons.forEach((button, buttonIndex) => {
+              const id = (button as Record<string, unknown> | null)?.id;
+              if (typeof id !== 'string' || id.length === 0) {
+                warnings.push(
+                  `Table "${label}" column[${i}] button[${buttonIndex}]: missing string \`id\`; ` +
+                    `its event ref must be <column key or name>::<button id>.`
+                );
+              } else if (ids.has(id)) {
+                warnings.push(`Table "${label}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
+              } else {
+                ids.add(id);
+              }
+            });
+          }
+        }
       });
+    }
+    if (isTruthyBinding(propVal(props, 'serverSidePagination'))) {
+      if (propVal(props, 'serverSideRowsPerPage') === undefined) {
+        warnings.push(`Table "${label}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
+      }
+      if (propVal(props, 'totalRecords') === undefined) {
+        warnings.push(`Table "${label}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
+      }
+    }
+  }
+
+  if (spec.type === 'Form') {
+    const mode = propVal(props, 'generateFormFrom');
+    if (mode === 'jsonSchema' && propVal(props, 'newJsonSchema') === undefined) {
+      warnings.push(`Form "${label}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
+    }
+    if (mode === 'rawJson' && propVal(props, 'JSONData') === undefined) {
+      warnings.push(`Form "${label}": generateFormFrom is "rawJson" but JSONData is missing.`);
     }
   }
 
@@ -276,7 +326,14 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   const pageIds = new Set(summary.pages.map((p) => p.id));
 
   // Duplicate component names within a page (ambiguous {{components.X}}).
-  for (const p of summary.pages) {
+  for (const [pageIndex, p] of summary.pages.entries()) {
+    // ToolJet renders IconHome2 for the first/Home page even when its stored icon is empty. Every
+    // other page falls back to IconFile, which makes multi-page sidebar navigation look unfinished.
+    if (pageIndex > 0 && !p.icon) {
+      warnings.push(
+        `Page "${p.name ?? p.id}" has no icon — set a relevant Tabler icon so the left sidebar does not use generic IconFile.`
+      );
+    }
     const counts = new Map<string, number>();
     for (const c of p.components) if (c.name) counts.set(c.name, (counts.get(c.name) ?? 0) + 1);
     for (const [name, n] of counts) {
@@ -300,7 +357,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
         ? queryIds
         : e.target === 'page'
           ? pageIds
-          : e.target === 'component'
+          : e.target === 'component' || e.target === 'table_column' || e.target === 'table_action'
             ? componentIds
             : new Set([...componentIds, ...queryIds, ...pageIds]);
     if (e.sourceId && !validSources.has(e.sourceId)) {
@@ -334,6 +391,58 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       parent: c.parent,
     });
     warnings.push(...r.warnings); // errors (styles-in-properties) can't occur post-persist
+  }
+
+  const eventsBySource = new Map<string, Set<string>>();
+  for (const event of summary.events) {
+    if (!event.sourceId || event.target !== 'component') continue;
+    const trigger = (event.event as Record<string, unknown> | undefined)?.eventId;
+    if (typeof trigger !== 'string') continue;
+    const triggers = eventsBySource.get(event.sourceId) ?? new Set<string>();
+    triggers.add(trigger);
+    eventsBySource.set(event.sourceId, triggers);
+  }
+  for (const table of allComponents.filter((component) => component.type === 'Table')) {
+    const triggers = eventsBySource.get(table.id) ?? new Set<string>();
+    const requirements: Array<[string, string]> = [
+      ['serverSidePagination', 'onPageChanged'],
+      ['serverSideSearch', 'onSearch'],
+      ['serverSideSort', 'onSort'],
+      ['serverSideFilter', 'onFilterChanged'],
+    ];
+    for (const [property, trigger] of requirements) {
+      if (isTruthyBinding(propVal(table.properties, property)) && !triggers.has(trigger)) {
+        warnings.push(`Table "${table.name ?? table.id}": ${property} is enabled but no ${trigger} event refreshes its data query.`);
+      }
+    }
+
+    const tableColumnRefs = new Set(
+      summary.events
+        .filter((event) => event.sourceId === table.id && event.target === 'table_column')
+        .map((event) => (event.event as Record<string, unknown> | undefined)?.ref)
+        .filter((ref): ref is string => typeof ref === 'string')
+    );
+    const columns = propVal(table.properties, 'columns');
+    if (Array.isArray(columns)) {
+      columns.forEach((column, columnIndex) => {
+        const col = column as Record<string, unknown> | null;
+        if (col?.columnType !== 'button' || col.useDynamicColumn === true || !Array.isArray(col.buttons)) return;
+        const columnKey = col.key ?? col.name;
+        if (typeof columnKey !== 'string') return;
+        col.buttons.forEach((button, buttonIndex) => {
+          const b = button as Record<string, unknown> | null;
+          if (Array.isArray(b?.events) && b.events.length > 0) return;
+          if (typeof b?.id !== 'string') return;
+          const ref = `${columnKey}::${b.id}`;
+          if (!tableColumnRefs.has(ref)) {
+            warnings.push(
+              `Table "${table.name ?? table.id}" column[${columnIndex}] button[${buttonIndex}] has no ` +
+                `table_column onClick event with ref "${ref}".`
+            );
+          }
+        });
+      });
+    }
   }
 
   for (const p of summary.pages) warnings.push(...detectOverlaps(p.components as LintComponent[]));
