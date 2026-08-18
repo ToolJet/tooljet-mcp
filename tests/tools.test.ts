@@ -254,6 +254,74 @@ describe('get_component_catalog tool', () => {
 });
 
 describe('add_events tool', () => {
+  it('blocks handlers placed after switch-page in the same trigger chain', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [
+        { id: 'p1', components: [{ id: 'btn1', name: 'viewDetails', type: 'Button' }] },
+        { id: 'p2', components: [] },
+      ],
+      queries: [{ id: 'q1', name: 'loadDetails' }],
+      events: [],
+    });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      events: [
+        {
+          source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+          action: { actionId: 'switch-page', pageId: 'p2' },
+        },
+        {
+          source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+          action: { actionId: 'run-query', queryId: 'q1' },
+        },
+      ],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/switch-page must be the LAST handler.*later handlers \(run-query\)/s);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
+
+  it('accepts state and query actions before a final switch-page', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [
+        { id: 'p1', components: [{ id: 'btn1', name: 'viewDetails', type: 'Button' }] },
+        { id: 'p2', components: [] },
+      ],
+      queries: [{ id: 'q1', name: 'loadDetails' }],
+      events: [],
+    });
+    client.createEvents.mockResolvedValue({ created: 3 });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      events: [
+        {
+          source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+          action: { actionId: 'set-custom-variable', key: 'selectedId', value: '{{1}}' },
+        },
+        {
+          source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+          action: { actionId: 'run-query', queryId: 'q1' },
+        },
+        {
+          source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+          action: { actionId: 'switch-page', pageId: 'p2' },
+        },
+      ],
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(client.createEvents).toHaveBeenCalled();
+  });
+
   it('passes Table Button-column target and compound ref to the client', async () => {
     const client = makeClient();
     client.getAppSummary.mockResolvedValue({

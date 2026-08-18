@@ -226,6 +226,42 @@ describe('update_layout geometry warnings', () => {
 });
 
 describe('update_events validation', () => {
+  it('blocks a reorder that moves switch-page before another same-trigger handler', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [
+          { id: 'p1', components: [{ id: 'button1', name: 'open', type: 'Button', properties: {} }] },
+          { id: 'p2', components: [] },
+        ],
+        queries: [{ id: 'q1', name: 'loadDetails' }],
+        events: [
+          {
+            id: 'run', index: 0, name: 'Load', sourceId: 'button1', target: 'component',
+            event: { eventId: 'onClick', actionId: 'run-query', queryId: 'q1' },
+          },
+          {
+            id: 'nav', index: 1, name: 'Navigate', sourceId: 'button1', target: 'component',
+            event: { eventId: 'onClick', actionId: 'switch-page', pageId: 'p2' },
+          },
+        ],
+      }),
+      updateEvents: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await updateEventsTool(client).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      update_type: 'reorder',
+      events: [
+        { event_id: 'nav', index: 0 },
+        { event_id: 'run', index: 1 },
+      ],
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/switch-page must be the LAST handler/);
+    expect(client.updateEvents).not.toHaveBeenCalled();
+  });
+
   it('blocks a trigger that cannot bind to the persisted component type', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

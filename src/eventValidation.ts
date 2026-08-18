@@ -154,11 +154,33 @@ export function validateEvents(summary: AppSummary, events: EventSpec[]): EventV
     }
   });
 
+  const chains = new Map<string, Array<{ event: EventSpec; index: number }>>();
+  events.forEach((event, index) => {
+    const key = [event.sourceType, event.sourceId, event.ref ?? '', event.trigger].join('\u0000');
+    const chain = chains.get(key) ?? [];
+    chain.push({ event, index });
+    chains.set(key, chain);
+  });
+  for (const chain of chains.values()) {
+    const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === 'switch-page');
+    if (navigationIndex === -1 || navigationIndex === chain.length - 1) continue;
+    const navigation = chain[navigationIndex]!;
+    const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(', ');
+    const label = navigation.event.name ? `Event "${navigation.event.name}"` : `Event[${navigation.index}]`;
+    errors.push(
+      `${label}: switch-page must be the LAST handler for the same source and trigger; ` +
+        `ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`
+    );
+  }
+
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
 export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
-  return summary.events.flatMap((event) => {
+  return summary.events
+    .map((event, position) => ({ event, position }))
+    .sort((left, right) => (left.event.index ?? left.position) - (right.event.index ?? right.position))
+    .flatMap(({ event }) => {
     if (!event.sourceId || !event.target || !event.event || typeof event.event !== 'object') return [];
     const payload = event.event as Record<string, unknown>;
     if (typeof payload.eventId !== 'string') return [];
@@ -171,5 +193,5 @@ export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
       action,
       name: event.name,
     }];
-  });
+    });
 }

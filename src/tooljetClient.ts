@@ -263,7 +263,7 @@ export interface AppSummary {
   version_id?: string;
   pages: Array<{ id: string; name?: string; handle?: string; icon?: string; components: ComponentSummary[] }>;
   queries: Array<{ id: string; name?: string; kind?: string; data_source_id?: string; options?: unknown }>;
-  events: Array<{ id: string; name?: string; sourceId?: string; target?: string; event?: unknown }>;
+  events: Array<{ id: string; name?: string; sourceId?: string; target?: string; event?: unknown; index?: number }>;
 }
 
 export interface QuerySummary {
@@ -499,6 +499,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       sourceId: e.sourceId,
       target: e.target,
       event: e.event,
+      ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
     return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
   }

@@ -34,31 +34,32 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
     }) {
       try {
         const updateType = args.update_type ?? 'update';
-        let warnings: string[] = [];
+        const summary = await client.getAppSummary(args.app_id);
+        const updatesById = new Map(args.events.map((event) => [event.event_id, event]));
+        const missingIds = args.events
+          .filter((event) => !summary.events.some((persisted) => persisted.id === event.event_id))
+          .map((event) => event.event_id);
+        if (missingIds.length) return fail(new Error(`Event ids do not exist in this app: ${missingIds.join(', ')}.`));
         if (updateType === 'update') {
           const missing = args.events.filter((event) => !event.name || !event.event);
           if (missing.length) {
             return fail(new Error('update_events with update_type="update" requires name and the full event blob for every entry.'));
           }
-          const summary = await client.getAppSummary(args.app_id);
-          const updatesById = new Map(args.events.map((event) => [event.event_id, event]));
-          const missingIds = args.events
-            .filter((event) => !summary.events.some((persisted) => persisted.id === event.event_id))
-            .map((event) => event.event_id);
-          if (missingIds.length) return fail(new Error(`Event ids do not exist in this app: ${missingIds.join(', ')}.`));
-          const changedSummary = {
-            ...summary,
-            events: summary.events
-              .filter((event) => updatesById.has(event.id))
-              .map((event) => {
-                const update = updatesById.get(event.id)!;
-                return { ...event, name: update.name, event: update.event };
-              }),
-          };
-          const validation = validateEvents(summary, persistedEventSpecs(changedSummary));
-          if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
-          warnings = validation.warnings;
+        } else if (args.events.some((event) => event.index === undefined)) {
+          return fail(new Error('update_events with update_type="reorder" requires index for every entry.'));
         }
+        const changedSummary = {
+          ...summary,
+          events: summary.events.map((event) => {
+            const update = updatesById.get(event.id);
+            if (!update) return event;
+            return updateType === 'update'
+              ? { ...event, name: update.name, event: update.event }
+              : { ...event, index: update.index };
+          }),
+        };
+        const validation = validateEvents(summary, persistedEventSpecs(changedSummary));
+        if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
         const result = await client.updateEvents({
           appId: args.app_id,
           versionId: args.version_id,
@@ -70,7 +71,7 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
             index: e.index,
           })),
         });
-        return ok({ ...result, warnings });
+        return ok({ ...result, warnings: validation.warnings });
       } catch (err) {
         return fail(err);
       }
