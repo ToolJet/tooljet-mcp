@@ -120,6 +120,12 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
   it('suggests what to build next when phases are exhausted', () => {
     expect(skill).toMatch(/grow into next/i);
   });
+
+  it('tells the agent to flag unbuildable requests instead of faking them', () => {
+    expect(skill).toMatch(/don't say yes to everything/i);
+    expect(skill).toMatch(/Never fake it/i);
+    expect(skill).toMatch(/tell the user plainly/i);
+  });
 });
 
 describe('generated skill is synchronized with the generator', () => {
@@ -140,6 +146,7 @@ describe('generated skill is synchronized with the generator', () => {
     'give EVERY page a relevant icon',
     'validate_app(app_id)',
     'how many MCP tool calls it took',
+    "don't say yes to everything",
   ];
   for (const a of anchors) {
     it(`generator emits: "${a}"`, () => {

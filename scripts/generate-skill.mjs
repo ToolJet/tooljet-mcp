@@ -132,6 +132,10 @@ Facts you need to build ToolJet apps through the \`tooljet-mcp\` tools — the c
 
 Every tool call goes through ToolJet's governed API (your session + permissions). ToolJet apps are configuration over a fixed component library, not code.
 
+## Be honest about what's buildable — don't say yes to everything
+
+Build only what these MCP tools and ToolJet's **real** components/features actually support. If a request — or any part of it — can't be done with the standard tools (a component or property that doesn't exist, an interaction ToolJet doesn't support, a datasource that isn't connected, anything outside this tool surface), **tell the user plainly**: name what isn't supported and why, and offer the nearest supported alternative or a manual step in the visual builder. **Never fake it** — don't invent components/properties/actions, don't silently drop a requested feature and present the app as finished, and don't claim something works when you haven't verified it (use \`run_query\` / \`validate_app\` / the browser pass to actually check). Delivering the supported parts and clearly listing what you couldn't do — and why — is the honest, useful outcome; a broken or imaginary feature presented as working is not.
+
 ## The tools
 
 - \`create_app(name)\` → \`{ app_id, version_id, home_page_id, app_url }\`. Call first; keep all four.
