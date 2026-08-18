@@ -351,10 +351,11 @@ describe('add_query tool', () => {
   it('maps snake_case args to client.createQuery params and returns the result', async () => {
     const client = makeClient();
     const created = { query_id: 'q1', name: 'getUsers' };
+    client.listDatasources.mockResolvedValue([{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }]);
     client.createQuery.mockResolvedValue(created);
 
     const tool = addQueryTool(client as unknown as ToolJetClient);
-    const options = { operation: 'list_rows', table_name: 'users', list_rows: {} };
+    const options = { operation: 'list_rows', table_id: 'users-id', list_rows: {} };
     const result = await tool.handler({
       version_id: 'v1',
       datasource_id: 'ds1',
@@ -367,12 +368,18 @@ describe('add_query tool', () => {
       dataSourceId: 'ds1',
       name: 'getUsers',
       options,
+      kind: 'tooljetdb',
     });
-    expect(textOf(result)).toEqual(created);
+    expect(textOf(result)).toEqual({
+      ...created,
+      warnings: [],
+      validation: { kind: 'tooljetdb', operation: 'list_rows', schema_found: true },
+    });
   });
 
   it('returns isError on client failure', async () => {
     const client = makeClient();
+    client.listDatasources.mockResolvedValue([{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }]);
     client.createQuery.mockRejectedValue(new Error('bad query'));
 
     const tool = addQueryTool(client as unknown as ToolJetClient);
@@ -380,7 +387,7 @@ describe('add_query tool', () => {
       version_id: 'v1',
       datasource_id: 'ds1',
       name: 'getUsers',
-      options: {},
+      options: { operation: 'list_rows', table_id: 'users-id', list_rows: {} },
     });
 
     expect(result.isError).toBe(true);
