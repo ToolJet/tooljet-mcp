@@ -314,4 +314,4 @@ The `Chart` component fails in a specific, common way: **ToolJet's chart-propert
 3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind `data` to a query that already returns `[{x,y}]` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: `{{queries.chartData.data}}`. Query engines evaluate JS reliably; the chart property evaluator does not.
 4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with `JSON.stringify(...)`.
 
-Rule of thumb: **an empty chart means the binding was too complex.** Replace dynamic detection with explicit field names + simple `.filter().length` / `.map()`.
+Rule of thumb: **an empty Chart or Html can mean the binding was too complex.** In particular, a `.map()` nested inside another `.map()` can throw before an `||` fallback runs. Flatten it to one `filter().map()` chain or pre-shape the nested data in a query; otherwise replace dynamic detection with explicit field names + simple `.filter().length` / `.map()`.

@@ -125,6 +125,67 @@ function differsFromCatalogDefault(type: string, key: string, value: unknown): b
   return defaultValue === undefined || JSON.stringify(value) !== JSON.stringify(defaultValue);
 }
 
+function nestedMapInValue(value: unknown): boolean {
+  if (typeof value === 'string') return value.includes('{{') && hasNestedMapCall(value);
+  if (Array.isArray(value)) return value.some(nestedMapInValue);
+  if (value && typeof value === 'object') return Object.values(value as Record<string, unknown>).some(nestedMapInValue);
+  return false;
+}
+
+/** ToolJet's component-expression evaluator can fail on a map call nested inside another map callback.
+ * Distinguish true nesting from safe sequential chains such as rows.map(...).map(...). */
+function hasNestedMapCall(source: string): boolean {
+  const parenthesisStack: boolean[] = [];
+  let quote: "'" | '"' | undefined;
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const current = source[index];
+    const next = source[index + 1];
+    if (lineComment) {
+      if (current === '\n') lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (current === '*' && next === '/') {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (current === '\\') escaped = true;
+      else if (current === quote) quote = undefined;
+      continue;
+    }
+    if (current === '/' && next === '/') {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (current === "'" || current === '"') {
+      quote = current;
+      continue;
+    }
+    if (current === '(') {
+      const isMapCall = /\.map\s*$/.test(source.slice(Math.max(0, index - 24), index));
+      if (isMapCall && parenthesisStack.some(Boolean)) return true;
+      parenthesisStack.push(isMapCall);
+    } else if (current === ')') {
+      parenthesisStack.pop();
+    }
+  }
+  return false;
+}
+
 function staticNumber(v: unknown, fallback: number): number {
   return optionalStaticNumber(v) ?? fallback;
 }
@@ -237,6 +298,14 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           `+ a separate Text heading (enable a native title only after visual verification).`
       );
     }
+  }
+
+  if (['Chart', 'Html'].includes(spec.type ?? '') && nestedMapInValue(props)) {
+    warnings.push(
+      `${spec.type} "${label}": a binding contains .map() inside another .map(); ToolJet's component expression ` +
+        'evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one ' +
+        'filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result.'
+    );
   }
 
   // Statistics renders secondaryValue in a deliberately narrow delta slot. Prose placed there

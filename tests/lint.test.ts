@@ -50,6 +50,29 @@ describe('lintComponentSpec', () => {
       .toEqual([]);
   });
 
+  it('warns when Html or Chart bindings nest map calls, but allows flat/sequential map chains', () => {
+    const nested =
+      '{{(queries.groups.data || []).map(group => group.items.map(item => `<b>${item.name}</b>`).join(""))' +
+      '.join("") || "No items"}}';
+    expect(lintComponentSpec({
+      name: 'groupedCards',
+      type: 'Html',
+      properties: { html: { value: nested } },
+    }).warnings.join(' ')).toMatch(/map\(\) inside another \.map\(\).*completely blank.*fallback.*filter\(\)\.map\(\)/i);
+    expect(lintComponentSpec({
+      name: 'groupedChart',
+      type: 'Chart',
+      properties: { title: { value: '' }, data: { value: nested } },
+    }).warnings.join(' ')).toMatch(/component expression evaluator can throw/i);
+
+    const flat = '{{(queries.items.data || []).filter(item => item.visible).map(item => `<b>${item.name}</b>`).join("")}}';
+    const sequential = '{{(queries.items.data || []).map(item => item.name).map(name => name.toUpperCase())}}';
+    expect(lintComponentSpec({ name: 'flatCards', type: 'Html', properties: { html: { value: flat } } }).warnings)
+      .toEqual([]);
+    expect(lintComponentSpec({ name: 'sequentialCards', type: 'Html', properties: { html: { value: sequential } } }).warnings)
+      .toEqual([]);
+  });
+
   it('warns when Statistics prose is placed in the narrow secondary value slot', () => {
     expect(lintComponentSpec({
       name: 'remainingCases',

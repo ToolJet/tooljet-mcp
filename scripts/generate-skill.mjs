@@ -376,6 +376,7 @@ The gotchas that most often break a build, inlined so you don't miss them:
 - **Kanban:** card columns/counts can look correct while every card is blank because the body is nested children bound to \`cardData\`. MCP creates catalog defaults when no explicit child is supplied. For multi-line card content, use one explicit \`Html\` child with wrapping CSS and an explicit CSS width/max-width; nested \`Text\` clips to one line, and \`cardWidth\` does not reliably predict the physical column width.
 - **DropdownV2:** the selection is \`.value\` (display text \`.selectedOption.label\`); \`.label\` is the field TITLE — never filter data on it. Dynamic \`schema\` requires \`advanced="{{true}}"\` or ToolJet silently uses static \`options\`; never author both modes. Bound options need \`visible:true\` + \`default:true\` to preselect.
 - **Styling** goes in the top-level \`styles\` object, **never** under \`properties\`.
+- **Html/Chart expressions:** never put a \`.map()\` inside another \`.map()\` in a component binding. ToolJet's property evaluator can throw and render the entire component blank before even an \`||\` fallback runs. Flatten to one \`filter().map()\` chain, or pre-shape nested data in a datasource/RunJS query and bind the simple result.
 - **Chart:** empty native title + a separate \`Text\` heading; build \`data\` as a simple explicit \`[{x,y}]\` and do heavy aggregation in a **query**, not in the chart binding.
 - **Events:** the id is \`set-custom-variable\` (not \`set-variable\`); lifecycle sources are component/data_query/page. Mutation refresh/success belongs on \`onDataQuerySuccess\` and errors on \`onDataQueryFailure\`.
 - **Security:** visibility is UX, not authorization; use server-side permissions/RLS and \`globals.server.currentUser\` in server queries.
@@ -647,7 +648,7 @@ The \`Chart\` component fails in a specific, common way: **ToolJet's chart-prope
 3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind \`data\` to a query that already returns \`[{x,y}]\` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: \`{{queries.chartData.data}}\`. Query engines evaluate JS reliably; the chart property evaluator does not.
 4. **Only use Plotly-JSON mode** (\`plotFromJson: true\` + \`jsonDescription\`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with \`JSON.stringify(...)\`.
 
-Rule of thumb: **an empty chart means the binding was too complex.** Replace dynamic detection with explicit field names + simple \`.filter().length\` / \`.map()\`.
+Rule of thumb: **an empty Chart or Html can mean the binding was too complex.** In particular, a \`.map()\` nested inside another \`.map()\` can throw before an \`||\` fallback runs. Flatten it to one \`filter().map()\` chain or pre-shape the nested data in a query; otherwise replace dynamic detection with explicit field names + simple \`.filter().length\` / \`.map()\`.
 `;
 
 writeFileSync(resolve(root, 'skill/SKILL.md'), skill);
