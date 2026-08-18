@@ -239,6 +239,22 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
+  // Statistics renders secondaryValue in a deliberately narrow delta slot. Prose placed there
+  // wraps letter-by-letter even when the tile itself is reasonably wide; keep prose in the label.
+  if (spec.type === 'Statistics') {
+    const secondaryValue = propVal(props, 'secondaryValue');
+    if (
+      typeof secondaryValue === 'string' &&
+      !secondaryValue.includes('{{') &&
+      /[A-Za-z]/.test(secondaryValue)
+    ) {
+      warnings.push(
+        `Statistics "${label}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot ` +
+          'that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.'
+      );
+    }
+  }
+
   // DropdownV2 has two mutually exclusive option surfaces. ToolJet persists defaults for both, so
   // compare with the exact catalog defaults and warn only when the caller authored a custom value.
   if (spec.type === 'DropdownV2') {

@@ -50,6 +50,29 @@ describe('lintComponentSpec', () => {
       .toEqual([]);
   });
 
+  it('warns when Statistics prose is placed in the narrow secondary value slot', () => {
+    expect(lintComponentSpec({
+      name: 'remainingCases',
+      type: 'Statistics',
+      properties: {
+        secondaryValue: { value: 'cases' },
+        secondaryValueLabel: { value: 'Assigned checks remaining' },
+      },
+    }).warnings.join(' ')).toMatch(/secondaryValue "cases" is prose.*wrap letter-by-letter.*secondaryValueLabel/i);
+
+    expect(lintComponentSpec({
+      name: 'passRateDelta',
+      type: 'Statistics',
+      properties: { secondaryValue: { value: '12%' } },
+    }).warnings).toEqual([]);
+
+    expect(lintComponentSpec({
+      name: 'dynamicDelta',
+      type: 'Statistics',
+      properties: { secondaryValue: { value: '{{queries.delta.data}}' } },
+    }).warnings).toEqual([]);
+  });
+
   it('warns when a Table binds data without rawJson / without columns', () => {
     const r = lintComponentSpec({
       name: 't',

@@ -307,6 +307,7 @@ const RENDERING_HINTS = {
   },
   Statistics: {
     recommendedMinHeightPx: '≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content',
+    secondaryValueUsage: 'secondaryValue renders in a narrow delta slot: reserve it for a number or percentage. Put prose in secondaryValueLabel and leave secondaryValue empty.',
   },
   ModalV2: {
     childCoordinateSpace: 'Modal-local 43-column grid; child (0,0) is the modal body top-left.',
