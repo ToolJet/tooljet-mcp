@@ -235,6 +235,13 @@ describe('generated skill — information architecture & phasing (the crowded-pa
 });
 
 describe('generated skill — selective reads, reuse, and page-level QA', () => {
+  it('shares the app URL early and reuses one built-in browser tab after meaningful progress', () => {
+    expect(skill).toMatch(/Immediately share the clickable `app_url` in chat/i);
+    expect(skill).toMatch(/built-in browser.*first meaningful page works.*reuse the same tab/is);
+    expect(skill).toMatch(/reload it at page-level checkpoints.*instead of opening new tabs/is);
+    expect(skill).toMatch(/Repeat the clickable `app_url` in the final handoff/i);
+  });
+
   it('batches only relevant catalog contracts and avoids redundant simple lookups', () => {
     expect(skill).toMatch(/types.*batch/i);
     expect(skill).toMatch(/request only the relevant sections\/keys/i);
@@ -333,6 +340,8 @@ describe('generated skill is synchronized with the generator', () => {
     'give EVERY page a relevant sidebar icon',
     'no per-app datasource attach/link step',
     'validate_app(app_id)',
+    'Immediately share the clickable `app_url` in chat',
+    'Repeat the clickable `app_url` in the final handoff',
     'how many MCP tool calls it took',
     'Reuse existing components deliberately',
     'collect every issue before editing',
