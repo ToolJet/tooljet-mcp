@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 
 describe('lintComponentSpec', () => {
@@ -199,6 +199,45 @@ describe('detectOverlaps', () => {
     ).toEqual([]);
   });
 
+  it('uses the extra 20px rendered by top-aligned form inputs', () => {
+    const field = {
+      name: 'subject',
+      type: 'TextInput',
+      properties: { label: { value: 'Subject' } },
+      styles: { alignment: { value: 'top' } },
+      layout: { top: 0, left: 0, width: 20, height: 62 },
+    };
+    expect(renderedHeight(field)).toBe(82);
+    const warnings = detectOverlaps([
+      field,
+      { name: 'status', type: 'DropdownV2', layout: { top: 72, left: 0, width: 20, height: 62 } },
+    ]).join(' ');
+    expect(warnings).toMatch(/overlap at rendered desktop size/);
+    expect(warnings).toMatch(/renders 82px tall \(authored 62px \+ 20px/);
+  });
+
+  it('uses the catalog-default auto label slot even when an authored label is empty', () => {
+    expect(renderedHeight({
+      name: 'notes',
+      type: 'TextArea',
+      properties: { label: { value: '' } },
+      styles: { alignment: { value: 'top' } },
+      layout: { top: 0, left: 0, width: 20, height: 62 },
+    })).toBe(82);
+  });
+
+  it('tests both axes so side-by-side fields are not false positives', () => {
+    expect(detectOverlaps([
+      {
+        name: 'first',
+        type: 'TextInput',
+        styles: { alignment: { value: 'top' } },
+        layout: { top: 0, left: 0, width: 20, height: 62 },
+      },
+      { name: 'second', type: 'TextInput', layout: { top: 72, left: 20, width: 20, height: 62 } },
+    ])).toEqual([]);
+  });
+
   it('does not compare rectangles that belong to different parents', () => {
     expect(detectOverlaps([
       { name: 'modal', clientRef: 'm', layout: { top: 0, left: 0, width: 20, height: 200 } },
@@ -216,6 +255,53 @@ describe('lintModalChildren', () => {
     ]);
     expect(warnings.join(' ')).toMatch(/SIDE-aligned label/);
     expect(warnings.join(' ')).toMatch(/only 10px vertical gap/);
+  });
+
+  it('warns when modalHeight cannot contain the rendered child bottom plus visible chrome', () => {
+    const warnings = lintModalChildren([
+      {
+        name: 'editTicket',
+        type: 'ModalV2',
+        clientRef: 'modal',
+        properties: {
+          modalHeight: { value: '{{400}}' },
+          showHeader: { value: '{{true}}' },
+          showFooter: { value: '{{false}}' },
+          headerHeight: { value: 80 },
+        },
+      },
+      {
+        name: 'status',
+        type: 'DropdownV2',
+        parentRef: 'modal',
+        properties: { label: { value: 'Status' } },
+        styles: { alignment: { value: 'top' } },
+        layout: { top: 300, left: 2, width: 18, height: 62 },
+      },
+    ]).join(' ');
+    expect(warnings).toMatch(/modalHeight 400px but needs at least 482px/);
+    expect(warnings).toMatch(/rendered bottom 382px \+ 80px header \+ 0px footer \+ 20px bottom slack/);
+  });
+
+  it('accepts a modal tall enough for the rendered children and visible chrome', () => {
+    const warnings = lintModalChildren([
+      {
+        id: 'modal-id',
+        name: 'editTicket',
+        type: 'ModalV2',
+        properties: { modalHeight: { value: 500 }, showHeader: { value: true }, showFooter: { value: false } },
+      },
+      {
+        id: 'status-id',
+        name: 'status',
+        type: 'DropdownV2',
+        parent: 'modal-id',
+        properties: { label: { value: 'Status' } },
+        styles: { alignment: { value: 'top' } },
+        layouts: { desktop: { top: 300, left: 2, width: 18, height: 62 } },
+      },
+    ]);
+    expect(warnings.join(' ')).not.toMatch(/modalHeight/);
   });
 });
 
@@ -411,5 +497,45 @@ describe('validateAppStructure', () => {
     expect(warnings).toMatch(/Page "Customers" has no icon.*left sidebar.*IconFile/);
     expect(warnings).not.toMatch(/Page "Home" has no icon/);
     expect(warnings).not.toMatch(/Page "Reports" has no icon/);
+  });
+
+  it('finds rendered-height overlap and modal clipping in persisted app geometry', () => {
+    const app: AppSummary = {
+      ...base,
+      pages: [{
+        id: 'p1',
+        name: 'Home',
+        components: [
+          {
+            id: 'modal',
+            name: 'editTicket',
+            type: 'ModalV2',
+            properties: { modalHeight: { value: 200 }, showHeader: { value: true }, showFooter: { value: false } },
+          },
+          {
+            id: 'subject',
+            name: 'subject',
+            type: 'TextInput',
+            parent: 'modal',
+            properties: { label: { value: 'Subject' } },
+            styles: { alignment: { value: 'top' } },
+            layouts: { desktop: { top: 20, left: 2, width: 18, height: 62 } },
+          },
+          {
+            id: 'status',
+            name: 'status',
+            type: 'DropdownV2',
+            parent: 'modal',
+            properties: { label: { value: 'Status' } },
+            styles: { alignment: { value: 'top' } },
+            layouts: { desktop: { top: 92, left: 2, width: 18, height: 62 } },
+          },
+        ],
+      }],
+      events: [],
+    };
+    const warnings = validateAppStructure(app).warnings.join(' ');
+    expect(warnings).toMatch(/overlap at rendered desktop size/);
+    expect(warnings).toMatch(/modalHeight 200px but needs at least 274px/);
   });
 });

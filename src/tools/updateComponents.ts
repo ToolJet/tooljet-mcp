@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintComponentSpec } from '../lint.js';
+import { lintComponentSpec, lintRenderedGeometry, type LintComponent } from '../lint.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const updateSchema = z.object({
@@ -50,6 +50,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (!page) return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
         const components = new Map(page.components.map((component) => [component.id, component]));
+        const projected = new Map(page.components.map((component) => [component.id, component as LintComponent]));
         const warnings: string[] = [];
         const errors: string[] = [];
         for (const update of args.updates) {
@@ -58,23 +59,27 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             errors.push(`Component "${update.component_id}" does not exist on page "${args.page_id}".`);
             continue;
           }
-          if (!update.definition) continue;
           const definition = update.definition as {
             properties?: Record<string, unknown>;
             styles?: Record<string, unknown>;
-          };
-          const lint = lintComponentSpec({
+          } | undefined;
+          const next: LintComponent = {
+            id: current.id,
             name: update.name ?? current.name ?? current.id,
             type: current.type,
-            properties: { ...(current.properties ?? {}), ...(definition.properties ?? {}) },
-            styles: { ...(current.styles ?? {}), ...(definition.styles ?? {}) },
+            properties: { ...(current.properties ?? {}), ...(definition?.properties ?? {}) },
+            styles: { ...(current.styles ?? {}), ...(definition?.styles ?? {}) },
             layouts: current.layouts as Parameters<typeof lintComponentSpec>[0]['layouts'],
             parent: update.parent ?? current.parent,
-          });
+          };
+          projected.set(current.id, next);
+          if (!update.definition) continue;
+          const lint = lintComponentSpec(next);
           errors.push(...lint.errors);
           warnings.push(...lint.warnings);
         }
         if (errors.length) return fail(new Error(errors.join(' ')));
+        warnings.push(...lintRenderedGeometry([...projected.values()]));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,

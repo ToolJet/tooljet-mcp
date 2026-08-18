@@ -47,6 +47,33 @@ export const FORM_INPUT_TYPES = new Set([
   'TreeSelect',
   'RadioButtonV2',
 ]);
+
+/** Exact ToolJet INPUT_COMPONENTS_FOR_FORM list. When one of these widgets uses a top-aligned
+ * label, the canvas renderer adds TOP_ALIGNMENT_HEIGHT_INCREMENT (20px) to its authored height. */
+export const TOP_ALIGNED_INPUT_TYPES = new Set([
+  'TextInput',
+  'PasswordInput',
+  'EmailInput',
+  'PhoneInput',
+  'CurrencyInput',
+  'NumberInput',
+  'DropdownV2',
+  'MultiselectV2',
+  'Cascader',
+  'RadioButtonV2',
+  'DatetimePickerV2',
+  'Checkbox',
+  'ToggleSwitchV2',
+  'DatePickerV2',
+  'TimePicker',
+  'DaterangePicker',
+  'TextArea',
+  'StarRating',
+  'TagsInput',
+  'ColorPicker',
+  'ButtonGroupV2',
+]);
+export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 /** At or below this width (grid columns), a side-aligned label leaves too little room for the input. */
 const NARROW_SIDE_LABEL_COLS = 18;
 
@@ -57,6 +84,7 @@ interface Rect {
   height?: number;
 }
 export interface LintComponent {
+  id?: string;
   name?: string;
   type?: string;
   properties?: Record<string, unknown>;
@@ -76,6 +104,41 @@ function propVal(props: Record<string, unknown> | undefined, key: string): unkno
 
 function isTruthyBinding(v: unknown): boolean {
   return v === true || v === '{{true}}' || v === 'true';
+}
+
+function isFalseBinding(v: unknown): boolean {
+  return v === false || v === '{{false}}' || v === 'false';
+}
+
+function staticNumber(v: unknown, fallback: number): number {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const match = v.trim().match(/^(?:\{\{\s*)?(\d+(?:\.\d+)?)(?:\s*\}\})?(?:px)?$/);
+    if (match) return Number(match[1]);
+  }
+  return fallback;
+}
+
+/** ToolJet adds 20px outside the authored layout box for a top-aligned labelled form input.
+ * Missing label metadata is treated as the catalog default (labelType:auto), which also increments. */
+export function renderedHeight(component: LintComponent, rect?: Rect): number {
+  const layout = rect ?? component.layouts?.desktop ?? component.layout;
+  const authored = layout?.height ?? 0;
+  if (!TOP_ALIGNED_INPUT_TYPES.has(component.type ?? '')) return authored;
+  if (propVal(component.styles, 'alignment') !== 'top') return authored;
+
+  const labelType = propVal(component.properties, 'labelType');
+  const label = propVal(component.properties, 'label');
+  const hasRenderedLabel =
+    labelType === undefined ||
+    labelType === 'auto' ||
+    label === undefined ||
+    (typeof label === 'string' ? label.trim().length > 0 : Boolean(label));
+  return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
+}
+
+function componentKey(component: LintComponent): string | undefined {
+  return component.clientRef ?? component.id;
 }
 
 /** Lint a single component spec (pre-write). */
@@ -247,11 +310,12 @@ export function detectOverlaps(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const items = components
     .map((c) => ({
+      component: c,
       name: c.name ?? c.type ?? '?',
       r: c.layouts?.desktop ?? c.layout,
       parent: c.parentRef ?? c.parent ?? '__page__',
     }))
-    .filter((x): x is { name: string; r: Rect; parent: string } => !!x.r);
+    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r);
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       if (items[i].parent !== items[j].parent) continue;
@@ -260,25 +324,43 @@ export function detectOverlaps(components: LintComponent[]): string[] {
       const ax = a.left ?? 0,
         ay = a.top ?? 0,
         aw = a.width ?? 0,
-        ah = a.height ?? 0;
+        ah = renderedHeight(items[i].component, a);
       const bx = b.left ?? 0,
         by = b.top ?? 0,
         bw = b.width ?? 0,
-        bh = b.height ?? 0;
+        bh = renderedHeight(items[j].component, b);
       if (ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah) {
-        warnings.push(`Components "${items[i].name}" and "${items[j].name}" overlap on the desktop canvas.`);
+        const increments = [items[i], items[j]]
+          .filter((item) => renderedHeight(item.component, item.r) > (item.r.height ?? 0))
+          .map(
+            (item) =>
+              `"${item.name}" renders ${renderedHeight(item.component, item.r)}px tall ` +
+              `(authored ${item.r.height ?? 0}px + ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px for its top-aligned label)`
+          );
+        warnings.push(
+          `Components "${items[i].name}" and "${items[j].name}" overlap at rendered desktop size` +
+            (increments.length ? `; ${increments.join(' and ')}` : '') +
+            `.`
+        );
       }
     }
   }
   return warnings;
 }
 
-/** Batch-only modal checks: parent type is knowable from clientRef before the write. */
+/** Modal checks work both before a batch write (clientRef/parentRef) and on persisted ids. */
 export function lintModalChildren(components: LintComponent[]): string[] {
   const warnings: string[] = [];
-  const refs = new Map(components.filter((c) => c.clientRef).map((c) => [c.clientRef!, c]));
-  const modalChildren = components.filter((c) => {
-    const parent = c.parentRef ? refs.get(c.parentRef) : undefined;
+  const refs = new Map(
+    components.flatMap((component) => {
+      const key = componentKey(component);
+      return key ? [[key, component] as const] : [];
+    })
+  );
+  const parentOf = (component: LintComponent): LintComponent | undefined =>
+    refs.get(component.parentRef ?? component.parent ?? '');
+  const modalChildren = components.filter((component) => {
+    const parent = parentOf(component);
     return parent?.type === 'ModalV2' || parent?.type === 'Modal';
   });
 
@@ -297,12 +379,16 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     for (let j = i + 1; j < modalChildren.length; j++) {
       const a = modalChildren[i];
       const b = modalChildren[j];
-      if (a.parentRef !== b.parentRef || !FORM_INPUT_TYPES.has(a.type ?? '') || !FORM_INPUT_TYPES.has(b.type ?? '')) continue;
+      if (
+        (a.parentRef ?? a.parent) !== (b.parentRef ?? b.parent) ||
+        !FORM_INPUT_TYPES.has(a.type ?? '') ||
+        !FORM_INPUT_TYPES.has(b.type ?? '')
+      ) continue;
       const ar = a.layouts?.desktop ?? a.layout;
       const br = b.layouts?.desktop ?? b.layout;
       if (!ar || !br) continue;
-      const ax = ar.left ?? 0, aw = ar.width ?? 0, ay = ar.top ?? 0, ah = ar.height ?? 0;
-      const bx = br.left ?? 0, bw = br.width ?? 0, by = br.top ?? 0, bh = br.height ?? 0;
+      const ax = ar.left ?? 0, aw = ar.width ?? 0, ay = ar.top ?? 0, ah = renderedHeight(a, ar);
+      const bx = br.left ?? 0, bw = br.width ?? 0, by = br.top ?? 0, bh = renderedHeight(b, br);
       if (!(ax < bx + bw && bx < ax + aw)) continue;
       const gap = by >= ay + ah ? by - (ay + ah) : ay >= by + bh ? ay - (by + bh) : -1;
       if (gap >= 0 && gap < 20) {
@@ -313,7 +399,43 @@ export function lintModalChildren(components: LintComponent[]): string[] {
       }
     }
   }
+
+  for (const modal of components.filter((component) => component.type === 'ModalV2' || component.type === 'Modal')) {
+    const key = componentKey(modal);
+    if (!key) continue;
+    const children = modalChildren.filter((child) => (child.parentRef ?? child.parent) === key);
+    const childBottoms = children.flatMap((child) => {
+      const rect = child.layouts?.desktop ?? child.layout;
+      return rect ? [{ child, bottom: (rect.top ?? 0) + renderedHeight(child, rect) }] : [];
+    });
+    if (!childBottoms.length) continue;
+
+    const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
+    const modalHeight = staticNumber(propVal(modal.properties, 'modalHeight'), 400);
+    const isV2 = modal.type === 'ModalV2';
+    const headerHeight = !isV2 || isFalseBinding(propVal(modal.properties, 'showHeader'))
+      ? 0
+      : staticNumber(propVal(modal.properties, 'headerHeight'), 80);
+    const footerHeight = !isV2 || isFalseBinding(propVal(modal.properties, 'showFooter'))
+      ? 0
+      : staticNumber(propVal(modal.properties, 'footerHeight'), 80);
+    const bottomSlack = 20;
+    const requiredHeight = lowest.bottom + headerHeight + footerHeight + bottomSlack;
+    if (modalHeight < requiredHeight) {
+      warnings.push(
+        `Modal "${modal.name ?? modal.type}" has modalHeight ${modalHeight}px but needs at least ${requiredHeight}px ` +
+          `for child "${lowest.child.name ?? lowest.child.type}" (rendered bottom ${lowest.bottom}px + ` +
+          `${headerHeight}px header + ${footerHeight}px footer + ${bottomSlack}px bottom slack); ` +
+          `content can be clipped or forced into unintended scrolling.`
+      );
+    }
+  }
   return warnings;
+}
+
+/** Geometry-only checks for a complete page after creates, property edits, or layout edits. */
+export function lintRenderedGeometry(components: LintComponent[]): string[] {
+  return [...detectOverlaps(components), ...lintModalChildren(components)];
 }
 
 /** Lint a batch: per-component checks + overlap detection across the batch. */
@@ -325,8 +447,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
-  warnings.push(...detectOverlaps(components));
-  warnings.push(...lintModalChildren(components));
+  warnings.push(...lintRenderedGeometry(components));
   return { errors, warnings };
 }
 
@@ -404,6 +525,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       }
     }
     const r = lintComponentSpec({
+      id: c.id,
       name: c.name ?? c.id,
       type: c.type,
       properties: c.properties,
@@ -467,7 +589,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
-  for (const p of summary.pages) warnings.push(...detectOverlaps(p.components as LintComponent[]));
+  for (const p of summary.pages) warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }

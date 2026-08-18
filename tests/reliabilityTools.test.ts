@@ -6,6 +6,7 @@ import { dropTableColumnTool } from '../src/tools/dropTableColumn.js';
 import { dropTableTool } from '../src/tools/dropTable.js';
 import { updateComponentsTool } from '../src/tools/updateComponents.js';
 import { updateEventsTool } from '../src/tools/updateEvents.js';
+import { updateLayoutTool } from '../src/tools/updateLayout.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
   return JSON.parse(result.content[0]!.text);
@@ -100,6 +101,62 @@ describe('update_components validation', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toMatch(/duplicate column key "same"/);
     expect(client.updateComponents).not.toHaveBeenCalled();
+  });
+
+  it('warns when a style edit turns an authored-height gap into a rendered overlap', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [
+          {
+            id: 'first', name: 'first', type: 'TextInput', properties: { label: { value: 'First' } },
+            styles: { alignment: { value: 'side' } }, layouts: { desktop: { top: 0, left: 0, width: 18, height: 62 } },
+          },
+          {
+            id: 'second', name: 'second', type: 'TextInput', properties: { label: { value: 'Second' } },
+            styles: { alignment: { value: 'side' } }, layouts: { desktop: { top: 72, left: 0, width: 18, height: 62 } },
+          },
+        ] }],
+        queries: [],
+        events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'first', definition: { styles: { alignment: { value: 'top' } } } }],
+    });
+    expect(textOf(result).warnings.join(' ')).toMatch(/renders 82px tall.*authored 62px \+ 20px/);
+    expect(client.updateComponents).toHaveBeenCalled();
+  });
+});
+
+describe('update_layout geometry warnings', () => {
+  it('checks the projected full-page layout before writing and returns overlap warnings', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [
+          {
+            id: 'first', name: 'first', type: 'TextInput', properties: { label: { value: 'First' } },
+            styles: { alignment: { value: 'top' } }, layouts: { desktop: { top: 0, left: 0, width: 18, height: 62 } },
+          },
+          {
+            id: 'second', name: 'second', type: 'TextInput', properties: { label: { value: 'Second' } },
+            styles: { alignment: { value: 'top' } }, layouts: { desktop: { top: 100, left: 0, width: 18, height: 62 } },
+          },
+        ] }],
+        queries: [],
+        events: [],
+      }),
+      updateLayouts: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateLayoutTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      layouts: [{ component_id: 'second', desktop: { top: 72, left: 0, width: 18, height: 62 } }],
+    });
+    expect(textOf(result).warnings.join(' ')).toMatch(/overlap at rendered desktop size/);
+    expect(client.updateLayouts).toHaveBeenCalled();
   });
 });
 
