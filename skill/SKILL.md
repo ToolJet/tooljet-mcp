@@ -229,7 +229,7 @@ Form inputs default to a **side-aligned label** (`styles.alignment = "side"`) �
 
 Any element backed by a query is **not done** until its states are handled. These are part of building the feature, not a later polish pass:
 - **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a `loadingState`), bound to the query's loading flag `{{queries.<q>.isLoading}}` — never leave a component blank while data loads.
-- **Empty:** a query can return zero rows. Show a clear empty state ("No workouts logged yet" via a Text/HTML block, or the Table's own empty message) — not a blank grid or a broken-looking chart.
+- **Empty:** a query can return zero rows. Show a clear empty state ("No workouts logged yet" via a Text/HTML block, or the Table's own empty message) — not a blank grid or a broken-looking chart. A custom empty state may intentionally share the Table's rectangle when their `visibility` bindings are exact complements; MCP suppresses the overlap warning only when that exclusivity is provable.
 - **Error:** a query can fail. Surface it (a `show-alert` on the query's failure event, or a visible error state) — never present blank/stale as if it were fine.
 - **Refresh:** after any mutation, re-run list/count queries from the mutation query's `onDataQuerySuccess` lifecycle event.
 - **Success:** confirm and close/reset only from `onDataQuerySuccess`; show an error and preserve input from `onDataQueryFailure`.

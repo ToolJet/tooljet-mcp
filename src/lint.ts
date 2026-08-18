@@ -120,6 +120,68 @@ function explicitlyProjectsTableData(value: unknown): boolean {
   return !value.slice(projectionStart).includes('...');
 }
 
+function visibilityExpression(component: LintComponent): string | undefined {
+  const value = propVal(component.properties, 'visibility');
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.startsWith('{{') && trimmed.endsWith('}}')
+    ? trimmed.slice(2, -2).trim()
+    : undefined;
+}
+
+function stripOuterParens(value: string): string {
+  let result = value;
+  while (result.startsWith('(') && result.endsWith(')')) {
+    let depth = 0;
+    let enclosesWholeExpression = true;
+    for (let index = 0; index < result.length; index++) {
+      if (result[index] === '(') depth++;
+      if (result[index] === ')') depth--;
+      if (depth === 0 && index < result.length - 1) {
+        enclosesWholeExpression = false;
+        break;
+      }
+    }
+    if (!enclosesWholeExpression) break;
+    result = result.slice(1, -1);
+  }
+  return result;
+}
+
+function rowsStateExpression(value: string): { query: string; state: 'empty' | 'present' } | undefined {
+  const compact = value.replace(/\s+/g, '').replace(/[()]/g, '');
+  const queries = [...compact.matchAll(/queries\.([A-Za-z_$][\w$]*)\.(?:isLoading|data)/g)]
+    .map((match) => match[1]!);
+  if (!queries.length || new Set(queries).size !== 1) return undefined;
+  const query = queries[0]!;
+  if (compact === `queries.${query}.isLoading||queries.${query}.data||[].length>0`) {
+    return { query, state: 'present' };
+  }
+  if (compact === `!queries.${query}.isLoading&&queries.${query}.data||[].length===0`) {
+    return { query, state: 'empty' };
+  }
+  return undefined;
+}
+
+/** Only suppress geometry warnings when two visibility bindings are provably disjoint. */
+function mutuallyExclusiveVisibility(a: LintComponent, b: LintComponent): boolean {
+  const aVisibility = propVal(a.properties, 'visibility');
+  const bVisibility = propVal(b.properties, 'visibility');
+  if (isFalseBinding(aVisibility) || isFalseBinding(bVisibility)) return true;
+  const aExpression = visibilityExpression(a);
+  const bExpression = visibilityExpression(b);
+  if (!aExpression || !bExpression) return false;
+  const aCompact = stripOuterParens(aExpression.replace(/\s+/g, ''));
+  const bCompact = stripOuterParens(bExpression.replace(/\s+/g, ''));
+  const negates = (left: string, right: string): boolean =>
+    left.startsWith('!') && stripOuterParens(left.slice(1)) === stripOuterParens(right);
+  if (negates(aCompact, bCompact) || negates(bCompact, aCompact)) return true;
+  const aRowsState = rowsStateExpression(aExpression);
+  const bRowsState = rowsStateExpression(bExpression);
+  return !!aRowsState && !!bRowsState &&
+    aRowsState.query === bRowsState.query && aRowsState.state !== bRowsState.state;
+}
+
 function recordValue(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
@@ -614,6 +676,7 @@ export function detectOverlaps(components: LintComponent[]): string[] {
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       if (items[i].parent !== items[j].parent) continue;
+      if (mutuallyExclusiveVisibility(items[i].component, items[j].component)) continue;
       const a = items[i].r;
       const b = items[j].r;
       const ax = a.left ?? 0,

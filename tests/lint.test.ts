@@ -404,6 +404,46 @@ describe('detectOverlaps', () => {
       { name: 'field', parentRef: 'm', layout: { top: 0, left: 0, width: 20, height: 60 } },
     ])).toEqual([]);
   });
+
+  it('allows intentionally overlaid components with provably complementary visibility', () => {
+    const layout = { top: 0, left: 0, width: 30, height: 200 };
+    expect(detectOverlaps([
+      {
+        name: 'results', type: 'Table', layout,
+        properties: { visibility: { value: '{{variables.hasResults}}' } },
+      },
+      {
+        name: 'emptyState', type: 'Html', layout,
+        properties: { visibility: { value: '{{!variables.hasResults}}' } },
+      },
+    ])).toEqual([]);
+  });
+
+  it('recognizes the standard loading-or-rows versus settled-empty visibility pair', () => {
+    const layout = { top: 0, left: 0, width: 30, height: 200 };
+    expect(detectOverlaps([
+      {
+        name: 'results', type: 'Table', layout,
+        properties: {
+          visibility: { value: '{{queries.listRows.isLoading || (queries.listRows.data || []).length > 0}}' },
+        },
+      },
+      {
+        name: 'emptyState', type: 'Html', layout,
+        properties: {
+          visibility: { value: '{{!queries.listRows.isLoading && (queries.listRows.data || []).length === 0}}' },
+        },
+      },
+    ])).toEqual([]);
+  });
+
+  it('keeps overlap warnings for visibility expressions that are not proven exclusive', () => {
+    const layout = { top: 0, left: 0, width: 30, height: 200 };
+    expect(detectOverlaps([
+      { name: 'first', layout, properties: { visibility: { value: '{{variables.showFirst}}' } } },
+      { name: 'second', layout, properties: { visibility: { value: '{{variables.showSecond}}' } } },
+    ])).toHaveLength(1);
+  });
 });
 
 describe('lintModalChildren', () => {
