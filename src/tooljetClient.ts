@@ -162,6 +162,20 @@ export interface CreatePageParams {
 export interface CreatePageResult {
   page_id: string;
   name: string;
+  icon?: string;
+}
+
+export interface AddTableColumnParams {
+  tableName: string;
+  column: TableColumn;
+  foreignKeys?: TableForeignKey[];
+}
+
+export interface InvokeDatasourceMethodParams {
+  dataSourceId: string;
+  method: string;
+  environmentId?: string;
+  args?: Record<string, unknown>;
 }
 
 export type EventSourceType = 'component' | 'data_query' | 'page' | 'table_column' | 'table_action';
@@ -225,6 +239,9 @@ export interface ToolJetClient {
   listDatasources(versionId: string): Promise<Datasource[]>;
   listTables(): Promise<Array<{ id: string; table_name: string }>>;
   createTable(params: CreateTableParams): Promise<CreateTableResult>;
+  addTableColumn(params: AddTableColumnParams): Promise<{ added: boolean }>;
+  dropTableColumn(params: { tableName: string; columnName: string }): Promise<{ dropped: boolean }>;
+  dropTable(params: { tableName: string }): Promise<{ dropped: boolean }>;
   getTableSchema(tableName: string): Promise<SchemaColumn[]>;
   insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }>;
   createQuery(params: CreateQueryParams): Promise<CreateQueryResult>;
@@ -235,8 +252,10 @@ export interface ToolJetClient {
   deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }>;
   updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }>;
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
+  updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
   deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }>;
   runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
+  invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
@@ -334,6 +353,30 @@ const TYPE_ALIASES: Record<string, string> = {
   serial: 'serial',
 };
 const normalizeType = (t: string): string => TYPE_ALIASES[t.trim().toLowerCase()] ?? t;
+
+function tableColumnDto(column: TableColumn): Record<string, unknown> {
+  return {
+    column_name: column.name,
+    data_type: normalizeType(column.type),
+    constraints_type: {
+      is_not_null: !!column.notNull || !!column.primaryKey,
+      is_primary_key: !!column.primaryKey,
+      is_unique: !!column.unique || !!column.primaryKey,
+    },
+    ...(column.defaultValue !== undefined ? { column_default: column.defaultValue } : {}),
+    ...(column.configurations ? { configurations: column.configurations } : {}),
+  };
+}
+
+function tableForeignKeyDto(foreignKey: TableForeignKey): Record<string, unknown> {
+  return {
+    column_names: foreignKey.columns,
+    referenced_table_name: foreignKey.referencedTable,
+    referenced_column_names: foreignKey.referencedColumns,
+    ...(foreignKey.onDelete ? { on_delete: foreignKey.onDelete } : {}),
+    ...(foreignKey.onUpdate ? { on_update: foreignKey.onUpdate } : {}),
+  };
+}
 
 function toCsv(headers: string[], rows: Array<Record<string, unknown>>): string {
   const esc = (v: unknown): string => {
@@ -480,7 +523,28 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }),
     });
     await assertOk(res, 'createPage');
-    return { page_id: pageId, name: params.name };
+
+    // ToolJet's create-page service currently ignores `icon`, even though the DTO accepts it.
+    // Persist it through the update route, then read it back so a silent drop cannot look successful.
+    if (params.icon) {
+      const iconRes = await auth.authedFetch(
+        `/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pageId, diff: { icon: params.icon } }),
+        }
+      );
+      await assertOk(iconRes, 'createPage icon update');
+      const refreshed = await getApp(params.appId);
+      const page = (refreshed.pages ?? []).find((candidate: any) => candidate.id === pageId);
+      if (page?.icon !== params.icon) {
+        throw new Error(
+          `ToolJet createPage failed: page was created, but sidebar icon "${params.icon}" did not persist.`
+        );
+      }
+    }
+    return { page_id: pageId, name: params.name, ...(params.icon ? { icon: params.icon } : {}) };
   }
 
   async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {
@@ -551,19 +615,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`ToolJet createTable failed: foreign key references missing local columns: ${missing.join(', ')}`);
       }
     }
-    let cols = params.columns.map((c) => ({
-      column_name: c.name,
-      data_type: normalizeType(c.type),
-      constraints_type: {
-        is_not_null: !!c.notNull || !!c.primaryKey,
-        is_primary_key: !!c.primaryKey,
-        is_unique: !!c.unique || !!c.primaryKey,
-      },
-      ...(c.defaultValue !== undefined ? { column_default: c.defaultValue } : {}),
-      ...(c.configurations ? { configurations: c.configurations } : {}),
-    }));
+    let cols = params.columns.map(tableColumnDto);
     // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`.
-    if (!cols.some((c) => c.constraints_type.is_primary_key)) {
+    if (!params.columns.some((column) => column.primaryKey)) {
       cols = [
         {
           column_name: 'id',
@@ -581,13 +635,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         columns: cols,
         ...(params.foreignKeys?.length
           ? {
-              foreign_keys: params.foreignKeys.map((foreignKey) => ({
-                column_names: foreignKey.columns,
-                referenced_table_name: foreignKey.referencedTable,
-                referenced_column_names: foreignKey.referencedColumns,
-                ...(foreignKey.onDelete ? { on_delete: foreignKey.onDelete } : {}),
-                ...(foreignKey.onUpdate ? { on_update: foreignKey.onUpdate } : {}),
-              })),
+              foreign_keys: params.foreignKeys.map(tableForeignKeyDto),
             }
           : {}),
       }),
@@ -595,6 +643,58 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await assertOk(res, 'createTable');
     const body = (await res.json()) as { result: { id: string; table_name: string } };
     return { table_id: body.result.id, table_name: body.result.table_name };
+  }
+
+  async function addTableColumn(params: AddTableColumnParams): Promise<{ added: boolean }> {
+    for (const foreignKey of params.foreignKeys ?? []) {
+      if (!foreignKey.columns.includes(params.column.name)) {
+        throw new Error(
+          `ToolJet addTableColumn failed: foreign key must include the new column "${params.column.name}".`
+        );
+      }
+      if (foreignKey.columns.length !== foreignKey.referencedColumns.length) {
+        throw new Error(
+          'ToolJet addTableColumn failed: foreign key columns and referencedColumns must have the same length.'
+        );
+      }
+    }
+    const orgId = await auth.getOrganizationId();
+    const res = await auth.authedFetch(
+      `/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(params.tableName)}/column`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          column: tableColumnDto(params.column),
+          foreign_keys: (params.foreignKeys ?? []).map(tableForeignKeyDto),
+        }),
+      }
+    );
+    await assertOk(res, 'addTableColumn');
+    return { added: true };
+  }
+
+  async function dropTableColumn(params: {
+    tableName: string;
+    columnName: string;
+  }): Promise<{ dropped: boolean }> {
+    const orgId = await auth.getOrganizationId();
+    const res = await auth.authedFetch(
+      `/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(params.tableName)}/column/${encodeURIComponent(params.columnName)}`,
+      { method: 'DELETE' }
+    );
+    await assertOk(res, 'dropTableColumn');
+    return { dropped: true };
+  }
+
+  async function dropTable(params: { tableName: string }): Promise<{ dropped: boolean }> {
+    const orgId = await auth.getOrganizationId();
+    const res = await auth.authedFetch(
+      `/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(params.tableName)}`,
+      { method: 'DELETE' }
+    );
+    await assertOk(res, 'dropTable');
+    return { dropped: true };
   }
 
   async function getTableSchema(tableName: string): Promise<SchemaColumn[]> {
@@ -911,6 +1011,22 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { query_id: params.queryId };
   }
 
+  async function updateQueryDatasource(params: {
+    queryId: string;
+    versionId: string;
+    dataSourceId: string;
+  }): Promise<void> {
+    const res = await auth.authedFetch(
+      `/api/data-queries/${params.queryId}/versions/${params.versionId}/data-source`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data_source_id: params.dataSourceId }),
+      }
+    );
+    await assertOk(res, 'updateQueryDatasource');
+  }
+
   async function deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }> {
     const res = await auth.authedFetch(
       `/api/data-queries/${params.queryId}/versions/${params.versionId}`,
@@ -938,6 +1054,21 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
     );
     await assertOk(res, 'runQuery');
+    return (await res.json()) as RunQueryResult;
+  }
+
+  async function invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult> {
+    const environmentId = params.environmentId ?? (await getDevelopmentEnvironmentId());
+    const res = await auth.authedFetch(`/api/data-sources/${params.dataSourceId}/invoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: params.method,
+        environmentId,
+        ...(params.args ? { args: params.args } : {}),
+      }),
+    });
+    await assertOk(res, 'invokeDatasourceMethod');
     return (await res.json()) as RunQueryResult;
   }
 
@@ -1016,6 +1147,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     listDatasources,
     listTables,
     createTable,
+    addTableColumn,
+    dropTableColumn,
+    dropTable,
     getTableSchema,
     insertRows,
     createQuery,
@@ -1026,8 +1160,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     deleteComponents,
     updateLayouts,
     updateQuery,
+    updateQueryDatasource,
     deleteQuery,
     runQuery,
+    invokeDatasourceMethod,
     listEvents,
     updateEvents,
     deleteEvent,

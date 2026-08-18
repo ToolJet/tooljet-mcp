@@ -628,6 +628,31 @@ describe('createClient', () => {
       expect(body).toMatchObject({ id: 'component-uuid-1', name: 'Details View', handle: 'details-view', index: 1 });
       expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Details View' });
     });
+
+    it('persists and verifies a sidebar icon through the page update route', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { pages: [{ id: 'home', name: 'Home' }, { id: 'component-uuid-1', name: 'Customers', icon: 'IconUsers' }] },
+        }));
+
+      const client = createClient(auth, config);
+      const result = await client.createPage({
+        appId: 'app1',
+        versionId: 'ver1',
+        name: 'Customers',
+        icon: 'IconUsers',
+      });
+
+      const [updatePath, updateInit] = auth.authedFetch.mock.calls[2];
+      expect(updatePath).toBe('/api/v2/apps/app1/versions/ver1/pages');
+      expect(updateInit.method).toBe('PUT');
+      expect(JSON.parse(updateInit.body)).toEqual({ pageId: 'component-uuid-1', diff: { icon: 'IconUsers' } });
+      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Customers', icon: 'IconUsers' });
+    });
   });
 
   describe('createTable', () => {
@@ -686,6 +711,37 @@ describe('createClient', () => {
         foreignKeys: [{ columns: ['missing'], referencedTable: 'customers', referencedColumns: ['id'] }],
       })).rejects.toThrow(/missing local columns: missing/);
       expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ToolJet DB schema maintenance', () => {
+    it('adds a typed column with defaults and foreign keys', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.addTableColumn({
+        tableName: 'orders',
+        column: { name: 'customer_id', type: 'integer', notNull: true, defaultValue: 0 },
+        foreignKeys: [{ columns: ['customer_id'], referencedTable: 'customers', referencedColumns: ['id'] }],
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/tooljet-db/organizations/org1/table/orders/column');
+      expect(JSON.parse(init.body)).toMatchObject({
+        column: { column_name: 'customer_id', data_type: 'integer', column_default: 0 },
+        foreign_keys: [{ column_names: ['customer_id'], referenced_table_name: 'customers', referenced_column_names: ['id'] }],
+      });
+    });
+
+    it('drops one encoded column or table target', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.dropTableColumn({ tableName: 'order lines', columnName: 'legacy/value' });
+      await client.dropTable({ tableName: 'old orders' });
+      expect(auth.authedFetch.mock.calls[0][0]).toBe(
+        '/api/tooljet-db/organizations/org1/table/order%20lines/column/legacy%2Fvalue'
+      );
+      expect(auth.authedFetch.mock.calls[1][0]).toBe('/api/tooljet-db/organizations/org1/table/old%20orders');
     });
   });
 
@@ -867,6 +923,16 @@ describe('createClient', () => {
       expect(path).toBe('/api/data-queries/q1/versions/ver1');
       expect(init.method).toBe('DELETE');
     });
+
+    it('repoints a query datasource through the dedicated route', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateQueryDatasource({ queryId: 'q1', versionId: 'ver1', dataSourceId: 'ds2' });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/data-queries/q1/versions/ver1/data-source');
+      expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body)).toEqual({ data_source_id: 'ds2' });
+    });
   });
 
   describe('runQuery', () => {
@@ -881,6 +947,27 @@ describe('createClient', () => {
       expect(init.method).toBe('POST');
       expect(JSON.parse(init.body)).toEqual({ resolvedOptions: {}, options: {} });
       expect(r).toEqual({ status: 'ok', data: [{ id: 1 }] });
+    });
+
+    it('invokes one datasource metadata method with explicit narrow args', async () => {
+      auth.authedFetch.mockResolvedValueOnce(
+        mockResponse({ status: 200, json: { status: 'ok', data: [{ value: 'public', label: 'public' }] } })
+      );
+      const client = createClient(auth, config);
+      const result = await client.invokeDatasourceMethod({
+        dataSourceId: 'pg1',
+        method: 'listTables',
+        environmentId: 'env-dev',
+        args: { values: { schema: 'public' }, search: 'tick', limit: 20 },
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/data-sources/pg1/invoke');
+      expect(JSON.parse(init.body)).toEqual({
+        method: 'listTables',
+        environmentId: 'env-dev',
+        args: { values: { schema: 'public' }, search: 'tick', limit: 20 },
+      });
+      expect(result.status).toBe('ok');
     });
   });
 
