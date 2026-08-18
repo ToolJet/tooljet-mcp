@@ -159,7 +159,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })\` → exact compact request **and response** contract for one connected datasource operation. Prefer datasource id so the kind is resolved for you; use \`requests:[...]\` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
 - \`inspect_datasource_schema({ version_id, datasource_id, method, schema?, table?, search?, page?, limit?, args? })\` → invoke one read-only metadata method advertised by that plugin (for example listSchemas/listTables/listColumns). Discover methods with schema \`sections:["introspection"]\`; request only what the current query needs.
 - \`get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })\` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one \`types\` batch, request only the relevant sections/keys, and reuse that result for the build. Request \`authoringHints\` for nested contracts such as Table columns/actions, Kanban card children, and Form JSON-schema field types. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
-- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`; \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
+- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`; \`create_tables({ tables:[...] })\`; \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
 - \`generate_form_schema({ table_name, mode, initial_values_binding?, include?, field_overrides? })\` → a ready-to-place Form \`properties\` block only for the layout-safe generated types: \`textinput\`, \`number\`, \`emailinput\`, \`password\`, \`datepicker\`, and \`checkbox\`. It rejects schemas needing Dropdown/Multiselect/TextArea/Radio/Toggle/StarRating/FilePicker and tells you to build the entire form from standalone components.
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
@@ -169,7 +169,9 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`list_tables()\` → \`[{ id, table_name }]\`. A ToolJet-DB query needs the table's **id** as \`table_id\`.
 - \`get_table_schema(table_name)\` → columns with types, primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships.
 - \`create_table({ table_name, columns, foreign_keys? })\` → create a ToolJet-DB table. Columns accept \`defaultValue\` and \`configurations\`; relationships support single/composite keys and delete/update actions. A serial \`id\` PK is added if none is marked.
+- \`create_tables({ tables:[...] })\` → create a complete ToolJet-DB model in one call. It preflights the whole batch and creates foreign-key dependencies in order; ToolJet has no atomic multi-table endpoint, so an upstream partial failure is reported and never auto-deleted.
 - \`insert_rows({ table_name, rows })\` → seed sample rows so the app isn't empty (optional; integer/serial PKs auto-fill).
+- \`insert_rows_batch({ tables:[{table_name,rows}] })\` → seed several tables in listed parent-before-child order. Keep the first build representative rather than exhaustive: usually 5–8 primary records and 2–3 examples per important state are enough unless density/pagination is itself under test.
 - \`get_component_catalog()\` → the lightweight component palette. Typed/batched selective calls are described above.
 - \`add_query({ version_id, datasource_id, name, options })\` → \`{ query_id, name }\`. Single query.
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
@@ -178,8 +180,10 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique \`client_ref\` and each child the matching \`parent_ref\`; MCP resolves real IDs atomically and lints overlaps within the correct parent. A Kanban with no explicit child gets its catalog card children automatically; an explicit child targeting its \`client_ref\` suppresses those defaults.
 - Both return a **\`warnings\`** array of non-blocking lint hints — an undersized Text heading, a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
 - \`add_events({ app_id, version_id, events: [...] })\` → wire component behavior plus query/page lifecycle events. Each event uses \`source_id\`, \`source_type: "component" | "data_query" | "page" | "table_column"\`, \`trigger\`, and \`action\` (\`component_id\` remains shorthand for components). Table Button-column events also require \`ref: "<column key or name>::<button id>"\`.
+- \`add_query_lifecycles({ app_id, version_id, lifecycles:[...] })\` → expand many mutation success/failure flows into ordinary validated events in one write: refresh queries, clear standalone inputs, close a modal, show alerts, and optional extra actions. It is datasource-neutral; use \`add_events\` when custom action ordering is required.
+- \`lint_app_spec({ version_id?, tables?, queries?, pages?, events?, lifecycles? })\` → dry-run a complete logical plan before writes. Give planned objects stable \`client_ref\` values; events use \`source_ref\`, and a targeted action uses \`target_ref\`. Fix every error and review warnings, then author with the normal batch tools. Its \`not_checked\` list still requires safe reads/browser QA.
 
-**Batch for the build, singular for edits.** When first building an app, create everything with \`add_queries\` + \`add_components\` (far fewer round-trips). Use the singular \`add_query\`/\`add_component\` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
+**Batch for the build, singular for edits.** Plan first, call \`lint_app_spec\`, then use \`create_tables\` / \`insert_rows_batch\` / \`add_pages\` / \`add_queries\`, one \`add_components\` call per page, one app-wide \`add_events\` call, and at most one \`add_query_lifecycles\` call. Use singular tools afterwards for incremental edits. Component/query/event batches are atomic; multi-table creation cannot be atomic because ToolJet has no bulk endpoint.
 
 ### Reuse existing components deliberately
 
@@ -198,7 +202,8 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 **A single wrong value is a one-call fix, not a rebuild.** When something is off, \`get_app_summary\` → \`update_*\`/\`delete_*\` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
 - \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
-- \`add_page({ app_id, version_id, name, icon })\` → \`{ page_id, name }\`. Add a page; pass its \`page_id\` to add_component(s). A relevant Tabler \`icon\` is required because ToolJet renders it in the left sidebar navigation.
+- \`add_page({ app_id, version_id, name, icon })\` → \`{ page_id, name }\`. Add one page during an edit.
+- \`add_pages({ app_id, version_id, pages:[{name,icon,hidden?}] })\` → add the initial page set in one call, preserving order and verifying sidebar icon/hidden metadata. Pass returned page ids to \`add_components\`.
 
 ## Workspace — confirm which one first
 
@@ -243,11 +248,12 @@ Plan the whole page architecture up front (above); **build it in phases.** A pha
 - **Complete journeys over skeletons.** Build ONE page's full loop (data + UI + interactivity + async states + polish) before starting the next. Never stub out several empty pages or scatter disconnected placeholders.
 - **Phase 1 = the highest-value single job, fully working** on its own focused page (plus a minimal Home if the app is multi-domain). Each later phase = the next job's page, complete end-to-end.
 - **Verify each completed page/primary flow with the page-level QA loop below** — not every tiny edit and not only once at the very end.
+- **Keep recon separate from delivery.** Log MCP/skill gaps while building, but do not stop an app-generation phase to edit, test, commit, or push the MCP repository unless the user explicitly prioritizes tooling work over delivery. Finish the useful app checkpoint first, then batch the recon fixes.
 - After each phase, say what now works and **name the next phase**; when the planned phases are done, proactively suggest **2–3 concrete, high-value things the app could grow into next**, grounded in its real data/domain. **But** honor "just wait" (build end-to-end), and for a genuinely small app skip phasing.
 
 ## App model & binding syntax
 
-- app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add pages with \`add_page\` per the information architecture (above). ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
+- app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add the initial page set with \`add_pages\`; reserve \`add_page\` for later edits. ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
 - **In a multi-page app, give EVERY page a relevant sidebar icon** — pass \`add_page\`'s required \`icon\` (a Tabler icon name, e.g. \`IconLayoutDashboard\`, \`IconUsers\`, \`IconChartBar\`, \`IconListDetails\`, \`IconSettings\`, \`IconReportAnalytics\`). ToolJet gives the auto-created first/Home page an \`IconHome2\` fallback; added pages without an icon fall back to generic \`IconFile\` and make the left sidebar look unfinished.
 - **Hide sub-pages that are only reached from another page** — for a page opened ONLY via \`switch-page\` (e.g. a detail/edit page you navigate to from a table row, not a top-level destination), pass \`add_page({ …, hidden: true })\`. It stays fully reachable but is removed from the sidebar nav, keeping the menu to real destinations. (An icon is still required — it shows if you later unhide it.)
 - A component has **properties**; each property value is \`{ "value": <val> }\`. Values starting with \`{{ … }}\` are **bindings** evaluated at runtime.
@@ -402,11 +408,12 @@ Components and queries alone make a *static* app. Use \`add_events\` for compone
 - **Server-side Table search/filter:** keep datasource-specific pagination/filter syntax in the query contract. Bind its page size and offset/cursor to the Table's exposed pagination state, bind \`totalRecords\` to a matching count query, and run the row query on \`onPageChanged\`. On \`onSearch\`/filter change, FIRST \`set-table-page\` to page 1, THEN run the row and count queries; otherwise a page-5 offset can make a valid filtered result look empty or fail.
 - **Prevent double-submit:** bind the submit Button's \`Disable\` to the mutation query's loading (\`{{queries.<mutation>.isLoading}}\`) so it can't fire twice, and show its native loading state while the mutation runs. (See "Async & UI states".)
 
-Wire events AFTER the components and queries exist (you need their ids). Prefer one \`add_events\` call for all of an app's events.
+Wire events AFTER the components and queries exist (you need their ids). Prefer one \`add_events\` call for all ordinary events and one \`add_query_lifecycles\` call for every standard mutation flow.
 
 ## Verify your work — browser-free checks first, then a real browser pass
 
 **Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
+- Before the first write, run one \`lint_app_spec\` over the planned tables, queries, pages/components, events, and lifecycles. Use stable logical refs; correct all reported errors in the plan rather than discovering them through partial writes.
 - For a safe, non-mutating, non-billable read query, call \`run_query(query_id, version_id)\` to confirm it returns rows and inspect real values before hardcoding chart series/options. If it warns about \`components.*\`, verify those runtime-resolved values in the viewer. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
 - Inspect with a **scoped** \`get_app_summary\` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; \`update_*\` anything wrong.
 - Run \`validate_app(app_id)\` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every \`error\`; review the \`warnings\`. Its explicit \`not_checked\` list still needs targeted runtime/browser verification.
@@ -424,6 +431,14 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 **Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
 
 **When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with \`get_app_summary\` / \`run_query\`, then fix in place with \`update_components\` / \`update_query\` / \`update_events\`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
+
+### Fast default build sequence
+
+1. Plan the page/data model and stable logical refs locally; do not write a skeleton first.
+2. Fetch all needed complex component contracts in one selective \`get_component_catalog({types:[...]})\` call and all datasource operation contracts in one \`get_datasource_query_schema({requests:[...]})\` call. Reuse both results for the whole build.
+3. Run \`lint_app_spec\`, then create the model/pages/queries with one batch call per tool.
+4. Add each complete page with one \`add_components\` call; after all ids exist, add ordinary events once and lifecycle flows once.
+5. Run selected safe reads + \`validate_app\`, then make one collected browser tour across the completed primary flows, one repair batch, and one confirmation pass. Do not screenshot-poll or reopen catalogs between pages.
 
 ## Avoid these (they silently fail or force rebuilds)
 
@@ -588,8 +603,8 @@ Call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` f
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
 1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
-2. \`create_table\` for each table.
-3. Optionally \`insert_rows\` to seed a handful of realistic sample rows so the app doesn't render empty (only if the user wants sample data).
+2. \`create_tables\` once for the confirmed model (use \`create_table\` only for a later single-table edit).
+3. Optionally \`insert_rows_batch\` once to seed a small representative set so the app doesn't render empty (only if the user wants sample data; avoid dozens of rows unless density/pagination is under test).
 4. Then \`add_queries\` + \`add_components\` as usual.
 For an **existing** table, call \`get_table_schema(table_name)\` first so you use its real column names and types.
 Use \`add_table_column\` to evolve a ToolJet DB table in place. Dropping a column/table is irreversible: inspect dependencies and obtain explicit approval for the exact target before \`drop_table_column(..., confirm:true)\` or \`drop_table(..., confirm:true)\`.
