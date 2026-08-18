@@ -73,7 +73,7 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 | `get_app_summary({app_id, sections?, filters?, *_fields?})` | Selectively inspect actual persisted values |
 | `add_page(..., icon)` / `add_pages(...)` | Add one page during edits or batch the initial sidebar/page structure |
 | `add_query(...)` / `add_queries(...)` | Create datasource queries; use the schema tool for `options` |
-| `add_component(...)` / `add_components(...)` | Place components, including atomic parent/child batches |
+| `add_component(...)` / `add_components(...)` | Place components, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / `delete_*` / `run_query(...)` | Repair apps in place; execute only explicitly selected safe reads for verification |
 

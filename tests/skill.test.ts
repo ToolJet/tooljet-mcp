@@ -120,6 +120,9 @@ describe('generated skill — modal form layout', () => {
     expect(skill).toMatch(/renderedHeight.*height \+ 20px/is);
     expect(skill).toMatch(/62px.*92px/is);
     expect(skill).toMatch(/modalHeight >= lowest child top \+ renderedHeight/i);
+    expect(skill).toMatch(/modal title Text.*slot_name:"header"/i);
+    expect(skill).toMatch(/showHeader:true.*empty header.*second title row.*body/is);
+    expect(skill).toMatch(/Header, body, and footer are separate child canvases/i);
   });
 
   it('documents the generated-vs-standalone Form decision and FilePicker crash workaround', () => {
@@ -321,6 +324,8 @@ describe('generated skill is synchronized with the generator', () => {
     'relative to the modal body',
     'Stack using rendered height',
     'modalHeight >= lowest child top + renderedHeight',
+    'modal title Text in `slot_name:"header"`',
+    'Header, body, and footer are separate child canvases',
     'getBoundingClientRect()',
     '13–15 columns',
     '110–120px',

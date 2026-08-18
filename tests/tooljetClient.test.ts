@@ -206,6 +206,16 @@ describe('createClient', () => {
         ],
       });
     });
+
+    it('reports a persisted native slot without hiding ToolJet\'s raw parent id', async () => {
+      const response = structuredClone(rawAppResponse);
+      response.pages[0].components['c-1'].component.parent = 'modal-1-header';
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: response }));
+      const client = createClient(auth, config);
+      const component = (await client.getAppSummary('app1')).pages[0].components[0];
+
+      expect(component).toMatchObject({ parent: 'modal-1-header', slot_name: 'header' });
+    });
   });
 
   describe('getComponent', () => {
@@ -544,6 +554,28 @@ describe('createClient', () => {
       const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
       expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
     });
+
+    it('encodes a logical modal slot in the persisted parent id', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'modal', type: 'ModalV2', clientRef: 'new-modal', properties: {}, layout: { top: 0, left: 0, width: 10, height: 10 } },
+          {
+            name: 'title', type: 'Text', parentRef: 'new-modal', slotName: 'header',
+            properties: { text: { value: 'Add a test case' } }, layout: { top: 10, left: 2, width: 30, height: 50 },
+          },
+          {
+            name: 'field', type: 'TextInput', parentRef: 'new-modal', slotName: 'body',
+            properties: {}, layout: { top: 20, left: 2, width: 18, height: 60 },
+          },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1-header');
+      expect(body.diff['component-uuid-3'].parent).toBe('component-uuid-1');
+    });
   });
 
   describe('createEvents', () => {
@@ -861,6 +893,30 @@ describe('createClient', () => {
       });
       expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff).toEqual({
         'c-1': { component: { name: 'renamed' } },
+      });
+    });
+
+    it('encodes slot-aware reparenting as ToolJet\'s suffixed parent id', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        updates: [{ componentId: 'c-1', parent: 'modal-1', slotName: 'footer' }],
+      });
+      expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff).toEqual({
+        'c-1': { component: { parent: 'modal-1-footer' } },
+      });
+    });
+
+    it('preserves an explicitly supplied raw parent id when slotName is omitted', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        updates: [{ componentId: 'c-1', parent: 'modal-1-header' }],
+      });
+      expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff).toEqual({
+        'c-1': { component: { parent: 'modal-1-header' } },
       });
     });
 

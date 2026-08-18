@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintPlannedApp } from '../appSpecLint.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { COMPONENT_SLOT_NAMES } from '../componentParent.js';
 
 const layoutSchema = z.object({ top: z.number(), left: z.number(), width: z.number(), height: z.number() });
 const componentSchema = z.object({
@@ -16,6 +17,7 @@ const componentSchema = z.object({
   client_ref: z.string().optional(),
   parent_ref: z.string().optional(),
   parent: z.string().optional(),
+  slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
 });
 const columnSchema = z.object({
   name: z.string(), type: z.string(), primaryKey: z.boolean().optional(), notNull: z.boolean().optional(),
@@ -124,6 +126,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
               clientRef: component.client_ref,
               parentRef: component.parent_ref,
               parent: component.parent,
+              slotName: component.slot_name,
             })),
           })),
           events: args.events?.map((event) => ({

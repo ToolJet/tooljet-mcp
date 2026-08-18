@@ -75,6 +75,31 @@ describe('ToolJet DB maintenance tools', () => {
 });
 
 describe('update_components validation', () => {
+  it('moves a body title into the current modal native header with slot_name only', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [
+          { id: 'm1', name: 'createCase', type: 'ModalV2', properties: { showHeader: { value: true } } },
+          {
+            id: 'title', name: 'modalTitle', type: 'Text', parent: 'm1',
+            properties: { text: { value: 'Add a test case' } }, styles: { fontWeight: { value: 'bold' } },
+          },
+        ] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'title', slot_name: 'header' }],
+    });
+    expect(result.isError).not.toBe(true);
+    expect(client.updateComponents).toHaveBeenCalledWith(expect.objectContaining({
+      updates: [{ componentId: 'title', definition: undefined, name: undefined, parent: 'm1', slotName: 'header' }],
+    }));
+  });
+
   it('blocks duplicate Table column keys after merging the persisted component', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

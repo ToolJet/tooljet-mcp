@@ -7,6 +7,7 @@ import { getAppTool } from '../src/tools/getApp.js';
 import { getAppSummaryTool } from '../src/tools/getAppSummary.js';
 import { addQueryTool } from '../src/tools/addQuery.js';
 import { addComponentTool } from '../src/tools/addComponent.js';
+import { addComponentsTool } from '../src/tools/addComponents.js';
 import { addEventsTool } from '../src/tools/addEvents.js';
 import { addPageTool } from '../src/tools/addPage.js';
 import { validateAppTool } from '../src/tools/validateApp.js';
@@ -233,6 +234,22 @@ describe('get_component_catalog tool', () => {
     expect(body.authoringHints.cardContent.wrappedText.recommendedComponent).toBe('Html');
     expect(body.authoringHints.cardContent.renderingRule).toMatch(/blank card bodies/i);
     expect(body.authoringHints.cardContent.mcpDefaultRule).toMatch(/materializes.*default card children/i);
+  });
+
+  it('returns the ModalV2 native slot authoring contract on demand', async () => {
+    const client = makeClient();
+    const result = await getComponentCatalogTool(client as unknown as ToolJetClient).handler({
+      type: 'ModalV2',
+      sections: ['defaultChildren', 'authoringHints'],
+    });
+
+    const body = textOf(result) as any;
+    expect(body.authoringHints.nativeSlots).toMatchObject({
+      mcpField: 'slot_name',
+      allowedValues: ['header', 'body', 'footer'],
+      defaultValue: 'body',
+    });
+    expect(body.defaultChildren.some((child: any) => child.slotName === 'header')).toBe(true);
   });
 });
 
@@ -705,6 +722,38 @@ describe('add_component tool', () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Error:');
+  });
+});
+
+describe('add_components tool', () => {
+  it('maps slot_name to the logical same-batch child slot', async () => {
+    const client = makeClient();
+    client.createComponents.mockResolvedValue([
+      { component_id: 'modal-id', name: 'createCase' },
+      { component_id: 'title-id', name: 'createCaseTitle' },
+    ]);
+    const result = await addComponentsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      components: [
+        {
+          client_ref: 'modal', name: 'createCase', type: 'ModalV2',
+          properties: { showHeader: { value: true }, showFooter: { value: false }, modalHeight: { value: 300 } },
+          layout: { top: 0, left: 0, width: 10, height: 40 },
+        },
+        {
+          name: 'createCaseTitle', type: 'Text', parent_ref: 'modal', slot_name: 'header',
+          properties: { text: { value: 'Add a test case' } }, styles: { textSize: { value: 18 }, fontWeight: { value: 'bold' } },
+          layout: { top: 10, left: 2, width: 30, height: 40 },
+        },
+      ],
+    });
+
+    expect(client.createComponents).toHaveBeenCalledWith(expect.objectContaining({
+      components: expect.arrayContaining([
+        expect.objectContaining({ name: 'createCaseTitle', parentRef: 'modal', slotName: 'header' }),
+      ]),
+    }));
+    expect(textOf(result).warnings).toEqual([]);
   });
 });
 

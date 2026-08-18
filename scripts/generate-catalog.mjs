@@ -339,6 +339,15 @@ const SAFE_GENERATED_FORM_FIELD_TYPES = [
   'textinput', 'number', 'emailinput', 'password', 'datepicker', 'checkbox',
 ];
 const AUTHORING_HINTS = {
+  ModalV2: {
+    nativeSlots: {
+      mcpField: 'slot_name',
+      allowedValues: ['header', 'body', 'footer'],
+      defaultValue: 'body',
+      rule: 'Put the modal title Text in header, fields/content in body, and native action buttons in footer. Do not leave showHeader enabled with an empty header and add a duplicate title row to the body.',
+      parentRule: 'Set parent_ref for a same-batch modal or parent for an existing modal; coordinates are relative to the selected slot canvas.',
+    },
+  },
   DropdownV2: {
     optionModes: {
       rule: 'ToolJet reads schema only when advanced=true; otherwise it silently renders options.',

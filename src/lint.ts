@@ -3,6 +3,7 @@
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
 import { getComponentSchema } from './catalog.js';
+import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
@@ -81,6 +82,7 @@ export const TOP_ALIGNED_INPUT_TYPES = new Set([
 export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 /** At or below this width (grid columns), a side-aligned label leaves too little room for the input. */
 const NARROW_SIDE_LABEL_COLS = 18;
+const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
 
 interface Rect {
   top?: number;
@@ -99,6 +101,7 @@ export interface LintComponent {
   clientRef?: string;
   parentRef?: string;
   parent?: string;
+  slotName?: ComponentSlotName;
 }
 
 /** Read a property whose value is wrapped as `{ value: X }` (ToolJet's shape), or a bare value. */
@@ -260,12 +263,63 @@ function componentKey(component: LintComponent): string | undefined {
   return component.clientRef ?? component.id;
 }
 
+function parentPlacement(component: LintComponent): {
+  parentId: string;
+  slotName: ComponentSlotName;
+} | undefined {
+  if (component.parentRef) {
+    return { parentId: component.parentRef, slotName: component.slotName ?? 'body' };
+  }
+  if (!component.parent) return undefined;
+  const decoded = decodeComponentParent(component.parent);
+  return { parentId: decoded.parentId, slotName: component.slotName ?? decoded.slotName };
+}
+
+function placementKey(component: LintComponent): string {
+  const placement = parentPlacement(component);
+  return placement ? `${placement.parentId}::${placement.slotName}` : '__page__';
+}
+
+/** Validate named slot placement when the parent is available in the same component set. */
+export function lintComponentSlots(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  const refs = new Map(
+    components.flatMap((component) => {
+      const key = componentKey(component);
+      return key ? [[key, component] as const] : [];
+    })
+  );
+  for (const component of components) {
+    const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : 'body';
+    const slotName = component.slotName ?? (persistedSlot === 'body' ? undefined : persistedSlot);
+    if (!slotName) continue;
+    const placement = parentPlacement(component);
+    const parent = placement ? refs.get(placement.parentId) : undefined;
+    if (parent && !SLOT_PARENT_TYPES.has(parent.type ?? '')) {
+      errors.push(
+        `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; native slots are supported only by ModalV2, Form, and Container.`
+      );
+    }
+  }
+  return errors;
+}
+
 /** Lint a single component spec (pre-write). */
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const props = spec.properties ?? {};
   const label = spec.name ?? spec.type ?? 'component';
+
+  if (spec.slotName !== undefined) {
+    if (!(COMPONENT_SLOT_NAMES as readonly string[]).includes(spec.slotName)) {
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
+    }
+    if (!spec.parentRef && !spec.parent) {
+      errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
+    }
+  }
 
   // ERROR: style keys under `properties` are silently dropped by ToolJet.
   const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
@@ -543,7 +597,7 @@ export function detectOverlaps(components: LintComponent[]): string[] {
       component: c,
       name: c.name ?? c.type ?? '?',
       r: c.layouts?.desktop ?? c.layout,
-      parent: c.parentRef ?? c.parent ?? '__page__',
+      parent: placementKey(c),
     }))
     .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r);
   for (let i = 0; i < items.length; i++) {
@@ -578,6 +632,24 @@ export function detectOverlaps(components: LintComponent[]): string[] {
   return warnings;
 }
 
+function isTitleLikeText(component: LintComponent): boolean {
+  if (component.type !== 'Text') return false;
+  const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
+  if (top > 100) return false;
+  const name = component.name ?? '';
+  const text = propVal(component.properties, 'text');
+  const fontWeight = propVal(component.styles, 'fontWeight');
+  const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
+  return (
+    /(?:title|heading|header)/i.test(name) ||
+    (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
+      (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim()))) ||
+    (typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
+    (typeof fontWeight === 'number' && fontWeight >= 600) ||
+    (textSize !== undefined && textSize >= 18)
+  );
+}
+
 /** Modal checks work both before a batch write (clientRef/parentRef) and on persisted ids. */
 export function lintModalChildren(components: LintComponent[]): string[] {
   const warnings: string[] = [];
@@ -588,13 +660,14 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     })
   );
   const parentOf = (component: LintComponent): LintComponent | undefined =>
-    refs.get(component.parentRef ?? component.parent ?? '');
+    refs.get(parentPlacement(component)?.parentId ?? '');
   const modalChildren = components.filter((component) => {
     const parent = parentOf(component);
     return parent?.type === 'ModalV2' || parent?.type === 'Modal';
   });
+  const bodyChildren = modalChildren.filter((component) => parentPlacement(component)?.slotName === 'body');
 
-  for (const child of modalChildren) {
+  for (const child of bodyChildren) {
     if (!FORM_INPUT_TYPES.has(child.type ?? '')) continue;
     const align = propVal(child.styles, 'alignment');
     if (align === undefined || align === 'side') {
@@ -605,12 +678,12 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     }
   }
 
-  for (let i = 0; i < modalChildren.length; i++) {
-    for (let j = i + 1; j < modalChildren.length; j++) {
-      const a = modalChildren[i];
-      const b = modalChildren[j];
+  for (let i = 0; i < bodyChildren.length; i++) {
+    for (let j = i + 1; j < bodyChildren.length; j++) {
+      const a = bodyChildren[i];
+      const b = bodyChildren[j];
       if (
-        (a.parentRef ?? a.parent) !== (b.parentRef ?? b.parent) ||
+        parentPlacement(a)?.parentId !== parentPlacement(b)?.parentId ||
         !FORM_INPUT_TYPES.has(a.type ?? '') ||
         !FORM_INPUT_TYPES.has(b.type ?? '')
       ) continue;
@@ -633,7 +706,25 @@ export function lintModalChildren(components: LintComponent[]): string[] {
   for (const modal of components.filter((component) => component.type === 'ModalV2' || component.type === 'Modal')) {
     const key = componentKey(modal);
     if (!key) continue;
-    const children = modalChildren.filter((child) => (child.parentRef ?? child.parent) === key);
+    const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key);
+    if (modal.type === 'ModalV2' && !isFalseBinding(propVal(modal.properties, 'showHeader'))) {
+      const headerChildren = modalChildren.filter((child) => {
+        const placement = parentPlacement(child);
+        return placement?.parentId === key && placement.slotName === 'header';
+      });
+      if (!headerChildren.length) {
+        warnings.push(
+          `Modal "${modal.name ?? modal.type}" has showHeader enabled but its native header slot is empty, so it renders reserved blank chrome. ` +
+            'Add a Text child with the modal parent_ref/parent and slot_name:"header", or set showHeader:false.'
+        );
+      }
+      for (const child of children.filter(isTitleLikeText)) {
+        warnings.push(
+          `Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. ` +
+            'Move that Text to slot_name:"header" instead of spending body space on a second title row.'
+        );
+      }
+    }
     const childBottoms = children.flatMap((child) => {
       const rect = child.layouts?.desktop ?? child.layout;
       return rect ? [{ child, bottom: (rect.top ?? 0) + renderedHeight(child, rect) }] : [];
@@ -677,6 +768,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
+  errors.push(...lintComponentSlots(components));
   warnings.push(...lintRenderedGeometry(components));
   return { errors, warnings };
 }

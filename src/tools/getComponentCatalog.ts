@@ -69,7 +69,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
       'component or types for a batch needed in the current page/phase. sections selects only overview, ' +
       'properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; ' +
       'property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. ' +
-      'authoringHints covers nested contracts such as Table row-action Button columns and Form JSON-schema field types. Fetch complex/unfamiliar ' +
+      'authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar ' +
       'contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
       type: z.string().optional(),

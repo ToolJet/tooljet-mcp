@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 
 export interface CreateAppResult {
@@ -78,6 +79,8 @@ export interface ComponentSpec {
   parentRef?: string;
   /** Parent an already-existing component by its ToolJet component id. */
   parent?: string;
+  /** Logical parent slot. ToolJet stores header/footer as suffixed parent ids; the client translates it. */
+  slotName?: ComponentSlotName;
 }
 
 
@@ -248,6 +251,8 @@ export interface ComponentSummary {
   styles?: Record<string, unknown>;
   others?: Record<string, unknown>;
   parent?: string;
+  /** Present for persisted header/footer children. Body children use the plain parent id. */
+  slot_name?: ComponentSlotName;
 }
 
 /** Compact projection of a whole app — what an authoring agent needs, without the ~10× schema bloat
@@ -323,6 +328,7 @@ export interface UpdateComponentSpec {
   };
   name?: string;
   parent?: string;
+  slotName?: ComponentSlotName;
 }
 export interface UpdateComponentsParams {
   appId: string;
@@ -340,7 +346,13 @@ export interface UpdateLayoutsParams {
   appId: string;
   versionId: string;
   pageId: string;
-  layouts: Array<{ componentId: string; desktop?: ComponentLayout; mobile?: ComponentLayout; parent?: string }>;
+  layouts: Array<{
+    componentId: string;
+    desktop?: ComponentLayout;
+    mobile?: ComponentLayout;
+    parent?: string;
+    slotName?: ComponentSlotName;
+  }>;
 }
 export interface UpdateQueryParams {
   queryId: string;
@@ -450,6 +462,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   function projectComponent(id: string, entry: any): ComponentSummary {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
+    const persistedParent = typeof c.parent === 'string' ? c.parent : undefined;
+    const decodedParent = persistedParent ? decodeComponentParent(persistedParent) : undefined;
     return {
       id,
       name: c.name,
@@ -458,7 +472,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       properties: def.properties,
       styles: def.styles,
       others: def.others,
-      parent: c.parent,
+      ...(persistedParent ? { parent: persistedParent } : {}),
+      ...(decodedParent && decodedParent.slotName !== 'body' ? { slot_name: decodedParent.slotName } : {}),
     };
   }
 
@@ -1009,7 +1024,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           `createComponents "${e.spec.name}": parentRef "${e.spec.parentRef}" does not match a clientRef in this batch.`
         );
       }
-      if (resolvedParent) dto.parent = resolvedParent;
+      if (e.spec.slotName && !resolvedParent) {
+        throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
+      }
+      if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
       diff[e.id] = dto;
     }
 
@@ -1051,12 +1069,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const diff: Record<string, unknown> = {};
     for (const u of params.updates) {
       const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
-      const hasRaw = u.name !== undefined || u.parent !== undefined;
+      const hasRaw = u.name !== undefined || u.parent !== undefined || u.slotName !== undefined;
       if (hasDef && hasRaw) {
         throw new Error(
-          `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent ` +
+          `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent/slotName ` +
             `in one entry — ToolJet applies only one path. Split into two update calls.`
         );
+      }
+      if (u.slotName !== undefined && u.parent === undefined) {
+        throw new Error(`updateComponents "${u.componentId}": slotName requires parent.`);
       }
       if (hasDef) {
         diff[u.componentId] = { component: { definition: u.definition } };
@@ -1064,7 +1085,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         diff[u.componentId] = {
           component: {
             ...(u.name !== undefined ? { name: u.name } : {}),
-            ...(u.parent !== undefined ? { parent: u.parent } : {}),
+            ...(u.parent !== undefined ? { parent: encodeComponentParent(u.parent, u.slotName) } : {}),
           },
         };
       }
@@ -1109,7 +1130,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           ...(l.mobile ? { mobile: l.mobile } : {}),
         },
       };
-      if (l.parent !== undefined) entry.component = { parent: l.parent };
+      if (l.slotName !== undefined && l.parent === undefined) {
+        throw new Error(`updateLayouts "${l.componentId}": slotName requires parent.`);
+      }
+      if (l.parent !== undefined) entry.component = { parent: encodeComponentParent(l.parent, l.slotName) };
       diff[l.componentId] = entry;
     }
     const res = await auth.authedFetch(

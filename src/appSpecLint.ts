@@ -4,6 +4,7 @@ import { lintComponents, validateAppStructure } from './lint.js';
 import { issueMessages, validateQueryOptions } from './queryValidation.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
+import { encodeComponentParent } from './componentParent.js';
 import type {
   AppSummary,
   ComponentSpec,
@@ -150,6 +151,7 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
           );
           parent = component.parent;
         }
+        if (parent) parent = encodeComponentParent(parent, component.slotName);
         return {
           id,
           name: component.name,
@@ -161,6 +163,7 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
             ? { desktop: component.layout, mobile: component.layout }
             : undefined),
           parent,
+          ...(component.slotName && component.slotName !== 'body' ? { slot_name: component.slotName } : {}),
         };
       }),
     });

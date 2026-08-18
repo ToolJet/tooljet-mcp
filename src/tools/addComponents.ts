@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
 import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
+import { COMPONENT_SLOT_NAMES } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -28,6 +29,7 @@ const componentSchema = z.object({
   client_ref: z.string().optional(),
   parent_ref: z.string().optional(),
   parent: z.string().optional(),
+  slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
 });
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -43,7 +45,8 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
       'for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children ' +
       'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
-      'coordinates are relative to that parent. A Kanban with no explicit child automatically gets its ' +
+      'coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child ' +
+      '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
       'those defaults (use Html for wrapped multi-line card content).',
     inputSchema: {
@@ -71,12 +74,14 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         client_ref?: string;
         parent_ref?: string;
         parent?: string;
+        slot_name?: 'body' | 'header' | 'footer';
       }>;
     }) {
-      const requested = args.components.map(({ client_ref, parent_ref, ...component }) => ({
+      const requested = args.components.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
         ...component,
         clientRef: client_ref,
         parentRef: parent_ref,
+        slotName: slot_name,
       }));
       const expanded = materializeRequiredDefaultChildren(requested);
       const components = expanded.components;

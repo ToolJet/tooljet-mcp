@@ -390,6 +390,38 @@ describe('detectOverlaps', () => {
 });
 
 describe('lintModalChildren', () => {
+  it('warns when ModalV2 reserves an empty header and keeps a title-like Text in its body', () => {
+    const warnings = lintModalChildren([
+      { name: 'createCase', type: 'ModalV2', clientRef: 'modal', properties: { showHeader: { value: true } } },
+      {
+        name: 'modalTitle', type: 'Text', parentRef: 'modal', properties: { text: { value: 'Add a test case' } },
+        styles: { fontWeight: { value: 'bold' }, textSize: { value: 24 } },
+        layout: { top: 20, left: 2, width: 30, height: 50 },
+      },
+    ]).join(' ');
+    expect(warnings).toMatch(/native header slot is empty.*slot_name:"header"/i);
+    expect(warnings).toMatch(/title-like Text "modalTitle" in the body.*Move.*slot_name:"header"/i);
+  });
+
+  it('recognizes explicit and persisted header slots and keeps their geometry separate from the body', () => {
+    const components = [
+      { id: 'modal-id', name: 'createCase', type: 'ModalV2', properties: { showHeader: { value: true }, showFooter: { value: false } } },
+      {
+        id: 'title-id', name: 'modalHeaderTitle', type: 'Text', parent: 'modal-id-header',
+        properties: { text: { value: 'Add a test case' } }, styles: { fontWeight: { value: 'bold' } },
+        layouts: { desktop: { top: 0, left: 2, width: 30, height: 50 } },
+      },
+      {
+        id: 'field-id', name: 'caseTitle', type: 'TextInput', parent: 'modal-id',
+        properties: { label: { value: 'Title' } }, styles: { alignment: { value: 'top' } },
+        layouts: { desktop: { top: 0, left: 2, width: 30, height: 60 } },
+      },
+    ];
+    expect(detectOverlaps(components)).toEqual([]);
+    const warnings = lintModalChildren(components).join(' ');
+    expect(warnings).not.toMatch(/native header slot is empty|title-like Text/);
+  });
+
   it('warns for side labels and less than one 20px grid gap inside a modal', () => {
     const warnings = lintModalChildren([
       { name: 'modal', type: 'ModalV2', clientRef: 'm', properties: {} },
@@ -449,6 +481,14 @@ describe('lintModalChildren', () => {
 });
 
 describe('lintComponents (batch)', () => {
+  it('blocks named slots on component types that do not expose native regions', () => {
+    const result = lintComponents([
+      { name: 'board', type: 'Kanban', clientRef: 'board' },
+      { name: 'badHeader', type: 'Text', parentRef: 'board', slotName: 'header', properties: {} },
+    ]);
+    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*only by ModalV2, Form, and Container/i);
+  });
+
   it('aggregates per-component results and overlaps', () => {
     const { errors, warnings } = lintComponents([
       { name: 'chart', type: 'Chart', properties: {}, layout: { top: 0, left: 0, width: 10, height: 10 } },
