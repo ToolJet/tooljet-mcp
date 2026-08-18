@@ -1,0 +1,43 @@
+{
+  "anthropic": {
+    "operations": {
+      "chat": {
+        "response": {
+          "type": "array<object>",
+          "description": "Anthropic content blocks, commonly [{ type: \"text\", text: \"...\" }]."
+        }
+      },
+      "chat-v2": {
+        "response": {
+          "type": "array<object>",
+          "description": "Anthropic content blocks, commonly [{ type: \"text\", text: \"...\" }]."
+        }
+      }
+    }
+  },
+  "openai": {
+    "operations": {
+      "chat": {
+        "required": ["operation", "model", "prompt"],
+        "response": {
+          "type": "string|null",
+          "description": "The assistant message content, returned directly as the query data. This is not an OpenAI chat-completions response object."
+        }
+      },
+      "generate_embedding": {
+        "response": {
+          "type": "object",
+          "shape": {
+            "embedding": "array<number>"
+          }
+        }
+      },
+      "image_generation": {
+        "response": {
+          "type": "object",
+          "description": "ToolJet OpenAI image-generation result; inspect a successful run before binding nested fields."
+        }
+      }
+    }
+  }
+}
