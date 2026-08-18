@@ -23,27 +23,38 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 ## The tools
 
+- `get_datasource_query_schema({ kind? })` → without a kind, list known datasource kinds/operations; with the `kind` from `list_datasources`, return its exact generated query `options` schema. **Call it before constructing queries for that kind.**
+- `get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one `types` batch, request only the relevant sections/keys, and reuse that result for the build. Request `authoringHints` for nested contracts such as Table row-action Button columns. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
+- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: `get_table_schema(table_name)`; `create_table({ table_name, columns, foreign_keys? })`.
+- `generate_form_schema({ table_name, mode, initial_values_binding? })` → a ready-to-place Form `properties` block plus field metadata. Prefer it for ToolJet DB create/edit forms so the MCP creates one Form instead of many nested fields.
+
 - `list_workspaces()` → `[{ id, name, slug, is_default, is_current }]`. The workspaces (organizations) this user belongs to.
 - `use_workspace(workspace_id)` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active `{ id, name, slug }`.
 - `create_app(name)` → `{ app_id, version_id, home_page_id, app_url }`. Call first; keep all four.
-- `list_datasources(version_id)` → `[{ id, name, kind }]`. ToolJet DB is `kind: "tooljetdb"`.
+- `list_datasources(version_id)` → `[{ id, name, kind }]`. Workspace-connected sources available to the current user/environment appear automatically in existing and brand-new apps—there is **no per-app datasource attach/link step**. Use a returned `id` directly; if an expected source is absent, check the active workspace, permissions, connection, and environment configuration. ToolJet DB is `kind: "tooljetdb"`.
 - `list_tables()` → `[{ id, table_name }]`. A ToolJet-DB query needs the table's **id** as `table_id`.
-- `get_table_schema(table_name)` → a table's columns `[{ name, type, isPrimaryKey, isNotNull }]`. Read before building queries/columns/forms/filters on an existing table.
-- `create_table({ table_name, columns })` → create a ToolJet-DB table (column types: string/integer/number/bigint/boolean/timestamp/json/serial; a serial `id` PK is added if you don't mark one). Returns `{ table_id, table_name }`.
+- `get_table_schema(table_name)` → columns with types, primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships.
+- `create_table({ table_name, columns, foreign_keys? })` → create a ToolJet-DB table. Columns accept `defaultValue` and `configurations`; relationships support single/composite keys and delete/update actions. A serial `id` PK is added if none is marked.
 - `insert_rows({ table_name, rows })` → seed sample rows so the app isn't empty (optional; integer/serial PKs auto-fill).
-- `get_component_catalog()` → the component palette (every type + purpose). `get_component_catalog(type)` → that component's **full property schema** (props with type + default, defaultSize, styles). **Always call `get_component_catalog(type)` before configuring a component** so you set real properties, not guesses.
+- `get_component_catalog()` → the lightweight component palette. Typed/batched selective calls are described above.
 - `add_query({ version_id, datasource_id, name, options })` → `{ query_id, name }`. Single query.
 - `add_queries({ version_id, queries: [...] })` → `[{ query_id, name }]`. **Create ALL an app's queries in one call.**
 - `run_query({ query_id, version_id })` → `{ status, data, ... }`. **Run a saved query and see its REAL rows — no browser.** Use to verify a query works and to read actual values (statuses, categories) before writing chart series / dropdown options / filters. Check `status` ("ok"/"failed") — HTTP is 200 even on failure.
 - `add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })` → `{ component_id, warnings }`. Single component; `name` required. Put styling in `styles` (NOT `properties`).
 - `add_components({ app_id, version_id, page_id, components: [...] })` → `{ components: [{ component_id, name }], warnings }`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique `client_ref` and each child the matching `parent_ref`; MCP resolves real IDs atomically and lints overlaps within the correct parent.
 - Both return a **`warnings`** array of non-blocking lint hints — a Chart left with its clipping default title, a Table bound without `dataSourceSelector:"rawJson"`, overlapping components, an invalid `headerCasing`, etc. **Read them and fix**; they don't block the write. (Style keys under `properties` are a hard error, not a warning.)
-- `add_events({ app_id, version_id, events: [...] })` → wire interactivity (each event = a trigger on a component + an action). This is how the app DOES things. Create all events in one call. See "Interactivity" below.
+- `add_events({ app_id, version_id, events: [...] })` → wire component behavior plus query/page lifecycle events. Each event uses `source_id`, `source_type: "component" | "data_query" | "page" | "table_column"`, `trigger`, and `action` (`component_id` remains shorthand for components). Table Button-column events also require `ref: "<column key or name>::<button id>"`.
 
 **Batch for the build, singular for edits.** When first building an app, create everything with `add_queries` + `add_components` (far fewer round-trips). Use the singular `add_query`/`add_component` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
 
+### Reuse existing components deliberately
+
+- If an existing component on the page already serves the requested job, **update it in place**; do not add a duplicate.
+- For a repeated visual pattern, use `get_component` when you need a known source component's complete config, or a filtered `get_app_summary` when you need only selected `type` / `properties` / `styles` / `layouts`. Treat it as a **template** for a new `add_components` entry. Give the new component a unique name and explicitly set its target page, layout, data/action bindings, parent, and events.
+- Clone the full configuration only when meaning and behavior are intentionally identical. Never copy a component id, event row, parent/page-local reference, or stale query/component binding blindly. Validate and browser-check the copy; consistency is useful, hidden coupling is not.
+
 ### Inspect & edit in place — fix mistakes, NEVER rebuild the app
-- `get_app_summary(app_id)` → compact `{ pages:[{id,name,components:[{id,name,type,layouts,properties,styles,others}]}], queries, events }` — actual bound values only. **Use this for routine inspection** (`get_app` returns the full 100KB+ raw app; avoid it).
+- `get_app_summary({ app_id, ...filters })` → selective actual app values. It defaults to bounded `detail:"structure"`; filter by page/component/query/event and request exact dotted fields such as `properties.data.value`. Use `detail:"full"` only after narrowing the target. **Do not pull every value from a multi-page app for routine inspection** (`get_app` is much larger; avoid it).
 - `get_component(app_id, component_id)` → one component's values + its `page_id`.
 - `update_components({ app_id, version_id, page_id, updates:[{ component_id, definition:{properties?,styles?,...} }] })` → edit in place. Send only CHANGED leaves (deep-merged); arrays like Table `columns` / dropdown `options` are REPLACED. Rename/reparent via `name`/`parent` (separate from `definition`).
 - `delete_components({ app_id, version_id, page_id, component_ids:[...] })` · `update_layout({ ..., layouts:[{ component_id, desktop?, mobile? }] })` (move/resize).
@@ -53,7 +64,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 **A single wrong value is a one-call fix, not a rebuild.** When something is off, `get_app_summary` → `update_*`/`delete_*` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
 - `get_app(app_id)` → the FULL raw app (large; prefer `get_app_summary`).
-- `add_page({ app_id, version_id, name, icon })` → `{ page_id, name }`. Add a page; pass its `page_id` to add_component(s), and a Tabler `icon` (see App model). ToolJet renders cross-page navigation automatically.
+- `add_page({ app_id, version_id, name, icon })` → `{ page_id, name }`. Add a page; pass its `page_id` to add_component(s). A relevant Tabler `icon` is required because ToolJet renders it in the left sidebar navigation.
 
 ## Workspace — confirm which one first
 
@@ -64,6 +75,14 @@ A ToolJet user can belong to **multiple workspaces**, and every app/table/dataso
 Don't reflexively interrogate the user. For a **common read-only dashboard on an existing table** (a single job), safe defaults exist — just build it: use the table as-is, assume read-only (no writes unless asked), use the Table's **built-in search/sort/filter** rather than external filter widgets, surface the signals that actually matter as `Statistics`/`Chart` (only what answers a real question — see the design framework), and neutral ToolJet-native styling. Ship it, then refine. (For a **multi-domain** request, first plan the page architecture — see "Plan the app" — then these defaults apply *per page*.)
 
 **Ask 1–3 focused questions only when the answer genuinely changes what you build** — a NEW data model (what fields/types), destructive or write operations (edit/delete flows), permissions, or a genuinely divergent product choice. Don't block a read-only dashboard on questions with obvious defaults. If the user already gave a detailed spec, build directly.
+
+## Security boundary — UI behavior is not authorization
+
+- Component visibility/disable rules are UX only. Never present a hidden button, page, or modal as an access-control boundary.
+- Use server-side datasource permissions and row-level security for sensitive data. In server-executed queries, prefer `globals.server.currentUser` for user-scoped filters; client-side `globals.currentUser` can be inspected or changed by the client.
+- Server-side current-user variables are not available inside RunJS/RunPy. Do not move an authorization check into client-executed code.
+- Ask about roles/ownership before adding destructive or sensitive writes. If the MCP surface cannot configure the required query/page permission or RLS policy, state the exact manual ToolJet step instead of claiming the app is secured.
+- Never place credentials, tokens, or secrets in component properties, RunJS, query parameters, alerts, or seeded placeholder data.
 
 ## Plan the app — information architecture BEFORE any component
 
@@ -85,16 +104,17 @@ Decide the **page structure first.** This is the single biggest difference betwe
 Plan the whole page architecture up front (above); **build it in phases.** A phase is an *order-of-work* decision, not an architecture decision — **"phase 2" is the next capability built on the page where it belongs, NOT more stuff appended to the Home/overview page.**
 
 - **If the scope is large, say so** and propose the phase breakdown (one line each) before building.
+- **Do not turn phasing into a permission prompt.** Once the user asked for the app, state the plan, start the highest-value phase, and continue through the requested scope. Ask or pause only when priority/architecture genuinely depends on the answer, or when the user requested a checkpoint. Honor explicit "build everything" / "do not stop" instructions.
 - **Deliver small, complete, POLISHED phases fast** — aim to give the user a **useful working loop within a few minutes** (view → act → feedback on one real page), not a broad skeleton. Polish is **not** a later phase; apply the design framework + async states to every phase as you go.
 - **Complete journeys over skeletons.** Build ONE page's full loop (data + UI + interactivity + async states + polish) before starting the next. Never stub out several empty pages or scatter disconnected placeholders.
 - **Phase 1 = the highest-value single job, fully working** on its own focused page (plus a minimal Home if the app is multi-domain). Each later phase = the next job's page, complete end-to-end.
-- **Verify each increment in the browser as you finish it** — not once at the very end.
+- **Verify each completed page/primary flow with the page-level QA loop below** — not every tiny edit and not only once at the very end.
 - After each phase, say what now works and **name the next phase**; when the planned phases are done, proactively suggest **2–3 concrete, high-value things the app could grow into next**, grounded in its real data/domain. **But** honor "just wait" (build end-to-end), and for a genuinely small app skip phasing.
 
 ## App model & binding syntax
 
 - app → version → page → component. `create_app` gives one app + version + a "Home" page. Add pages with `add_page` per the information architecture (above). ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
-- **In a multi-page app, give EVERY page a relevant icon** — pass `add_page`'s `icon` (a Tabler icon name, e.g. `IconLayoutDashboard`, `IconUsers`, `IconChartBar`, `IconListDetails`, `IconSettings`, `IconReportAnalytics`). The icon shows in the auto-generated nav; a page without one falls back to a generic file icon and the nav looks unfinished.
+- **In a multi-page app, give EVERY page a relevant sidebar icon** — pass `add_page`'s required `icon` (a Tabler icon name, e.g. `IconLayoutDashboard`, `IconUsers`, `IconChartBar`, `IconListDetails`, `IconSettings`, `IconReportAnalytics`). ToolJet gives the auto-created first/Home page an `IconHome2` fallback; added pages without an icon fall back to generic `IconFile` and make the left sidebar look unfinished.
 - A component has **properties**; each property value is `{ "value": <val> }`. Values starting with `{{ … }}` are **bindings** evaluated at runtime.
 - A query exposes its result as `queries.<queryName>.data`. Bind a component property to it, e.g. a Table's `data.value = "{{queries.<queryName>.data}}"`.
 
@@ -107,7 +127,7 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 - **Custom markup inside a component's own properties** — many components take HTML in their content/cell/tooltip properties (a Table column rendered as HTML, a `Text` set to HTML, custom cell formatting). Use it to polish the UI in place.
 - **Rule of thumb:** built-in when it's **interactive, data-bound, or meant to be tweaked visually**; HTML when it's **static presentation or fine UI customization** and HTML expresses it more cleanly.
 
-The full built-in palette (every `type` + purpose) is in **`references/tooljet-reference.md`**; pick from built-ins first. Once you've picked one, call `get_component_catalog(type)` for its exact properties (and, for `Chart`/`Statistics`, the `renderingHints` sizing defaults) — configure precisely, don't guess property names.
+The full built-in palette (every `type` + purpose) is in **`references/tooljet-reference.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` (or use `type` for one) and request their exact needed sections — including `renderingHints` for `Chart`/`Statistics`. Configure precisely; don't guess property names.
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
@@ -148,7 +168,8 @@ Then hold to these:
 - **Chart titles clip** at common dashboard sizes. **Default: leave `Chart.title` empty and put a separate `Text` heading above the chart**, with its own heading slot + spacing. Enable a native chart title only after you've visually verified it doesn't clip at that size.
 - **Chart widths** (defaults, not hard limits): a compact few-category pie/donut ≈ **13–15 columns**; a categorical bar with longer labels ≈ **20–24 columns**; at most **two** normal analytical charts in one ~39-column content row unless labels are short and readability is verified.
 - **Statistics height:** a compact tile with no visible secondary content ≈ **110–120px**; with useful secondary content ≈ **130–150px**.
-- **Table columns:** when presentation matters, set an **explicit, complete `columns` array** in the order you want. Do **not** rely on the property order of a transformed query object to reorder existing ToolJet columns — it won't reorder them. Natural header casing is fine: **`headerCasing: "none"` is a valid value** (keeps human labels like "Due date" instead of forcing Title/UPPER casing).
+- **Table columns:** when presentation matters, set an **explicit, complete `columns` array** in the order you want and project the Table's `data` expression to objects containing only those keys (for example, `queries.q.data.map(r => ({name:r.name,status:r.status}))`). With `autogenerateColumns` enabled, ToolJet appends undeclared datasource fields after your explicit columns, which commonly leaks technical IDs and internal notes. Do not casually disable autogeneration: some ToolJet Table versions crash while generating column transformations when it is false. Do **not** rely on the property order of a transformed query object to reorder existing columns — it won't. Natural header casing is fine: **`headerCasing: "none"` is a valid value**.
+- **Table row actions:** use a `columnType: "button"` column in the complete `columns` array; do not use deprecated `properties.actions`. Read `get_component_catalog({type:"Table",sections:["authoringHints"]})` for the exact column/button defaults. Wire each button with `source_type:"table_column"`, `trigger:"onClick"`, and `ref:"<column key or name>::<button id>"`. Button property expressions can use `rowData`/`cellValue`; event actions should read `components.<table>.selectedRow` (ToolJet sets it before the handler runs).
 
 ### 4. Density — don't overcrowd; split instead
 - A page should serve **~one primary job** (plus light supporting context). If you find yourself stacking full tables/forms for multiple **unrelated** domains on one page, STOP and split them into focused pages (see "Plan the app") — crowding is an **architecture** smell, not a layout problem.
@@ -159,6 +180,25 @@ Then hold to these:
 ### 5. Mobile — skip it by default
 Most customers view these on desktop. **Don't build or tune a mobile layout for the initial build unless the user explicitly asks.** When they do, treat mobile as **recomposition** — rethink what leads and what collapses on a narrow screen — not blind vertical stacking of the desktop layout. And note: **resizing a browser window does NOT prove ToolJet's mobile layout rendered** — that is a structural guess, not real mobile visual validation; only claim mobile works if you verified it the way ToolJet actually renders mobile.
 
+## Server-side Tables — datasource-neutral recipe
+
+Use server-side behavior for large/remote datasets; keep client-side behavior for small fully loaded arrays. Do not hardcode one datasource's pagination syntax into the component layer.
+
+1. Call `get_datasource_query_schema(kind)`. Create a **page query** and a **total-count/metadata query** using that datasource's real options.
+2. Configure Table with `dataSourceSelector="rawJson"`, `data` bound to the page query, `serverSidePagination=true`, `serverSideRowsPerPage`, and `totalRecords` bound to the count query. ToolJet's exposed `pageIndex` is **1-based**; offset is `(components.<table>.pageIndex - 1) * pageSize`.
+3. Attach Table `onPageChanged` to re-run the page query. If `serverSideSearch`, `serverSideSort`, or `serverSideFilter` is enabled, also attach `onSearch`, `onSort`, or `onFilterChanged` respectively. Read the Table contract first for `searchText`, `sortApplied`, and `filters` shapes.
+4. Keep translation at the query boundary: SQL/TJDB use limit+offset and a count query; page-number APIs send page+size; cursor/token APIs store the returned cursor and drive `enableNextButton`/`enablePrevButton`. Do not pretend a cursor API supports random page offsets.
+5. Mutations from inline/bulk edit run only the write query. Its `onDataQuerySuccess` re-runs page+count queries; failure preserves edits and shows an error.
+
+Verify page 1, a middle page, the last/partial page, zero results, a changed search/sort/filter, and a mutation that changes the total count.
+
+## Form generation — prefer schemas over nested children
+
+- For an existing ToolJet DB table, call `generate_form_schema` and pass its returned `properties` to a Form. It maps real column types/defaults, omits generated serial columns in create mode, locks primary keys in edit mode, and reports required/unique/foreign-key metadata for review. Read submitted direct values from `components.<form>.formData`.
+- For a quick object-shaped form, use `generateFormFrom="rawJson"` + `JSONData`. Use custom nested child components only when schema generation cannot express the interaction.
+- Map strings to TextInput/TextArea, integers/numbers to NumberInput, booleans to Checkbox/Toggle, timestamps to Date/Datetime, and enums/foreign keys to Dropdown. Omit serial/generated columns from create forms; lock immutable keys in edit forms.
+- Attach the Form's `onSubmit` to the mutation query and `onInvalid` to a validation alert. Put refresh/reset/close/success behavior on the mutation query's `onDataQuerySuccess`, not immediately after the submit action.
+
 ## Forms & modals — field layout (avoid cramped, misaligned fields)
 
 Form inputs default to a **side-aligned label** (`styles.alignment = "side"`) — the label sits to the LEFT of the input and eats its width. In a modal or a narrow column, a long label ("Requested amount (USD)") leaves a uselessly narrow input. Lay forms out deliberately:
@@ -168,7 +208,8 @@ Form inputs default to a **side-aligned label** (`styles.alignment = "side"`) �
 - **Two-column forms:** reserve ~**2 grid columns** of gutter between the two columns, and give both columns' fields consistent widths.
 - **Full-width fields** (Description, notes) must share the **same left AND right edge** as the columns above them — with top-aligned labels they line up naturally; side-aligned ones begin at different x positions.
 - **Modal-local coordinates:** a component parented to a modal is positioned **relative to the modal body** (0,0 = modal body top-left), NOT the 43-column canvas. Size its children to the modal body width, not the full canvas.
-- **Create the hierarchy atomically:** in one `add_components` call, set `client_ref` on the modal and the same `parent_ref` on every modal child. Do not create children as page-level siblings and reparent them later; that produces misleading page-overlap lint and makes modal layout harder to review.
+- **Prefer flat composition.** Page-level components are faster to generate, inspect, and repair. For forms, prefer the Form component's `rawJson`/`jsonSchema` generation instead of creating many nested field components.
+- **Use nesting only when the component semantics require it** (custom Modal/Form children, Container/FlexContainer, Tabs, Listview, expandable rows). When it is required, create the hierarchy atomically in one `add_components` call with `client_ref`/`parent_ref`; keep it one level deep where practical.
 
 **Browser QA for any form/modal:** confirm no label is truncating its input, every control has a usable width, field left/right edges line up, and there's breathing room above the footer/action buttons.
 
@@ -178,28 +219,29 @@ Any element backed by a query is **not done** until its states are handled. Thes
 - **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a `loadingState`), bound to the query's loading flag `{{queries.<q>.isLoading}}` — never leave a component blank while data loads.
 - **Empty:** a query can return zero rows. Show a clear empty state ("No workouts logged yet" via a Text/HTML block, or the Table's own empty message) — not a blank grid or a broken-looking chart.
 - **Error:** a query can fail. Surface it (a `show-alert` on the query's failure event, or a visible error state) — never present blank/stale as if it were fine.
-- **Refresh:** after any mutation (create/update/delete), **re-run the list query** so the UI reflects the change (see "Form submit → insert + refresh").
-- **Success:** confirm a mutation with a `show-alert` success (and `close-modal` if it was in a modal).
+- **Refresh:** after any mutation, re-run list/count queries from the mutation query's `onDataQuerySuccess` lifecycle event.
+- **Success:** confirm and close/reset only from `onDataQuerySuccess`; show an error and preserve input from `onDataQueryFailure`.
 - **Disabled / no double-fire:** while a mutation runs, **disable the button that triggered it** — bind its `Disable` to the mutation query's `{{queries.<mutation>.isLoading}}` (or `control-component` setDisable/setLoading around the action). A double-click must never fire the mutation twice.
 
 ## Reference — look these up as you build
 
-The full **per-component binding rules**, the **built-in component palette**, and **per-datasource query schemas** are in **`references/tooljet-reference.md`** — open it before configuring a component or writing a query. (Or call `get_component_catalog(type)` for one component's full schema.)
+The full **per-component binding rules** and **built-in component palette** are in **`references/tooljet-reference.md`**. For live contracts, call selective `get_component_catalog({ type | types })` and `get_datasource_query_schema(kind)`.
 
 The gotchas that most often break a build, inlined so you don't miss them:
-- **Table:** set `data.value = {{queries.<q>.data}}` **and** `dataSourceSelector.value = "rawJson"` (both, or it renders blank); keep table-level `autogenerateColumns` true unless you supply a full explicit `columns` array.
+- **Table:** set `data.value = {{queries.<q>.data}}` **and** `dataSourceSelector.value = "rawJson"` (both, or it renders blank). For a curated grid, keep `autogenerateColumns` true for runtime compatibility but project `data` to only the intended explicit column keys. Modern row actions are `columnType:"button"` columns plus `table_column` events; never new legacy `properties.actions`. A Button-column click sets `selectedRow` before its handler, so the event can read the full selected record even when the visible data was projected. Exposed `pageIndex` is 1-based.
 - **DropdownV2:** the selection is `.value` (display text `.selectedOption.label`); `.label` is the field TITLE — never filter data on it. Bound options need `visible:true` + `default:true` to preselect.
 - **Styling** goes in the top-level `styles` object, **never** under `properties`.
 - **Chart:** empty native title + a separate `Text` heading; build `data` as a simple explicit `[{x,y}]` and do heavy aggregation in a **query**, not in the chart binding.
-- **Events:** the id is `set-custom-variable` (not `set-variable`); master→detail passes the row via `set-custom-variable` + `{{variables…}}` (a `runOnPageLoad` query does NOT re-run on an in-app page switch).
+- **Events:** the id is `set-custom-variable` (not `set-variable`); lifecycle sources are component/data_query/page. Mutation refresh/success belongs on `onDataQuerySuccess` and errors on `onDataQueryFailure`.
+- **Security:** visibility is UX, not authorization; use server-side permissions/RLS and `globals.server.currentUser` in server queries.
 - **tjdb queries** reference the table by `table_id` (from `list_tables()`), not by name; writes use indexed-object option shapes (see the reference).
 - **New data model:** for "build a CRM / expense tracker" with no table yet — **propose the tables+columns and confirm with the user** (schema is a commitment), then `create_table` → optional `insert_rows` → `add_queries`/`add_components`.
 
 ## Interactivity — wire events so the app DOES things (not just displays)
 
-Components and queries alone make a *static* app. Use `add_events` to add behavior. Each event = **a trigger on a component + an action**: `{ component_id, trigger, action }`.
+Components and queries alone make a *static* app. Use `add_events` for component, query, page, and Table Button-column behavior: `{ source_id, source_type, trigger, ref?, action }`. `component_id` is a backward-compatible shorthand for `source_type: "component"`.
 
-**Triggers** (the `trigger` = the component's event id): Button → `onClick`; Table → `onRowClicked`, `onSearch`, `onPageChanged`, `onBulkUpdate`; text/number inputs → `onChange`, `onEnterPressed`; Form → `onSubmit`. (A component's exact events are in `get_component_catalog(type)` / its widget definition.)
+**Triggers:** component triggers come from `get_component_catalog(type).events` (Button `onClick`; Table `onPageChanged`/`onSearch`/`onSort`/`onFilterChanged`/`onBulkUpdate`; Form `onSubmit`/`onInvalid`). A Table Button-column click uses `source_type:"table_column"`, `trigger:"onClick"`, and `ref:"<column key or name>::<button id>"`. Query lifecycle triggers are `onDataQuerySuccess` and `onDataQueryFailure` with `source_type: "data_query"`. Page load is `onPageLoad` with `source_type: "page"`.
 
 **Actions** (`action = { actionId, ...params }`) — use these exact `actionId` strings (invalid ids silently do nothing):
 - **Run a query:** `{ actionId: 'run-query', queryId: '<query id>', queryName: '<name>' }`
@@ -213,8 +255,9 @@ Components and queries alone make a *static* app. Use `add_events` to add behavi
 (Other valid ids include `set-table-page`, `set-page-variable`, `open-webpage`, `go-to-app`, `logout`, `set-localstorage-value`, `scroll-component-into-view`.)
 
 **Common recipes:**
-- **Form submit → insert + refresh:** on the submit Button's `onClick`, two events: `run-query` (the insert/create query), then `run-query` (the list query, to refresh the table). Add `show-alert` success, and `close-modal` if the form is in a modal.
-- **Master → detail (IMPORTANT — the naive way silently fails):** on Table `onRowClicked`, FIRST `set-custom-variable` (key e.g. `selectedTicket`, value `{{components.<table>.selectedRow}}`), THEN `switch-page` to the detail page. Bind the detail page's components to `{{variables.selectedTicket.<field>}}`. **Do NOT** filter a detail query on `{{globals.urlparams.*}}` and rely on `runOnPageLoad` — a `runOnPageLoad` query does NOT re-run on an in-app page switch (only the page's own load event fires), so that detail query never runs. Prefer binding straight to the passed `{{variables…}}` row; if you truly need a fresh query, trigger it from a component action on the detail page.
+- **Mutation lifecycle (required):** the Button/Form event runs **only** the mutation. On that query's `onDataQuerySuccess`, run the list/count refresh queries, show success, reset the Form if appropriate, and close the modal. On `onDataQueryFailure`, show an error and keep the user's input. Never refresh or show success immediately after starting the mutation—the write may fail.
+- **Page initialization:** attach `onPageLoad` to the page when a query must run each time that page is entered. Use a page event instead of assuming app-level `runOnPageLoad` will re-run on in-app navigation.
+- **Master → detail:** on Table `onRowClicked`, FIRST `set-custom-variable` (key e.g. `selectedTicket`, value `{{components.<table>.selectedRow}}`), THEN `switch-page`. Bind directly to `{{variables.selectedTicket.<field>}}` when a snapshot is enough. If detail must be fresh, bind its query filter to the variable and run it from the detail page's `onPageLoad` event; do not rely on app-level `runOnPageLoad` re-running on navigation.
 - **Refresh on filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose `where_filters` reference the input.
 - **Prevent double-submit:** bind the submit Button's `Disable` to the mutation query's loading (`{{queries.<mutation>.isLoading}}`) so it can't fire twice, and show its native loading state while the mutation runs. (See "Async & UI states".)
 
@@ -224,10 +267,18 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 
 **Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
 - After creating a data query, call `run_query(query_id, version_id)` to confirm it returns rows and to READ real values — statuses, categories, ranges — before you hardcode chart series, dropdown options, or filter values. Don't guess a status is "Open/Closed"; run the query and see.
-- Inspect with `get_app_summary` (not `get_app`) to confirm bindings/values are what you intended; `update_*` anything wrong.
+- Inspect with a **scoped** `get_app_summary` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; `update_*` anything wrong.
 - Run `validate_app(app_id)` — it catches dangling references, ambiguous duplicate names, bindings to non-existent queries/components, and render traps (unbound Table, Chart clipping title, bad headerCasing) with no browser. Fix every `error`; review the `warnings`.
 
-**Then verify in a browser — at least once, before you call the app done.** Open the **VIEWER** URL (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). Confirm: the page renders, queries populated real data, there are no console errors, and the key interactions work (row click, filter, submit). Also do a browser check at **genuine risk points while building** — after adding a `Chart`, a custom/dense layout, or multi-step interactivity — not just at the very end. **Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
+**Then run one page-level browser QA loop for each completed page/primary flow.** Open the **VIEWER** URL (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). In the first pass, inspect the whole page and exercise its key flow (row click, filter, submit); **collect every issue before editing** unless a blank/error/blocker prevents further inspection. Group fixes by page/tool, apply the smallest number of batched `update_components` / `update_layout` / `update_events` calls, then do **one confirmation pass**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
+
+**Triage before repairing:**
+- **Always fix:** blank/error rendering, incorrect or unbound data, broken navigation, failed primary actions, misleading values, unreadable core charts/tables, and missing loading/error behavior that breaks the workflow.
+- **Fix at the default target viewport:** usability/accessibility problems that impede the page's intended job.
+- **Report unless requested:** tiny spacing/font differences, cosmetic wrapping seen only at an unusual viewport, and evidence-backed ToolJet/editor limitations. Allow at most one collected cosmetic repair batch; do not enter repeated pixel-polish loops.
+- If something appears to be a platform/manual-builder limitation, make one targeted evidence check, then report the exact limitation and manual step instead of probing repeatedly. Get one complete primary loop working before cosmetic work; before declaring the **whole requested app** complete, verify every requested primary flow.
+
+**Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
 
 **When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with `get_app_summary` / `run_query`, then fix in place with `update_components` / `update_query` / `update_events`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
 
@@ -255,4 +306,4 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 
 ---
 
-**Technical reference:** exact per-component binding rules, the full built-in palette, and per-datasource query schemas are in `references/tooljet-reference.md`. Open it before configuring a component or writing a query.
+**Technical reference:** exact per-component binding rules and the full built-in palette are in `references/tooljet-reference.md`. Datasource option schemas are served on demand by `get_datasource_query_schema(kind)`.

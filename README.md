@@ -1,8 +1,6 @@
 # tooljet-mcp
 
-An MCP server that lets a coding agent (Codex, Claude Code, …) build **ToolJet** apps end-to-end through ToolJet's own governed API — create an app, add a query on a datasource, add components bound to it. No direct DB writes; every action goes through the same endpoints the ToolJet builder uses, so your permissions and validation apply.
-
-**Slice 1** scope: from one prompt, create a single-page app with a Table bound to a ToolJet-DB query that renders real rows. See `docs/specs/` and `docs/plans/`.
+An MCP server that lets a coding agent (Codex, Claude Code, …) build and maintain **ToolJet** apps through ToolJet's governed APIs: workspaces, apps/pages, datasource queries, ToolJet DB tables, components, layouts, and lifecycle events. It includes generated component and datasource catalogs so agents use first-party contracts instead of guessing configuration keys.
 
 ## Prerequisites
 
@@ -46,7 +44,7 @@ TOOLJET_PASSWORD = "your-password"
 
 Then install the skill so Codex knows how to drive the tools: copy `skill/SKILL.md` into your Codex skills directory (or point Codex at it). The skill teaches the app model + the build recipe.
 
-Restart Codex; it should list the `tooljet` server's tools: `create_app`, `list_datasources`, `get_component_catalog`, `get_app`, `add_query`, `add_component`.
+Restart Codex; it should expose the ToolJet tools, including `create_app`, `list_datasources`, `get_datasource_query_schema`, `get_component_catalog`, `add_queries`, `add_components`, `add_events`, and `validate_app`.
 
 ## Demo
 
@@ -60,12 +58,20 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 
 | Tool | Purpose |
 |---|---|
+| `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace |
 | `create_app(name)` | New app + version + Home page → `{ app_id, version_id, home_page_id, app_url }` |
-| `list_datasources(version_id)` | Datasources incl. ToolJet DB (`kind: tooljetdb`) |
-| `get_component_catalog()` | Placeable component types + key props |
-| `get_app(app_id)` | Current app structure |
-| `add_query({version_id, datasource_id, name, options})` | Create a query |
-| `add_component({app_id, version_id, page_id, name, type, properties, layout})` | Place a component |
+| `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps; no per-app linking |
+| `get_datasource_query_schema({kind?})` | List datasource kinds or return one kind's generated query-options schema |
+| `list_tables()` / `get_table_schema(table_name)` | Inspect ToolJet DB tables, constraints, defaults, and relationships |
+| `create_table({table_name, columns, foreign_keys?})` / `insert_rows(...)` | Create and seed ToolJet DB data models |
+| `get_component_catalog({type?, types?, sections?, ...})` | Component palette or selective one/batched contracts, including nested `authoringHints` |
+| `generate_form_schema({table_name, mode, ...})` | Generate one schema-driven create/edit Form from a ToolJet DB table |
+| `get_app_summary({app_id, sections?, filters?, *_fields?})` / `validate_app(app_id)` | Selectively inspect only needed app values; structurally validate the whole app |
+| `add_page(..., icon)` | Add a page with its required left-sidebar Tabler icon |
+| `add_query(...)` / `add_queries(...)` | Create datasource queries; use the schema tool for `options` |
+| `add_component(...)` / `add_components(...)` | Place components, including atomic parent/child batches |
+| `add_events(...)` | Add component, query/page lifecycle, and Table Button-column (`table_column`) behavior |
+| `update_*` / `delete_*` / `run_query(...)` | Repair apps in place and verify saved queries |
 
 ## Development
 
@@ -73,10 +79,7 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 npm test          # vitest (unit tests, mocked HTTP)
 npm run build     # tsc → dist/
 npm run dev       # tsx src/index.ts (stdio server)
+npm run generate:catalogs  # refresh component + datasource contracts from local ToolJet source
 ```
 
 Confirmed ToolJet endpoint contracts are in `docs/contracts.md` (all verified live).
-
-## Not in slice 1
-
-Browser preview/self-correct loop, ServiceNow (and other datasources), styling/events/multi-page, custom components. All additive on top of this.

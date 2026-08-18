@@ -65,6 +65,16 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(skill).toMatch(/only after you've visually verified/i);
   });
 
+  it('documents the exact modern Table row-action target and compound ref', () => {
+    expect(skill).toContain('`columnType: "button"`');
+    expect(skill).toContain('`source_type:"table_column"`');
+    expect(skill).toContain('`ref:"<column key or name>::<button id>"`');
+    expect(skill).toMatch(/deprecated `properties\.actions`/);
+    expect(reference).toMatch(/## Table row-action Button columns/);
+    expect(reference).toContain('"ref": "actions::view-action"');
+    expect(reference).toMatch(/selectedRow.*selectedRowId.*before running this handler/s);
+  });
+
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {
     expect(skill).toMatch(/explicit, complete `columns` array/i);
     expect(skill).toMatch(/property order of a transformed query object to reorder/i);
@@ -114,6 +124,13 @@ describe('generated skill — workspaces', () => {
     expect(skill).toMatch(/before creating anything/i);
     expect(skill).toContain('TOOLJET_WORKSPACE_ID');
   });
+
+  it('uses workspace datasources directly without inventing per-app linking', () => {
+    expect(skill).toMatch(/Workspace-connected sources.*brand-new apps/i);
+    expect(skill).toMatch(/no per-app datasource attach\/link step/i);
+    expect(reference).toMatch(/after `create_app`, call `list_datasources\(version_id\)`/i);
+    expect(reference).toMatch(/wrong workspace, insufficient permission.*environment configuration/i);
+  });
 });
 
 describe('generated skill — HTML usage, page icons, validation, efficiency', () => {
@@ -124,8 +141,10 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
   });
 
   it('requires a relevant icon on every page of a multi-page app', () => {
-    expect(skill).toMatch(/give EVERY page a relevant icon/);
+    expect(skill).toMatch(/give EVERY page a relevant sidebar icon/);
     expect(skill).toContain('IconLayoutDashboard');
+    expect(skill).toContain('IconHome2');
+    expect(skill).toMatch(/left sidebar look unfinished/);
   });
 
   it('documents validate_app and the non-blocking warnings contract', () => {
@@ -174,6 +193,43 @@ describe('generated skill — information architecture & phasing (the crowded-pa
     expect(skill).toMatch(/useful working loop within a few minutes/i);
     expect(skill).toMatch(/Complete journeys over skeletons/i);
   });
+
+  it('continues through requested phases without a reflexive permission checkpoint', () => {
+    expect(skill).toMatch(/Do not turn phasing into a permission prompt/i);
+    expect(skill).toMatch(/continue through the requested scope/i);
+    expect(skill).toMatch(/priority\/architecture genuinely depends on the answer/i);
+  });
+});
+
+describe('generated skill — selective reads, reuse, and page-level QA', () => {
+  it('batches only relevant catalog contracts and avoids redundant simple lookups', () => {
+    expect(skill).toMatch(/types.*batch/i);
+    expect(skill).toMatch(/request only the relevant sections\/keys/i);
+    expect(skill).toMatch(/skip redundant lookups for familiar simple components/i);
+  });
+
+  it('uses bounded/scoped app summaries with dotted field selection', () => {
+    expect(skill).toContain('detail:"structure"');
+    expect(skill).toMatch(/exact dotted fields/i);
+    expect(skill).toMatch(/Do not pull every value from a multi-page app/i);
+    expect(skill).toMatch(/current page\/component.*not the whole app/i);
+  });
+
+  it('reuses components as guarded templates instead of copying hidden coupling', () => {
+    expect(skill).toMatch(/Reuse existing components deliberately/i);
+    expect(skill).toMatch(/treat it as a \*\*template\*\*/i);
+    expect(skill).toMatch(/Never copy a component id, event row/i);
+    expect(skill).toMatch(/stale query\/component binding blindly/i);
+  });
+
+  it('collects page issues, batches fixes, confirms once, and triages cosmetics', () => {
+    expect(skill).toMatch(/collect every issue before editing/i);
+    expect(skill).toMatch(/smallest number of batched/i);
+    expect(skill).toMatch(/one confirmation pass/i);
+    expect(skill).toMatch(/Report unless requested/i);
+    expect(skill).toMatch(/one collected cosmetic repair batch/i);
+    expect(skill).toMatch(/verify every requested primary flow/i);
+  });
 });
 
 describe('generated skill — async states & density guardrails', () => {
@@ -218,9 +274,14 @@ describe('generated skill is synchronized with the generator', () => {
     'internal design critique',
     'Chart.title` empty',
     'headerCasing: "none"',
+    'Table row-action Button columns',
+    'source_type:"table_column"',
+    '<column key or name>::<button id>',
+    'deprecated `properties.actions`',
     "resizing a browser window does NOT prove ToolJet's mobile layout rendered",
     'Verify the default desktop render only',
     'If the scope is large, say so',
+    'Do not turn phasing into a permission prompt',
     'information architecture BEFORE any component',
     'page architecture and phasing are SEPARATE decisions',
     'Async & UI states — required, not polish',
@@ -230,9 +291,13 @@ describe('generated skill is synchronized with the generator', () => {
     '13–15 columns',
     '110–120px',
     'HTML where it makes the UI better',
-    'give EVERY page a relevant icon',
+    'give EVERY page a relevant sidebar icon',
+    'no per-app datasource attach/link step',
     'validate_app(app_id)',
     'how many MCP tool calls it took',
+    'Reuse existing components deliberately',
+    'collect every issue before editing',
+    'detail:"structure"',
     "don't say yes to everything",
     // now in the reference file, not SKILL.md:
     'cannot create or connect a new datasource or third-party integration',
