@@ -138,6 +138,21 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       );
     }
     if (hasColumns) {
+      const columnKeys = new Map<string, number[]>();
+      (columns as unknown[]).forEach((column, index) => {
+        const key = (column as Record<string, unknown> | null)?.key;
+        if (typeof key !== 'string' || !key) return;
+        const indexes = columnKeys.get(key) ?? [];
+        indexes.push(index);
+        columnKeys.set(key, indexes);
+      });
+      for (const [key, indexes] of columnKeys) {
+        if (indexes.length > 1) {
+          errors.push(
+            `Table "${label}": duplicate column key "${key}" at indexes ${indexes.join(', ')} — ToolJet silently keeps the last column. Use unique keys.`
+          );
+        }
+      }
       if (isTruthyBinding(autogen) && !projectsDataKeys) {
         warnings.push(
           `Table "${label}": has an explicit columns array but autogenerateColumns is still true — ` +
@@ -185,6 +200,12 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           }
         }
       });
+    }
+    const legacyActions = propVal(props, 'actions');
+    if (Array.isArray(legacyActions) && legacyActions.length > 0) {
+      warnings.push(
+        `Table "${label}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`
+      );
     }
     if (isTruthyBinding(propVal(props, 'serverSidePagination'))) {
       if (propVal(props, 'serverSideRowsPerPage') === undefined) {
@@ -390,7 +411,8 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       layouts: c.layouts as LintComponent['layouts'],
       parent: c.parent,
     });
-    warnings.push(...r.warnings); // errors (styles-in-properties) can't occur post-persist
+    errors.push(...r.errors);
+    warnings.push(...r.warnings);
   }
 
   const eventsBySource = new Map<string, Set<string>>();

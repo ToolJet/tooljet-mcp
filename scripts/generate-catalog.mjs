@@ -328,6 +328,10 @@ const AUTHORING_HINTS = {
         available: ['rowData', 'cellValue'],
         example: 'Set buttonVisibility to {{rowData.status !== "archived"}} for per-row behavior.',
       },
+      cellExpressionContext: {
+        rowData: 'The source row object.',
+        cellValue: 'The displayed/transformed cell value. For color/visibility rules that need the original field, read rowData.<field> instead.',
+      },
       clickBehavior: 'Clicking sets the Table selectedRow and selectedRowId before event handlers run.',
       eventExample: {
         source_id: '<table component id>',

@@ -89,6 +89,17 @@ describe('lintComponentSpec', () => {
     expect(r.warnings.join(' ')).toMatch(/column\[1\]: missing `name`/);
   });
 
+  it('errors when Table column keys are duplicated because ToolJet keeps only the last one', () => {
+    const result = lintComponentSpec({
+      name: 'tickets',
+      type: 'Table',
+      properties: {
+        columns: { value: [{ name: 'Status', key: 'status' }, { name: 'State', key: 'status' }] },
+      },
+    });
+    expect(result.errors.join(' ')).toMatch(/duplicate column key "status".*silently keeps the last column/);
+  });
+
   it('validates Table Button-column button ids and nested shape', () => {
     const warnings = lintComponentSpec({
       name: 'orders',
