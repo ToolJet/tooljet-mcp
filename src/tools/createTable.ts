@@ -8,26 +8,56 @@ const columnSchema = z.object({
   primaryKey: z.boolean().optional(),
   notNull: z.boolean().optional(),
   unique: z.boolean().optional(),
+  defaultValue: z.any().optional(),
+  configurations: z.record(z.string(), z.any()).optional(),
+});
+
+const foreignKeyAction = z.enum(['RESTRICT', 'NO ACTION', 'CASCADE', 'SET NULL', 'SET DEFAULT']);
+const foreignKeySchema = z.object({
+  columns: z.array(z.string()).min(1),
+  referencedTable: z.string(),
+  referencedColumns: z.array(z.string()).min(1),
+  onDelete: foreignKeyAction.optional(),
+  onUpdate: foreignKeyAction.optional(),
 });
 
 export function createTableTool(client: ToolJetClient): ToolDef {
   return {
     name: 'create_table',
     description:
-      'Create a ToolJet-DB table. Give a table_name and columns (each: name, type, and optional primaryKey/notNull/unique). ' +
+      'Create a ToolJet-DB table. Give table_name and columns (name, type, optional primaryKey/notNull/unique/defaultValue/configurations). ' +
+      'Optional foreign_keys supports single or composite relationships with columns, referencedTable, referencedColumns, onDelete, and onUpdate. ' +
       'Types accept tjdb values or friendly aliases: string, integer, number, bigint, boolean, timestamp, json, serial. ' +
       'If no column is marked primaryKey, a serial `id` primary key is added automatically. Returns { table_id, table_name }. ' +
       'For a NEW app, confirm the data model with the user before creating tables.',
     inputSchema: {
       table_name: z.string(),
       columns: z.array(columnSchema).min(1),
+      foreign_keys: z.array(foreignKeySchema).optional(),
     },
     async handler(args: {
       table_name: string;
-      columns: Array<{ name: string; type: string; primaryKey?: boolean; notNull?: boolean; unique?: boolean }>;
+      columns: Array<{
+        name: string;
+        type: string;
+        primaryKey?: boolean;
+        notNull?: boolean;
+        unique?: boolean;
+        defaultValue?: unknown;
+        configurations?: Record<string, unknown>;
+      }>;
+      foreign_keys?: Array<{
+        columns: string[];
+        referencedTable: string;
+        referencedColumns: string[];
+        onDelete?: 'RESTRICT' | 'NO ACTION' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
+        onUpdate?: 'RESTRICT' | 'NO ACTION' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
+      }>;
     }) {
       try {
-        return ok(await client.createTable({ tableName: args.table_name, columns: args.columns }));
+        return ok(
+          await client.createTable({ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys })
+        );
       } catch (err) {
         return fail(err);
       }

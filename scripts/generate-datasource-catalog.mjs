@@ -176,7 +176,11 @@ const staticSchemas = {
         type: 'object',
         fields: { primary_key: { type: 'array<string>' }, rows: { type: 'array|binding' } },
       },
-      sql: { type: 'string', description: 'SQL text when operation is sql_execution (self-hosted availability varies).' },
+      sql_execution: {
+        type: 'object',
+        fields: { sqlQuery: { type: 'string' } },
+        description: 'SQL mode options when operation is sql_execution (self-hosted availability varies).',
+      },
     },
   },
 };

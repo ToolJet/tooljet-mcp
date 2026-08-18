@@ -108,11 +108,26 @@ export interface TableColumn {
   primaryKey?: boolean;
   notNull?: boolean;
   unique?: boolean;
+  /** Database default. False, 0, and empty strings are preserved. */
+  defaultValue?: unknown;
+  /** Type-specific ToolJet DB metadata, for example a timestamp timezone. */
+  configurations?: Record<string, unknown>;
+}
+
+export type ForeignKeyAction = 'RESTRICT' | 'NO ACTION' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT';
+
+export interface TableForeignKey {
+  columns: string[];
+  referencedTable: string;
+  referencedColumns: string[];
+  onDelete?: ForeignKeyAction;
+  onUpdate?: ForeignKeyAction;
 }
 
 export interface CreateTableParams {
   tableName: string;
   columns: TableColumn[];
+  foreignKeys?: TableForeignKey[];
 }
 
 export interface CreateTableResult {
@@ -125,6 +140,10 @@ export interface SchemaColumn {
   type: string;
   isPrimaryKey: boolean;
   isNotNull: boolean;
+  isUnique: boolean;
+  defaultValue?: unknown;
+  configurations?: Record<string, unknown>;
+  foreignKeys: TableForeignKey[];
 }
 
 export interface InsertRowsParams {
@@ -514,6 +533,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   async function createTable(params: CreateTableParams): Promise<CreateTableResult> {
     const orgId = await auth.getOrganizationId();
+    const columnNames = new Set(params.columns.map((column) => column.name));
+    for (const foreignKey of params.foreignKeys ?? []) {
+      if (foreignKey.columns.length !== foreignKey.referencedColumns.length) {
+        throw new Error(
+          `ToolJet createTable failed: foreign key columns and referencedColumns must have the same length.`
+        );
+      }
+      const missing = foreignKey.columns.filter((column) => !columnNames.has(column));
+      if (missing.length) {
+        throw new Error(`ToolJet createTable failed: foreign key references missing local columns: ${missing.join(', ')}`);
+      }
+    }
     let cols = params.columns.map((c) => ({
       column_name: c.name,
       data_type: normalizeType(c.type),
@@ -522,6 +553,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         is_primary_key: !!c.primaryKey,
         is_unique: !!c.unique || !!c.primaryKey,
       },
+      ...(c.defaultValue !== undefined ? { column_default: c.defaultValue } : {}),
+      ...(c.configurations ? { configurations: c.configurations } : {}),
     }));
     // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`.
     if (!cols.some((c) => c.constraints_type.is_primary_key)) {
@@ -537,7 +570,21 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/tooljet-db/organizations/${orgId}/table`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ table_name: params.tableName, columns: cols }),
+      body: JSON.stringify({
+        table_name: params.tableName,
+        columns: cols,
+        ...(params.foreignKeys?.length
+          ? {
+              foreign_keys: params.foreignKeys.map((foreignKey) => ({
+                column_names: foreignKey.columns,
+                referenced_table_name: foreignKey.referencedTable,
+                referenced_column_names: foreignKey.referencedColumns,
+                ...(foreignKey.onDelete ? { on_delete: foreignKey.onDelete } : {}),
+                ...(foreignKey.onUpdate ? { on_update: foreignKey.onUpdate } : {}),
+              })),
+            }
+          : {}),
+      }),
     });
     await assertOk(res, 'createTable');
     const body = (await res.json()) as { result: { id: string; table_name: string } };
@@ -555,16 +602,49 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         columns: Array<{
           column_name: string;
           data_type: string;
-          constraints_type?: { is_primary_key?: boolean; is_not_null?: boolean };
+          column_default?: unknown;
+          configurations?: Record<string, unknown>;
+          constraints_type?: { is_primary_key?: boolean; is_not_null?: boolean; is_unique?: boolean };
         }>;
+        foreign_keys?: Array<{
+          column_names: string[];
+          referenced_table_name: string;
+          referenced_column_names: string[];
+          on_delete?: ForeignKeyAction;
+          on_update?: ForeignKeyAction;
+        }>;
+        configurations?: {
+          columns?: {
+            column_names?: Record<string, string>;
+            configurations?: Record<string, Record<string, unknown>>;
+          };
+        };
       };
     };
-    return body.result.columns.map((c) => ({
-      name: c.column_name,
-      type: c.data_type,
-      isPrimaryKey: !!c.constraints_type?.is_primary_key,
-      isNotNull: !!c.constraints_type?.is_not_null,
-    }));
+    return body.result.columns.map((c) => {
+      const columnUuid = body.result.configurations?.columns?.column_names?.[c.column_name];
+      const configurations =
+        c.configurations ??
+        (columnUuid ? body.result.configurations?.columns?.configurations?.[columnUuid] : undefined);
+      return {
+        name: c.column_name,
+        type: c.data_type,
+        isPrimaryKey: !!c.constraints_type?.is_primary_key,
+        isNotNull: !!c.constraints_type?.is_not_null,
+        isUnique: !!c.constraints_type?.is_unique,
+        ...(c.column_default !== undefined ? { defaultValue: c.column_default } : {}),
+        ...(configurations ? { configurations } : {}),
+        foreignKeys: (body.result.foreign_keys ?? [])
+          .filter((foreignKey) => foreignKey.column_names.includes(c.column_name))
+          .map((foreignKey) => ({
+            columns: foreignKey.column_names,
+            referencedTable: foreignKey.referenced_table_name,
+            referencedColumns: foreignKey.referenced_column_names,
+            ...(foreignKey.on_delete ? { onDelete: foreignKey.on_delete } : {}),
+            ...(foreignKey.on_update ? { onUpdate: foreignKey.on_update } : {}),
+          })),
+      };
+    });
   }
 
   async function insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }> {

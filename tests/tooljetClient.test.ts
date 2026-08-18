@@ -628,6 +628,39 @@ describe('createClient', () => {
       expect(body.columns[2]).toMatchObject({ column_name: 'age', data_type: 'integer', constraints_type: { is_not_null: true } });
       expect(result).toEqual({ table_id: 't1', table_name: 'people' });
     });
+
+    it('preserves defaults/configurations and creates foreign-key relationships', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't2', table_name: 'orders' } } }));
+      const client = createClient(auth, config);
+      await client.createTable({
+        tableName: 'orders',
+        columns: [
+          { name: 'id', type: 'serial', primaryKey: true },
+          { name: 'customer_id', type: 'integer', notNull: true },
+          { name: 'active', type: 'boolean', defaultValue: false },
+          { name: 'created_at', type: 'timestamp', defaultValue: 'now()', configurations: { timezone: 'UTC' } },
+        ],
+        foreignKeys: [
+          { columns: ['customer_id'], referencedTable: 'customers', referencedColumns: ['id'], onDelete: 'CASCADE' },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.columns[2]).toMatchObject({ column_name: 'active', column_default: false });
+      expect(body.columns[3]).toMatchObject({ column_default: 'now()', configurations: { timezone: 'UTC' } });
+      expect(body.foreign_keys).toEqual([
+        { column_names: ['customer_id'], referenced_table_name: 'customers', referenced_column_names: ['id'], on_delete: 'CASCADE' },
+      ]);
+    });
+
+    it('rejects malformed foreign keys before sending a request', async () => {
+      const client = createClient(auth, config);
+      await expect(client.createTable({
+        tableName: 'orders',
+        columns: [{ name: 'customer_id', type: 'integer' }],
+        foreignKeys: [{ columns: ['missing'], referencedTable: 'customers', referencedColumns: ['id'] }],
+      })).rejects.toThrow(/missing local columns: missing/);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
   });
 
   describe('getTableSchema', () => {
@@ -635,14 +668,26 @@ describe('createClient', () => {
       auth.authedFetch.mockResolvedValueOnce(
         mockResponse({
           status: 200,
-          json: { result: { columns: [{ column_name: 'id', data_type: 'integer', constraints_type: { is_primary_key: true, is_not_null: true } }, { column_name: 'name', data_type: 'character varying' }] } },
+          json: { result: {
+            columns: [
+              { column_name: 'id', data_type: 'integer', constraints_type: { is_primary_key: true, is_not_null: true, is_unique: true } },
+              { column_name: 'customer_id', data_type: 'integer', column_default: 0 },
+            ],
+            foreign_keys: [{ column_names: ['customer_id'], referenced_table_name: 'customers', referenced_column_names: ['id'], on_delete: 'CASCADE' }],
+            configurations: { columns: { column_names: { customer_id: 'uuid-1' }, configurations: { 'uuid-1': { timezone: 'UTC' } } } },
+          } },
         })
       );
       const client = createClient(auth, config);
       const schema = await client.getTableSchema('people');
       expect(schema).toEqual([
-        { name: 'id', type: 'integer', isPrimaryKey: true, isNotNull: true },
-        { name: 'name', type: 'character varying', isPrimaryKey: false, isNotNull: false },
+        { name: 'id', type: 'integer', isPrimaryKey: true, isNotNull: true, isUnique: true, foreignKeys: [] },
+        {
+          name: 'customer_id', type: 'integer', isPrimaryKey: false, isNotNull: false, isUnique: false,
+          defaultValue: 0,
+          configurations: { timezone: 'UTC' },
+          foreignKeys: [{ columns: ['customer_id'], referencedTable: 'customers', referencedColumns: ['id'], onDelete: 'CASCADE' }],
+        },
       ]);
     });
   });

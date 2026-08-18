@@ -6,7 +6,7 @@ export function getTableSchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_table_schema',
     description:
-      "Get a ToolJet-DB table's columns as [{ name, type, isPrimaryKey, isNotNull }]. Use before building queries, " +
+      "Get a ToolJet-DB table's columns, including primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships. Use before building queries, " +
       'columns, forms, or filters on an existing table, or to verify a table you just created.',
     inputSchema: { table_name: z.string() },
     async handler(args: { table_name: string }) {
