@@ -10,6 +10,7 @@ import { addComponentTool } from '../src/tools/addComponent.js';
 import { addEventsTool } from '../src/tools/addEvents.js';
 import { addPageTool } from '../src/tools/addPage.js';
 import { validateAppTool } from '../src/tools/validateApp.js';
+import { runQueryTool } from '../src/tools/runQuery.js';
 import { getCatalog } from '../src/catalog.js';
 
 function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } {
@@ -24,6 +25,8 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
     createComponents: vi.fn(),
     createEvents: vi.fn(),
     createPage: vi.fn(),
+    getQuery: vi.fn(),
+    runQuery: vi.fn(),
   };
 }
 
@@ -86,6 +89,44 @@ describe('list_datasources tool', () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Error:');
+  });
+});
+
+describe('run_query tool', () => {
+  it('warns when a successful browser-free run cannot resolve component-bound options', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'q1',
+      options: {
+        operation: 'list_rows',
+        list_rows: { limit: '{{components.ordersTable.serverSideRowsPerPage || 10}}' },
+      },
+    });
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ id: 1 }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'q1',
+      version_id: 'v1',
+    });
+
+    expect(client.getQuery).toHaveBeenCalledWith('q1', 'v1');
+    expect(textOf(result)).toMatchObject({
+      status: 'ok',
+      warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
+    });
+  });
+
+  it('does not add warnings to a static query result', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({ id: 'q1', options: { mode: 'sql', query: 'select 1' } });
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ '?column?': 1 }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'q1',
+      version_id: 'v1',
+    });
+
+    expect(textOf(result)).toEqual({ status: 'ok', data: [{ '?column?': 1 }] });
   });
 });
 

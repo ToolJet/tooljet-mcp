@@ -226,6 +226,14 @@ export interface AppSummary {
   events: Array<{ id: string; name?: string; sourceId?: string; target?: string; event?: unknown }>;
 }
 
+export interface QuerySummary {
+  id: string;
+  name?: string;
+  kind?: string;
+  data_source_id?: string;
+  options?: unknown;
+}
+
 export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
@@ -254,6 +262,7 @@ export interface ToolJetClient {
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
   updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
   deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }>;
+  getQuery(queryId: string, versionId: string): Promise<QuerySummary>;
   runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
@@ -1036,6 +1045,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { deleted: true };
   }
 
+  async function getQuery(queryId: string, versionId: string): Promise<QuerySummary> {
+    const res = await auth.authedFetch(`/api/data-queries/${versionId}`);
+    await assertOk(res, 'getQuery');
+    const body = (await res.json()) as { data_queries?: QuerySummary[] };
+    const query = body.data_queries?.find((candidate) => candidate.id === queryId);
+    if (!query) throw new Error(`ToolJet getQuery failed: query ${queryId} not found in version ${versionId}`);
+    return query;
+  }
+
   // Run a SAVED query and return its result — the browser-free way to see real rows. Executes the query
   // as stored in the DB; `options:{}` avoids persisting anything back. Response { status:'ok', data:[…] }
   // on success, { status:'failed', message } on error — HTTP is 200 either way, so callers inspect status.
@@ -1162,6 +1180,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updateQuery,
     updateQueryDatasource,
     deleteQuery,
+    getQuery,
     runQuery,
     invokeDatasourceMethod,
     listEvents,
