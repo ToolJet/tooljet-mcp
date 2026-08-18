@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
+import { persistedEventSpecs, validateEvents } from '../eventValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 export function updateEventsTool(client: ToolJetClient): ToolDef {
@@ -32,10 +33,36 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
       update_type?: 'update' | 'reorder';
     }) {
       try {
+        const updateType = args.update_type ?? 'update';
+        let warnings: string[] = [];
+        if (updateType === 'update') {
+          const missing = args.events.filter((event) => !event.name || !event.event);
+          if (missing.length) {
+            return fail(new Error('update_events with update_type="update" requires name and the full event blob for every entry.'));
+          }
+          const summary = await client.getAppSummary(args.app_id);
+          const updatesById = new Map(args.events.map((event) => [event.event_id, event]));
+          const missingIds = args.events
+            .filter((event) => !summary.events.some((persisted) => persisted.id === event.event_id))
+            .map((event) => event.event_id);
+          if (missingIds.length) return fail(new Error(`Event ids do not exist in this app: ${missingIds.join(', ')}.`));
+          const changedSummary = {
+            ...summary,
+            events: summary.events
+              .filter((event) => updatesById.has(event.id))
+              .map((event) => {
+                const update = updatesById.get(event.id)!;
+                return { ...event, name: update.name, event: update.event };
+              }),
+          };
+          const validation = validateEvents(summary, persistedEventSpecs(changedSummary));
+          if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
+          warnings = validation.warnings;
+        }
         const result = await client.updateEvents({
           appId: args.app_id,
           versionId: args.version_id,
-          updateType: args.update_type,
+          updateType,
           events: args.events.map((e) => ({
             eventId: e.event_id,
             name: e.name,
@@ -43,7 +70,7 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
             index: e.index,
           })),
         });
-        return ok(result);
+        return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
       }

@@ -147,6 +147,17 @@ describe('get_component_catalog tool', () => {
 describe('add_events tool', () => {
   it('passes Table Button-column target and compound ref to the client', async () => {
     const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{
+        id: 'tbl1',
+        name: 'orders',
+        type: 'Table',
+        properties: { columns: { value: [{ key: 'actions', name: 'Actions', columnType: 'button', buttons: [{ id: 'view-action' }] }] } },
+      }] }],
+      queries: [{ id: 'q1', name: 'viewOrder' }],
+      events: [],
+    });
     client.createEvents.mockResolvedValue({ created: 1 });
     const tool = addEventsTool(client as unknown as ToolJetClient);
     const result = await tool.handler({
@@ -176,7 +187,7 @@ describe('add_events tool', () => {
         },
       ],
     });
-    expect(textOf(result)).toEqual({ created: 1 });
+    expect(textOf(result)).toEqual({ created: 1, warnings: [] });
   });
 });
 

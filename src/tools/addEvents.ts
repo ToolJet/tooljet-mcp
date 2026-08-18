@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
+import { validateEvents } from '../eventValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const eventSchema = z
@@ -62,7 +63,8 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
       "  • other valid ids: unset-custom-variable, set-page-variable, set-table-page, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout.\n" +
       "For reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. " +
       "For master→detail, pass the row with set-custom-variable then switch-page (a runOnPageLoad detail query does NOT re-run on page switch). " +
-      'Create all of an app\'s events in one call.',
+      'Create all of an app\'s events in one call. MCP validates source existence, component-specific triggers, ' +
+      'Table Button-column refs, action ids, and action targets before writing.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -74,20 +76,23 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
       events: EventInput[];
     }) {
       try {
-        return ok(
-          await client.createEvents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            events: args.events.map((event) => ({
-              sourceId: event.source_id ?? event.component_id!,
-              sourceType: event.source_type ?? 'component',
-              ref: event.ref,
-              trigger: event.trigger,
-              action: event.action,
-              name: event.name,
-            })),
-          })
-        );
+        const summary = await client.getAppSummary(args.app_id);
+        const events = args.events.map((event) => ({
+          sourceId: event.source_id ?? event.component_id!,
+          sourceType: (event.source_type ?? 'component') as NonNullable<EventInput['source_type']>,
+          ref: event.ref,
+          trigger: event.trigger,
+          action: event.action,
+          name: event.name,
+        }));
+        const validation = validateEvents(summary, events);
+        if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
+        const result = await client.createEvents({
+          appId: args.app_id,
+          versionId: args.version_id,
+          events,
+        });
+        return ok({ ...result, warnings: validation.warnings });
       } catch (err) {
         return fail(err);
       }
