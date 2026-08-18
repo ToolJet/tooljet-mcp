@@ -10,6 +10,7 @@ import { createTableTool } from './createTable.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
+import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
@@ -40,6 +41,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     createTableTool(client),
     getTableSchemaTool(client),
     insertRowsTool(client),
+    getDatasourceQuerySchemaTool(client),
     getComponentCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),

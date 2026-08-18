@@ -552,9 +552,9 @@ describe('createClient', () => {
         appId: 'app1',
         versionId: 'ver1',
         events: [
-          { componentId: 'btn1', trigger: 'onClick', action: { actionId: 'run-query', queryName: 'save' } },
-          { componentId: 'btn1', trigger: 'onClick', action: { actionId: 'show-alert', message: 'Saved', alertType: 'success' } },
-          { componentId: 'tbl1', trigger: 'onRowClicked', action: { actionId: 'switch-page', pageId: 'p2', queryParams: [['id', '{{x}}']] } },
+          { sourceId: 'btn1', sourceType: 'component', trigger: 'onClick', action: { actionId: 'run-query', queryName: 'save' } },
+          { sourceId: 'btn1', sourceType: 'component', trigger: 'onClick', action: { actionId: 'show-alert', message: 'Saved', alertType: 'success' } },
+          { sourceId: 'tbl1', sourceType: 'component', trigger: 'onRowClicked', action: { actionId: 'switch-page', pageId: 'p2', queryParams: [['id', '{{x}}']] } },
         ],
       });
 
@@ -565,6 +565,25 @@ describe('createClient', () => {
       expect(body.events[1]).toMatchObject({ attachedTo: 'btn1', index: 1 }); // second event on same component → index 1
       expect(body.events[2]).toMatchObject({ attachedTo: 'tbl1', index: 0, event: { eventId: 'onRowClicked', actionId: 'switch-page', pageId: 'p2' } });
       expect(result).toEqual({ created: 3 });
+    });
+
+    it('bulk-posts query and page lifecycle events with independent per-source ordering', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: {} }));
+      const client = createClient(auth, config);
+      await client.createEvents({
+        appId: 'app1',
+        versionId: 'ver1',
+        events: [
+          { sourceId: 'save1', sourceType: 'data_query', trigger: 'onDataQuerySuccess', action: { actionId: 'run-query', queryId: 'list1' } },
+          { sourceId: 'save1', sourceType: 'data_query', trigger: 'onDataQuerySuccess', action: { actionId: 'show-alert', message: 'Saved' }, name: 'Refresh after save' },
+          { sourceId: 'page1', sourceType: 'page', trigger: 'onPageLoad', action: { actionId: 'run-query', queryId: 'list1' } },
+        ],
+      });
+
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.events[0]).toMatchObject({ eventType: 'data_query', attachedTo: 'save1', index: 0, event: { eventId: 'onDataQuerySuccess' } });
+      expect(body.events[1]).toMatchObject({ eventType: 'data_query', attachedTo: 'save1', index: 1, name: 'Refresh after save' });
+      expect(body.events[2]).toMatchObject({ eventType: 'page', attachedTo: 'page1', index: 0, event: { eventId: 'onPageLoad' } });
     });
   });
 

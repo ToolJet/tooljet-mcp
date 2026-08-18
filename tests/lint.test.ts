@@ -184,6 +184,23 @@ describe('validateAppStructure', () => {
     expect(validateAppStructure(bad).errors.join(' ')).toMatch(/attached to a source \(GONE\) that no longer exists/);
   });
 
+  it('validates event sources against their declared component, query, or page target', () => {
+    const valid: AppSummary = {
+      ...base,
+      events: [
+        { id: 'e1', sourceId: 'q1', target: 'data_query', event: { eventId: 'onDataQuerySuccess' } },
+        { id: 'e2', sourceId: 'p1', target: 'page', event: { eventId: 'onPageLoad' } },
+      ],
+    };
+    expect(validateAppStructure(valid).errors).toEqual([]);
+
+    const wrongTarget: AppSummary = {
+      ...base,
+      events: [{ id: 'e1', sourceId: 'q1', target: 'component', event: { eventId: 'onClick' } }],
+    };
+    expect(validateAppStructure(wrongTarget).errors.join(' ')).toMatch(/source \(q1\) that no longer exists/);
+  });
+
   it('warns on a binding to a non-existent query', () => {
     const bad: AppSummary = {
       ...base,

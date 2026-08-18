@@ -6,9 +6,29 @@ describe('catalog', () => {
     const types = getCatalog().map((c) => c.type);
     expect(types).toContain('Table');
     expect(types).toContain('Statistics');
-    expect(types.length).toBeGreaterThan(50);
+    expect(types.length).toBeGreaterThanOrEqual(80);
     // every entry carries a purpose
     expect(getCatalog().every((c) => typeof c.type === 'string')).toBe(true);
+  });
+
+  it('includes source-harvested events, actions, exposed variables, and style metadata', () => {
+    const table = getComponentSchema('Table')!;
+    expect(table.events?.map((event) => event.id)).toEqual(
+      expect.arrayContaining(['onPageChanged', 'onSearch', 'onSort', 'onFilterChanged', 'onBulkUpdate'])
+    );
+    expect(table.actions?.map((action) => action.handle)).toEqual(
+      expect.arrayContaining(['setPage', 'selectRow', 'downloadTableData'])
+    );
+    expect(table.exposedVariables?.map((variable) => variable.name)).toEqual(
+      expect.arrayContaining(['pageIndex', 'searchText', 'filters', 'currentPageData'])
+    );
+    expect(table.styles.some((style) => style.label && ('valueType' in style || 'default' in style))).toBe(true);
+
+    const form = getComponentSchema('Form')!;
+    expect(form.events?.map((event) => event.id)).toEqual(expect.arrayContaining(['onSubmit', 'onInvalid']));
+    expect(form.actions?.map((action) => action.handle)).toEqual(expect.arrayContaining(['submitForm', 'resetForm']));
+    expect(form.exposedVariables?.map((variable) => variable.name)).toContain('formData');
+    expect(form.defaultChildren?.length).toBeGreaterThan(0);
   });
 
   it('getComponentSchema returns full props for Table incl. the required binding props', () => {

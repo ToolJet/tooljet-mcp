@@ -145,14 +145,20 @@ export interface CreatePageResult {
   name: string;
 }
 
-/** One event handler: a trigger on a component + an action to run. */
+export type EventSourceType = 'component' | 'data_query' | 'page';
+
+/** One event handler: a trigger on a component, query, or page + an action to run. */
 export interface EventSpec {
-  /** The component the event is attached to. */
-  componentId: string;
-  /** The trigger event id, e.g. 'onClick' (Button), 'onRowClicked' (Table). */
+  /** The component, data query, or page id the event is attached to. */
+  sourceId: string;
+  /** Source kind. Query lifecycle events use data_query; page lifecycle events use page. */
+  sourceType: EventSourceType;
+  /** The trigger event id, e.g. onClick, onDataQuerySuccess, onDataQueryFailure, onPageLoad. */
   trigger: string;
   /** The action: { actionId, ...params }, e.g. { actionId: 'run-query', queryId, queryName }. */
   action: Record<string, unknown>;
+  /** Optional readable event name. A deterministic name is generated when omitted. */
+  name?: string;
 }
 
 export interface CreateEventsParams {
@@ -456,18 +462,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {
-    // Each event → { event: { eventId: <trigger>, ...action }, eventType: 'component', attachedTo, index }.
-    // index is per-component ordering; for a fresh build start at 0 and increment per component.
-    const indexByComponent: Record<string, number> = {};
+    // Each event → { event: { eventId: <trigger>, ...action }, eventType, attachedTo, index }.
+    // index is ordered independently for each source (component/query/page).
+    const indexBySource: Record<string, number> = {};
     const events = params.events.map((e) => {
-      const index = indexByComponent[e.componentId] ?? 0;
-      indexByComponent[e.componentId] = index + 1;
+      const sourceKey = `${e.sourceType}:${e.sourceId}`;
+      const index = indexBySource[sourceKey] ?? 0;
+      indexBySource[sourceKey] = index + 1;
       return {
         // name is NOT NULL server-side (the DTO marks it optional but the column requires it).
-        name: `${e.trigger} → ${(e.action.actionId as string) ?? 'action'}`,
+        name: e.name ?? `${e.trigger} → ${(e.action.actionId as string) ?? 'action'}`,
         event: { eventId: e.trigger, ...e.action },
-        eventType: 'component',
-        attachedTo: e.componentId,
+        eventType: e.sourceType,
+        attachedTo: e.sourceId,
         index,
       };
     });

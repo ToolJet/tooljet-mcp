@@ -30,6 +30,7 @@ describe('buildServer', () => {
         'add_query',
         'add_events',
         'list_datasources',
+        'get_datasource_query_schema',
       ]) {
         expect(names).toContain(required);
       }

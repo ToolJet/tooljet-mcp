@@ -7,8 +7,8 @@ export function addQueryTool(client: ToolJetClient): ToolDef {
     name: 'add_query',
     description:
       "Create a query on an app version's datasource (ANY datasource — ToolJet DB, Postgres, RunJS, ServiceNow, …). " +
-      'The query kind is taken from the datasource automatically (or pass `kind`). `options` differ per datasource kind: ' +
-      'tooljetdb list = { operation: "list_rows", table_id, list_rows: {} }; runjs = { code }; postgresql = { mode: "sql", query, query_params: [] }.',
+      'The query kind is taken from the datasource automatically (or pass `kind`). `options` differ per datasource kind; ' +
+      'call get_datasource_query_schema with the datasource kind before constructing them.',
     inputSchema: {
       version_id: z.string(),
       datasource_id: z.string(),

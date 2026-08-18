@@ -14,8 +14,8 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
     name: 'add_queries',
     description:
       "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query " +
-      'when building an app. Each query names its own datasource_id and options (for a ToolJet-DB list: ' +
-      '{ operation: "list_rows", table_id: "<table id from list_tables>", list_rows: {}, runOnPageLoad: true }). ' +
+      'when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema ' +
+      'once per datasource kind before constructing those options. ' +
       'Returns [{ query_id, name }].',
     inputSchema: {
       version_id: z.string(),

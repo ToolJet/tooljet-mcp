@@ -16,13 +16,37 @@ export interface ComponentProp {
   default?: unknown;
 }
 
+export interface ComponentEvent {
+  id: string;
+  label?: string;
+}
+
+export interface ComponentAction {
+  handle: string;
+  displayName?: string;
+  params?: Array<Record<string, unknown>>;
+}
+
+export interface ExposedVariable {
+  name: string;
+  default?: unknown;
+}
+
 export interface ComponentSchema {
   type: string;
   name?: string;
   description?: string;
   defaultSize?: { width: number; height: number };
   properties: ComponentProp[];
-  styles: Array<{ key: string; label?: string }>;
+  styles: ComponentProp[];
+  /** Trigger ids accepted by add_events for this component. */
+  events?: ComponentEvent[];
+  /** Runtime methods accepted by control-component's componentSpecificActionHandle. */
+  actions?: ComponentAction[];
+  /** Values readable as components.<name>.<variable> at runtime. */
+  exposedVariables?: ExposedVariable[];
+  /** Built-in semantic children supplied by ToolJet (containers/forms only). */
+  defaultChildren?: unknown[];
   /** Curated sizing/readability hints for components that have them (e.g. Chart, Statistics). */
   renderingHints?: Record<string, unknown>;
 }

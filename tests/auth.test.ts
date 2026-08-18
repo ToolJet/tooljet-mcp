@@ -139,6 +139,28 @@ describe('createAuth', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it('surfaces a 401 (with a credentials/SSO hint) instead of the generic no-cookie error', async () => {
+    fetchImpl.mockResolvedValueOnce(mockResponse({ status: 401, text: 'Invalid credentials' }));
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(
+      /login failed \(HTTP 401\).*rejected by this instance.*Response: Invalid credentials/
+    );
+  });
+
+  it('surfaces a 404 with a URL hint', async () => {
+    fetchImpl.mockResolvedValueOnce(mockResponse({ status: 404, text: 'Not Found' }));
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(/login failed \(HTTP 404\).*TOOLJET_URL is the API origin/);
+  });
+
+  it('distinguishes "authenticated but no cookie" (200 without Set-Cookie)', async () => {
+    fetchImpl.mockResolvedValueOnce(mockResponse({ status: 200, json: {} })); // ok, but no setCookie
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(
+      /HTTP 200 but no tj_auth_token cookie/
+    );
+  });
+
   describe('workspaces', () => {
     const orgList = {
       organizations: [

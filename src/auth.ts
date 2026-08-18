@@ -38,8 +38,27 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: config.email, password: config.password }),
     });
+
+    // Surface the REAL cause — a 401 (bad creds / SSO-only), a 404 (wrong URL), etc. all otherwise
+    // collapse into the generic "no cookie" message below, which is misleading.
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => '')).slice(0, 500);
+      const hint =
+        res.status === 401
+          ? ' — TOOLJET_EMAIL / TOOLJET_PASSWORD were rejected by this instance (or this workspace requires SSO, not form login).'
+          : res.status === 404
+            ? ' — check TOOLJET_URL is the API origin with no path, e.g. https://your-instance.tooljet.com.'
+            : '';
+      throw new Error(`ToolJet login failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ''}`);
+    }
+
     captureCookie(res);
-    if (!token) throw new Error('ToolJet login failed: no tj_auth_token cookie in response');
+    if (!token) {
+      throw new Error(
+        `ToolJet login returned HTTP ${res.status} but no tj_auth_token cookie — the instance authenticated ` +
+          `without setting the session cookie (e.g. a redirect, a non-form login mode, or a secure/cross-origin cookie the client can't read).`
+      );
+    }
 
     const body = (await res.json()) as {
       current_organization_id?: string;

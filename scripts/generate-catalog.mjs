@@ -31,6 +31,9 @@ function literal(node) {
       return node.value;
     case 'NullLiteral':
       return null;
+    case 'TemplateLiteral':
+      if (node.expressions.length === 0) return node.quasis[0]?.value?.cooked ?? '';
+      return undefined;
     case 'UnaryExpression':
       if (node.operator === '-' && node.argument.type === 'NumericLiteral') return -node.argument.value;
       return undefined;
@@ -125,13 +128,56 @@ function extractProps(config) {
   return order.map((k) => meta[k]);
 }
 
-function styleKeys(config) {
+function extractStyles(config) {
   const stylesObj = prop(config, 'styles');
   if (!stylesObj || stylesObj.type !== 'ObjectExpression') return [];
   return stylesObj.properties
     .filter((pr) => pr.type === 'ObjectProperty' && pr.value.type === 'ObjectExpression')
-    .map((pr) => ({ key: keyName(pr), label: strProp(pr.value, 'displayName') }))
+    .map((pr) => {
+      const validation = prop(pr.value, 'validation');
+      const schema = validation && validation.type === 'ObjectExpression' ? prop(validation, 'schema') : undefined;
+      return {
+        key: keyName(pr),
+        label: strProp(pr.value, 'displayName'),
+        valueType: schema ? strProp(schema, 'type') : undefined,
+        default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
+      };
+    })
     .filter((s) => s.label); // drop section dividers (no label)
+}
+
+function extractEvents(config) {
+  const events = prop(config, 'events');
+  if (!events || events.type !== 'ObjectExpression') return [];
+  return events.properties
+    .filter((pr) => pr.type === 'ObjectProperty')
+    .map((pr) => ({
+      id: keyName(pr),
+      label: pr.value.type === 'ObjectExpression' ? strProp(pr.value, 'displayName') : undefined,
+    }));
+}
+
+function extractActions(config) {
+  const actions = literal(prop(config, 'actions'));
+  if (!Array.isArray(actions)) return [];
+  return actions
+    .filter((action) => action && typeof action === 'object' && typeof action.handle === 'string')
+    .map(({ handle, displayName, params }) => ({
+      handle,
+      ...(typeof displayName === 'string' ? { displayName } : {}),
+      ...(Array.isArray(params) ? { params } : {}),
+    }));
+}
+
+function extractExposedVariables(config) {
+  const exposed = prop(config, 'exposedVariables');
+  if (!exposed || exposed.type !== 'ObjectExpression') return [];
+  return exposed.properties
+    .filter((pr) => pr.type === 'ObjectProperty')
+    .map((pr) => {
+      const value = trimDefault(literal(pr.value));
+      return { name: keyName(pr), ...(value !== undefined ? { default: value } : {}) };
+    });
 }
 
 // Legacy components we deliberately hide from agents — a modern replacement exists, so surfacing
@@ -170,8 +216,32 @@ for (const f of files) {
     description: strProp(config, 'description'),
     defaultSize: literal(prop(config, 'defaultSize')),
     properties: extractProps(config),
-    styles: styleKeys(config),
+    styles: extractStyles(config),
+    events: extractEvents(config),
+    actions: extractActions(config),
+    exposedVariables: extractExposedVariables(config),
+    defaultChildren: literal(prop(config, 'defaultChildren')),
   };
+}
+
+// Some runtime variables are created by the widget implementation and are intentionally absent
+// from the editor config. Keep these tiny, source-verified additions next to the generator rather
+// than teaching the skill stale prose.
+const RUNTIME_EXPOSED_VARIABLES = {
+  Form: [{ name: 'formData', default: {} }, { name: 'children', default: {} }],
+  Table: [
+    { name: 'currentData', default: [] },
+    { name: 'currentPageData', default: [] },
+    { name: 'filteredData', default: [] },
+    { name: 'sortApplied', default: [] },
+    { name: 'newRows', default: [] },
+    { name: 'updatedData', default: [] },
+  ],
+};
+for (const [type, variables] of Object.entries(RUNTIME_EXPOSED_VARIABLES)) {
+  if (!schemas[type]) continue;
+  const known = new Set((schemas[type].exposedVariables || []).map((variable) => variable.name));
+  schemas[type].exposedVariables.push(...variables.filter((variable) => !known.has(variable.name)));
 }
 
 // Curated rendering hints (not harvestable from the widget defs) — sizing/readability defaults the

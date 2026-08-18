@@ -273,6 +273,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   const componentIds = new Set(allComponents.map((c) => c.id));
   const queryNames = new Set(summary.queries.map((q) => q.name).filter(Boolean) as string[]);
   const queryIds = new Set(summary.queries.map((q) => q.id));
+  const pageIds = new Set(summary.pages.map((p) => p.id));
 
   // Duplicate component names within a page (ambiguous {{components.X}}).
   for (const p of summary.pages) {
@@ -294,7 +295,15 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   // Dangling event references.
   for (const e of summary.events) {
     const name = e.name ?? e.id;
-    if (e.sourceId && !componentIds.has(e.sourceId) && !queryIds.has(e.sourceId)) {
+    const validSources =
+      e.target === 'data_query'
+        ? queryIds
+        : e.target === 'page'
+          ? pageIds
+          : e.target === 'component'
+            ? componentIds
+            : new Set([...componentIds, ...queryIds, ...pageIds]);
+    if (e.sourceId && !validSources.has(e.sourceId)) {
       errors.push(`Event "${name}" is attached to a source (${e.sourceId}) that no longer exists.`);
     }
     const ev = (e.event ?? {}) as Record<string, unknown>;

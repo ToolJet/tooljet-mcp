@@ -7,7 +7,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
   return {
     name: 'get_component_catalog',
     description:
-      'Discover ToolJet components. Call with no argument to list every component type + its purpose (the palette). Call with `type` (e.g. "Statistics", "Chart", "Table") to get that component\'s full property schema — its properties (key, type, default), defaultSize, and styles — so you can configure it correctly with add_component instead of guessing.',
+      'Discover ToolJet components. Call with no argument to list every component type + its purpose (the palette). Call with `type` (e.g. "Statistics", "Chart", "Table", "Form") to get its full authoring contract: properties/styles with defaults, event triggers, exposed runtime variables, component actions, default size, and semantic default children. Use this before add_component/add_events instead of guessing ids or bindings.',
     inputSchema: {
       type: z.string().optional(),
     },
