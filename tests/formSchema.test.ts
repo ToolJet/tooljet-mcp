@@ -23,10 +23,16 @@ describe('generateFormSchema', () => {
       customer_name: { type: 'textinput', label: 'Customer Name' },
       amount: { type: 'number', value: '{{0}}' },
       active: { type: 'checkbox', value: '{{false}}' },
-      created_at: { type: 'datepicker', enableDate: true, enableTime: true },
+      created_at: { type: 'datepicker', enableDate: true, enableTime: true, value: '{{null}}' },
       metadata: { type: 'textarea' },
     });
     expect(result.properties.resetOnSubmit).toEqual({ value: '{{false}}' });
+    expect(result.layout_guidance).toMatchObject({
+      field_count: 6,
+      recommended_canvas_height_px: 420,
+      recommended_form_height_px: 550,
+      recommended_modal_height_px: 630,
+    });
   });
 
   it('generates edit bindings without nested MCP components', () => {
@@ -39,6 +45,7 @@ describe('generateFormSchema', () => {
     });
     expect(result.schema.properties).not.toHaveProperty('metadata');
     expect(result.properties.resetOnSubmit).toEqual({ value: '{{false}}' });
+    expect(result.layout_guidance.field_count).toBe(6);
   });
 
   it('tool reads the real table schema and returns the generated properties', async () => {

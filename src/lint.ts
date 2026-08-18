@@ -3,6 +3,7 @@
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
 import { getComponentSchema } from './catalog.js';
+import { FORM_SCHEMA_FIELD_TYPE_SET } from './formFieldTypes.js';
 
 export interface LintResult {
   errors: string[];
@@ -101,6 +102,10 @@ export interface LintComponent {
 function propVal(props: Record<string, unknown> | undefined, key: string): unknown {
   const p = props?.[key] as { value?: unknown } | undefined;
   return p && typeof p === 'object' && 'value' in p ? p.value : p;
+}
+
+function recordValue(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
 
 function isTruthyBinding(v: unknown): boolean {
@@ -318,11 +323,67 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 
   if (spec.type === 'Form') {
     const mode = propVal(props, 'generateFormFrom');
-    if (mode === 'jsonSchema' && propVal(props, 'newJsonSchema') === undefined) {
+    const schemaValue = propVal(props, 'newJsonSchema');
+    if (mode === 'jsonSchema' && schemaValue === undefined) {
       warnings.push(`Form "${label}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
     }
     if (mode === 'rawJson' && propVal(props, 'JSONData') === undefined) {
       warnings.push(`Form "${label}": generateFormFrom is "rawJson" but JSONData is missing.`);
+    }
+    const fields = recordValue(recordValue(schemaValue)?.properties);
+    if (mode === 'jsonSchema' && fields) {
+      const labelRiskTypes = new Set<string>();
+      for (const [fieldName, rawField] of Object.entries(fields)) {
+        const field = recordValue(rawField);
+        if (!field) continue;
+        const type = field.type;
+        if (typeof type !== 'string' || !FORM_SCHEMA_FIELD_TYPE_SET.has(type)) {
+          errors.push(
+            `Form "${label}" field "${fieldName}": unsupported type "${String(type)}". ` +
+              'Use the authoritative Form field-type list; aliases such as email/star/file do not work.'
+          );
+          continue;
+        }
+        if (type === 'filepicker') {
+          errors.push(
+            `Form "${label}" field "${fieldName}": type "filepicker" crashes the entire Form. ` +
+              'Use a standalone FilePicker component and read components.<picker>.file instead.'
+          );
+        }
+        if (type === 'datepicker' && (field.value === null || field.value === undefined)) {
+          warnings.push(
+            `Form "${label}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. ` +
+              'Set value to "{{null}}" for an empty create field.'
+          );
+        }
+        if (['dropdown', 'multiselect'].includes(type)) {
+          if ('options' in field) {
+            errors.push(
+              `Form "${label}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`
+            );
+          }
+          if (!('values' in field) || !('displayValues' in field)) {
+            warnings.push(
+              `Form "${label}" field "${fieldName}": ${type} should define both "values" and "displayValues".`
+            );
+          }
+          labelRiskTypes.add(type);
+        }
+        if (type === 'textarea') labelRiskTypes.add(type);
+        const validation = recordValue(field.validation);
+        if ('required' in field || validation?.required !== undefined) {
+          warnings.push(
+            `Form "${label}" field "${fieldName}": "required" is not a supported Form schema validator. ` +
+              'Use validation.minLength or validation.customRule.'
+          );
+        }
+      }
+      if (labelRiskTypes.size > 0) {
+        warnings.push(
+          `Form "${label}": FormUtils label rendering is inconsistent for ${[...labelRiskTypes].join('/')} fields ` +
+            '(duplicate labels or literal "Label"). Browser-check them and use standalone inputs if needed.'
+        );
+      }
     }
   }
 
@@ -504,10 +565,13 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   const pageIds = new Set(summary.pages.map((p) => p.id));
 
   // Duplicate component names within a page (ambiguous {{components.X}}).
-  for (const [pageIndex, p] of summary.pages.entries()) {
-    // ToolJet renders IconHome2 for the first/Home page even when its stored icon is empty. Every
-    // other page falls back to IconFile, which makes multi-page sidebar navigation look unfinished.
-    if (pageIndex > 0 && !p.icon) {
+  for (const p of summary.pages) {
+    // ToolJet renders IconHome2 for the native Home page even when its stored icon is empty. API
+    // summaries are not guaranteed to return pages in creation order, so identify Home by its
+    // stable handle/name rather than array position. Every other icon-less page falls back to
+    // IconFile, which makes multi-page sidebar navigation look unfinished.
+    const isNativeHome = p.handle === 'home' || p.name === 'Home';
+    if (!isNativeHome && !p.icon) {
       warnings.push(
         `Page "${p.name ?? p.id}" has no icon — set a relevant Tabler icon so the left sidebar does not use generic IconFile.`
       );

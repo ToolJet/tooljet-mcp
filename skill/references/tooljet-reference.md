@@ -116,7 +116,7 @@ defaultValue is the ONLY bindable value field — there is no separate `value` p
 TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: advanced=`{{false}}`, options=[{label:'X', value:1, disable:{value:false}, visible:{value:true}}]. Do NOT set schema. (2) QUERY-BOUND: advanced=`{{true}}`, schema=`{{queries.queryName.data}}`. Do NOT set options. Query data must be an array of {label, value, disable, visible} objects — transform at the query level if needed. Exposed variables: the CURRENT SELECTION is `.value` (e.g. `{{components.name.value}}`) — use this for filtering, conditions and reading the choice; the selected option's display text is `.selectedOption.label`. The `label` PROPERTY is the field's TITLE (e.g. 'Status'), NOT the selection — NEVER compare data against `.label` (it silently matches zero rows). PREFILL: there is no `value`/`defaultValue` input property. The initially selected item is whichever entry in the bound `schema`/`options` array has BOTH `visible: true` AND `default: true` (the default-picker requires `visible === true && default === true`, so an option missing `visible` never preselects even with `default: true`). Set it via a transform, e.g. when prefilling from a table row inside a modal: `schema: {{ queries.queryName.data.map(o => ({...o, visible: true, default: o.value === components.tableName.selectedRow.fieldName})) }}`. When the dropdown edits a table column with a fixed set of values, bind `schema` to a dedicated lookup query (same datasource as the table, filtered to the relevant scope) — never hardcode static `options` for a database-backed column.
 
 ### Form
-Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`. For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object.
+Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`. For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object. Supported schema field types are textinput, textarea, dropdown, multiselect, number, emailinput, password, datepicker, checkbox, radio, toggle, starrating, and filepicker—but filepicker currently crashes the whole Form, so use a standalone FilePicker. Dropdown/multiselect fields use values + displayValues, not options. There is no required flag; use validation.minLength or validation.customRule.
 
 ### KanbanBoard
 Bind cardData from query array shaped as [{id, title, columnId}]; bind columnData from query array shaped as [{id, title}]. lastCardMovement exposes {cardId, sourceColumn, destinationColumn} — use in update queries triggered by onCardMoved event to persist reordering.
@@ -159,6 +159,20 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 
 ### TextInput
 Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
+
+## Form schema field contracts and upload workaround
+
+The authoritative Form JSON-schema field types are: `textinput`, `textarea`, `dropdown`, `multiselect`, `number`, `emailinput`, `password`, `datepicker`, `checkbox`, `radio`, `toggle`, `starrating`, and `filepicker`. Do not abbreviate these to `email`, `star`, or `file`.
+
+- Dropdown and multiselect fields use `values` plus `displayValues`; `options` is not the Form schema contract.
+- There is no working `required` flag. Use `validation.minLength` or `validation.customRule` and keep database constraints authoritative.
+- Do not use Form's `filepicker` type even though it is listed: the current renderer throws while reading `minSize` and replaces the entire Form with "Something went wrong". Place a standalone `FilePicker` component outside the Form. Its `.file` variable is an array of `{name, content, dataURL, type, parsedValue}`; read values such as `{{components.evidencePicker.file[0].name}}`.
+- FormUtils label handling varies by field type: Dropdown can receive a duplicate label, while TextArea can retain a literal "Label". Browser-check mixed-type generated forms and prefer standalone fields when clean labeling is essential.
+- A create-mode datepicker must use `value:"{{null}}"`; a literal/omitted null renders ToolJet's 01/01/2022 demo date.
+
+## File generation formats
+
+`generate-file` genuinely serializes CSV and passes plaintext through. Its PDF handler is also pass-through: it expects already-formed PDF bytes and does not render text, HTML, or tabular data into a PDF. Use CSV/plaintext unless the app already has valid PDF bytes, then verify the download in the viewer before claiming PDF support.
 
 ## Table row-action Button columns
 

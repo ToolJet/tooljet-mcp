@@ -7,7 +7,7 @@ export function generateFormSchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'generate_form_schema',
     description:
-      'Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table. This uses one schema-generated Form instead of many nested field components. Create mode omits generated serial columns; edit mode can prefill fields with initial_values_binding (a ToolJet expression without {{ }}) and locks primary keys. Review field_metadata for required/unique/foreign-key behavior before wiring the mutation.',
+      'Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table, with ordered includes, field_overrides, field metadata, and recommended Form/modal heights. Boolean-string defaults are normalized, empty dates stay blank, long-text/email fields get safer inferred types, and unsafe Form filepicker overrides are rejected.',
     inputSchema: {
       table_name: z.string(),
       mode: z.enum(['create', 'edit']).default('create'),
@@ -16,6 +16,7 @@ export function generateFormSchemaTool(client: ToolJetClient): ToolDef {
       include: z.array(z.string()).optional(),
       exclude: z.array(z.string()).optional(),
       initial_values_binding: z.string().optional(),
+      field_overrides: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
     },
     async handler(args: {
       table_name: string;
@@ -25,6 +26,7 @@ export function generateFormSchemaTool(client: ToolJetClient): ToolDef {
       include?: string[];
       exclude?: string[];
       initial_values_binding?: string;
+      field_overrides?: Record<string, Record<string, unknown>>;
     }) {
       try {
         const columns = await client.getTableSchema(args.table_name);
@@ -37,6 +39,7 @@ export function generateFormSchemaTool(client: ToolJetClient): ToolDef {
             include: args.include,
             exclude: args.exclude,
             initialValuesBinding: args.initial_values_binding,
+            fieldOverrides: args.field_overrides,
           })
         );
       } catch (err) {

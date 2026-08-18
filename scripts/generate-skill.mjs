@@ -125,7 +125,7 @@ const componentSection = componentList
       );
     }
     if (name === 'Form') {
-      rule += ' For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object.';
+      rule += ' For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object. Supported schema field types are textinput, textarea, dropdown, multiselect, number, emailinput, password, datepicker, checkbox, radio, toggle, starrating, and filepicker—but filepicker currently crashes the whole Form, so use a standalone FilePicker. Dropdown/multiselect fields use values + displayValues, not options. There is no required flag; use validation.minLength or validation.customRule.';
     }
     return `### ${name}\n${rule}`;
   })
@@ -160,7 +160,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`inspect_datasource_schema({ version_id, datasource_id, method, schema?, table?, search?, page?, limit?, args? })\` → invoke one read-only metadata method advertised by that plugin (for example listSchemas/listTables/listColumns). Discover methods with schema \`sections:["introspection"]\`; request only what the current query needs.
 - \`get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })\` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one \`types\` batch, request only the relevant sections/keys, and reuse that result for the build. Request \`authoringHints\` for nested contracts such as Table row-action Button columns. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
 - ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`; \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
-- \`generate_form_schema({ table_name, mode, initial_values_binding? })\` → a ready-to-place Form \`properties\` block plus field metadata. Prefer it for ToolJet DB create/edit forms so the MCP creates one Form instead of many nested fields.
+- \`generate_form_schema({ table_name, mode, initial_values_binding?, include?, field_overrides? })\` → a ready-to-place Form \`properties\` block plus field metadata. Prefer it for ToolJet DB create/edit forms so the MCP creates one Form instead of many nested fields; \`include\` controls field order and \`field_overrides\` handles textarea/enum/label/validation tuning.
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
 - \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug }\`.
@@ -249,6 +249,7 @@ Plan the whole page architecture up front (above); **build it in phases.** A pha
 
 - app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add pages with \`add_page\` per the information architecture (above). ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
 - **In a multi-page app, give EVERY page a relevant sidebar icon** — pass \`add_page\`'s required \`icon\` (a Tabler icon name, e.g. \`IconLayoutDashboard\`, \`IconUsers\`, \`IconChartBar\`, \`IconListDetails\`, \`IconSettings\`, \`IconReportAnalytics\`). ToolJet gives the auto-created first/Home page an \`IconHome2\` fallback; added pages without an icon fall back to generic \`IconFile\` and make the left sidebar look unfinished.
+- **Hide sub-pages that are only reached from another page** — for a page opened ONLY via \`switch-page\` (e.g. a detail/edit page you navigate to from a table row, not a top-level destination), pass \`add_page({ …, hidden: true })\`. It stays fully reachable but is removed from the sidebar nav, keeping the menu to real destinations. (An icon is still required — it shows if you later unhide it.)
 - A component has **properties**; each property value is \`{ "value": <val> }\`. Values starting with \`{{ … }}\` are **bindings** evaluated at runtime.
 - A query exposes its result as \`queries.<queryName>.data\`. Bind a component property to it, e.g. a Table's \`data.value = "{{queries.<queryName>.data}}"\`.
 
@@ -328,7 +329,9 @@ Verify page 1, a middle page, the last/partial page, zero results, a changed sea
 
 ## Form generation — prefer schemas over nested children
 
-- For an existing ToolJet DB table, call \`generate_form_schema\` and pass its returned \`properties\` to a Form. It maps real column types/defaults, keeps create-mode date fields visually empty until selected, omits generated serial columns in create mode, locks primary keys in edit mode, and reports required/unique/foreign-key metadata for review. Read submitted direct values from \`components.<form>.formData\`.
+- For an existing ToolJet DB table, call \`generate_form_schema\` and pass its returned \`properties\` to a Form. It maps real column types/defaults, keeps create-mode date fields visually empty until selected, omits generated serial columns in create mode, locks primary keys in edit mode, and reports required/unique/foreign-key metadata for review. Apply its returned \`layout_guidance.recommended_canvas_height_px\`, \`recommended_form_height_px\`, and (when nested) \`recommended_modal_height_px\` instead of guessing; these estimates keep the final field and submit button inside the Form boundary. Read submitted direct values from \`components.<form>.formData\`.
+- The \`include\` array is the output order. Use \`field_overrides\` to select \`textarea\`, \`dropdown\`/\`multiselect\`, labels, placeholders, and validators when database types are not expressive enough. Form dropdowns use \`values\` + \`displayValues\`, never \`options\`; \`required\` is not a supported validator, so use \`validation.minLength\` or \`validation.customRule\`.
+- Never use \`type:"filepicker"\` inside Form JSON schema: ToolJet crashes and replaces the whole Form with "Something went wrong". Add a standalone \`FilePicker\` beside the Form and read \`components.<picker>.file[0]\` (for example \`.name\`, \`.content\`, or \`.dataURL\`).
 - For a quick object-shaped form, use \`generateFormFrom="rawJson"\` + \`JSONData\`. Use custom nested child components only when schema generation cannot express the interaction.
 - Map strings to TextInput/TextArea, integers/numbers to NumberInput, booleans to Checkbox/Toggle, timestamps to Date/Datetime, and enums/foreign keys to Dropdown. Omit serial/generated columns from create forms; lock immutable keys in edit forms.
 - Attach the Form's \`onSubmit\` to the mutation query and \`onInvalid\` to a validation alert. Put refresh/reset/close/success behavior on the mutation query's \`onDataQuerySuccess\`, not immediately after the submit action.
@@ -346,7 +349,7 @@ Form inputs default to a **side-aligned label** (\`styles.alignment = "side"\`) 
 - **Prefer flat composition.** Page-level components are faster to generate, inspect, and repair. For forms, prefer the Form component's \`rawJson\`/\`jsonSchema\` generation instead of creating many nested field components.
 - **Use nesting only when the component semantics require it** (custom Modal/Form children, Container/FlexContainer, Tabs, Listview, expandable rows). When it is required, create the hierarchy atomically in one \`add_components\` call with \`client_ref\`/\`parent_ref\`; keep it one level deep where practical.
 
-**Browser QA for any form/modal:** confirm no label is truncating its input, every control has a usable width, field left/right edges line up, and there's breathing room above the footer/action buttons.
+**Browser QA for any form/modal:** confirm no label is truncating its input, every control has a usable width, field left/right edges line up, and the final field plus footer/action buttons are visible at maximum modal scroll. FormUtils can duplicate Dropdown labels and leave a literal "Label" on TextArea, so inspect mixed-type forms visually and use standalone fields if necessary. An element can exist in the DOM yet still be occluded by an undersized Form boundary, so use a screenshot in addition to the DOM snapshot.
 
 ## Async & UI states — required, not polish
 
@@ -386,7 +389,7 @@ Components and queries alone make a *static* app. Use \`add_events\` for compone
 - **Set a custom variable:** \`{ actionId: 'set-custom-variable', key: 'selectedTicket', value: '{{components.<table>.selectedRow}}' }\` — the id is **\`set-custom-variable\`** (NOT \`set-variable\`, which does not exist); read it back as \`{{variables.selectedTicket}}\`. Also: \`unset-custom-variable\`.
 - **Control a component:** \`{ actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue' | 'clear' | 'setVisibility' | 'setDisable' | 'setLoading', ... }\` — reset/prefill an input, toggle visibility, etc.
 - **Set a Table page:** \`{ actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\`.
-- **Export data:** \`{ actionId: 'generate-file', ... }\` (CSV/PDF) · **Copy:** \`{ actionId: 'copy-to-clipboard', ... }\`.
+- **Export data:** \`{ actionId: 'generate-file', ... }\` — CSV/plaintext works. The PDF branch is pass-through only: it requires pre-formed PDF bytes and does not convert text, HTML, or query data. Use CSV unless real PDF bytes are already available and browser-verified. · **Copy:** \`{ actionId: 'copy-to-clipboard', ... }\`.
 
 (Other valid ids include \`set-page-variable\`, \`open-webpage\`, \`go-to-app\`, \`logout\`, \`set-localstorage-value\`, \`scroll-component-into-view\`.)
 
@@ -434,6 +437,8 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - **Skeleton or placeholder pages** with no working loop — build one complete journey before starting the next.
 - **Query-backed UI with no loading / empty / error state** — those are required parts of the feature, not polish.
 - **A mutation button that can be double-fired** — disable it while the mutation runs.
+- **A FilePicker inside Form JSON schema** — it crashes the whole Form; use standalone \`FilePicker\`.
+- **Claiming generate-file converts content to PDF** — it only passes through already-formed PDF bytes; use CSV/plaintext otherwise.
 
 ### Datasource contract failures — one compact rule
 
@@ -470,6 +475,20 @@ ${catalogSection}
 Authoritative rules for binding each component correctly (what must be set, or it renders nothing / wrong).
 
 ${componentSection}
+
+## Form schema field contracts and upload workaround
+
+The authoritative Form JSON-schema field types are: \`textinput\`, \`textarea\`, \`dropdown\`, \`multiselect\`, \`number\`, \`emailinput\`, \`password\`, \`datepicker\`, \`checkbox\`, \`radio\`, \`toggle\`, \`starrating\`, and \`filepicker\`. Do not abbreviate these to \`email\`, \`star\`, or \`file\`.
+
+- Dropdown and multiselect fields use \`values\` plus \`displayValues\`; \`options\` is not the Form schema contract.
+- There is no working \`required\` flag. Use \`validation.minLength\` or \`validation.customRule\` and keep database constraints authoritative.
+- Do not use Form's \`filepicker\` type even though it is listed: the current renderer throws while reading \`minSize\` and replaces the entire Form with "Something went wrong". Place a standalone \`FilePicker\` component outside the Form. Its \`.file\` variable is an array of \`{name, content, dataURL, type, parsedValue}\`; read values such as \`{{components.evidencePicker.file[0].name}}\`.
+- FormUtils label handling varies by field type: Dropdown can receive a duplicate label, while TextArea can retain a literal "Label". Browser-check mixed-type generated forms and prefer standalone fields when clean labeling is essential.
+- A create-mode datepicker must use \`value:"{{null}}"\`; a literal/omitted null renders ToolJet's 01/01/2022 demo date.
+
+## File generation formats
+
+\`generate-file\` genuinely serializes CSV and passes plaintext through. Its PDF handler is also pass-through: it expects already-formed PDF bytes and does not render text, HTML, or tabular data into a PDF. Use CSV/plaintext unless the app already has valid PDF bytes, then verify the download in the viewer before claiming PDF support.
 
 ## Table row-action Button columns
 

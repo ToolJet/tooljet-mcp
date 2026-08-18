@@ -157,12 +157,15 @@ export interface CreatePageParams {
   name: string;
   /** Tabler icon name, e.g. "IconLayoutDashboard". Defaults to ToolJet's "IconFile" if omitted. */
   icon?: string;
+  /** Hide the page from the auto-generated sidebar nav (still reachable via switch-page). For detail/sub-pages. */
+  hidden?: boolean;
 }
 
 export interface CreatePageResult {
   page_id: string;
   name: string;
   icon?: string;
+  hidden?: boolean;
 }
 
 export interface AddTableColumnParams {
@@ -533,27 +536,43 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
     await assertOk(res, 'createPage');
 
-    // ToolJet's create-page service currently ignores `icon`, even though the DTO accepts it.
-    // Persist it through the update route, then read it back so a silent drop cannot look successful.
-    if (params.icon) {
-      const iconRes = await auth.authedFetch(
+    // ToolJet's create-page service ignores `icon` and `hidden`, even though the DTO accepts them.
+    // Persist them via the update route — which applies a single-field diff (a diff with >1 key throws
+    // "Can not update multiple pages"), so send ONE field per call. `hidden: { value: true }` removes the
+    // page from the sidebar nav. Read back afterwards so a silent drop cannot look successful.
+    const persistField = async (field: string, value: unknown, label: string): Promise<void> => {
+      const r = await auth.authedFetch(
         `/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageId, diff: { icon: params.icon } }),
+          body: JSON.stringify({ pageId, diff: { [field]: value } }),
         }
       );
-      await assertOk(iconRes, 'createPage icon update');
+      await assertOk(r, label);
+    };
+    if (params.icon) await persistField('icon', params.icon, 'createPage icon update');
+    if (params.hidden) await persistField('hidden', { value: true }, 'createPage hidden update');
+    if (params.icon || params.hidden) {
       const refreshed = await getApp(params.appId);
       const page = (refreshed.pages ?? []).find((candidate: any) => candidate.id === pageId);
-      if (page?.icon !== params.icon) {
+      if (params.icon && page?.icon !== params.icon) {
         throw new Error(
           `ToolJet createPage failed: page was created, but sidebar icon "${params.icon}" did not persist.`
         );
       }
+      if (params.hidden && page?.hidden?.value !== true) {
+        throw new Error(
+          'ToolJet createPage failed: page was created, but hidden-from-sidebar did not persist.'
+        );
+      }
     }
-    return { page_id: pageId, name: params.name, ...(params.icon ? { icon: params.icon } : {}) };
+    return {
+      page_id: pageId,
+      name: params.name,
+      ...(params.icon ? { icon: params.icon } : {}),
+      ...(params.hidden ? { hidden: true } : {}),
+    };
   }
 
   async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {

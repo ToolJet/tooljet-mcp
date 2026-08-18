@@ -12,14 +12,17 @@ export function addPageTool(client: ToolJetClient): ToolDef {
       "— don't fragment a simple app across many pages. " +
       'A relevant `icon` is required (a Tabler icon name, e.g. "IconLayoutDashboard", "IconUsers", "IconChartBar", ' +
       '"IconSettings") so every added page reads clearly in the sidebar. The auto-created Home page already falls back ' +
-      'to IconHome2; other pages without an icon fall back to the generic IconFile.',
+      'to IconHome2; other pages without an icon fall back to the generic IconFile. ' +
+      'Set `hidden: true` for a page that is opened ONLY from another page (e.g. a detail page reached by row-click → ' +
+      'switch-page) — it stays fully reachable but is removed from the sidebar nav so the menu stays clean.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
       name: z.string(),
       icon: z.string().min(1),
+      hidden: z.boolean().optional(),
     },
-    async handler(args: { app_id: string; version_id: string; name: string; icon: string }) {
+    async handler(args: { app_id: string; version_id: string; name: string; icon: string; hidden?: boolean }) {
       try {
         return ok(
           await client.createPage({
@@ -27,6 +30,7 @@ export function addPageTool(client: ToolJetClient): ToolDef {
             versionId: args.version_id,
             name: args.name,
             icon: args.icon,
+            hidden: args.hidden,
           })
         );
       } catch (err) {

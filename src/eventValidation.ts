@@ -141,6 +141,17 @@ export function validateEvents(summary: AppSummary, events: EventSpec[]): EventV
         errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
       }
     }
+    if (actionId === 'generate-file') {
+      const format = ['fileType', 'type', 'format', 'extension']
+        .map((key) => event.action[key])
+        .find((value): value is string => typeof value === 'string');
+      if (format && /\bpdf\b/i.test(format)) {
+        warnings.push(
+          `${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. ` +
+            'Use CSV/plaintext, or supply and browser-verify real PDF bytes.'
+        );
+      }
+    }
   });
 
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };

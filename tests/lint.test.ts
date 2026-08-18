@@ -533,8 +533,8 @@ describe('validateAppStructure', () => {
     const app: AppSummary = {
       ...base,
       pages: [
-        { ...base.pages[0], icon: undefined },
         { id: 'p2', name: 'Customers', handle: 'customers', components: [] },
+        { ...base.pages[0], name: 'Home', handle: 'home', icon: undefined },
         { id: 'p3', name: 'Reports', handle: 'reports', icon: 'IconReportAnalytics', components: [] },
       ],
     };
