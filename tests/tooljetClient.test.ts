@@ -654,4 +654,174 @@ describe('createClient', () => {
       ]);
     });
   });
+
+  describe('updateComponents', () => {
+    it('wraps a definition change under component.definition, keyed by existing id, with pageId', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateComponents({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        updates: [{ componentId: 'c-1', definition: { properties: { text: { value: 'NEW' } } } }],
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/components');
+      expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body)).toEqual({
+        is_user_switched_version: false,
+        pageId: 'page-home',
+        diff: { 'c-1': { component: { definition: { properties: { text: { value: 'NEW' } } } } } },
+      });
+    });
+
+    it('sends a rename as a raw column change (no definition key)', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateComponents({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        updates: [{ componentId: 'c-1', name: 'renamed' }],
+      });
+      expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff).toEqual({
+        'c-1': { component: { name: 'renamed' } },
+      });
+    });
+
+    it('rejects mixing definition with name/parent in one entry', async () => {
+      const client = createClient(auth, config);
+      await expect(
+        client.updateComponents({
+          appId: 'app1',
+          versionId: 'ver1',
+          pageId: 'page-home',
+          updates: [{ componentId: 'c-1', name: 'x', definition: { styles: { textSize: { value: 20 } } } }],
+        })
+      ).rejects.toThrow(/set EITHER definition .* OR name\/parent/);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteComponents', () => {
+    it('DELETEs with diff as a bare array of ids', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      const r = await client.deleteComponents({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        componentIds: ['c-1', 'c-2'],
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/components');
+      expect(init.method).toBe('DELETE');
+      expect(JSON.parse(init.body)).toEqual({
+        is_user_switched_version: false,
+        pageId: 'page-home',
+        diff: ['c-1', 'c-2'],
+      });
+      expect(r).toEqual({ deleted: 2 });
+    });
+  });
+
+  describe('updateLayouts', () => {
+    it('PUTs to /components/layout with only the provided resolutions', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateLayouts({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-home',
+        layouts: [{ componentId: 'c-1', desktop: { top: 8, left: 5, width: 15, height: 6 } }],
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/components/layout');
+      expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body).diff).toEqual({
+        'c-1': { layouts: { desktop: { top: 8, left: 5, width: 15, height: 6 } } },
+      });
+    });
+  });
+
+  describe('updateQuery / deleteQuery', () => {
+    it('PATCHes name+options (options replace wholesale)', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateQuery({ queryId: 'q1', versionId: 'ver1', name: 'q', options: { a: 1 } });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/data-queries/q1/versions/ver1');
+      expect(init.method).toBe('PATCH');
+      expect(JSON.parse(init.body)).toEqual({ options: { a: 1 }, name: 'q' });
+    });
+
+    it('DELETEs a query with no body', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.deleteQuery({ queryId: 'q1', versionId: 'ver1' });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/data-queries/q1/versions/ver1');
+      expect(init.method).toBe('DELETE');
+    });
+  });
+
+  describe('runQuery', () => {
+    it('resolves the dev env, POSTs to /run/:env with empty options, returns the result', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { environments: [{ id: 'env-dev', name: 'development' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { status: 'ok', data: [{ id: 1 }] } }));
+      const client = createClient(auth, config);
+      const r = await client.runQuery({ queryId: 'q1', versionId: 'ver1' });
+      const [path, init] = auth.authedFetch.mock.calls[1];
+      expect(path).toBe('/api/data-queries/q1/versions/ver1/run/env-dev');
+      expect(init.method).toBe('POST');
+      expect(JSON.parse(init.body)).toEqual({ resolvedOptions: {}, options: {} });
+      expect(r).toEqual({ status: 'ok', data: [{ id: 1 }] });
+    });
+  });
+
+  describe('events: list / update / delete', () => {
+    it('lists events filtered by sourceId and projects fields', async () => {
+      auth.authedFetch.mockResolvedValueOnce(
+        mockResponse({
+          status: 200,
+          json: [
+            { id: 'e1', name: 'n', index: 0, event: { actionId: 'run-query' }, sourceId: 'c-1', target: 'component', appVersionId: 'ver1' },
+          ],
+        })
+      );
+      const client = createClient(auth, config);
+      const evs = await client.listEvents({ appId: 'app1', versionId: 'ver1', sourceId: 'c-1' });
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/v2/apps/app1/versions/ver1/events?sourceId=c-1');
+      expect(evs).toEqual([
+        { id: 'e1', name: 'n', index: 0, event: { actionId: 'run-query' }, sourceId: 'c-1', target: 'component' },
+      ]);
+    });
+
+    it('PUT update sends {event_id, diff:{name,event}} + updateType', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: [] }));
+      const client = createClient(auth, config);
+      await client.updateEvents({
+        appId: 'app1',
+        versionId: 'ver1',
+        events: [{ eventId: 'e1', name: 'n', event: { actionId: 'show-alert', message: 'hi' } }],
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/events');
+      expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body)).toEqual({
+        updateType: 'update',
+        events: [{ event_id: 'e1', diff: { name: 'n', event: { actionId: 'show-alert', message: 'hi' } } }],
+      });
+    });
+
+    it('DELETEs one event by id', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.deleteEvent({ appId: 'app1', versionId: 'ver1', eventId: 'e1' });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/events/e1');
+      expect(init.method).toBe('DELETE');
+    });
+  });
 });

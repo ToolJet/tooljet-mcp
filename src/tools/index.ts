@@ -16,7 +16,16 @@ import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
 import { addComponentsTool } from './addComponents.js';
+import { updateComponentsTool } from './updateComponents.js';
+import { deleteComponentsTool } from './deleteComponents.js';
+import { updateLayoutTool } from './updateLayout.js';
 import { addEventsTool } from './addEvents.js';
+import { updateQueryTool } from './updateQuery.js';
+import { deleteQueryTool } from './deleteQuery.js';
+import { runQueryTool } from './runQuery.js';
+import { listEventsTool } from './listEvents.js';
+import { updateEventsTool } from './updateEvents.js';
+import { deleteEventTool } from './deleteEvent.js';
 
 export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
@@ -33,9 +42,18 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     addPageTool(client),
     addQueryTool(client),
     addQueriesTool(client),
+    updateQueryTool(client),
+    deleteQueryTool(client),
+    runQueryTool(client),
     addComponentTool(client),
     addComponentsTool(client),
+    updateComponentsTool(client),
+    deleteComponentsTool(client),
+    updateLayoutTool(client),
     addEventsTool(client),
+    listEventsTool(client),
+    updateEventsTool(client),
+    deleteEventTool(client),
   ];
 
   for (const tool of tools) {

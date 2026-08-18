@@ -209,6 +209,79 @@ export interface ToolJetClient {
   createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]>;
   createComponent(params: CreateComponentParams): Promise<CreateComponentResult>;
   createComponents(params: CreateComponentsParams): Promise<Array<CreateComponentResult & { name: string }>>;
+  updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }>;
+  deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }>;
+  updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }>;
+  updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
+  deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }>;
+  runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
+  listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
+  updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
+  deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
+}
+
+/** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
+ *  deep-merged; array values like Table columns / DropdownV2 options are REPLACED) OR name/parent — not
+ *  both in one entry (ToolJet applies only one path). */
+export interface UpdateComponentSpec {
+  componentId: string;
+  definition?: {
+    properties?: Record<string, unknown>;
+    styles?: Record<string, unknown>;
+    validation?: Record<string, unknown>;
+    general?: Record<string, unknown>;
+    general_styles?: Record<string, unknown>;
+    others?: Record<string, unknown>;
+  };
+  name?: string;
+  parent?: string;
+}
+export interface UpdateComponentsParams {
+  appId: string;
+  versionId: string;
+  pageId: string;
+  updates: UpdateComponentSpec[];
+}
+export interface DeleteComponentsParams {
+  appId: string;
+  versionId: string;
+  pageId: string;
+  componentIds: string[];
+}
+export interface UpdateLayoutsParams {
+  appId: string;
+  versionId: string;
+  pageId: string;
+  layouts: Array<{ componentId: string; desktop?: ComponentLayout; mobile?: ComponentLayout; parent?: string }>;
+}
+export interface UpdateQueryParams {
+  queryId: string;
+  versionId: string;
+  /** REPLACES the stored options wholesale — send the full options object, not a partial. */
+  options: Record<string, unknown>;
+  name?: string;
+}
+/** Run/preview result — `status` is 'ok' or 'failed' (HTTP is 200 either way); rows under `data`. */
+export interface RunQueryResult {
+  status: string;
+  data?: unknown;
+  message?: string;
+  [k: string]: unknown;
+}
+export interface EventSummary {
+  id: string;
+  name?: string;
+  index?: number;
+  event?: unknown;
+  sourceId?: string;
+  target?: string;
+}
+export interface UpdateEventsParams {
+  appId: string;
+  versionId: string;
+  /** For 'update': name + event required (name becomes null if omitted). For 'reorder': index used. */
+  events: Array<{ eventId: string; name?: string; event?: Record<string, unknown>; index?: number }>;
+  updateType?: 'update' | 'reorder';
 }
 
 async function assertOk(res: Response, method: string): Promise<void> {
@@ -617,6 +690,195 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { component_id: r.component_id };
   }
 
+  // Update = PUT /components. The diff value is wrapped in `component` (NOT the flat create shape) and
+  // partial: send only changed leaves under `definition`. Server deep-merges, except arrays (Table
+  // columns / dropdown options) which it REPLACES. Renames/reparents go as raw column changes with no
+  // `definition` key. pageId is required by the DTO even though the update handler ignores it.
+  async function updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }> {
+    const diff: Record<string, unknown> = {};
+    for (const u of params.updates) {
+      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasRaw = u.name !== undefined || u.parent !== undefined;
+      if (hasDef && hasRaw) {
+        throw new Error(
+          `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent ` +
+            `in one entry — ToolJet applies only one path. Split into two update calls.`
+        );
+      }
+      if (hasDef) {
+        diff[u.componentId] = { component: { definition: u.definition } };
+      } else {
+        diff[u.componentId] = {
+          component: {
+            ...(u.name !== undefined ? { name: u.name } : {}),
+            ...(u.parent !== undefined ? { parent: u.parent } : {}),
+          },
+        };
+      }
+    }
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/components`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff }),
+      }
+    );
+    await assertOk(res, 'updateComponents');
+    return { updated: params.updates.length };
+  }
+
+  // Delete = DELETE /components with a JSON body whose `diff` is a bare array of component ids.
+  async function deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }> {
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/components`,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_user_switched_version: false,
+          pageId: params.pageId,
+          diff: params.componentIds,
+        }),
+      }
+    );
+    await assertOk(res, 'deleteComponents');
+    return { deleted: params.componentIds.length };
+  }
+
+  // Move/resize = PUT /components/layout; diff keyed by id → { layouts:{desktop?,mobile?}, component?:{parent} }.
+  async function updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }> {
+    const diff: Record<string, unknown> = {};
+    for (const l of params.layouts) {
+      const entry: Record<string, unknown> = {
+        layouts: {
+          ...(l.desktop ? { desktop: l.desktop } : {}),
+          ...(l.mobile ? { mobile: l.mobile } : {}),
+        },
+      };
+      if (l.parent !== undefined) entry.component = { parent: l.parent };
+      diff[l.componentId] = entry;
+    }
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/components/layout`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff }),
+      }
+    );
+    await assertOk(res, 'updateLayouts');
+    return { updated: params.layouts.length };
+  }
+
+  // Update query = PATCH /:id/versions/:versionId. `options` REPLACES the stored options wholesale.
+  async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
+    const body: Record<string, unknown> = { options: params.options };
+    if (params.name !== undefined) body.name = params.name;
+    const res = await auth.authedFetch(
+      `/api/data-queries/${params.queryId}/versions/${params.versionId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+    await assertOk(res, 'updateQuery');
+    return { query_id: params.queryId };
+  }
+
+  async function deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/data-queries/${params.queryId}/versions/${params.versionId}`,
+      { method: 'DELETE' }
+    );
+    await assertOk(res, 'deleteQuery');
+    return { deleted: true };
+  }
+
+  // Run a SAVED query and return its result — the browser-free way to see real rows. Executes the query
+  // as stored in the DB; `options:{}` avoids persisting anything back. Response { status:'ok', data:[…] }
+  // on success, { status:'failed', message } on error — HTTP is 200 either way, so callers inspect status.
+  async function runQuery(params: {
+    queryId: string;
+    versionId: string;
+    environmentId?: string;
+  }): Promise<RunQueryResult> {
+    const envId = params.environmentId ?? (await getDevelopmentEnvironmentId());
+    const res = await auth.authedFetch(
+      `/api/data-queries/${params.queryId}/versions/${params.versionId}/run/${envId}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolvedOptions: {}, options: {} }),
+      }
+    );
+    await assertOk(res, 'runQuery');
+    return (await res.json()) as RunQueryResult;
+  }
+
+  async function listEvents(params: {
+    appId: string;
+    versionId: string;
+    sourceId?: string;
+  }): Promise<EventSummary[]> {
+    const qs = params.sourceId ? `?sourceId=${encodeURIComponent(params.sourceId)}` : '';
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/events${qs}`
+    );
+    await assertOk(res, 'listEvents');
+    const body = (await res.json()) as any[];
+    return (Array.isArray(body) ? body : []).map((e) => ({
+      id: e.id,
+      name: e.name,
+      index: e.index,
+      event: e.event,
+      sourceId: e.sourceId,
+      target: e.target,
+    }));
+  }
+
+  // Update = PUT /events, body { events:[{event_id, diff}], updateType }. For 'update' the server reads
+  // diff.name + diff.event (name becomes null if omitted); for 'reorder' it reads diff.index.
+  async function updateEvents(params: UpdateEventsParams): Promise<{ updated: number }> {
+    const updateType = params.updateType ?? 'update';
+    const events = params.events.map((e) =>
+      updateType === 'reorder'
+        ? { event_id: e.eventId, diff: { index: e.index } }
+        : {
+            event_id: e.eventId,
+            diff: {
+              name: e.name,
+              event: e.event,
+              ...(e.index !== undefined ? { index: e.index } : {}),
+            },
+          }
+    );
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/events`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events, updateType }),
+      }
+    );
+    await assertOk(res, 'updateEvents');
+    return { updated: params.events.length };
+  }
+
+  async function deleteEvent(params: {
+    appId: string;
+    versionId: string;
+    eventId: string;
+  }): Promise<{ deleted: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/events/${params.eventId}`,
+      { method: 'DELETE' }
+    );
+    await assertOk(res, 'deleteEvent');
+    return { deleted: true };
+  }
+
   return {
     createApp,
     getApp,
@@ -634,5 +896,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createQueries,
     createComponent,
     createComponents,
+    updateComponents,
+    deleteComponents,
+    updateLayouts,
+    updateQuery,
+    deleteQuery,
+    runQuery,
+    listEvents,
+    updateEvents,
+    deleteEvent,
   };
 }
