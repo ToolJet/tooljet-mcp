@@ -6,16 +6,19 @@ import { getComponentCatalogTool } from '../src/tools/getComponentCatalog.js';
 import { getAppTool } from '../src/tools/getApp.js';
 import { addQueryTool } from '../src/tools/addQuery.js';
 import { addComponentTool } from '../src/tools/addComponent.js';
+import { validateAppTool } from '../src/tools/validateApp.js';
 import { getCatalog } from '../src/catalog.js';
 
 function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } {
   return {
     createApp: vi.fn(),
     getApp: vi.fn(),
+    getAppSummary: vi.fn(),
     getDevelopmentEnvironmentId: vi.fn(),
     listDatasources: vi.fn(),
     createQuery: vi.fn(),
     createComponent: vi.fn(),
+    createComponents: vi.fn(),
   };
 }
 
@@ -164,7 +167,12 @@ describe('add_component tool', () => {
     client.createComponent.mockResolvedValue(created);
 
     const tool = addComponentTool(client as unknown as ToolJetClient);
-    const properties = { data: { value: '{{queries.getUsers.data}}' } };
+    // lint-clean Table (rawJson + autogenerateColumns) so no warnings are attached
+    const properties = {
+      data: { value: '{{queries.getUsers.data}}' },
+      dataSourceSelector: { value: 'rawJson' },
+      autogenerateColumns: { value: true },
+    };
     const layout = { top: 0, left: 0, width: 10, height: 5 };
     const result = await tool.handler({
       app_id: 'app1',
@@ -183,9 +191,49 @@ describe('add_component tool', () => {
       name: 'usersTable',
       type: 'Table',
       properties,
+      styles: undefined,
+      validation: undefined,
+      others: undefined,
       layout,
+      layouts: undefined,
     });
-    expect(textOf(result)).toEqual(created);
+    expect(textOf(result)).toEqual({ ...created, warnings: [] });
+  });
+
+  it('surfaces lint warnings (and does not block) for a Table bound without rawJson', async () => {
+    const client = makeClient();
+    client.createComponent.mockResolvedValue({ component_id: 'c1' });
+    const tool = addComponentTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      page_id: 'p1',
+      name: 't',
+      type: 'Table',
+      properties: { data: { value: '{{queries.q.data}}' } },
+      layout: { top: 0, left: 0, width: 10, height: 5 },
+    });
+    expect(client.createComponent).toHaveBeenCalled(); // not blocked
+    const out = textOf(result) as { component_id: string; warnings: string[] };
+    expect(out.component_id).toBe('c1');
+    expect(out.warnings.join(' ')).toMatch(/dataSourceSelector is not "rawJson"/);
+  });
+
+  it('BLOCKS (isError) when style keys are under properties', async () => {
+    const client = makeClient();
+    const tool = addComponentTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      page_id: 'p1',
+      name: 'title',
+      type: 'Text',
+      properties: { textColor: { value: '#111' } },
+      layout: { top: 0, left: 0, width: 10, height: 4 },
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/style keys .* are under `properties`/);
+    expect(client.createComponent).not.toHaveBeenCalled();
   });
 
   it('returns isError on client failure', async () => {
@@ -205,5 +253,25 @@ describe('add_component tool', () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Error:');
+  });
+});
+
+describe('validate_app tool', () => {
+  it('fetches the summary and reports structural errors/warnings', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      name: 'App',
+      version_id: 'v1',
+      pages: [{ id: 'p1', name: 'Home', components: [{ id: 'c1', name: 'chart1', type: 'Chart', properties: { title: { value: 'Sales' } } }] }],
+      queries: [],
+      events: [{ id: 'e1', name: 'run', sourceId: 'GONE', target: 'component', event: {} }],
+    });
+    const tool = validateAppTool(client as unknown as ToolJetClient);
+    const out = textOf(await tool.handler({ app_id: 'app1' })) as { ok: boolean; errors: string[]; warnings: string[] };
+    expect(client.getAppSummary).toHaveBeenCalledWith('app1');
+    expect(out.ok).toBe(false); // dangling event source
+    expect(out.errors.join(' ')).toMatch(/no longer exists/);
+    expect(out.warnings.join(' ')).toMatch(/can clip at dashboard sizes/); // chart title lint
   });
 });

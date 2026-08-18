@@ -95,6 +95,33 @@ describe('generated skill — mobile & verification caveats', () => {
   });
 });
 
+describe('generated skill — HTML usage, page icons, validation, efficiency', () => {
+  it('nuances HTML usage (built-in for interactive; HTML for display/custom markup)', () => {
+    expect(skill).toMatch(/HTML where it makes the UI better/i);
+    expect(skill).toMatch(/Presentational \/ display-only/i);
+    expect(skill).toMatch(/Custom markup inside a component'?s own properties/i);
+  });
+
+  it('requires a relevant icon on every page of a multi-page app', () => {
+    expect(skill).toMatch(/give EVERY page a relevant icon/);
+    expect(skill).toContain('IconLayoutDashboard');
+  });
+
+  it('documents validate_app and the non-blocking warnings contract', () => {
+    expect(skill).toMatch(/validate_app\(app_id\)/);
+    expect(skill).toMatch(/array of non-blocking lint hints/);
+  });
+
+  it('tells the agent to report tool-call count and only real token usage', () => {
+    expect(skill).toMatch(/how many MCP tool calls it took/);
+    expect(skill).toMatch(/token usage only if your runtime actually surfaces it/i);
+  });
+
+  it('suggests what to build next when phases are exhausted', () => {
+    expect(skill).toMatch(/grow into next/i);
+  });
+});
+
 describe('generated skill is synchronized with the generator', () => {
   // Guards against the skill being hand-edited out of sync with scripts/generate-skill.mjs:
   // every load-bearing phrase asserted above must also be emitted by the generator source.
@@ -109,6 +136,10 @@ describe('generated skill is synchronized with the generator', () => {
     'too big to do well in one pass',
     '13–15 columns',
     '110–120px',
+    'HTML where it makes the UI better',
+    'give EVERY page a relevant icon',
+    'validate_app(app_id)',
+    'how many MCP tool calls it took',
   ];
   for (const a of anchors) {
     it(`generator emits: "${a}"`, () => {

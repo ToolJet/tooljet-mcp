@@ -11,6 +11,7 @@ import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
+import { validateAppTool } from './validateApp.js';
 import { addPageTool } from './addPage.js';
 import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
@@ -39,6 +40,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     getAppTool(client),
     getAppSummaryTool(client),
     getComponentTool(client),
+    validateAppTool(client),
     addPageTool(client),
     addQueryTool(client),
     addQueriesTool(client),

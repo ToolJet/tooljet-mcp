@@ -144,8 +144,9 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - \`add_query({ version_id, datasource_id, name, options })\` → \`{ query_id, name }\`. Single query.
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
 - \`run_query({ query_id, version_id })\` → \`{ status, data, ... }\`. **Run a saved query and see its REAL rows — no browser.** Use to verify a query works and to read actual values (statuses, categories) before writing chart series / dropdown options / filters. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure.
-- \`add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })\` → \`{ component_id }\`. Single component; \`name\` required. Put styling in \`styles\` (NOT \`properties\`).
-- \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`[{ component_id, name }]\`. **Place ALL of a page's components in one call.**
+- \`add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })\` → \`{ component_id, warnings }\`. Single component; \`name\` required. Put styling in \`styles\` (NOT \`properties\`).
+- \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.**
+- Both return a **\`warnings\`** array of non-blocking lint hints — a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
 - \`add_events({ app_id, version_id, events: [...] })\` → wire interactivity (each event = a trigger on a component + an action). This is how the app DOES things. Create all events in one call. See "Interactivity" below.
 
 **Batch for the build, singular for edits.** When first building an app, create everything with \`add_queries\` + \`add_components\` (far fewer round-trips). Use the singular \`add_query\`/\`add_component\` afterwards for incremental edits (e.g. "add a status filter"). A batch is atomic — if one item is invalid the whole call fails; fix that item and retry.
@@ -157,10 +158,11 @@ Every tool call goes through ToolJet's governed API (your session + permissions)
 - \`delete_components({ app_id, version_id, page_id, component_ids:[...] })\` · \`update_layout({ ..., layouts:[{ component_id, desktop?, mobile? }] })\` (move/resize).
 - \`update_query({ query_id, version_id, options })\` (options REPLACE wholesale) · \`delete_query({ query_id, version_id })\`.
 - \`list_events({ app_id, version_id, source_id? })\` · \`update_events({ ..., events:[{ event_id, name, event }] })\` · \`delete_event({ app_id, version_id, event_id })\`.
+- \`validate_app(app_id)\` → \`{ ok, errors, warnings }\`. Structural check with no browser — dangling event/query references, ambiguous duplicate names, bindings to non-existent queries/components, and per-component render traps. Run it before you call the app done.
 
 **A single wrong value is a one-call fix, not a rebuild.** When something is off, \`get_app_summary\` → \`update_*\`/\`delete_*\` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
 - \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
-- \`add_page({ app_id, version_id, name })\` → \`{ page_id, name }\`. Add a page; pass its \`page_id\` to add_component(s). ToolJet renders cross-page navigation automatically.
+- \`add_page({ app_id, version_id, name, icon })\` → \`{ page_id, name }\`. Add a page; pass its \`page_id\` to add_component(s), and a Tabler \`icon\` (see App model). ToolJet renders cross-page navigation automatically.
 
 ## Before you build — prefer safe defaults; ask only when it changes what you build
 
@@ -175,22 +177,25 @@ Don't reflexively interrogate the user. For a **common read-only dashboard on an
 - **Phase 1 = the small-but-high-impact core, working end-to-end** — not necessarily the *smallest* possible; pick the slice that delivers the **most usefulness for the least build** (the capability the user cares about most). It ships complete: its data (create/seed the table), a styled page, AND its key interactivity, all functioning and presentable. The user gets something genuinely valuable after phase 1.
 - **Each later phase = one more usable capability**, again end-to-end. E.g. for a tickets app: (1) browse tickets — list page that works and looks right → (2) open a ticket — row-click → detail page → (3) create/edit a ticket — form + insert/update + refresh → (4) analytics — a dashboard page with charts/metrics. Each phase is independently useful and reasonably polished.
 
-After each phase, briefly say what now works and what's next, and share the app URL early so the user watches real, usable value appear. **But**: if the user would rather wait for the finished app, honor that and build end-to-end. For a **small/simple** app, skip phasing and build in one pass — don't over-ceremony it.
+After each phase, briefly say what now works and **name the next phase** (what it will add and why), then share the app URL so the user watches real, usable value appear — this makes the next step an easy "yes". **When the planned phases are done, don't just stop:** proactively suggest **2–3 concrete, high-value things the app could grow into next**, grounded in its actual data and domain (e.g. an analytics/trends view, an edit/create flow, bulk actions, CSV export, a related object, role-based views). Give the user an obvious next move rather than leaving them at a dead end. **But**: if the user would rather wait for the finished app, honor that and build end-to-end. For a **small/simple** app, skip phasing and build in one pass — don't over-ceremony it.
 
 ## App model & binding syntax
 
 - app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add more pages with \`add_page\` when the app benefits (e.g. list + detail, or separate dashboard/admin views); ToolJet auto-renders navigation between pages. Don't fragment a simple app across many pages — a single well-laid-out page is often best.
+- **In a multi-page app, give EVERY page a relevant icon** — pass \`add_page\`'s \`icon\` (a Tabler icon name, e.g. \`IconLayoutDashboard\`, \`IconUsers\`, \`IconChartBar\`, \`IconListDetails\`, \`IconSettings\`, \`IconReportAnalytics\`). The icon shows in the auto-generated nav; a page without one falls back to a generic file icon and the nav looks unfinished.
 - A component has **properties**; each property value is \`{ "value": <val> }\`. Values starting with \`{{ … }}\` are **bindings** evaluated at runtime.
 - A query exposes its result as \`queries.<queryName>.data\`. Bind a component property to it, e.g. a Table's \`data.value = "{{queries.<queryName>.data}}"\`.
 
-## Component selection — ALWAYS prefer built-in components over HTML
+## Component selection — built-in for interactive/data surfaces, HTML where it makes the UI better
 
-ToolJet's value is **visually-editable, governed low-code config**. Built-in components can be edited in ToolJet's visual builder by anyone; a raw \`HTML\`/\`Text\` component with hand-written markup **cannot** — it becomes an opaque blob the user can't tweak without code. So:
+ToolJet's value is **visually-editable, governed low-code config**: a built-in component can be edited in the visual builder by anyone. So anything the user will **interact with, bind data to, or edit** should be a built-in — a KPI tile → \`Statistics\`, a chart → \`Chart\`, a data grid → \`Table\`, inputs → \`TextInput\`/\`NumberInput\`/\`DropdownV2\`, forms → \`Form\`, progress → \`CircularProgressbar\`. Don't rebuild those in HTML — you'd throw away the visual editing and governance that are the whole point.
 
-- **Map every piece of your design to a built-in component first.** A KPI/metric tile → \`Statistics\` (not an HTML card). A chart or bar/graph → \`Chart\` (not HTML/SVG). A data grid → \`Table\`. Labels/headings → \`Text\`. Inputs → \`TextInput\`/\`NumberInput\`/\`DropdownV2\`/etc. Forms → \`Form\`. Progress → \`CircularProgressbar\`.
-- Use \`HTML\` (or \`Text\` with HTML) **only as a last resort** — when ToolJet genuinely has no built-in component for what you need. Do not build tiles, charts, tables, or layouts out of HTML when a built-in exists.
-- The full built-in palette (with purposes) is below — check it before reaching for HTML.
-- Once you've picked a component, call \`get_component_catalog(type)\` to get its exact properties (names, types, defaults) and configure it precisely — don't guess property names.
+**But HTML is a first-class tool where it genuinely makes the app better — use it deliberately, not only as a last resort:**
+- **Presentational / display-only content** — a styled hero or banner, a rich info card, a legend, an empty state, a formatted read-only block — where custom markup gives better aesthetics and more flexible layout than stacking built-ins. If the user won't interact with it or need to edit it, HTML is often the cleaner, better-looking choice.
+- **Custom markup inside a component's own properties** — many components take HTML in their content/cell/tooltip properties (a Table column rendered as HTML, a \`Text\` set to HTML, custom cell formatting). Use it to polish the UI in place.
+- **Rule of thumb:** built-in when it's **interactive, data-bound, or meant to be tweaked visually**; HTML when it's **static presentation or fine UI customization** and HTML expresses it more cleanly.
+
+The full built-in palette (with purposes) is below. Once you've picked a component, call \`get_component_catalog(type)\` for its exact properties (and, for \`Chart\`/\`Statistics\`, the \`renderingHints\` sizing defaults) — configure precisely, don't guess property names.
 
 ### Built-in components (use these first)
 
@@ -328,6 +333,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 **Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
 - After creating a data query, call \`run_query(query_id, version_id)\` to confirm it returns rows and to READ real values — statuses, categories, ranges — before you hardcode chart series, dropdown options, or filter values. Don't guess a status is "Open/Closed"; run the query and see.
 - Inspect with \`get_app_summary\` (not \`get_app\`) to confirm bindings/values are what you intended; \`update_*\` anything wrong.
+- Run \`validate_app(app_id)\` — it catches dangling references, ambiguous duplicate names, bindings to non-existent queries/components, and render traps (unbound Table, Chart clipping title, bad headerCasing) with no browser. Fix every \`error\`; review the \`warnings\`.
 
 **Then verify in a browser — at least once, before you call the app done.** Open the **VIEWER** URL (\`.../applications/<appId>/<pageHandle>?env=development&version=v1\`, not the editor canvas — the editor can render components staircased right after API creation and self-corrects on reload, a non-bug). Confirm: the page renders, queries populated real data, there are no console errors, and the key interactions work (row click, filter, submit). Also do a browser check at **genuine risk points while building** — after adding a \`Chart\`, a custom/dense layout, or multi-step interactivity — not just at the very end. **Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
 
@@ -349,6 +355,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - Give each component a \`name\`; bind data by query name: \`{{queries.<name>.data}}\`.
 - Use the grid mechanics above to lay components out without overlap. Design the layout yourself — make it clean and enterprise-grade.
 - Report the \`app_url\` back to the user.
+- **Close the loop with an efficiency note.** After building (and after each phase), tell the user roughly **how many MCP tool calls it took** — you can count your own calls, and fewer round-trips is the goal (batch with \`add_components\`/\`add_queries\`). Include **token usage only if your runtime actually surfaces it** to you; never fabricate a token number you don't have. Keep it to one line.
 `;
 
 writeFileSync(resolve(root, 'skill/SKILL.md'), skill);

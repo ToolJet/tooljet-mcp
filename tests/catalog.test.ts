@@ -25,4 +25,21 @@ describe('catalog', () => {
   it('returns null for an unknown component type', () => {
     expect(getComponentSchema('NotAComponent')).toBeNull();
   });
+
+  it('excludes legacy dropdowns but keeps the V2s', () => {
+    const types = getCatalog().map((c) => c.type);
+    expect(types).not.toContain('DropDown');
+    expect(types).not.toContain('Multiselect');
+    expect(types).toContain('DropdownV2');
+    expect(types).toContain('MultiselectV2');
+  });
+
+  it('serves curated renderingHints for Chart and Statistics', () => {
+    const chart = getComponentSchema('Chart');
+    expect(chart!.renderingHints).toBeTruthy();
+    expect(String(chart!.renderingHints!.recommendedWidthCols)).toMatch(/13.?15/);
+    expect(String(chart!.renderingHints!.note)).toMatch(/title/i);
+    const stat = getComponentSchema('Statistics');
+    expect(String(stat!.renderingHints!.recommendedMinHeightPx)).toMatch(/110.?120/);
+  });
 });

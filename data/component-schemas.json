@@ -1380,7 +1380,12 @@
         "key": "disabledState",
         "label": "Disable"
       }
-    ]
+    ],
+    "renderingHints": {
+      "recommendedWidthCols": "≈13–15 for a compact few-category pie/donut; ≈20–24 for a categorical bar with longer labels",
+      "maxPerContentRow": 2,
+      "note": "Native title clips at common dashboard sizes — set title.value=\"\" and put a separate Text heading above the chart; enable a native title only after visual verification."
+    }
   },
   "Chat": {
     "type": "Chat",
@@ -7324,7 +7329,10 @@
         "key": "padding",
         "label": "Padding"
       }
-    ]
+    ],
+    "renderingHints": {
+      "recommendedMinHeightPx": "≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content"
+    }
   },
   "Steps": {
     "type": "Steps",

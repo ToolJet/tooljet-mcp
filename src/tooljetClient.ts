@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Auth } from './auth.js';
 import type { Config } from './config.js';
+import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
 
 export interface CreateAppResult {
   app_id: string;
@@ -72,23 +73,6 @@ export interface ComponentSpec {
   layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
 }
 
-/** Style-ish keys that ToolJet's renderer reads from `definition.styles`, NOT `properties`.
- *  If any appear under `properties` we reject with an actionable error instead of silently dropping them. */
-const STYLE_KEYS_IN_PROPERTIES = new Set([
-  'styles',
-  'textSize',
-  'fontWeight',
-  'textColor',
-  'backgroundColor',
-  'borderColor',
-  'borderRadius',
-  'boxShadow',
-  'textAlign',
-  'fontVariant',
-  'padding',
-  'accentColor',
-  'iconColor',
-]);
 
 export interface CreateComponentsParams {
   appId: string;
@@ -146,6 +130,8 @@ export interface CreatePageParams {
   appId: string;
   versionId: string;
   name: string;
+  /** Tabler icon name, e.g. "IconLayoutDashboard". Defaults to ToolJet's "IconFile" if omitted. */
+  icon?: string;
 }
 
 export interface CreatePageResult {
@@ -439,7 +425,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: pageId, name: params.name, handle, index }),
+      body: JSON.stringify({
+        id: pageId,
+        name: params.name,
+        handle,
+        index,
+        ...(params.icon ? { icon: params.icon } : {}),
+      }),
     });
     await assertOk(res, 'createPage');
     return { page_id: pageId, name: params.name };

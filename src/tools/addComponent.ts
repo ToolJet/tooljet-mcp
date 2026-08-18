@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
+import { lintComponents } from '../lint.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -53,6 +54,10 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
         mobile?: { top: number; left: number; width: number; height: number };
       };
     }) {
+      const { errors, warnings } = lintComponents([
+        { name: args.name, type: args.type, properties: args.properties, styles: args.styles, layout: args.layout, layouts: args.layouts },
+      ]);
+      if (errors.length) return fail(new Error(errors.join(' ')));
       try {
         const result = await client.createComponent({
           appId: args.app_id,
@@ -67,7 +72,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
           layout: args.layout,
           layouts: args.layouts,
         });
-        return ok(result);
+        return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
       }

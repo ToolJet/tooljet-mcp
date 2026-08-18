@@ -23,6 +23,8 @@ export interface ComponentSchema {
   defaultSize?: { width: number; height: number };
   properties: ComponentProp[];
   styles: Array<{ key: string; label?: string }>;
+  /** Curated sizing/readability hints for components that have them (e.g. Chart, Statistics). */
+  renderingHints?: Record<string, unknown>;
 }
 
 // Resolves to <repo>/data/... whether running from src (tsx) or dist (built).

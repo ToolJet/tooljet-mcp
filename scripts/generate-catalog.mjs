@@ -174,6 +174,23 @@ for (const f of files) {
   };
 }
 
+// Curated rendering hints (not harvestable from the widget defs) — sizing/readability defaults the
+// design guardrails reference, served as DATA via get_component_catalog(type) so the agent reads them
+// rather than relying on prose. Defaults, not hard limits.
+const RENDERING_HINTS = {
+  Chart: {
+    recommendedWidthCols: '≈13–15 for a compact few-category pie/donut; ≈20–24 for a categorical bar with longer labels',
+    maxPerContentRow: 2,
+    note: 'Native title clips at common dashboard sizes — set title.value="" and put a separate Text heading above the chart; enable a native title only after visual verification.',
+  },
+  Statistics: {
+    recommendedMinHeightPx: '≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content',
+  },
+};
+for (const [t, hints] of Object.entries(RENDERING_HINTS)) {
+  if (schemas[t]) schemas[t].renderingHints = hints;
+}
+
 mkdirSync(resolve(root, 'data'), { recursive: true });
 writeFileSync(resolve(root, 'data/component-schemas.json'), JSON.stringify(schemas, null, 2) + '\n');
 const total = Object.keys(schemas).length;
