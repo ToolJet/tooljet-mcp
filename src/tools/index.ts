@@ -7,10 +7,14 @@ import { createAppTool } from './createApp.js';
 import { listDatasourcesTool } from './listDatasources.js';
 import { listTablesTool } from './listTables.js';
 import { createTableTool } from './createTable.js';
+import { addTableColumnTool } from './addTableColumn.js';
+import { dropTableColumnTool } from './dropTableColumn.js';
+import { dropTableTool } from './dropTable.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
+import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
 import { generateFormSchemaTool } from './generateFormSchema.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
@@ -40,9 +44,13 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     listDatasourcesTool(client),
     listTablesTool(client),
     createTableTool(client),
+    addTableColumnTool(client),
+    dropTableColumnTool(client),
+    dropTableTool(client),
     getTableSchemaTool(client),
     insertRowsTool(client),
     getDatasourceQuerySchemaTool(client),
+    inspectDatasourceSchemaTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),
     getAppTool(client),
