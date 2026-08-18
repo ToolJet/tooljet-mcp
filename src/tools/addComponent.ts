@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
+import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -24,7 +25,9 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in the top-level `styles` object, NOT under `properties` — ToolJet silently ignores styles nested ' +
       'in properties (and this tool will reject them). Provide either `layout` (one rectangle applied to ' +
-      'both resolutions) or `layouts:{desktop,mobile}` for per-resolution placement.',
+      'both resolutions) or `layouts:{desktop,mobile}` for per-resolution placement. Kanban automatically ' +
+      'gets its catalog card children; use add_components with client_ref/parent_ref when you need a custom ' +
+      'card body such as wrapped Html.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -54,11 +57,33 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
         mobile?: { top: number; left: number; width: number; height: number };
       };
     }) {
-      const { errors, warnings } = lintComponents([
-        { name: args.name, type: args.type, properties: args.properties, styles: args.styles, layout: args.layout, layouts: args.layouts },
-      ]);
+      const requested = {
+        name: args.name,
+        type: args.type,
+        properties: args.properties,
+        styles: args.styles,
+        validation: args.validation,
+        others: args.others,
+        layout: args.layout,
+        layouts: args.layouts,
+      };
+      const expanded = materializeRequiredDefaultChildren([requested]);
+      const { errors, warnings } = lintComponents(expanded.components);
       if (errors.length) return fail(new Error(errors.join(' ')));
       try {
+        if (expanded.materializedChildren) {
+          const [parent, ...defaultChildren] = await client.createComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            components: expanded.components,
+          });
+          return ok({
+            ...parent,
+            default_children: defaultChildren,
+            warnings: [...expanded.warnings, ...warnings],
+          });
+        }
         const result = await client.createComponent({
           appId: args.app_id,
           versionId: args.version_id,
@@ -72,7 +97,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
           layout: args.layout,
           layouts: args.layouts,
         });
-        return ok({ ...result, warnings });
+        return ok({ ...result, warnings: [...expanded.warnings, ...warnings] });
       } catch (err) {
         return fail(err);
       }

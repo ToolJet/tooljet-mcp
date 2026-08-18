@@ -581,6 +581,45 @@ describe('add_component tool', () => {
     expect(out.warnings.join(' ')).toMatch(/dataSourceSelector is not "rawJson"/);
   });
 
+  it('materializes Kanban default card children and returns their ids', async () => {
+    const client = makeClient();
+    client.createComponents.mockResolvedValue([
+      { component_id: 'board-id', name: 'ticketBoard' },
+      { component_id: 'title-id', name: 'ticketBoardCardTitle' },
+      { component_id: 'description-id', name: 'ticketBoardCardDescription' },
+    ]);
+
+    const result = await addComponentTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      page_id: 'p1',
+      name: 'ticketBoard',
+      type: 'Kanban',
+      properties: { cardData: { value: '{{queries.tickets.data}}' } },
+      layout: { top: 0, left: 0, width: 40, height: 490 },
+    });
+
+    expect(client.createComponent).not.toHaveBeenCalled();
+    expect(client.createComponents).toHaveBeenCalledWith(expect.objectContaining({
+      appId: 'app1',
+      versionId: 'v1',
+      pageId: 'p1',
+      components: expect.arrayContaining([
+        expect.objectContaining({ name: 'ticketBoard', type: 'Kanban' }),
+        expect.objectContaining({ name: 'ticketBoardCardTitle', parentRef: expect.any(String) }),
+        expect.objectContaining({ name: 'ticketBoardCardDescription', parentRef: expect.any(String) }),
+      ]),
+    }));
+    expect(textOf(result)).toMatchObject({
+      component_id: 'board-id',
+      default_children: [
+        { component_id: 'title-id', name: 'ticketBoardCardTitle' },
+        { component_id: 'description-id', name: 'ticketBoardCardDescription' },
+      ],
+      warnings: [expect.stringMatching(/materialized 2 catalog default children/i)],
+    });
+  });
+
   it('BLOCKS (isError) when style keys are under properties', async () => {
     const client = makeClient();
     const tool = addComponentTool(client as unknown as ToolJetClient);

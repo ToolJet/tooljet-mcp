@@ -36,6 +36,17 @@ export interface ExposedVariable {
   default?: unknown;
 }
 
+export interface ComponentDefaultChild {
+  componentName: string;
+  slotName?: string;
+  layout?: { top?: number; left?: number; width?: number; height?: number };
+  properties?: string[];
+  styles?: string[];
+  defaultValue?: Record<string, unknown>;
+  accessorKey?: string;
+  incrementWidth?: number;
+}
+
 export interface ComponentSchema {
   type: string;
   name?: string;
@@ -50,7 +61,7 @@ export interface ComponentSchema {
   /** Values readable as components.<name>.<variable> at runtime. */
   exposedVariables?: ExposedVariable[];
   /** Built-in semantic children supplied by ToolJet (containers/forms only). */
-  defaultChildren?: unknown[];
+  defaultChildren?: ComponentDefaultChild[];
   /** Curated sizing/readability hints for components that have them (e.g. Chart, Statistics). */
   renderingHints?: Record<string, unknown>;
   /** Source-verified nested authoring contracts not represented by the flat property schema. */

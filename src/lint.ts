@@ -586,6 +586,15 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     for (const [name, n] of counts) {
       if (n > 1) warnings.push(`Page "${p.name}": ${n} components named "${name}" — {{components.${name}}} is ambiguous.`);
     }
+    for (const kanban of p.components.filter((component) => component.type === 'Kanban')) {
+      if (!p.components.some((component) => component.parent === kanban.id)) {
+        warnings.push(
+          `Kanban "${kanban.name ?? kanban.id}" has no nested card child components, so cards can render with ` +
+            `correct columns/counts but blank bodies. Recreate it through add_component(s), or add an Html/Text ` +
+            `child parented to this Kanban.`
+        );
+      }
+    }
   }
   // Duplicate query names (ambiguous {{queries.X}}).
   {

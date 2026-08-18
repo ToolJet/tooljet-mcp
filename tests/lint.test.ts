@@ -553,6 +553,33 @@ describe('validateAppStructure', () => {
     expect(validateAppStructure(bad).warnings.join(' ')).toMatch(/2 components named "dup"/);
   });
 
+  it('warns when a persisted Kanban has no nested card body', () => {
+    const blank = validateAppStructure({
+      ...base,
+      pages: [{
+        id: 'p1',
+        name: 'Home',
+        components: [{ id: 'board', name: 'ticketBoard', type: 'Kanban', properties: {} }],
+      }],
+      events: [],
+    });
+    expect(blank.warnings.join(' ')).toMatch(/Kanban "ticketBoard" has no nested card child components.*blank bodies/i);
+
+    const populated = validateAppStructure({
+      ...base,
+      pages: [{
+        id: 'p1',
+        name: 'Home',
+        components: [
+          { id: 'board', name: 'ticketBoard', type: 'Kanban', properties: {} },
+          { id: 'card', name: 'ticketCard', type: 'Html', parent: 'board', properties: {} },
+        ],
+      }],
+      events: [],
+    });
+    expect(populated.warnings.join(' ')).not.toMatch(/no nested card child components/i);
+  });
+
   it('allows the Home fallback icon but warns when an added sidebar page has no icon', () => {
     const app: AppSummary = {
       ...base,

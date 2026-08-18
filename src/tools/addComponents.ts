@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
+import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -42,7 +43,9 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
       'for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children ' +
       'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
-      'coordinates are relative to that parent.',
+      'coordinates are relative to that parent. A Kanban with no explicit child automatically gets its ' +
+      'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
+      'those defaults (use Html for wrapped multi-line card content).',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -70,11 +73,13 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         parent?: string;
       }>;
     }) {
-      const components = args.components.map(({ client_ref, parent_ref, ...component }) => ({
+      const requested = args.components.map(({ client_ref, parent_ref, ...component }) => ({
         ...component,
         clientRef: client_ref,
         parentRef: parent_ref,
       }));
+      const expanded = materializeRequiredDefaultChildren(requested);
+      const components = expanded.components;
       const { errors, warnings } = lintComponents(components);
       if (errors.length) return fail(new Error(errors.join(' ')));
       try {
@@ -84,7 +89,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
           pageId: args.page_id,
           components,
         });
-        return ok({ components: result, warnings });
+        return ok({ components: result, warnings: [...expanded.warnings, ...warnings] });
       } catch (err) {
         return fail(err);
       }
