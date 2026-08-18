@@ -180,8 +180,25 @@ describe('get_component_catalog tool', () => {
     const body = textOf(result) as any;
     expect(body.authoringHints.rowActionButtons.columnExample.columnType).toBe('button');
     expect(body.authoringHints.rowActionButtons.eventExample.ref).toBe('actions::view-action');
+    expect(body.authoringHints.hiddenDataColumns.columnExample).toMatchObject({
+      key: 'id',
+      columnVisibility: false,
+    });
     expect(body).not.toHaveProperty('properties');
     expect(body).not.toHaveProperty('actions');
+  });
+
+  it('returns the Kanban card-child and wrapping contract on demand', async () => {
+    const client = makeClient();
+    const result = await getComponentCatalogTool(client as unknown as ToolJetClient).handler({
+      type: 'Kanban',
+      sections: ['authoringHints'],
+    });
+
+    const body = textOf(result) as any;
+    expect(body.authoringHints.cardContent.wrappedText.recommendedComponent).toBe('Html');
+    expect(body.authoringHints.cardContent.renderingRule).toMatch(/blank card bodies/i);
+    expect(body.authoringHints.cardContent.mcpDefaultRule).toMatch(/materializes.*default card children/i);
   });
 });
 

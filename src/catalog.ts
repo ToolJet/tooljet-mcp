@@ -60,7 +60,7 @@ export interface ComponentSchema {
   actions?: ComponentAction[];
   /** Values readable as components.<name>.<variable> at runtime. */
   exposedVariables?: ExposedVariable[];
-  /** Built-in semantic children supplied by ToolJet (containers/forms only). */
+  /** Built-in semantic child templates supplied by ToolJet. */
   defaultChildren?: ComponentDefaultChild[];
   /** Curated sizing/readability hints for components that have them (e.g. Chart, Statistics). */
   renderingHints?: Record<string, unknown>;
