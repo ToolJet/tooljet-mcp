@@ -7,7 +7,7 @@ export function generateFormSchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'generate_form_schema',
     description:
-      'Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table, with ordered includes, field_overrides, field metadata, and recommended Form/modal heights. Boolean-string defaults are normalized, empty dates stay blank, long-text/email fields get safer inferred types, and unsafe Form filepicker overrides are rejected.',
+      'Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table only when every selected field maps to textinput, number, emailinput, password, datepicker, or checkbox. Mixed schemas needing dropdown, multiselect, textarea, radio, toggle, starrating, or filepicker are rejected with the standalone-component workaround because FormUtils cannot render them with clean, controllable alignment.',
     inputSchema: {
       table_name: z.string(),
       mode: z.enum(['create', 'edit']).default('create'),

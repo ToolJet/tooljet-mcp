@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getCatalog, getComponentSchema } from '../src/catalog.js';
+import { FORM_SCHEMA_FIELD_TYPES, SAFE_GENERATED_FORM_FIELD_TYPES } from '../src/formFieldTypes.js';
 
 describe('catalog', () => {
   it('palette lists the built-in components incl. Table and Statistics', () => {
@@ -108,5 +109,24 @@ describe('catalog', () => {
       expect.arrayContaining(['value', 'selectedOption', 'options'])
     );
     expect((dropdown.authoringHints?.optionModes as any).rule).toMatch(/schema only when advanced=true/i);
+  });
+
+  it('serves the authoritative generated-Form field contract and FilePicker workaround', () => {
+    const form = getComponentSchema('Form')!;
+    const hints = form.authoringHints!.jsonSchemaFields as any;
+    expect(hints.supportedTypes).toEqual(FORM_SCHEMA_FIELD_TYPES);
+    expect(hints.safeGeneratedTypes).toEqual(SAFE_GENERATED_FORM_FIELD_TYPES);
+    expect(hints.decisionRule).toMatch(/only when every field.*safeGeneratedTypes.*entire form.*standalone/i);
+    expect(hints.selectContract).toMatch(/values.*displayValues.*not options/i);
+    expect(hints.validationContract).toMatch(/no required flag.*minLength.*customRule/i);
+    expect(hints.unsafeTypes.filepicker).toMatch(/crashes the entire Form.*standalone FilePicker/i);
+    expect(hints.emptyDateValue).toBe('{{null}}');
+    expect(hints.hardLayoutLimit).toMatch(/does not pass alignment.*TextArea.*literal "Label".*single-line/i);
+    expect(hints.standaloneReplacement).toMatchObject({
+      alignment: { path: 'styles.alignment.value', value: 'top' },
+      requiredValidationPath: 'validation.mandatory',
+      valuePath: 'components.<field>.value',
+      fileValuePath: 'components.<picker>.file[0]',
+    });
   });
 });

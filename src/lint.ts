@@ -3,7 +3,10 @@
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
 import { getComponentSchema } from './catalog.js';
-import { FORM_SCHEMA_FIELD_TYPE_SET } from './formFieldTypes.js';
+import {
+  FORM_SCHEMA_FIELD_TYPE_SET,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET,
+} from './formFieldTypes.js';
 
 export interface LintResult {
   errors: string[];
@@ -332,7 +335,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
     const fields = recordValue(recordValue(schemaValue)?.properties);
     if (mode === 'jsonSchema' && fields) {
-      const labelRiskTypes = new Set<string>();
+      const standaloneRequiredFields: string[] = [];
       for (const [fieldName, rawField] of Object.entries(fields)) {
         const field = recordValue(rawField);
         if (!field) continue;
@@ -367,9 +370,10 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
               `Form "${label}" field "${fieldName}": ${type} should define both "values" and "displayValues".`
             );
           }
-          labelRiskTypes.add(type);
         }
-        if (type === 'textarea') labelRiskTypes.add(type);
+        if (type !== 'filepicker' && !SAFE_GENERATED_FORM_FIELD_TYPE_SET.has(type)) {
+          standaloneRequiredFields.push(`${fieldName} (${type})`);
+        }
         const validation = recordValue(field.validation);
         if ('required' in field || validation?.required !== undefined) {
           warnings.push(
@@ -378,10 +382,11 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           );
         }
       }
-      if (labelRiskTypes.size > 0) {
-        warnings.push(
-          `Form "${label}": FormUtils label rendering is inconsistent for ${[...labelRiskTypes].join('/')} fields ` +
-            '(duplicate labels or literal "Label"). Browser-check them and use standalone inputs if needed.'
+      if (standaloneRequiredFields.length > 0) {
+        errors.push(
+          `Form "${label}": generated fields ${standaloneRequiredFields.join(', ')} are not layout-safe. ` +
+            'FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". ' +
+            'Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.'
         );
       }
     }

@@ -256,6 +256,31 @@ describe('add_events tool', () => {
     expect(client.createEvents).toHaveBeenCalled();
   });
 
+  it('warns that generate-file PDF needs pre-formed bytes', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{ id: 'btn1', name: 'download', type: 'Button' }] }],
+      queries: [],
+      events: [],
+    });
+    client.createEvents.mockResolvedValue({ created: 1 });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      events: [{
+        source_id: 'btn1',
+        source_type: 'component',
+        trigger: 'onClick',
+        action: { actionId: 'generate-file', fileType: 'pdf', data: '{{queries.report.data}}' },
+      }],
+    });
+
+    expect(textOf(result)).toMatchObject({ created: 1 });
+    expect((textOf(result) as any).warnings.join(' ')).toMatch(/PDF is a pass-through.*pre-formed PDF bytes/is);
+  });
+
   it('blocks set-table-page when its Table target or pageIndex is missing', async () => {
     const client = makeClient();
     client.getAppSummary.mockResolvedValue({

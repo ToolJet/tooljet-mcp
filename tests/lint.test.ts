@@ -223,6 +223,30 @@ describe('lintComponentSpec', () => {
     expect(lintComponentSpec({ name: 'f', type: 'Form', properties: { generateFormFrom: { value: 'rawJson' } } }).warnings.join(' '))
       .toMatch(/JSONData/);
   });
+
+  it('blocks Form filepicker/aliases/options and generated field types that cannot align cleanly', () => {
+    const result = lintComponentSpec({
+      name: 'incidentForm',
+      type: 'Form',
+      properties: {
+        generateFormFrom: { value: 'jsonSchema' },
+        newJsonSchema: { value: { properties: {
+          evidence: { type: 'filepicker' },
+          reporter: { type: 'email' },
+          status: { type: 'dropdown', options: ['Open'], validation: { required: true } },
+          description: { type: 'textarea' },
+          occurred_on: { type: 'datepicker', value: null },
+        } } },
+      },
+    });
+
+    expect(result.errors.join(' ')).toMatch(/filepicker.*crashes the entire Form.*standalone FilePicker/is);
+    expect(result.errors.join(' ')).toMatch(/unsupported type "email".*aliases such as email\/star\/file/is);
+    expect(result.errors.join(' ')).toMatch(/dropdown uses "values" and "displayValues", not "options"/i);
+    expect(result.warnings.join(' ')).toMatch(/required.*not a supported Form schema validator.*minLength.*customRule/is);
+    expect(result.warnings.join(' ')).toMatch(/01\/01\/2022.*\{\{null\}\}/is);
+    expect(result.errors.join(' ')).toMatch(/generated fields.*status \(dropdown\).*description \(textarea\).*not layout-safe.*standalone components.*alignment.*top/is);
+  });
 });
 
 describe('detectOverlaps', () => {

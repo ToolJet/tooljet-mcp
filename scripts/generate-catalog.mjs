@@ -325,6 +325,13 @@ for (const [t, hints] of Object.entries(RENDERING_HINTS)) {
 // top-level widget property schema. `actions` above means control-component runtime methods; it is
 // not the deprecated Table action-buttons property and not the modern per-row Button-column shape.
 const TABLE_BUTTON_DEFAULTS = readNamedLiteral(tableButtonManager, 'DEFAULT_BUTTON');
+const FORM_SCHEMA_FIELD_TYPES = [
+  'textinput', 'textarea', 'dropdown', 'multiselect', 'number', 'emailinput', 'password',
+  'datepicker', 'checkbox', 'radio', 'toggle', 'starrating', 'filepicker',
+];
+const SAFE_GENERATED_FORM_FIELD_TYPES = [
+  'textinput', 'number', 'emailinput', 'password', 'datepicker', 'checkbox',
+];
 const AUTHORING_HINTS = {
   DropdownV2: {
     optionModes: {
@@ -340,6 +347,33 @@ const AUTHORING_HINTS = {
         dataProperty: 'properties.schema.value',
       },
       preselectionRule: 'The selected option must have visible=true and default=true.',
+    },
+  },
+  Form: {
+    jsonSchemaFields: {
+      supportedTypes: FORM_SCHEMA_FIELD_TYPES,
+      safeGeneratedTypes: SAFE_GENERATED_FORM_FIELD_TYPES,
+      exactTypeRule: 'Use these exact lowercase names; aliases such as email, star, and file are invalid.',
+      decisionRule: 'Use generated Form only when every field is one of safeGeneratedTypes. If any field needs dropdown, multiselect, textarea, radio, toggle, starrating, or filepicker, build the entire form from standalone components.',
+      selectContract: 'dropdown/multiselect use values plus displayValues, not options.',
+      validationContract: 'There is no required flag; use validation.minLength or validation.customRule.',
+      unsafeTypes: {
+        filepicker: 'Currently crashes the entire Form while reading minSize. Use a standalone FilePicker component.',
+      },
+      standaloneFilePickerValue: 'components.<picker>.file is an array of {name, content, dataURL, type, parsedValue}.',
+      emptyDateValue: '{{null}}',
+      standaloneLayout: 'Set styles.alignment.value="top" on every labelled input; use one aligned two-column grid for compact fields and full-width TextArea fields.',
+      hardLayoutLimit: 'FormUtils does not pass alignment through to generated fields. Dropdown/Multiselect labels are misaligned and TextArea retains a literal "Label" and can render as a single-line control.',
+      standaloneReplacement: {
+        batchRule: 'Create the full field set and its modal/container parent in one add_components call using client_ref/parent_ref.',
+        alignment: { path: 'styles.alignment.value', value: 'top' },
+        requiredValidationPath: 'validation.mandatory',
+        valuePath: 'components.<field>.value',
+        fileValuePath: 'components.<picker>.file[0]',
+        compactFieldLayout: 'Use a consistent two-column grid with one shared gutter.',
+        textAreaLayout: 'Use a full-width, multi-line TextArea aligned to the same left/right edges.',
+        conditionalVisibility: 'Bind visibility on each standalone component; do not place corrective fields beside a generated Form.',
+      },
     },
   },
   Table: {

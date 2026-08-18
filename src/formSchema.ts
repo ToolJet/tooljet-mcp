@@ -1,5 +1,8 @@
 import type { SchemaColumn } from './tooljetClient.js';
-import { FORM_SCHEMA_FIELD_TYPE_SET } from './formFieldTypes.js';
+import {
+  FORM_SCHEMA_FIELD_TYPE_SET,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET,
+} from './formFieldTypes.js';
 
 export type FormMode = 'create' | 'edit';
 
@@ -132,6 +135,20 @@ export function generateFormSchema(columns: SchemaColumn[], options: FormSchemaO
     })
   );
 
+  const standaloneFields = Object.entries(fields)
+    .filter(([, field]) => !SAFE_GENERATED_FORM_FIELD_TYPE_SET.has(String(field.type)))
+    .map(([name, field]) => `${name} (${String(field.type)})`);
+  if (standaloneFields.length > 0) {
+    throw new Error(
+      `Generated ToolJet Form is not layout-safe for ${standaloneFields.join(', ')}. ` +
+        'FormUtils does not pass label alignment through to generated fields; Dropdown/Multiselect labels do not align with inputs, ' +
+        'and TextArea retains a literal "Label" and can render as a single-line control. ' +
+        'Build the entire form from standalone components in one add_components call, set styles.alignment.value="top" on every labelled input, ' +
+        'use a consistent two-column grid for compact fields, and make TextArea fields full-width. ' +
+        'Generated Form is approved only for textinput, number, emailinput, password, datepicker, and checkbox fields.'
+    );
+  }
+
   const schema = {
     title: options.title ?? `${options.mode === 'create' ? 'Create' : 'Edit'} ${humanize(options.tableName)}`,
     properties: fields,
@@ -177,10 +194,10 @@ export function generateFormSchema(columns: SchemaColumn[], options: FormSchemaO
     notes: [
       'Pass `properties` directly to add_component(s) for a Form.',
       'ToolJet generated-form schemas do not automatically enforce database NOT NULL/UNIQUE constraints; add supported client validation and keep database constraints authoritative.',
-      'Replace foreign-key fields with dropdown values/displayValues backed by a lookup query when users should select related rows.',
-      'The include array controls output field order. Use field_overrides for explicit textarea/dropdown/enum/label/validation tuning; Form dropdowns use values/displayValues, not options.',
+      'Use this generated Form only when every selected field maps to textinput, number, emailinput, password, datepicker, or checkbox.',
+      'If any field needs Dropdown, Multiselect, TextArea, Radio, Toggle, StarRating, or FilePicker, build the entire form from standalone components with top-aligned labels.',
+      'The include array controls output field order. Use field_overrides only for labels, placeholders, supported validators, and other safe-field tuning.',
       'Never place type:filepicker inside a generated Form; use a standalone FilePicker and read components.<picker>.file.',
-      'FormUtils label rendering differs for TextArea and Dropdown fields; browser-check for a literal "Label" or duplicate labels and use standalone inputs when needed.',
       'When nesting this Form in ModalV2, use layout_guidance instead of guessing the Form/modal height; browser-check that the final field and submit button remain visible at maximum scroll.',
     ],
   };

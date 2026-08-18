@@ -122,6 +122,23 @@ describe('generated skill — modal form layout', () => {
     expect(skill).toMatch(/modalHeight >= lowest child top \+ renderedHeight/i);
   });
 
+  it('documents the generated-vs-standalone Form decision and FilePicker crash workaround', () => {
+    expect(skill).toMatch(/only when \*\*every selected field\*\* maps to.*textinput.*number.*emailinput.*password.*datepicker.*checkbox/is);
+    expect(skill).toMatch(/any field.*dropdown.*multiselect.*textarea.*build the \*\*entire form\*\* from standalone components/is);
+    expect(skill).toMatch(/styles\.alignment\.value="top".*two-column grid.*TextArea fields full-width/is);
+    expect(skill).toMatch(/validation\.mandatory.*required state\/asterisks/is);
+    expect(skill).toMatch(/filepicker.*crashes.*standalone `FilePicker`/is);
+    expect(reference).toMatch(/textinput.*textarea.*emailinput.*starrating.*filepicker/is);
+    expect(reference).toMatch(/values.*displayValues.*not `options`/is);
+    expect(reference).toMatch(/no working `required` flag.*minLength.*customRule/is);
+    expect(reference).toMatch(/passes no schema alignment through.*literal "Label".*whole form from standalone/is);
+  });
+
+  it('documents the real generate-file PDF limitation', () => {
+    expect(skill).toMatch(/PDF branch is pass-through only.*pre-formed PDF bytes/is);
+    expect(reference).toMatch(/does not render text, HTML, or tabular data into a PDF/is);
+  });
+
   it('uses a two-axis DOM overlap check for form and modal verification', () => {
     expect(skill).toMatch(/id=<component_id>/);
     expect(skill).toMatch(/getBoundingClientRect/);
