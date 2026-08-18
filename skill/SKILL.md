@@ -231,7 +231,7 @@ The full **per-component binding rules** and **built-in component palette** are 
 
 The gotchas that most often break a build, inlined so you don't miss them:
 - **Table:** set `data.value = {{queries.<q>.data}}` **and** `dataSourceSelector.value = "rawJson"` (both, or it renders blank). For a curated grid, keep `autogenerateColumns` true for runtime compatibility but project `data` to only the intended explicit column keys. Modern row actions are `columnType:"button"` columns plus `table_column` events; never new legacy `properties.actions`. A Button-column click sets `selectedRow` before its handler, so the event can read the full selected record even when the visible data was projected. Exposed `pageIndex` is 1-based.
-- **DropdownV2:** the selection is `.value` (display text `.selectedOption.label`); `.label` is the field TITLE — never filter data on it. Bound options need `visible:true` + `default:true` to preselect.
+- **DropdownV2:** the selection is `.value` (display text `.selectedOption.label`); `.label` is the field TITLE — never filter data on it. Dynamic `schema` requires `advanced="{{true}}"` or ToolJet silently uses static `options`; never author both modes. Bound options need `visible:true` + `default:true` to preselect.
 - **Styling** goes in the top-level `styles` object, **never** under `properties`.
 - **Chart:** empty native title + a separate `Text` heading; build `data` as a simple explicit `[{x,y}]` and do heavy aggregation in a **query**, not in the chart binding.
 - **Events:** the id is `set-custom-variable` (not `set-variable`); lifecycle sources are component/data_query/page. Mutation refresh/success belongs on `onDataQuerySuccess` and errors on `onDataQueryFailure`.

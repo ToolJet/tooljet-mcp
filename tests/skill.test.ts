@@ -86,6 +86,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(skill).toMatch(/20[–-]24 columns/);
     expect(skill).toMatch(/110[–-]120px/);
   });
+
+  it('keeps the DropdownV2 dynamic-mode prerequisite in the compact skill', () => {
+    expect(skill).toMatch(/Dynamic `schema` requires `advanced="\{\{true\}\}"`/);
+    expect(skill).toMatch(/silently uses static `options`/);
+  });
 });
 
 describe('generated skill — mobile & verification caveats', () => {
