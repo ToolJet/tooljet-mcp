@@ -49,6 +49,42 @@ describe('inspect_datasource_schema tool', () => {
     expect(result.content[0]!.text).toMatch(/Available methods: listColumns, listSchemas, listTables/);
     expect(client.invokeDatasourceMethod).not.toHaveBeenCalled();
   });
+
+  it('batches independent column lookups after validating every method', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'pg1', name: 'Postgres', kind: 'postgresql' }]),
+      invokeDatasourceMethod: vi.fn()
+        .mockResolvedValueOnce({ status: 'ok', data: [{ value: 'id', label: 'id' }] })
+        .mockResolvedValueOnce({ status: 'ok', data: [{ value: 'email', label: 'email' }] }),
+    } as unknown as ToolJetClient;
+    const result = await inspectDatasourceSchemaTool(client).handler({
+      version_id: 'v1', datasource_id: 'pg1',
+      requests: [
+        { method: 'listColumns', schema: 'public', table: 'users' },
+        { method: 'listColumns', schema: 'public', table: 'accounts' },
+      ],
+    });
+    expect(client.invokeDatasourceMethod).toHaveBeenCalledTimes(2);
+    expect(textOf(result).results).toHaveLength(2);
+    expect(textOf(result).results[0]).toMatchObject({ method: 'listColumns', schema: 'public', table: 'users' });
+  });
+
+  it('rejects an invalid batch before invoking any metadata method', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'pg1', name: 'Postgres', kind: 'postgresql' }]),
+      invokeDatasourceMethod: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await inspectDatasourceSchemaTool(client).handler({
+      version_id: 'v1', datasource_id: 'pg1',
+      requests: [
+        { method: 'listTables', schema: 'public' },
+        { method: 'listIndexes', schema: 'public', table: 'users' },
+      ],
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/listIndexes.*Available methods/i);
+    expect(client.invokeDatasourceMethod).not.toHaveBeenCalled();
+  });
 });
 
 describe('ToolJet DB maintenance tools', () => {

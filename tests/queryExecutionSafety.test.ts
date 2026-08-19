@@ -21,6 +21,20 @@ describe('query execution safety', () => {
     expect(star.reason).toMatch(/SELECT \* is refused.*schema.*required columns/i);
   });
 
+  it('recognizes MSSQL TOP and Oracle FETCH FIRST as static bounds', () => {
+    expect(assessQueryRead({
+      id: 'mssql', kind: 'mssql',
+      options: { mode: 'sql', query: 'SELECT TOP (25) [id], [name] FROM [dbo].[users]' },
+    })).toMatchObject({ provenRead: true, directSafe: true, maxRows: 25, requiresCountPreflight: false });
+    expect(assessQueryRead({
+      id: 'oracle', kind: 'oracledb',
+      options: { mode: 'sql', query: 'SELECT "ID", "NAME" FROM "USERS" FETCH FIRST 25 ROWS ONLY' },
+    })).toMatchObject({ provenRead: true, directSafe: true, maxRows: 25, requiresCountPreflight: false });
+    expect(assessQueryRead({
+      id: 'mssql-star', kind: 'mssql', options: { mode: 'sql', query: 'SELECT TOP 25 * FROM [dbo].[users]' },
+    })).toMatchObject({ provenRead: true, directSafe: false, selectStar: true });
+  });
+
   it('requires a count preflight for unbounded or oversized row reads', () => {
     expect(assessQueryRead({
       id: 'unbounded', kind: 'postgresql',

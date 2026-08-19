@@ -66,6 +66,13 @@ describe('generated skill — progressive disclosure', () => {
     expect(toolWorkflows).toMatch(/reads back every requested field.*warnings.*silent-drop|license-gating/is);
   });
 
+  it('documents batched selector discovery and mutation-free SQL discovery specs', () => {
+    expect(toolWorkflows).toMatch(/inspect_datasource_schema.*batch up to 20.*column lookups/is);
+    expect(toolWorkflows).toMatch(/prepare_sql_discovery_queries.*without creating or running.*SELECT \*/is);
+    expect(datasources).toMatch(/selectors commonly stop at column names.*keys.*indexes.*views/is);
+    expect(datasources).toMatch(/explicit columns.*capped at 100 rows.*server-side pagination above 1,000/is);
+  });
+
   it('generates identical canonical and packaged host outputs', () => {
     const canonical = resolve(root, 'skill');
     const packaged = resolve(root, 'skills/tooljet-app-builder');

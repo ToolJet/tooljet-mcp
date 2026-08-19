@@ -43,6 +43,7 @@ describe('buildServer', () => {
         'list_datasources',
         'get_datasource_query_schema',
         'inspect_datasource_schema',
+        'prepare_sql_discovery_queries',
         'add_table_column',
         'drop_table_column',
         'drop_table',

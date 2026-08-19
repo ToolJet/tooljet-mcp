@@ -4,7 +4,7 @@ export const LARGE_READ_ROW_THRESHOLD = 1000;
 
 const SQL_KINDS = new Set([
   'postgresql', 'mysql', 'mariadb', 'mssql', 'sqlserver', 'cockroachdb', 'redshift',
-  'snowflake', 'bigquery', 'clickhouse', 'oracle', 'sqlite',
+  'snowflake', 'bigquery', 'clickhouse', 'oracle', 'oracledb', 'sqlite',
 ]);
 
 const BILLABLE_SCAN_SQL_KINDS = new Set(['bigquery', 'snowflake', 'redshift']);
@@ -96,13 +96,22 @@ function assessSql(sql: string, datasourceKind: string, datasourceId?: string): 
   const fromIndex = compact.search(/\bfrom\b/i);
   const selectClause = compact.slice('select'.length, fromIndex >= 0 ? fromIndex : compact.length).trim();
   const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
-  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(selectClause);
+  const projectionClause = selectClause.replace(/^top\s*(?:\(\s*\d+\s*\)|\d+)\s+/i, '').trim();
+  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(projectionClause);
   const source = sqlSource(compact);
   const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
   const simpleSourceRead = !!source && fromCount === 1 &&
     !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
   const limit = compact.match(/\blimit\s+(\d+)\b/i);
-  const maxRows = limit ? Number(limit[1]) : undefined;
+  const top = selectClause.match(/^top\s*(?:\(\s*(\d+)\s*\)|(\d+))\s+/i);
+  const fetch = compact.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only\b/i);
+  const maxRows = limit
+    ? Number(limit[1])
+    : top
+      ? Number(top[1] ?? top[2])
+      : fetch
+        ? Number(fetch[1])
+        : undefined;
   const billableRead = BILLABLE_SCAN_SQL_KINDS.has(datasourceKind) && fromIndex >= 0;
   const fullSourceCount = countOnly && /^count\s*\(\s*\*\s*\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause) &&
     simpleSourceRead && !/\b(where|group\s+by|having|limit|offset)\b/i.test(compact);
