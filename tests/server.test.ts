@@ -29,6 +29,7 @@ describe('buildServer', () => {
         'add_components',
         'add_query',
         'add_events',
+        'update_pages',
         'list_datasources',
         'get_datasource_query_schema',
         'inspect_datasource_schema',

@@ -31284,6 +31284,9 @@ var TABLE_TOOLBAR_HEIGHT_PX = 56;
 var TABLE_FOOTER_HEIGHT_PX = 56;
 var TABLE_BORDER_PX = 2;
 var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]);
+var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
+var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
+var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
 function propVal(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
@@ -31666,6 +31669,36 @@ function lintListviewChildren(components) {
     if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
       continue;
     warnings.push(`Html "${child.name ?? child.id ?? "Html"}" is repeated inside Listview "${parent.name ?? parent.id ?? "Listview"}" and uses a fixed pixel CSS height. The Listview wrapper's inner canvas can be shorter than the authored component, creating a scrollbar in every item. Use height:100%; box-sizing:border-box on the Html root instead.`);
+  }
+  return warnings;
+}
+function lintOperationalViewport(components) {
+  const topLevel = components.filter((component) => !parentPlacement(component));
+  const surfaces = topLevel.flatMap((component) => {
+    if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? ""))
+      return [];
+    const rect2 = component.layouts?.desktop ?? component.layout;
+    if (!rect2 || (rect2.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX)
+      return [];
+    return [{ component, bottom: (rect2.top ?? 0) + (rect2.height ?? 0) }];
+  });
+  if (!surfaces.length)
+    return [];
+  const warnings = [];
+  for (const button of topLevel.filter((component) => component.type === "Button")) {
+    if (propVal(button.styles, "type") !== "primary")
+      continue;
+    const rect2 = button.layouts?.desktop ?? button.layout;
+    if (!rect2)
+      continue;
+    const buttonTop = rect2.top ?? 0;
+    const buttonBottom = buttonTop + (rect2.height ?? 0);
+    if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX)
+      continue;
+    const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
+    if (!precedingSurface)
+      continue;
+    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px below a bounded ${precedingSurface.component.type} "${precedingSurface.component.name ?? precedingSurface.component.id ?? precedingSurface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
   }
   return warnings;
 }
@@ -32052,7 +32085,8 @@ function lintRenderedGeometry(components) {
     ...detectOverlaps(components),
     ...lintModalChildren(components),
     ...lintTextGeometry(components),
-    ...lintListviewChildren(components)
+    ...lintListviewChildren(components),
+    ...lintOperationalViewport(components)
   ];
 }
 function lintComponents(components) {
