@@ -127,6 +127,12 @@ const componentSection = componentList
     if (name === 'Form') {
       rule += ' For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object. Supported schema field types are textinput, textarea, dropdown, multiselect, number, emailinput, password, datepicker, checkbox, radio, toggle, starrating, and filepicker—but only textinput/number/emailinput/password/datepicker/checkbox are layout-safe in generated Form. If any other type is needed, build the whole form from standalone components. Filepicker also crashes the Form. Dropdown/multiselect fields use values + displayValues, not options. There is no required flag; use validation.minLength or validation.customRule.';
     }
+    if (name === 'DatePickerV2') {
+      rule += ' For an empty/create field, set `defaultValue="{{null}}"`; leaving it untouched renders ToolJet\'s 01/01/2022 demo date.';
+    }
+    if (name === 'KeyValuePair') {
+      rule += ' An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection.';
+    }
     return `### ${name}\n${rule}`;
   })
   .join('\n\n');
@@ -374,6 +380,7 @@ The full **per-component binding rules** and **built-in component palette** are 
 
 The gotchas that most often break a build, inlined so you don't miss them:
 - **Table:** set \`data.value = {{queries.<q>.data}}\` **and** \`dataSourceSelector.value = "rawJson"\` (both, or it renders blank). For a curated grid, keep \`autogenerateColumns\` true for runtime compatibility and project \`data\` to intended visible + behavior keys; declare behavior-only keys with \`columnVisibility:false\`. Modern row actions are \`columnType:"button"\` columns plus \`table_column\` events; never new legacy \`properties.actions\`. A Button-column click sets \`selectedRow\` before its handler. Exposed \`pageIndex\` is 1-based.
+- **KeyValuePair:** an explicit \`fields\` array does not suppress undeclared keys from \`data\`; bind a freshly projected object containing only the intended field keys. Do not pass a full selected row or use an object spread.
 - **Kanban:** card columns/counts can look correct while every card is blank because the body is nested children bound to \`cardData\`. MCP creates catalog defaults when no explicit child is supplied. For multi-line card content, use one explicit \`Html\` child with wrapping CSS and an explicit CSS width/max-width; nested \`Text\` clips to one line, and \`cardWidth\` does not reliably predict the physical column width.
 - **DropdownV2:** the selection is \`.value\` (display text \`.selectedOption.label\`); \`.label\` is the field TITLE — never filter data on it. Dynamic \`schema\` requires \`advanced="{{true}}"\` or ToolJet silently uses static \`options\`; never author both modes. Bound options need \`visible:true\` + \`default:true\` to preselect.
 - **Styling** goes in the top-level \`styles\` object, **never** under \`properties\`.

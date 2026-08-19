@@ -299,6 +299,50 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('warns when KeyValuePair fields bind an unprojected object', () => {
+    const fields = { value: [
+      { name: 'Client', key: 'client' },
+      { name: 'Status', key: 'status' },
+    ] };
+    expect(lintComponentSpec({
+      name: 'facts',
+      type: 'KeyValuePair',
+      properties: { data: { value: '{{variables.selectedWorkOrder}}' }, fields },
+    }).warnings.join(' ')).toMatch(/explicit fields do not suppress undeclared data keys.*Project data to a new object/i);
+
+    expect(lintComponentSpec({
+      name: 'facts',
+      type: 'KeyValuePair',
+      properties: { data: { value: '{{({client:variables.selectedWorkOrder.client,status:variables.selectedWorkOrder.status})}}' }, fields },
+    }).warnings).toEqual([]);
+  });
+
+  it('names undeclared static KeyValuePair data keys', () => {
+    const warnings = lintComponentSpec({
+      name: 'facts',
+      type: 'KeyValuePair',
+      properties: {
+        data: { value: { client: 'Acme', status: 'Open', internal_id: 42 } },
+        fields: { value: [{ name: 'Client', key: 'client' }, { name: 'Status', key: 'status' }] },
+      },
+    }).warnings.join(' ');
+    expect(warnings).toMatch(/Undeclared keys: internal_id/);
+  });
+
+  it('warns on the untouched DatePickerV2 demo date but accepts explicit empty/edit values', () => {
+    expect(lintComponentSpec({ name: 'scheduledOn', type: 'DatePickerV2', properties: {} }).warnings.join(' '))
+      .toMatch(/01\/01\/2022 demo date.*defaultValue.*\{\{null\}\}/i);
+    expect(lintComponentSpec({
+      name: 'scheduledOn', type: 'DatePickerV2', properties: { defaultValue: { value: '01/01/2022' } },
+    }).warnings.join(' ')).toMatch(/01\/01\/2022 demo date/);
+    expect(lintComponentSpec({
+      name: 'scheduledOn', type: 'DatePickerV2', properties: { defaultValue: { value: '{{null}}' } },
+    }).warnings).toEqual([]);
+    expect(lintComponentSpec({
+      name: 'scheduledOn', type: 'DatePickerV2', properties: { defaultValue: { value: '{{components.orders.selectedRow.scheduled_on}}' } },
+    }).warnings).toEqual([]);
+  });
+
   it('does not treat Table identity maps or object spreads as safe projections', () => {
     const warningsFor = (data: string) => lintComponentSpec({
       name: 'requests',
@@ -502,14 +546,29 @@ describe('lintModalChildren', () => {
     expect(warnings).not.toMatch(/native header slot is empty|title-like Text/);
   });
 
-  it('warns for side labels and less than one 20px grid gap inside a modal', () => {
+  it('accepts the compact 10px modal rhythm while still warning for side labels', () => {
     const warnings = lintModalChildren([
       { name: 'modal', type: 'ModalV2', clientRef: 'm', properties: {} },
       { name: 'first', type: 'TextInput', parentRef: 'm', properties: {}, layout: { top: 20, left: 2, width: 18, height: 60 } },
       { name: 'second', type: 'TextInput', parentRef: 'm', properties: {}, layout: { top: 90, left: 2, width: 18, height: 60 } },
     ]);
     expect(warnings.join(' ')).toMatch(/SIDE-aligned label/);
-    expect(warnings.join(' ')).toMatch(/only 10px vertical gap/);
+    expect(warnings.join(' ')).not.toMatch(/vertical gap/);
+  });
+
+  it('warns when rendered modal fields have no vertical gap', () => {
+    const warnings = lintModalChildren([
+      { name: 'modal', type: 'ModalV2', clientRef: 'm', properties: {} },
+      {
+        name: 'first', type: 'TextInput', parentRef: 'm', properties: {},
+        styles: { alignment: { value: 'top' } }, layout: { top: 20, left: 2, width: 18, height: 40 },
+      },
+      {
+        name: 'second', type: 'TextInput', parentRef: 'm', properties: {},
+        styles: { alignment: { value: 'top' } }, layout: { top: 80, left: 2, width: 18, height: 40 },
+      },
+    ]).join(' ');
+    expect(warnings).toMatch(/only 0px vertical gap.*at least 10px/i);
   });
 
   it('warns when modalHeight cannot contain the rendered child bottom plus visible chrome', () => {

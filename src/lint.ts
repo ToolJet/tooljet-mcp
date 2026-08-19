@@ -122,6 +122,14 @@ function explicitlyProjectsTableData(value: unknown): boolean {
   return !value.slice(projectionStart).includes('...');
 }
 
+function explicitlyProjectsObjectData(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const expression = value.trim().replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '').trim();
+  const directObject = /^\(*\s*\{/.test(expression);
+  const returnedObject = /\breturn\s*\{/.test(expression);
+  return (directObject || returnedObject) && !expression.includes('...');
+}
+
 function visibilityExpression(component: LintComponent): string | undefined {
   const value = propVal(component.properties, 'visibility');
   if (typeof value !== 'string') return undefined;
@@ -493,6 +501,43 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
+  if (spec.type === 'DatePickerV2') {
+    const defaultValue = propVal(props, 'defaultValue');
+    const demoDefault = getComponentSchema('DatePickerV2')?.properties.find(
+      (property) => property.key === 'defaultValue'
+    )?.default;
+    if (defaultValue === undefined || JSON.stringify(defaultValue) === JSON.stringify(demoDefault)) {
+      warnings.push(
+        `DatePickerV2 "${label}": the untouched default renders ToolJet's 01/01/2022 demo date. ` +
+          'Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.'
+      );
+    }
+  }
+
+  if (spec.type === 'KeyValuePair') {
+    const data = propVal(props, 'data');
+    const fields = propVal(props, 'fields');
+    if (data !== undefined && Array.isArray(fields) && fields.length > 0) {
+      const declaredKeys = new Set(
+        fields.flatMap((field) => {
+          const key = recordValue(field)?.key;
+          return typeof key === 'string' && key.length > 0 ? [key] : [];
+        })
+      );
+      const staticData = recordValue(data);
+      const undeclaredKeys = staticData
+        ? Object.keys(staticData).filter((key) => !declaredKeys.has(key))
+        : [];
+      if (undeclaredKeys.length > 0 || (!staticData && !explicitlyProjectsObjectData(data))) {
+        warnings.push(
+          `KeyValuePair "${label}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` +
+            (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(', ')}. ` : '') +
+            'Project data to a new object containing only the intended field keys; object spreads are not safe projections.'
+        );
+      }
+    }
+  }
+
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
     const data = propVal(props, 'data');
@@ -782,10 +827,10 @@ export function lintModalChildren(components: LintComponent[]): string[] {
       const bx = br.left ?? 0, bw = br.width ?? 0, by = br.top ?? 0, bh = renderedHeight(b, br);
       if (!(ax < bx + bw && bx < ax + aw)) continue;
       const gap = by >= ay + ah ? by - (ay + ah) : ay >= by + bh ? ay - (by + bh) : -1;
-      if (gap >= 0 && gap < 20) {
+      if (gap >= 0 && gap < 10) {
         warnings.push(
           `Modal fields "${a.name ?? a.type}" and "${b.name ?? b.type}" have only ${gap}px vertical gap — ` +
-            `use at least 20px on ToolJet's 10px vertical grid.`
+            `use at least 10px on ToolJet's vertical grid.`
         );
       }
     }

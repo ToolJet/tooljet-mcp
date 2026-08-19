@@ -75,6 +75,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(reference).toMatch(/selectedRow.*selectedRowId.*before running this handler/s);
   });
 
+  it('documents KeyValuePair projection and an empty DatePickerV2 create value', () => {
+    expect(skill).toMatch(/KeyValuePair.*explicit.*fields.*does not suppress undeclared keys.*project/is);
+    expect(reference).toMatch(/DatePickerV2[\s\S]*defaultValue="\{\{null\}\}".*01\/01\/2022/i);
+  });
+
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {
     expect(skill).toMatch(/explicit, complete `columns` array/i);
     expect(skill).toMatch(/property order of a transformed query object to reorder/i);
