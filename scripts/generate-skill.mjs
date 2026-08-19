@@ -290,7 +290,7 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 - **Custom markup inside a component's own properties** — many components take HTML in their content/cell/tooltip properties (a Table column rendered as HTML, a \`Text\` set to HTML, custom cell formatting). Use it to polish the UI in place.
 - **Rule of thumb:** built-in when it's **interactive, data-bound, or meant to be tweaked visually**; HTML when it's **static presentation or fine UI customization** and HTML expresses it more cleanly.
 
-The full built-in palette (every \`type\` + purpose) is in **\`references/tooljet-reference.md\`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with \`get_component_catalog({ types:[...] })\` (or use \`type\` for one) and request their exact needed sections — including \`renderingHints\` for \`Text\`/\`Chart\`/\`Statistics\`. Configure precisely; don't guess property names.
+The full built-in palette (every \`type\` + purpose) is in **\`references/components.md\`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with \`get_component_catalog({ types:[...] })\` (or use \`type\` for one) and request their exact needed sections — including \`renderingHints\` for \`Text\`/\`Chart\`/\`Statistics\`. Configure precisely; don't guess property names.
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
@@ -394,7 +394,7 @@ Any element backed by a query is **not done** until its states are handled. Thes
 
 ## Reference — look these up as you build
 
-The full **per-component binding rules** and **built-in component palette** are in **\`references/tooljet-reference.md\`**. For live contracts, call selective \`get_component_catalog({ type | types })\` and operation-scoped \`get_datasource_query_schema({ datasource_id, version_id, operation })\`.
+The full **per-component binding rules** and **built-in component palette** are in **\`references/components.md\`**. For live contracts, call selective \`get_component_catalog({ type | types })\` and operation-scoped \`get_datasource_query_schema({ datasource_id, version_id, operation })\`.
 
 The gotchas that most often break a build, inlined so you don't miss them:
 - **Table:** set \`data.value = {{queries.<q>.data}}\` **and** \`dataSourceSelector.value = "rawJson"\` (both, or it renders blank). For a curated grid, keep \`autogenerateColumns\` true for runtime compatibility and project \`data\` to intended visible + behavior keys; declare behavior-only keys with \`columnVisibility:false\`. Modern row actions are \`columnType:"button"\` columns plus \`table_column\` events; never new legacy \`properties.actions\`. A Button-column click sets \`selectedRow\` before its handler. Exposed \`pageIndex\` is 1-based.
@@ -447,7 +447,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 - Inspect with a **scoped** \`get_app_summary\` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; \`update_*\` anything wrong.
 - Run \`validate_app(app_id)\` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every \`error\`; review the \`warnings\`. Its explicit \`not_checked\` list still needs targeted runtime/browser verification.
 
-**Then run one page-level browser QA loop for each completed page/primary flow.** Open or refresh the same **VIEWER** tab (\`.../applications/<appId>/<pageHandle>?env=development&version=v1\`, not the editor canvas). Read \`scripts/browser-audit.js\` from this skill and evaluate its complete IIFE once in that page; it returns bounded component rectangles, real two-axis overlaps, clipped text, blank-widget candidates, nested scroll pairs, dialogs, below-fold buttons, and visible Plotly Charts with zero evaluated traces. Take one screenshot for visual context, exercise the key flow, and **collect every issue before editing** unless a blank/error/blocker prevents further inspection. The audit explicitly does not check console/network failures, hidden conditional states, or mutation correctness—use the browser's relevant facilities for those only when the flow needs them. Group fixes by page/tool, apply the smallest number of batched \`update_components\` / \`update_layout\` / \`update_events\` calls, then do **one confirmation audit + screenshot**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
+**Then run one page-level browser QA loop for each completed page/primary flow.** Open or refresh the same **VIEWER** tab (\`.../applications/<appId>/<pageHandle>?env=development&version=v1\`, not the editor canvas). Read \`scripts/browser-audit.js\` from this skill and evaluate its complete IIFE once in that page; it returns bounded component rectangles, real two-axis overlaps, clipped text, blank-widget candidates, nested scroll pairs, dialogs, below-fold buttons, and visible Plotly Charts with zero evaluated or rendered traces. Take one screenshot for visual context, exercise the key flow, and **collect every issue before editing** unless a blank/error/blocker prevents further inspection. The audit explicitly does not check console/network failures, hidden conditional states, or mutation correctness—use the browser's relevant facilities for those only when the flow needs them. Group fixes by page/tool, apply the smallest number of batched \`update_components\` / \`update_layout\` / \`update_events\` calls, then do **one confirmation audit + screenshot**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
 
 For an **Operate** page, this browser pass must also confirm that its primary action is visible without first scrolling the page and that a bounded Table/Listview does not introduce a second vertical scroll region around the whole page. If both scroll regions are deliberate, report that explicitly; otherwise shorten/reposition the operational surface in one repair batch.
 
@@ -501,7 +501,7 @@ ToolJet plugins are wrappers, so upstream API knowledge can be actively misleadi
 
 ---
 
-**Technical reference:** exact per-component binding rules and the full built-in palette are in \`references/tooljet-reference.md\`. Datasource request contracts and known response shapes/statuses are served on demand by \`get_datasource_query_schema\`.
+**Technical reference:** exact per-component binding rules and the full built-in palette are in \`references/components.md\`. Datasource request contracts and known response shapes/statuses are served on demand by \`get_datasource_query_schema\`.
 `;
 
 // --- Technical reference (the lookup material — kept out of the workflow core so it stays prominent) ---
@@ -675,7 +675,7 @@ The \`Chart\` component fails in a specific, common way: **ToolJet's chart-prope
    \`\`\`
    For a straight mapping, \`queries.q.data.map(r => ({ x: r.category, y: r.amount }))\` is fine — simple and explicit.
 3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind \`data\` to a query that already returns \`[{x,y}]\` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: \`{{queries.chartData.data}}\`. Query engines evaluate JS reliably; the chart property evaluator does not.
-4. **Only use Plotly-JSON mode** (\`plotFromJson: true\` + \`jsonDescription\`) for advanced multi-trace charts. Static descriptions must be valid JSON with a non-empty \`data\` array. For a dynamic description, keep the expression simple, use explicit field names, wrap the object with \`JSON.stringify(...)\`, and confirm the browser audit does not report a visible Chart with zero evaluated traces.
+4. **Only use Plotly-JSON mode** (\`plotFromJson: true\` + \`jsonDescription\`) for advanced multi-trace charts. Static descriptions must be valid JSON with a non-empty \`data\` array. For a dynamic description, keep the expression simple, use explicit field names, wrap the object with \`JSON.stringify(...)\`, and confirm the browser audit does not report a visible Chart with zero evaluated or rendered traces.
 
 Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a \`.map()\` nested inside another \`.map()\` can throw before an \`||\` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.
 `;

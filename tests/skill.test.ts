@@ -239,7 +239,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   it('defaults to simple Charts and requires trace verification for dynamic Plotly JSON', () => {
     expect(guidance).toMatch(/default to simple `type` \+ explicit `data:\[\{x,y\}\]`/i);
     expect(guidance).toMatch(/Static descriptions must be valid JSON with a non-empty `data` array/i);
-    expect(guidance).toMatch(/visible Chart with zero evaluated traces/i);
+    expect(guidance).toMatch(/visible Chart with zero evaluated or rendered traces/i);
   });
 });
 
@@ -565,7 +565,7 @@ describe('generated skill is synchronized with the generator', () => {
     'how many MCP tool calls it took',
     'Seed writes are insert-only',
     'delete_page({ app_id, version_id, page_id, confirm:true })',
-    'visible Plotly Charts with zero evaluated traces',
+    'visible Plotly Charts with zero evaluated or rendered traces',
     'Reuse existing components deliberately',
     'collect every issue before editing',
     'detail:"structure"',

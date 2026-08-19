@@ -116,8 +116,12 @@
   const chartsWithoutData = [...document.querySelectorAll('.js-plotly-plot')]
     .filter(visible)
     .flatMap((plot) => {
-      const plotData = Array.isArray(plot.data) ? plot.data : [];
-      if (plotData.length > 0) return [];
+      const hasEvaluatedTrace = [plot.data, plot._fullData, plot.calcdata]
+        .some((value) => Array.isArray(value) && value.length > 0);
+      // Some ToolJet/Plotly builds do not expose data/_fullData on the DOM node even after a
+      // successful render. A rendered SVG/WebGL trace is authoritative evidence that it is not blank.
+      const hasRenderedTrace = !!plot.querySelector('.trace, .gl-container canvas, canvas.gl-canvas');
+      if (hasEvaluatedTrace || hasRenderedTrace) return [];
       const owner = componentOwner(plot);
       return [{
         component: owner ? label(owner) : undefined,

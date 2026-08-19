@@ -122,7 +122,7 @@ Plan the whole page architecture up front (above). A phase is an *order-of-work*
 
 ## Reference — look these up as you build
 
-The full **per-component binding rules** and **built-in component palette** are in **`references/tooljet-reference.md`**. For live contracts, call selective `get_component_catalog({ type | types })` and operation-scoped `get_datasource_query_schema({ datasource_id, version_id, operation })`.
+The full **per-component binding rules** and **built-in component palette** are in **`references/components.md`**. For live contracts, call selective `get_component_catalog({ type | types })` and operation-scoped `get_datasource_query_schema({ datasource_id, version_id, operation })`.
 
 The gotchas that most often break a build, inlined so you don't miss them:
 - **Table:** set `data.value = {{queries.<q>.data}}` **and** `dataSourceSelector.value = "rawJson"` (both, or it renders blank). For a curated grid, keep `autogenerateColumns` true for runtime compatibility and project `data` to intended visible + behavior keys; declare behavior-only keys with `columnVisibility:false`. Modern row actions are `columnType:"button"` columns plus `table_column` events; never new legacy `properties.actions`. A Button-column click sets `selectedRow` before its handler. Exposed `pageIndex` is 1-based.
@@ -170,4 +170,4 @@ ToolJet plugins are wrappers, so upstream API knowledge can be actively misleadi
 
 ---
 
-**Technical reference:** exact per-component binding rules and the full built-in palette are in `references/tooljet-reference.md`. Datasource request contracts and known response shapes/statuses are served on demand by `get_datasource_query_schema`.
+**Technical reference:** exact per-component binding rules and the full built-in palette are in `references/components.md`. Datasource request contracts and known response shapes/statuses are served on demand by `get_datasource_query_schema`.

@@ -57,14 +57,22 @@ class FixtureElement {
     return false;
   }
 
-  querySelector() {
+  querySelector(selector = '') {
+    if (selector.includes('.trace')) {
+      const pending = [...this.children];
+      while (pending.length) {
+        const child = pending.shift()!;
+        if ((child.getAttribute('class') ?? '').split(/\s+/).includes('trace')) return child;
+        pending.push(...child.children);
+      }
+    }
     return this.children.find((child) =>
       ['INPUT', 'TEXTAREA', 'SELECT', 'IMG', 'SVG', 'CANVAS', 'VIDEO'].includes(child.tagName)
     ) ?? null;
   }
 }
 
-function executeFixture() {
+function executeFixture(renderedChartWithoutDataProperty = false) {
   const uuid = (last: string) => `00000000-0000-4000-8000-${last.padStart(12, '0')}`;
   const componentA = new FixtureElement('div', { top: 10, left: 10, width: 100, height: 100 });
   componentA.id = uuid('1');
@@ -97,7 +105,12 @@ function executeFixture() {
   chartOwner.id = uuid('5');
   chartOwner.innerText = 'Chart';
   const chart = chartOwner.append(new FixtureElement('div', { top: 520, left: 10, width: 300, height: 200 }));
-  chart.data = [];
+  if (renderedChartWithoutDataProperty) {
+    const trace = chart.append(new FixtureElement('g', { top: 540, left: 30, width: 200, height: 120 }));
+    trace.setAttribute('class', 'trace bars');
+  } else {
+    chart.data = [];
+  }
 
   const scrollingElement = new FixtureElement('html', { top: 0, left: 0, width: 1200, height: 800 });
   scrollingElement.clientHeight = 800;
@@ -150,5 +163,11 @@ describe('one-shot browser audit helper', () => {
     expect(result.issues.clippedText[0].text).toBe('A clipped heading');
     expect(result.issues.chartsWithoutData[0].component.id).toBe('00000000-0000-4000-8000-000000000005');
     expect(result.notChecked).toEqual(expect.arrayContaining(['network failures', 'mutation correctness']));
+  });
+
+  it('does not flag a rendered Plotly trace when the DOM node exposes no data property', () => {
+    const result = executeFixture(true);
+    expect(result.counts.chartsWithoutData).toBe(0);
+    expect(result.issues.chartsWithoutData).toEqual([]);
   });
 });
