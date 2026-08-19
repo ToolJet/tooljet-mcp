@@ -32425,7 +32425,7 @@ function validateAppStructure(summary) {
 }
 
 // dist/tableValidation.js
-var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set(["action", "comment"]);
+var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set(["action", "comment", "condition"]);
 function normalized(value) {
   return value.trim().toLowerCase();
 }
@@ -32448,7 +32448,7 @@ function validateTableBatch(tables) {
         columnsByName.set(columnKey, column.name);
       }
       if (TOOLJET_DB_RESERVED_COLUMN_NAMES.has(columnKey)) {
-        errors.push(`Table "${table.tableName}" uses reserved column name "${column.name}". Use a descriptive name such as step_action or result_comment.`);
+        errors.push(`Table "${table.tableName}" uses reserved column name "${column.name}". Use a descriptive name such as step_action, result_comment, or item_condition.`);
       }
     }
     for (const foreignKey of table.foreignKeys ?? []) {
@@ -32523,7 +32523,7 @@ function completedPartialWrites(error51) {
 function assertAllowedToolJetDbColumnNames(operation, columns) {
   const reserved = columns.map((column) => column.name).filter((name) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name.toLowerCase()));
   if (reserved.length) {
-    throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action or result_comment.`);
+    throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
 async function assertOk(res, method) {
@@ -33082,14 +33082,25 @@ function createClient(auth, config2) {
     const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
     if (!table)
       throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
-    const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(rows)
-    });
-    await assertOk(res, "insertRows");
-    const inserted = await res.json().catch(() => void 0);
-    return { processed_rows: Array.isArray(inserted) ? inserted.length : rows.length };
+    let processedRows = 0;
+    for (const [index, row] of rows.entries()) {
+      try {
+        const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(row)
+        });
+        await assertOk(res, "insertRows");
+        processedRows += 1;
+      } catch (error51) {
+        if (!processedRows)
+          throw error51;
+        throw new PartialWriteError("insertRows", [{ processed_rows: processedRows }], [
+          `row ${index + 1}/${rows.length}: ${error51 instanceof Error ? error51.message : String(error51)}`
+        ]);
+      }
+    }
+    return { processed_rows: processedRows };
   }
   async function insertRowsBatch(params) {
     const results = [];
@@ -33098,6 +33109,9 @@ function createClient(auth, config2) {
         const result = await insertRows(table);
         results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
       } catch (error51) {
+        const partialRows = completedPartialWrites(error51).reduce((total, result) => total + result.processed_rows, 0);
+        if (partialRows)
+          results.push({ table_name: table.tableName, processed_rows: partialRows });
         throw new PartialWriteError("insertRowsBatch", results, [
           `${table.tableName}: ${error51 instanceof Error ? error51.message : String(error51)}`
         ]);
@@ -35748,7 +35762,7 @@ function normalizeComponentSpec(component) {
 }
 
 // dist/appSpecLint.js
-function lintPlannedApp(spec) {
+function lintPlannedApp(spec, existingSummary) {
   const errors = [];
   const warnings = [];
   const checked = [];
@@ -35773,9 +35787,24 @@ function lintPlannedApp(spec) {
   }
   const queryRefs = /* @__PURE__ */ new Map();
   const queryIds = /* @__PURE__ */ new Map();
-  const queries = (spec.queries ?? []).map((query, index) => {
+  const existingQueries = existingSummary?.queries ?? [];
+  const existingQueryNames = /* @__PURE__ */ new Set();
+  for (const query of existingQueries) {
+    const target = { id: query.id, name: query.name ?? query.id };
+    queryRefs.set(query.id, target);
+    queryIds.set(query.id, target);
+    if (query.name) {
+      if (existingQueryNames.has(query.name))
+        errors.push(`Existing app has duplicate query name "${query.name}".`);
+      existingQueryNames.add(query.name);
+      queryRefs.set(query.name, target);
+    }
+  }
+  const plannedQueries = (spec.queries ?? []).map((query, index) => {
     const ref = query.clientRef ?? query.name;
     const id = `planned-query:${index}:${ref}`;
+    if (existingQueryNames.has(query.name))
+      errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
     if (!query.kind) {
@@ -35793,16 +35822,42 @@ function lintPlannedApp(spec) {
       options: query.options
     };
   });
-  if (queries.length)
+  const queries = [...existingQueries, ...plannedQueries];
+  if (plannedQueries.length)
     checked.push("datasource query option contracts and duplicate logical query references");
   const pageRefs = /* @__PURE__ */ new Map();
   const componentRefs = /* @__PURE__ */ new Map();
-  const pages = [];
+  const pages = (existingSummary?.pages ?? []).map((page) => ({
+    ...page,
+    components: page.components.map((component) => ({ ...component }))
+  }));
+  const componentNameCounts = /* @__PURE__ */ new Map();
+  for (const page of pages) {
+    bindRef(pageRefs, page.id, { id: page.id, name: page.name ?? page.id });
+    if (page.name)
+      bindRef(pageRefs, page.name, { id: page.id, name: page.name });
+    if (page.handle)
+      bindRef(pageRefs, page.handle, { id: page.id, name: page.name ?? page.handle });
+    for (const component of page.components) {
+      const target = { id: component.id, name: component.name ?? component.id, type: component.type };
+      bindRef(componentRefs, component.id, target);
+      if (component.name)
+        componentNameCounts.set(component.name, (componentNameCounts.get(component.name) ?? 0) + 1);
+    }
+  }
+  for (const page of pages) {
+    for (const component of page.components) {
+      if (component.name && componentNameCounts.get(component.name) === 1) {
+        bindRef(componentRefs, component.name, { id: component.id, name: component.name, type: component.type });
+      }
+    }
+  }
   let componentCount = 0;
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
-    const pageId = `planned-page:${pageIndex}:${pageRef}`;
-    registerRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
+    const existingPage = pages.find((page) => page.name === plannedPage.name || plannedPage.name === "Home" && page.handle === "home");
+    const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
+    bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
     if (!plannedPage.icon.trim())
       errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
     const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component));
@@ -35813,9 +35868,17 @@ function lintPlannedApp(spec) {
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
     const localRefs = /* @__PURE__ */ new Map();
+    for (const component of existingPage?.components ?? []) {
+      if (component.name)
+        localRefs.set(component.name, component.id);
+      localRefs.set(component.id, component.id);
+    }
     const componentEntries = expansion.components.map((component, componentIndex) => {
       const ref = component.clientRef ?? component.name;
       const id = `planned-component:${pageIndex}:${componentIndex}:${ref}`;
+      if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
+        errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
+      }
       if (localRefs.has(ref))
         errors.push(`Page "${plannedPage.name}" has duplicate component ref "${ref}".`);
       else
@@ -35824,37 +35887,45 @@ function lintPlannedApp(spec) {
       componentCount += 1;
       return { component, id };
     });
-    pages.push({
+    const plannedComponents = componentEntries.map(({ component, id }) => {
+      let parent;
+      if (component.parentRef) {
+        parent = localRefs.get(component.parentRef);
+        if (!parent) {
+          errors.push(`Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`);
+        }
+      } else if (component.parent) {
+        warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
+        parent = component.parent;
+      }
+      if (parent)
+        parent = encodeComponentParent(parent, component.slotName);
+      return {
+        id,
+        name: component.name,
+        type: component.type,
+        properties: component.properties,
+        styles: component.styles,
+        others: component.others,
+        layouts: component.layouts ?? (component.layout ? { desktop: component.layout, mobile: component.layout } : void 0),
+        parent,
+        ...component.slotName && component.slotName !== "body" ? { slot_name: component.slotName } : {}
+      };
+    });
+    const pageSummary = existingPage ?? {
       id: pageId,
       name: plannedPage.name,
       handle: plannedPage.name === "Home" ? "home" : slug(plannedPage.name),
       icon: plannedPage.icon,
-      components: componentEntries.map(({ component, id }) => {
-        let parent;
-        if (component.parentRef) {
-          parent = localRefs.get(component.parentRef);
-          if (!parent) {
-            errors.push(`Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`);
-          }
-        } else if (component.parent) {
-          warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
-          parent = component.parent;
-        }
-        if (parent)
-          parent = encodeComponentParent(parent, component.slotName);
-        return {
-          id,
-          name: component.name,
-          type: component.type,
-          properties: component.properties,
-          styles: component.styles,
-          others: component.others,
-          layouts: component.layouts ?? (component.layout ? { desktop: component.layout, mobile: component.layout } : void 0),
-          parent,
-          ...component.slotName && component.slotName !== "body" ? { slot_name: component.slotName } : {}
-        };
-      })
-    });
+      components: []
+    };
+    pageSummary.name = plannedPage.name;
+    pageSummary.icon = plannedPage.icon;
+    if (plannedPage.hidden !== void 0)
+      pageSummary.hidden = plannedPage.hidden;
+    pageSummary.components.push(...plannedComponents);
+    if (!existingPage)
+      pages.push(pageSummary);
   });
   if (pages.length)
     checked.push("page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs");
@@ -35891,7 +35962,7 @@ function lintPlannedApp(spec) {
       }];
     });
     try {
-      const expanded = expandQueryLifecycles({ app_id: "planned-app", pages, queries, events: [] }, lifecycleSpecs);
+      const expanded = expandQueryLifecycles({ app_id: existingSummary?.app_id ?? "planned-app", pages, queries, events: existingSummary?.events ?? [] }, lifecycleSpecs);
       eventSpecs.push(...expanded.events);
       warnings.push(...expanded.warnings);
     } catch (error51) {
@@ -35899,18 +35970,21 @@ function lintPlannedApp(spec) {
     }
   }
   const summary = {
-    app_id: "planned-app",
-    name: "Planned app",
-    version_id: "planned-version",
+    app_id: existingSummary?.app_id ?? "planned-app",
+    name: existingSummary?.name ?? "Planned app",
+    version_id: existingSummary?.version_id ?? "planned-version",
     pages,
     queries,
-    events: eventSpecs.map((event, index) => ({
-      id: `planned-event:${index}`,
-      name: event.name,
-      sourceId: event.sourceId,
-      target: event.sourceType,
-      event: { eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action }
-    }))
+    events: [
+      ...existingSummary?.events ?? [],
+      ...eventSpecs.map((event, index) => ({
+        id: `planned-event:${index}`,
+        name: event.name,
+        sourceId: event.sourceId,
+        target: event.sourceType,
+        event: { eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action }
+      }))
+    ]
   };
   if (eventSpecs.length) {
     checked.push("event/lifecycle sources, triggers, action ids, and logical targets");
@@ -35934,13 +36008,20 @@ function lintPlannedApp(spec) {
     counts: {
       tables: tables.length,
       seed_rows: seedRows,
-      pages: pages.length,
+      pages: spec.pages?.length ?? 0,
       components: componentCount,
-      queries: queries.length,
+      queries: plannedQueries.length,
       events: eventSpecs.length,
       lifecycles: spec.lifecycles?.length ?? 0
     }
   };
+}
+function bindRef(map2, ref, value, type, errors) {
+  const existing = map2.get(ref);
+  if (!existing || existing.id === value.id)
+    map2.set(ref, value);
+  else if (type && errors)
+    errors.push(`Duplicate ${type} client_ref/name "${ref}" in planned app.`);
 }
 function registerRef(map2, ref, value, type, errors) {
   if (map2.has(ref))
@@ -36136,6 +36217,8 @@ var plannedLifecycleSchema = external_exports.object({
   failure_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional()
 });
 var appPlanSchema = external_exports.object({
+  /** Existing app context for repair phases. Lets lint/apply resolve persisted refs safely. */
+  app_id: external_exports.string().optional(),
   version_id: external_exports.string().optional(),
   tables: external_exports.array(plannedTableSchema).max(50).optional(),
   seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
@@ -36183,7 +36266,7 @@ function unique3(values) {
 function lintAppSpecTool(client) {
   return {
     name: "lint_app_spec",
-    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
+    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
     inputSchema: appPlanSchema.shape,
     async handler(args) {
       try {
@@ -36192,7 +36275,13 @@ function lintAppSpecTool(client) {
         }
         const preflightErrors = [];
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
-        const existingTables = needsTables ? await client.listTables() : [];
+        const [existingTables, existingSummary] = await Promise.all([
+          needsTables ? client.listTables() : Promise.resolve([]),
+          args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
+        ]);
+        if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
+          preflightErrors.push(`App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`);
+        }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
@@ -36281,7 +36370,7 @@ function lintAppSpecTool(client) {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions
           }))
-        });
+        }, existingSummary);
         const result = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
@@ -36363,6 +36452,9 @@ function applyAppPhaseTool(client) {
       try {
         const stored = consumeAppPlan(args.plan_token);
         const spec = stored.spec;
+        if (spec.app_id && spec.app_id !== args.app_id) {
+          throw new Error(`Plan app_id "${spec.app_id}" does not match "${args.app_id}".`);
+        }
         if (spec.version_id && spec.version_id !== args.version_id) {
           throw new Error(`Plan version_id "${spec.version_id}" does not match "${args.version_id}".`);
         }
@@ -36421,7 +36513,7 @@ function applyAppPhaseTool(client) {
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables)
           tableIds.set(table.table_name.toLowerCase(), table.table_id);
-        const pageTargets = /* @__PURE__ */ new Map();
+        const pageTargets = persistedTargets(initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] })));
         for (const page of spec.pages ?? []) {
           const ref = logicalRef(page);
           const existing = plannedPageMatches.get(ref);
@@ -36438,7 +36530,7 @@ function applyAppPhaseTool(client) {
           const update = {
             pageId: existing.id,
             ...existing.icon !== page.icon ? { icon: page.icon } : {},
-            ...Boolean(existing.hidden) !== Boolean(page.hidden) ? { hidden: Boolean(page.hidden) } : {}
+            ...page.hidden !== void 0 && Boolean(existing.hidden) !== page.hidden ? { hidden: page.hidden } : {}
           };
           return Object.keys(update).length > 1 ? [update] : [];
         });
@@ -36475,7 +36567,7 @@ function applyAppPhaseTool(client) {
         ];
         if (dataFailures.length)
           throw new Error(dataFailures.join(" | "));
-        const queryTargets = /* @__PURE__ */ new Map();
+        const queryTargets = persistedTargets(initialSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
         (spec.queries ?? []).forEach((query, index) => {
           const created = createdQueries[index];
           if (!created)
@@ -36505,7 +36597,11 @@ function applyAppPhaseTool(client) {
         })));
         const componentResults = componentWrites.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
         const componentFailures = componentWrites.flatMap((result, index) => result.status === "rejected" ? [`page ${preparedPages[index].page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
-        const componentTargets = /* @__PURE__ */ new Map();
+        const componentTargets = persistedTargets(initialSummary.pages.flatMap((page) => page.components).map((component) => ({
+          id: component.id,
+          name: component.name ?? component.id,
+          type: component.type
+        })));
         const warnings = [];
         for (const page of componentResults) {
           applied.components += page.created.length;
@@ -36576,9 +36672,9 @@ function applyAppPhaseTool(client) {
           applied,
           refs: {
             tables: Object.fromEntries([...relevantTableNames].map((name) => [name, tableIds.get(name.toLowerCase())])),
-            pages: Object.fromEntries([...pageTargets].map(([ref, target]) => [ref, target.id])),
-            queries: Object.fromEntries([...queryTargets].map(([ref, target]) => [ref, target.id])),
-            components: Object.fromEntries([...componentTargets].map(([ref, target]) => [ref, target.id]))
+            pages: selectedRefs(pageTargets, (spec.pages ?? []).map(logicalRef)),
+            queries: selectedRefs(queryTargets, (spec.queries ?? []).map(logicalRef)),
+            components: selectedRefs(componentTargets, (spec.pages ?? []).flatMap((page) => (page.components ?? []).map(logicalRef)))
           },
           warnings: [...new Set(warnings)],
           validation
@@ -36588,6 +36684,26 @@ function applyAppPhaseTool(client) {
       }
     }
   };
+}
+function persistedTargets(values) {
+  const targets = /* @__PURE__ */ new Map();
+  const nameCounts = /* @__PURE__ */ new Map();
+  values.forEach((value) => nameCounts.set(value.name, (nameCounts.get(value.name) ?? 0) + 1));
+  for (const { aliases, ...value } of values) {
+    targets.set(value.id, value);
+    if (nameCounts.get(value.name) === 1)
+      targets.set(value.name, value);
+    for (const alias of aliases ?? [])
+      if (alias && !targets.has(alias))
+        targets.set(alias, value);
+  }
+  return targets;
+}
+function selectedRefs(targets, refs2) {
+  return Object.fromEntries(refs2.flatMap((ref) => {
+    const target = targets.get(ref);
+    return target ? [[ref, target.id]] : [];
+  }));
 }
 
 // dist/tools/addPage.js
