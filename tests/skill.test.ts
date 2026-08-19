@@ -121,9 +121,17 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   });
 
   it('batches multiple proven safe query reads without broadening execution scope', () => {
-    expect(skill).toMatch(/run_queries.*up to ten.*proven read-only.*concurrently/is);
-    expect(skill).toMatch(/refuses mutations, RunJS, paid\/remote APIs, and unknown kinds before executing anything/i);
-    expect(skill).toMatch(/two or more independent ToolJet DB\/SQL reads.*one preflighted `run_queries/is);
+    expect(skill).toMatch(/run_queries.*up to ten.*proven bounded read-only.*concurrently/is);
+    expect(skill).toMatch(/refuses `SELECT \*`, unbounded reads, mutations, RunJS, paid\/remote APIs, and unknown kinds/i);
+    expect(skill).toMatch(/two or more independent bounded ToolJet DB\/SQL reads.*one preflighted `run_queries/is);
+  });
+
+  it('requires count-first approval for potentially large reads', () => {
+    expect(skill).toMatch(/Never author or execute `SELECT \*` against an unfamiliar table.*run_query.*refuses/is);
+    expect(skill).toMatch(/same-source `COUNT\(\*\)`.*count_query_id.*runs the count first.*does not execute the target/is);
+    expect(skill).toMatch(/more than 1,000 rows.*server-side-pagination territory/is);
+    expect(skill).toMatch(/tell the user the observed row count.*ask explicitly.*user_confirmed_large_read:true/is);
+    expect(skill).toMatch(/general permission to build or inspect an app is not consent for a large read/i);
   });
 
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {
