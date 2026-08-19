@@ -52,6 +52,7 @@ export interface PlannedLifecycle {
 
 export interface PlannedAppSpec {
   tables?: CreateTableParams[];
+  seedData?: Array<{ tableName: string; rows: Array<Record<string, unknown>> }>;
   queries?: PlannedQuery[];
   pages?: PlannedPage[];
   events?: PlannedEvent[];
@@ -64,7 +65,7 @@ export interface AppSpecLintResult {
   warnings: string[];
   checked: string[];
   not_checked: string[];
-  counts: { tables: number; pages: number; components: number; queries: number; events: number; lifecycles: number };
+  counts: { tables: number; seed_rows: number; pages: number; components: number; queries: number; events: number; lifecycles: number };
 }
 
 /** Validate a complete logical app plan without performing any writes. */
@@ -77,6 +78,19 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
   if (tables.length) {
     checked.push('ToolJet DB table names, columns, foreign keys, reserved names, and dependency order');
     errors.push(...validateTableBatch(tables));
+  }
+
+  const seedData = spec.seedData ?? [];
+  const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
+  if (seedData.length) {
+    checked.push('seed batches have unique table targets and non-empty rows');
+    const seen = new Set<string>();
+    for (const seed of seedData) {
+      const key = seed.tableName.toLowerCase();
+      if (seen.has(key)) errors.push(`Seed data targets table "${seed.tableName}" more than once.`);
+      seen.add(key);
+      if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+    }
   }
 
   const queryRefs = new Map<string, { id: string; name: string }>();
@@ -258,6 +272,7 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
     ],
     counts: {
       tables: tables.length,
+      seed_rows: seedRows,
       pages: pages.length,
       components: componentCount,
       queries: queries.length,

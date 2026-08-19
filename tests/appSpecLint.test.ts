@@ -1,15 +1,19 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
+import { clearAppPlansForTests } from '../src/appPlanStore.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
   return JSON.parse(result.content[0]!.text);
 }
 
 describe('lint_app_spec', () => {
+  beforeEach(() => clearAppPlansForTests());
+
   it('validates a complete planned flow through logical refs without writing', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+      listTables: vi.fn().mockResolvedValue([]),
     } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({
       version_id: 'v1',
@@ -46,15 +50,16 @@ describe('lint_app_spec', () => {
     });
     const body = textOf(result);
     expect(body.ok).toBe(true);
-    expect(body.counts).toMatchObject({ tables: 1, pages: 1, components: 2, queries: 2, events: 5, lifecycles: 1 });
+    expect(body.counts).toMatchObject({ tables: 1, seed_rows: 0, pages: 1, components: 2, queries: 2, events: 5, lifecycles: 1 });
+    expect(body.plan_token).toEqual(expect.any(String));
     expect(client.listDatasources).toHaveBeenCalledOnce();
   });
 
   it('collects mechanical failures across tables, components, queries, and events in one pass', async () => {
-    const client = { listDatasources: vi.fn() } as unknown as ToolJetClient;
+    const client = { listDatasources: vi.fn(), listTables: vi.fn().mockResolvedValue([]) } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({
       tables: [{ table_name: 'steps', columns: [{ name: 'action', type: 'string' }] }],
-      queries: [{ kind: 'tooljetdb', name: 'bad_query', options: { operation: 'list_rows', table_id: 't1', order_filters: [] } }],
+      queries: [{ datasource_id: 'tjdb', kind: 'tooljetdb', name: 'bad_query', options: { operation: 'list_rows', table_id: 't1', order_filters: [] } }],
       pages: [{
         name: 'Cases', icon: 'IconChecklist',
         components: [
@@ -86,6 +91,6 @@ describe('lint_app_spec', () => {
   it('requires at least one spec section', async () => {
     const result = await lintAppSpecTool({} as ToolJetClient).handler({});
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/at least one table, query, page, event, or lifecycle/i);
+    expect(result.content[0]!.text).toMatch(/at least one table, seed_data batch, query, page, event, or lifecycle/i);
   });
 });

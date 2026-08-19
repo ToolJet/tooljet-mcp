@@ -259,9 +259,10 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
 
   it('treats lint_app_spec as an awaited barrier before every write', () => {
     expect(skill).toMatch(/awaited preflight barrier/i);
-    expect(skill).toMatch(/call it alone.*only then issue writes/is);
-    expect(skill).toMatch(/Never run it concurrently with `add_pages`, `create_tables`, or any other mutating tool/i);
-    expect(skill).toMatch(/Never dispatch the linter and a write as siblings in parallel/i);
+    expect(skill).toMatch(/one-time 30-minute `plan_token`/i);
+    expect(skill).toMatch(/apply_app_phase\(\{ app_id, version_id, plan_token \}\)/i);
+    expect(skill).toMatch(/Never run the linter concurrently with that or any other mutating tool/i);
+    expect(skill).toMatch(/never dispatch the linter and the apply call as siblings in parallel/i);
   });
 
   it('uses update_pages to restyle and reorder existing pages including Home', () => {

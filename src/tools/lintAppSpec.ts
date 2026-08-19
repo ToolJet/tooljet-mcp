@@ -1,114 +1,85 @@
-import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintPlannedApp } from '../appSpecLint.js';
+import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
+import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
+import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { COMPONENT_SLOT_NAMES } from '../componentParent.js';
 
-const layoutSchema = z.object({ top: z.number(), left: z.number(), width: z.number(), height: z.number() });
-const componentSchema = z.object({
-  name: z.string(),
-  type: z.string(),
-  properties: z.record(z.string(), z.any()),
-  styles: z.record(z.string(), z.any()).optional(),
-  validation: z.record(z.string(), z.any()).optional(),
-  others: z.record(z.string(), z.any()).optional(),
-  layout: layoutSchema.optional(),
-  layouts: z.object({ desktop: layoutSchema.optional(), mobile: layoutSchema.optional() }).optional(),
-  client_ref: z.string().optional(),
-  parent_ref: z.string().optional(),
-  parent: z.string().optional(),
-  slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
-});
-const columnSchema = z.object({
-  name: z.string(), type: z.string(), primaryKey: z.boolean().optional(), notNull: z.boolean().optional(),
-  unique: z.boolean().optional(), defaultValue: z.any().optional(), configurations: z.record(z.string(), z.any()).optional(),
-});
-const foreignKeyAction = z.enum(['RESTRICT', 'NO ACTION', 'CASCADE', 'SET NULL', 'SET DEFAULT']);
-const foreignKeySchema = z.object({
-  columns: z.array(z.string()).min(1), referencedTable: z.string(), referencedColumns: z.array(z.string()).min(1),
-  onDelete: foreignKeyAction.optional(), onUpdate: foreignKeyAction.optional(),
-});
-const tableSchema = z.object({
-  table_name: z.string(), columns: z.array(columnSchema).min(1), foreign_keys: z.array(foreignKeySchema).optional(),
-});
-const querySchema = z.object({
-  client_ref: z.string().optional(), datasource_id: z.string().optional(), name: z.string(), kind: z.string().optional(),
-  options: z.record(z.string(), z.any()),
-});
-const pageSchema = z.object({
-  client_ref: z.string().optional(), name: z.string(), icon: z.string().min(1), hidden: z.boolean().optional(),
-  components: z.array(componentSchema).optional(),
-});
-const eventSchema = z.object({
-  source_ref: z.string(),
-  source_type: z.enum(['component', 'data_query', 'page', 'table_column', 'table_action']),
-  ref: z.string().optional(),
-  trigger: z.string(),
-  action: z.record(z.string(), z.any()),
-  name: z.string().optional(),
-});
-const alertSchema = z.object({
-  message: z.string().min(1), alert_type: z.enum(['success', 'info', 'warning', 'error']).optional(),
-});
-const lifecycleSchema = z.object({
-  query_ref: z.string(),
-  refresh_query_refs: z.array(z.string()).optional(),
-  clear_component_refs: z.array(z.string()).optional(),
-  close_modal_ref: z.string().optional(),
-  success_alert: alertSchema.optional(),
-  failure_alert: alertSchema.optional(),
-  success_actions: z.array(z.record(z.string(), z.any())).optional(),
-  failure_actions: z.array(z.record(z.string(), z.any())).optional(),
-});
-
-type ToolArgs = {
-  version_id?: string;
-  tables?: Array<z.infer<typeof tableSchema>>;
-  queries?: Array<z.infer<typeof querySchema>>;
-  pages?: Array<z.infer<typeof pageSchema>>;
-  events?: Array<z.infer<typeof eventSchema>>;
-  lifecycles?: Array<z.infer<typeof lifecycleSchema>>;
-};
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
+}
 
 export function lintAppSpecTool(client: ToolJetClient): ToolDef {
   return {
     name: 'lint_app_spec',
     description:
-      'Dry-run a planned app before any writes. It validates optional tables, queries, pages/components, events, and concise query ' +
-      'lifecycles together. Give pages, queries, and components stable client_ref values (name is the fallback); events use source_ref, ' +
-      'and actions that target another planned object use target_ref. Query kind can be supplied directly, or resolved from datasource_id ' +
-      'when version_id is present. Returns structured {ok,errors,warnings,checked,not_checked,counts}; it never mutates ToolJet.',
-    inputSchema: {
-      version_id: z.string().optional(),
-      tables: z.array(tableSchema).max(50).optional(),
-      queries: z.array(querySchema).max(200).optional(),
-      pages: z.array(pageSchema).max(50).optional(),
-      events: z.array(eventSchema).max(1000).optional(),
-      lifecycles: z.array(lifecycleSchema).max(200).optional(),
-    },
-    async handler(args: ToolArgs) {
+      'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
+      'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
+      'values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ' +
+      'ToolJet DB table into options.table_id. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
+      'Treat this call as an awaited barrier; it never mutates ToolJet.',
+    inputSchema: appPlanSchema.shape,
+    async handler(args: AppPlanInput) {
       try {
-        if (![args.tables, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
-          return fail(new Error('lint_app_spec needs at least one table, query, page, event, or lifecycle.'));
+        if (![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles]
+          .some((items) => items?.length)) {
+          return fail(new Error('lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle.'));
         }
-        const needsDatasourceResolution = (args.queries ?? []).some((query) => !query.kind && query.datasource_id);
-        const datasources = needsDatasourceResolution && args.version_id
+
+        const preflightErrors: string[] = [];
+        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
+        const existingTables = needsTables ? await client.listTables() : [];
+        const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        for (const table of args.tables ?? []) {
+          const key = table.table_name.toLowerCase();
+          if (tableIds.has(key)) preflightErrors.push(`Planned table "${table.table_name}" already exists.`);
+          else tableIds.set(key, `planned-table:${table.table_name}`);
+        }
+        for (const seed of args.seed_data ?? []) {
+          if (!tableIds.has(seed.table_name.toLowerCase())) {
+            preflightErrors.push(`Seed data targets unknown planned/existing table "${seed.table_name}".`);
+          }
+        }
+
+        if (args.queries?.length && !args.version_id) {
+          preflightErrors.push('version_id is required when a plan contains queries.');
+        }
+        const datasources = args.queries?.length && args.version_id
           ? await client.listDatasources(args.version_id)
           : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        return ok(lintPlannedApp({
+        const queries = (args.queries ?? []).map((query) => {
+          const datasourceKind = datasourceKinds.get(query.datasource_id);
+          if (args.version_id && !datasourceKind) {
+            preflightErrors.push(`Query "${query.name}" datasource "${query.datasource_id}" is not available.`);
+          }
+          if (query.kind && datasourceKind && query.kind !== datasourceKind) {
+            preflightErrors.push(
+              `Query "${query.name}" kind "${query.kind}" does not match datasource kind "${datasourceKind}".`
+            );
+          }
+          const options = structuredClone(query.options);
+          if (query.table_ref) {
+            const tableId = tableIds.get(query.table_ref.toLowerCase());
+            if (!tableId) preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
+            else options.table_id = tableId;
+          }
+          return {
+            clientRef: query.client_ref,
+            datasourceId: query.datasource_id,
+            name: query.name,
+            kind: datasourceKind ?? query.kind,
+            options,
+          };
+        });
+
+        const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
             columns: table.columns,
             foreignKeys: table.foreign_keys,
           })),
-          queries: args.queries?.map((query) => ({
-            clientRef: query.client_ref,
-            datasourceId: query.datasource_id,
-            name: query.name,
-            kind: query.kind ?? (query.datasource_id ? datasourceKinds.get(query.datasource_id) : undefined),
-            options: query.options,
-          })),
+          seedData: args.seed_data?.map((seed) => ({ tableName: seed.table_name, rows: seed.rows })),
+          queries,
           pages: args.pages?.map((page) => ({
             clientRef: page.client_ref,
             name: page.name,
@@ -151,7 +122,13 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions,
           })),
-        }));
+        });
+        const result: AppSpecLintResult = {
+          ...lint,
+          ok: lint.ok && preflightErrors.length === 0,
+          errors: unique([...preflightErrors, ...lint.errors]),
+        };
+        return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
       } catch (error) {
         return fail(error);
       }
