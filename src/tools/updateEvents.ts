@@ -58,7 +58,13 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
               : { ...event, index: update.index };
           }),
         };
-        const validation = validateEvents(summary, persistedEventSpecs(changedSummary));
+        // The projected list already contains every persisted event exactly once. Validate that
+        // complete future state without merging the original persisted chains a second time.
+        const validation = validateEvents(
+          changedSummary,
+          persistedEventSpecs(changedSummary),
+          { includePersistedChains: false }
+        );
         if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
         const result = await client.updateEvents({
           appId: args.app_id,

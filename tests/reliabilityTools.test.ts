@@ -316,6 +316,41 @@ describe('update_layout geometry warnings', () => {
 });
 
 describe('update_events validation', () => {
+  it('accepts an update that keeps state-setting before the final navigation handler', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [
+          { id: 'p1', components: [{ id: 'button1', name: 'open', type: 'Button', properties: {} }] },
+          { id: 'p2', components: [] },
+        ],
+        queries: [],
+        events: [
+          {
+            id: 'state', index: 0, name: 'Old alert', sourceId: 'button1', target: 'component',
+            event: { eventId: 'onClick', actionId: 'show-alert', message: 'Opening', alertType: 'info' },
+          },
+          {
+            id: 'nav', index: 1, name: 'Navigate', sourceId: 'button1', target: 'component',
+            event: { eventId: 'onClick', actionId: 'switch-page', pageId: 'p2' },
+          },
+        ],
+      }),
+      updateEvents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+
+    const result = await updateEventsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', update_type: 'update',
+      events: [{
+        event_id: 'state', name: 'Select row',
+        event: { eventId: 'onClick', actionId: 'set-custom-variable', key: 'selectedId', value: '{{1}}' },
+      }],
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(client.updateEvents).toHaveBeenCalledOnce();
+  });
+
   it('blocks a reorder that moves switch-page before another same-trigger handler', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({
