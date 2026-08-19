@@ -947,6 +947,26 @@ describe('lintListviewChildren', () => {
       properties: { rawHtml: { value: '<div style="height:170px">Static content</div>' } },
     }])).toEqual([]);
   });
+
+  it('warns when a full-row grid child incorrectly reuses the parent grid fraction', () => {
+    const warnings = lintListviewChildren([
+      parent,
+      {
+        name: 'fleetCard', type: 'Html', parentRef: 'fleet',
+        layout: { top: 0, left: 0, width: 13, height: 170 },
+        properties: { rawHtml: { value: '<div style="height:100%">{{listItem.name}}</div>' } },
+      },
+    ]).join(' ');
+    expect(warnings).toMatch(/only child on its row.*fresh 43-column local canvas.*left:0, width:43.*do not divide/i);
+  });
+
+  it('allows intentional side-by-side composition inside the local item canvas', () => {
+    expect(lintListviewChildren([
+      parent,
+      { name: 'title', type: 'Text', parentRef: 'fleet', layout: { top: 0, left: 0, width: 28, height: 40 } },
+      { name: 'status', type: 'Text', parentRef: 'fleet', layout: { top: 0, left: 29, width: 14, height: 40 } },
+    ])).toEqual([]);
+  });
 });
 
 describe('lintOperationalViewport', () => {

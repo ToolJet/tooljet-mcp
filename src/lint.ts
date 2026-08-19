@@ -561,8 +561,8 @@ export function lintKanbanInteractions(components: LintComponent[]): string[] {
   return warnings;
 }
 
-/** Repeated Html children render inside Listview wrapper chrome, so a CSS height copied from the
- * authored component rectangle can exceed the real inner canvas and add a scrollbar to every row. */
+/** Repeated Listview children use a fresh 43-column canvas inside every item. Also catch Html
+ * roots whose copied pixel height exceeds the wrapper's actual inner height. */
 export function lintListviewChildren(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const refs = new Map(
@@ -571,6 +571,35 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
       return key ? [[key, component] as const] : [];
     })
   );
+  const childrenByParent = new Map<string, LintComponent[]>();
+  for (const child of components) {
+    const parentId = parentPlacement(child)?.parentId;
+    if (!parentId || refs.get(parentId)?.type !== 'Listview') continue;
+    childrenByParent.set(parentId, [...(childrenByParent.get(parentId) ?? []), child]);
+  }
+
+  for (const [parentId, children] of childrenByParent) {
+    const parent = refs.get(parentId)!;
+    if (propVal(parent.properties, 'mode') !== 'grid') continue;
+    for (const child of children) {
+      const rect = child.layouts?.desktop ?? child.layout;
+      if (!rect || rect.top === undefined || rect.height === undefined) continue;
+      const sharesRow = children.some((sibling) => {
+        if (sibling === child) return false;
+        const siblingRect = sibling.layouts?.desktop ?? sibling.layout;
+        if (!siblingRect || siblingRect.top === undefined || siblingRect.height === undefined) return false;
+        return rect.top! < siblingRect.top + siblingRect.height && siblingRect.top < rect.top! + rect.height!;
+      });
+      if (sharesRow || (rect.left === 0 && rect.width === 43)) continue;
+      warnings.push(
+        `Component "${child.name ?? child.id ?? child.type}" is the only child on its row inside grid-mode ` +
+          `Listview "${parent.name ?? parent.id ?? 'Listview'}", but uses left:${rect.left ?? 'unset'}, ` +
+          `width:${rect.width ?? 'unset'}. Each repeated grid cell has its own fresh 43-column local canvas; ` +
+          'for a full-row child use left:0, width:43. Do not divide the child width by the parent grid column count.'
+      );
+    }
+  }
+
   for (const child of components.filter((component) => component.type === 'Html')) {
     const parent = refs.get(parentPlacement(child)?.parentId ?? '');
     if (parent?.type !== 'Listview') continue;

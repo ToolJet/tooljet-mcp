@@ -218,6 +218,7 @@ describe('catalog', () => {
     const hints = listview.authoringHints as any;
     expect(hints.modes.gridViewRule).toMatch(/no separate GridView.*type:"Listview".*mode:"grid"/i);
     expect(hints.repeatedChildren.atomicBatchRule).toMatch(/same add_components call.*client_ref\/parent_ref.*empty exposed values/i);
+    expect(hints.repeatedChildren.localCanvasRule).toMatch(/fresh 43-column local canvas.*left:0,width:43.*do not divide/i);
     expect(hints.repeatedChildren.htmlSizingRule).toMatch(/height:100%.*box-sizing:border-box.*scrollbar/i);
     expect(hints.selection.selectedRecordShape).toMatch(/keyed by repeated child component name.*not the original listItem/i);
     expect(hints.selection.paginationCaveat).toMatch(/page-local.*not.*durable record ids/i);
