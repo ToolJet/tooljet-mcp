@@ -28,6 +28,7 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
     createEvents: vi.fn(),
     createPage: vi.fn(),
     createPages: vi.fn(),
+    updatePages: vi.fn(),
     listTables: vi.fn(),
     createTable: vi.fn(),
     createTables: vi.fn(),

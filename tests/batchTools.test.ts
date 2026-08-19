@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createTablesTool } from '../src/tools/createTables.js';
 import { insertRowsBatchTool } from '../src/tools/insertRowsBatch.js';
 import { addPagesTool } from '../src/tools/addPages.js';
+import { updatePagesTool } from '../src/tools/updatePages.js';
 import { tableCreationLevels, validateTableBatch } from '../src/tableValidation.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
@@ -106,5 +107,32 @@ describe('batch authoring tools', () => {
       ],
     });
     expect(textOf(result).pages).toHaveLength(2);
+  });
+
+  it('updates page metadata and forwards a complete order', async () => {
+    const client = {
+      updatePages: vi.fn().mockResolvedValue({
+        updated_fields: 1,
+        reordered: true,
+        pages: [
+          { page_id: 'p2', name: 'Cases', icon: 'IconChecklist', hidden: false, index: 0 },
+          { page_id: 'p1', name: 'Overview', icon: 'IconHome', hidden: false, index: 1 },
+        ],
+      }),
+    } as unknown as ToolJetClient;
+    const result = await updatePagesTool(client).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      updates: [{ page_id: 'p1', name: 'Overview', icon: 'IconHome' }],
+      order: ['p2', 'p1'],
+    });
+
+    expect(client.updatePages).toHaveBeenCalledWith({
+      appId: 'app1',
+      versionId: 'v1',
+      updates: [{ pageId: 'p1', name: 'Overview', icon: 'IconHome', hidden: undefined }],
+      order: ['p2', 'p1'],
+    });
+    expect(textOf(result)).toMatchObject({ updated_fields: 1, reordered: true });
   });
 });

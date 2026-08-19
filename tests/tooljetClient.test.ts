@@ -717,6 +717,74 @@ describe('createClient', () => {
     });
   });
 
+  describe('updatePages', () => {
+    it('updates one field per request, reorders all pages, and verifies the readback', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: {
+            pages: [
+              { id: 'home', name: 'Home', handle: 'home', index: 1 },
+              { id: 'cases', name: 'Cases', handle: 'cases', icon: 'IconChecklist', index: 2 },
+            ],
+          },
+        }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: {
+            pages: [
+              { id: 'cases', name: 'Cases', handle: 'cases', icon: 'IconChecklist', index: 0 },
+              { id: 'home', name: 'Overview', handle: 'home', icon: 'IconHome', hidden: { value: false }, index: 1 },
+            ],
+          },
+        }));
+
+      const client = createClient(auth, config);
+      const result = await client.updatePages({
+        appId: 'app1',
+        versionId: 'ver1',
+        updates: [{ pageId: 'home', name: 'Overview', icon: 'IconHome', hidden: false }],
+        order: ['cases', 'home'],
+      });
+
+      expect(auth.authedFetch.mock.calls.slice(1, 3).map(([, init]) => JSON.parse(init.body))).toEqual([
+        { pageId: 'home', diff: { name: 'Overview' } },
+        { pageId: 'home', diff: { icon: 'IconHome' } },
+      ]);
+      const [reorderPath, reorderInit] = auth.authedFetch.mock.calls[3];
+      expect(reorderPath).toBe('/api/v2/apps/app1/versions/ver1/pages/reorder');
+      expect(JSON.parse(reorderInit.body)).toEqual({
+        diff: { cases: { index: 0 }, home: { index: 1 } },
+      });
+      expect(result).toEqual({
+        updated_fields: 2,
+        reordered: true,
+        pages: [
+          { page_id: 'cases', name: 'Cases', handle: 'cases', icon: 'IconChecklist', hidden: false, index: 0 },
+          { page_id: 'home', name: 'Overview', handle: 'home', icon: 'IconHome', hidden: false, index: 1 },
+        ],
+      });
+    });
+
+    it('rejects partial page orders before writing', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+        status: 200,
+        json: { pages: [{ id: 'home', name: 'Home' }, { id: 'cases', name: 'Cases' }] },
+      }));
+      const client = createClient(auth, config);
+
+      await expect(client.updatePages({
+        appId: 'app1',
+        versionId: 'ver1',
+        order: ['cases'],
+      })).rejects.toThrow(/every current page id exactly once/i);
+      expect(auth.authedFetch).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('createTable', () => {
     it('normalizes types, sets constraints, and auto-adds a serial id PK when none given', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't1', table_name: 'people' } } }));

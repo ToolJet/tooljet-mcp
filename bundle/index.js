@@ -32321,6 +32321,7 @@ function createClient(auth, config2) {
       handle: p.handle,
       icon: p.icon,
       hidden: p.hidden?.value === true,
+      ...typeof p.index === "number" ? { index: p.index } : {},
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry))
     }));
     const queries = (full.data_queries ?? []).map((q) => ({
@@ -32388,7 +32389,9 @@ function createClient(auth, config2) {
   }
   async function createPages(params) {
     const app = await getApp(params.appId);
-    const startIndex = (app.pages ?? []).length;
+    const existingPages = app.pages ?? [];
+    const highestPersistedIndex = existingPages.reduce((highest, page) => typeof page.index === "number" && Number.isFinite(page.index) ? Math.max(highest, page.index) : highest, 0);
+    const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
     const handleOf = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
     const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
     const existingHandles = new Set((app.pages ?? []).map((page) => String(page.handle).toLowerCase()));
@@ -32440,6 +32443,7 @@ function createClient(auth, config2) {
     return entries.map((page) => ({
       page_id: page.id,
       name: page.name,
+      index: page.index,
       ...page.icon ? { icon: page.icon } : {},
       ...page.hidden ? { hidden: true } : {}
     }));
@@ -32459,6 +32463,118 @@ function createClient(auth, config2) {
       pages: [{ name: params.name, icon: params.icon, hidden: params.hidden }]
     });
     return page;
+  }
+  async function updatePages(params) {
+    const updates = params.updates ?? [];
+    const order = params.order;
+    if (!updates.length && !order) {
+      throw new Error("ToolJet updatePages failed: provide at least one page update or a complete page order.");
+    }
+    const app = await getApp(params.appId);
+    const pages = app.pages ?? [];
+    const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const seenUpdateIds = /* @__PURE__ */ new Set();
+    for (const update of updates) {
+      if (!pagesById.has(update.pageId)) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" does not exist.`);
+      }
+      if (seenUpdateIds.has(update.pageId)) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" is updated more than once.`);
+      }
+      seenUpdateIds.add(update.pageId);
+      if (update.name === void 0 && update.icon === void 0 && update.hidden === void 0) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has no changed fields.`);
+      }
+      if (update.name !== void 0 && !update.name.trim()) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty name.`);
+      }
+      if (update.icon !== void 0 && !update.icon.trim()) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty icon.`);
+      }
+    }
+    const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
+    const finalNames = pages.map((page) => {
+      const kind = page.isPageGroup === true ? "group" : "page";
+      const name = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
+      return `${kind}:${name}`;
+    });
+    if (new Set(finalNames).size !== finalNames.length) {
+      throw new Error("ToolJet updatePages failed: page names must remain unique.");
+    }
+    if (order) {
+      const orderedIds = new Set(order);
+      if (order.length !== pages.length || orderedIds.size !== order.length) {
+        throw new Error("ToolJet updatePages failed: order must contain every current page id exactly once.");
+      }
+      const missing = pages.filter((page) => !orderedIds.has(String(page.id))).map((page) => page.id);
+      if (missing.length || order.some((pageId) => !pagesById.has(pageId))) {
+        throw new Error("ToolJet updatePages failed: order must contain every current page id exactly once.");
+      }
+    }
+    const fieldUpdates = [];
+    for (const update of updates) {
+      const current = pagesById.get(update.pageId);
+      if (update.name !== void 0 && update.name !== current.name) {
+        fieldUpdates.push({ pageId: update.pageId, field: "name", value: update.name });
+      }
+      if (update.icon !== void 0 && update.icon !== current.icon) {
+        fieldUpdates.push({ pageId: update.pageId, field: "icon", value: update.icon });
+      }
+      if (update.hidden !== void 0 && update.hidden !== (current.hidden?.value === true)) {
+        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: { value: update.hidden } });
+      }
+    }
+    await Promise.all(fieldUpdates.map(async ({ pageId, field, value }) => {
+      const response = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, diff: { [field]: value } })
+      });
+      await assertOk(response, `updatePages ${pageId}.${field}`);
+    }));
+    if (order) {
+      const diff = Object.fromEntries(order.map((pageId, index) => [pageId, { index }]));
+      const response = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ diff })
+      });
+      await assertOk(response, "updatePages reorder");
+    }
+    const refreshed = await getApp(params.appId);
+    const refreshedPages = refreshed.pages ?? [];
+    const refreshedById = new Map(refreshedPages.map((page) => [String(page.id), page]));
+    for (const update of updates) {
+      const page = refreshedById.get(update.pageId);
+      if (update.name !== void 0 && page?.name !== update.name) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" name did not persist.`);
+      }
+      if (update.icon !== void 0 && page?.icon !== update.icon) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
+      }
+      if (update.hidden !== void 0 && page?.hidden?.value === true !== update.hidden) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
+      }
+    }
+    if (order) {
+      for (const [index, pageId] of order.entries()) {
+        if (refreshedById.get(pageId)?.index !== index) {
+          throw new Error(`ToolJet updatePages failed: page order did not persist at index ${index}.`);
+        }
+      }
+    }
+    return {
+      updated_fields: fieldUpdates.length,
+      reordered: order !== void 0,
+      pages: refreshedPages.slice().sort((left, right) => (left.index ?? 0) - (right.index ?? 0)).map((page) => ({
+        page_id: page.id,
+        name: page.name,
+        handle: page.handle,
+        icon: page.icon,
+        hidden: page.hidden?.value === true,
+        ...typeof page.index === "number" ? { index: page.index } : {}
+      }))
+    };
   }
   async function createEvents(params) {
     const indexBySource = {};
@@ -32931,6 +33047,7 @@ function createClient(auth, config2) {
     getComponent,
     createPage,
     createPages,
+    updatePages,
     createEvents,
     getDevelopmentEnvironmentId,
     listDatasources,
@@ -33837,7 +33954,7 @@ function getAppTool(client) {
 
 // dist/appSummarySelection.js
 var APP_FIELDS = ["app_id", "name", "version_id"];
-var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden"];
+var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index"];
 var COMPONENT_FIELDS = [
   "id",
   "name",
@@ -33939,7 +34056,7 @@ var fieldList = external_exports.array(external_exports.string()).min(1).optiona
 function getAppSummaryTool(client) {
   return {
     name: "get_app_summary",
-    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden), component(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
+    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index), component(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
       sections: external_exports.array(external_exports.enum(["pages", "queries", "events"])).optional(),
@@ -35197,6 +35314,43 @@ function addPagesTool(client) {
   };
 }
 
+// dist/tools/updatePages.js
+var updateSchema = external_exports.object({
+  page_id: external_exports.string().min(1),
+  name: external_exports.string().min(1).optional(),
+  icon: external_exports.string().min(1).optional(),
+  hidden: external_exports.boolean().optional()
+});
+function updatePagesTool(client) {
+  return {
+    name: "update_pages",
+    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes. This can restyle and reposition the auto-created Home page.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      updates: external_exports.array(updateSchema).min(1).max(50).optional(),
+      order: external_exports.array(external_exports.string().min(1)).min(1).max(50).optional()
+    },
+    async handler(args) {
+      try {
+        return ok(await client.updatePages({
+          appId: args.app_id,
+          versionId: args.version_id,
+          updates: args.updates?.map((update) => ({
+            pageId: update.page_id,
+            name: update.name,
+            icon: update.icon,
+            hidden: update.hidden
+          })),
+          order: args.order
+        }));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/addQuery.js
 function addQueryTool(client) {
   return {
@@ -35447,7 +35601,7 @@ function addComponentsTool(client) {
 }
 
 // dist/tools/updateComponents.js
-var updateSchema = external_exports.object({
+var updateSchema2 = external_exports.object({
   component_id: external_exports.string(),
   definition: external_exports.object({
     properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
@@ -35469,7 +35623,7 @@ function updateComponentsTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      updates: external_exports.array(updateSchema).min(1)
+      updates: external_exports.array(updateSchema2).min(1)
     },
     async handler(args) {
       try {
@@ -36183,6 +36337,7 @@ function registerTools(server, client) {
     lintAppSpecTool(client),
     addPageTool(client),
     addPagesTool(client),
+    updatePagesTool(client),
     addQueryTool(client),
     addQueriesTool(client),
     updateQueryTool(client),

@@ -204,6 +204,34 @@ export interface CreatePagesParams {
   pages: Array<{ name: string; icon?: string; hidden?: boolean }>;
 }
 
+export interface UpdatePageSpec {
+  pageId: string;
+  name?: string;
+  icon?: string;
+  hidden?: boolean;
+}
+
+export interface UpdatePagesParams {
+  appId: string;
+  versionId: string;
+  updates?: UpdatePageSpec[];
+  /** Complete ordered list of the app's current page ids. */
+  order?: string[];
+}
+
+export interface UpdatePagesResult {
+  updated_fields: number;
+  reordered: boolean;
+  pages: Array<{
+    page_id: string;
+    name?: string;
+    handle?: string;
+    icon?: string;
+    hidden: boolean;
+    index?: number;
+  }>;
+}
+
 export interface AddTableColumnParams {
   tableName: string;
   column: TableColumn;
@@ -292,6 +320,7 @@ export interface ToolJetClient {
   getComponent(appId: string, componentId: string): Promise<ComponentSummary & { page_id: string }>;
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
   createPages(params: CreatePagesParams): Promise<CreatePageResult[]>;
+  updatePages(params: UpdatePagesParams): Promise<UpdatePagesResult>;
   createEvents(params: CreateEventsParams): Promise<{ created: number }>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
@@ -681,6 +710,137 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       pages: [{ name: params.name, icon: params.icon, hidden: params.hidden }],
     });
     return page;
+  }
+
+  async function updatePages(params: UpdatePagesParams): Promise<UpdatePagesResult> {
+    const updates = params.updates ?? [];
+    const order = params.order;
+    if (!updates.length && !order) {
+      throw new Error('ToolJet updatePages failed: provide at least one page update or a complete page order.');
+    }
+
+    const app = await getApp(params.appId);
+    const pages: any[] = app.pages ?? [];
+    const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const seenUpdateIds = new Set<string>();
+    for (const update of updates) {
+      if (!pagesById.has(update.pageId)) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" does not exist.`);
+      }
+      if (seenUpdateIds.has(update.pageId)) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" is updated more than once.`);
+      }
+      seenUpdateIds.add(update.pageId);
+      if (update.name === undefined && update.icon === undefined && update.hidden === undefined) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has no changed fields.`);
+      }
+      if (update.name !== undefined && !update.name.trim()) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty name.`);
+      }
+      if (update.icon !== undefined && !update.icon.trim()) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty icon.`);
+      }
+    }
+
+    const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
+    const finalNames = pages.map((page) => {
+      const kind = page.isPageGroup === true ? 'group' : 'page';
+      const name = String(requestedNames.get(String(page.id)) ?? page.name ?? '').trim().toLowerCase();
+      return `${kind}:${name}`;
+    });
+    if (new Set(finalNames).size !== finalNames.length) {
+      throw new Error('ToolJet updatePages failed: page names must remain unique.');
+    }
+
+    if (order) {
+      const orderedIds = new Set(order);
+      if (order.length !== pages.length || orderedIds.size !== order.length) {
+        throw new Error('ToolJet updatePages failed: order must contain every current page id exactly once.');
+      }
+      const missing = pages.filter((page) => !orderedIds.has(String(page.id))).map((page) => page.id);
+      if (missing.length || order.some((pageId) => !pagesById.has(pageId))) {
+        throw new Error('ToolJet updatePages failed: order must contain every current page id exactly once.');
+      }
+    }
+
+    const fieldUpdates: Array<{ pageId: string; field: string; value: unknown }> = [];
+    for (const update of updates) {
+      const current = pagesById.get(update.pageId);
+      if (update.name !== undefined && update.name !== current.name) {
+        fieldUpdates.push({ pageId: update.pageId, field: 'name', value: update.name });
+      }
+      if (update.icon !== undefined && update.icon !== current.icon) {
+        fieldUpdates.push({ pageId: update.pageId, field: 'icon', value: update.icon });
+      }
+      if (update.hidden !== undefined && update.hidden !== (current.hidden?.value === true)) {
+        fieldUpdates.push({ pageId: update.pageId, field: 'hidden', value: { value: update.hidden } });
+      }
+    }
+
+    // ToolJet's page update service accepts one changed field per request.
+    await Promise.all(fieldUpdates.map(async ({ pageId, field, value }) => {
+      const response = await auth.authedFetch(
+        `/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pageId, diff: { [field]: value } }),
+        }
+      );
+      await assertOk(response, `updatePages ${pageId}.${field}`);
+    }));
+
+    if (order) {
+      const diff = Object.fromEntries(order.map((pageId, index) => [pageId, { index }]));
+      const response = await auth.authedFetch(
+        `/api/v2/apps/${params.appId}/versions/${params.versionId}/pages/reorder`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diff }),
+        }
+      );
+      await assertOk(response, 'updatePages reorder');
+    }
+
+    const refreshed = await getApp(params.appId);
+    const refreshedPages: any[] = refreshed.pages ?? [];
+    const refreshedById = new Map(refreshedPages.map((page) => [String(page.id), page]));
+    for (const update of updates) {
+      const page = refreshedById.get(update.pageId);
+      if (update.name !== undefined && page?.name !== update.name) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" name did not persist.`);
+      }
+      if (update.icon !== undefined && page?.icon !== update.icon) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
+      }
+      if (update.hidden !== undefined && (page?.hidden?.value === true) !== update.hidden) {
+        throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
+      }
+    }
+    if (order) {
+      for (const [index, pageId] of order.entries()) {
+        if (refreshedById.get(pageId)?.index !== index) {
+          throw new Error(`ToolJet updatePages failed: page order did not persist at index ${index}.`);
+        }
+      }
+    }
+
+    return {
+      updated_fields: fieldUpdates.length,
+      reordered: order !== undefined,
+      pages: refreshedPages
+        .slice()
+        .sort((left, right) => (left.index ?? 0) - (right.index ?? 0))
+        .map((page) => ({
+          page_id: page.id,
+          name: page.name,
+          handle: page.handle,
+          icon: page.icon,
+          hidden: page.hidden?.value === true,
+          ...(typeof page.index === 'number' ? { index: page.index } : {}),
+        })),
+    };
   }
 
   async function createEvents(params: CreateEventsParams): Promise<{ created: number }> {
@@ -1337,6 +1497,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     getComponent,
     createPage,
     createPages,
+    updatePages,
     createEvents,
     getDevelopmentEnvironmentId,
     listDatasources,

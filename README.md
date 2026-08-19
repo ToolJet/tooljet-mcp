@@ -102,7 +102,7 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 | `generate_form_schema({table_name, mode, ...})` | Generate one schema-driven create/edit Form from a ToolJet DB table |
 | `lint_app_spec(...)` / `validate_app(app_id)` | Dry-run a logical plan before writes; statically validate the persisted app afterwards |
 | `get_app_summary({app_id, sections?, filters?, *_fields?})` | Selectively inspect actual persisted values |
-| `add_page(..., icon)` / `add_pages(...)` | Add one page during edits or batch the initial sidebar/page structure |
+| `add_page(..., icon)` / `add_pages(...)` / `update_pages(...)` | Add pages, then restyle, hide, rename, or reorder existing sidebar pages (including Home) |
 | `add_query(...)` / `add_queries(...)` | Create datasource queries; use the schema tool for `options` |
 | `add_component(...)` / `add_components(...)` | Place components, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
