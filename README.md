@@ -44,7 +44,7 @@ TOOLJET_EMAIL = "you@example.com"
 TOOLJET_PASSWORD = "your-password"
 ```
 
-Then install the skill so Codex knows how to drive the tools: copy `skill/SKILL.md` into your Codex skills directory (or point Codex at it). The skill teaches the app model + the build recipe.
+Then install the skill so Codex knows how to drive the tools: copy the complete `skill/` directory into your Codex skills directory (or use `npm run sync:skill`). Its compact entry point progressively loads focused references for tables, forms, events, datasources, security, and QA.
 
 Restart Codex; it should expose the ToolJet tools, including `create_app`, `list_datasources`, `get_datasource_query_schema`, `get_component_catalog`, `lint_app_spec`, the batch authoring tools, and `validate_app`.
 
@@ -73,7 +73,7 @@ export TOOLJET_APP_URL="https://your-instance.tooljet.com"
 ```
 If either credential is missing, the server exits during startup with a clear required-variable error. Set both and restart.
 
-**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime; the skill lives at `skills/tooljet-app-builder/`. Rebuild all of that after a source or catalog change with:
+**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
 ```bash
 npm run generate:catalogs && npm run generate:skill && npm run build:plugin
 ```
@@ -91,9 +91,9 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 
 | Tool | Purpose |
 |---|---|
-| `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace |
-| `create_app(name)` | New app + version + Home page → ids plus explicit `editor_url` and `viewer_url` (`app_url` remains an editor alias) |
-| `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps; no per-app linking |
+| `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace; results include its manual datasource-settings URL |
+| `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
+| `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |
 | `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
 | `list_tables()` / `get_table_schema(table_name)` | Inspect ToolJet DB tables, constraints, defaults, and relationships |

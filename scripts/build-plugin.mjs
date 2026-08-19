@@ -10,7 +10,7 @@
 // The bundle is built from the tsc output (dist/), NOT src/, so the NodeNext `.js` import
 // specifiers resolve to real files (esbuild can't map `./foo.js` → `foo.ts` on its own).
 import { execSync } from 'node:child_process';
-import { mkdirSync, cpSync, existsSync, rmSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,11 +32,24 @@ for (const f of ['component-schemas.json', 'component-compatibility.json', 'data
   }
 }
 
-// 3. Copy the generated skill into the plugin's skills/<name>/ location.
-const skillSrc = resolve(root, 'skill');
-const skillDst = resolve(root, 'skills/tooljet-app-builder');
-rmSync(skillDst, { recursive: true, force: true });
-mkdirSync(skillDst, { recursive: true });
-cpSync(skillSrc, skillDst, { recursive: true, force: true });
+// 3. The skill generator writes both canonical and packaged host outputs from one source.
+// Assert that focused references are present instead of silently copying a possibly stale tree.
+for (const f of [
+  'SKILL.md',
+  'references/workflows.md',
+  'references/ui-layout.md',
+  'references/tables.md',
+  'references/forms.md',
+  'references/events.md',
+  'references/datasources.md',
+  'references/security.md',
+  'references/qa.md',
+  'references/components.md',
+  'scripts/browser-audit.js',
+]) {
+  if (!existsSync(resolve(root, 'skills/tooljet-app-builder', f))) {
+    throw new Error(`build-plugin: missing skills/tooljet-app-builder/${f} — run "npm run generate:skill" first.`);
+  }
+}
 
 console.log('✓ Plugin built: bundle/index.js + skills/tooljet-app-builder/ (data/ shipped from repo).');

@@ -1,6 +1,6 @@
 # UI authoring and layout
 
-Read this before laying out a new page, and whenever the page uses a Table, Chart, nested view, or other layout-sensitive surface.
+Read this before laying out a new page or using a Chart, nested view, or other layout-sensitive surface. Table-specific layout and pagination live in tables.md.
 
 ## Component selection — built-in for interactive/data surfaces, HTML where it makes the UI better
 
@@ -65,16 +65,3 @@ Then hold to these:
 
 ### 5. Mobile — skip it by default
 Most customers view these on desktop. **Don't build or tune a mobile layout for the initial build unless the user explicitly asks.** When they do, treat mobile as **recomposition** — rethink what leads and what collapses on a narrow screen — not blind vertical stacking of the desktop layout. And note: **resizing a browser window does NOT prove ToolJet's mobile layout rendered** — that is a structural guess, not real mobile visual validation; only claim mobile works if you verified it the way ToolJet actually renders mobile.
-
-## Server-side Tables — datasource-neutral recipe
-
-Use server-side behavior for large/remote datasets; keep client-side behavior for small fully loaded arrays. When cardinality is unknown, run a count-only query first; more than 1,000 rows is the default handoff to server-side pagination (use a lower threshold for wide, sensitive, remote, or fast-growing rows). Do not hardcode one datasource's pagination syntax into the component layer.
-
-1. Batch-fetch only the page/count operation contracts with `get_datasource_query_schema({requests:[...]})`. Create a **page query** and a **total-count/metadata query** using that datasource's real options.
-2. Configure Table with `dataSourceSelector="rawJson"`, `data` bound to the page query, `serverSidePagination=true`, `serverSideRowsPerPage`, and `totalRecords` bound to the count query. ToolJet's exposed `pageIndex` is **1-based**, but it can be undefined when the first page-load query evaluates. Guard the offset as `((components.<table>.pageIndex || 1) - 1) * pageSize`; the unguarded subtraction produces `NaN` and an empty Table.
-3. Choose exactly one query-wiring mode and never mix them. **Preferred reactive mode:** set `runOnDependencyChange:true` on reads whose options reference Table/filter state, keep an initial page-load run, and let search/sort/filter events only reset the Table to page 1. **Explicit-event fallback:** disable dependency-change runs, then wire page/search/sort/filter events to run the necessary page/count queries after resetting page 1. Use the fallback only when a dependency cannot be represented reliably. Immediate ButtonGroupV2 `onClick` reads can observe the previous `selected` value, so reactive mode is safer for that control.
-4. Exact Table shapes are `searchText: string`, `sortApplied: [{column,columnKey,direction}]`, and `filters: [{column,condition,value}]`; request Table `exposedVariables` + `authoringHints` for the machine-readable contract. An empty `DaterangePicker` can become the literal strings `"undefined"` or `"Invalid date"` in datasource options, so read its authoring hint instead of relying only on `value || fallback`.
-5. Keep translation at the query boundary: SQL/TJDB use limit+offset and a count query; page-number APIs send page+size; cursor/token APIs store the returned cursor and drive `enableNextButton`/`enablePrevButton`. Do not pretend a cursor API supports random page offsets.
-6. Mutations from inline/bulk edit run only the write query. Its `onDataQuerySuccess` re-runs page+count queries; failure preserves edits and shows an error.
-
-Verify page 1, a middle page, the last/partial page, zero results, a changed search/sort/filter, and a mutation that changes the total count.

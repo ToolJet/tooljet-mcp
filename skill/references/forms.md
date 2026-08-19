@@ -1,6 +1,6 @@
-# Forms, modals, and interactions
+# Forms and modals
 
-Read this only when the requested phase contains forms, modals, mutations, or component/query event wiring.
+Read this only when the phase contains generated or standalone forms, validation, uploads, or modal layout.
 
 ## Form construction — choose generated or standalone before creating components
 
@@ -26,30 +26,17 @@ Form inputs default to a **side-aligned label** (`styles.alignment = "side"`) �
 
 **Browser QA for any form/modal:** confirm no label is truncating its input, every control has a usable width, field left/right edges line up, TextAreas are visibly multi-line, conditional fields behave correctly, and the final field plus footer/action buttons are visible at maximum modal scroll. Generated mixed-type Forms are blocked before authoring; if one already exists, replace it in place with standalone fields rather than attempting schema alignment. An element can exist in the DOM yet still be occluded by an undersized boundary, so use a screenshot in addition to the DOM snapshot.
 
-## Interactivity — wire events so the app DOES things (not just displays)
+## Exact Form binding rule
 
-Components and queries alone make a *static* app. Use `add_events` for component, query, page, and Table Button-column behavior: `{ source_id, source_type, trigger, ref?, action }`. `component_id` is a backward-compatible shorthand for `source_type: "component"`.
+### Form
+Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`. For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object. Supported schema field types are textinput, textarea, dropdown, multiselect, number, emailinput, password, datepicker, checkbox, radio, toggle, starrating, and filepicker—but only textinput/number/emailinput/password/datepicker/checkbox are layout-safe in generated Form. If any other type is needed, build the whole form from standalone components. Filepicker also crashes the Form. Dropdown/multiselect fields use values + displayValues, not options. There is no required flag; use validation.minLength or validation.customRule.
 
-**Triggers:** component triggers come from `get_component_catalog(type).events` (Button `onClick`; Table `onPageChanged`/`onSearch`/`onSort`/`onFilterChanged`/`onBulkUpdate`; Form `onSubmit`/`onInvalid`). A Table Button-column click uses `source_type:"table_column"`, `trigger:"onClick"`, and `ref:"<column key or name>::<button id>"`. Query lifecycle triggers are `onDataQuerySuccess` and `onDataQueryFailure` with `source_type: "data_query"`. Page load is `onPageLoad` with `source_type: "page"`.
+## Form schema field contracts and upload workaround
 
-**Actions** (`action = { actionId, ...params }`) — use these exact `actionId` strings (invalid ids silently do nothing):
-- **Run a query:** `{ actionId: 'run-query', queryId: '<query id>', queryName: '<name>' }`
-- **Switch page:** `{ actionId: 'switch-page', pageId: '<target page id>' }` (see master→detail below for passing data).
-- **Show alert:** `{ actionId: 'show-alert', message: 'Saved', alertType: 'success' | 'info' | 'warning' | 'error' }`
-- **Show modal:** `{ actionId: 'show-modal', modal: '<modal component id>' }` · **Close modal:** `{ actionId: 'close-modal', modal: '<modal component id>' }`
-- **Set a custom variable:** `{ actionId: 'set-custom-variable', key: 'selectedTicket', value: '{{components.<table>.selectedRow}}' }` — the id is **`set-custom-variable`** (NOT `set-variable`, which does not exist); read it back as `{{variables.selectedTicket}}`. Also: `unset-custom-variable`.
-- **Control a component:** `{ actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue' | 'clear' | 'setVisibility' | 'setDisable' | 'setLoading', ... }` — reset/prefill an input, toggle visibility, etc.
-- **Set a Table page:** `{ actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }`.
-- **Export data:** `{ actionId: 'generate-file', ... }` — CSV/plaintext works. The PDF branch is pass-through only: it requires pre-formed PDF bytes and does not convert text, HTML, or query data. Use CSV unless real PDF bytes are already available and browser-verified. · **Copy:** `{ actionId: 'copy-to-clipboard', ... }`.
+The authoritative Form JSON-schema field types are: `textinput`, `textarea`, `dropdown`, `multiselect`, `number`, `emailinput`, `password`, `datepicker`, `checkbox`, `radio`, `toggle`, `starrating`, and `filepicker`. Do not abbreviate these to `email`, `star`, or `file`.
 
-(Other valid ids include `set-page-variable`, `open-webpage`, `go-to-app`, `logout`, `set-localstorage-value`, `scroll-component-into-view`.)
-
-**Common recipes:**
-- **Mutation lifecycle (required):** the Button/Form event runs **only** the mutation. On that query's `onDataQuerySuccess`, run the list/count refresh queries, show success, reset the Form if appropriate, and close the modal. On `onDataQueryFailure`, show an error and keep the user's input. Never refresh or show success immediately after starting the mutation—the write may fail.
-- **Page initialization:** attach `onPageLoad` to the page when a query must run each time that page is entered. Use a page event instead of assuming app-level `runOnPageLoad` will re-run on in-app navigation.
-- **Master → detail:** on Table `onRowClicked`, order handlers as: (1) `set-custom-variable` for the selected row/id, (2) optional `run-query` for fresh detail data, (3) `switch-page` **LAST**. ToolJet stops the same-trigger chain after navigation, so later handlers silently never run. Bind directly to `{{variables.selectedTicket.<field>}}` when a snapshot is enough. A detail-page `onPageLoad` query is also valid; do not rely on app-level `runOnPageLoad` re-running on navigation.
-- **Refresh on an external filter:** an input's `onChange`/`onEnterPressed` → `run-query` on the list query whose filter references the input.
-- **Server-side Table search/filter:** keep datasource-specific pagination/filter syntax in the query contract and bind `totalRecords` to a matching count query. Use one mode only: reactive reads with events limited to resetting page 1, or non-reactive reads explicitly run by page/search/sort/filter events after the reset. Never wire both, which duplicates requests and can race stale state. Guard offset pagination with `((components.<table>.pageIndex || 1) - 1) * pageSize`.
-- **Prevent double-submit:** bind the submit Button's `Disable` to the mutation query's loading (`{{queries.<mutation>.isLoading}}`) so it can't fire twice, and show its native loading state while the mutation runs. (See "Async & UI states".)
-
-Wire events AFTER the components and queries exist (you need their ids). Prefer one `add_events` call for all ordinary events and one `add_query_lifecycles` call for every standard mutation flow.
+- Dropdown and multiselect fields use `values` plus `displayValues`, not `options`.
+- There is no working `required` flag. Use `validation.minLength` or `validation.customRule` and keep database constraints authoritative.
+- Do not use Form's `filepicker` type even though it is listed: the current renderer throws while reading `minSize` and replaces the entire Form with "Something went wrong". Place a standalone `FilePicker` component outside the Form. Its `.file` variable is an array of `{name, content, dataURL, type, parsedValue}`; read values such as `{{components.evidencePicker.file[0].name}}`.
+- Generated Form is layout-safe only when every field is `textinput`, `number`, `emailinput`, `password`, `datepicker`, or `checkbox`. FormUtils passes no schema alignment through: Dropdown/Multiselect labels are offset or duplicated, while TextArea retains a literal "Label" and may be single-line. If any field needs Dropdown, Multiselect, TextArea, Radio, Toggle, StarRating, or FilePicker, build the whole form from standalone components with `styles.alignment.value="top"`; use a two-column grid for compact fields and full-width TextArea controls.
+- A create-mode datepicker must use `value:"{{null}}"`; a literal/omitted null renders ToolJet's 01/01/2022 demo date.

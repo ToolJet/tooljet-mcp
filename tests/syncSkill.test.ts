@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -30,5 +30,11 @@ describe('sync-skill', () => {
     const expected = readFileSync(resolve(root, 'skill/SKILL.md'), 'utf8');
     expect(readFileSync(join(codexHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
     expect(readFileSync(join(claudeHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
+    const references = readdirSync(resolve(root, 'skill/references')).sort();
+    for (const name of references) {
+      const expectedReference = readFileSync(resolve(root, 'skill/references', name), 'utf8');
+      expect(readFileSync(join(codexHome, 'skills/tooljet-app-builder/references', name), 'utf8')).toBe(expectedReference);
+      expect(readFileSync(join(claudeHome, 'skills/tooljet-app-builder/references', name), 'utf8')).toBe(expectedReference);
+    }
   });
 });

@@ -5,7 +5,7 @@
 // Usage: node scripts/generate-skill.mjs
 //   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
 //        TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
-import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
@@ -116,7 +116,7 @@ const catalogSection = catalog
   .map((c) => `| \`${c.type}\` | ${c.name} — ${c.description} |`)
   .join('\n');
 
-const componentSection = referenceComponentList
+const componentRuleSections = referenceComponentList
   .map((name) => {
     let rule = deAgent(rules[name]);
     const publishedName = LEGACY_REPLACEMENTS[name] ?? name;
@@ -137,9 +137,10 @@ const componentSection = referenceComponentList
     if (name === 'KeyValuePair') {
       rule += ' An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection.';
     }
-    return `### ${publishedName}\n${rule}`;
-  })
-  .join('\n\n');
+    return { sourceName: name, publishedName, markdown: `### ${publishedName}\n${rule}` };
+  });
+
+const componentSection = componentRuleSections.map((section) => section.markdown).join('\n\n');
 
 const fullSkill = `---
 name: tooljet-app-builder
@@ -172,10 +173,10 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_tables({ tables:[...] })\` (one or more tables); \`add_table_column(...)\`. \`drop_table_column\`, \`drop_table\`, and \`delete_page\` are destructive and require explicit user approval plus \`confirm:true\`.
 - \`generate_form_schema({ table_name, mode, initial_values_binding?, include?, field_overrides? })\` → a ready-to-place Form \`properties\` block only for the layout-safe generated types: \`textinput\`, \`number\`, \`emailinput\`, \`password\`, \`datepicker\`, and \`checkbox\`. It rejects schemas needing Dropdown/Multiselect/TextArea/Radio/Toggle/StarRating/FilePicker and tells you to build the entire form from standalone components.
 
-- \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
-- \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug }\`.
-- \`create_app(name)\` → \`{ app_id, version_id, home_page_id, editor_url, viewer_url, app_url }\`. \`app_url\` is a backward-compatible alias for \`editor_url\`. Call first and keep the ids. Share \`editor_url\` so the user can follow authoring live. If a built-in browser is available, wait until the first meaningful page works, then open \`viewer_url\` and reuse that tab at page-level checkpoints. When no browser is available, share both links rather than calling the editor URL a viewer.
-- \`list_datasources(version_id)\` → \`[{ id, name, kind }]\`. Workspace-connected sources available to the current user/environment appear automatically in existing and brand-new apps—there is **no per-app datasource attach/link step**. Use a returned \`id\` directly; if an expected source is absent, check the active workspace, permissions, connection, and environment configuration. ToolJet DB is \`kind: "tooljetdb"\`.
+- \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current, datasources_url }]\`. The workspaces (organizations) this user belongs to; \`datasources_url\` is the manual connection-repair page.
+- \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug, datasources_url }\`.
+- \`create_app(name)\` → \`{ app_id, version_id, home_page_id, editor_url, viewer_url, app_url, datasources_url }\`. \`app_url\` is a backward-compatible alias for \`editor_url\`. Call first and keep the ids. Share \`editor_url\` so the user can follow authoring live. If a built-in browser is available, wait until the first meaningful page works, then open \`viewer_url\` and reuse that tab at page-level checkpoints. When no browser is available, share both links rather than calling the editor URL a viewer.
+- \`list_datasources(version_id)\` → \`[{ id, name, kind, settings_url }]\`. Workspace-connected sources available to the current user/environment appear automatically in existing and brand-new apps—there is **no per-app datasource attach/link step**. Use a returned \`id\` directly; if an expected source is absent, use the workspace \`datasources_url\`; if a known source fails, use its direct \`settings_url\`. ToolJet DB is \`kind: "tooljetdb"\`.
 - \`list_tables()\` → \`[{ id, table_name }]\`. A ToolJet-DB query needs the table's **id** as \`table_id\`.
 - \`get_table_schema(table_name)\` → columns with types, primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships.
 - \`create_tables({ tables:[...] })\` → create a complete ToolJet-DB model in one call. It preflights the whole batch and creates foreign-key dependencies in order; ToolJet has no atomic multi-table endpoint, so an upstream partial failure is reported and never auto-deleted.
@@ -618,7 +619,7 @@ Nested \`Text\` clips to a single line. For multi-line title/description content
 
 \`add_queries\` works on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call \`list_datasources\` to see each datasource's \`kind\`). Only the \`options\` differ per kind:
 
-Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after \`create_app\`, call \`list_datasources(version_id)\` and pass the returned \`id\` to \`add_queries\`. An expected source missing from that result indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment.
+Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after \`create_app\`, call \`list_datasources(version_id)\` and pass the returned \`id\` to \`add_queries\`. An expected source missing from that result indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment. Use the returned workspace \`datasources_url\` or datasource \`settings_url\` for a user-owned repair handoff; never configure credentials or OAuth yourself.
 
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in \`list_datasources\`:
 > - **Say so plainly** — ToolJet has no native integration for it (or it simply isn't connected), and you can't connect one from here. Don't fabricate a query against it or present placeholder data as if it were live.
@@ -679,107 +680,188 @@ The \`Chart\` component fails in a specific, common way: **ToolJet's chart-prope
 Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a \`.map()\` nested inside another \`.map()\` can throw before an \`||\` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.
 `;
 
-function extractTopLevelSection(document, heading) {
+function extractSection(document, heading) {
   const start = document.indexOf(heading);
   if (start < 0) throw new Error(`Missing generated skill section: ${heading}`);
-  const next = document.indexOf('\n## ', start + heading.length);
-  return document.slice(start, next < 0 ? document.length : next).trim();
-}
-
-function replaceTopLevelSection(document, heading, replacement = '') {
-  const start = document.indexOf(heading);
-  if (start < 0) throw new Error(`Missing generated skill section: ${heading}`);
-  const next = document.indexOf('\n## ', start + heading.length);
-  const before = document.slice(0, start).trimEnd();
-  const after = document.slice(next < 0 ? document.length : next + 1).trimStart();
-  return [before, replacement.trim(), after].filter(Boolean).join('\n\n') + '\n';
+  const level = heading.match(/^#+/)?.[0].length;
+  if (!level) throw new Error(`Generated skill heading has no Markdown level: ${heading}`);
+  const tail = document.slice(start + heading.length);
+  const next = new RegExp(`\\n#{1,${level}} `).exec(tail);
+  const end = next ? start + heading.length + next.index : document.length;
+  return document.slice(start, end).trim();
 }
 
 const routedSections = {
-  toolWorkflows: [
+  workflows: [
+    '## What this skill is',
+    '## Be honest about what\'s buildable — don\'t say yes to everything',
     '## The tools',
+    '## Workspace — confirm which one first',
+    '## Before you build — prefer safe defaults; ask only when it changes what you build',
+    '## Plan the app — information architecture BEFORE any component',
+    '## Build in phases — page architecture and phasing are SEPARATE decisions',
+    '## App model & binding syntax',
     '## Reference — look these up as you build',
     '## Avoid these (they silently fail or force rebuilds)',
+    '## Build guidance',
   ],
-  uiAuthoring: [
+  uiLayout: [
     '## Component selection — built-in for interactive/data surfaces, HTML where it makes the UI better',
     '## Canvas & grid mechanics (FACTS — you must respect these to position components)',
     '## Design — decide before you build, then apply the visual defaults',
-    '## Server-side Tables — datasource-neutral recipe',
   ],
-  formsAndInteractions: [
+  tables: ['## Server-side Tables — datasource-neutral recipe'],
+  forms: [
     '## Form construction — choose generated or standalone before creating components',
     '## Forms & modals — field layout (avoid cramped, misaligned fields)',
-    '## Interactivity — wire events so the app DOES things (not just displays)',
   ],
-  verification: ['## Verify your work — browser-free checks first, then a real browser pass'],
+  events: [
+    '## Interactivity — wire events so the app DOES things (not just displays)',
+    '## Async & UI states — required, not polish',
+  ],
+  security: ['## Security boundary — UI behavior is not authorization'],
+  qa: ['## Verify your work — browser-free checks first, then a real browser pass'],
 };
 
-const makeReference = (title, purpose, headings) => `# ${title}\n\n${purpose}\n\n${headings
-  .map((heading) => extractTopLevelSection(fullSkill, heading))
+const makeReference = (title, purpose, headings, document = fullSkill) => `# ${title}\n\n${purpose}\n\n${headings
+  .map((heading) => extractSection(document, heading))
   .join('\n\n')}\n`;
 
-const toolWorkflows = makeReference(
+const workflows = makeReference(
   'Tool workflows and runtime guardrails',
   'Read this only when choosing an authoring/update path, repairing an existing app, or diagnosing a silent ToolJet configuration failure. MCP input schemas and returned warnings remain authoritative.',
-  routedSections.toolWorkflows
+  routedSections.workflows
 );
-const uiAuthoring = makeReference(
+const uiLayout = makeReference(
   'UI authoring and layout',
-  'Read this before laying out a new page, and whenever the page uses a Table, Chart, nested view, or other layout-sensitive surface.',
-  routedSections.uiAuthoring
+  'Read this before laying out a new page or using a Chart, nested view, or other layout-sensitive surface. Table-specific layout and pagination live in tables.md.',
+  routedSections.uiLayout
 );
-const formsAndInteractions = makeReference(
-  'Forms, modals, and interactions',
-  'Read this only when the requested phase contains forms, modals, mutations, or component/query event wiring.',
-  routedSections.formsAndInteractions
+const tableRule = componentRuleSections.find((section) => section.publishedName === 'Table')?.markdown ?? '';
+const tables = `# Tables\n\nRead this whenever a phase contains a Table: binding, row actions, sizing, or server-side pagination.\n\n${routedSections.tables
+  .map((heading) => extractSection(fullSkill, heading))
+  .join('\n\n')}\n\n## Exact Table binding rule\n\n${tableRule}\n\n${extractSection(reference, '## Table row-action Button columns')}\n`;
+
+const formRule = componentRuleSections.find((section) => section.publishedName === 'Form')?.markdown ?? '';
+const forms = `# Forms and modals\n\nRead this only when the phase contains generated or standalone forms, validation, uploads, or modal layout.\n\n${routedSections.forms
+  .map((heading) => extractSection(fullSkill, heading))
+  .join('\n\n')}\n\n## Exact Form binding rule\n\n${formRule}\n\n${extractSection(reference, '## Form schema field contracts and upload workaround')}\n`;
+
+const events = makeReference(
+  'Events, mutations, and async states',
+  'Read this when wiring component, query, page, or Table-column events, and for mutation success/failure/loading behavior.',
+  routedSections.events
 );
-const verification = makeReference(
+const datasourceRepair = `## Missing or broken datasource recovery
+
+\`list_workspaces\` returns \`datasources_url\`; \`list_datasources\` returns a direct \`settings_url\` for each source; failed query runs may return \`recovery:{action:"open_datasource_settings",url,instruction}\`.
+
+When the expected datasource is absent or a connection-backed query fails, explain the failure and ask the user to repair it. If the host has a built-in browser, open the most specific returned URL there; otherwise send the clickable link. Navigation is the only automated action: never enter credentials, authorize OAuth, test the connection, or save settings for the user. Wait for the user to confirm the repair, then refresh \`list_datasources\` and retry at most one explicitly selected safe read. If it still fails, report the error instead of looping.`;
+const datasources = `# Datasources and query contracts
+
+Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n`;
+const security = makeReference(
+  'Security and authorization boundaries',
+  'Read this before adding sensitive data access, user-scoped behavior, permissions, or destructive writes.',
+  routedSections.security
+);
+const qa = makeReference(
   'Verification and browser QA',
   'Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.',
-  routedSections.verification
+  routedSections.qa
 );
+const generalComponentRules = componentRuleSections
+  .filter((section) => !['Table', 'Form'].includes(section.publishedName))
+  .map((section) => section.markdown)
+  .join('\n\n');
+const components = `# Component contracts and specialized rendering\n\nRead this selectively for exact component binding rules or the built-in palette. Prefer batched, section-filtered \`get_component_catalog\` calls for the types actually used.\n\n${extractSection(reference, '## Built-in components (pick from these first)')}\n\n## Component binding reference\n\n${generalComponentRules}\n\n${extractSection(reference, '## File generation formats')}\n\n${extractSection(reference, '## Kanban card content')}\n\n${extractSection(reference, '## Charts — how to make them render reliably (READ THIS before adding a Chart)')}\n`;
 
-const compactVerification = `## Verify every completed page or primary flow
+const skill = `---
+name: tooljet-app-builder
+description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
+metadata:
+  generated_by: scripts/generate-skill.mjs
+  sources:
+    - TJ-AI COMPONENT_BINDING_RULES (${componentList.length} components)
+    - ToolJet WidgetManager catalog (${catalog.length} built-in components)
+    - ToolJet appCanvasConstants (grid mechanics)
+---
 
-Read \`references/verification.md\` at the verification stage. The required loop is: await \`lint_app_spec\` before writes; run only explicitly selected safe reads (with count/large-read/billable-read approval when applicable); inspect scoped persisted values; run \`validate_app\`; then use one viewer-tab browser audit + screenshot, exercise the primary flow, collect all issues, repair in one batch, and run one confirmation pass. Validation is static and never proves query execution, event delivery, or rendering. Never test mutations, AI, email, or other side effects merely to validate a build. For forms/modals, include the DOM rectangle overlap and bounds check.`;
+<!-- GENERATED FILE — do not edit by hand. Run \`node scripts/generate-skill.mjs\` to regenerate every host package. -->
 
-const compactRouting = `## Keep context small — load only the relevant reference
+# ToolJet app builder
 
-Tool input schemas, catalog responses, and returned warnings are authoritative. Do not preload every reference:
+Build only what ToolJet's real components, connected datasources, and MCP tools support. Never invent a property, action, integration, or successful result. User requirements override the adaptable quality defaults in the references.
 
-- Read \`references/ui-authoring.md\` before laying out a new page or using a layout-sensitive Table/Chart/nested view.
-- Read \`references/forms-and-interactions.md\` only for forms, modals, mutations, or event wiring.
-- Read \`references/tool-workflows.md\` only for a non-obvious authoring/update path, an existing-app repair, or a silent runtime/configuration failure.
-- Read \`references/verification.md\` when a page or primary flow is ready for QA.
-- Read \`references/tooljet-reference.md\` selectively for exact per-component binding rules, the built-in palette, and datasource query shapes. Prefer batched, section-filtered catalog tools over loading broad reference material.
+## Core workflow
 
-For a new phase, use \`lint_app_spec\` as an awaited barrier, inspect its warnings/errors, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never dispatch the linter and an apply/write as siblings in parallel. Batch tools are the default surface and accept one item for targeted creates; use update tools for persisted objects. Set \`TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true\` only for an older client that still calls \`create_table\`, \`insert_rows\`, \`add_page\`, \`add_query\`, or \`add_component\`.
+1. Call \`list_workspaces\`; if several exist, confirm and switch before creating anything. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into an overview plus focused pages.
+2. Treat 3+ substantive pages, 2+ complex workflows, a multi-table model, or multiple integrations as a large build. Before mutations, show the page/phase plan and rough time ranges, then ask for phased checkpoints (recommended) or the whole app in one run. Do not re-ask if the user already chose.
+3. Call \`create_app\`, preserve its ids and links, then call \`list_datasources\`. Fetch only the component and datasource contracts needed for the current phase, preferably in batches. Confirm a new data model before creating it.
+4. Plan a complete useful phase with stable \`client_ref\` values. Await \`lint_app_spec\` as a standalone barrier, fix its errors and review warnings, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never run the linter alongside a write. Use update tools—not duplicate resources or a rebuilt app—for persisted repairs.
+5. Verify each completed page/primary flow using \`references/qa.md\`. Static validation does not prove runtime query behavior, rendering, or event delivery.
+6. Share \`editor_url\` while authoring. After the first meaningful page works, open \`viewer_url\` in the built-in browser when available and reuse that tab. Final handoff includes both links, what works, limitations, and a short tool-call-count efficiency note.
 
-For reads, inspect schema first, request explicit columns, and never author or execute \`SELECT *\` against an unfamiliar table. Count first when size is unknown; above 1,000 rows, propose server-side pagination and require explicit user approval before a full read. General permission to build or inspect an app is not consent for a large read.
+## Datasource repair handoff
 
-Seed writes are insert-only: omit generated serial primary keys so ToolJet uses the real sequence. A duplicate-key failure must never be treated as permission to update an existing row. Page/query/component/table/column deletion requires explicit approval for the exact target and \`confirm:true\`; current page-group deletion is deliberately unsupported.
+If an expected source is absent or a query returns a connection failure, explain the problem and use the returned \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the clickable link. Do not enter credentials, authorize OAuth, test, or save the connection for the user. Wait for them to confirm the repair, refresh datasource discovery, and retry at most one selected safe read. Read \`references/datasources.md\` for the full contract and large/billable-read safeguards.
 
-Fix persisted work in place: use bounded \`get_app_summary\`/\`get_component\`, then the relevant \`update_*\` or \`delete_*\` tool. Do not rebuild an app to correct one value.`;
+## Load only the references the phase needs
 
-let skill = replaceTopLevelSection(fullSkill, routedSections.toolWorkflows[0], compactRouting);
-skill = replaceTopLevelSection(skill, routedSections.verification[0], compactVerification);
-for (const heading of [
-  ...routedSections.toolWorkflows.slice(1),
-  ...routedSections.uiAuthoring,
-  ...routedSections.formsAndInteractions,
-]) {
-  skill = replaceTopLevelSection(skill, heading);
+- \`references/workflows.md\` — tool selection, plan/apply behavior, repair, reuse, deletion, and silent-failure guardrails.
+- \`references/ui-layout.md\` — page design, canvas geometry, nested layouts, charts, and visual defaults.
+- \`references/tables.md\` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
+- \`references/forms.md\` — generated-vs-standalone forms, validation, uploads, and modal geometry.
+- \`references/events.md\` — component/query/page events, mutation lifecycles, loading, empty, error, and success states.
+- \`references/datasources.md\` — connection recovery, exact query shapes, schema introspection, ToolJet DB, SQL, large reads, and billable reads.
+- \`references/security.md\` — authorization boundaries, current-user variables, permissions, and sensitive/destructive operations.
+- \`references/qa.md\` — static checks, safe runtime checks, the browser audit, triage, and confirmation.
+- \`references/components.md\` — selective component palette and exact binding/rendering rules not covered by Table/Form references.
+
+Tool schemas, catalog responses, and returned warnings are authoritative. Do not preload every reference.
+
+## Non-negotiable safety
+
+- Never author or execute \`SELECT *\` against an unfamiliar table. Count first when size is unknown; above 1,000 rows prefer server-side pagination. Large and billable reads require separate explicit approvals.
+- Never run mutations, AI, email, OAuth, or other side effects merely to validate a build.
+- Seed writes are insert-only; omit generated serial keys. A duplicate-key failure is never permission to update existing rows.
+- Page/query/component/table/column deletion requires exact-target approval plus \`confirm:true\`. Visibility is not authorization.
+- Batch/phase writes can partially persist. Read reported completed resources and repair in place; never auto-delete or replay the whole batch blindly.
+`;
+
+const references = {
+  'workflows.md': workflows,
+  'ui-layout.md': uiLayout,
+  'tables.md': tables,
+  'forms.md': forms,
+  'events.md': events,
+  'datasources.md': datasources,
+  'security.md': security,
+  'qa.md': qa,
+  'components.md': components,
+};
+
+const hostSkillRoots = [
+  resolve(root, 'skill'),
+  resolve(root, 'skills/tooljet-app-builder'),
+];
+const canonicalAudit = resolve(root, 'skill/scripts/browser-audit.js');
+for (const outputRoot of hostSkillRoots) {
+  const referencesDir = resolve(outputRoot, 'references');
+  rmSync(referencesDir, { recursive: true, force: true });
+  mkdirSync(referencesDir, { recursive: true });
+  writeFileSync(resolve(outputRoot, 'SKILL.md'), skill.trimEnd() + '\n');
+  for (const [name, content] of Object.entries(references)) {
+    writeFileSync(resolve(referencesDir, name), content.trimEnd() + '\n');
+  }
+  if (outputRoot !== hostSkillRoots[0]) {
+    const scriptsDir = resolve(outputRoot, 'scripts');
+    mkdirSync(scriptsDir, { recursive: true });
+    copyFileSync(canonicalAudit, resolve(scriptsDir, 'browser-audit.js'));
+  }
 }
-skill = skill.trimEnd() + '\n';
 
-writeFileSync(resolve(root, 'skill/SKILL.md'), skill);
-mkdirSync(resolve(root, 'skill/references'), { recursive: true });
-writeFileSync(resolve(root, 'skill/references/tooljet-reference.md'), reference);
-writeFileSync(resolve(root, 'skill/references/tool-workflows.md'), toolWorkflows);
-writeFileSync(resolve(root, 'skill/references/ui-authoring.md'), uiAuthoring);
-writeFileSync(resolve(root, 'skill/references/forms-and-interactions.md'), formsAndInteractions);
-writeFileSync(resolve(root, 'skill/references/verification.md'), verification);
 console.log(
-  `Generated compact skill/SKILL.md (${skill.trim().split(/\s+/).length} words) + 5 routed references — ${componentList.length} components, grid ${grid.columns} cols / ${grid.rowSnapPx}px snap.`
+  `Generated 2 host packages from one source: SKILL.md (${skill.trim().split(/\s+/).length} words) + ` +
+    `${Object.keys(references).length} focused references — ${componentList.length} components, grid ${grid.columns} cols / ${grid.rowSnapPx}px snap.`
 );

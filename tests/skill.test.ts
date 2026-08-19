@@ -1,16 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const skill = readFileSync(resolve(root, 'skill/SKILL.md'), 'utf8');
-const reference = readFileSync(resolve(root, 'skill/references/tooljet-reference.md'), 'utf8');
-const toolWorkflows = readFileSync(resolve(root, 'skill/references/tool-workflows.md'), 'utf8');
-const uiAuthoring = readFileSync(resolve(root, 'skill/references/ui-authoring.md'), 'utf8');
-const formsAndInteractions = readFileSync(resolve(root, 'skill/references/forms-and-interactions.md'), 'utf8');
-const verification = readFileSync(resolve(root, 'skill/references/verification.md'), 'utf8');
-const guidance = [skill, reference, toolWorkflows, uiAuthoring, formsAndInteractions, verification].join('\n');
+const readReference = (name: string) => readFileSync(resolve(root, 'skill/references', name), 'utf8');
+const components = readReference('components.md');
+const datasources = readReference('datasources.md');
+const events = readReference('events.md');
+const forms = readReference('forms.md');
+const qa = readReference('qa.md');
+const security = readReference('security.md');
+const tables = readReference('tables.md');
+const uiLayout = readReference('ui-layout.md');
+const workflows = readReference('workflows.md');
+// Compatibility aggregates keep assertions scoped by subject while the published files stay focused.
+const reference = [components, datasources, forms, tables].join('\n');
+const toolWorkflows = workflows;
+const uiAuthoring = uiLayout;
+const formsAndInteractions = [forms, events].join('\n');
+const verification = qa;
+const guidance = [skill, workflows, uiLayout, tables, forms, events, datasources, security, qa, components].join('\n');
 const both = guidance;
 // The generator holds the skill body in a template literal, so backticks are escaped (\`) in source.
 // Unescape them so anchor comparisons match the rendered skill text.
@@ -28,12 +39,42 @@ const designSection = section(uiAuthoring, '## Design — decide before you buil
 
 describe('generated skill — progressive disclosure', () => {
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
-    expect(skill.trim().split(/\s+/).length).toBeLessThan(3_000);
-    expect(guidance).toContain('## Keep context small — load only the relevant reference');
-    expect(guidance).toContain('`references/ui-authoring.md`');
-    expect(guidance).toContain('`references/forms-and-interactions.md`');
-    expect(guidance).toContain('`references/tool-workflows.md`');
-    expect(guidance).toContain('`references/verification.md`');
+    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_000);
+    expect(skill).toContain('## Load only the references the phase needs');
+    for (const name of [
+      'workflows.md', 'ui-layout.md', 'tables.md', 'forms.md', 'events.md',
+      'datasources.md', 'security.md', 'qa.md', 'components.md',
+    ]) {
+      expect(skill).toContain(`\`references/${name}\``);
+    }
+    expect(skill).not.toContain('## Server-side Tables — datasource-neutral recipe');
+    expect(skill).not.toContain('## Forms & modals — field layout');
+    expect(skill).not.toContain('## Interactivity — wire events');
+    expect(skill).not.toContain('## Datasource query reference');
+    expect(skill).not.toContain('## Security boundary — UI behavior is not authorization');
+    expect(skill).not.toContain('## Verify your work — browser-free checks first');
+    expect(tables).toContain('## Server-side Tables — datasource-neutral recipe');
+    expect(forms).toContain('## Forms & modals — field layout');
+    expect(events).toContain('## Interactivity — wire events');
+    expect(datasources).toContain('## Datasource query reference');
+    expect(security).toContain('## Security boundary — UI behavior is not authorization');
+    expect(qa).toContain('## Verify your work — browser-free checks first');
+  });
+
+  it('generates identical canonical and packaged host outputs', () => {
+    const canonical = resolve(root, 'skill');
+    const packaged = resolve(root, 'skills/tooljet-app-builder');
+    expect(readFileSync(resolve(packaged, 'SKILL.md'), 'utf8')).toBe(readFileSync(resolve(canonical, 'SKILL.md'), 'utf8'));
+    const canonicalReferences = readdirSync(resolve(canonical, 'references')).sort();
+    expect(readdirSync(resolve(packaged, 'references')).sort()).toEqual(canonicalReferences);
+    for (const name of canonicalReferences) {
+      expect(readFileSync(resolve(packaged, 'references', name), 'utf8')).toBe(
+        readFileSync(resolve(canonical, 'references', name), 'utf8')
+      );
+    }
+    expect(readFileSync(resolve(packaged, 'scripts/browser-audit.js'), 'utf8')).toBe(
+      readFileSync(resolve(canonical, 'scripts/browser-audit.js'), 'utf8')
+    );
   });
 });
 
@@ -285,6 +326,16 @@ describe('generated skill — workspaces', () => {
     expect(guidance).toMatch(/no per-app datasource attach\/link step/i);
     expect(reference).toMatch(/after `create_app`, call `list_datasources\(version_id\)`/i);
     expect(reference).toMatch(/wrong workspace, insufficient permission.*environment configuration/i);
+  });
+
+  it('hands broken datasource connections back to the user in the built-in browser', () => {
+    expect(skill).toMatch(/datasources_url.*settings_url.*recovery\.url/is);
+    expect(skill).toMatch(/Open it in the built-in browser when available/i);
+    expect(datasources).toMatch(/Navigation is the only automated action/i);
+    expect(datasources).toMatch(/never enter credentials, authorize OAuth, test the connection, or save settings/i);
+    expect(datasources).toMatch(/Wait for the user to confirm.*retry at most one.*safe read/is);
+    expect(workflows).toMatch(/list_workspaces\(\).*datasources_url/is);
+    expect(workflows).toMatch(/list_datasources\(version_id\).*settings_url/is);
   });
 });
 
