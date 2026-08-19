@@ -5,7 +5,7 @@
 // Produces (all committed, so the plugin installs from git with no build/npm step):
 //   bundle/index.js                     — single-file esbuild bundle of the server (no node_modules)
 //   skills/tooljet-app-builder/          — the generated skill (SKILL.md + references)
-//   data/{component,datasource}-schemas.json — read at runtime as ../data relative to bundle/index.js
+//   data component/datasource schemas + compatibility metadata — read at runtime as ../data
 //
 // The bundle is built from the tsc output (dist/), NOT src/, so the NodeNext `.js` import
 // specifiers resolve to real files (esbuild can't map `./foo.js` → `foo.ts` on its own).
@@ -25,8 +25,8 @@ run(
     '--outfile=bundle/index.js --legal-comments=none'
 );
 
-// 2. The two catalogs are read at runtime via `../data/*.json` relative to the bundle. Assert they ship.
-for (const f of ['component-schemas.json', 'datasource-schemas.json']) {
+// 2. Runtime catalogs and compatibility metadata live at `../data/*.json`. Assert they ship.
+for (const f of ['component-schemas.json', 'component-compatibility.json', 'datasource-schemas.json']) {
   if (!existsSync(resolve(root, 'data', f))) {
     throw new Error(`build-plugin: missing data/${f} — run "npm run generate:catalogs" first.`);
   }

@@ -31210,17 +31210,30 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname as dirname2, resolve } from "node:path";
 var dataPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
 var cache = null;
+var legacyReplacements = null;
 function load() {
   if (!cache)
     cache = JSON.parse(readFileSync(dataPath, "utf8"));
   return cache;
 }
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
 function getCatalog() {
-  return Object.values(load()).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+  const legacy = loadLegacyReplacements();
+  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
 }
 function getComponentSchema(type) {
   return load()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
 }
 
 // dist/componentParent.js
@@ -31344,6 +31357,23 @@ var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
 function propVal(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
+}
+function editDistance(left, right) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(current[rightIndex - 1] + 1, previous[rightIndex] + 1, previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1));
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[right.length];
+}
+function nearestCatalogKey(value, candidates) {
+  const normalized2 = value.toLowerCase();
+  const ranked = candidates.map((candidate) => ({ candidate, distance: editDistance(normalized2, candidate.toLowerCase()) })).sort((left, right) => left.distance - right.distance || left.candidate.localeCompare(right.candidate));
+  const best = ranked[0];
+  return best && best.distance <= Math.max(2, Math.floor(normalized2.length * 0.25)) ? best.candidate : void 0;
 }
 function projectedTableDataKeys(value) {
   if (typeof value !== "string" || !/\.map\s*\(/.test(value))
@@ -31780,12 +31810,32 @@ function lintComponentSpec(spec) {
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
+  if (!spec.type) {
+    errors.push(`Component "${label}": type is required.`);
+  } else if (!componentSchema) {
+    const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
+    errors.push(`Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+  } else {
+    const replacement = getLegacyComponentReplacement(spec.type);
+    if (replacement) {
+      warnings.push(`Component "${label}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
+    }
+  }
   for (const [sectionName, authored, entries] of [
     ["property", spec.properties, componentSchema?.properties],
     ["style", spec.styles, componentSchema?.styles]
   ]) {
     if (!authored || !entries)
       continue;
+    const knownKeys = entries.map((entry) => entry.key);
+    for (const key of Object.keys(authored)) {
+      if (knownKeys.includes(key))
+        continue;
+      if (sectionName === "property" && STYLE_KEYS_IN_PROPERTIES.has(key))
+        continue;
+      const suggestion = nearestCatalogKey(key, knownKeys);
+      warnings.push(`Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Check get_component_catalog before authoring this key."));
+    }
     for (const entry of entries) {
       if (!entry.allowedValues?.length)
         continue;
@@ -32449,6 +32499,19 @@ function tableCreationLevels(tables) {
 }
 
 // dist/tooljetClient.js
+var PartialWriteError = class extends Error {
+  completed;
+  failures;
+  constructor(operation, completed, failures) {
+    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`);
+    this.name = "PartialWriteError";
+    this.completed = completed;
+    this.failures = failures;
+  }
+};
+function completedPartialWrites(error51) {
+  return error51 instanceof PartialWriteError ? error51.completed : [];
+}
 function assertAllowedToolJetDbColumnNames(operation, columns) {
   const reserved = columns.map((column) => column.name).filter((name) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name.toLowerCase()));
   if (reserved.length) {
@@ -32536,6 +32599,8 @@ function createClient(auth, config2) {
       icon: p.icon,
       hidden: p.hidden?.value === true,
       ...typeof p.index === "number" ? { index: p.index } : {},
+      ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
+      ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry))
     }));
     const queries = (full.data_queries ?? []).map((q) => ({
@@ -32580,6 +32645,7 @@ function createClient(auth, config2) {
     const created = await createRes.json();
     const app = await getApp(created.id);
     const versionId = app.editing_version.id;
+    const versionName = app.editing_version.name ?? "v1";
     const pages = app.pages ?? [];
     const homePage = pages.find((p) => p.name === "Home") ?? pages[0];
     if (!homePage) {
@@ -32587,11 +32653,16 @@ function createClient(auth, config2) {
     }
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
+    const editorUrl = `${config2.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const homeHandle = homePage.handle ?? "home";
+    const viewerUrl = `${config2.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}`;
     return {
       app_id: created.id,
       version_id: versionId,
       home_page_id: homePage.id,
-      app_url: `${config2.appUrl}/${orgSlug}/apps/${appSlug}`
+      app_url: editorUrl,
+      editor_url: editorUrl,
+      viewer_url: viewerUrl
     };
   }
   async function listTables() {
@@ -32624,7 +32695,7 @@ function createClient(auth, config2) {
       seenHandles.add(handle);
       return { ...page, id: randomUUID(), handle, index: startIndex + offset };
     });
-    await Promise.all(entries.map(async (page) => {
+    const createSettled = await Promise.allSettled(entries.map(async (page) => {
       const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32637,30 +32708,44 @@ function createClient(auth, config2) {
         })
       });
       await assertOk(res, `createPages "${page.name}"`);
+      return page;
     }));
-    await Promise.all(entries.flatMap((page) => [
-      ...page.icon ? [persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`)] : [],
-      ...page.hidden ? [persistFieldForPage(page.id, "hidden", { value: true }, `createPages "${page.name}" hidden update`)] : []
-    ]));
-    if (entries.some((page) => page.icon || page.hidden)) {
-      const refreshed = await getApp(params.appId);
-      for (const entry of entries) {
-        const page = (refreshed.pages ?? []).find((candidate) => candidate.id === entry.id);
-        if (entry.icon && page?.icon !== entry.icon) {
-          throw new Error(`ToolJet createPages failed: page "${entry.name}" was created, but sidebar icon "${entry.icon}" did not persist.`);
+    const createdEntries = createSettled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    const failures = createSettled.flatMap((result, index) => result.status === "rejected" ? [`${entries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
+    const metadataTasks = createdEntries.flatMap((page) => [
+      ...page.icon ? [{ page, field: "icon", promise: persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`) }] : [],
+      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", { value: true }, `createPages "${page.name}" hidden update`) }] : []
+    ]);
+    const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
+    failures.push(...metadataSettled.flatMap((result, index) => result.status === "rejected" ? [`${metadataTasks[index].page.name} ${metadataTasks[index].field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []));
+    let persistedById = /* @__PURE__ */ new Map();
+    if (createdEntries.some((page) => page.icon || page.hidden)) {
+      try {
+        const refreshed = await getApp(params.appId);
+        persistedById = new Map((refreshed.pages ?? []).map((page) => [page.id, page]));
+        for (const entry of createdEntries) {
+          const page = persistedById.get(entry.id);
+          if (entry.icon && page?.icon !== entry.icon) {
+            failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
+          }
+          if (entry.hidden && page?.hidden?.value !== true) {
+            failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
+          }
         }
-        if (entry.hidden && page?.hidden?.value !== true) {
-          throw new Error(`ToolJet createPages failed: page "${entry.name}" was created, but hidden-from-sidebar did not persist.`);
-        }
+      } catch (error51) {
+        failures.push(`page metadata readback: ${error51 instanceof Error ? error51.message : String(error51)}`);
       }
     }
-    return entries.map((page) => ({
+    const completed = createdEntries.map((page) => ({
       page_id: page.id,
       name: page.name,
       index: page.index,
-      ...page.icon ? { icon: page.icon } : {},
-      ...page.hidden ? { hidden: true } : {}
+      ...persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon } : {},
+      ...persistedById.get(page.id)?.hidden?.value === true ? { hidden: true } : {}
     }));
+    if (failures.length)
+      throw new PartialWriteError("createPages", completed, failures);
+    return completed;
     async function persistFieldForPage(pageId, field, value, label) {
       const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "PUT",
@@ -32792,6 +32877,14 @@ function createClient(auth, config2) {
   }
   async function createEvents(params) {
     const indexBySource = {};
+    for (const existing of params.existingEvents) {
+      if (!existing.sourceId || !existing.target || typeof existing.index !== "number")
+        continue;
+      const raw = existing.event && typeof existing.event === "object" && !Array.isArray(existing.event) ? existing.event : void 0;
+      const ref = typeof raw?.ref === "string" ? raw.ref : "";
+      const sourceKey = `${existing.target}:${existing.sourceId}:${ref}`;
+      indexBySource[sourceKey] = Math.max(indexBySource[sourceKey] ?? 0, existing.index + 1);
+    }
     const events = params.events.map((e) => {
       const sourceKey = `${e.sourceType}:${e.sourceId}:${e.ref ?? ""}`;
       const index = indexBySource[sourceKey] ?? 0;
@@ -32892,7 +32985,7 @@ function createClient(auth, config2) {
           failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
       });
       if (failures.length) {
-        throw new Error(`ToolJet createTables partially failed. Created: ${created.map((table) => table.table_name).join(", ") || "none"}. Failed: ${failures.join(" | ")}. Existing tables were not deleted automatically.`);
+        throw new PartialWriteError("createTables", created, failures);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -32982,8 +33075,14 @@ function createClient(auth, config2) {
   async function insertRowsBatch(params) {
     const results = [];
     for (const table of params.tables) {
-      const result = await insertRows(table);
-      results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
+      try {
+        const result = await insertRows(table);
+        results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
+      } catch (error51) {
+        throw new PartialWriteError("insertRowsBatch", results, [
+          `${table.tableName}: ${error51 instanceof Error ? error51.message : String(error51)}`
+        ]);
+      }
     }
     return results;
   }
@@ -33008,13 +33107,18 @@ function createClient(auth, config2) {
     const needResolve = params.queries.some((q) => !q.kind);
     const dsList = needResolve ? await listDatasources(params.versionId) : [];
     const kindOf = (id) => dsList.find((d) => d.id === id)?.kind;
-    return Promise.all(params.queries.map((q) => createQuery({
+    const settled = await Promise.allSettled(params.queries.map((q) => createQuery({
       versionId: params.versionId,
       dataSourceId: q.dataSourceId,
       name: q.name,
       options: q.options,
       kind: q.kind ?? kindOf(q.dataSourceId)
     })));
+    const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    const failures = settled.flatMap((result, index) => result.status === "rejected" ? [`${params.queries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
+    if (failures.length)
+      throw new PartialWriteError("createQueries", completed, failures);
+    return completed;
   }
   function buildComponentDto(spec) {
     const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
@@ -33359,7 +33463,7 @@ function useWorkspaceTool(client) {
 function createAppTool(client) {
   return {
     name: "create_app",
-    description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, and app_url needed by other tools.",
+    description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, and app_url (a backward-compatible alias for editor_url).",
     inputSchema: {
       name: external_exports.string().min(1)
     },
@@ -33619,7 +33723,7 @@ var seedSchema = external_exports.object({
 function insertRowsBatchTool(client) {
   return {
     name: "insert_rows_batch",
-    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. Keep initial demo data representative and small.",
+    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -33694,6 +33798,14 @@ function selectSchema(schema, args) {
   }
   return result;
 }
+function legacyNotice(type) {
+  const replacement = getLegacyComponentReplacement(type);
+  return replacement ? {
+    deprecated: true,
+    replacement,
+    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
+  } : {};
+}
 function getComponentCatalogTool(_client) {
   return {
     name: "get_component_catalog",
@@ -33722,7 +33834,11 @@ function getComponentCatalogTool(_client) {
           if (!schema) {
             return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
           }
-          return ok({ ...selectSchema(schema, args), ...resolved.alias ? { alias: resolved.alias } : {} });
+          return ok({
+            ...selectSchema(schema, args),
+            ...legacyNotice(schema.type),
+            ...resolved.alias ? { alias: resolved.alias } : {}
+          });
         }
         const requestedTypes = [...new Set(args.types)];
         const components = [];
@@ -33743,6 +33859,7 @@ function getComponentCatalogTool(_client) {
         for (const { schema, aliases } of byResolvedType.values()) {
           components.push({
             ...selectSchema(schema, args),
+            ...legacyNotice(schema.type),
             ...aliases.length ? { requested_aliases: aliases } : {}
           });
         }
@@ -34209,7 +34326,7 @@ function getAppTool(client) {
 
 // dist/appSummarySelection.js
 var APP_FIELDS = ["app_id", "name", "version_id"];
-var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index"];
+var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
   "name",
@@ -34311,7 +34428,7 @@ var fieldList = external_exports.array(external_exports.string()).min(1).optiona
 function getAppSummaryTool(client) {
   return {
     name: "get_app_summary",
-    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index), component(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
+    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
       sections: external_exports.array(external_exports.enum(["pages", "queries", "events"])).optional(),
@@ -34412,6 +34529,12 @@ function propVal2(properties, key) {
 function isFalseBinding2(value) {
   return value === false || value === "false" || value === "{{false}}";
 }
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function nonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
 function validateTableColumnRef(source, ref) {
   if (!ref)
     return 'Table Button-column events require ref "<column key or name>::<button id>".';
@@ -34435,7 +34558,7 @@ function validateTableColumnRef(source, ref) {
   }
   return void 0;
 }
-function validateEvents(summary, events) {
+function validateEvents(summary, events, options = {}) {
   const errors = [];
   const warnings = [];
   const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
@@ -34503,15 +34626,73 @@ function validateEvents(summary, events) {
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
-      if (typeof modal !== "string" || !components.has(modal)) {
+      const target = typeof modal === "string" ? components.get(modal) : void 0;
+      if (!target) {
         errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
+      } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
+        errors.push(`${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
-      if (typeof componentId !== "string" || !components.has(componentId)) {
+      const target = typeof componentId === "string" ? components.get(componentId) : void 0;
+      if (!target) {
         errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
+      } else {
+        const handle = event.action.componentSpecificActionHandle;
+        const schema = target.type ? getComponentSchema(target.type) : null;
+        const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
+        if (!nonEmptyString(handle)) {
+          errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
+        } else if (!componentAction) {
+          errors.push(`${label}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+        } else {
+          const params = event.action.componentSpecificActionParams;
+          if (params !== void 0 && !Array.isArray(params)) {
+            errors.push(`${label}: componentSpecificActionParams must be an array.`);
+          } else if (Array.isArray(params)) {
+            const supplied = new Set(params.flatMap((param) => isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []));
+            if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
+              errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
+            }
+            const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
+            const missing = requiredHandles.filter((required2) => !supplied.has(required2));
+            if (missing.length) {
+              errors.push(`${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
+            }
+          } else if ((componentAction.params?.length ?? 0) > 0) {
+            errors.push(`${label}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
+          }
+        }
       }
+    }
+    if (actionId === "scroll-component-into-view") {
+      const componentId = event.action.componentId;
+      if (typeof componentId !== "string" || !components.has(componentId)) {
+        errors.push(`${label}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
+      }
+    }
+    if (actionId === "show-alert") {
+      if (!nonEmptyString(event.action.message))
+        errors.push(`${label}: show-alert requires a non-empty message.`);
+      if (!["success", "info", "warning", "error"].includes(String(event.action.alertType))) {
+        errors.push(`${label}: show-alert alertType must be success, info, warning, or error.`);
+      }
+    }
+    if (["set-custom-variable", "set-page-variable", "set-localstorage-value"].includes(actionId)) {
+      if (!nonEmptyString(event.action.key))
+        errors.push(`${label}: ${actionId} requires a non-empty key.`);
+      if (!Object.prototype.hasOwnProperty.call(event.action, "value"))
+        errors.push(`${label}: ${actionId} requires value.`);
+    }
+    if (actionId === "unset-custom-variable" && !nonEmptyString(event.action.key)) {
+      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
+    }
+    if (actionId === "open-webpage" && !nonEmptyString(event.action.url)) {
+      errors.push(`${label}: open-webpage requires a non-empty url.`);
+    }
+    if (actionId === "copy-to-clipboard" && !Object.prototype.hasOwnProperty.call(event.action, "contentToCopy")) {
+      errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
     }
     if (actionId === "set-table-page") {
       const tableId = event.action.table;
@@ -34533,20 +34714,45 @@ function validateEvents(summary, events) {
       }
     }
   });
+  const chainKey = (event) => [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0");
+  const touchedChains = new Set(events.map(chainKey));
   const chains = /* @__PURE__ */ new Map();
-  events.forEach((event, index) => {
-    const key = [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0");
+  for (const persisted of options.includePersistedChains === false ? [] : summary.events) {
+    const raw = isRecord(persisted.event) ? persisted.event : void 0;
+    const sourceType = persisted.target;
+    const trigger = raw?.eventId;
+    if (!raw || !persisted.sourceId || !sourceType || !nonEmptyString(trigger))
+      continue;
+    const event = {
+      sourceId: persisted.sourceId,
+      sourceType,
+      ref: nonEmptyString(raw.ref) ? raw.ref : void 0,
+      trigger,
+      action: raw,
+      name: persisted.name
+    };
+    const key = chainKey(event);
+    if (!touchedChains.has(key))
+      continue;
     const chain = chains.get(key) ?? [];
-    chain.push({ event, index });
+    chain.push({ event, index: persisted.index ?? 0, persisted: true });
+    chains.set(key, chain);
+  }
+  events.forEach((event, index) => {
+    const key = chainKey(event);
+    const chain = chains.get(key) ?? [];
+    const lastPersistedIndex = chain.reduce((maximum, item) => item.persisted ? Math.max(maximum, item.index) : maximum, -1);
+    chain.push({ event, index: lastPersistedIndex + index + 1, persisted: false });
     chains.set(key, chain);
   });
   for (const chain of chains.values()) {
+    chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
     if (navigationIndex === -1 || navigationIndex === chain.length - 1)
       continue;
     const navigation = chain[navigationIndex];
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label = navigation.event.name ? `Event "${navigation.event.name}"` : `Event[${navigation.index}]`;
+    const label = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
     errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
@@ -34586,6 +34792,7 @@ var SQL_KINDS = /* @__PURE__ */ new Set([
   "oracle",
   "sqlite"
 ]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift"]);
 function record2(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
 }
@@ -34607,8 +34814,9 @@ function sqlSource(sql) {
   const match = sql.match(/\bfrom\s+((?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?)/i);
   return match ? { kind: "sql_table", value: normalizeSqlTable(match[1]) } : void 0;
 }
-function assessSql(sql) {
+function assessSql(sql, datasourceKind, datasourceId) {
   const compact = stripSql(sql);
+  const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
   if (!compact || /;\s*\S/.test(compact)) {
     return {
       provenRead: false,
@@ -34616,7 +34824,8 @@ function assessSql(sql) {
       countOnly: false,
       selectStar: false,
       requiresCountPreflight: false,
-      reason: "SQL is empty or contains more than one statement"
+      reason: "SQL is empty or contains more than one statement",
+      ...identity
     };
   }
   if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
@@ -34625,7 +34834,8 @@ function assessSql(sql) {
       directSafe: true,
       countOnly: false,
       selectStar: false,
-      requiresCountPreflight: false
+      requiresCountPreflight: false,
+      ...identity
     };
   }
   if (!/^select\b/i.test(compact)) {
@@ -34635,7 +34845,30 @@ function assessSql(sql) {
       countOnly: false,
       selectStar: false,
       requiresCountPreflight: false,
-      reason: "SQL is not a single proven read statement"
+      reason: "SQL is not a single proven read statement",
+      ...identity
+    };
+  }
+  if (/\binto\s+(?:temp(?:orary)?\s+|unlogged\s+)?[`"\[]?[A-Za-z_$]/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SELECT INTO creates or replaces data and is not a read-only query",
+      ...identity
+    };
+  }
+  if (/\bfor\s+(?:no\s+key\s+update|key\s+share|update|share)\b|\block\s+in\s+share\s+mode\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Locking SELECT statements are not side-effect-free reads",
+      ...identity
     };
   }
   const fromIndex = compact.search(/\bfrom\b/i);
@@ -34643,8 +34876,12 @@ function assessSql(sql) {
   const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
   const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(selectClause);
   const source = sqlSource(compact);
+  const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
+  const simpleSourceRead = !!source && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
   const limit = compact.match(/\blimit\s+(\d+)\b/i);
   const maxRows = limit ? Number(limit[1]) : void 0;
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(datasourceKind) && fromIndex >= 0;
+  const fullSourceCount = countOnly && /^count\s*\(\s*\*\s*\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause) && simpleSourceRead && !/\b(where|group\s+by|having|limit|offset)\b/i.test(compact);
   if (selectStar) {
     return {
       provenRead: true,
@@ -34654,21 +34891,23 @@ function assessSql(sql) {
       requiresCountPreflight: false,
       source,
       maxRows,
+      simpleSourceRead,
+      ...identity,
       reason: "SELECT * is refused. Inspect the schema and select only the required columns."
     };
   }
-  if (countOnly || fromIndex < 0) {
-    return {
-      provenRead: true,
-      directSafe: true,
-      countOnly,
-      selectStar: false,
-      requiresCountPreflight: false,
-      source,
-      maxRows: countOnly ? 1 : maxRows
-    };
-  }
-  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+  if (fromIndex < 0) {
+    if (/\b[A-Za-z_$][\w$.]*\s*\(/.test(selectClause)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "Function-only SELECT statements cannot be proven side-effect-free",
+        ...identity
+      };
+    }
     return {
       provenRead: true,
       directSafe: true,
@@ -34676,7 +34915,37 @@ function assessSql(sql) {
       selectStar: false,
       requiresCountPreflight: false,
       source,
-      maxRows
+      maxRows,
+      ...identity
+    };
+  }
+  if (countOnly) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      fullSourceCount,
+      simpleSourceRead,
+      source,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead,
+      source,
+      maxRows,
+      ...identity
     };
   }
   return {
@@ -34685,8 +34954,11 @@ function assessSql(sql) {
     countOnly: false,
     selectStar: false,
     requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead,
     source,
     maxRows,
+    ...identity,
     reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
@@ -34698,6 +34970,29 @@ function countAggregate(options) {
     return false;
   return Object.values(aggregates).every((aggregate) => record2(aggregate)?.aggFx === "count");
 }
+function fullToolJetDbCount(options) {
+  if (!countAggregate(options))
+    return false;
+  const listRows = record2(options.list_rows);
+  const aggregates = record2(listRows.aggregates);
+  if (Object.keys(aggregates).length !== 1)
+    return false;
+  const aggregate = record2(Object.values(aggregates)[0]);
+  if (aggregate?.column !== "id")
+    return false;
+  const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
+  return Object.entries(listRows).every(([key, value]) => {
+    if (ignoredForScope.has(key))
+      return true;
+    if (value === void 0 || value === null || value === "")
+      return true;
+    if (Array.isArray(value))
+      return value.length === 0;
+    if (record2(value))
+      return Object.keys(record2(value)).length === 0;
+    return false;
+  });
+}
 function guiSource(kind, options) {
   if (kind === "tooljetdb" && typeof options.table_id === "string") {
     return { kind: "table_id", value: options.table_id };
@@ -34708,8 +35003,10 @@ function guiSource(kind, options) {
   const schema = typeof options.schema === "string" ? `${options.schema}.` : "";
   return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
 }
-function assessListRows(kind, options) {
+function assessListRows(kind, options, datasourceId) {
   const source = guiSource(kind, options);
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(kind);
+  const identity = { datasourceKind: kind, ...datasourceId ? { datasourceId } : {} };
   if (kind === "tooljetdb" && countAggregate(options)) {
     return {
       provenRead: true,
@@ -34717,8 +35014,11 @@ function assessListRows(kind, options) {
       countOnly: true,
       selectStar: false,
       requiresCountPreflight: false,
+      fullSourceCount: fullToolJetDbCount(options),
+      simpleSourceRead: true,
       source,
-      maxRows: 1
+      maxRows: 1,
+      ...identity
     };
   }
   const listRows = record2(options.list_rows);
@@ -34726,12 +35026,15 @@ function assessListRows(kind, options) {
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
       provenRead: true,
-      directSafe: true,
+      directSafe: !billableRead,
       countOnly: false,
       selectStar: false,
       requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead: true,
       source,
-      maxRows
+      maxRows,
+      ...identity
     };
   }
   return {
@@ -34740,13 +35043,17 @@ function assessListRows(kind, options) {
     countOnly: false,
     selectStar: false,
     requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead: true,
     source,
     maxRows,
+    ...identity,
     reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
 function assessQueryRead(query) {
   const kind = query.kind?.toLowerCase();
+  const datasourceId = query.data_source_id;
   const options = record2(query.options);
   if (!kind || !options) {
     return {
@@ -34761,10 +35068,10 @@ function assessQueryRead(query) {
   const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
-      return assessListRows(kind, options);
+      return assessListRows(kind, options, datasourceId);
     if (operation === "sql_execution") {
       const sql = record2(options.sql_execution)?.sqlQuery;
-      return typeof sql === "string" ? assessSql(sql) : {
+      return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
         provenRead: false,
         directSafe: false,
         countOnly: false,
@@ -34784,9 +35091,9 @@ function assessQueryRead(query) {
   }
   if (SQL_KINDS.has(kind)) {
     if (operation === "list_rows" || options.mode === "gui")
-      return assessListRows(kind, options);
+      return assessListRows(kind, options, datasourceId);
     const sql = typeof options.query === "string" ? options.query : typeof options.sql === "string" ? options.sql : void 0;
-    return sql ? assessSql(sql) : {
+    return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
       countOnly: false,
@@ -34805,7 +35112,7 @@ function assessQueryRead(query) {
   };
 }
 function sameReadSource(target, count) {
-  return !!target.source && !!count.source && target.source.kind === count.source.kind && target.source.value === count.source.value;
+  return !!target.source && !!count.source && target.simpleSourceRead === true && count.fullSourceCount === true && !!target.datasourceId && target.datasourceId === count.datasourceId && target.datasourceKind === count.datasourceKind && target.source.kind === count.source.kind && target.source.value === count.source.value;
 }
 function extractRowCount(result) {
   if (result.status !== "ok")
@@ -34835,6 +35142,12 @@ var KNOWN_IGNORED_KEYS = {
 function isObject2(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
+function isTruthyStatic(value) {
+  return value === true || value === "true" || value === "{{true}}";
+}
+function isDynamicBinding2(value) {
+  return typeof value === "string" && value.includes("{{");
+}
 function valueAtPath(source, path) {
   let cursor = source;
   for (const segment of path.split(".")) {
@@ -34858,7 +35171,7 @@ function operationFromOptions(options, contracts, defaults) {
 function variantMatches(variant, options) {
   return Object.entries(variant.when).every(([selector, accepted]) => {
     const actual = options[selector];
-    return actual === void 0 || typeof actual === "string" && accepted.includes(actual);
+    return actual === void 0 || isDynamicBinding2(actual) || typeof actual === "string" && accepted.includes(actual);
   });
 }
 function intersection2(values) {
@@ -34924,6 +35237,21 @@ function validateQueryOptions(kind, options) {
       message: `${readAssessment.reason ?? "This read is not statically bounded"} Count the same table before running it. Prefer a bounded preview and server-side pagination for large or growing datasets.`
     });
   }
+  const automaticRead = isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange);
+  if (automaticRead && readAssessment.provenRead && readAssessment.requiresCountPreflight) {
+    errors.push({
+      code: "unsafe_automatic_unbounded_read",
+      path: isTruthyStatic(options.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      message: `An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`
+    });
+  }
+  if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
+    errors.push({
+      code: "unsafe_automatic_billable_read",
+      path: isTruthyStatic(options.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      message: "A potentially billable warehouse read cannot run automatically. Trigger it through an explicit user action, and use run_query user_confirmed_billable_read:true only after the user approves any MCP-side verification run."
+    });
+  }
   const schema = getDatasourceQuerySchema(kind);
   if (!schema) {
     warnings.push({
@@ -34971,6 +35299,14 @@ function validateQueryOptions(kind, options) {
       }
     }
     return { kind, operation, schemaFound: true, errors, warnings };
+  }
+  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding2(options[selector])))];
+  for (const selector of dynamicSelectors) {
+    warnings.push({
+      code: "runtime_selector_binding",
+      path: selector,
+      message: `Selector "${selector}" is a dynamic binding, so MCP validated the fields shared by every possible ${kind}/${operation} variant. Browser-verify any fields required only by the runtime-selected value.`
+    });
   }
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
@@ -35049,7 +35385,7 @@ function validatePersistedAppSummary(summary) {
   const structural = validateAppStructure(summary);
   const errors = [...structural.errors];
   const warnings = [...structural.warnings];
-  const eventValidation = validateEvents(summary, persistedEventSpecs(summary));
+  const eventValidation = validateEvents(summary, persistedEventSpecs(summary), { includePersistedChains: false });
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const query of summary.queries) {
@@ -36049,8 +36385,8 @@ function applyAppPhaseTool(client) {
             pages: newPages.map((page) => ({ name: page.name, icon: page.icon, hidden: page.hidden }))
           }) : Promise.resolve([])
         ]);
-        const createdTables = tableWrite.status === "fulfilled" ? tableWrite.value : [];
-        const createdPages = pageWrite.status === "fulfilled" ? pageWrite.value : [];
+        const createdTables = tableWrite.status === "fulfilled" ? tableWrite.value : completedPartialWrites(tableWrite.reason);
+        const createdPages = pageWrite.status === "fulfilled" ? pageWrite.value : completedPartialWrites(pageWrite.reason);
         applied.tables = createdTables.length;
         applied.pages = createdPages.length;
         const foundationFailures = [
@@ -36106,8 +36442,8 @@ function applyAppPhaseTool(client) {
           }) : Promise.resolve([]),
           queryInputs.length ? client.createQueries({ versionId: args.version_id, queries: queryInputs }) : Promise.resolve([])
         ]);
-        const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : [];
-        const createdQueries = queryWrite.status === "fulfilled" ? queryWrite.value : [];
+        const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : completedPartialWrites(seedWrite.reason);
+        const createdQueries = queryWrite.status === "fulfilled" ? queryWrite.value : completedPartialWrites(queryWrite.reason);
         applied.seed_rows = seedResults.reduce((total, result) => total + result.processed_rows, 0);
         applied.queries = createdQueries.length;
         const dataFailures = [
@@ -36197,7 +36533,12 @@ function applyAppPhaseTool(client) {
           throw new Error(eventValidation.errors.join(" "));
         warnings.push(...eventValidation.warnings);
         if (allEvents.length) {
-          await client.createEvents({ appId: args.app_id, versionId: args.version_id, events: allEvents });
+          await client.createEvents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            events: allEvents,
+            existingEvents: summaryBeforeEvents.events
+          });
           applied.events = allEvents.length;
         }
         stage = "validate persisted phase";
@@ -36263,7 +36604,7 @@ var pageSchema = external_exports.object({
 function addPagesTool(client) {
   return {
     name: "add_pages",
-    description: "Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and sidebar icon/hidden metadata is persisted and verified with one final readback. Every page requires a relevant Tabler icon; set hidden:true for detail pages reached only through navigation. Returns {pages}.",
+    description: "Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and sidebar icon/hidden metadata is persisted and verified with one final readback. Every page requires a relevant Tabler icon; set hidden:true for detail pages reached only through navigation. Returns {pages}. ToolJet has no page bulk transaction: a rare partial failure names every persisted page; do not retry the whole batch or auto-delete those pages.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -36322,21 +36663,37 @@ function updatePagesTool(client) {
   };
 }
 
-// dist/tools/deletePage.js
-function containsValue(value, expected) {
+// dist/referenceSafety.js
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function containsExactValue(value, expected) {
   if (value === expected)
     return true;
   if (Array.isArray(value))
-    return value.some((entry) => containsValue(entry, expected));
+    return value.some((entry) => containsExactValue(entry, expected));
   if (value && typeof value === "object") {
-    return Object.values(value).some((entry) => containsValue(entry, expected));
+    return Object.values(value).some((entry) => containsExactValue(entry, expected));
   }
   return false;
 }
+function containsNamedBinding(value, namespace, name) {
+  if (typeof value === "string") {
+    return new RegExp(`\\b${namespace}\\s*\\.\\s*${escapeRegExp(name)}(?:\\b|\\s*\\[)`).test(value);
+  }
+  if (Array.isArray(value))
+    return value.some((entry) => containsNamedBinding(entry, namespace, name));
+  if (value && typeof value === "object") {
+    return Object.values(value).some((entry) => containsNamedBinding(entry, namespace, name));
+  }
+  return false;
+}
+
+// dist/tools/deletePage.js
 function deletePageTool(client) {
   return {
     name: "delete_page",
-    description: "Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user approval for the named page, then pass confirm:true. The tool refuses pages still targeted by events outside that page, because ToolJet does not safely retarget those references. Set delete_associated_pages:true only when explicitly deleting a page group and its children.",
+    description: "Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user approval for the named page, then pass confirm:true. The tool refuses pages still targeted by events outside that page, because ToolJet does not safely retarget those references. Group-wide deletion is disabled because ToolJet does not return a verifiable child-page deletion set; delete each inspected and approved page separately.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -36350,11 +36707,14 @@ function deletePageTool(client) {
         const page = before.pages.find((candidate) => candidate.id === args.page_id);
         if (!page)
           throw new Error(`delete_page: page ${args.page_id} was not found in app ${args.app_id}.`);
+        if (args.delete_associated_pages) {
+          throw new Error("delete_page: delete_associated_pages is disabled because the compact ToolJet delete response cannot prove which child pages were removed. Inspect and delete each named page separately with explicit approval.");
+        }
         if (page.handle === "home" || page.name === "Home") {
           throw new Error("delete_page: the native Home page cannot be deleted; rename, restyle, or reorder it with update_pages.");
         }
         const ownedSourceIds = /* @__PURE__ */ new Set([page.id, ...page.components.map((component) => component.id)]);
-        const incomingEvents = before.events.filter((event) => !ownedSourceIds.has(event.sourceId ?? "") && containsValue(event.event, page.id));
+        const incomingEvents = before.events.filter((event) => !ownedSourceIds.has(event.sourceId ?? "") && [...ownedSourceIds].some((targetId) => containsExactValue(event.event, targetId)));
         if (incomingEvents.length) {
           throw new Error(`delete_page: page "${page.name ?? page.id}" is still targeted by external event(s): ` + incomingEvents.map((event) => event.name ?? event.id).join(", ") + ". Update or delete those events first so the app does not retain dangling navigation.");
         }
@@ -36367,6 +36727,10 @@ function deletePageTool(client) {
         const after = await client.getAppSummary(args.app_id);
         if (after.pages.some((candidate) => candidate.id === args.page_id)) {
           throw new Error(`delete_page: ToolJet returned success but page ${args.page_id} still exists.`);
+        }
+        const danglingSourceEvents = after.events.filter((event) => ownedSourceIds.has(event.sourceId ?? ""));
+        if (danglingSourceEvents.length) {
+          throw new Error(`delete_page: page was removed but source events remain: ` + danglingSourceEvents.map((event) => event.name ?? event.id).join(", ") + ". Delete those events before further authoring.");
         }
         const deletedEventCount = before.events.filter((event) => ownedSourceIds.has(event.sourceId ?? "")).length;
         return ok({
@@ -36438,7 +36802,7 @@ var querySchema = external_exports.object({
 function addQueriesTool(client) {
   return {
     name: "add_queries",
-    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}.",
+    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch.",
     inputSchema: {
       version_id: external_exports.string(),
       queries: external_exports.array(querySchema).min(1)
@@ -36774,22 +37138,81 @@ function updateComponentsTool(client) {
 function deleteComponentsTool(client) {
   return {
     name: "delete_components",
-    description: "Remove components from a page by id (batch). Use this to clean up mistakes instead of leaving orphaned/duplicate components. If a deleted component is referenced by events, delete or update those events too (list_events \u2192 delete_event) so nothing points at a removed component.",
+    description: "Permanently remove named components from one page. Inspect the targets and obtain explicit approval, then pass confirm:true. The tool refuses surviving child components, component/query bindings, and external events that still reference a target. It verifies every requested id disappeared and never deletes dependencies automatically.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      component_ids: external_exports.array(external_exports.string()).min(1)
+      component_ids: external_exports.array(external_exports.string()).min(1),
+      confirm: external_exports.literal(true)
     },
     async handler(args) {
       try {
+        const before = await client.getAppSummary(args.app_id);
+        const page = before.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          throw new Error(`delete_components: page ${args.page_id} was not found.`);
+        const requested = new Set(args.component_ids);
+        if (requested.size !== args.component_ids.length) {
+          throw new Error("delete_components: component_ids must be unique.");
+        }
+        const targets = page.components.filter((component) => requested.has(component.id));
+        const missing = args.component_ids.filter((id) => !targets.some((component) => component.id === id));
+        if (missing.length) {
+          throw new Error(`delete_components: component ids are not on page ${args.page_id}: ${missing.join(", ")}.`);
+        }
+        const descendants = page.components.filter((component) => component.parent && [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`)) && !requested.has(component.id));
+        if (descendants.length) {
+          throw new Error(`delete_components: surviving child components still belong to a target: ` + descendants.map((component) => component.name ?? component.id).join(", ") + ". Include them in the explicitly approved deletion or reparent them first.");
+        }
+        const survivingComponents = before.pages.flatMap((candidate) => candidate.components).filter((component) => !requested.has(component.id));
+        const references = [];
+        for (const target of targets) {
+          if (target.name) {
+            for (const component of survivingComponents) {
+              if (containsNamedBinding([component.properties, component.styles, component.others], "components", target.name)) {
+                references.push(`component ${component.name ?? component.id} binds components.${target.name}`);
+              }
+            }
+            for (const query of before.queries) {
+              if (containsNamedBinding(query.options, "components", target.name)) {
+                references.push(`query ${query.name ?? query.id} binds components.${target.name}`);
+              }
+            }
+          }
+          for (const event of before.events) {
+            if (requested.has(event.sourceId ?? ""))
+              continue;
+            if (containsExactValue(event.event, target.id) || (target.name ? containsNamedBinding(event.event, "components", target.name) : false)) {
+              references.push(`event ${event.name ?? event.id} targets ${target.name ?? target.id}`);
+            }
+          }
+        }
+        if (references.length) {
+          throw new Error(`delete_components: refusing dangling references: ${[...new Set(references)].join("; ")}. Update or delete those references first.`);
+        }
         const result = await client.deleteComponents({
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
           componentIds: args.component_ids
         });
-        return ok(result);
+        const after = await client.getAppSummary(args.app_id);
+        const remaining = after.pages.flatMap((candidate) => candidate.components).filter((component) => requested.has(component.id));
+        if (remaining.length) {
+          throw new Error(`delete_components: ToolJet returned success but these components still exist: ` + remaining.map((component) => component.id).join(", "));
+        }
+        const danglingSourceEvents = after.events.filter((event) => requested.has(event.sourceId ?? ""));
+        if (danglingSourceEvents.length) {
+          throw new Error(`delete_components: components were removed but source events remain: ` + danglingSourceEvents.map((event) => event.name ?? event.id).join(", ") + ". Delete those events before further authoring.");
+        }
+        const sourceEventsDeleted = before.events.filter((event) => requested.has(event.sourceId ?? "")).length;
+        return ok({
+          ...result,
+          component_ids: args.component_ids,
+          component_names: targets.map((component) => component.name).filter(Boolean),
+          source_events_deleted: sourceEventsDeleted
+        });
       } catch (err) {
         return fail(err);
       }
@@ -36906,7 +37329,7 @@ var eventSchema = external_exports.object({
 function addEventsTool(client) {
   return {
     name: "add_events",
-    description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue'|'clear'|'setVisibility'|'setDisable'|'setLoading', ... }\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
+    description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -36929,7 +37352,8 @@ function addEventsTool(client) {
         const result = await client.createEvents({
           appId: args.app_id,
           versionId: args.version_id,
-          events
+          events,
+          existingEvents: summary.events
         });
         return ok({ ...result, warnings: validation.warnings });
       } catch (err) {
@@ -36982,7 +37406,8 @@ function addQueryLifecyclesTool(client) {
         const result = await client.createEvents({
           appId: args.app_id,
           versionId: args.version_id,
-          events: expanded.events
+          events: expanded.events,
+          existingEvents: summary.events
         });
         return ok({
           ...result,
@@ -37091,15 +37516,58 @@ function updateQueryTool(client) {
 function deleteQueryTool(client) {
   return {
     name: "delete_query",
-    description: "Delete a query by id. Any component/event bindings that referenced it (e.g. run-query actions, {{queries.<name>.data}}) will break \u2014 update those first.",
+    description: "Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. The tool refuses component bindings, dependent query bindings, and external events that still reference it, verifies the query disappeared, and never deletes dependencies automatically.",
     inputSchema: {
+      app_id: external_exports.string(),
       query_id: external_exports.string(),
-      version_id: external_exports.string()
+      version_id: external_exports.string(),
+      confirm: external_exports.literal(true)
     },
     async handler(args) {
       try {
+        const before = await client.getAppSummary(args.app_id);
+        const query = before.queries.find((candidate) => candidate.id === args.query_id);
+        if (!query)
+          throw new Error(`delete_query: query ${args.query_id} was not found in app ${args.app_id}.`);
+        const references = [];
+        if (query.name) {
+          for (const component of before.pages.flatMap((page) => page.components)) {
+            if (containsNamedBinding([component.properties, component.styles, component.others], "queries", query.name)) {
+              references.push(`component ${component.name ?? component.id} binds queries.${query.name}`);
+            }
+          }
+          for (const dependent of before.queries) {
+            if (dependent.id !== query.id && containsNamedBinding(dependent.options, "queries", query.name)) {
+              references.push(`query ${dependent.name ?? dependent.id} binds queries.${query.name}`);
+            }
+          }
+        }
+        for (const event of before.events) {
+          if (event.sourceId === query.id)
+            continue;
+          if (containsExactValue(event.event, query.id) || (query.name ? containsNamedBinding(event.event, "queries", query.name) : false)) {
+            references.push(`event ${event.name ?? event.id} targets ${query.name ?? query.id}`);
+          }
+        }
+        if (references.length) {
+          throw new Error(`delete_query: refusing dangling references: ${[...new Set(references)].join("; ")}. Update or delete those references first.`);
+        }
         const result = await client.deleteQuery({ queryId: args.query_id, versionId: args.version_id });
-        return ok(result);
+        const after = await client.getAppSummary(args.app_id);
+        if (after.queries.some((candidate) => candidate.id === query.id)) {
+          throw new Error(`delete_query: ToolJet returned success but query ${query.id} still exists.`);
+        }
+        const danglingSourceEvents = after.events.filter((event) => event.sourceId === query.id);
+        if (danglingSourceEvents.length) {
+          throw new Error(`delete_query: query was removed but lifecycle events remain: ` + danglingSourceEvents.map((event) => event.name ?? event.id).join(", ") + ". Delete those events before further authoring.");
+        }
+        const sourceEventsDeleted = before.events.filter((event) => event.sourceId === query.id).length;
+        return ok({
+          ...result,
+          query_id: query.id,
+          query_name: query.name,
+          source_events_deleted: sourceEventsDeleted
+        });
       } catch (err) {
         return fail(err);
       }
@@ -37120,13 +37588,14 @@ function containsComponentBinding(value) {
 function runQueryTool(client) {
   return {
     name: "run_query",
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require a same-source count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. Never set that flag from inferred consent. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
       environment_id: external_exports.string().optional(),
       count_query_id: external_exports.string().optional(),
-      user_confirmed_large_read: external_exports.boolean().optional()
+      user_confirmed_large_read: external_exports.boolean().optional(),
+      user_confirmed_billable_read: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
@@ -37139,9 +37608,12 @@ function runQueryTool(client) {
         if (containsComponentBinding(query.options)) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
         }
+        if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
+        }
         let preflight;
-        if (!assessment.directSafe) {
-          if (!assessment.requiresCountPreflight || !args.count_query_id) {
+        if (assessment.requiresCountPreflight) {
+          if (!args.count_query_id) {
             return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
           }
           if (args.count_query_id === args.query_id) {
@@ -37149,8 +37621,9 @@ function runQueryTool(client) {
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
-          if (!countAssessment.countOnly || !countAssessment.directSafe || !sameReadSource(assessment, countAssessment)) {
-            return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be a proven count-only query against the same simple table as the target query.`));
+          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true;
+          if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
+            return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
           }
           const countResult = await client.runQuery({
             queryId: countQuery.id,
