@@ -310,12 +310,34 @@ for (const collection of pluginCollections) {
 const commonRestFields = [
   field('method', 'string', { allowedValues: ['get', 'post', 'put', 'patch', 'delete'] }),
   field('url', 'string|binding'),
-  field('url_params', 'array'),
-  field('headers', 'array'),
-  field('cookies', 'array'),
+  field('url_params', 'array<[string,unknown]>', {
+    description: 'Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.',
+    shape: { '<index>': ['string|binding', 'unknown|binding'] },
+    example: [['state', 'open'], ['per_page', '25']],
+  }),
+  field('headers', 'array<[string,unknown]>', {
+    description: 'Request headers as [key, value] tuples. Connection-level authentication remains user-managed.',
+    shape: { '<index>': ['string|binding', 'unknown|binding'] },
+    example: [['Accept', 'application/json']],
+  }),
+  field('cookies', 'array<[string,unknown]>', {
+    description: 'Query-specific cookies as [key, value] tuples.',
+    shape: { '<index>': ['string|binding', 'unknown|binding'] },
+    example: [['locale', 'en']],
+  }),
   field('body_toggle', 'boolean'),
-  field('body', 'array'),
-  field('json_body', 'object|string|null'),
+  field('body', 'array<[string,unknown]>', {
+    description: 'Structured request body as [key, value] tuples when body_toggle is false.',
+    shape: { '<index>': ['string|binding', 'unknown|binding'] },
+    example: [['status', 'open']],
+  }),
+  field('raw_body', 'string|binding|null', {
+    description: 'Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.',
+    example: '{"status":"open"}',
+  }),
+  field('json_body', 'object|string|binding|null', {
+    description: 'Legacy raw-body field retained for old queries; author new raw bodies with raw_body.',
+  }),
   field('retry_network_errors', 'boolean|null'),
 ];
 const restContracts = Object.fromEntries(
@@ -407,7 +429,7 @@ const staticSchemas = {
   restapi: {
     kind: 'restapi', name: 'REST API', type: 'api',
     description: 'Built-in HTTP query. Pagination is defined by the remote API, not ToolJet.',
-    defaults: { method: 'get', url: '', url_params: [], headers: [], cookies: [], body: [], json_body: null, body_toggle: false, retry_network_errors: null },
+    defaults: { method: 'get', url: '', url_params: [], headers: [], cookies: [], body: [], raw_body: null, json_body: null, body_toggle: false, retry_network_errors: null },
     operations: Object.keys(restContracts), contracts: restContracts,
     properties: Object.fromEntries(commonRestFields.map((item) => [item.path, item])),
     paginationStrategies: ['offset', 'page', 'cursor/token'], introspectionMethods: [], sources: [{ collection: 'static', package: 'restapi' }],

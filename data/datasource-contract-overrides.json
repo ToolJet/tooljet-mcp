@@ -151,6 +151,44 @@
       }
     ]
   },
+  "restapi": {
+    "response_groups": [
+      {
+        "operations": ["get", "post", "put", "patch", "delete"],
+        "response": {
+          "type": "object|array|string",
+          "status": "runtime-dependent",
+          "source": "tooljet-restapi-runtime",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "operations": {
+      "get": {
+        "notes": [
+          "The operation selector passed to get_datasource_query_schema is MCP metadata only. Persist method and url in the ToolJet query options; do not add an operation key.",
+          "Pagination is remote-API-specific. Put the API's page/limit/cursor parameters in url_params and bind totals or next cursors from data or metadata response headers."
+        ]
+      }
+    }
+  },
   "snowflake": {
     "response_groups": [
       {

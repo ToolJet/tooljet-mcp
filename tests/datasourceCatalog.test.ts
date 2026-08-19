@@ -54,6 +54,34 @@ describe('datasource query catalog', () => {
     expect(anthropic.response.type).toBe('array<object>');
   });
 
+  it('publishes exact REST tuple fields, current raw body, and diagnostic metadata', () => {
+    const rest = selectDatasourceQuerySchema('restapi', { operation: 'get' }) as any;
+    const fields = rest.request.variants[0].fields;
+
+    expect(fields.url_params).toMatchObject({
+      type: 'array<[string,unknown]>',
+      shape: { '<index>': ['string|binding', 'unknown|binding'] },
+      example: [['state', 'open'], ['per_page', '25']],
+    });
+    expect(fields.headers.shape['<index>']).toHaveLength(2);
+    expect(fields.cookies.shape['<index>']).toHaveLength(2);
+    expect(fields.body.shape['<index>']).toHaveLength(2);
+    expect(fields.raw_body.description).toMatch(/preferred raw request body/i);
+    expect(fields.json_body.description).toMatch(/legacy/i);
+    expect(rest.response).toMatchObject({
+      type: 'object|array|string',
+      status: 'runtime-dependent',
+      metadata: {
+        status: 'known',
+        shape: {
+          request: { url: 'string', params: 'record<string,unknown>' },
+          response: { statusCode: 'number' },
+        },
+      },
+    });
+    expect(rest.request.notes.join(' ')).toMatch(/do not add an operation key/i);
+  });
+
   it('publishes source-derived SQL response shapes and explicit uncertainty', () => {
     const postgres = selectDatasourceQuerySchema('postgresql', { operation: 'list_rows' }) as any;
     expect(postgres.response).toMatchObject({

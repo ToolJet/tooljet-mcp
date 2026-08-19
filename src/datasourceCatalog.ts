@@ -40,6 +40,11 @@ export interface DatasourceResponseContract {
   source: string;
   description?: string;
   shape?: Record<string, unknown>;
+  metadata?: {
+    status: 'known' | 'runtime-dependent' | 'unknown';
+    description?: string;
+    shape?: Record<string, unknown>;
+  };
 }
 
 export interface DatasourceOperationContract {

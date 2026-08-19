@@ -91,6 +91,18 @@ describe('validateQueryOptions', () => {
     ]));
   });
 
+  it('rejects object-shaped REST parameters before ToolJet can ignore or mangle them', () => {
+    const result = validateQueryOptions('restapi', {
+      method: 'get',
+      url: '/issues',
+      url_params: [{ key: 'state', value: 'open' }],
+    });
+
+    expect(result.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'invalid_option_shape', path: 'url_params[0]' }),
+    ]));
+  });
+
   it('warns when a ToolJet DB order-filter map key differs from its inner id', () => {
     const result = validateQueryOptions('tooljetdb', {
       operation: 'list_rows',

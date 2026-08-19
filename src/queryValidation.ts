@@ -109,6 +109,11 @@ function suffixSuggestion(key: string, fields: Record<string, DatasourceFieldCon
   return matches.length === 1 ? matches[0] : undefined;
 }
 
+function tupleArity(field: DatasourceFieldContract): number | undefined {
+  const tuple = field.shape?.['<index>'];
+  return Array.isArray(tuple) && tuple.length > 0 ? tuple.length : undefined;
+}
+
 function bindingStrings(value: unknown, path = ''): Array<{ path?: string; value: string }> {
   if (typeof value === 'string') return [{ path: path || undefined, value }];
   if (Array.isArray(value)) {
@@ -288,8 +293,27 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
   }
 
   for (const [path, field] of Object.entries(fields)) {
-    if (!field.allowedValues?.length) continue;
     const value = valueAtPath(options, path);
+    const arity = tupleArity(field);
+    if (arity !== undefined && value !== undefined && !isDynamicBinding(value)) {
+      if (!Array.isArray(value)) {
+        errors.push({
+          code: 'invalid_option_shape',
+          path,
+          message: `Option "${path}" for ${kind}/${operation} must be an array of ${arity}-item tuples.`,
+        });
+      } else {
+        const invalidIndex = value.findIndex((item) => !Array.isArray(item) || item.length !== arity);
+        if (invalidIndex >= 0) {
+          errors.push({
+            code: 'invalid_option_shape',
+            path: `${path}[${invalidIndex}]`,
+            message: `Option "${path}" for ${kind}/${operation} must contain ${arity}-item tuples such as [["key", "value"]].`,
+          });
+        }
+      }
+    }
+    if (!field.allowedValues?.length) continue;
     if (
       typeof value === 'string' &&
       !value.includes('{{') &&

@@ -43753,6 +43753,7 @@
       "headers": [],
       "cookies": [],
       "body": [],
+      "raw_body": null,
       "json_body": null,
       "body_toggle": false,
       "retry_network_errors": null
@@ -43777,7 +43778,20 @@
             "fields": {
               "body": {
                 "path": "body",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Structured request body as [key, value] tuples when body_toggle is false.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "status",
+                    "open"
+                  ]
+                ]
               },
               "body_toggle": {
                 "path": "body_toggle",
@@ -43785,15 +43799,42 @@
               },
               "cookies": {
                 "path": "cookies",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query-specific cookies as [key, value] tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "locale",
+                    "en"
+                  ]
+                ]
               },
               "headers": {
                 "path": "headers",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Request headers as [key, value] tuples. Connection-level authentication remains user-managed.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "Accept",
+                    "application/json"
+                  ]
+                ]
               },
               "json_body": {
                 "path": "json_body",
-                "type": "object|string|null"
+                "type": "object|string|binding|null",
+                "description": "Legacy raw-body field retained for old queries; author new raw bodies with raw_body."
               },
               "method": {
                 "path": "method",
@@ -43806,6 +43847,12 @@
                   "delete"
                 ]
               },
+              "raw_body": {
+                "path": "raw_body",
+                "type": "string|binding|null",
+                "description": "Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.",
+                "example": "{\"status\":\"open\"}"
+              },
               "retry_network_errors": {
                 "path": "retry_network_errors",
                 "type": "boolean|null"
@@ -43816,7 +43863,24 @@
               },
               "url_params": {
                 "path": "url_params",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "state",
+                    "open"
+                  ],
+                  [
+                    "per_page",
+                    "25"
+                  ]
+                ]
               }
             },
             "required": [
@@ -43826,11 +43890,32 @@
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
-          "source": "remote-api",
-          "description": "The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields."
-        }
+          "source": "tooljet-restapi-runtime",
+          "type": "object|array|string",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
+        },
+        "notes": [
+          "The operation selector passed to get_datasource_query_schema is MCP metadata only. Persist method and url in the ToolJet query options; do not add an operation key.",
+          "Pagination is remote-API-specific. Put the API's page/limit/cursor parameters in url_params and bind totals or next cursors from data or metadata response headers."
+        ]
       },
       "post": {
         "operation": "post",
@@ -43844,7 +43929,20 @@
             "fields": {
               "body": {
                 "path": "body",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Structured request body as [key, value] tuples when body_toggle is false.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "status",
+                    "open"
+                  ]
+                ]
               },
               "body_toggle": {
                 "path": "body_toggle",
@@ -43852,15 +43950,42 @@
               },
               "cookies": {
                 "path": "cookies",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query-specific cookies as [key, value] tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "locale",
+                    "en"
+                  ]
+                ]
               },
               "headers": {
                 "path": "headers",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Request headers as [key, value] tuples. Connection-level authentication remains user-managed.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "Accept",
+                    "application/json"
+                  ]
+                ]
               },
               "json_body": {
                 "path": "json_body",
-                "type": "object|string|null"
+                "type": "object|string|binding|null",
+                "description": "Legacy raw-body field retained for old queries; author new raw bodies with raw_body."
               },
               "method": {
                 "path": "method",
@@ -43873,6 +43998,12 @@
                   "delete"
                 ]
               },
+              "raw_body": {
+                "path": "raw_body",
+                "type": "string|binding|null",
+                "description": "Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.",
+                "example": "{\"status\":\"open\"}"
+              },
               "retry_network_errors": {
                 "path": "retry_network_errors",
                 "type": "boolean|null"
@@ -43883,7 +44014,24 @@
               },
               "url_params": {
                 "path": "url_params",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "state",
+                    "open"
+                  ],
+                  [
+                    "per_page",
+                    "25"
+                  ]
+                ]
               }
             },
             "required": [
@@ -43893,10 +44041,27 @@
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
-          "source": "remote-api",
-          "description": "The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields."
+          "source": "tooljet-restapi-runtime",
+          "type": "object|array|string",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
         }
       },
       "put": {
@@ -43911,7 +44076,20 @@
             "fields": {
               "body": {
                 "path": "body",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Structured request body as [key, value] tuples when body_toggle is false.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "status",
+                    "open"
+                  ]
+                ]
               },
               "body_toggle": {
                 "path": "body_toggle",
@@ -43919,15 +44097,42 @@
               },
               "cookies": {
                 "path": "cookies",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query-specific cookies as [key, value] tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "locale",
+                    "en"
+                  ]
+                ]
               },
               "headers": {
                 "path": "headers",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Request headers as [key, value] tuples. Connection-level authentication remains user-managed.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "Accept",
+                    "application/json"
+                  ]
+                ]
               },
               "json_body": {
                 "path": "json_body",
-                "type": "object|string|null"
+                "type": "object|string|binding|null",
+                "description": "Legacy raw-body field retained for old queries; author new raw bodies with raw_body."
               },
               "method": {
                 "path": "method",
@@ -43940,6 +44145,12 @@
                   "delete"
                 ]
               },
+              "raw_body": {
+                "path": "raw_body",
+                "type": "string|binding|null",
+                "description": "Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.",
+                "example": "{\"status\":\"open\"}"
+              },
               "retry_network_errors": {
                 "path": "retry_network_errors",
                 "type": "boolean|null"
@@ -43950,7 +44161,24 @@
               },
               "url_params": {
                 "path": "url_params",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "state",
+                    "open"
+                  ],
+                  [
+                    "per_page",
+                    "25"
+                  ]
+                ]
               }
             },
             "required": [
@@ -43960,10 +44188,27 @@
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
-          "source": "remote-api",
-          "description": "The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields."
+          "source": "tooljet-restapi-runtime",
+          "type": "object|array|string",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
         }
       },
       "patch": {
@@ -43978,7 +44223,20 @@
             "fields": {
               "body": {
                 "path": "body",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Structured request body as [key, value] tuples when body_toggle is false.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "status",
+                    "open"
+                  ]
+                ]
               },
               "body_toggle": {
                 "path": "body_toggle",
@@ -43986,15 +44244,42 @@
               },
               "cookies": {
                 "path": "cookies",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query-specific cookies as [key, value] tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "locale",
+                    "en"
+                  ]
+                ]
               },
               "headers": {
                 "path": "headers",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Request headers as [key, value] tuples. Connection-level authentication remains user-managed.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "Accept",
+                    "application/json"
+                  ]
+                ]
               },
               "json_body": {
                 "path": "json_body",
-                "type": "object|string|null"
+                "type": "object|string|binding|null",
+                "description": "Legacy raw-body field retained for old queries; author new raw bodies with raw_body."
               },
               "method": {
                 "path": "method",
@@ -44007,6 +44292,12 @@
                   "delete"
                 ]
               },
+              "raw_body": {
+                "path": "raw_body",
+                "type": "string|binding|null",
+                "description": "Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.",
+                "example": "{\"status\":\"open\"}"
+              },
               "retry_network_errors": {
                 "path": "retry_network_errors",
                 "type": "boolean|null"
@@ -44017,7 +44308,24 @@
               },
               "url_params": {
                 "path": "url_params",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "state",
+                    "open"
+                  ],
+                  [
+                    "per_page",
+                    "25"
+                  ]
+                ]
               }
             },
             "required": [
@@ -44027,10 +44335,27 @@
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
-          "source": "remote-api",
-          "description": "The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields."
+          "source": "tooljet-restapi-runtime",
+          "type": "object|array|string",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
         }
       },
       "delete": {
@@ -44045,7 +44370,20 @@
             "fields": {
               "body": {
                 "path": "body",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Structured request body as [key, value] tuples when body_toggle is false.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "status",
+                    "open"
+                  ]
+                ]
               },
               "body_toggle": {
                 "path": "body_toggle",
@@ -44053,15 +44391,42 @@
               },
               "cookies": {
                 "path": "cookies",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query-specific cookies as [key, value] tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "locale",
+                    "en"
+                  ]
+                ]
               },
               "headers": {
                 "path": "headers",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Request headers as [key, value] tuples. Connection-level authentication remains user-managed.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "Accept",
+                    "application/json"
+                  ]
+                ]
               },
               "json_body": {
                 "path": "json_body",
-                "type": "object|string|null"
+                "type": "object|string|binding|null",
+                "description": "Legacy raw-body field retained for old queries; author new raw bodies with raw_body."
               },
               "method": {
                 "path": "method",
@@ -44074,6 +44439,12 @@
                   "delete"
                 ]
               },
+              "raw_body": {
+                "path": "raw_body",
+                "type": "string|binding|null",
+                "description": "Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.",
+                "example": "{\"status\":\"open\"}"
+              },
               "retry_network_errors": {
                 "path": "retry_network_errors",
                 "type": "boolean|null"
@@ -44084,7 +44455,24 @@
               },
               "url_params": {
                 "path": "url_params",
-                "type": "array"
+                "type": "array<[string,unknown]>",
+                "description": "Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.",
+                "shape": {
+                  "<index>": [
+                    "string|binding",
+                    "unknown|binding"
+                  ]
+                },
+                "example": [
+                  [
+                    "state",
+                    "open"
+                  ],
+                  [
+                    "per_page",
+                    "25"
+                  ]
+                ]
               }
             },
             "required": [
@@ -44094,10 +44482,27 @@
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
-          "source": "remote-api",
-          "description": "The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields."
+          "source": "tooljet-restapi-runtime",
+          "type": "object|array|string",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
         }
       }
     },
@@ -44119,15 +44524,58 @@
       },
       "url_params": {
         "path": "url_params",
-        "type": "array"
+        "type": "array<[string,unknown]>",
+        "description": "Query parameters as [key, value] tuples. Values may contain bindings; repeated keys remain separate tuples.",
+        "shape": {
+          "<index>": [
+            "string|binding",
+            "unknown|binding"
+          ]
+        },
+        "example": [
+          [
+            "state",
+            "open"
+          ],
+          [
+            "per_page",
+            "25"
+          ]
+        ]
       },
       "headers": {
         "path": "headers",
-        "type": "array"
+        "type": "array<[string,unknown]>",
+        "description": "Request headers as [key, value] tuples. Connection-level authentication remains user-managed.",
+        "shape": {
+          "<index>": [
+            "string|binding",
+            "unknown|binding"
+          ]
+        },
+        "example": [
+          [
+            "Accept",
+            "application/json"
+          ]
+        ]
       },
       "cookies": {
         "path": "cookies",
-        "type": "array"
+        "type": "array<[string,unknown]>",
+        "description": "Query-specific cookies as [key, value] tuples.",
+        "shape": {
+          "<index>": [
+            "string|binding",
+            "unknown|binding"
+          ]
+        },
+        "example": [
+          [
+            "locale",
+            "en"
+          ]
+        ]
       },
       "body_toggle": {
         "path": "body_toggle",
@@ -44135,11 +44583,31 @@
       },
       "body": {
         "path": "body",
-        "type": "array"
+        "type": "array<[string,unknown]>",
+        "description": "Structured request body as [key, value] tuples when body_toggle is false.",
+        "shape": {
+          "<index>": [
+            "string|binding",
+            "unknown|binding"
+          ]
+        },
+        "example": [
+          [
+            "status",
+            "open"
+          ]
+        ]
+      },
+      "raw_body": {
+        "path": "raw_body",
+        "type": "string|binding|null",
+        "description": "Preferred raw request body when body_toggle is true. Set Content-Type through headers when needed.",
+        "example": "{\"status\":\"open\"}"
       },
       "json_body": {
         "path": "json_body",
-        "type": "object|string|null"
+        "type": "object|string|binding|null",
+        "description": "Legacy raw-body field retained for old queries; author new raw bodies with raw_body."
       },
       "retry_network_errors": {
         "path": "retry_network_errors",
