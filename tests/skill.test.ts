@@ -158,8 +158,11 @@ describe('generated skill — mobile & verification caveats', () => {
     expect(skill).toMatch(/Test other viewports only if the user asks/i);
   });
 
-  it('proactively suggests phases when scope is large', () => {
-    expect(skill).toMatch(/If the scope is large, say so/i);
+  it('requires explicit execution-mode confirmation when scope is large', () => {
+    expect(skill).toMatch(/Treat scope as \*\*large\*\* when.*3\+ substantive pages.*2\+ independent complex workflows.*multi-table.*multiple datasource/is);
+    expect(skill).toMatch(/get the user's execution choice before any mutating build call/i);
+    expect(skill).toMatch(/phased checkpoints \(recommended\).*whole app in one run.*slower.*without feedback/is);
+    expect(skill).toMatch(/Do not silently choose for them/i);
   });
 });
 
@@ -284,10 +287,10 @@ describe('generated skill — information architecture & phasing (the crowded-pa
     expect(skill).toMatch(/Complete journeys over skeletons/i);
   });
 
-  it('continues through requested phases without a reflexive permission checkpoint', () => {
-    expect(skill).toMatch(/Do not turn phasing into a permission prompt/i);
-    expect(skill).toMatch(/continue through the requested scope/i);
-    expect(skill).toMatch(/priority\/architecture genuinely depends on the answer/i);
+  it('does not re-ask after an explicit mode choice and honors the chosen checkpoint behavior', () => {
+    expect(skill).toMatch(/already explicitly chooses phased delivery.*whole app.*one go.*build everything.*do not stop.*do not ask again/is);
+    expect(skill).toMatch(/detailed feature spec alone is not an execution choice/i);
+    expect(skill).toMatch(/phased-checkpoint mode.*wait for the user to continue.*whole-app mode.*continue without waiting/is);
   });
 });
 
@@ -383,8 +386,8 @@ describe('generated skill is synchronized with the generator', () => {
     'deprecated `properties.actions`',
     "resizing a browser window does NOT prove ToolJet's mobile layout rendered",
     'Verify the default desktop render only',
-    'If the scope is large, say so',
-    'Do not turn phasing into a permission prompt',
+    "get the user's execution choice before any mutating build call",
+    'phased checkpoints (recommended)',
     'information architecture BEFORE any component',
     'page architecture and phasing are SEPARATE decisions',
     'Async & UI states — required, not polish',
