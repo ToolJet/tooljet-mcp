@@ -4,6 +4,7 @@ import {
   type DatasourceContractVariant,
   type DatasourceFieldContract,
 } from './datasourceCatalog.js';
+import { assessQueryRead } from './queryExecutionSafety.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -115,6 +116,25 @@ function tableStateWarnings(options: Record<string, unknown>): QueryValidationIs
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  const readAssessment = assessQueryRead({ id: '<planned-query>', kind, options });
+  if (readAssessment.selectStar) {
+    warnings.push({
+      code: 'select_star_read',
+      path: typeof options.query === 'string' ? 'query' : undefined,
+      message:
+        'SELECT * will be refused by run_query. Inspect the table schema and select only the fields the app needs; ' +
+        'this avoids unknown/wide columns and accidental sensitive-data reads.',
+    });
+  }
+  if (readAssessment.provenRead && readAssessment.requiresCountPreflight) {
+    warnings.push({
+      code: 'unbounded_read',
+      path: typeof options.query === 'string' ? 'query' : undefined,
+      message:
+        `${readAssessment.reason ?? 'This read is not statically bounded'} Count the same table before running it. ` +
+        'Prefer a bounded preview and server-side pagination for large or growing datasets.',
+    });
+  }
   const schema = getDatasourceQuerySchema(kind);
   if (!schema) {
     warnings.push({

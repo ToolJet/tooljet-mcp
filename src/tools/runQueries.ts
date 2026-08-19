@@ -1,47 +1,21 @@
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
+import { assessQueryRead } from '../queryExecutionSafety.js';
 import { containsComponentBinding } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 
-const SQL_KINDS = new Set([
-  'postgresql', 'mysql', 'mariadb', 'mssql', 'sqlserver', 'cockroachdb', 'redshift',
-  'snowflake', 'bigquery', 'clickhouse', 'oracle', 'sqlite',
-]);
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
 /** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query. */
 export function batchSafeRead(query: QuerySummary): { safe: boolean; reason?: string } {
-  const kind = query.kind?.toLowerCase();
-  const options = record(query.options);
-  if (!kind || !options) return { safe: false, reason: 'kind/options are unavailable' };
-  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
-
-  if (kind === 'tooljetdb') {
-    return operation === 'list_rows' || operation === 'join_tables'
-      ? { safe: true }
-      : { safe: false, reason: `ToolJet DB operation ${operation ?? '<missing>'} is not a proven read` };
-  }
-
-  if (SQL_KINDS.has(kind)) {
-    if (operation === 'list_rows') return { safe: true };
-    const sql = typeof options.query === 'string'
-      ? options.query
-      : typeof options.sql === 'string'
-        ? options.sql
-        : undefined;
-    if (!sql) return { safe: false, reason: 'SQL text is unavailable' };
-    const compact = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
-    return /^(select\b|show\b|describe\b|explain\s+(select\b|show\b))/i.test(compact) && !/;\s*\S/.test(compact)
-      ? { safe: true }
-      : { safe: false, reason: 'SQL is not a single proven read statement' };
-  }
-
-  return { safe: false, reason: `datasource kind ${kind} has no batch-safe read classifier` };
+  const assessment = assessQueryRead(query);
+  return assessment.provenRead && assessment.directSafe && !assessment.selectStar
+    ? { safe: true }
+    : {
+        safe: false,
+        reason: assessment.reason ??
+          (assessment.requiresCountPreflight
+            ? 'read requires a count-first preflight through singular run_query'
+            : 'query is not a proven bounded read'),
+      };
 }
 
 export function runQueriesTool(client: ToolJetClient): ToolDef {
@@ -50,10 +24,10 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
     description:
       'Run 1–10 already-created, proven read-only queries concurrently and return ordered per-query ' +
       'results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or ' +
-      'one SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; mutations, ' +
+      'one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, ' +
       'RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are ' +
       'loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure ' +
-      'does not hide other read results. Component-bound options receive the run_query viewer warning.',
+      'does not hide other read results. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.',
     inputSchema: {
       query_ids: z.array(z.string()).min(1).max(10),
       version_id: z.string(),

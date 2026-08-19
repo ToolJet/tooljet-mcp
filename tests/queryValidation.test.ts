@@ -59,6 +59,7 @@ describe('validateQueryOptions', () => {
       operation: 'list_rows',
       table_id: 'table-1',
       list_rows: {
+        limit: 25,
         order_filters: {
           'sort-created': { id: 'different-id', column: 'created_at', order: 'desc' },
         },
@@ -81,6 +82,7 @@ describe('validateQueryOptions', () => {
       operation: 'list_rows',
       table_id: 'table-1',
       list_rows: {
+        limit: 25,
         order_filters: {
           'sort-created': { id: 'sort-created', column: 'created_at', order: 'desc' },
         },
@@ -93,7 +95,7 @@ describe('validateQueryOptions', () => {
   it('warns when a server-side Table offset can become NaN before pageIndex is published', () => {
     const result = validateQueryOptions('postgresql', {
       mode: 'sql',
-      query: 'select * from orders limit 25 offset {{(components.ordersTable.pageIndex - 1) * 25}}',
+      query: 'select id, status from orders limit 25 offset {{(components.ordersTable.pageIndex - 1) * 25}}',
     });
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual(expect.arrayContaining([
@@ -105,9 +107,28 @@ describe('validateQueryOptions', () => {
   it('accepts a first-load-safe server-side Table offset', () => {
     const result = validateQueryOptions('postgresql', {
       mode: 'sql',
-      query: 'select * from orders limit 25 offset {{((components.ordersTable.pageIndex || 1) - 1) * 25}}',
+      query: 'select id, status from orders limit 25 offset {{((components.ordersTable.pageIndex || 1) - 1) * 25}}',
     });
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
+  });
+
+  it('warns before saving SELECT star or an unbounded row read', () => {
+    const star = validateQueryOptions('postgresql', {
+      mode: 'sql', query: 'SELECT * FROM orders LIMIT 25',
+    });
+    expect(star.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'select_star_read', path: 'query' }),
+    ]));
+
+    const unbounded = validateQueryOptions('postgresql', {
+      mode: 'sql', query: 'SELECT id, status FROM orders',
+    });
+    expect(unbounded.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'unbounded_read', path: 'query' }),
+    ]));
+    expect(unbounded.warnings.map((issue) => issue.message).join(' ')).toMatch(
+      /Count the same table.*bounded preview.*server-side pagination/i
+    );
   });
 });

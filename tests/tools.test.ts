@@ -123,9 +123,13 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
       id: 'q1',
+      kind: 'tooljetdb',
       options: {
         operation: 'list_rows',
-        list_rows: { limit: '{{components.ordersTable.serverSideRowsPerPage || 10}}' },
+        list_rows: {
+          limit: 25,
+          where_filters: { status: { column: 'status', operator: 'eq', value: '{{components.status.value}}' } },
+        },
       },
     });
     client.runQuery.mockResolvedValue({ status: 'ok', data: [{ id: 1 }] });
@@ -144,7 +148,7 @@ describe('run_query tool', () => {
 
   it('does not add warnings to a static query result', async () => {
     const client = makeClient();
-    client.getQuery.mockResolvedValue({ id: 'q1', options: { mode: 'sql', query: 'select 1' } });
+    client.getQuery.mockResolvedValue({ id: 'q1', kind: 'postgresql', options: { mode: 'sql', query: 'select 1' } });
     client.runQuery.mockResolvedValue({ status: 'ok', data: [{ '?column?': 1 }] });
 
     const result = await runQueryTool(client as unknown as ToolJetClient).handler({
@@ -154,16 +158,118 @@ describe('run_query tool', () => {
 
     expect(textOf(result)).toEqual({ status: 'ok', data: [{ '?column?': 1 }] });
   });
+
+  it('refuses SELECT star before execution, even when it has a limit', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'q1', name: 'unknownRows', kind: 'postgresql',
+      options: { mode: 'sql', query: 'SELECT * FROM unknown_table LIMIT 25' },
+    });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'q1', version_id: 'v1',
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/refused.*SELECT \*.*Inspect the schema.*required columns/i);
+    expect(client.runQuery).not.toHaveBeenCalled();
+  });
+
+  it('runs an unbounded read only after a same-source count proves it is small', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', name: 'listOrders', kind: 'postgresql',
+        options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', name: 'countOrders', kind: 'postgresql',
+        options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
+      });
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ total: '48' }] })
+      .mockResolvedValueOnce({ status: 'ok', data: [{ id: 1, status: 'open' }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1',
+    });
+
+    expect(client.runQuery).toHaveBeenCalledTimes(2);
+    expect(textOf(result)).toMatchObject({
+      status: 'ok',
+      preflight: { count_query_id: 'count', row_count: 48, threshold: 1000 },
+    });
+  });
+
+  it('reports the observed large count and requires explicit user confirmation before the target run', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', name: 'listOrders', kind: 'postgresql',
+        options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', name: 'countOrders', kind: 'postgresql',
+        options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
+      });
+    client.runQuery.mockResolvedValueOnce({ status: 'ok', data: [{ total: 2_400_000 }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1',
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(
+      /target query was not run.*2400000 rows.*server-side pagination.*ask explicitly.*user_confirmed_large_read:true/i
+    );
+    expect(client.runQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('honors explicit confirmation after rechecking the large count', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', name: 'listOrders', kind: 'postgresql',
+        options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', name: 'countOrders', kind: 'postgresql',
+        options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
+      });
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ total: 2400 }] })
+      .mockResolvedValueOnce({ status: 'ok', data: [{ id: 1, status: 'open' }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1',
+      user_confirmed_large_read: true,
+    });
+
+    expect(textOf(result)).toMatchObject({
+      status: 'ok',
+      preflight: { row_count: 2400 },
+      warnings: [expect.stringMatching(/User-confirmed large read.*server-side pagination/i)],
+    });
+  });
 });
 
 describe('run_queries tool', () => {
   it('loads metadata/environment once and preserves ordered per-query read results', async () => {
     const client = makeClient();
     client.getQueries.mockResolvedValue([
-      { id: 'q1', name: 'overview', kind: 'tooljetdb', options: { operation: 'list_rows', list_rows: {} } },
+      {
+        id: 'q1', name: 'overview', kind: 'tooljetdb',
+        options: {
+          operation: 'list_rows', table_id: 'orders',
+          list_rows: { aggregates: { count: { column: 'id', aggFx: 'count' } } },
+        },
+      },
       {
         id: 'q2', name: 'page', kind: 'tooljetdb',
-        options: { operation: 'list_rows', list_rows: { offset: '{{components.orders.pageIndex}}' } },
+        options: {
+          operation: 'list_rows', table_id: 'orders',
+          list_rows: { limit: 25, offset: '{{components.orders.pageIndex}}' },
+        },
       },
     ]);
     client.getDevelopmentEnvironmentId.mockResolvedValue('dev');
@@ -203,6 +309,9 @@ describe('run_queries tool', () => {
 
   it('only classifies single proven SQL reads as batch safe', () => {
     expect(batchSafeRead({ id: 's', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT 1' } }).safe).toBe(true);
+    expect(batchSafeRead({ id: 'b', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT id FROM users LIMIT 25' } }).safe).toBe(true);
+    expect(batchSafeRead({ id: 'u', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT id FROM users' } }).safe).toBe(false);
+    expect(batchSafeRead({ id: 'star', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT * FROM users LIMIT 25' } }).safe).toBe(false);
     expect(batchSafeRead({ id: 'w', kind: 'postgresql', options: { mode: 'sql', query: 'UPDATE users SET active=true' } }).safe).toBe(false);
     expect(batchSafeRead({ id: 'r', kind: 'restapi', options: { operation: 'get' } }).safe).toBe(false);
   });
@@ -736,7 +845,7 @@ describe('add_query tool', () => {
     client.createQuery.mockResolvedValue(created);
 
     const tool = addQueryTool(client as unknown as ToolJetClient);
-    const options = { operation: 'list_rows', table_id: 'users-id', list_rows: {} };
+    const options = { operation: 'list_rows', table_id: 'users-id', list_rows: { limit: 25 } };
     const result = await tool.handler({
       version_id: 'v1',
       datasource_id: 'ds1',

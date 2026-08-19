@@ -34254,6 +34254,264 @@ function getComponentTool(client) {
   };
 }
 
+// dist/queryExecutionSafety.js
+var LARGE_READ_ROW_THRESHOLD = 1e3;
+var SQL_KINDS = /* @__PURE__ */ new Set([
+  "postgresql",
+  "mysql",
+  "mariadb",
+  "mssql",
+  "sqlserver",
+  "cockroachdb",
+  "redshift",
+  "snowflake",
+  "bigquery",
+  "clickhouse",
+  "oracle",
+  "sqlite"
+]);
+function record2(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+}
+function staticPositiveInteger(value) {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0)
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
+  return match ? Number(match[1]) : void 0;
+}
+function stripSql(sql) {
+  return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
+}
+function normalizeSqlTable(raw) {
+  return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
+}
+function sqlSource(sql) {
+  const match = sql.match(/\bfrom\s+((?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?)/i);
+  return match ? { kind: "sql_table", value: normalizeSqlTable(match[1]) } : void 0;
+}
+function assessSql(sql) {
+  const compact = stripSql(sql);
+  if (!compact || /;\s*\S/.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is empty or contains more than one statement"
+    };
+  }
+  if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false
+    };
+  }
+  if (!/^select\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is not a single proven read statement"
+    };
+  }
+  const fromIndex = compact.search(/\bfrom\b/i);
+  const selectClause = compact.slice("select".length, fromIndex >= 0 ? fromIndex : compact.length).trim();
+  const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
+  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(selectClause);
+  const source = sqlSource(compact);
+  const limit = compact.match(/\blimit\s+(\d+)\b/i);
+  const maxRows = limit ? Number(limit[1]) : void 0;
+  if (selectStar) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: true,
+      requiresCountPreflight: false,
+      source,
+      maxRows,
+      reason: "SELECT * is refused. Inspect the schema and select only the required columns."
+    };
+  }
+  if (countOnly || fromIndex < 0) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source,
+      maxRows: countOnly ? 1 : maxRows
+    };
+  }
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source,
+      maxRows
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    source,
+    maxRows,
+    reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function countAggregate(options) {
+  const listRows = record2(options.list_rows);
+  const aggregates = record2(listRows?.aggregates);
+  const groupBy = record2(listRows?.group_by);
+  if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
+    return false;
+  return Object.values(aggregates).every((aggregate) => record2(aggregate)?.aggFx === "count");
+}
+function guiSource(kind, options) {
+  if (kind === "tooljetdb" && typeof options.table_id === "string") {
+    return { kind: "table_id", value: options.table_id };
+  }
+  const table = typeof options.table === "string" ? options.table : void 0;
+  if (!table)
+    return void 0;
+  const schema = typeof options.schema === "string" ? `${options.schema}.` : "";
+  return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
+}
+function assessListRows(kind, options) {
+  const source = guiSource(kind, options);
+  if (kind === "tooljetdb" && countAggregate(options)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source,
+      maxRows: 1
+    };
+  }
+  const listRows = record2(options.list_rows);
+  const maxRows = staticPositiveInteger(listRows?.limit ?? options.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source,
+      maxRows
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    source,
+    maxRows,
+    reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function assessQueryRead(query) {
+  const kind = query.kind?.toLowerCase();
+  const options = record2(query.options);
+  if (!kind || !options) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Datasource kind/options are unavailable."
+    };
+  }
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  if (kind === "tooljetdb") {
+    if (operation === "list_rows")
+      return assessListRows(kind, options);
+    if (operation === "sql_execution") {
+      const sql = record2(options.sql_execution)?.sqlQuery;
+      return typeof sql === "string" ? assessSql(sql) : {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "ToolJet DB SQL text is unavailable."
+      };
+    }
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `ToolJet DB operation ${operation ?? "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (SQL_KINDS.has(kind)) {
+    if (operation === "list_rows" || options.mode === "gui")
+      return assessListRows(kind, options);
+    const sql = typeof options.query === "string" ? options.query : typeof options.sql === "string" ? options.sql : void 0;
+    return sql ? assessSql(sql) : {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL text is unavailable."
+    };
+  }
+  return {
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason: `Datasource kind ${kind} has no proven read classifier.`
+  };
+}
+function sameReadSource(target, count) {
+  return !!target.source && !!count.source && target.source.kind === count.source.kind && target.source.value === count.source.value;
+}
+function extractRowCount(result) {
+  if (result.status !== "ok")
+    return void 0;
+  let value = result.data;
+  if (record2(value)?.result !== void 0)
+    value = record2(value).result;
+  if (Array.isArray(value)) {
+    if (value.length !== 1)
+      return void 0;
+    value = value[0];
+  }
+  const row = record2(value);
+  if (!row)
+    return void 0;
+  const numeric = Object.values(row).flatMap((candidate) => {
+    const parsed = typeof candidate === "number" ? candidate : typeof candidate === "string" && /^\d+$/.test(candidate.trim()) ? Number(candidate) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? [parsed] : [];
+  });
+  return numeric.length === 1 ? numeric[0] : void 0;
+}
+
 // dist/queryValidation.js
 var KNOWN_IGNORED_KEYS = {
   run_on_page_load: "runOnPageLoad"
@@ -34335,6 +34593,21 @@ function tableStateWarnings(options) {
 function validateQueryOptions(kind, options) {
   const errors = [];
   const warnings = tableStateWarnings(options);
+  const readAssessment = assessQueryRead({ id: "<planned-query>", kind, options });
+  if (readAssessment.selectStar) {
+    warnings.push({
+      code: "select_star_read",
+      path: typeof options.query === "string" ? "query" : void 0,
+      message: "SELECT * will be refused by run_query. Inspect the table schema and select only the fields the app needs; this avoids unknown/wide columns and accidental sensitive-data reads."
+    });
+  }
+  if (readAssessment.provenRead && readAssessment.requiresCountPreflight) {
+    warnings.push({
+      code: "unbounded_read",
+      path: typeof options.query === "string" ? "query" : void 0,
+      message: `${readAssessment.reason ?? "This read is not statically bounded"} Count the same table before running it. Prefer a bounded preview and server-side pagination for large or growing datasets.`
+    });
+  }
   const schema = getDatasourceQuerySchema(kind);
   if (!schema) {
     warnings.push({
@@ -36220,29 +36493,65 @@ function containsComponentBinding(value) {
 function runQueryTool(client) {
   return {
     name: "run_query",
-    description: 'Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK `status` and read `message` on failure. Runs the SAVED query as-is; it does not mutate it. If saved options reference `components.*`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.',
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require a same-source count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. Never set that flag from inferred consent. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
-      environment_id: external_exports.string().optional()
+      environment_id: external_exports.string().optional(),
+      count_query_id: external_exports.string().optional(),
+      user_confirmed_large_read: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
         const warnings = [];
-        try {
-          const query = await client.getQuery(args.query_id, args.version_id);
-          if (containsComponentBinding(query.options)) {
-            warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
+        const query = await client.getQuery(args.query_id, args.version_id);
+        const assessment = assessQueryRead(query);
+        if (!assessment.provenRead || assessment.selectStar) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
+        }
+        if (containsComponentBinding(query.options)) {
+          warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
+        }
+        let preflight;
+        if (!assessment.directSafe) {
+          if (!assessment.requiresCountPreflight || !args.count_query_id) {
+            return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
           }
-        } catch {
-          warnings.push("Saved query options could not be inspected before execution; this result does not validate browser-bound component inputs.");
+          if (args.count_query_id === args.query_id) {
+            return fail(new Error("count_query_id must be a separate count-only query."));
+          }
+          const countQuery = await client.getQuery(args.count_query_id, args.version_id);
+          const countAssessment = assessQueryRead(countQuery);
+          if (!countAssessment.countOnly || !countAssessment.directSafe || !sameReadSource(assessment, countAssessment)) {
+            return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be a proven count-only query against the same simple table as the target query.`));
+          }
+          const countResult = await client.runQuery({
+            queryId: countQuery.id,
+            versionId: args.version_id,
+            environmentId: args.environment_id
+          });
+          const rowCount = extractRowCount(countResult);
+          if (rowCount === void 0) {
+            return fail(new Error(`Count preflight "${countQuery.name ?? countQuery.id}" did not return one row with exactly one numeric count; target query was not run.`));
+          }
+          preflight = { count_query_id: countQuery.id, row_count: rowCount, threshold: LARGE_READ_ROW_THRESHOLD };
+          if (rowCount > LARGE_READ_ROW_THRESHOLD && !args.user_confirmed_large_read) {
+            return fail(new Error(`Target query was not run: count preflight found ${rowCount} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row threshold. Recommend server-side pagination. If a full read is still necessary, tell the user the observed count and ask explicitly; retry with user_confirmed_large_read:true only after they approve.`));
+          }
+          if (rowCount > LARGE_READ_ROW_THRESHOLD) {
+            warnings.push(`User-confirmed large read: count preflight found ${rowCount} rows. Server-side pagination remains recommended.`);
+          }
         }
         const result = await client.runQuery({
           queryId: args.query_id,
           versionId: args.version_id,
           environmentId: args.environment_id
         });
-        return ok(warnings.length ? { ...result, warnings } : result);
+        return ok({
+          ...result,
+          ...preflight ? { preflight } : {},
+          ...warnings.length ? { warnings } : {}
+        });
       } catch (err) {
         return fail(err);
       }
@@ -36251,47 +36560,17 @@ function runQueryTool(client) {
 }
 
 // dist/tools/runQueries.js
-var SQL_KINDS = /* @__PURE__ */ new Set([
-  "postgresql",
-  "mysql",
-  "mariadb",
-  "mssql",
-  "sqlserver",
-  "cockroachdb",
-  "redshift",
-  "snowflake",
-  "bigquery",
-  "clickhouse",
-  "oracle",
-  "sqlite"
-]);
-function record2(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
-}
 function batchSafeRead(query) {
-  const kind = query.kind?.toLowerCase();
-  const options = record2(query.options);
-  if (!kind || !options)
-    return { safe: false, reason: "kind/options are unavailable" };
-  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
-  if (kind === "tooljetdb") {
-    return operation === "list_rows" || operation === "join_tables" ? { safe: true } : { safe: false, reason: `ToolJet DB operation ${operation ?? "<missing>"} is not a proven read` };
-  }
-  if (SQL_KINDS.has(kind)) {
-    if (operation === "list_rows")
-      return { safe: true };
-    const sql = typeof options.query === "string" ? options.query : typeof options.sql === "string" ? options.sql : void 0;
-    if (!sql)
-      return { safe: false, reason: "SQL text is unavailable" };
-    const compact = sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim();
-    return /^(select\b|show\b|describe\b|explain\s+(select\b|show\b))/i.test(compact) && !/;\s*\S/.test(compact) ? { safe: true } : { safe: false, reason: "SQL is not a single proven read statement" };
-  }
-  return { safe: false, reason: `datasource kind ${kind} has no batch-safe read classifier` };
+  const assessment = assessQueryRead(query);
+  return assessment.provenRead && assessment.directSafe && !assessment.selectStar ? { safe: true } : {
+    safe: false,
+    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
+  };
 }
 function runQueriesTool(client) {
   return {
     name: "run_queries",
-    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; mutations, RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Component-bound options receive the run_query viewer warning.",
+    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
     inputSchema: {
       query_ids: external_exports.array(external_exports.string()).min(1).max(10),
       version_id: external_exports.string(),
