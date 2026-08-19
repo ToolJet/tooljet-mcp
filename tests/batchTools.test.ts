@@ -85,8 +85,8 @@ describe('batch authoring tools', () => {
   it('adds pages as one verified batch', async () => {
     const client = {
       createPages: vi.fn().mockResolvedValue([
-        { page_id: 'p2', name: 'Cases', icon: 'IconChecklist' },
-        { page_id: 'p3', name: 'Case Detail', icon: 'IconFileDescription', hidden: true },
+        { page_id: 'p2', name: 'Cases', index: 2, icon: 'IconChecklist' },
+        { page_id: 'p3', name: 'Case Detail', index: 3, icon: 'IconFileDescription', hidden: true },
       ]),
     } as unknown as ToolJetClient;
     const result = await addPagesTool(client).handler({

@@ -193,6 +193,7 @@ export interface CreatePageParams {
 export interface CreatePageResult {
   page_id: string;
   name: string;
+  index: number;
   icon?: string;
   hidden?: boolean;
 }
@@ -267,6 +268,7 @@ export interface AppSummary {
     handle?: string;
     icon?: string;
     hidden?: boolean;
+    index?: number;
     components: ComponentSummary[];
   }>;
   queries: Array<{ id: string; name?: string; kind?: string; data_source_id?: string; options?: unknown }>;
@@ -493,6 +495,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       handle: p.handle,
       icon: p.icon,
       hidden: p.hidden?.value === true,
+      ...(typeof p.index === 'number' ? { index: p.index } : {}),
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
     }));
     const queries = (full.data_queries ?? []).map((q: any) => ({
@@ -575,7 +578,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createPages(params: CreatePagesParams): Promise<CreatePageResult[]> {
     // Page order = append after existing pages. Precompute ids/indexes and create the batch concurrently.
     const app = await getApp(params.appId);
-    const startIndex = (app.pages ?? []).length;
+    const existingPages = app.pages ?? [];
+    const highestPersistedIndex = existingPages.reduce(
+      (highest: number, page: any) =>
+        typeof page.index === 'number' && Number.isFinite(page.index)
+          ? Math.max(highest, page.index)
+          : highest,
+      0
+    );
+    // ToolJet's initial Home page starts at index 1. Older payloads can omit index, so fall back
+    // to the current page count instead of reusing an occupied index.
+    const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
     const handleOf = (name: string): string =>
       name
         .toLowerCase()
@@ -646,6 +659,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return entries.map((page) => ({
       page_id: page.id,
       name: page.name,
+      index: page.index,
       ...(page.icon ? { icon: page.icon } : {}),
       ...(page.hidden ? { hidden: true } : {}),
     }));

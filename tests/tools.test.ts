@@ -575,6 +575,7 @@ describe('get_app_summary tool', () => {
         handle: 'home',
         icon: 'IconLayoutDashboard',
         hidden: true,
+        index: 1,
         components: [
           {
             id: 'c1',
@@ -644,7 +645,7 @@ describe('get_app_summary tool', () => {
       page_names: ['Home'],
       component_types: ['Table'],
       app_fields: ['app_id'],
-      page_fields: ['id', 'name', 'hidden'],
+      page_fields: ['id', 'name', 'hidden', 'index'],
       component_fields: ['id', 'name', 'properties.data.value', 'styles.borderRadius.value'],
     });
 
@@ -655,6 +656,7 @@ describe('get_app_summary tool', () => {
           id: 'p1',
           name: 'Home',
           hidden: true,
+          index: 1,
           components: [
             {
               id: 'c1',

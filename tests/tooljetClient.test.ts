@@ -144,6 +144,7 @@ describe('createClient', () => {
         handle: 'home',
         icon: 'IconLayoutDashboard',
         hidden: { value: true },
+        index: 1,
         components: {
           'c-1': {
             layouts: { desktop: { top: 0, left: 0, width: 20, height: 4 } },
@@ -187,6 +188,7 @@ describe('createClient', () => {
             handle: 'home',
             icon: 'IconLayoutDashboard',
             hidden: true,
+            index: 1,
             components: [
               {
                 id: 'c-1',
@@ -676,7 +678,7 @@ describe('createClient', () => {
   describe('createPage', () => {
     it('appends after existing pages, slugifies the handle, uses a client-generated id', async () => {
       auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home' }] } })) // getApp
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home', index: 1 }] } })) // getApp
         .mockResolvedValueOnce(mockResponse({ status: 201, json: {} })); // create page
 
       const client = createClient(auth, config);
@@ -685,18 +687,18 @@ describe('createClient', () => {
       const [path, init] = auth.authedFetch.mock.calls[1];
       expect(path).toBe('/api/v2/apps/app1/versions/ver1/pages');
       const body = JSON.parse(init.body);
-      expect(body).toMatchObject({ id: 'component-uuid-1', name: 'Details View', handle: 'details-view', index: 1 });
-      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Details View' });
+      expect(body).toMatchObject({ id: 'component-uuid-1', name: 'Details View', handle: 'details-view', index: 2 });
+      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Details View', index: 2 });
     });
 
     it('persists and verifies a sidebar icon through the page update route', async () => {
       auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home', index: 1 }] } }))
         .mockResolvedValueOnce(mockResponse({ status: 201, json: {} }))
         .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
         .mockResolvedValueOnce(mockResponse({
           status: 200,
-          json: { pages: [{ id: 'home', name: 'Home' }, { id: 'component-uuid-1', name: 'Customers', icon: 'IconUsers' }] },
+          json: { pages: [{ id: 'home', name: 'Home', index: 1 }, { id: 'component-uuid-1', name: 'Customers', icon: 'IconUsers', index: 2 }] },
         }));
 
       const client = createClient(auth, config);
@@ -711,7 +713,7 @@ describe('createClient', () => {
       expect(updatePath).toBe('/api/v2/apps/app1/versions/ver1/pages');
       expect(updateInit.method).toBe('PUT');
       expect(JSON.parse(updateInit.body)).toEqual({ pageId: 'component-uuid-1', diff: { icon: 'IconUsers' } });
-      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Customers', icon: 'IconUsers' });
+      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Customers', index: 2, icon: 'IconUsers' });
     });
   });
 
