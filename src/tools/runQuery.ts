@@ -25,9 +25,11 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       'The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", ' +
       'data: [...rows], ... } — HTTP is 200 even on failure, so CHECK `status` and read `message` on failure. ' +
       `Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static ` +
-      `limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require a same-source count_query_id first; if the ` +
+      `limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the ` +
       `observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. ` +
-      'Never set that flag from inferred consent. If saved options reference `components.*`, the result ' +
+      'BigQuery, Snowflake, and Redshift reads also require explicit cost approval with ' +
+      'user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. ' +
+      'If saved options reference `components.*`, the result ' +
       'includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.',
     inputSchema: {
       query_id: z.string(),
@@ -35,6 +37,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       environment_id: z.string().optional(),
       count_query_id: z.string().optional(),
       user_confirmed_large_read: z.boolean().optional(),
+      user_confirmed_billable_read: z.boolean().optional(),
     },
     async handler(args: {
       query_id: string;
@@ -42,6 +45,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       environment_id?: string;
       count_query_id?: string;
       user_confirmed_large_read?: boolean;
+      user_confirmed_billable_read?: boolean;
     }) {
       try {
         const warnings: string[] = [];
@@ -58,9 +62,17 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           );
         }
 
+        if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
+          return fail(new Error(
+            `run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur ` +
+              'warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with ' +
+              'user_confirmed_billable_read:true only after explicit approval.'
+          ));
+        }
+
         let preflight: Record<string, unknown> | undefined;
-        if (!assessment.directSafe) {
-          if (!assessment.requiresCountPreflight || !args.count_query_id) {
+        if (assessment.requiresCountPreflight) {
+          if (!args.count_query_id) {
             return fail(new Error(
               `run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? 'result size is not bounded'}` +
                 ` Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. ` +
@@ -72,10 +84,13 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
-          if (!countAssessment.countOnly || !countAssessment.directSafe || !sameReadSource(assessment, countAssessment)) {
+          const countCanRun = countAssessment.directSafe ||
+            (countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true);
+          if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight ||
+              !sameReadSource(assessment, countAssessment)) {
             return fail(new Error(
-              `run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be a proven count-only ` +
-                'query against the same simple table as the target query.'
+              `run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered ` +
+                'COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.'
             ));
           }
           const countResult = await client.runQuery({

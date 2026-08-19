@@ -4,7 +4,7 @@ import {
   type DatasourceContractVariant,
   type DatasourceFieldContract,
 } from './datasourceCatalog.js';
-import { assessQueryRead } from './queryExecutionSafety.js';
+import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafety.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -26,6 +26,10 @@ const KNOWN_IGNORED_KEYS: Record<string, string> = {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isTruthyStatic(value: unknown): boolean {
+  return value === true || value === 'true' || value === '{{true}}';
 }
 
 function valueAtPath(source: Record<string, unknown>, path: string): unknown {
@@ -133,6 +137,25 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
       message:
         `${readAssessment.reason ?? 'This read is not statically bounded'} Count the same table before running it. ` +
         'Prefer a bounded preview and server-side pagination for large or growing datasets.',
+    });
+  }
+  const automaticRead = isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange);
+  if (automaticRead && readAssessment.provenRead && readAssessment.requiresCountPreflight) {
+    errors.push({
+      code: 'unsafe_automatic_unbounded_read',
+      path: isTruthyStatic(options.runOnPageLoad) ? 'runOnPageLoad' : 'runOnDependencyChange',
+      message:
+        'An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ' +
+        `${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`,
+    });
+  }
+  if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
+    errors.push({
+      code: 'unsafe_automatic_billable_read',
+      path: isTruthyStatic(options.runOnPageLoad) ? 'runOnPageLoad' : 'runOnDependencyChange',
+      message:
+        'A potentially billable warehouse read cannot run automatically. Trigger it through an explicit user action, ' +
+        'and use run_query user_confirmed_billable_read:true only after the user approves any MCP-side verification run.',
     });
   }
   const schema = getDatasourceQuerySchema(kind);

@@ -180,11 +180,11 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery
       .mockResolvedValueOnce({
-        id: 'rows', name: 'listOrders', kind: 'postgresql',
+        id: 'rows', name: 'listOrders', kind: 'postgresql', data_source_id: 'pg-main',
         options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
       })
       .mockResolvedValueOnce({
-        id: 'count', name: 'countOrders', kind: 'postgresql',
+        id: 'count', name: 'countOrders', kind: 'postgresql', data_source_id: 'pg-main',
         options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
       });
     client.runQuery
@@ -206,11 +206,11 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery
       .mockResolvedValueOnce({
-        id: 'rows', name: 'listOrders', kind: 'postgresql',
+        id: 'rows', name: 'listOrders', kind: 'postgresql', data_source_id: 'pg-main',
         options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
       })
       .mockResolvedValueOnce({
-        id: 'count', name: 'countOrders', kind: 'postgresql',
+        id: 'count', name: 'countOrders', kind: 'postgresql', data_source_id: 'pg-main',
         options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
       });
     client.runQuery.mockResolvedValueOnce({ status: 'ok', data: [{ total: 2_400_000 }] });
@@ -230,11 +230,11 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery
       .mockResolvedValueOnce({
-        id: 'rows', name: 'listOrders', kind: 'postgresql',
+        id: 'rows', name: 'listOrders', kind: 'postgresql', data_source_id: 'pg-main',
         options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
       })
       .mockResolvedValueOnce({
-        id: 'count', name: 'countOrders', kind: 'postgresql',
+        id: 'count', name: 'countOrders', kind: 'postgresql', data_source_id: 'pg-main',
         options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
       });
     client.runQuery
@@ -251,6 +251,28 @@ describe('run_query tool', () => {
       preflight: { row_count: 2400 },
       warnings: [expect.stringMatching(/User-confirmed large read.*server-side pagination/i)],
     });
+  });
+
+  it('does not execute a billable warehouse read without explicit confirmation', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'warehouse-page', name: 'warehousePage', kind: 'bigquery', data_source_id: 'bq-main',
+      options: { query: 'SELECT id FROM dataset.orders LIMIT 25' },
+    });
+
+    const refused = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'warehouse-page', version_id: 'v1',
+    });
+    expect(refused.isError).toBe(true);
+    expect(refused.content[0]!.text).toMatch(/scan charges.*user_confirmed_billable_read:true.*explicit approval/i);
+    expect(client.runQuery).not.toHaveBeenCalled();
+
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ id: 1 }] });
+    const approved = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'warehouse-page', version_id: 'v1', user_confirmed_billable_read: true,
+    });
+    expect(textOf(approved)).toMatchObject({ status: 'ok', data: [{ id: 1 }] });
+    expect(client.runQuery).toHaveBeenCalledOnce();
   });
 });
 

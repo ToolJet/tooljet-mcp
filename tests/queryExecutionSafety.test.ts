@@ -39,12 +39,12 @@ describe('query execution safety', () => {
 
   it('recognizes same-source SQL and ToolJet DB count-only queries', () => {
     const sqlTarget = assessQueryRead({
-      id: 'target', kind: 'postgresql', options: { query: 'SELECT id FROM orders' },
+      id: 'target', kind: 'postgresql', data_source_id: 'pg-main', options: { query: 'SELECT id FROM orders' },
     });
     const sqlCount = assessQueryRead({
-      id: 'count', kind: 'postgresql', options: { query: 'SELECT COUNT(*) AS total FROM orders' },
+      id: 'count', kind: 'postgresql', data_source_id: 'pg-main', options: { query: 'SELECT COUNT(*) AS total FROM orders' },
     });
-    expect(sqlCount).toMatchObject({ directSafe: true, countOnly: true, maxRows: 1 });
+    expect(sqlCount).toMatchObject({ directSafe: true, countOnly: true, fullSourceCount: true, maxRows: 1 });
     expect(sameReadSource(sqlTarget, sqlCount)).toBe(true);
 
     const tjCount = assessQueryRead({
@@ -53,7 +53,61 @@ describe('query execution safety', () => {
         list_rows: { aggregates: { count: { column: 'id', aggFx: 'count' } } },
       },
     });
-    expect(tjCount).toMatchObject({ directSafe: true, countOnly: true, maxRows: 1 });
+    expect(tjCount).toMatchObject({ directSafe: true, countOnly: true, fullSourceCount: true, maxRows: 1 });
+  });
+
+  it('does not let filtered, joined, or cross-datasource counts unlock a target read', () => {
+    const target = assessQueryRead({
+      id: 'target', kind: 'postgresql', data_source_id: 'pg-main',
+      options: { query: 'SELECT id FROM orders WHERE status = \'open\'' },
+    });
+    const filtered = assessQueryRead({
+      id: 'filtered', kind: 'postgresql', data_source_id: 'pg-main',
+      options: { query: 'SELECT COUNT(*) FROM orders WHERE id = -1' },
+    });
+    const otherDatasource = assessQueryRead({
+      id: 'other', kind: 'postgresql', data_source_id: 'pg-replica',
+      options: { query: 'SELECT COUNT(*) FROM orders' },
+    });
+    const joinedTarget = assessQueryRead({
+      id: 'joined', kind: 'postgresql', data_source_id: 'pg-main',
+      options: { query: 'SELECT o.id FROM orders o JOIN items i ON i.order_id = o.id' },
+    });
+    const fullCount = assessQueryRead({
+      id: 'count', kind: 'postgresql', data_source_id: 'pg-main',
+      options: { query: 'SELECT COUNT(*) FROM orders' },
+    });
+
+    expect(filtered.fullSourceCount).toBe(false);
+    expect(sameReadSource(target, filtered)).toBe(false);
+    expect(sameReadSource(target, otherDatasource)).toBe(false);
+    expect(sameReadSource(joinedTarget, fullCount)).toBe(false);
+  });
+
+  it('rejects SQL statements with write, lock, or unproven function side effects', () => {
+    expect(assessQueryRead({
+      id: 'into', kind: 'postgresql',
+      options: { query: 'SELECT id INTO archived_orders FROM orders LIMIT 10' },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+    expect(assessQueryRead({
+      id: 'lock', kind: 'postgresql',
+      options: { query: 'SELECT id FROM orders LIMIT 10 FOR UPDATE' },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+    expect(assessQueryRead({
+      id: 'function', kind: 'postgresql', options: { query: 'SELECT rotate_secrets()' },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+  });
+
+  it('requires explicit confirmation for warehouse reads even when row-limited', () => {
+    expect(assessQueryRead({
+      id: 'bq', kind: 'bigquery', data_source_id: 'warehouse',
+      options: { query: 'SELECT id FROM dataset.orders LIMIT 10' },
+    })).toMatchObject({
+      provenRead: true,
+      directSafe: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: true,
+    });
   });
 
   it('extracts only an unambiguous one-row numeric count', () => {

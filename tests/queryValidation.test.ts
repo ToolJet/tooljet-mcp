@@ -131,4 +131,27 @@ describe('validateQueryOptions', () => {
       /Count the same table.*bounded preview.*server-side pagination/i
     );
   });
+
+  it('blocks unbounded or billable reads from running automatically', () => {
+    const unbounded = validateQueryOptions('postgresql', {
+      mode: 'sql', query: 'SELECT id, status FROM orders', runOnPageLoad: true,
+    });
+    expect(unbounded.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'unsafe_automatic_unbounded_read', path: 'runOnPageLoad' }),
+    ]));
+
+    const billable = validateQueryOptions('bigquery', {
+      query: 'SELECT id FROM dataset.orders LIMIT 25', runOnDependencyChange: true,
+    });
+    expect(billable.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'unsafe_automatic_billable_read', path: 'runOnDependencyChange' }),
+    ]));
+  });
+
+  it('allows a statically bounded non-warehouse read to run on page load', () => {
+    const result = validateQueryOptions('postgresql', {
+      mode: 'sql', query: 'SELECT id, status FROM orders LIMIT 25', runOnPageLoad: true,
+    });
+    expect(result.errors).toEqual([]);
+  });
 });
