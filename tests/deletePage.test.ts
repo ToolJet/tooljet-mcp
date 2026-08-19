@@ -84,4 +84,36 @@ describe('delete_page tool', () => {
     expect(result.content[0]!.text).toMatch(/still targeted by external event.*open analytics/i);
     expect((client.deletePage as any)).not.toHaveBeenCalled();
   });
+
+  it('also refuses an external event that targets a component owned by the page', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue(summary([
+        {
+          id: 'external-control', name: 'refresh chart', sourceId: 'home-button', target: 'component',
+          event: { actionId: 'control-component', componentId: 'chart' },
+        },
+      ])),
+      deletePage: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await deletePageTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'analytics', confirm: true,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/still targeted by external event.*refresh chart/i);
+    expect((client.deletePage as any)).not.toHaveBeenCalled();
+  });
+
+  it('fails closed instead of performing unverifiable group-wide deletion', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue(summary()),
+      deletePage: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await deletePageTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'analytics',
+      delete_associated_pages: true, confirm: true,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/delete_associated_pages is disabled.*cannot prove.*child pages/i);
+    expect((client.deletePage as any)).not.toHaveBeenCalled();
+  });
 });

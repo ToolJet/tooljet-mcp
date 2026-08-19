@@ -29,7 +29,7 @@ export interface AppSummarySelection {
 }
 
 const APP_FIELDS = ['app_id', 'name', 'version_id'] as const;
-const PAGE_FIELDS = ['id', 'name', 'handle', 'icon', 'hidden', 'index'] as const;
+const PAGE_FIELDS = ['id', 'name', 'handle', 'icon', 'hidden', 'index', 'is_page_group', 'page_group_id'] as const;
 const COMPONENT_FIELDS = [
   'id',
   'name',
