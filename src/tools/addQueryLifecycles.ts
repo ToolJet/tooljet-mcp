@@ -74,6 +74,7 @@ export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
           appId: args.app_id,
           versionId: args.version_id,
           events: expanded.events,
+          existingEvents: summary.events,
         });
         return ok({
           ...result,

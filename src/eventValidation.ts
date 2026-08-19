@@ -67,7 +67,11 @@ function validateTableColumnRef(
   return undefined;
 }
 
-export function validateEvents(summary: AppSummary, events: EventSpec[]): EventValidationResult {
+export function validateEvents(
+  summary: AppSummary,
+  events: EventSpec[],
+  options: { includePersistedChains?: boolean } = {}
+): EventValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
@@ -249,19 +253,45 @@ export function validateEvents(summary: AppSummary, events: EventSpec[]): EventV
     }
   });
 
-  const chains = new Map<string, Array<{ event: EventSpec; index: number }>>();
-  events.forEach((event, index) => {
-    const key = [event.sourceType, event.sourceId, event.ref ?? '', event.trigger].join('\u0000');
+  const chainKey = (event: Pick<EventSpec, 'sourceType' | 'sourceId' | 'ref' | 'trigger'>): string =>
+    [event.sourceType, event.sourceId, event.ref ?? '', event.trigger].join('\u0000');
+  const touchedChains = new Set(events.map(chainKey));
+  const chains = new Map<string, Array<{ event: EventSpec; index: number; persisted: boolean }>>();
+  for (const persisted of options.includePersistedChains === false ? [] : summary.events) {
+    const raw = isRecord(persisted.event) ? persisted.event : undefined;
+    const sourceType = persisted.target as EventSourceType | undefined;
+    const trigger = raw?.eventId;
+    if (!raw || !persisted.sourceId || !sourceType || !nonEmptyString(trigger)) continue;
+    const event: EventSpec = {
+      sourceId: persisted.sourceId,
+      sourceType,
+      ref: nonEmptyString(raw.ref) ? raw.ref : undefined,
+      trigger,
+      action: raw,
+      name: persisted.name,
+    };
+    const key = chainKey(event);
+    if (!touchedChains.has(key)) continue;
     const chain = chains.get(key) ?? [];
-    chain.push({ event, index });
+    chain.push({ event, index: persisted.index ?? 0, persisted: true });
+    chains.set(key, chain);
+  }
+  events.forEach((event, index) => {
+    const key = chainKey(event);
+    const chain = chains.get(key) ?? [];
+    const lastPersistedIndex = chain.reduce((maximum, item) => item.persisted ? Math.max(maximum, item.index) : maximum, -1);
+    chain.push({ event, index: lastPersistedIndex + index + 1, persisted: false });
     chains.set(key, chain);
   });
   for (const chain of chains.values()) {
+    chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === 'switch-page');
     if (navigationIndex === -1 || navigationIndex === chain.length - 1) continue;
     const navigation = chain[navigationIndex]!;
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(', ');
-    const label = navigation.event.name ? `Event "${navigation.event.name}"` : `Event[${navigation.index}]`;
+    const label = navigation.event.name
+      ? `${navigation.persisted ? 'Persisted event' : 'Event'} "${navigation.event.name}"`
+      : `${navigation.persisted ? 'Persisted event' : 'Event'}[${navigation.index}]`;
     errors.push(
       `${label}: switch-page must be the LAST handler for the same source and trigger; ` +
         `ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`

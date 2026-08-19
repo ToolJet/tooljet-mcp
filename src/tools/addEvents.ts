@@ -92,6 +92,7 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
           appId: args.app_id,
           versionId: args.version_id,
           events,
+          existingEvents: summary.events,
         });
         return ok({ ...result, warnings: validation.warnings });
       } catch (err) {

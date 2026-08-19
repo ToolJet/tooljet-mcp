@@ -5,6 +5,7 @@ import { validatePersistedAppSummary } from '../appValidation.js';
 import { prepareComponentBatch } from '../componentBatch.js';
 import { validateEvents } from '../eventValidation.js';
 import { expandQueryLifecycles } from '../queryLifecycle.js';
+import { completedPartialWrites } from '../tooljetClient.js';
 import type {
   AppSummary,
   EventSourceType,
@@ -160,8 +161,12 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
               })
             : Promise.resolve([]),
         ]);
-        const createdTables = tableWrite.status === 'fulfilled' ? tableWrite.value : [];
-        const createdPages = pageWrite.status === 'fulfilled' ? pageWrite.value : [];
+        const createdTables = tableWrite.status === 'fulfilled'
+          ? tableWrite.value
+          : completedPartialWrites<{ table_id: string; table_name: string }>(tableWrite.reason);
+        const createdPages = pageWrite.status === 'fulfilled'
+          ? pageWrite.value
+          : completedPartialWrites<{ page_id: string; name: string; index: number; icon?: string; hidden?: boolean }>(pageWrite.reason);
         applied.tables = createdTables.length;
         applied.pages = createdPages.length;
         const foundationFailures = [
@@ -222,8 +227,12 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             ? client.createQueries({ versionId: args.version_id, queries: queryInputs })
             : Promise.resolve([]),
         ]);
-        const seedResults = seedWrite.status === 'fulfilled' ? seedWrite.value : [];
-        const createdQueries = queryWrite.status === 'fulfilled' ? queryWrite.value : [];
+        const seedResults = seedWrite.status === 'fulfilled'
+          ? seedWrite.value
+          : completedPartialWrites<{ table_name: string; processed_rows: number }>(seedWrite.reason);
+        const createdQueries = queryWrite.status === 'fulfilled'
+          ? queryWrite.value
+          : completedPartialWrites<{ query_id: string; name: string }>(queryWrite.reason);
         applied.seed_rows = seedResults.reduce((total, result) => total + result.processed_rows, 0);
         applied.queries = createdQueries.length;
         const dataFailures = [
@@ -320,7 +329,12 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         if (eventValidation.errors.length) throw new Error(eventValidation.errors.join(' '));
         warnings.push(...eventValidation.warnings);
         if (allEvents.length) {
-          await client.createEvents({ appId: args.app_id, versionId: args.version_id, events: allEvents });
+          await client.createEvents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            events: allEvents,
+            existingEvents: summaryBeforeEvents.events,
+          });
           applied.events = allEvents.length;
         }
 

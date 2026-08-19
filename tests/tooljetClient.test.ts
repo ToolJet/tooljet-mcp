@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createClient } from '../src/tooljetClient.js';
+import { PartialWriteError, createClient } from '../src/tooljetClient.js';
 import type { Config } from '../src/config.js';
 import type { Auth } from '../src/auth.js';
 
@@ -603,6 +603,7 @@ describe('createClient', () => {
       const result = await client.createEvents({
         appId: 'app1',
         versionId: 'ver1',
+        existingEvents: [],
         events: [
           { sourceId: 'btn1', sourceType: 'component', trigger: 'onClick', action: { actionId: 'run-query', queryName: 'save' } },
           { sourceId: 'btn1', sourceType: 'component', trigger: 'onClick', action: { actionId: 'show-alert', message: 'Saved', alertType: 'success' } },
@@ -625,6 +626,7 @@ describe('createClient', () => {
       await client.createEvents({
         appId: 'app1',
         versionId: 'ver1',
+        existingEvents: [],
         events: [
           { sourceId: 'save1', sourceType: 'data_query', trigger: 'onDataQuerySuccess', action: { actionId: 'run-query', queryId: 'list1' } },
           { sourceId: 'save1', sourceType: 'data_query', trigger: 'onDataQuerySuccess', action: { actionId: 'show-alert', message: 'Saved' }, name: 'Refresh after save' },
@@ -644,6 +646,7 @@ describe('createClient', () => {
       await client.createEvents({
         appId: 'app1',
         versionId: 'ver1',
+        existingEvents: [],
         events: [
           { sourceId: 'tbl1', sourceType: 'table_column', ref: 'actions::view', trigger: 'onClick', action: { actionId: 'run-query', queryId: 'view1' } },
           { sourceId: 'tbl1', sourceType: 'table_column', ref: 'actions::delete', trigger: 'onClick', action: { actionId: 'run-query', queryId: 'delete1' } },
@@ -668,6 +671,7 @@ describe('createClient', () => {
       await client.createEvents({
         appId: 'app1',
         versionId: 'ver1',
+        existingEvents: [],
         events: [{
           sourceId: 'save1',
           sourceType: 'data_query',
@@ -686,6 +690,36 @@ describe('createClient', () => {
         componentSpecificActionHandle: 'clear',
         componentSpecificActionParams: [],
       });
+    });
+
+    it('appends indices after persisted events for the same source and sub-element', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: {} }));
+      const client = createClient(auth, config);
+      await client.createEvents({
+        appId: 'app1',
+        versionId: 'ver1',
+        existingEvents: [
+          {
+            id: 'existing-1', sourceId: 'btn1', target: 'component', index: 2,
+            event: { eventId: 'onClick', actionId: 'run-query' },
+          },
+          {
+            id: 'other-ref', sourceId: 'tbl1', target: 'table_column', index: 7,
+            event: { eventId: 'onClick', ref: 'actions::delete', actionId: 'run-query' },
+          },
+        ],
+        events: [
+          { sourceId: 'btn1', sourceType: 'component', trigger: 'onClick', action: { actionId: 'show-alert' } },
+          {
+            sourceId: 'tbl1', sourceType: 'table_column', ref: 'actions::view', trigger: 'onClick',
+            action: { actionId: 'run-query' },
+          },
+        ],
+      });
+
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.events[0].index).toBe(3);
+      expect(body.events[1].index).toBe(0);
     });
   });
 
@@ -728,6 +762,30 @@ describe('createClient', () => {
       expect(updateInit.method).toBe('PUT');
       expect(JSON.parse(updateInit.body)).toEqual({ pageId: 'component-uuid-1', diff: { icon: 'IconUsers' } });
       expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Customers', index: 2, icon: 'IconUsers' });
+    });
+
+    it('reports exactly which pages persisted when one request in a batch fails', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home', index: 1 }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 500, text: 'page write failed' }));
+
+      const client = createClient(auth, config);
+      let caught: unknown;
+      try {
+        await client.createPages({
+          appId: 'app1', versionId: 'ver1',
+          pages: [{ name: 'Customers' }, { name: 'Reports' }],
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(PartialWriteError);
+      expect((caught as PartialWriteError<unknown>).completed).toEqual([
+        { page_id: 'component-uuid-1', name: 'Customers', index: 2 },
+      ]);
+      expect(String(caught)).toMatch(/Persisted before failure.*Customers.*Reports.*page write failed.*not deleted/i);
     });
   });
 
@@ -975,6 +1033,39 @@ describe('createClient', () => {
       await expect(client.insertRows({ tableName: 'people', rows: [{ code: 'existing', name: 'replacement' }] }))
         .rejects.toThrow(/insertRows failed \(409\).*duplicate key/i);
     });
+
+    it('reports completed table seeds when a later table fails', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { result: { columns: [{ column_name: 'id', data_type: 'serial', constraints_type: { is_primary_key: true } }] } },
+        }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { result: [{ id: 'parents-id', table_name: 'parents' }, { id: 'children-id', table_name: 'children' }] },
+        }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 1, name: 'Parent' }] }))
+        .mockResolvedValueOnce(mockResponse({ status: 500, text: 'schema unavailable' }));
+
+      const client = createClient(auth, config);
+      let caught: unknown;
+      try {
+        await client.insertRowsBatch({
+          tables: [
+            { tableName: 'parents', rows: [{ name: 'Parent' }] },
+            { tableName: 'children', rows: [{ name: 'Child' }] },
+          ],
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(PartialWriteError);
+      expect((caught as PartialWriteError<unknown>).completed).toEqual([
+        { table_name: 'parents', processed_rows: 1 },
+      ]);
+      expect(String(caught)).toMatch(/children.*schema unavailable.*not deleted/i);
+    });
   });
 
   describe('createQueries (batch)', () => {
@@ -997,6 +1088,30 @@ describe('createClient', () => {
         { query_id: 'q1', name: 'a' },
         { query_id: 'q2', name: 'b' },
       ]);
+    });
+
+    it('reports successful query ids when another query in the batch fails', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q1', name: 'a' } }))
+        .mockResolvedValueOnce(mockResponse({ status: 422, text: 'invalid options' }));
+
+      const client = createClient(auth, config);
+      let caught: unknown;
+      try {
+        await client.createQueries({
+          versionId: 'ver1',
+          queries: [
+            { dataSourceId: 'ds1', name: 'a', options: {}, kind: 'tooljetdb' },
+            { dataSourceId: 'ds1', name: 'b', options: {}, kind: 'tooljetdb' },
+          ],
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(PartialWriteError);
+      expect((caught as PartialWriteError<unknown>).completed).toEqual([{ query_id: 'q1', name: 'a' }]);
+      expect(String(caught)).toMatch(/Persisted before failure.*q1.*b.*invalid options.*not deleted/i);
     });
   });
 

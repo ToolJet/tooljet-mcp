@@ -32,6 +32,27 @@ export interface CreateQueryResult {
   name: string;
 }
 
+/** A multi-request batch persisted some items before an upstream failure. Callers must report
+ * completed items and must not retry the whole batch or auto-delete user resources. */
+export class PartialWriteError<T> extends Error {
+  readonly completed: T[];
+  readonly failures: string[];
+
+  constructor(operation: string, completed: T[], failures: string[]) {
+    super(
+      `ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. ` +
+        `Failed: ${failures.join(' | ')}. Persisted resources were not deleted automatically.`
+    );
+    this.name = 'PartialWriteError';
+    this.completed = completed;
+    this.failures = failures;
+  }
+}
+
+export function completedPartialWrites<T>(error: unknown): T[] {
+  return error instanceof PartialWriteError ? error.completed as T[] : [];
+}
+
 export interface ComponentLayout {
   top?: number;
   left?: number;
@@ -274,6 +295,8 @@ export interface CreateEventsParams {
   appId: string;
   versionId: string;
   events: EventSpec[];
+  /** Persisted events from a fresh app summary, used to append deterministic indices. */
+  existingEvents: AppSummary['events'];
 }
 
 /** Compact projection of one placed component — actual bound values only, no widget schema. */
@@ -304,6 +327,8 @@ export interface AppSummary {
     icon?: string;
     hidden?: boolean;
     index?: number;
+    is_page_group?: boolean;
+    page_group_id?: string;
     components: ComponentSummary[];
   }>;
   queries: Array<{ id: string; name?: string; kind?: string; data_source_id?: string; options?: unknown }>;
@@ -523,6 +548,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       icon: p.icon,
       hidden: p.hidden?.value === true,
       ...(typeof p.index === 'number' ? { index: p.index } : {}),
+      ...(typeof p.isPageGroup === 'boolean' ? { is_page_group: p.isPageGroup } : {}),
+      ...(typeof p.pageGroupId === 'string' ? { page_group_id: p.pageGroupId } : {}),
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
     }));
     const queries = (full.data_queries ?? []).map((q: any) => ({
@@ -640,7 +667,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       return { ...page, id: randomUUID(), handle, index: startIndex + offset };
     });
 
-    await Promise.all(entries.map(async (page) => {
+    const createSettled = await Promise.allSettled(entries.map(async (page) => {
       const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -653,43 +680,58 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         }),
       });
       await assertOk(res, `createPages "${page.name}"`);
+      return page;
     }));
+    const createdEntries = createSettled.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
+    const failures = createSettled.flatMap((result, index) => result.status === 'rejected'
+      ? [`${entries[index]!.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
+      : []);
 
     // ToolJet's create-page service ignores `icon` and `hidden`, even though the DTO accepts them.
     // Persist them via the update route — which applies a single-field diff (a diff with >1 key throws
     // "Can not update multiple pages"), so send ONE field per call. `hidden: { value: true }` removes the
     // page from the sidebar nav. Read back afterwards so a silent drop cannot look successful.
-    await Promise.all(entries.flatMap((page) => [
+    const metadataTasks = createdEntries.flatMap((page) => [
       ...(page.icon
-        ? [persistFieldForPage(page.id, 'icon', page.icon, `createPages "${page.name}" icon update`)]
+        ? [{ page, field: 'icon', promise: persistFieldForPage(page.id, 'icon', page.icon, `createPages "${page.name}" icon update`) }]
         : []),
       ...(page.hidden
-        ? [persistFieldForPage(page.id, 'hidden', { value: true }, `createPages "${page.name}" hidden update`)]
+        ? [{ page, field: 'hidden', promise: persistFieldForPage(page.id, 'hidden', { value: true }, `createPages "${page.name}" hidden update`) }]
         : []),
-    ]));
-    if (entries.some((page) => page.icon || page.hidden)) {
-      const refreshed = await getApp(params.appId);
-      for (const entry of entries) {
-        const page = (refreshed.pages ?? []).find((candidate: any) => candidate.id === entry.id);
-        if (entry.icon && page?.icon !== entry.icon) {
-          throw new Error(
-            `ToolJet createPages failed: page "${entry.name}" was created, but sidebar icon "${entry.icon}" did not persist.`
-          );
+    ]);
+    const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
+    failures.push(...metadataSettled.flatMap((result, index) => result.status === 'rejected'
+      ? [`${metadataTasks[index]!.page.name} ${metadataTasks[index]!.field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
+      : []));
+
+    let persistedById = new Map<string, any>();
+    if (createdEntries.some((page) => page.icon || page.hidden)) {
+      try {
+        const refreshed = await getApp(params.appId);
+        persistedById = new Map((refreshed.pages ?? []).map((page: any) => [page.id, page]));
+        for (const entry of createdEntries) {
+          const page = persistedById.get(entry.id);
+          if (entry.icon && page?.icon !== entry.icon) {
+            failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
+          }
+          if (entry.hidden && page?.hidden?.value !== true) {
+            failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
+          }
         }
-        if (entry.hidden && page?.hidden?.value !== true) {
-          throw new Error(
-            `ToolJet createPages failed: page "${entry.name}" was created, but hidden-from-sidebar did not persist.`
-          );
-        }
+      } catch (error) {
+        failures.push(`page metadata readback: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    return entries.map((page) => ({
+
+    const completed = createdEntries.map((page) => ({
       page_id: page.id,
       name: page.name,
       index: page.index,
-      ...(page.icon ? { icon: page.icon } : {}),
-      ...(page.hidden ? { hidden: true } : {}),
+      ...(persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon as string } : {}),
+      ...(persistedById.get(page.id)?.hidden?.value === true ? { hidden: true } : {}),
     }));
+    if (failures.length) throw new PartialWriteError('createPages', completed, failures);
+    return completed;
 
     async function persistFieldForPage(pageId: string, field: string, value: unknown, label: string): Promise<void> {
       const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
@@ -846,6 +888,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // index is ordered independently for each source; component sub-elements also scope it by ref,
     // matching EventManager's per-button ordering for Table column buttons.
     const indexBySource: Record<string, number> = {};
+    for (const existing of params.existingEvents) {
+      if (!existing.sourceId || !existing.target || typeof existing.index !== 'number') continue;
+      const raw = existing.event && typeof existing.event === 'object' && !Array.isArray(existing.event)
+        ? existing.event as Record<string, unknown>
+        : undefined;
+      const ref = typeof raw?.ref === 'string' ? raw.ref : '';
+      const sourceKey = `${existing.target}:${existing.sourceId}:${ref}`;
+      indexBySource[sourceKey] = Math.max(indexBySource[sourceKey] ?? 0, existing.index + 1);
+    }
     const events = params.events.map((e) => {
       const sourceKey = `${e.sourceType}:${e.sourceId}:${e.ref ?? ''}`;
       const index = indexBySource[sourceKey] ?? 0;
@@ -963,10 +1014,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         else failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
       });
       if (failures.length) {
-        throw new Error(
-          `ToolJet createTables partially failed. Created: ${created.map((table) => table.table_name).join(', ') || 'none'}. ` +
-            `Failed: ${failures.join(' | ')}. Existing tables were not deleted automatically.`
-        );
+        throw new PartialWriteError('createTables', created, failures);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -1119,8 +1167,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function insertRowsBatch(params: InsertRowsBatchParams): Promise<InsertRowsBatchResult[]> {
     const results: InsertRowsBatchResult[] = [];
     for (const table of params.tables) {
-      const result = await insertRows(table);
-      results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
+      try {
+        const result = await insertRows(table);
+        results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
+      } catch (error) {
+        throw new PartialWriteError('insertRowsBatch', results, [
+          `${table.tableName}: ${error instanceof Error ? error.message : String(error)}`,
+        ]);
+      }
     }
     return results;
   }
@@ -1155,7 +1209,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const needResolve = params.queries.some((q) => !q.kind);
     const dsList = needResolve ? await listDatasources(params.versionId) : [];
     const kindOf = (id: string): string | undefined => dsList.find((d) => d.id === id)?.kind;
-    return Promise.all(
+    const settled = await Promise.allSettled(
       params.queries.map((q) =>
         createQuery({
           versionId: params.versionId,
@@ -1166,6 +1220,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         })
       )
     );
+    const completed = settled.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
+    const failures = settled.flatMap((result, index) => result.status === 'rejected'
+      ? [`${params.queries[index]!.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
+      : []);
+    if (failures.length) throw new PartialWriteError('createQueries', completed, failures);
+    return completed;
   }
 
   function buildComponentDto(spec: ComponentSpec): Record<string, unknown> {

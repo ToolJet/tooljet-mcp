@@ -613,6 +613,34 @@ describe('add_events tool', () => {
     expect(client.createEvents).not.toHaveBeenCalled();
   });
 
+  it('blocks an incremental handler that would be appended after a persisted switch-page', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [
+        { id: 'p1', components: [{ id: 'btn1', name: 'viewDetails', type: 'Button' }] },
+        { id: 'p2', components: [] },
+      ],
+      queries: [],
+      events: [{
+        id: 'nav', name: 'Open details', sourceId: 'btn1', target: 'component', index: 0,
+        event: { eventId: 'onClick', actionId: 'switch-page', pageId: 'p2' },
+      }],
+    });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+        action: { actionId: 'show-alert', message: 'Opening', alertType: 'info' },
+      }],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Persisted event "Open details".*switch-page must be the LAST.*show-alert/s);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
+
   it('accepts state and query actions before a final switch-page', async () => {
     const client = makeClient();
     client.getAppSummary.mockResolvedValue({
@@ -681,6 +709,7 @@ describe('add_events tool', () => {
     expect(client.createEvents).toHaveBeenCalledWith({
       appId: 'app1',
       versionId: 'v1',
+      existingEvents: [],
       events: [
         {
           sourceId: 'tbl1',

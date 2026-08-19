@@ -16,7 +16,7 @@ export function validatePersistedAppSummary(summary: AppSummary): PersistedAppVa
   const structural = validateAppStructure(summary);
   const errors = [...structural.errors];
   const warnings = [...structural.warnings];
-  const eventValidation = validateEvents(summary, persistedEventSpecs(summary));
+  const eventValidation = validateEvents(summary, persistedEventSpecs(summary), { includePersistedChains: false });
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const query of summary.queries) {

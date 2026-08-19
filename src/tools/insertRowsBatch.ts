@@ -13,7 +13,8 @@ export function insertRowsBatchTool(client: ToolJetClient): ToolDef {
     description:
       'Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before ' +
       'foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. ' +
-      'Returns {tables:[{table_name,processed_rows}],processed_rows}. Keep initial demo data representative and small.',
+      'Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not ' +
+      'retry completed seeds. Keep initial demo data representative and small.',
     inputSchema: { tables: z.array(seedSchema).min(1).max(50) },
     async handler(args: { tables: Array<{ table_name: string; rows: Array<Record<string, unknown>> }> }) {
       try {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PartialWriteError } from '../src/tooljetClient.js';
 import type { AppSummary, EventSpec, ToolJetClient } from '../src/tooljetClient.js';
 import { clearAppPlansForTests } from '../src/appPlanStore.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
@@ -110,5 +111,36 @@ describe('plan token + apply_app_phase', () => {
     const retry = await applyAppPhaseTool(client).handler({ app_id: 'app1', version_id: 'v1', plan_token: planToken });
     expect(retry.isError).toBe(true);
     expect(retry.content[0]!.text).toMatch(/Unknown or expired plan_token/i);
+  });
+
+  it('reports partial page persistence instead of claiming the failed batch wrote nothing', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1', version_id: 'v1',
+        pages: [{ id: 'home', name: 'Home', handle: 'home', components: [] }],
+        queries: [], events: [],
+      }),
+      listTables: vi.fn().mockResolvedValue([]),
+      listDatasources: vi.fn().mockResolvedValue([]),
+      createPages: vi.fn().mockRejectedValue(new PartialWriteError('createPages', [
+        { page_id: 'page-a', name: 'Queue', index: 2, icon: 'IconList' },
+      ], ['Reports: upstream failure'])),
+    } as unknown as ToolJetClient;
+
+    const lintResult = await lintAppSpecTool(client).handler({
+      version_id: 'v1',
+      pages: [
+        { name: 'Queue', icon: 'IconList' },
+        { name: 'Reports', icon: 'IconChartBar' },
+      ],
+    });
+    const result = await applyAppPhaseTool(client).handler({
+      app_id: 'app1', version_id: 'v1', plan_token: textOf(lintResult).plan_token,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Applied before failure:.*pages=1/i);
+    expect(result.content[0]!.text).toMatch(/no resources were auto-deleted/i);
+    expect(result.content[0]!.text).toMatch(/Persisted before failure.*page-a/i);
   });
 });

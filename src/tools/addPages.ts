@@ -14,7 +14,8 @@ export function addPagesTool(client: ToolJetClient): ToolDef {
     description:
       'Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and ' +
       'sidebar icon/hidden metadata is persisted and verified with one final readback. Every page requires a relevant Tabler icon; ' +
-      'set hidden:true for detail pages reached only through navigation. Returns {pages}.',
+      'set hidden:true for detail pages reached only through navigation. Returns {pages}. ToolJet has no page bulk transaction: a ' +
+      'rare partial failure names every persisted page; do not retry the whole batch or auto-delete those pages.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),

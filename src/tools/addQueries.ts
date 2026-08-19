@@ -17,7 +17,8 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
       "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query " +
       'when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema ' +
       'for the operations you use before constructing those options. The batch resolves datasource kinds once, ' +
-      'contract-validates every query before any writes, and returns {queries,warnings,validation}.',
+      'contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk ' +
+      'transaction: a rare partial failure names every persisted query; do not retry the whole batch.',
     inputSchema: {
       version_id: z.string(),
       queries: z
