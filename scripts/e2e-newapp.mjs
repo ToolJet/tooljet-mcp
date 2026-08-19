@@ -1,4 +1,4 @@
-// e2e: build an app on a NEW table — create_table → insert_rows → get_table_schema → query → UI.
+// e2e: build an app on a NEW table — create_tables → insert_rows_batch → get_table_schema → query → UI.
 // node scripts/e2e-newapp.mjs
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -27,28 +27,33 @@ const tableName = `projects_${stamp}`;
 const app = await call('create_app', { name: `Projects ${stamp}` });
 
 // NEW data model
-const table = await call('create_table', {
-  table_name: tableName,
-  columns: [
-    { name: 'title', type: 'string', notNull: true },
-    { name: 'owner', type: 'string' },
-    { name: 'status', type: 'string' },
-    { name: 'budget', type: 'number' },
-  ],
+const created = await call('create_tables', {
+  tables: [{
+    table_name: tableName,
+    columns: [
+      { name: 'title', type: 'string', notNull: true },
+      { name: 'owner', type: 'string' },
+      { name: 'status', type: 'string' },
+      { name: 'budget', type: 'number' },
+    ],
+  }],
 });
-console.error('create_table →', table);
+const table = created.tables[0];
+console.error('create_tables →', table);
 
 // seed sample rows (no id — auto-filled)
-const seeded = await call('insert_rows', {
-  table_name: tableName,
-  rows: [
-    { title: 'Website revamp', owner: 'Alice', status: 'Active', budget: 12000 },
-    { title: 'Mobile app', owner: 'Bob', status: 'Planning', budget: 30000 },
-    { title: 'Data migration', owner: 'Carol', status: 'Active', budget: 8000 },
-    { title: 'Security audit', owner: 'Dan', status: 'Done', budget: 15000 },
-  ],
+const seeded = await call('insert_rows_batch', {
+  tables: [{
+    table_name: tableName,
+    rows: [
+      { title: 'Website revamp', owner: 'Alice', status: 'Active', budget: 12000 },
+      { title: 'Mobile app', owner: 'Bob', status: 'Planning', budget: 30000 },
+      { title: 'Data migration', owner: 'Carol', status: 'Active', budget: 8000 },
+      { title: 'Security audit', owner: 'Dan', status: 'Done', budget: 15000 },
+    ],
+  }],
 });
-console.error('insert_rows →', seeded);
+console.error('insert_rows_batch →', seeded);
 
 const schema = await call('get_table_schema', { table_name: tableName });
 console.error('get_table_schema →', schema.map((c) => `${c.name}:${c.type}`).join(', '));

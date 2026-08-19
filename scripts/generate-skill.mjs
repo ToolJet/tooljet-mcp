@@ -137,7 +137,7 @@ const componentSection = componentList
   })
   .join('\n\n');
 
-const skill = `---
+const fullSkill = `---
 name: tooljet-app-builder
 description: "Build ToolJet apps end-to-end via the tooljet-mcp tools — create apps, add datasource queries, and add components bound to them. Use whenever asked to build/scaffold a ToolJet app, dashboard, or internal tool, or to add pages/components/queries. This is a KNOWLEDGE reference (component binding rules, canvas mechanics, query schemas); YOU make all layout and design decisions."
 metadata:
@@ -165,7 +165,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`get_datasource_query_schema({ datasource_id, version_id, operation?, sections? })\` → exact compact request contract plus a response shape and \`status\` when known. A response marked \`runtime-dependent\` or \`unknown\` still requires a safe successful run or the remote schema before binding nested fields. Prefer datasource id so the kind is resolved for you; use \`requests:[...]\` to fetch up to 10 needed contracts in one batch. With no selector it returns the palette. **Never infer a ToolJet wrapper from the upstream vendor API.**
 - \`inspect_datasource_schema({ version_id, datasource_id, method, schema?, table?, search?, page?, limit?, args? })\` → invoke one read-only metadata method advertised by that plugin (for example listSchemas/listTables/listColumns). Discover methods with schema \`sections:["introspection"]\`; request only what the current query needs.
 - \`get_component_catalog({ type?, types?, sections?, property_keys?, style_keys? })\` returns exact component contracts. Fetch the distinct **complex, interactive, or unfamiliar** types needed for the current page/phase in one \`types\` batch, request only the relevant sections/keys, and reuse that result for the build. Request \`authoringHints\` for nested contracts such as Table columns/actions, Kanban card children, and Form JSON-schema field types. Always fetch the contract before wiring events/actions or when an exact property is uncertain; skip redundant lookups for familiar simple components rather than guessing.
-- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_table({ table_name, columns, foreign_keys? })\`; \`create_tables({ tables:[...] })\`; \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
+- ToolJet DB schema tools preserve constraints, defaults, configurations, and foreign keys: \`get_table_schema(table_name)\`; \`create_tables({ tables:[...] })\` (one or more tables); \`add_table_column(...)\`. \`drop_table_column\` and \`drop_table\` are destructive and require explicit user approval plus \`confirm:true\`.
 - \`generate_form_schema({ table_name, mode, initial_values_binding?, include?, field_overrides? })\` → a ready-to-place Form \`properties\` block only for the layout-safe generated types: \`textinput\`, \`number\`, \`emailinput\`, \`password\`, \`datepicker\`, and \`checkbox\`. It rejects schemas needing Dropdown/Multiselect/TextArea/Radio/Toggle/StarRating/FilePicker and tells you to build the entire form from standalone components.
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
@@ -174,16 +174,12 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`list_datasources(version_id)\` → \`[{ id, name, kind }]\`. Workspace-connected sources available to the current user/environment appear automatically in existing and brand-new apps—there is **no per-app datasource attach/link step**. Use a returned \`id\` directly; if an expected source is absent, check the active workspace, permissions, connection, and environment configuration. ToolJet DB is \`kind: "tooljetdb"\`.
 - \`list_tables()\` → \`[{ id, table_name }]\`. A ToolJet-DB query needs the table's **id** as \`table_id\`.
 - \`get_table_schema(table_name)\` → columns with types, primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships.
-- \`create_table({ table_name, columns, foreign_keys? })\` → create a ToolJet-DB table. Columns accept \`defaultValue\` and \`configurations\`; relationships support single/composite keys and delete/update actions. A serial \`id\` PK is added if none is marked.
 - \`create_tables({ tables:[...] })\` → create a complete ToolJet-DB model in one call. It preflights the whole batch and creates foreign-key dependencies in order; ToolJet has no atomic multi-table endpoint, so an upstream partial failure is reported and never auto-deleted.
-- \`insert_rows({ table_name, rows })\` → seed sample rows so the app isn't empty (optional; integer/serial PKs auto-fill).
 - \`insert_rows_batch({ tables:[{table_name,rows}] })\` → seed several tables in listed parent-before-child order. Keep the first build representative rather than exhaustive: usually 5–8 primary records and 2–3 examples per important state are enough unless density/pagination is itself under test.
 - \`get_component_catalog()\` → the lightweight component palette. Typed/batched selective calls are described above.
-- \`add_query({ version_id, datasource_id, name, options })\` → \`{ query_id, name }\`. Single query.
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
 - \`run_query({ query_id, version_id, count_query_id?, user_confirmed_large_read? })\` → \`{ status, data, preflight?, warnings?, ... }\`. Run only an explicitly selected **safe, non-mutating, non-billable read** to inspect real rows. It refuses \`SELECT *\`; a row read without a static limit of at most 1,000 requires a same-table count query first. If that count exceeds 1,000, the target stays blocked until the user explicitly approves and you retry with \`user_confirmed_large_read:true\`. Never infer that approval. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure. A \`components.*\` warning means the static datasource path passed but live pagination/filter values still require the viewer.
 - \`run_queries({ query_ids, version_id })\` executes up to ten **proven bounded read-only** ToolJet DB/SQL reads concurrently after preflighting the whole batch. Use it when two or more independent safe reads need real response shapes; it refuses \`SELECT *\`, unbounded reads, mutations, RunJS, paid/remote APIs, and unknown kinds before executing anything. Use singular \`run_query\` for the count-first flow.
-- \`add_component({ app_id, version_id, page_id, name, type, properties, styles, layout })\` → \`{ component_id, warnings }\`. Single component; \`name\` required. Put styling in \`styles\` (NOT \`properties\`). A Kanban also returns \`default_children\` because MCP materializes its card body.
 - \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique \`client_ref\` and each child the matching \`parent_ref\`; MCP resolves real IDs atomically and lints overlaps within the correct parent. Use child \`slot_name:"header" | "body" | "footer"\` for ModalV2/Form/Container native regions (body is the default). A Kanban with no explicit child gets its catalog card children automatically; an explicit child targeting its \`client_ref\` suppresses those defaults.
 - \`add_component_batches({ app_id, version_id, pages:[{page_id,components}] })\` → preflight and create complete batches for **2–20 independent pages concurrently**. Prefer it over serial \`add_components\` calls once all target page ids and bindings exist. Each page is atomic; ToolJet has no cross-page transaction, so an upstream partial failure reports completed/failed pages for in-place repair.
 - Both return a **\`warnings\`** array of non-blocking lint hints — an undersized Text heading, a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
@@ -192,7 +188,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`lint_app_spec({ version_id?, tables?, seed_data?, queries?, pages?, events?, lifecycles? })\` → dry-run one exact phase before writes. Give planned objects stable \`client_ref\` values; events use \`source_ref\`, targeted actions use \`target_ref\`, and ToolJet DB queries may use \`table_ref\` instead of a not-yet-created table id. Treat this as an **awaited preflight barrier**: call it by itself, inspect its result, fix every error and review warnings. A clean result includes a one-time 30-minute \`plan_token\`; never run this linter in parallel with a mutating call.
 - \`apply_app_phase({ app_id, version_id, plan_token })\` → consume that exact plan once. MCP creates dependency stages internally, batches independent pages concurrently, resolves all logical refs, combines ordinary events + lifecycles into one write, and returns final static validation. It never runs queries. ToolJet has no cross-resource transaction, so a rare partial failure reports exactly what persisted and never auto-deletes it; lint again before an in-place repair.
 
-**Plan/apply for a new phase; singular tools for edits.** Plan first, await \`lint_app_spec\` as a standalone barrier, inspect the result, then pass its token to one \`apply_app_phase\` call. Do not retransmit or manually replay a clean plan through separate authoring tools. Use \`add_component_batches\` when adding several pages outside a stored plan, and singular/update tools for incremental repairs. Page/query/event batches are atomic; cross-resource phase application cannot be atomic because ToolJet has no matching transaction.
+**Plan/apply for a new phase; update tools for persisted objects.** Plan first, await \`lint_app_spec\` as a standalone barrier, inspect the result, then pass its token to one \`apply_app_phase\` call. Do not retransmit or manually replay a clean plan through separate authoring tools. Batch create tools accept one item for a targeted addition; use \`add_component_batches\` for several pages and \`update_*\` for incremental repairs. Page/query/event batches are atomic; cross-resource phase application cannot be atomic because ToolJet has no matching transaction.
 
 ### Large-data read safety
 
@@ -219,7 +215,6 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 **A single wrong value is a one-call fix, not a rebuild.** When something is off, \`get_app_summary\` → \`update_*\`/\`delete_*\` the offending item. Do NOT create a new app or pile on duplicate components to "correct" a mistake.
 - \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
-- \`add_page({ app_id, version_id, name, icon })\` → \`{ page_id, name }\`. Add one page during an edit.
 - \`add_pages({ app_id, version_id, pages:[{name,icon,hidden?}] })\` → add the initial page set in one call, preserving order and verifying sidebar icon/hidden metadata. Pass returned page ids to \`add_components\`.
 - \`update_pages({ app_id, version_id, updates?, order? })\` → retouch or reorder existing pages without rebuilding them. This is how to give Home a relevant icon/name and place it correctly after the initial page set exists.
 
@@ -273,9 +268,9 @@ Plan the whole page architecture up front (above). A phase is an *order-of-work*
 
 ## App model & binding syntax
 
-- app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add the initial page set with \`add_pages\`; reserve \`add_page\` for later edits. ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
-- **In a multi-page app, give EVERY page a relevant sidebar icon** — pass \`add_page\`'s required \`icon\` (a Tabler icon name, e.g. \`IconLayoutDashboard\`, \`IconUsers\`, \`IconChartBar\`, \`IconListDetails\`, \`IconSettings\`, \`IconReportAnalytics\`). ToolJet gives the auto-created first/Home page an \`IconHome2\` fallback; added pages without an icon fall back to generic \`IconFile\` and make the left sidebar look unfinished.
-- **Hide sub-pages that are only reached from another page** — for a page opened ONLY via \`switch-page\` (e.g. a detail/edit page you navigate to from a table row, not a top-level destination), pass \`add_page({ …, hidden: true })\`. It stays fully reachable but is removed from the sidebar nav, keeping the menu to real destinations. (An icon is still required — it shows if you later unhide it.)
+- app → version → page → component. \`create_app\` gives one app + version + a "Home" page. Add one or more pages with \`add_pages\`; use \`update_pages\` to retouch existing pages. ToolJet auto-renders navigation between pages. **Don't fragment a genuinely simple, single-job app** — one well-laid-out page is best there. **But a multi-domain / multi-job request needs the IA — an overview + a focused page per job, not one long crowded page.**
+- **In a multi-page app, give EVERY page a relevant sidebar icon** — pass each \`add_pages\` item a Tabler \`icon\` name (e.g. \`IconLayoutDashboard\`, \`IconUsers\`, \`IconChartBar\`, \`IconListDetails\`, \`IconSettings\`, \`IconReportAnalytics\`). ToolJet gives the auto-created first/Home page an \`IconHome2\` fallback; added pages without an icon fall back to generic \`IconFile\` and make the left sidebar look unfinished.
+- **Hide sub-pages that are only reached from another page** — for a page opened ONLY via \`switch-page\` (e.g. a detail/edit page you navigate to from a table row, not a top-level destination), set \`hidden:true\` on its \`add_pages\` item. It stays fully reachable but is removed from the sidebar nav, keeping the menu to real destinations. (An icon is still required — it shows if you later unhide it.)
 - A component has **properties**; each property value is \`{ "value": <val> }\`. Values starting with \`{{ … }}\` are **bindings** evaluated at runtime.
 - A query exposes its result as \`queries.<queryName>.data\`. Bind a component property to it, e.g. a Table's \`data.value = "{{queries.<queryName>.data}}"\`.
 
@@ -407,7 +402,7 @@ The gotchas that most often break a build, inlined so you don't miss them:
 - **Events:** the id is \`set-custom-variable\` (not \`set-variable\`); lifecycle sources are component/data_query/page. Mutation refresh/success belongs on \`onDataQuerySuccess\` and errors on \`onDataQueryFailure\`.
 - **Security:** visibility is UX, not authorization; use server-side permissions/RLS and \`globals.server.currentUser\` in server queries.
 - **tjdb queries** reference the table by \`table_id\` (from \`list_tables()\`), not by name; writes use indexed-object option shapes (see the reference).
-- **New data model:** for "build a CRM / expense tracker" with no table yet — **propose the tables+columns and confirm with the user** (schema is a commitment), then \`create_table\` → optional \`insert_rows\` → \`add_queries\`/\`add_components\`.
+- **New data model:** for "build a CRM / expense tracker" with no table yet — **propose the tables+columns and confirm with the user** (schema is a commitment), then \`create_tables\` → optional \`insert_rows_batch\` → \`add_queries\`/\`add_components\`.
 
 ## Interactivity — wire events so the app DOES things (not just displays)
 
@@ -470,7 +465,7 @@ For an **Operate** page, this browser pass must also confirm that its primary ac
 
 ## Avoid these (they silently fail or force rebuilds)
 
-- **Styling under \`properties\`.** Native styling goes in the top-level \`styles\` object; ToolJet ignores styles nested in \`properties\` (and \`add_component\` will reject them).
+- **Styling under \`properties\`.** Native styling goes in the top-level \`styles\` object; ToolJet ignores styles nested in \`properties\` (and \`add_components\` will reject them).
 - **Filtering on \`DropdownV2.label\`.** \`.label\` is the field TITLE. The selection is \`.value\` (display text is \`.selectedOption.label\`).
 - **\`set-variable\`.** Not a real action id — use \`set-custom-variable\`.
 - **Master→detail via urlparams + \`runOnPageLoad\`.** It won't re-run on page switch; pass the row via \`set-custom-variable\` and bind to \`{{variables…}}\`.
@@ -609,15 +604,15 @@ This keeps the field available in \`selectedRow\` and suppresses \`autogenerateC
 
 ## Kanban card content
 
-Kanban cards are nested canvases: \`columnData\` and \`cardData\` can resolve correctly, including card counts, while every card body remains blank if the Kanban has no child components. \`add_component(s)\` materializes the catalog default title/description children when no explicit child is supplied. For a custom body, give the Kanban a \`client_ref\` and create its child with the matching \`parent_ref\` in the same \`add_components\` call; any explicit child suppresses the defaults.
+Kanban cards are nested canvases: \`columnData\` and \`cardData\` can resolve correctly, including card counts, while every card body remains blank if the Kanban has no child components. \`add_components\` materializes the catalog default title/description children when no explicit child is supplied. For a custom body, give the Kanban a \`client_ref\` and create its child with the matching \`parent_ref\` in the same call; any explicit child suppresses the defaults.
 
 Nested \`Text\` clips to a single line. For multi-line title/description content, prefer one \`Html\` child bound to \`cardData\`, use normal wrapping plus \`overflow-wrap:anywhere\`, and pin its content width/max-width explicitly in CSS. Do not infer the physical Kanban column width from \`cardWidth\`; verify the card in the viewer because the rendered column can retain a wider minimum than the nested card canvas.
 
 ## Datasource query reference
 
-\`add_query\`/\`add_queries\` work on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call \`list_datasources\` to see each datasource's \`kind\`). Only the \`options\` differ per kind:
+\`add_queries\` works on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call \`list_datasources\` to see each datasource's \`kind\`). Only the \`options\` differ per kind:
 
-Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after \`create_app\`, call \`list_datasources(version_id)\` and pass the returned \`id\` to \`add_query\`/\`add_queries\`. An expected source missing from that result indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment.
+Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after \`create_app\`, call \`list_datasources(version_id)\` and pass the returned \`id\` to \`add_queries\`. An expected source missing from that result indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment.
 
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in \`list_datasources\`:
 > - **Say so plainly** — ToolJet has no native integration for it (or it simply isn't connected), and you can't connect one from here. Don't fabricate a query against it or present placeholder data as if it were live.
@@ -631,7 +626,7 @@ Call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` f
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
 1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
-2. \`create_tables\` once for the confirmed model (use \`create_table\` only for a later single-table edit).
+2. \`create_tables\` once for the confirmed model (it accepts one or many tables).
 3. Optionally \`insert_rows_batch\` once to seed a small representative set so the app doesn't render empty (only if the user wants sample data; avoid dozens of rows unless density/pagination is under test).
 4. Then \`add_queries\` + \`add_components\` as usual.
 For an **existing** table, call \`get_table_schema(table_name)\` first so you use its real column names and types.
@@ -678,9 +673,92 @@ The \`Chart\` component fails in a specific, common way: **ToolJet's chart-prope
 Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a \`.map()\` nested inside another \`.map()\` can throw before an \`||\` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.
 `;
 
+function extractTopLevelSection(document, heading) {
+  const start = document.indexOf(heading);
+  if (start < 0) throw new Error(`Missing generated skill section: ${heading}`);
+  const next = document.indexOf('\n## ', start + heading.length);
+  return document.slice(start, next < 0 ? document.length : next).trim();
+}
+
+function replaceTopLevelSection(document, heading, replacement = '') {
+  const start = document.indexOf(heading);
+  if (start < 0) throw new Error(`Missing generated skill section: ${heading}`);
+  const next = document.indexOf('\n## ', start + heading.length);
+  const before = document.slice(0, start).trimEnd();
+  const after = document.slice(next < 0 ? document.length : next + 1).trimStart();
+  return [before, replacement.trim(), after].filter(Boolean).join('\n\n') + '\n';
+}
+
+const routedSections = {
+  toolWorkflows: [
+    '## The tools',
+    '## Reference — look these up as you build',
+    '## Avoid these (they silently fail or force rebuilds)',
+  ],
+  uiAuthoring: [
+    '## Component selection — built-in for interactive/data surfaces, HTML where it makes the UI better',
+    '## Canvas & grid mechanics (FACTS — you must respect these to position components)',
+    '## Design — decide before you build, then apply the visual defaults',
+    '## Server-side Tables — datasource-neutral recipe',
+  ],
+  formsAndInteractions: [
+    '## Form construction — choose generated or standalone before creating components',
+    '## Forms & modals — field layout (avoid cramped, misaligned fields)',
+    '## Interactivity — wire events so the app DOES things (not just displays)',
+  ],
+};
+
+const makeReference = (title, purpose, headings) => `# ${title}\n\n${purpose}\n\n${headings
+  .map((heading) => extractTopLevelSection(fullSkill, heading))
+  .join('\n\n')}\n`;
+
+const toolWorkflows = makeReference(
+  'Tool workflows and runtime guardrails',
+  'Read this only when choosing an authoring/update path, repairing an existing app, or diagnosing a silent ToolJet configuration failure. MCP input schemas and returned warnings remain authoritative.',
+  routedSections.toolWorkflows
+);
+const uiAuthoring = makeReference(
+  'UI authoring and layout',
+  'Read this before laying out a new page, and whenever the page uses a Table, Chart, nested view, or other layout-sensitive surface.',
+  routedSections.uiAuthoring
+);
+const formsAndInteractions = makeReference(
+  'Forms, modals, and interactions',
+  'Read this only when the requested phase contains forms, modals, mutations, or component/query event wiring.',
+  routedSections.formsAndInteractions
+);
+
+const compactRouting = `## Keep context small — load only the relevant reference
+
+Tool input schemas, catalog responses, and returned warnings are authoritative. Do not preload every reference:
+
+- Read \`references/ui-authoring.md\` before laying out a new page or using a layout-sensitive Table/Chart/nested view.
+- Read \`references/forms-and-interactions.md\` only for forms, modals, mutations, or event wiring.
+- Read \`references/tool-workflows.md\` only for a non-obvious authoring/update path, an existing-app repair, or a silent runtime/configuration failure.
+- Read \`references/tooljet-reference.md\` selectively for exact per-component binding rules, the built-in palette, and datasource query shapes. Prefer batched, section-filtered catalog tools over loading broad reference material.
+
+For a new phase, use \`lint_app_spec\` as an awaited barrier, inspect its warnings/errors, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never dispatch the linter and an apply/write as siblings in parallel. Batch tools are the default surface and accept one item for targeted creates; use update tools for persisted objects. Set \`TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true\` only for an older client that still calls \`create_table\`, \`insert_rows\`, \`add_page\`, \`add_query\`, or \`add_component\`.
+
+For reads, inspect schema first, request explicit columns, and never author or execute \`SELECT *\` against an unfamiliar table. Count first when size is unknown; above 1,000 rows, propose server-side pagination and require explicit user approval before a full read. General permission to build or inspect an app is not consent for a large read.
+
+Fix persisted work in place: use bounded \`get_app_summary\`/\`get_component\`, then the relevant \`update_*\` or \`delete_*\` tool. Do not rebuild an app to correct one value.`;
+
+let skill = replaceTopLevelSection(fullSkill, routedSections.toolWorkflows[0], compactRouting);
+for (const heading of [
+  ...routedSections.toolWorkflows.slice(1),
+  ...routedSections.uiAuthoring,
+  ...routedSections.formsAndInteractions,
+]) {
+  skill = replaceTopLevelSection(skill, heading);
+}
+skill = skill.trimEnd() + '\n';
+
 writeFileSync(resolve(root, 'skill/SKILL.md'), skill);
 mkdirSync(resolve(root, 'skill/references'), { recursive: true });
 writeFileSync(resolve(root, 'skill/references/tooljet-reference.md'), reference);
+writeFileSync(resolve(root, 'skill/references/tool-workflows.md'), toolWorkflows);
+writeFileSync(resolve(root, 'skill/references/ui-authoring.md'), uiAuthoring);
+writeFileSync(resolve(root, 'skill/references/forms-and-interactions.md'), formsAndInteractions);
 console.log(
-  `Generated skill/SKILL.md (${skill.split('\n').length} lines) + references/tooljet-reference.md — ${componentList.length} components, grid ${grid.columns} cols / ${grid.rowSnapPx}px snap.`
+  `Generated compact skill/SKILL.md (${skill.trim().split(/\s+/).length} words) + 4 routed references — ${componentList.length} components, grid ${grid.columns} cols / ${grid.rowSnapPx}px snap.`
 );

@@ -26,6 +26,8 @@ TOOLJET_EMAIL=you@example.com
 TOOLJET_PASSWORD=your-password
 ```
 
+The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
+
 ## Register with Codex
 
 Codex reads MCP servers from `~/.codex/config.toml`. Add:
@@ -83,7 +85,7 @@ In Codex:
 
 > **Build me a tickets dashboard on my ToolJet DB.**
 
-Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `list_rows` on `tickets`) → `add_component` (a Table bound to `{{queries.<name>.data}}`), then return an `app_url`. Open it at `http://localhost:8082/apps/…` — the Table renders the seeded tickets.
+Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply_app_phase`, using `add_queries`/`add_components` for later targeted additions, then return an `app_url`. Open it at `http://localhost:8082/apps/…` — the Table renders the seeded tickets.
 
 ## Tools
 
@@ -95,16 +97,16 @@ Codex should: `list_datasources` → `create_app` → `add_query` (ToolJet-DB `l
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |
 | `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
 | `list_tables()` / `get_table_schema(table_name)` | Inspect ToolJet DB tables, constraints, defaults, and relationships |
-| `create_table(...)` / `create_tables(...)` / `add_table_column(...)` | Create or evolve ToolJet DB data models; the batch preflights dependencies before writes |
-| `insert_rows(...)` / `insert_rows_batch(...)` | Seed one or several ToolJet DB tables in parent-before-child order |
+| `create_tables(...)` / `add_table_column(...)` | Create one or more ToolJet DB tables or evolve an existing model; the batch preflights dependencies before writes |
+| `insert_rows_batch(...)` | Seed one or several ToolJet DB tables in parent-before-child order |
 | `drop_table_column(..., confirm:true)` / `drop_table(..., confirm:true)` | Explicitly confirmed destructive ToolJet DB cleanup |
 | `get_component_catalog({type?, types?, sections?, ...})` | Component palette or selective one/batched contracts, including nested `authoringHints` |
 | `generate_form_schema({table_name, mode, ...})` | Generate one schema-driven create/edit Form from a ToolJet DB table |
-| `lint_app_spec(...)` / `validate_app(app_id)` | Dry-run a logical plan before writes; statically validate the persisted app afterwards |
+| `lint_app_spec(...)` / `apply_app_phase(...)` / `validate_app(app_id)` | Dry-run a logical phase, apply its one-time plan token, then statically validate persisted state |
 | `get_app_summary({app_id, sections?, filters?, *_fields?})` | Selectively inspect actual persisted values |
-| `add_page(..., icon)` / `add_pages(...)` / `update_pages(...)` | Add pages, then restyle, hide, rename, or reorder existing sidebar pages (including Home) |
-| `add_query(...)` / `add_queries(...)` | Create datasource queries; use the schema tool for `options` |
-| `add_component(...)` / `add_components(...)` | Place components, including atomic parent/child batches and native header/body/footer slots |
+| `add_pages(...)` / `update_pages(...)` | Add one or more pages, then restyle, hide, rename, or reorder existing sidebar pages (including Home) |
+| `add_queries(...)` | Create one or more datasource queries; use the schema tool for `options` |
+| `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / `delete_*` / `run_query(...)` | Repair apps in place; execute only explicitly selected safe reads for verification |
 

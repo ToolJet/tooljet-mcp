@@ -46,6 +46,18 @@ import { updateEventsTool } from './updateEvents.js';
 import { deleteEventTool } from './deleteEvent.js';
 import { withToolTelemetry } from '../telemetry.js';
 
+export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
+  'create_table',
+  'insert_rows',
+  'add_page',
+  'add_query',
+  'add_component',
+]);
+
+function includeLegacySingularCreateTools(): boolean {
+  return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? '');
+}
+
 export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
     listWorkspacesTool(client),
@@ -93,7 +105,11 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     deleteEventTool(client),
   ];
 
-  for (const tool of tools) {
+  const exposedTools = includeLegacySingularCreateTools()
+    ? tools
+    : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
+
+  for (const tool of exposedTools) {
     server.registerTool(
       tool.name,
       { description: tool.description, inputSchema: tool.inputSchema },

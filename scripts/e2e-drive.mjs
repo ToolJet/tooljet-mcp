@@ -47,28 +47,33 @@ const tables = await call('list_tables', {});
 const tickets = tables.find((t) => t.table_name === 'tickets');
 console.error('tickets table →', tickets.id);
 
-const query = await call('add_query', {
+const [query] = await call('add_queries', {
   version_id: app.version_id,
-  datasource_id: tjdb.id,
-  name: 'list_tickets',
-  options: { operation: 'list_rows', table_id: tickets.id, list_rows: {}, runOnPageLoad: true },
+  queries: [{
+    datasource_id: tjdb.id,
+    name: 'list_tickets',
+    options: { operation: 'list_rows', table_id: tickets.id, list_rows: {}, runOnPageLoad: true },
+  }],
 });
-console.error('add_query →', query);
+console.error('add_queries →', query);
 
-const component = await call('add_component', {
+const componentResult = await call('add_components', {
   app_id: app.app_id,
   version_id: app.version_id,
   page_id: app.home_page_id,
-  name: 'ticketsTable',
-  type: 'Table',
-  properties: {
-    data: { value: '{{queries.list_tickets.data}}' },
-    dataSourceSelector: { value: 'rawJson' }, // REQUIRED with data or the table renders nothing
-    autogenerateColumns: { value: true, generateNestedColumns: true },
-  },
-  layout: { top: 10, left: 2, width: 40, height: 400 },
+  components: [{
+    name: 'ticketsTable',
+    type: 'Table',
+    properties: {
+      data: { value: '{{queries.list_tickets.data}}' },
+      dataSourceSelector: { value: 'rawJson' }, // REQUIRED with data or the table renders nothing
+      autogenerateColumns: { value: true, generateNestedColumns: true },
+    },
+    layout: { top: 10, left: 2, width: 40, height: 400 },
+  }],
 });
-console.error('add_component →', component);
+const component = componentResult.components[0];
+console.error('add_components →', component);
 
 console.log(JSON.stringify({ app_id: app.app_id, app_url: app.app_url, query_id: query.query_id, component_id: component.component_id }));
 

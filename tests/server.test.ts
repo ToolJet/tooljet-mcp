@@ -1,12 +1,16 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 
 beforeAll(() => {
   process.env.TOOLJET_EMAIL = 'x@y.com';
   process.env.TOOLJET_PASSWORD = 'pw';
 });
 
+afterEach(() => {
+  delete process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
+});
+
 describe('buildServer', () => {
-  it('builds without throwing and registers all tools', async () => {
+  it('builds with the compact default tool surface', async () => {
     const { buildServer } = await import('../src/server.js');
 
     let server: any;
@@ -25,11 +29,10 @@ describe('buildServer', () => {
         'get_app',
         'get_app_summary',
         'get_component',
-        'add_component',
         'add_components',
         'add_component_batches',
         'apply_app_phase',
-        'add_query',
+        'add_queries',
         'add_events',
         'update_pages',
         'list_datasources',
@@ -43,6 +46,21 @@ describe('buildServer', () => {
       ]) {
         expect(names).toContain(required);
       }
+
+      for (const hiddenByDefault of ['create_table', 'insert_rows', 'add_page', 'add_query', 'add_component']) {
+        expect(names).not.toContain(hiddenByDefault);
+      }
+    }
+  });
+
+  it('can restore legacy singular create tools for older clients', async () => {
+    process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = 'true';
+    const { buildServer } = await import('../src/server.js');
+    const server = buildServer();
+    const names = Object.keys((server as any)._registeredTools ?? {});
+
+    for (const legacy of ['create_table', 'insert_rows', 'add_page', 'add_query', 'add_component']) {
+      expect(names).toContain(legacy);
     }
   });
 });
