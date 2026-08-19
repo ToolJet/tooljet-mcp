@@ -296,6 +296,27 @@ for (const [type, variables] of Object.entries(RUNTIME_EXPOSED_VARIABLES)) {
   schemas[type].exposedVariables.push(...variables.filter((variable) => !known.has(variable.name)));
 }
 
+// Exact runtime shapes used by datasource-neutral server-side Table bindings. The widget config
+// advertises the variable names but not their members, which otherwise forces browser probing.
+if (schemas.Table) {
+  const tableVariables = new Map(schemas.Table.exposedVariables.map((variable) => [variable.name, variable]));
+  Object.assign(tableVariables.get('pageIndex') ?? {}, {
+    valueType: 'number',
+    semantics: '1-based current page index',
+  });
+  Object.assign(tableVariables.get('searchText') ?? {}, {
+    valueType: 'string',
+  });
+  Object.assign(tableVariables.get('sortApplied') ?? {}, {
+    valueType: 'array',
+    itemShape: { column: 'display column name', columnKey: 'data key', direction: 'asc | desc' },
+  });
+  Object.assign(tableVariables.get('filters') ?? {}, {
+    valueType: 'array',
+    itemShape: { column: 'data key', condition: 'Table filter condition', value: 'filter value' },
+  });
+}
+
 // Dependencies that ToolJet's flat inspector schema cannot express. Keep them on the individual
 // property so a selective property_keys lookup remains both small and sufficient to author safely.
 if (schemas.DropdownV2) {
@@ -380,6 +401,19 @@ const SAFE_GENERATED_FORM_FIELD_TYPES = [
   'textinput', 'number', 'emailinput', 'password', 'datepicker', 'checkbox',
 ];
 const AUTHORING_HINTS = {
+  ButtonGroupV2: {
+    selectionTiming: {
+      rule: 'onClick can fire before an immediate run-query action observes the new selected value. A page query and count query can therefore disagree after one click.',
+      datasourceFilterPattern: 'Bind query options to components.<group>.selected, set runOnDependencyChange=true on those reads, and use onClick only for side effects such as resetting a Table to page 1. Do not also run the same reads from onClick.',
+    },
+  },
+  DaterangePicker: {
+    emptyDatasourceBinding: {
+      rule: 'An empty picker can resolve to the literal strings "undefined" or "Invalid date" inside datasource options; a simple value || fallback does not cover those strings.',
+      startExample: "{{!components.range.startDate || components.range.startDate === 'undefined' || components.range.startDate === 'Invalid date' ? '1900-01-01' : components.range.startDate}}",
+      endExample: "{{!components.range.endDate || components.range.endDate === 'undefined' || components.range.endDate === 'Invalid date' ? '2999-12-31' : components.range.endDate}}",
+    },
+  },
   ModalV2: {
     nativeSlots: {
       mcpField: 'slot_name',
@@ -460,6 +494,16 @@ const AUTHORING_HINTS = {
     },
   },
   Table: {
+    serverSideDataFlow: {
+      exposedVariables: {
+        pageIndex: '1-based number',
+        searchText: 'string',
+        sortApplied: '[{column,columnKey,direction:"asc"|"desc"}]',
+        filters: '[{column,condition,value}]',
+      },
+      reactiveReadRule: 'When page/count options reference Table or external-filter exposed state, prefer runOnDependencyChange=true so reads occur after the new state is published. Keep onPageLoad for initial hydration and onRefresh for explicit refresh.',
+      eventRule: 'With reactive reads, onPageChanged/onSearch/onSort/onFilterChanged and external-filter events should not also run those queries. Use them only for non-query effects such as resetting pageIndex to 1; duplicate wiring causes redundant or stale reads.',
+    },
     runtimeCompatibility: {
       autogenerateColumns: true,
       useDynamicColumn: '{{false}}',

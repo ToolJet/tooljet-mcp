@@ -106,6 +106,14 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(reference).toContain('`starlink_terminals_id_count`');
   });
 
+  it('uses dependency-driven server-side reads with exact Table state shapes', () => {
+    expect(skill).toMatch(/server-side Tables[\s\S]*runOnDependencyChange:true.*after.*exposed value is published/i);
+    expect(skill).toMatch(/do \*\*not\*\* also run the same reactive queries from those events/i);
+    expect(skill).toMatch(/sortApplied: \[\{column,columnKey,direction\}\].*filters: \[\{column,condition,value\}\]/i);
+    expect(skill).toMatch(/ButtonGroupV2.*previous `selected` value/i);
+    expect(skill).toMatch(/DaterangePicker.*literal strings `"undefined"` or `"Invalid date"`/i);
+  });
+
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {
     expect(skill).toMatch(/explicit, complete `columns` array/i);
     expect(skill).toMatch(/property order of a transformed query object to reorder/i);

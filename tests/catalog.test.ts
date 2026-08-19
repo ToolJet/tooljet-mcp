@@ -158,6 +158,25 @@ describe('catalog', () => {
     expect(hints.defaultFieldRule).toMatch(/MCP populates fieldDeletionHistory.*appended.*positionally merged/i);
   });
 
+  it('serves exact server-side Table state shapes and control timing caveats', () => {
+    const table = getComponentSchema('Table')!;
+    const variables = new Map(table.exposedVariables!.map((variable) => [variable.name, variable as any]));
+    expect(variables.get('pageIndex')).toMatchObject({ valueType: 'number', semantics: expect.stringMatching(/1-based/) });
+    expect(variables.get('sortApplied').itemShape).toEqual({
+      column: 'display column name', columnKey: 'data key', direction: 'asc | desc',
+    });
+    expect(variables.get('filters').itemShape).toEqual({
+      column: 'data key', condition: 'Table filter condition', value: 'filter value',
+    });
+    expect((table.authoringHints!.serverSideDataFlow as any).reactiveReadRule)
+      .toMatch(/runOnDependencyChange=true.*after.*state is published/i);
+
+    expect((getComponentSchema('ButtonGroupV2')!.authoringHints!.selectionTiming as any).rule)
+      .toMatch(/onClick.*before.*new selected value.*page query and count query.*disagree/i);
+    expect((getComponentSchema('DaterangePicker')!.authoringHints!.emptyDatasourceBinding as any).rule)
+      .toMatch(/literal strings "undefined" or "Invalid date"/i);
+  });
+
   it('serves the Kanban interaction dependency and custom-card modal caveat', () => {
     const rule = getComponentSchema('Kanban')!.authoringHints!.cardContent as any;
     expect(rule.interactionRule.selectionDependency).toMatch(/onCardSelected.*only when openModalOnCardClick.*true/i);
