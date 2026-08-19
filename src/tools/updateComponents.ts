@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintComponentSlots, lintComponentSpec, lintRenderedGeometry, type LintComponent } from '../lint.js';
+import {
+  lintComponentSlots,
+  lintComponentSpec,
+  lintKanbanInteractions,
+  lintRenderedGeometry,
+  type LintComponent,
+} from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
@@ -136,6 +142,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         errors.push(...lintComponentSlots([...projected.values()]));
         if (errors.length) return fail(new Error(errors.join(' ')));
         warnings.push(...lintRenderedGeometry([...projected.values()]));
+        warnings.push(...lintKanbanInteractions([...projected.values()]));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,

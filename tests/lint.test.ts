@@ -928,6 +928,40 @@ describe('validateAppStructure', () => {
     expect(populated.warnings.join(' ')).not.toMatch(/no nested card child components/i);
   });
 
+  it('warns when a custom Html Kanban card is combined with the native card modal', () => {
+    const warning = validateAppStructure({
+      ...base,
+      pages: [{
+        id: 'p1', name: 'Home',
+        components: [
+          {
+            id: 'board', name: 'dispatchBoard', type: 'Kanban',
+            properties: { openModalOnCardClick: { value: '{{true}}' } },
+          },
+          { id: 'card', name: 'dispatchCard', type: 'Html', parent: 'board', properties: {} },
+        ],
+      }],
+      events: [],
+    });
+    expect(warning.warnings.join(' ')).toMatch(/custom Html.*blank built-in modal.*openModalOnCardClick:false/is);
+
+    const readOnly = validateAppStructure({
+      ...base,
+      pages: [{
+        id: 'p1', name: 'Home',
+        components: [
+          {
+            id: 'board', name: 'dispatchBoard', type: 'Kanban',
+            properties: { openModalOnCardClick: { value: '{{false}}' } },
+          },
+          { id: 'card', name: 'dispatchCard', type: 'Html', parent: 'board', properties: {} },
+        ],
+      }],
+      events: [],
+    });
+    expect(readOnly.warnings.join(' ')).not.toMatch(/blank built-in modal/i);
+  });
+
   it('allows the Home fallback icon but warns when an added sidebar page has no icon', () => {
     const app: AppSummary = {
       ...base,

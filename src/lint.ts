@@ -408,6 +408,30 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
   return errors;
 }
 
+/** Cross-component Kanban checks that require seeing both the board and its card children. */
+export function lintKanbanInteractions(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const boards = components.filter((component) => component.type === 'Kanban');
+  for (const board of boards) {
+    const key = componentKey(board);
+    if (!key) continue;
+    const openModal = propVal(board.properties, 'openModalOnCardClick');
+    const nativeModalEnabled = openModal === undefined || isTruthyBinding(openModal);
+    if (!nativeModalEnabled) continue;
+    const htmlChildren = components.filter(
+      (component) => parentPlacement(component)?.parentId === key && component.type === 'Html'
+    );
+    if (!htmlChildren.length) continue;
+    warnings.push(
+      `Kanban "${board.name ?? board.id ?? 'Kanban'}" enables the native card modal while using a custom Html ` +
+        `card child (${htmlChildren.map((child) => `"${child.name ?? child.id ?? 'Html'}"`).join(', ')}). ` +
+        'The card can render correctly while ToolJet opens a blank built-in modal. Prefer ' +
+        'openModalOnCardClick:false for a read-only board, or browser-verify a separate supported detail flow.'
+    );
+  }
+  return warnings;
+}
+
 /** Lint a single component spec (pre-write). */
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
@@ -985,6 +1009,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   }
   errors.push(...lintComponentSlots(components));
   warnings.push(...lintRenderedGeometry(components));
+  warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
 }
 
@@ -1199,7 +1224,10 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
-  for (const p of summary.pages) warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
+  for (const p of summary.pages) {
+    warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
+    warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
+  }
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }

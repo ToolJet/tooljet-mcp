@@ -271,6 +271,30 @@ describe('get_component_catalog tool', () => {
 });
 
 describe('add_events tool', () => {
+  it('blocks a dead Kanban onCardSelected handler when the card modal is disabled', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{
+        id: 'board1', name: 'dispatchBoard', type: 'Kanban',
+        properties: { openModalOnCardClick: { value: false } },
+      }] }],
+      queries: [], events: [],
+    });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'board1', source_type: 'component', trigger: 'onCardSelected',
+        action: { actionId: 'show-alert', message: 'Selected' },
+      }],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/onCardSelected cannot fire.*openModalOnCardClick is false/i);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
+
   it('blocks handlers placed after switch-page in the same trigger chain', async () => {
     const client = makeClient();
     client.getAppSummary.mockResolvedValue({

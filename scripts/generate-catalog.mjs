@@ -452,6 +452,10 @@ const AUTHORING_HINTS = {
         bindingContext: ['cardData'],
       },
       widthRule: 'Do not infer the rendered Kanban column width from cardWidth. Pin the Html content width/max-width explicitly in CSS and verify it in the viewer; current columns can retain a wider minimum than the card canvas.',
+      interactionRule: {
+        selectionDependency: 'onCardSelected fires only when openModalOnCardClick is true; ToolJet returns before setting lastSelectedCard or firing the event when it is false. MCP rejects that dead event binding.',
+        customHtmlModal: 'A custom Html card child can render correctly while the enabled built-in card modal opens blank. Prefer openModalOnCardClick=false for a read-only board, or browser-verify a separate supported detail flow.',
+      },
     },
   },
   Table: {

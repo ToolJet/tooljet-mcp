@@ -31,6 +31,10 @@ function propVal(properties: Record<string, unknown> | undefined, key: string): 
   return value && typeof value === 'object' && 'value' in value ? value.value : value;
 }
 
+function isFalseBinding(value: unknown): boolean {
+  return value === false || value === 'false' || value === '{{false}}';
+}
+
 function validateTableColumnRef(
   source: AppSummary['pages'][number]['components'][number],
   ref: string | undefined
@@ -73,6 +77,17 @@ export function validateEvents(summary: AppSummary, events: EventSpec[]): EventV
         if (schema && !validTriggers.includes(event.trigger)) {
           errors.push(
             `${label}: trigger "${event.trigger}" is not valid for ${source.type}. Valid triggers: ${validTriggers.join(', ') || 'none'}.`
+          );
+        }
+        if (
+          source.type === 'Kanban' &&
+          event.trigger === 'onCardSelected' &&
+          isFalseBinding(propVal(source.properties, 'openModalOnCardClick'))
+        ) {
+          errors.push(
+            `${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ` +
+              'ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, ' +
+              'or remove this handler and use a separate supported detail flow.'
           );
         }
       }

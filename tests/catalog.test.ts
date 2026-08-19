@@ -157,6 +157,12 @@ describe('catalog', () => {
     expect(hints.defaultFieldRule).toMatch(/MCP populates fieldDeletionHistory.*appended.*positionally merged/i);
   });
 
+  it('serves the Kanban interaction dependency and custom-card modal caveat', () => {
+    const rule = getComponentSchema('Kanban')!.authoringHints!.cardContent as any;
+    expect(rule.interactionRule.selectionDependency).toMatch(/onCardSelected.*only when openModalOnCardClick.*true/i);
+    expect(rule.interactionRule.customHtmlModal).toMatch(/custom Html.*built-in card modal.*blank/i);
+  });
+
   it('serves the authoritative generated-Form field contract and FilePicker workaround', () => {
     const form = getComponentSchema('Form')!;
     const hints = form.authoringHints!.jsonSchemaFields as any;

@@ -89,6 +89,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(reference).toMatch(/DatePickerV2[\s\S]*defaultValue="\{\{null\}\}".*01\/01\/2022/i);
   });
 
+  it('documents the Kanban selection dependency and blank custom-card modal caveat', () => {
+    expect(skill).toMatch(/onCardSelected.*only when.*openModalOnCardClick.*true/is);
+    expect(skill).toMatch(/custom Html child.*native modal.*blank/is);
+  });
+
   it('limits the nested-map warning to Html and preserves supported Table lookup joins', () => {
     expect(skill).toMatch(/Html rawHtml expressions.*map\(\).*inside another.*completely blank/is);
     expect(skill).toMatch(/Do not generalize this to Table data.*filter\(\.\.\.\)\[0\].*inside.*map\(\).*work/is);
