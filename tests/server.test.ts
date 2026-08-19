@@ -36,6 +36,7 @@ describe('buildServer', () => {
         'drop_table_column',
         'drop_table',
         'generate_form_schema',
+        'run_queries',
       ]) {
         expect(names).toContain(required);
       }

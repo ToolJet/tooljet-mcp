@@ -12,6 +12,7 @@ import { addEventsTool } from '../src/tools/addEvents.js';
 import { addPageTool } from '../src/tools/addPage.js';
 import { validateAppTool } from '../src/tools/validateApp.js';
 import { runQueryTool } from '../src/tools/runQuery.js';
+import { batchSafeRead, runQueriesTool } from '../src/tools/runQueries.js';
 import { getCatalog } from '../src/catalog.js';
 
 function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } {
@@ -37,6 +38,7 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
     insertRows: vi.fn(),
     insertRowsBatch: vi.fn(),
     getQuery: vi.fn(),
+    getQueries: vi.fn(),
     runQuery: vi.fn(),
     invokeDatasourceMethod: vi.fn(),
     getComponent: vi.fn(),
@@ -150,6 +152,58 @@ describe('run_query tool', () => {
     });
 
     expect(textOf(result)).toEqual({ status: 'ok', data: [{ '?column?': 1 }] });
+  });
+});
+
+describe('run_queries tool', () => {
+  it('loads metadata/environment once and preserves ordered per-query read results', async () => {
+    const client = makeClient();
+    client.getQueries.mockResolvedValue([
+      { id: 'q1', name: 'overview', kind: 'tooljetdb', options: { operation: 'list_rows', list_rows: {} } },
+      {
+        id: 'q2', name: 'page', kind: 'tooljetdb',
+        options: { operation: 'list_rows', list_rows: { offset: '{{components.orders.pageIndex}}' } },
+      },
+    ]);
+    client.getDevelopmentEnvironmentId.mockResolvedValue('dev');
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ count: 48 }] })
+      .mockRejectedValueOnce(new Error('upstream timeout'));
+
+    const result = await runQueriesTool(client as unknown as ToolJetClient).handler({
+      query_ids: ['q1', 'q2'], version_id: 'v1',
+    });
+
+    expect(client.getQueries).toHaveBeenCalledOnce();
+    expect(client.getDevelopmentEnvironmentId).toHaveBeenCalledOnce();
+    expect(client.runQuery).toHaveBeenCalledTimes(2);
+    expect(textOf(result)).toEqual({ queries: [
+      { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }] },
+      {
+        query_id: 'q2', name: 'page', status: 'failed', message: 'upstream timeout',
+        warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
+      },
+    ] });
+  });
+
+  it('refuses an unsafe batch before resolving an environment or running anything', async () => {
+    const client = makeClient();
+    client.getQueries.mockResolvedValue([
+      { id: 'delete', kind: 'tooljetdb', options: { operation: 'delete_rows' } },
+    ]);
+    const result = await runQueriesTool(client as unknown as ToolJetClient).handler({
+      query_ids: ['delete'], version_id: 'v1',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/refused non-proven reads.*delete_rows/i);
+    expect(client.getDevelopmentEnvironmentId).not.toHaveBeenCalled();
+    expect(client.runQuery).not.toHaveBeenCalled();
+  });
+
+  it('only classifies single proven SQL reads as batch safe', () => {
+    expect(batchSafeRead({ id: 's', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT 1' } }).safe).toBe(true);
+    expect(batchSafeRead({ id: 'w', kind: 'postgresql', options: { mode: 'sql', query: 'UPDATE users SET active=true' } }).safe).toBe(false);
+    expect(batchSafeRead({ id: 'r', kind: 'restapi', options: { operation: 'get' } }).safe).toBe(false);
   });
 });
 

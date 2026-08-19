@@ -114,6 +114,12 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(skill).toMatch(/DaterangePicker.*literal strings `"undefined"` or `"Invalid date"`/i);
   });
 
+  it('batches multiple proven safe query reads without broadening execution scope', () => {
+    expect(skill).toMatch(/run_queries.*up to ten.*proven read-only.*concurrently/is);
+    expect(skill).toMatch(/refuses mutations, RunJS, paid\/remote APIs, and unknown kinds before executing anything/i);
+    expect(skill).toMatch(/two or more independent ToolJet DB\/SQL reads.*one preflighted `run_queries/is);
+  });
+
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {
     expect(skill).toMatch(/explicit, complete `columns` array/i);
     expect(skill).toMatch(/property order of a transformed query object to reorder/i);

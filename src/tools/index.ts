@@ -37,6 +37,7 @@ import { addQueryLifecyclesTool } from './addQueryLifecycles.js';
 import { updateQueryTool } from './updateQuery.js';
 import { deleteQueryTool } from './deleteQuery.js';
 import { runQueryTool } from './runQuery.js';
+import { runQueriesTool } from './runQueries.js';
 import { listEventsTool } from './listEvents.js';
 import { updateEventsTool } from './updateEvents.js';
 import { deleteEventTool } from './deleteEvent.js';
@@ -72,6 +73,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     updateQueryTool(client),
     deleteQueryTool(client),
     runQueryTool(client),
+    runQueriesTool(client),
     addComponentTool(client),
     addComponentsTool(client),
     updateComponentsTool(client),

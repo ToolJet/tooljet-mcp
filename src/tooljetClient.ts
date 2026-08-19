@@ -312,6 +312,7 @@ export interface ToolJetClient {
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
   updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
   deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }>;
+  getQueries(versionId: string): Promise<QuerySummary[]>;
   getQuery(queryId: string, versionId: string): Promise<QuerySummary>;
   runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
@@ -1198,11 +1199,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { deleted: true };
   }
 
-  async function getQuery(queryId: string, versionId: string): Promise<QuerySummary> {
+  async function getQueries(versionId: string): Promise<QuerySummary[]> {
     const res = await auth.authedFetch(`/api/data-queries/${versionId}`);
-    await assertOk(res, 'getQuery');
+    await assertOk(res, 'getQueries');
     const body = (await res.json()) as { data_queries?: QuerySummary[] };
-    const query = body.data_queries?.find((candidate) => candidate.id === queryId);
+    return body.data_queries ?? [];
+  }
+
+  async function getQuery(queryId: string, versionId: string): Promise<QuerySummary> {
+    const query = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
     if (!query) throw new Error(`ToolJet getQuery failed: query ${queryId} not found in version ${versionId}`);
     return query;
   }
@@ -1336,6 +1341,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updateQuery,
     updateQueryDatasource,
     deleteQuery,
+    getQueries,
     getQuery,
     runQuery,
     invokeDatasourceMethod,

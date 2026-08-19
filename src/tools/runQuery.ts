@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
 
-function containsComponentBinding(value: unknown): boolean {
+export function containsComponentBinding(value: unknown): boolean {
   if (typeof value === 'string') return /\bcomponents\s*\./.test(value);
   if (Array.isArray(value)) return value.some(containsComponentBinding);
   if (value && typeof value === 'object') return Object.values(value).some(containsComponentBinding);
