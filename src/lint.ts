@@ -84,6 +84,12 @@ export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 const NARROW_SIDE_LABEL_COLS = 18;
 const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
 const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
+const TABLE_REGULAR_ROW_HEIGHT_PX = 46;
+const TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
+const TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
+const TABLE_TOOLBAR_HEIGHT_PX = 56;
+const TABLE_FOOTER_HEIGHT_PX = 56;
+const TABLE_BORDER_PX = 2;
 const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
 
 interface Rect {
@@ -208,6 +214,21 @@ function differsFromCatalogDefault(type: string, key: string, value: unknown): b
   if (value === undefined) return false;
   const defaultValue = getComponentSchema(type)?.properties.find((property) => property.key === key)?.default;
   return defaultValue === undefined || JSON.stringify(value) !== JSON.stringify(defaultValue);
+}
+
+function catalogValue(
+  type: string,
+  entries: Record<string, unknown> | undefined,
+  key: string,
+  section: 'properties' | 'styles' = 'properties'
+): unknown {
+  const authored = propVal(entries, key);
+  if (authored !== undefined) return authored;
+  return getComponentSchema(type)?.[section].find((entry) => entry.key === key)?.default;
+}
+
+function isDynamicBinding(value: unknown): boolean {
+  return typeof value === 'string' && value.includes('{{');
 }
 
 function nestedMapInValue(value: unknown): boolean {
@@ -420,6 +441,26 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
+  const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
+  for (const [sectionName, authored, entries] of [
+    ['property', spec.properties, componentSchema?.properties],
+    ['style', spec.styles, componentSchema?.styles],
+  ] as const) {
+    if (!authored || !entries) continue;
+    for (const entry of entries) {
+      if (!entry.allowedValues?.length) continue;
+      const value = propVal(authored, entry.key);
+      if (value === undefined || isDynamicBinding(value)) continue;
+      if (!entry.allowedValues.some((allowed) => Object.is(allowed, value))) {
+        errors.push(
+          `Component "${label}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; ` +
+            `allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(', ')}. ` +
+            'ToolJet silently ignores unsupported enum values.'
+        );
+      }
+    }
+  }
+
   // Chart: the native title defaults to a non-empty string that clips at common dashboard sizes.
   if (spec.type === 'Chart') {
     const title = propVal(props, 'title');
@@ -436,11 +477,12 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
-  if (['Chart', 'Html'].includes(spec.type ?? '') && nestedMapInValue(props)) {
+  if (spec.type === 'Html' && nestedMapInValue(propVal(props, 'rawHtml'))) {
     warnings.push(
-      `${spec.type} "${label}": a binding contains .map() inside another .map(); ToolJet's component expression ` +
-        'evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one ' +
-        'filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result.'
+      `Html "${label}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator ` +
+        'can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() ' +
+        'chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize ' +
+        'this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.'
     );
   }
 
@@ -546,6 +588,46 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const columns = propVal(props, 'columns');
     const hasColumns = Array.isArray(columns);
     const projectsDataKeys = explicitlyProjectsTableData(data);
+    const desktopHeight = (spec.layouts?.desktop ?? spec.layout)?.height;
+    const dynamicHeight = catalogValue('Table', props, 'dynamicHeight');
+    const contentWrap = catalogValue('Table', props, 'contentWrap');
+    const expandableRows = catalogValue('Table', props, 'enableExpandableRows');
+    const paginationEnabled = catalogValue('Table', props, 'enablePagination');
+    const serverSide = catalogValue('Table', props, 'serverSidePagination');
+    const rowsPerPage = optionalStaticNumber(
+      isTruthyBinding(serverSide)
+        ? catalogValue('Table', props, 'serverSideRowsPerPage')
+        : catalogValue('Table', props, 'rowsPerPage')
+    );
+    if (
+      typeof desktopHeight === 'number' &&
+      rowsPerPage !== undefined &&
+      rowsPerPage > 0 &&
+      isTruthyBinding(paginationEnabled) &&
+      !isTruthyBinding(dynamicHeight) &&
+      !isTruthyBinding(contentWrap) &&
+      !isTruthyBinding(expandableRows)
+    ) {
+      const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
+      const rowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const toolbarVisible =
+        isTruthyBinding(catalogValue('Table', props, 'displaySearchBox')) ||
+        isTruthyBinding(catalogValue('Table', props, 'showFilterButton'));
+      const chromeHeight =
+        (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) +
+        TABLE_COLUMN_HEADER_HEIGHT_PX +
+        TABLE_FOOTER_HEIGHT_PX +
+        TABLE_BORDER_PX;
+      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
+      if (desktopHeight < minimumHeight) {
+        warnings.push(
+          `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
+            `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
+            `${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped ` +
+            'behind the Table body scrollbar.'
+        );
+      }
+    }
     if (data !== undefined && selector !== 'rawJson') {
       warnings.push(
         `Table "${label}": binds \`data\` but dataSourceSelector is not "rawJson" — it may render blank. ` +

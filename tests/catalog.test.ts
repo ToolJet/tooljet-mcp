@@ -66,6 +66,19 @@ describe('catalog', () => {
     const modal = getComponentSchema('ModalV2');
     expect(modal!.renderingHints!.recommendedFieldAlignment).toBe('top');
     expect(String(modal!.renderingHints!.recommendedFieldRowStepPx)).toMatch(/70/);
+    const tableCapacity = getComponentSchema('Table')!.renderingHints!.visibleRowCapacity as any;
+    expect(tableCapacity).toMatchObject({ regularRowHeightPx: 46, condensedRowHeightPx: 40 });
+    expect(tableCapacity.formula).toMatch(/rowsPerPage.*row height/i);
+  });
+
+  it('harvests static select values for component enum validation', () => {
+    const table = getComponentSchema('Table')!;
+    expect(table.styles.find((style) => style.key === 'tableType')?.allowedValues).toEqual([
+      'table-classic', 'table-bordered', 'table-striped',
+    ]);
+    expect(table.styles.find((style) => style.key === 'cellSize')?.allowedValues).toEqual([
+      'regular', 'condensed',
+    ]);
   });
 
   it('serves the source-verified Table row-action Button-column contract', () => {

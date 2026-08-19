@@ -40,7 +40,12 @@
         "key": "sort",
         "label": "Sort tags",
         "valueType": "string",
-        "default": "none"
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "asc",
+          "desc"
+        ]
       },
       {
         "key": "allowNewTags",
@@ -70,7 +75,11 @@
         "key": "serverSideSearch",
         "label": "Search type",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "loadingState",
@@ -99,7 +108,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -164,13 +178,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -236,7 +258,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -386,7 +412,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -585,7 +616,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -733,7 +769,11 @@
         "key": "selector",
         "label": "Selector",
         "valueType": "string",
-        "default": "RECTANGLE"
+        "default": "RECTANGLE",
+        "allowedValues": [
+          "RECTANGLE",
+          "POINT"
+        ]
       },
       {
         "key": "labels",
@@ -831,7 +871,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -844,7 +889,11 @@
       {
         "key": "type",
         "label": "Type",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "primary",
+          "outline"
+        ]
       },
       {
         "key": "backgroundColor",
@@ -856,7 +905,11 @@
         "key": "hoverBackgroundMode",
         "label": "Hover background",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "manual"
+        ]
       },
       {
         "key": "textColor",
@@ -872,7 +925,14 @@
       },
       {
         "key": "fontWeight",
-        "label": "Font Weight"
+        "label": "Font Weight",
+        "allowedValues": [
+          "normal",
+          "medium",
+          "bold",
+          "lighter",
+          "bolder"
+        ]
       },
       {
         "key": "borderColor",
@@ -916,7 +976,11 @@
       {
         "key": "padding",
         "label": "Padding",
-        "valueType": "union"
+        "valueType": "union",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -1130,7 +1194,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -1196,7 +1264,12 @@
         "key": "layout",
         "label": "Layout",
         "valueType": "string",
-        "default": "row"
+        "default": "row",
+        "allowedValues": [
+          "row",
+          "column",
+          "wrap"
+        ]
       },
       {
         "key": "loadingState",
@@ -1225,7 +1298,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -1298,13 +1376,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -1322,7 +1408,11 @@
         "key": "hoverBackgroundMode",
         "label": "Hover background",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "manual"
+        ]
       },
       {
         "key": "borderColor",
@@ -1344,7 +1434,14 @@
       },
       {
         "key": "fontWeight",
-        "label": "Font Weight"
+        "label": "Font Weight",
+        "allowedValues": [
+          "normal",
+          "medium",
+          "bold",
+          "lighter",
+          "bolder"
+        ]
       },
       {
         "key": "iconColor",
@@ -1398,7 +1495,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -1552,7 +1653,11 @@
       },
       {
         "key": "cellSizeInViewsClassifiedByResource",
-        "label": "Cell size in views classified by resource"
+        "label": "Cell size in views classified by resource",
+        "allowedValues": [
+          "compact",
+          "spacious"
+        ]
       },
       {
         "key": "weekDateFormat",
@@ -1621,7 +1726,11 @@
         "key": "content",
         "label": "Content",
         "valueType": "string",
-        "default": "image"
+        "default": "image",
+        "allowedValues": [
+          "image",
+          "video"
+        ]
       },
       {
         "key": "visibility",
@@ -1638,7 +1747,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -1830,7 +1944,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -2009,13 +2128,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -2081,7 +2208,12 @@
         "key": "menuWidthMode",
         "label": "Menu width",
         "valueType": "string",
-        "default": "matchField"
+        "default": "matchField",
+        "allowedValues": [
+          "matchField",
+          "matchContent",
+          "custom"
+        ]
       },
       {
         "key": "menuCustomWidth",
@@ -2092,7 +2224,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -2274,7 +2410,12 @@
         "key": "type",
         "label": "Chart type",
         "valueType": "union",
-        "default": "line"
+        "default": "line",
+        "allowedValues": [
+          "line",
+          "bar",
+          "pie"
+        ]
       },
       {
         "key": "jsonDescription",
@@ -2291,7 +2432,13 @@
       {
         "key": "barmode",
         "label": "Bar mode",
-        "default": "group"
+        "default": "group",
+        "allowedValues": [
+          "stack",
+          "group",
+          "overlay",
+          "relative"
+        ]
       }
     ],
     "styles": [
@@ -2730,7 +2877,11 @@
         "key": "defaultValue",
         "label": "Default state",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "{{true}}",
+          "{{false}}"
+        ]
       },
       {
         "key": "loadingState",
@@ -2759,7 +2910,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -2802,13 +2958,21 @@
       {
         "key": "alignment",
         "label": "Alignment",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -2927,7 +3091,11 @@
         "key": "labelType",
         "label": "Label",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "custom"
+        ]
       },
       {
         "key": "text",
@@ -2950,7 +3118,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -3024,7 +3197,12 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "center"
+        "default": "center",
+        "allowedValues": [
+          "flex-start",
+          "center",
+          "flex-end"
+        ]
       },
       {
         "key": "counterClockwise",
@@ -3042,7 +3220,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [],
@@ -3222,7 +3404,11 @@
         "key": "format",
         "label": "Color format",
         "valueType": "string",
-        "default": "hex"
+        "default": "hex",
+        "allowedValues": [
+          "hex",
+          "rgb"
+        ]
       },
       {
         "key": "showAlpha",
@@ -3263,7 +3449,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -3289,7 +3480,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -3343,7 +3538,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -3497,7 +3696,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -3711,7 +3915,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -3741,7 +3950,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -3795,7 +4008,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -4121,7 +4338,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -4151,13 +4373,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top"
+        "default": "top",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -4217,7 +4447,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -4440,7 +4674,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -4466,13 +4705,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top"
+        "default": "top",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -4532,7 +4779,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -4764,7 +5015,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -4806,13 +5062,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top"
+        "default": "top",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -4872,7 +5136,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -5101,7 +5369,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -5120,13 +5393,22 @@
       {
         "key": "dividerStyle",
         "label": "Style",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "solid",
+          "dashed"
+        ]
       },
       {
         "key": "labelAlignment",
         "label": "Label alignment",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center",
+          "right"
+        ]
       },
       {
         "key": "labelColor",
@@ -5137,7 +5419,11 @@
         "key": "textWrap",
         "label": "Text wrap",
         "valueType": "string",
-        "default": "wrap"
+        "default": "wrap",
+        "allowedValues": [
+          "wrap",
+          "nowrap"
+        ]
       },
       {
         "key": "boxShadow",
@@ -5149,7 +5435,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [],
@@ -5204,7 +5494,12 @@
         "key": "sort",
         "label": "Sort options",
         "valueType": "string",
-        "default": "none"
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "asc",
+          "desc"
+        ]
       },
       {
         "key": "showClearBtn",
@@ -5222,7 +5517,11 @@
         "key": "serverSideSearch",
         "label": "Search type",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "loadingState",
@@ -5251,7 +5550,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -5330,13 +5634,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -5402,7 +5714,12 @@
         "key": "menuWidthMode",
         "label": "Menu width",
         "valueType": "string",
-        "default": "matchField"
+        "default": "matchField",
+        "allowedValues": [
+          "matchField",
+          "matchContent",
+          "custom"
+        ]
       },
       {
         "key": "menuCustomWidth",
@@ -5413,7 +5730,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -5587,7 +5908,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -5613,7 +5939,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -5679,7 +6009,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -5820,7 +6154,14 @@
         "key": "parseFileType",
         "label": "File type",
         "valueType": "string",
-        "default": "auto-detect"
+        "default": "auto-detect",
+        "allowedValues": [
+          "auto-detect",
+          "csv",
+          "xls",
+          "xlsx",
+          "json"
+        ]
       },
       {
         "key": "delimiter",
@@ -5855,7 +6196,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -5875,7 +6221,12 @@
         "key": "labelWeight",
         "label": "Label weight",
         "valueType": "string",
-        "default": "medium"
+        "default": "medium",
+        "allowedValues": [
+          "normal",
+          "medium",
+          "bold"
+        ]
       },
       {
         "key": "labelColor",
@@ -5903,13 +6254,22 @@
       },
       {
         "key": "contentAlignment",
-        "label": "Content alignment"
+        "label": "Content alignment",
+        "allowedValues": [
+          "left",
+          "center",
+          "right"
+        ]
       },
       {
         "key": "buttonType",
         "label": "Button type",
         "valueType": "string",
-        "default": "solid"
+        "default": "solid",
+        "allowedValues": [
+          "solid",
+          "outline"
+        ]
       },
       {
         "key": "backgroundColor",
@@ -5933,7 +6293,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -6070,7 +6434,14 @@
         "key": "parseFileType",
         "label": "File type",
         "valueType": "string",
-        "default": "auto-detect"
+        "default": "auto-detect",
+        "allowedValues": [
+          "auto-detect",
+          "csv",
+          "xls",
+          "xlsx",
+          "json"
+        ]
       },
       {
         "key": "loadingState",
@@ -6093,7 +6464,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -6119,13 +6495,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top"
+        "default": "top",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -6185,7 +6569,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -6336,7 +6724,14 @@
         "key": "parseFileType",
         "label": "File type",
         "valueType": "string",
-        "default": "auto-detect"
+        "default": "auto-detect",
+        "allowedValues": [
+          "auto-detect",
+          "csv",
+          "tsv",
+          "vnd.ms-excel",
+          "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ]
       },
       {
         "key": "delimiter",
@@ -6365,7 +6760,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -6397,7 +6797,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -6526,19 +6930,33 @@
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "row"
+        "default": "row",
+        "allowedValues": [
+          "row",
+          "column"
+        ]
       },
       {
         "key": "justifyContent",
         "label": "Justify",
         "valueType": "string",
-        "default": "flex-start"
+        "default": "flex-start",
+        "allowedValues": [
+          "flex-start",
+          "center",
+          "flex-end"
+        ]
       },
       {
         "key": "alignItems",
         "label": "Align",
         "valueType": "string",
-        "default": "flex-start"
+        "default": "flex-start",
+        "allowedValues": [
+          "flex-start",
+          "center",
+          "flex-end"
+        ]
       },
       {
         "key": "gap",
@@ -6562,7 +6980,13 @@
         "key": "stackBelow",
         "label": "Stack below",
         "valueType": "string",
-        "default": "none"
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "375",
+          "768",
+          "1440"
+        ]
       },
       {
         "key": "dynamicHeight",
@@ -6687,13 +7111,20 @@
         "key": "buttonToSubmit",
         "label": "Submit button",
         "valueType": "string",
-        "default": "none"
+        "default": "none",
+        "allowedValues": [
+          "none"
+        ]
       },
       {
         "key": "generateFormFrom",
         "label": "Generate form from",
         "valueType": "union",
-        "default": ""
+        "default": "",
+        "allowedValues": [
+          "rawJson",
+          "jsonSchema"
+        ]
       },
       {
         "key": "JSONData",
@@ -6784,7 +7215,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -7149,7 +7585,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -7193,7 +7634,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       },
       {
         "key": "boxShadow",
@@ -7292,7 +7737,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -7393,7 +7843,11 @@
       {
         "key": "imageFormat",
         "label": "Image Format",
-        "default": "imageUrl"
+        "default": "imageUrl",
+        "allowedValues": [
+          "imageUrl",
+          "jsObject"
+        ]
       },
       {
         "key": "source",
@@ -7452,7 +7906,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -7466,13 +7925,25 @@
         "key": "imageFit",
         "label": "Image fit",
         "valueType": "string",
-        "default": "contain"
+        "default": "contain",
+        "allowedValues": [
+          "contain",
+          "fill",
+          "cover",
+          "scale-down"
+        ]
       },
       {
         "key": "borderType",
         "label": "Shape",
         "valueType": "string",
-        "default": "none"
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "rounded",
+          "rounded-circle",
+          "img-thumbnail"
+        ]
       },
       {
         "key": "alignment",
@@ -7508,7 +7979,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "custom"
+        ]
       },
       {
         "key": "customPadding",
@@ -7597,7 +8072,13 @@
         "key": "theme",
         "label": "Theme",
         "valueType": "string",
-        "default": "solarized"
+        "default": "solarized",
+        "allowedValues": [
+          "monokai",
+          "solarized",
+          "tomorrow",
+          "bespin"
+        ]
       },
       {
         "key": "shouldExpandEntireJSON",
@@ -7638,7 +8119,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -7780,7 +8266,13 @@
         "key": "theme",
         "label": "Theme",
         "valueType": "string",
-        "default": "solarized"
+        "default": "solarized",
+        "allowedValues": [
+          "monokai",
+          "solarized",
+          "tomorrow",
+          "bespin"
+        ]
       },
       {
         "key": "shouldExpandEntireJSON",
@@ -7827,7 +8319,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -8003,7 +8500,13 @@
         "key": "size",
         "label": "Modal size",
         "valueType": "string",
-        "default": "lg"
+        "default": "lg",
+        "allowedValues": [
+          "sm",
+          "lg",
+          "xl",
+          "fullscreen"
+        ]
       },
       {
         "key": "modalHeight",
@@ -8013,7 +8516,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -8317,7 +8825,10 @@
         "key": "dataSourceSelector",
         "label": "Data source",
         "valueType": "union",
-        "default": "rawJson"
+        "default": "rawJson",
+        "allowedValues": [
+          "rawJson"
+        ]
       },
       {
         "key": "data",
@@ -8536,7 +9047,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -8560,7 +9076,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top"
+        "default": "top",
+        "allowedValues": [
+          "top",
+          "side"
+        ]
       },
       {
         "key": "autoLabelWidth",
@@ -8584,7 +9104,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       },
       {
         "key": "backgroundColor",
@@ -8613,7 +9137,11 @@
         "key": "hoverBackgroundMode",
         "label": "Hover background",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "manual"
+        ]
       }
     ],
     "events": [
@@ -8723,7 +9251,11 @@
         "key": "targetType",
         "label": "Target type",
         "valueType": "string",
-        "default": "new"
+        "default": "new",
+        "allowedValues": [
+          "new",
+          "same"
+        ]
       },
       {
         "key": "loadingState",
@@ -8746,7 +9278,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -8784,7 +9321,12 @@
         "key": "underline",
         "label": "Underline",
         "valueType": "string",
-        "default": "on-hover"
+        "default": "on-hover",
+        "allowedValues": [
+          "no-underline",
+          "on-hover",
+          "underline"
+        ]
       },
       {
         "key": "boxShadow",
@@ -8796,7 +9338,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -8890,7 +9436,10 @@
         "key": "dataSourceSelector",
         "label": "Data source",
         "valueType": "union",
-        "default": "rawJson"
+        "default": "rawJson",
+        "allowedValues": [
+          "rawJson"
+        ]
       },
       {
         "key": "data",
@@ -8931,7 +9480,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -8943,7 +9497,11 @@
         "key": "mode",
         "label": "Mode",
         "valueType": "string",
-        "default": "list"
+        "default": "list",
+        "allowedValues": [
+          "list",
+          "grid"
+        ]
       },
       {
         "key": "columns",
@@ -9218,7 +9776,12 @@
         "key": "size",
         "label": "Modal size",
         "valueType": "string",
-        "default": "lg"
+        "default": "lg",
+        "allowedValues": [
+          "sm",
+          "lg",
+          "xl"
+        ]
       },
       {
         "key": "modalHeight",
@@ -9373,7 +9936,13 @@
         "key": "size",
         "label": "Width",
         "valueType": "string",
-        "default": "lg"
+        "default": "lg",
+        "allowedValues": [
+          "sm",
+          "lg",
+          "xl",
+          "fullscreen"
+        ]
       },
       {
         "key": "modalHeight",
@@ -9399,7 +9968,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -9457,7 +10031,11 @@
         "key": "triggerButtonHoverBackgroundMode",
         "label": "Hover background",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "manual"
+        ]
       },
       {
         "key": "triggerButtonTextColor",
@@ -9473,7 +10051,14 @@
       },
       {
         "key": "triggerButtonFontWeight",
-        "label": "Font Weight"
+        "label": "Font Weight",
+        "allowedValues": [
+          "normal",
+          "medium",
+          "bold",
+          "lighter",
+          "bolder"
+        ]
       },
       {
         "key": "triggerButtonContentAlignment",
@@ -9758,7 +10343,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [],
@@ -9830,7 +10419,12 @@
         "key": "sort",
         "label": "Sort options",
         "valueType": "string",
-        "default": "none"
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "asc",
+          "desc"
+        ]
       },
       {
         "key": "showClearBtn",
@@ -9848,7 +10442,11 @@
         "key": "serverSideSearch",
         "label": "Search type",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "loadingState",
@@ -9877,7 +10475,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -9957,13 +10560,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -10029,7 +10640,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -10280,30 +10895,53 @@
       {
         "key": "orientation",
         "label": "Orientation",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "horizontal",
+          "vertical"
+        ]
       },
       {
         "key": "displayStyle",
         "label": "Style",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "textAndIcon",
+          "textOnly",
+          "iconOnly"
+        ]
       },
       {
         "key": "navItemSize",
         "label": "Nav item size",
         "valueType": "string",
-        "default": "equalWidth"
+        "default": "equalWidth",
+        "allowedValues": [
+          "auto",
+          "equalWidth"
+        ]
       },
       {
         "key": "horizontalAlignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center",
+          "right"
+        ]
       },
       {
         "key": "subMenuAlignment",
         "label": "Sub menu alignment",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center",
+          "right"
+        ]
       },
       {
         "key": "backgroundColor",
@@ -10475,7 +11113,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -10515,7 +11158,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -10587,7 +11234,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -10887,7 +11538,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -10913,7 +11569,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -10985,7 +11645,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -11214,7 +11878,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -11240,7 +11909,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -11294,7 +11967,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -11434,13 +12111,21 @@
         "key": "buttonType",
         "label": "Button type",
         "valueType": "string",
-        "default": "primary"
+        "default": "primary",
+        "allowedValues": [
+          "primary",
+          "outline"
+        ]
       },
       {
         "key": "trigger",
         "label": "Show menu",
         "valueType": "string",
-        "default": "click"
+        "default": "click",
+        "allowedValues": [
+          "hover",
+          "click"
+        ]
       },
       {
         "key": "advanced",
@@ -11480,7 +12165,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -11553,7 +12243,11 @@
         "key": "hoverBackgroundMode",
         "label": "Hover background",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "manual"
+        ]
       },
       {
         "key": "textColor",
@@ -11569,7 +12263,14 @@
       },
       {
         "key": "fontWeight",
-        "label": "Font Weight"
+        "label": "Font Weight",
+        "allowedValues": [
+          "normal",
+          "medium",
+          "bold",
+          "lighter",
+          "bolder"
+        ]
       },
       {
         "key": "borderColor",
@@ -11702,7 +12403,11 @@
         "key": "labelType",
         "label": "Label",
         "valueType": "string",
-        "default": "auto"
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "custom"
+        ]
       },
       {
         "key": "label",
@@ -11719,7 +12424,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -11751,7 +12461,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "textSize",
@@ -11799,7 +12513,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [],
@@ -11928,7 +12646,12 @@
         "key": "layout",
         "label": "Layout",
         "valueType": "string",
-        "default": "row"
+        "default": "row",
+        "allowedValues": [
+          "row",
+          "column",
+          "wrap"
+        ]
       },
       {
         "key": "loadingState",
@@ -11957,7 +12680,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -12039,13 +12767,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -12082,7 +12818,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -12326,7 +13066,11 @@
       {
         "key": "enableTwoHandle",
         "label": "Slider type",
-        "default": "slider"
+        "default": "slider",
+        "allowedValues": [
+          "slider",
+          "rangeSlider"
+        ]
       },
       {
         "key": "label",
@@ -12393,7 +13137,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -12419,7 +13168,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -12460,7 +13213,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -12597,7 +13354,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -12637,7 +13399,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -12840,7 +13606,11 @@
         "key": "size",
         "label": "Size",
         "valueType": "string",
-        "default": "sm"
+        "default": "sm",
+        "allowedValues": [
+          "sm",
+          "lg"
+        ]
       }
     ],
     "events": [],
@@ -12866,7 +13636,11 @@
         "key": "iconType",
         "label": "Icon Type",
         "valueType": "string",
-        "default": "stars"
+        "default": "stars",
+        "allowedValues": [
+          "stars",
+          "hearts"
+        ]
       },
       {
         "key": "maxRating",
@@ -12925,7 +13699,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -12943,7 +13722,11 @@
         "key": "labelStyle",
         "label": "Style",
         "valueType": "string",
-        "default": "standard"
+        "default": "standard",
+        "allowedValues": [
+          "standard",
+          "legacy"
+        ]
       },
       {
         "key": "labelColor",
@@ -12961,7 +13744,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -12997,7 +13784,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -13140,13 +13931,22 @@
         "key": "dataAlignment",
         "label": "Data",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center",
+          "right"
+        ]
       },
       {
         "key": "secondaryValueAlignment",
         "label": "Secondary value",
         "valueType": "string",
-        "default": "horizontal"
+        "default": "horizontal",
+        "allowedValues": [
+          "vertical",
+          "horizontal"
+        ]
       },
       {
         "key": "icon",
@@ -13158,7 +13958,11 @@
         "key": "iconDirection",
         "label": "",
         "valueType": "string",
-        "default": "right"
+        "default": "right",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "loadingState",
@@ -13175,7 +13979,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -13269,7 +14078,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [],
@@ -13370,7 +14183,12 @@
         "key": "variant",
         "label": "Variant",
         "valueType": "string",
-        "default": "titles"
+        "default": "titles",
+        "allowedValues": [
+          "titles",
+          "numbers",
+          "plain"
+        ]
       },
       {
         "key": "schema",
@@ -13505,7 +14323,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -13647,7 +14469,10 @@
         "key": "dataSourceSelector",
         "label": "Data source",
         "valueType": "union",
-        "default": "rawJson"
+        "default": "rawJson",
+        "allowedValues": [
+          "rawJson"
+        ]
       },
       {
         "key": "data",
@@ -13840,25 +14665,41 @@
         "key": "serverSidePagination",
         "label": "Type",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "serverSideSearch",
         "label": "Type",
         "valueType": "boolean",
-        "default": false
+        "default": false,
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "serverSideSort",
         "label": "Type",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "serverSideFilter",
         "label": "Type",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "clientSide",
+          "serverSide"
+        ]
       },
       {
         "key": "actionButtonBackgroundColor",
@@ -14011,12 +14852,20 @@
       {
         "key": "columnHeaderWrap",
         "label": "Overflow",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "fixed",
+          "wrap"
+        ]
       },
       {
         "key": "headerCasing",
         "label": "Header casing",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "none",
+          "uppercase"
+        ]
       },
       {
         "key": "columnBackgroundColor",
@@ -14040,18 +14889,31 @@
         "key": "tableType",
         "label": "Row style",
         "valueType": "string",
-        "default": "table-classic"
+        "default": "table-classic",
+        "allowedValues": [
+          "table-classic",
+          "table-bordered",
+          "table-striped"
+        ]
       },
       {
         "key": "cellSize",
         "label": "Cell height",
         "valueType": "string",
-        "default": "regular"
+        "default": "regular",
+        "allowedValues": [
+          "regular",
+          "condensed"
+        ]
       },
       {
         "key": "maxRowHeight",
         "label": "Max row height",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "auto",
+          "custom"
+        ]
       },
       {
         "key": "actionButtonRadius",
@@ -14083,7 +14945,11 @@
       {
         "key": "padding",
         "label": "Padding",
-        "valueType": "union"
+        "valueType": "union",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -14403,6 +15269,15 @@
         "default": []
       }
     ],
+    "renderingHints": {
+      "visibleRowCapacity": {
+        "regularRowHeightPx": 46,
+        "condensedRowHeightPx": 40,
+        "fixedChromePx": "≈154 with the default 56px toolbar, 40px column header, 56px footer, and borders",
+        "formula": "minimum static height ≈ fixed chrome + rowsPerPage × row height",
+        "rule": "If authored height is smaller, the page rows remain reachable through an inner scrollbar but appear clipped. Reduce rowsPerPage, use dynamicHeight, or increase the authored height."
+      }
+    },
     "authoringHints": {
       "runtimeCompatibility": {
         "autogenerateColumns": true,
@@ -14568,7 +15443,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -14699,11 +15579,19 @@
       },
       {
         "key": "tabWidth",
-        "label": "Tab width"
+        "label": "Tab width",
+        "allowedValues": [
+          "auto",
+          "split"
+        ]
       },
       {
         "key": "transition",
-        "label": "Transition"
+        "label": "Transition",
+        "allowedValues": [
+          "slide",
+          "none"
+        ]
       },
       {
         "key": "commonBackgroundColor",
@@ -14730,7 +15618,11 @@
       {
         "key": "padding",
         "label": "Padding",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -14891,7 +15783,11 @@
         "key": "overflow",
         "label": "Overflow",
         "valueType": "string",
-        "default": "wrap"
+        "default": "wrap",
+        "allowedValues": [
+          "scroll",
+          "wrap"
+        ]
       },
       {
         "key": "loadingState",
@@ -14914,7 +15810,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -15005,7 +15906,11 @@
         "key": "size",
         "label": "Size",
         "valueType": "union",
-        "default": "large"
+        "default": "large",
+        "allowedValues": [
+          "small",
+          "large"
+        ]
       },
       {
         "key": "borderRadius",
@@ -15017,7 +15922,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       },
       {
         "key": "boxShadow",
@@ -15085,7 +15994,12 @@
       {
         "key": "textFormat",
         "label": "Text Format",
-        "default": "html"
+        "default": "html",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "text",
@@ -15126,7 +16040,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -15143,11 +16062,22 @@
       },
       {
         "key": "fontWeight",
-        "label": "Weight"
+        "label": "Weight",
+        "allowedValues": [
+          "normal",
+          "bold",
+          "lighter",
+          "bolder"
+        ]
       },
       {
         "key": "fontStyle",
-        "label": "Style"
+        "label": "Style",
+        "allowedValues": [
+          "normal",
+          "oblique",
+          "italic"
+        ]
       },
       {
         "key": "textColor",
@@ -15156,7 +16086,11 @@
       },
       {
         "key": "isScrollRequired",
-        "label": "Scroll"
+        "label": "Scroll",
+        "allowedValues": [
+          "enabled",
+          "disabled"
+        ]
       },
       {
         "key": "lineHeight",
@@ -15174,11 +16108,23 @@
       },
       {
         "key": "decoration",
-        "label": "Decoration"
+        "label": "Decoration",
+        "allowedValues": [
+          "none",
+          "underline",
+          "overline",
+          "line-through"
+        ]
       },
       {
         "key": "transformation",
-        "label": "Transformation"
+        "label": "Transformation",
+        "allowedValues": [
+          "none",
+          "uppercase",
+          "lowercase",
+          "capitalize"
+        ]
       },
       {
         "key": "letterSpacing",
@@ -15190,7 +16136,13 @@
       },
       {
         "key": "fontVariant",
-        "label": "Font variant"
+        "label": "Font variant",
+        "allowedValues": [
+          "normal",
+          "small-caps",
+          "initial",
+          "inherit"
+        ]
       },
       {
         "key": "backgroundColor",
@@ -15220,7 +16172,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -15361,7 +16317,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -15387,7 +16348,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -15453,7 +16418,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -15645,7 +16614,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -15671,7 +16645,11 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "auto",
@@ -15743,7 +16721,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -15975,7 +16957,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -16005,13 +16992,21 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top"
+        "default": "top",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "auto",
@@ -16071,7 +17066,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -16212,7 +17211,11 @@
         "key": "type",
         "label": "Timer type",
         "valueType": "string",
-        "default": "countUp"
+        "default": "countUp",
+        "allowedValues": [
+          "countUp",
+          "countDown"
+        ]
       }
     ],
     "styles": [
@@ -16336,7 +17339,11 @@
         "key": "defaultValue",
         "label": "Default state",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{false}}",
+        "allowedValues": [
+          "{{true}}",
+          "{{false}}"
+        ]
       },
       {
         "key": "loadingState",
@@ -16365,7 +17372,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -16403,7 +17415,11 @@
       {
         "key": "alignment",
         "label": "Alignment",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "boxShadow",
@@ -16414,7 +17430,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -16577,7 +17597,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -16759,19 +17784,31 @@
       },
       {
         "key": "labelStyle",
-        "label": "Style"
+        "label": "Style",
+        "allowedValues": [
+          "new",
+          "legacy"
+        ]
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "side"
+        "default": "side",
+        "allowedValues": [
+          "side",
+          "top"
+        ]
       },
       {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
-        "default": "left"
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "right"
+        ]
       },
       {
         "key": "autoLabelWidth",
@@ -16814,7 +17851,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [
@@ -16950,7 +17991,12 @@
       {
         "key": "tooltipFormat",
         "label": "Tooltip",
-        "default": "plainText"
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
       },
       {
         "key": "tooltip",
@@ -16969,7 +18015,11 @@
       {
         "key": "dividerStyle",
         "label": "Style",
-        "valueType": "string"
+        "valueType": "string",
+        "allowedValues": [
+          "solid",
+          "dashed"
+        ]
       },
       {
         "key": "boxShadow",
@@ -16981,7 +18031,11 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": "default"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       }
     ],
     "events": [],

@@ -14,6 +14,8 @@ export interface ComponentProp {
   label?: string;
   valueType?: string;
   default?: unknown;
+  /** Static values accepted by a source-defined select/switch property. */
+  allowedValues?: Array<string | number | boolean>;
   /** Other component properties required for this property to take effect. */
   requires?: Record<string, unknown>;
   /** Properties that should not be authored together with this one. */

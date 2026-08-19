@@ -712,7 +712,7 @@ describe('add_component tool', () => {
       dataSourceSelector: { value: 'rawJson' },
       autogenerateColumns: { value: true },
     };
-    const layout = { top: 0, left: 0, width: 10, height: 5 };
+    const layout = { top: 0, left: 0, width: 10, height: 620 };
     const result = await tool.handler({
       app_id: 'app1',
       version_id: 'v1',

@@ -74,6 +74,17 @@ function trimDefault(v) {
   return v;
 }
 
+function allowedValues(definition) {
+  const options = literal(prop(definition, 'options'));
+  if (!Array.isArray(options)) return undefined;
+  const values = options.flatMap((option) => {
+    if (!option || typeof option !== 'object' || !Object.prototype.hasOwnProperty.call(option, 'value')) return [];
+    const value = option.value;
+    return ['string', 'number', 'boolean'].includes(typeof value) ? [value] : [];
+  });
+  return values.length ? [...new Set(values)] : undefined;
+}
+
 // These defaults are compact machine-readable contracts, not decorative demo data. Keeping them
 // exact lets callers request one property (via property_keys) without loading an entire component
 // schema or leaving the catalog for external documentation.
@@ -144,6 +155,7 @@ function extractProps(config, componentType) {
         label: strProp(def, 'displayName'),
         valueType: schema ? strProp(schema, 'type') : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
+        allowedValues: allowedValues(def),
       };
     }
   }
@@ -179,6 +191,7 @@ function extractStyles(config) {
         label: strProp(pr.value, 'displayName'),
         valueType: schema ? strProp(schema, 'type') : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
+        allowedValues: allowedValues(pr.value),
       };
     })
     .filter((s) => s.label); // drop section dividers (no label)
@@ -316,6 +329,15 @@ const RENDERING_HINTS = {
     recommendedMinHeightPx: '≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content',
     recommendedMinWidthCols: 'At least 12 for a value-only tile with hideSecondary=true; at least 18 when secondary content is visible. Prefer at most three value-only or two secondary-content tiles per content row.',
     secondaryValueUsage: 'secondaryValue renders in a narrow delta slot: reserve it for a number or percentage. Put prose in secondaryValueLabel and leave secondaryValue empty.',
+  },
+  Table: {
+    visibleRowCapacity: {
+      regularRowHeightPx: 46,
+      condensedRowHeightPx: 40,
+      fixedChromePx: '≈154 with the default 56px toolbar, 40px column header, 56px footer, and borders',
+      formula: 'minimum static height ≈ fixed chrome + rowsPerPage × row height',
+      rule: 'If authored height is smaller, the page rows remain reachable through an inner scrollbar but appear clipped. Reduce rowsPerPage, use dynamicHeight, or increase the authored height.',
+    },
   },
   ModalV2: {
     childCoordinateSpace: 'Modal-local 43-column grid; child (0,0) is the modal body top-left.',

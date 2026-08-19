@@ -50,27 +50,48 @@ describe('lintComponentSpec', () => {
       .toEqual([]);
   });
 
-  it('warns when Html or Chart bindings nest map calls, but allows flat/sequential map chains', () => {
+  it('warns only when Html rawHtml nests map calls and allows supported lookup joins elsewhere', () => {
     const nested =
       '{{(queries.groups.data || []).map(group => group.items.map(item => `<b>${item.name}</b>`).join(""))' +
       '.join("") || "No items"}}';
     expect(lintComponentSpec({
       name: 'groupedCards',
       type: 'Html',
-      properties: { html: { value: nested } },
-    }).warnings.join(' ')).toMatch(/map\(\) inside another \.map\(\).*completely blank.*fallback.*filter\(\)\.map\(\)/i);
+      properties: { rawHtml: { value: nested } },
+    }).warnings.join(' ')).toMatch(/rawHtml.*map\(\) inside another \.map\(\).*completely blank.*fallback.*filter\(\)\.map\(\)/i);
     expect(lintComponentSpec({
       name: 'groupedChart',
       type: 'Chart',
       properties: { title: { value: '' }, data: { value: nested } },
-    }).warnings.join(' ')).toMatch(/component expression evaluator can throw/i);
+    }).warnings).toEqual([]);
+
+    const tableLookupJoin = '{{queries.orders.data.map(order => ({...order, owner:(queries.users.data || []).filter(user => user.id === order.owner_id)[0]}))}}';
+    expect(lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      properties: { data: { value: tableLookupJoin }, dataSourceSelector: { value: 'rawJson' }, autogenerateColumns: { value: true } },
+    }).warnings.join(' ')).not.toMatch(/nested|lookup join|expression evaluator/i);
 
     const flat = '{{(queries.items.data || []).filter(item => item.visible).map(item => `<b>${item.name}</b>`).join("")}}';
     const sequential = '{{(queries.items.data || []).map(item => item.name).map(name => name.toUpperCase())}}';
-    expect(lintComponentSpec({ name: 'flatCards', type: 'Html', properties: { html: { value: flat } } }).warnings)
+    expect(lintComponentSpec({ name: 'flatCards', type: 'Html', properties: { rawHtml: { value: flat } } }).warnings)
       .toEqual([]);
-    expect(lintComponentSpec({ name: 'sequentialCards', type: 'Html', properties: { html: { value: sequential } } }).warnings)
+    expect(lintComponentSpec({ name: 'sequentialCards', type: 'Html', properties: { rawHtml: { value: sequential } } }).warnings)
       .toEqual([]);
+  });
+
+  it('blocks unsupported static component enum values but leaves dynamic bindings unresolved', () => {
+    const invalid = lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      styles: { cellSize: { value: 'tiny' } },
+    });
+    expect(invalid.errors.join(' ')).toMatch(/unsupported style value "tiny".*cellSize.*regular.*condensed.*silently ignores/i);
+    expect(lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      styles: { cellSize: { value: '{{variables.tableDensity}}' } },
+    }).errors).toEqual([]);
   });
 
   it('warns when Statistics prose is placed in the narrow secondary value slot', () => {
@@ -373,6 +394,34 @@ describe('lintComponentSpec', () => {
     }).warnings.join(' ');
     expect(warnings).toMatch(/serverSideRowsPerPage/);
     expect(warnings).toMatch(/totalRecords/);
+  });
+
+  it('warns when a static-height Table cannot show rowsPerPage without inner scrolling', () => {
+    const compact = lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      properties: { rowsPerPage: { value: '{{10}}' } },
+      styles: { cellSize: { value: 'regular' } },
+      layout: { top: 0, left: 0, width: 30, height: 460 },
+    });
+    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 614px/i);
+
+    const tall = lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      properties: { rowsPerPage: { value: '{{10}}' } },
+      styles: { cellSize: { value: 'regular' } },
+      layout: { top: 0, left: 0, width: 30, height: 620 },
+    });
+    expect(tall.warnings.join(' ')).not.toMatch(/inner scrollbar/);
+
+    const dynamic = lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      properties: { rowsPerPage: { value: '{{10}}' }, dynamicHeight: { value: '{{true}}' } },
+      layout: { top: 0, left: 0, width: 30, height: 460 },
+    });
+    expect(dynamic.warnings.join(' ')).not.toMatch(/inner scrollbar/);
   });
 
   it('warns when schema-generated Forms omit their source schema/data', () => {
