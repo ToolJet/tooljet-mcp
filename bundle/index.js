@@ -31534,6 +31534,12 @@ function mutuallyExclusiveVisibility(a, b) {
 function recordValue(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : void 0;
 }
+function looksDateLikeField(value) {
+  if (typeof value !== "string")
+    return false;
+  const normalized2 = value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  return /(?:^|_)(?:date|datetime|timestamp|created|updated|submitted|requested|started|ended|expires|expired|due)(?:_at|_date|_time)?$/.test(normalized2);
+}
 function isTruthyBinding(v) {
   return v === true || v === "{{true}}" || v === "true";
 }
@@ -31562,6 +31568,17 @@ function nestedMapInValue(value) {
     return value.some(nestedMapInValue);
   if (value && typeof value === "object")
     return Object.values(value).some(nestedMapInValue);
+  return false;
+}
+function statementBodyMapInValue(value) {
+  if (typeof value === "string") {
+    return value.includes("{{") && /\.map\s*\(\s*(?:async\s+)?(?:[A-Za-z_$][\w$]*|\([^)]*\))\s*=>\s*\{/.test(value);
+  }
+  if (Array.isArray(value))
+    return value.some(statementBodyMapInValue);
+  if (value && typeof value === "object") {
+    return Object.values(value).some(statementBodyMapInValue);
+  }
   return false;
 }
 function unsafeEmptyArrayFirstRowFallback(value) {
@@ -31958,6 +31975,38 @@ function lintComponentSpec(spec) {
         warnings.push(`KeyValuePair "${label}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
       }
     }
+    if (Array.isArray(fields) && fields.length > 0) {
+      const catalogFields = getComponentSchema("KeyValuePair")?.properties.find((property) => property.key === "fields")?.default;
+      const catalogKeyById = /* @__PURE__ */ new Map();
+      if (Array.isArray(catalogFields)) {
+        for (const field of catalogFields) {
+          const entry = recordValue(field);
+          if (typeof entry?.id === "string" && typeof entry.key === "string") {
+            catalogKeyById.set(entry.id, entry.key);
+          }
+        }
+      }
+      const deletionHistoryValue = propVal(props, "fieldDeletionHistory");
+      const deletionHistory = new Set(Array.isArray(deletionHistoryValue) ? deletionHistoryValue.filter((key) => typeof key === "string") : []);
+      const hasCustomField = fields.some((field) => {
+        const id = recordValue(field)?.id;
+        return typeof id !== "string" || !catalogKeyById.has(id);
+      });
+      const contradictoryDemoKeys = hasCustomField ? fields.flatMap((field) => {
+        const id = recordValue(field)?.id;
+        const key = typeof id === "string" ? catalogKeyById.get(id) : void 0;
+        return key && deletionHistory.has(key) ? [key] : [];
+      }) : [];
+      if (contradictoryDemoKeys.length) {
+        warnings.push(`KeyValuePair "${label}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
+      }
+      fields.forEach((field, index) => {
+        const entry = recordValue(field);
+        if (entry?.fieldType === "string" && (looksDateLikeField(entry.key) || looksDateLikeField(entry.name))) {
+          warnings.push(`KeyValuePair "${label}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+        }
+      });
+    }
   }
   if (spec.type === "Table") {
     const data = propVal(props, "data");
@@ -31974,6 +32023,9 @@ function lintComponentSpec(spec) {
     const paginationEnabled = catalogValue("Table", props, "enablePagination");
     const serverSide = catalogValue("Table", props, "serverSidePagination");
     const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props, "serverSideRowsPerPage") : catalogValue("Table", props, "rowsPerPage"));
+    if (statementBodyMapInValue(data)) {
+      errors.push(`Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
+    }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(contentWrap) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
       const rowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
@@ -32023,6 +32075,9 @@ function lintComponentSpec(spec) {
         }
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
           warnings.push(`Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
+        }
+        if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
+          warnings.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
@@ -38002,6 +38057,72 @@ function deleteEventTool(client) {
   };
 }
 
+// dist/runtimeFreshness.js
+import { createHash } from "node:crypto";
+import { statSync } from "node:fs";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+var TOOLJET_MCP_VERSION = "0.2.0";
+function snapshot(path) {
+  try {
+    const stat = statSync(path);
+    const source = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    return {
+      buildId: createHash("sha256").update(source).digest("hex").slice(0, 12),
+      modifiedMs: stat.mtimeMs,
+      size: stat.size
+    };
+  } catch {
+    return { buildId: "missing", modifiedMs: -1, size: -1 };
+  }
+}
+var RuntimeFreshnessMonitor = class {
+  artifactPath;
+  loaded;
+  startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  constructor(artifactPath = fileURLToPath3(import.meta.url)) {
+    this.artifactPath = artifactPath;
+    this.loaded = snapshot(artifactPath);
+  }
+  status() {
+    const current = snapshot(this.artifactPath);
+    const stale = current.modifiedMs !== this.loaded.modifiedMs || current.size !== this.loaded.size;
+    return {
+      version: TOOLJET_MCP_VERSION,
+      state: stale ? "stale" : "fresh",
+      build_id: this.loaded.buildId,
+      disk_build_id: current.buildId,
+      process_started_at: this.startedAt,
+      restart_required: stale
+    };
+  }
+};
+var runtimeFreshness = new RuntimeFreshnessMonitor();
+function staleRuntimeResult(status) {
+  return {
+    isError: true,
+    content: [{
+      type: "text",
+      text: `Error: MCP_RUNTIME_STALE: the ToolJet MCP files changed after this process started (loaded ${status.build_id}, disk ${status.disk_build_id}). Restart or reload the MCP/plugin host, then retry. No ToolJet request was attempted.`
+    }],
+    _meta: { tooljet_runtime: status }
+  };
+}
+function withRuntimeStatus(result, status) {
+  return { ...result, _meta: { ...result._meta ?? {}, tooljet_runtime: status } };
+}
+
+// dist/tools/getRuntimeInfo.js
+function getRuntimeInfoTool(runtime) {
+  return {
+    name: "get_runtime_info",
+    description: "Return the loaded ToolJet MCP version/build identity and whether its on-disk runtime changed after process start. If restart_required is true, restart or reload the MCP/plugin host before using any other tool.",
+    inputSchema: { refresh: external_exports.boolean().optional().describe("Accepted for discoverability; runtime status is always fresh.") },
+    async handler() {
+      return ok(runtime.status());
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -38013,8 +38134,9 @@ var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
-function registerTools(server, client) {
+function registerTools(server, client, runtime = runtimeFreshness) {
   const tools = [
+    getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     createAppTool(client),
@@ -38062,7 +38184,13 @@ function registerTools(server, client) {
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   for (const tool of exposedTools) {
-    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema }, (args) => withToolTelemetry(tool.name, () => tool.handler(args)));
+    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema }, (args) => withToolTelemetry(tool.name, async () => {
+      const status = runtime.status();
+      if (status.restart_required && tool.name !== "get_runtime_info") {
+        return staleRuntimeResult(status);
+      }
+      return withRuntimeStatus(await tool.handler(args), status);
+    }));
   }
 }
 
@@ -38071,7 +38199,7 @@ function buildServer() {
   const config2 = loadConfig();
   const auth = createAuth(config2);
   const client = createClient(auth, config2);
-  const server = new McpServer({ name: "tooljet-mcp", version: "0.2.0" });
+  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
   registerTools(server, client);
   return server;
 }
