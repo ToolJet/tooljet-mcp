@@ -143,6 +143,7 @@ describe('createClient', () => {
         name: 'Home',
         handle: 'home',
         icon: 'IconLayoutDashboard',
+        hidden: { value: true },
         components: {
           'c-1': {
             layouts: { desktop: { top: 0, left: 0, width: 20, height: 4 } },
@@ -185,6 +186,7 @@ describe('createClient', () => {
             name: 'Home',
             handle: 'home',
             icon: 'IconLayoutDashboard',
+            hidden: true,
             components: [
               {
                 id: 'c-1',
