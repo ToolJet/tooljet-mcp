@@ -112,6 +112,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(skill).toMatch(/sortApplied: \[\{column,columnKey,direction\}\].*filters: \[\{column,condition,value\}\]/i);
     expect(skill).toMatch(/ButtonGroupV2.*previous `selected` value/i);
     expect(skill).toMatch(/DaterangePicker.*literal strings `"undefined"` or `"Invalid date"`/i);
+    expect(skill).toMatch(/pageIndex.*undefined.*\(\(components\.<table>\.pageIndex \|\| 1\) - 1\).*NaN.*empty Table/i);
   });
 
   it('batches multiple proven safe query reads without broadening execution scope', () => {
@@ -347,7 +348,7 @@ describe('generated skill — async states & density guardrails', () => {
     expect(skill).toMatch(/## Forms & modals — field layout/);
     expect(skill).toContain('styles.alignment.value = "top"');
     expect(skill).toMatch(/40px authored height/);
-    expect(skill).toMatch(/60px.*70px top-to-top row step/is);
+    expect(skill).toMatch(/Row step is always.*authored height \+ 20px.*\+ 10px gap.*70px only.*40px-authored/is);
     expect(skill).toMatch(/90[–-]100px authored height.*TextArea/is);
     expect(skill).toMatch(/no value-font-size style/i);
     expect(skill).toMatch(/relative to the modal body/i);

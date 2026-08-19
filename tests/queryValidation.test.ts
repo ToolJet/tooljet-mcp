@@ -89,4 +89,25 @@ describe('validateQueryOptions', () => {
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
   });
+
+  it('warns when a server-side Table offset can become NaN before pageIndex is published', () => {
+    const result = validateQueryOptions('postgresql', {
+      mode: 'sql',
+      query: 'select * from orders limit 25 offset {{(components.ordersTable.pageIndex - 1) * 25}}',
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'unguarded_table_page_index', path: 'query' }),
+    ]));
+    expect(result.warnings.map((issue) => issue.message).join(' ')).toMatch(/undefined.*NaN.*pageIndex \|\| 1/i);
+  });
+
+  it('accepts a first-load-safe server-side Table offset', () => {
+    const result = validateQueryOptions('postgresql', {
+      mode: 'sql',
+      query: 'select * from orders limit 25 offset {{((components.ordersTable.pageIndex || 1) - 1) * 25}}',
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
 });

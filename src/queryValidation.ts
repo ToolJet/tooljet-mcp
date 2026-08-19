@@ -84,9 +84,37 @@ function suffixSuggestion(key: string, fields: Record<string, DatasourceFieldCon
   return matches.length === 1 ? matches[0] : undefined;
 }
 
+function bindingStrings(value: unknown, path = ''): Array<{ path?: string; value: string }> {
+  if (typeof value === 'string') return [{ path: path || undefined, value }];
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => bindingStrings(item, `${path}[${index}]`));
+  }
+  if (!isObject(value)) return [];
+  return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
+}
+
+/** Table state is not guaranteed to exist when a page-load query first evaluates. Catch the
+ * common offset recipe that turns undefined into NaN before the Table has published pageIndex. */
+function tableStateWarnings(options: Record<string, unknown>): QueryValidationIssue[] {
+  const warnings: QueryValidationIssue[] = [];
+  for (const binding of bindingStrings(options)) {
+    const match = binding.value.match(/components\.([A-Za-z_$][\w$]*)\.pageIndex\s*-\s*1/);
+    if (!match) continue;
+    warnings.push({
+      code: 'unguarded_table_page_index',
+      path: binding.path,
+      message:
+        `Table pageIndex may be undefined when the first page-load query evaluates; ` +
+        `"${match[0]}" can produce NaN and an empty table. Use ` +
+        `((components.${match[1]}.pageIndex || 1) - 1) * pageSize (or an equivalent nullish guard).`,
+    });
+  }
+  return warnings;
+}
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
-  const warnings: QueryValidationIssue[] = [];
+  const warnings: QueryValidationIssue[] = tableStateWarnings(options);
   const schema = getDatasourceQuerySchema(kind);
   if (!schema) {
     warnings.push({

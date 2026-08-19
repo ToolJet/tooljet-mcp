@@ -366,7 +366,7 @@ const RENDERING_HINTS = {
     recommendedFieldAlignment: 'top',
     recommendedSingleLineFieldHeightPx: 40,
     topAlignedRenderedFootprintPx: 60,
-    recommendedFieldRowStepPx: '70 (40px authored + 20px label/validation footprint + 10px gap)',
+    recommendedFieldRowStepPx: 'authored field height + 30px (20px label/validation footprint + 10px gap); this is 70px only for a 40px-authored field',
     recommendedTextAreaHeightPx: '90–100',
     recommendedTwoColumnGutterCols: 2,
   },
@@ -502,6 +502,7 @@ const AUTHORING_HINTS = {
         filters: '[{column,condition,value}]',
       },
       reactiveReadRule: 'When page/count options reference Table or external-filter exposed state, prefer runOnDependencyChange=true so reads occur after the new state is published. Keep onPageLoad for initial hydration and onRefresh for explicit refresh.',
+      initialPageGuard: 'pageIndex can be undefined when a page-load query first evaluates. For offset pagination use ((components.<table>.pageIndex || 1) - 1) * pageSize, or an equivalent nullish guard; the unguarded subtraction produces NaN and an empty table.',
       eventRule: 'With reactive reads, onPageChanged/onSearch/onSort/onFilterChanged and external-filter events should not also run those queries. Use them only for non-query effects such as resetting pageIndex to 1; duplicate wiring causes redundant or stale reads.',
     },
     runtimeCompatibility: {

@@ -66,7 +66,7 @@ describe('catalog', () => {
     expect(String(stat!.renderingHints!.secondaryValueUsage)).toMatch(/narrow delta slot.*number or percentage/i);
     const modal = getComponentSchema('ModalV2');
     expect(modal!.renderingHints!.recommendedFieldAlignment).toBe('top');
-    expect(String(modal!.renderingHints!.recommendedFieldRowStepPx)).toMatch(/70/);
+    expect(String(modal!.renderingHints!.recommendedFieldRowStepPx)).toMatch(/authored field height \+ 30px.*70px only.*40px-authored/i);
     const tableCapacity = getComponentSchema('Table')!.renderingHints!.visibleRowCapacity as any;
     expect(tableCapacity).toMatchObject({ regularRowHeightPx: 46, condensedRowHeightPx: 40 });
     expect(tableCapacity.formula).toMatch(/rowsPerPage.*row height/i);
@@ -133,7 +133,7 @@ describe('catalog', () => {
       topAlignedRenderedFootprintPx: 60,
       recommendedTextAreaHeightPx: '90–100',
     });
-    expect(modalHints.recommendedFieldRowStepPx).toMatch(/70.*40px authored.*20px.*10px gap/i);
+    expect(modalHints.recommendedFieldRowStepPx).toMatch(/authored field height \+ 30px.*20px.*10px gap.*70px only.*40px-authored/i);
 
     const inputHints = getComponentSchema('TextInput')!.renderingHints as any;
     expect(inputHints.compactFormHeight).toMatch(/defaultSize\.height.*40px.*60px.*70px/i);
@@ -170,6 +170,8 @@ describe('catalog', () => {
     });
     expect((table.authoringHints!.serverSideDataFlow as any).reactiveReadRule)
       .toMatch(/runOnDependencyChange=true.*after.*state is published/i);
+    expect((table.authoringHints!.serverSideDataFlow as any).initialPageGuard)
+      .toMatch(/pageIndex can be undefined.*pageIndex \|\| 1.*NaN.*empty table/i);
 
     expect((getComponentSchema('ButtonGroupV2')!.authoringHints!.selectionTiming as any).rule)
       .toMatch(/onClick.*before.*new selected value.*page query and count query.*disagree/i);
