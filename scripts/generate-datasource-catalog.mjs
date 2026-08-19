@@ -347,7 +347,7 @@ const tooljetWhereFilters = {
 };
 const tooljetOrderFilters = {
   type: 'record',
-  description: 'Map of stable ids to sort clauses.',
+  description: 'Map of stable ids to sort clauses. When a clause includes id, the outer map key must exactly match that inner id or ToolJet can silently ignore the sort.',
   shape: {
     '<sort-id>': { column: 'string', order: 'asc|desc', 'id?': 'string', 'jsonpath?': 'string' },
   },

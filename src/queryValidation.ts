@@ -198,6 +198,22 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && operation === 'list_rows') {
+    const orderFilters = valueAtPath(options, 'list_rows.order_filters');
+    if (isObject(orderFilters)) {
+      for (const [mapKey, rawClause] of Object.entries(orderFilters)) {
+        if (!isObject(rawClause) || typeof rawClause.id !== 'string' || rawClause.id === mapKey) continue;
+        warnings.push({
+          code: 'mismatched_record_id',
+          path: `list_rows.order_filters.${mapKey}.id`,
+          message:
+            `ToolJet DB order_filters key "${mapKey}" does not match its inner id "${rawClause.id}"; ` +
+            'ToolJet can silently ignore the sort. Use the same stable value for the outer key and inner id.',
+        });
+      }
+    }
+  }
+
   return { kind, operation, schemaFound: true, errors, warnings };
 }
 

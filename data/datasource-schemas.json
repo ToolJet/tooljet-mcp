@@ -51915,7 +51915,7 @@
               "list_rows.order_filters": {
                 "path": "list_rows.order_filters",
                 "type": "record",
-                "description": "Map of stable ids to sort clauses.",
+                "description": "Map of stable ids to sort clauses. When a clause includes id, the outer map key must exactly match that inner id or ToolJet can silently ignore the sort.",
                 "shape": {
                   "<sort-id>": {
                     "column": "string",
@@ -51976,7 +51976,7 @@
           "description": "Rows from the selected table. Aggregate fields are aliased as <table_name>_<column>_<aggFx>; grouped columns are returned alongside them."
         },
         "notes": [
-          "The map keys inside where_filters, order_filters, aggregates, and group_by are caller-chosen stable ids.",
+          "The map keys inside where_filters, aggregates, and group_by are caller-chosen stable ids. For order_filters, use the same stable value for the outer map key and the clause's inner id; a mismatch can silently disable sorting.",
           "For generic server-side tables, bind limit/offset/filter values to the Table but keep these datasource-specific record shapes in the query contract."
         ]
       },
@@ -52297,7 +52297,7 @@
           },
           "order_filters": {
             "type": "record",
-            "description": "Map of stable ids to sort clauses.",
+            "description": "Map of stable ids to sort clauses. When a clause includes id, the outer map key must exactly match that inner id or ToolJet can silently ignore the sort.",
             "shape": {
               "<sort-id>": {
                 "column": "string",

@@ -53,4 +53,40 @@ describe('validateQueryOptions', () => {
       expect.arrayContaining([expect.objectContaining({ code: 'invalid_operation', path: 'operation' })])
     );
   });
+
+  it('warns when a ToolJet DB order-filter map key differs from its inner id', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'list_rows',
+      table_id: 'table-1',
+      list_rows: {
+        order_filters: {
+          'sort-created': { id: 'different-id', column: 'created_at', order: 'desc' },
+        },
+      },
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'mismatched_record_id',
+          path: 'list_rows.order_filters.sort-created.id',
+        }),
+      ])
+    );
+    expect(result.warnings.map((issue) => issue.message).join(' ')).toMatch(/silently ignore.*same stable value/i);
+  });
+
+  it('accepts a ToolJet DB order filter whose map key matches its inner id', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'list_rows',
+      table_id: 'table-1',
+      list_rows: {
+        order_filters: {
+          'sort-created': { id: 'sort-created', column: 'created_at', order: 'desc' },
+        },
+      },
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
 });

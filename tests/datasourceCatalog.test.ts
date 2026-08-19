@@ -36,6 +36,7 @@ describe('datasource query catalog', () => {
       operator: expect.stringContaining('ilike'),
     });
     expect(fields['list_rows.order_filters'].shape['<sort-id>'].order).toBe('asc|desc');
+    expect(fields['list_rows.order_filters'].description).toMatch(/outer map key.*match.*inner id.*silently ignore/i);
     expect(fields['list_rows.aggregates'].shape['<aggregate-id>'].aggFx).toBe('sum|count');
     expect(fields['list_rows.group_by'].example).toEqual({ 'group-status': ['status'] });
     expect(listRows.response.description).toContain('<table_name>_<column>_<aggFx>');
