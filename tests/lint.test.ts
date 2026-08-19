@@ -284,6 +284,30 @@ describe('lintComponentSpec', () => {
     }).warnings).toEqual([]);
   });
 
+  it('blocks DropdownV2 dynamic bindings on static options before ToolJet shreds them', () => {
+    const result = lintComponentSpec({
+      name: 'status',
+      type: 'DropdownV2',
+      properties: {
+        options: { value: '{{queries.statuses.data.map(row => ({ label: row.name, value: row.id }))}}' },
+        advanced: { value: '{{false}}' },
+      },
+    });
+    expect(result.errors.join(' ')).toMatch(/options is static-array-only.*dynamic \{\{ \}\} binding.*schema.*advanced/is);
+  });
+
+  it('detects persisted DropdownV2 character-object corruption', () => {
+    const result = lintComponentSpec({
+      name: 'status',
+      type: 'DropdownV2',
+      properties: {
+        options: { value: [{ 0: '{' }, { 0: '{' }, { 0: '[' }] },
+        advanced: { value: '{{false}}' },
+      },
+    });
+    expect(result.errors.join(' ')).toMatch(/malformed entries at indexes 0, 1, 2.*shredded dynamic binding/is);
+  });
+
   it('validates explicit Table columns shape and headerCasing enum', () => {
     const r = lintComponentSpec({
       name: 't',
@@ -880,6 +904,28 @@ describe('validateAppStructure', () => {
     queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: {} }],
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
+
+  it('reports persisted DropdownV2 character-object corruption as an error', () => {
+    const corrupted: AppSummary = {
+      ...base,
+      pages: [{
+        id: 'p1',
+        name: 'Home',
+        components: [{
+          id: 'status-id',
+          name: 'status',
+          type: 'DropdownV2',
+          properties: {
+            options: { value: [{ 0: '{' }, { 0: '{' }, { 0: '[' }] },
+            advanced: { value: '{{false}}' },
+          },
+        }],
+      }],
+      queries: [],
+      events: [],
+    };
+    expect(validateAppStructure(corrupted).errors.join(' ')).toMatch(/malformed entries.*shredded dynamic binding/is);
+  });
 
   it('passes a well-formed app', () => {
     const r = validateAppStructure(base);

@@ -715,6 +715,26 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const customSchema = differsFromCatalogDefault('DropdownV2', 'schema', schema);
     const customOptions = differsFromCatalogDefault('DropdownV2', 'options', options);
 
+    if (customOptions && !Array.isArray(options)) {
+      errors.push(
+        `DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options === 'string' && isDynamicBinding(options) ? 'a dynamic {{ }} binding' : typeof options}. ` +
+          'ToolJet can silently split a binding string into character objects. Use properties.schema with ' +
+          'properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.'
+      );
+    } else if (Array.isArray(options)) {
+      const malformedIndexes = options.flatMap((option, index) => {
+        const entry = recordValue(option);
+        return entry && 'label' in entry && 'value' in entry ? [] : [index];
+      });
+      if (malformedIndexes.length) {
+        errors.push(
+          `DropdownV2 "${label}": properties.options contains malformed entries at indexes ${malformedIndexes.join(', ')}; ` +
+            'each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; ' +
+            'replace it with properties.schema + advanced="{{true}}".'
+        );
+      }
+    }
+
     if (customSchema && customOptions) {
       warnings.push(
         `DropdownV2 "${label}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. ` +
