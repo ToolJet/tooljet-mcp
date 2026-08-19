@@ -13,7 +13,8 @@
     "check:datasource-catalog": "node scripts/datasource-coverage.mjs --check",
     "generate:catalogs": "node scripts/generate-catalog.mjs && node scripts/generate-datasource-catalog.mjs",
     "generate:skill": "node scripts/generate-skill.mjs",
-    "sync:skill": "node scripts/sync-skill.mjs --all"
+    "sync:skill": "node scripts/sync-skill.mjs --all",
+    "build:plugin": "node scripts/build-plugin.mjs"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@babel/parser": "^7.29.8",
     "@types/node": "^26.2.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"

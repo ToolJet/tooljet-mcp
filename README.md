@@ -46,6 +46,37 @@ Then install the skill so Codex knows how to drive the tools: copy `skill/SKILL.
 
 Restart Codex; it should expose the ToolJet tools, including `create_app`, `list_datasources`, `get_datasource_query_schema`, `get_component_catalog`, `lint_app_spec`, the batch authoring tools, and `validate_app`.
 
+## Install as a Claude Code plugin
+
+This repo is also a **self-contained Claude Code plugin** — installing it registers the MCP server *and* the `tooljet-app-builder` skill together. No `npm install`/build on the user's side: a single-file bundle (`bundle/index.js`) plus the runtime catalogs in `data/` are committed.
+
+**Install (no marketplace needed):**
+```
+/plugin install github:ToolJet/mcp-v2
+```
+Or via the marketplace, which lets you get updates:
+```
+/plugin marketplace add ToolJet/mcp-v2
+/plugin install tooljet-app-builder@tooljet
+```
+For local development you can also install from a path: `/plugin install path:/Users/you/Claude/Projects/tooljet-mcp`.
+
+**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (the `TOOLJET_URL`/`TOOLJET_APP_URL` default to localhost). Before launching Claude Code:
+```bash
+export TOOLJET_EMAIL="you@example.com"
+export TOOLJET_PASSWORD="your-password"
+# optional, if not localhost:
+export TOOLJET_URL="https://your-instance.tooljet.com"
+export TOOLJET_APP_URL="https://your-instance.tooljet.com"
+```
+If those aren't set, the server starts but every ToolJet call fails auth — set them and restart.
+
+**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads `data/component-schemas.json` and `data/datasource-schemas.json` at runtime; the skill lives at `skills/tooljet-app-builder/`. Rebuild all of that after a source or catalog change with:
+```bash
+npm run generate:catalogs && npm run generate:skill && npm run build:plugin
+```
+The plugin manifest is `.claude-plugin/plugin.json` (declares the MCP server via `${CLAUDE_PLUGIN_ROOT}/bundle/index.js`); the marketplace catalog is `.claude-plugin/marketplace.json`.
+
 ## Demo
 
 In Codex:

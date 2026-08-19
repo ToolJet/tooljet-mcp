@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "tooljet-app-builder",
+  "version": "0.2.0",
+  "description": "Build ToolJet apps end-to-end through governed MCP tools plus an app-builder skill (component binding rules, canvas mechanics, per-datasource query schemas).",
+  "author": { "name": "ToolJet" },
+  "homepage": "https://github.com/ToolJet/mcp-v2",
+  "repository": "https://github.com/ToolJet/mcp-v2",
+  "license": "ISC",
+  "keywords": ["tooljet", "low-code", "app-builder", "internal-tools", "mcp"],
+  "mcpServers": {
+    "tooljet": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bundle/index.js"],
+      "env": {
+        "TOOLJET_URL": "${TOOLJET_URL:-http://localhost:3000}",
+        "TOOLJET_APP_URL": "${TOOLJET_APP_URL:-http://localhost:8082}",
+        "TOOLJET_EMAIL": "${TOOLJET_EMAIL}",
+        "TOOLJET_PASSWORD": "${TOOLJET_PASSWORD}"
+      }
+    }
+  }
+}

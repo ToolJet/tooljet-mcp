@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "tooljet",
+  "owner": { "name": "ToolJet", "url": "https://github.com/ToolJet" },
+  "plugins": [
+    {
+      "name": "tooljet-app-builder",
+      "source": "./",
+      "description": "Build ToolJet apps end-to-end via governed MCP tools + an app-builder skill.",
+      "version": "0.2.0",
+      "author": { "name": "ToolJet" },
+      "category": "productivity",
+      "keywords": ["tooljet", "low-code", "app-builder", "mcp"]
+    }
+  ]
+}
