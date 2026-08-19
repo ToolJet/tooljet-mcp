@@ -173,6 +173,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(guidance).toMatch(/supported Table lookup joins.*remain valid/is);
   });
 
+  it('formats known date and timestamp fields instead of exposing raw ISO strings', () => {
+    expect(guidance).toMatch(/date\/timestamp.*columnType:"string".*columnType:"datepicker".*dateFormat.*parseDateFormat/is);
+    expect(guidance).toMatch(/date\/timestamp values.*fieldType:"datepicker".*Moment-style.*matching the source/is);
+  });
+
   it('documents the empty-array first-row fallback trap', () => {
     expect(guidance).toContain('`(queries.<q>.data || [{}])[0].field`');
     expect(guidance).toMatch(/`\[\]` is truthy.*`\(queries\.<q>\.data \|\| \[\]\)\[0\]\?\.field`/is);

@@ -22,6 +22,8 @@ Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector
 
 ToolJet Table data bindings can silently become `No data` when a `.map()` callback uses a statement body such as `map(row => { const value = ...; return {...}; })`. Use the expression-body form `map(row => ({...}))`, or pre-shape multi-statement logic in the datasource/RunJS query. This is narrower than the Html nested-map limitation: supported Table lookup joins inside an expression-body map remain valid.
 
+When a schema or bounded sample identifies a date/timestamp, do not leave its explicit column as `columnType:"string"` unless the user asked for the raw timestamp. Use `columnType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source; enable time only when it carries useful information.
+
 ## Table row-action Button columns
 
 Modern per-row actions are **Button columns**, not the deprecated `properties.actions.value` configuration. The top-level `actions` returned by `get_component_catalog("Table")` are `control-component` runtime methods such as `setPage`/`selectRow`; they are unrelated to row buttons. For the machine-readable version, request `get_component_catalog({type:"Table",sections:["authoringHints"]})`.

@@ -300,6 +300,15 @@ function recordValue(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
 
+function looksDateLikeField(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const normalized = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_');
+  return /(?:^|_)(?:date|datetime|timestamp|created|updated|submitted|requested|started|ended|expires|expired|due)(?:_at|_date|_time)?$/.test(normalized);
+}
+
 function isTruthyBinding(v: unknown): boolean {
   return v === true || v === '{{true}}' || v === 'true';
 }
@@ -928,6 +937,19 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
             'already-persisted rows; replace properties.fields with the complete intended array in one update.'
         );
       }
+      fields.forEach((field, index) => {
+        const entry = recordValue(field);
+        if (
+          entry?.fieldType === 'string' &&
+          (looksDateLikeField(entry.key) || looksDateLikeField(entry.name))
+        ) {
+          warnings.push(
+            `KeyValuePair "${label}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses ` +
+              'fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit ' +
+              'dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.'
+          );
+        }
+      });
     }
   }
 
@@ -1046,6 +1068,16 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         if (c && c.headerCasing !== undefined && !VALID_HEADER_CASING.has(c.headerCasing as string)) {
           warnings.push(
             `Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid — use "none" (as typed) or "uppercase".`
+          );
+        }
+        if (
+          c?.columnType === 'string' &&
+          (looksDateLikeField(c.key) || looksDateLikeField(c.name))
+        ) {
+          warnings.push(
+            `Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses ` +
+              'columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit ' +
+              'dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.'
           );
         }
         if (c?.columnType === 'button') {
