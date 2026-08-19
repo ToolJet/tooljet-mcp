@@ -35427,6 +35427,63 @@ function staticPositiveInteger(value) {
   const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
   return match ? Number(match[1]) : void 0;
 }
+function containsBinding(value) {
+  if (typeof value === "string")
+    return value.includes("{{");
+  if (Array.isArray(value))
+    return value.some(containsBinding);
+  return !!record2(value) && Object.values(record2(value)).some(containsBinding);
+}
+function assessRestGet(options2, datasourceId) {
+  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
+  const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
+  if (method !== "get") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
+      ...identity
+    };
+  }
+  const url2 = typeof options2.url === "string" ? options2.url.trim() : "";
+  if (!url2 || containsBinding(url2)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
+      ...identity
+    };
+  }
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
+  if (requestFields.some(containsBinding)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: url2 },
+    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -35692,6 +35749,8 @@ function assessQueryRead(query) {
     };
   }
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (kind === "restapi")
+    return assessRestGet(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -35792,6 +35851,15 @@ function operationFromOptions(options2, contracts, defaults) {
     return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, "default"))
     return "default";
+  const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
+    const selectors = Object.entries(variant.when);
+    return selectors.length > 0 && selectors.every(([selector, accepted]) => {
+      const actual = options2[selector] ?? defaults[selector];
+      return typeof actual === "string" && !isDynamicBinding2(actual) && accepted.includes(actual);
+    });
+  }));
+  if (selectorMatches.length === 1)
+    return selectorMatches[0][0];
   return void 0;
 }
 function variantMatches(variant, options2) {
@@ -35820,6 +35888,10 @@ function nestedChildren(fields, root) {
 function suffixSuggestion(key, fields) {
   const matches2 = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
   return matches2.length === 1 ? matches2[0] : void 0;
+}
+function tupleArity(field) {
+  const tuple2 = field.shape?.["<index>"];
+  return Array.isArray(tuple2) && tuple2.length > 0 ? tuple2.length : void 0;
 }
 function bindingStrings(value, path = "") {
   if (typeof value === "string")
@@ -35975,9 +36047,28 @@ function validateQueryOptions(kind, options2) {
     }
   }
   for (const [path, field] of Object.entries(fields)) {
+    const value = valueAtPath(options2, path);
+    const arity = tupleArity(field);
+    if (arity !== void 0 && value !== void 0 && !isDynamicBinding2(value)) {
+      if (!Array.isArray(value)) {
+        errors.push({
+          code: "invalid_option_shape",
+          path,
+          message: `Option "${path}" for ${kind}/${operation} must be an array of ${arity}-item tuples.`
+        });
+      } else {
+        const invalidIndex = value.findIndex((item) => !Array.isArray(item) || item.length !== arity);
+        if (invalidIndex >= 0) {
+          errors.push({
+            code: "invalid_option_shape",
+            path: `${path}[${invalidIndex}]`,
+            message: `Option "${path}" for ${kind}/${operation} must contain ${arity}-item tuples such as [["key", "value"]].`
+          });
+        }
+      }
+    }
     if (!field.allowedValues?.length)
       continue;
-    const value = valueAtPath(options2, path);
     if (typeof value === "string" && !value.includes("{{") && !field.allowedValues.includes(value)) {
       errors.push({
         code: "invalid_option_value",
@@ -38304,6 +38395,35 @@ function deleteQueryTool(client) {
 }
 
 // dist/tools/runQuery.js
+var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
+function truncateRemoteResult(result) {
+  if (!Object.prototype.hasOwnProperty.call(result, "data"))
+    return { result };
+  let serialized;
+  try {
+    serialized = JSON.stringify(result.data);
+  } catch {
+    return {
+      result: { ...result, data: { mcp_truncated: true, preview_json: "<unserializable response>" } },
+      warning: "The REST response data could not be serialized for MCP output; inspect it in ToolJet."
+    };
+  }
+  if (typeof serialized !== "string")
+    return { result };
+  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS)
+    return { result };
+  return {
+    result: {
+      ...result,
+      data: {
+        mcp_truncated: true,
+        original_json_characters: serialized.length,
+        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS)
+      }
+    },
+    warning: `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. The remote request already completed; add API-specific pagination or a smaller limit before another run.`
+  };
+}
 function containsComponentBinding(value) {
   if (typeof value === "string")
     return /\bcomponents\s*\./.test(value);
@@ -38325,14 +38445,15 @@ function datasourceRecovery(query) {
 function runQueryTool(client) {
   return {
     name: "run_query",
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
       environment_id: external_exports.string().optional(),
       count_query_id: external_exports.string().optional(),
       user_confirmed_large_read: external_exports.boolean().optional(),
-      user_confirmed_billable_read: external_exports.boolean().optional()
+      user_confirmed_billable_read: external_exports.boolean().optional(),
+      user_confirmed_remote_read: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
@@ -38344,6 +38465,12 @@ function runQueryTool(client) {
         }
         if (containsComponentBinding(query.options)) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
+        }
+        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
+          return fail(new Error(`run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+        }
+        if (assessment.requiresRemoteReadConfirmation) {
+          warnings.push("User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -38397,8 +38524,11 @@ function runQueryTool(client) {
           });
         }
         const recovery = result.status === "failed" ? datasourceRecovery(query) : void 0;
+        const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
+        if (output.warning)
+          warnings.push(output.warning);
         return ok({
-          ...result,
+          ...output.result,
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {}
