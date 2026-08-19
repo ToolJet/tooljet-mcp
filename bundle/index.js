@@ -31288,15 +31288,85 @@ function propVal(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
-function explicitlyProjectsTableData(value) {
+function projectedTableDataKeys(value) {
   if (typeof value !== "string" || !/\.map\s*\(/.test(value))
-    return false;
+    return void 0;
   const arrowObject = value.match(/=>\s*\(\s*\{/);
   const returnedObject = value.match(/=>\s*\{[\s\S]*?\breturn\s*\{/);
-  const projectionStart = arrowObject?.index ?? returnedObject?.index;
-  if (projectionStart === void 0)
-    return false;
-  return !value.slice(projectionStart).includes("...");
+  const projection = arrowObject ?? returnedObject;
+  if (projection?.index === void 0)
+    return void 0;
+  const objectOffset = projection[0].lastIndexOf("{");
+  if (objectOffset < 0)
+    return void 0;
+  const objectStart = projection.index + objectOffset;
+  const chunks = [];
+  let chunkStart = objectStart + 1;
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let parenDepth = 0;
+  let quote;
+  let escaped = false;
+  for (let index = objectStart + 1; index < value.length; index++) {
+    const char = value[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        quote = void 0;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{")
+      braceDepth++;
+    else if (char === "}") {
+      if (braceDepth === 0) {
+        chunks.push(value.slice(chunkStart, index));
+        break;
+      }
+      braceDepth--;
+    } else if (char === "[")
+      bracketDepth++;
+    else if (char === "]")
+      bracketDepth--;
+    else if (char === "(")
+      parenDepth++;
+    else if (char === ")")
+      parenDepth--;
+    else if (char === "," && braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+      chunks.push(value.slice(chunkStart, index));
+      chunkStart = index + 1;
+    }
+  }
+  if (!chunks.length)
+    return void 0;
+  const keys = [];
+  for (const rawChunk of chunks) {
+    const chunk = rawChunk.trim();
+    if (!chunk)
+      continue;
+    if (chunk.startsWith("...") || chunk.startsWith("["))
+      return void 0;
+    const identifier = chunk.match(/^([A-Za-z_$][\w$]*)\s*(?::|$)/);
+    if (identifier) {
+      keys.push(identifier[1]);
+      continue;
+    }
+    const quoted = chunk.match(/^(?:"([^"]+)"|'([^']+)')\s*:/);
+    const quotedKey = quoted?.[1] ?? quoted?.[2];
+    if (quotedKey !== void 0) {
+      keys.push(quotedKey);
+      continue;
+    }
+    return void 0;
+  }
+  return keys;
 }
 function explicitlyProjectsObjectData(value) {
   if (typeof value !== "string")
@@ -31695,7 +31765,8 @@ function lintComponentSpec(spec) {
     const autogen = propVal(props, "autogenerateColumns");
     const columns = propVal(props, "columns");
     const hasColumns = Array.isArray(columns);
-    const projectsDataKeys = explicitlyProjectsTableData(data);
+    const projectedDataKeys = projectedTableDataKeys(data);
+    const projectsDataKeys = projectedDataKeys !== void 0;
     const desktopHeight = (spec.layouts?.desktop ?? spec.layout)?.height;
     const dynamicHeight = catalogValue("Table", props, "dynamicHeight");
     const contentWrap = catalogValue("Table", props, "contentWrap");
@@ -31732,6 +31803,12 @@ function lintComponentSpec(spec) {
       for (const [key, indexes] of columnKeys) {
         if (indexes.length > 1) {
           errors.push(`Table "${label}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
+        }
+      }
+      if (isTruthyBinding(autogen) && projectedDataKeys) {
+        const undeclaredKeys = projectedDataKeys.filter((key) => !columnKeys.has(key));
+        if (undeclaredKeys.length) {
+          warnings.push(`Table "${label}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
         }
       }
       if (isTruthyBinding(autogen) && !projectsDataKeys) {

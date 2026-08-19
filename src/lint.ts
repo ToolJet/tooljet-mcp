@@ -118,14 +118,81 @@ function propVal(props: Record<string, unknown> | undefined, key: string): unkno
   return p && typeof p === 'object' && 'value' in p ? p.value : p;
 }
 
-function explicitlyProjectsTableData(value: unknown): boolean {
-  if (typeof value !== 'string' || !/\.map\s*\(/.test(value)) return false;
+function projectedTableDataKeys(value: unknown): string[] | undefined {
+  if (typeof value !== 'string' || !/\.map\s*\(/.test(value)) return undefined;
   const arrowObject = value.match(/=>\s*\(\s*\{/);
   const returnedObject = value.match(/=>\s*\{[\s\S]*?\breturn\s*\{/);
-  const projectionStart = arrowObject?.index ?? returnedObject?.index;
-  if (projectionStart === undefined) return false;
-  // An object spread preserves undeclared datasource fields, so autogeneration can still expose them.
-  return !value.slice(projectionStart).includes('...');
+  const projection = arrowObject ?? returnedObject;
+  if (projection?.index === undefined) return undefined;
+  const objectOffset = projection[0].lastIndexOf('{');
+  if (objectOffset < 0) return undefined;
+  const objectStart = projection.index + objectOffset;
+
+  const chunks: string[] = [];
+  let chunkStart = objectStart + 1;
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let parenDepth = 0;
+  let quote: '"' | "'" | '`' | undefined;
+  let escaped = false;
+  for (let index = objectStart + 1; index < value.length; index++) {
+    const char = value[index]!;
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char === '{') braceDepth++;
+    else if (char === '}') {
+      if (braceDepth === 0) {
+        chunks.push(value.slice(chunkStart, index));
+        break;
+      }
+      braceDepth--;
+    } else if (char === '[') bracketDepth++;
+    else if (char === ']') bracketDepth--;
+    else if (char === '(') parenDepth++;
+    else if (char === ')') parenDepth--;
+    else if (char === ',' && braceDepth === 0 && bracketDepth === 0 && parenDepth === 0) {
+      chunks.push(value.slice(chunkStart, index));
+      chunkStart = index + 1;
+    }
+  }
+  if (!chunks.length) return undefined;
+
+  const keys: string[] = [];
+  for (const rawChunk of chunks) {
+    const chunk = rawChunk.trim();
+    if (!chunk) continue;
+    // A top-level spread preserves every source key, so the projection is not closed.
+    if (chunk.startsWith('...') || chunk.startsWith('[')) return undefined;
+    const identifier = chunk.match(/^([A-Za-z_$][\w$]*)\s*(?::|$)/);
+    if (identifier) {
+      keys.push(identifier[1]!);
+      continue;
+    }
+    const quoted = chunk.match(/^(?:"([^"]+)"|'([^']+)')\s*:/);
+    const quotedKey = quoted?.[1] ?? quoted?.[2];
+    if (quotedKey !== undefined) {
+      keys.push(quotedKey);
+      continue;
+    }
+    return undefined;
+  }
+  return keys;
+}
+
+function explicitlyProjectsTableData(value: unknown): boolean {
+  return projectedTableDataKeys(value) !== undefined;
 }
 
 function explicitlyProjectsObjectData(value: unknown): boolean {
@@ -646,7 +713,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const autogen = propVal(props, 'autogenerateColumns');
     const columns = propVal(props, 'columns');
     const hasColumns = Array.isArray(columns);
-    const projectsDataKeys = explicitlyProjectsTableData(data);
+    const projectedDataKeys = projectedTableDataKeys(data);
+    const projectsDataKeys = projectedDataKeys !== undefined;
     const desktopHeight = (spec.layouts?.desktop ?? spec.layout)?.height;
     const dynamicHeight = catalogValue('Table', props, 'dynamicHeight');
     const contentWrap = catalogValue('Table', props, 'contentWrap');
@@ -711,6 +779,17 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         if (indexes.length > 1) {
           errors.push(
             `Table "${label}": duplicate column key "${key}" at indexes ${indexes.join(', ')} — ToolJet silently keeps the last column. Use unique keys.`
+          );
+        }
+      }
+      if (isTruthyBinding(autogen) && projectedDataKeys) {
+        const undeclaredKeys = projectedDataKeys.filter((key) => !columnKeys.has(key));
+        if (undeclaredKeys.length) {
+          warnings.push(
+            `Table "${label}": projected data keys ${undeclaredKeys.join(', ')} have no matching explicit column while ` +
+              'autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with ' +
+              'columnVisibility:false when the data is still needed (for example an id used by row actions), or remove ' +
+              'the keys from the projection.'
           );
         }
       }

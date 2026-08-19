@@ -366,6 +366,41 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('warns when projected Table keys can still leak through autogeneration', () => {
+    const r = lintComponentSpec({
+      name: 'candidates',
+      type: 'Table',
+      properties: {
+        data: {
+          value: '{{queries.candidates.data.map(r => ({name:r.name,candidate_key:r.candidate_key,submitted_at:r.submitted_at}))}}',
+        },
+        dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        columns: { value: [{ name: 'Candidate', key: 'name' }] },
+      },
+    });
+    expect(r.warnings.join(' ')).toMatch(
+      /projected data keys candidate_key, submitted_at.*append them as visible columns.*columnVisibility:false/i
+    );
+  });
+
+  it('accepts projected technical keys when matching hidden Table columns are declared', () => {
+    const r = lintComponentSpec({
+      name: 'candidates',
+      type: 'Table',
+      properties: {
+        data: { value: '{{queries.candidates.data.map(r => ({name:r.name,id:r.id}))}}' },
+        dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        columns: { value: [
+          { name: 'Candidate', key: 'name' },
+          { name: 'ID', key: 'id', columnVisibility: false },
+        ] },
+      },
+    });
+    expect(r.warnings).toEqual([]);
+  });
+
   it('warns when KeyValuePair fields bind an unprojected object', () => {
     const fields = { value: [
       { name: 'Client', key: 'client' },
@@ -765,6 +800,20 @@ describe('validateAppStructure', () => {
     const r = validateAppStructure(base);
     expect(r.errors).toEqual([]);
     expect(r.warnings).toEqual([]);
+  });
+
+  it('reports projected Table-key leaks in persisted apps', () => {
+    const leaked: AppSummary = structuredClone(base);
+    leaked.pages[0]!.components[0]!.properties = {
+      data: { value: '{{queries.getRows.data.map(r => ({name:r.name,candidate_key:r.candidate_key,submitted_at:r.submitted_at}))}}' },
+      dataSourceSelector: { value: 'rawJson' },
+      autogenerateColumns: { value: true },
+      columns: { value: [{ name: 'Candidate', key: 'name' }] },
+    };
+
+    expect(validateAppStructure(leaked).warnings.join(' ')).toMatch(
+      /projected data keys candidate_key, submitted_at.*visible columns/i
+    );
   });
 
   it('warns when Home runs an app-load query a second time', () => {
