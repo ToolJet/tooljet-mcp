@@ -4,6 +4,20 @@ import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
+  it('blocks unknown component types and warns on unknown catalog keys with spelling suggestions', () => {
+    const unknownType = lintComponentSpec({ name: 'progress', type: 'CircularProgressbar', properties: {} });
+    expect(unknownType.errors.join(' ')).toMatch(/unknown component type "CircularProgressbar".*CircularProgressBar/i);
+
+    const misspelled = lintComponentSpec({
+      name: 'orders',
+      type: 'Table',
+      properties: { rowsPerPgae: { value: 25 } },
+      styles: { cellSze: { value: 'regular' } },
+    });
+    expect(misspelled.warnings.join(' ')).toMatch(/unknown property key "rowsPerPgae".*rowsPerPage/i);
+    expect(misspelled.warnings.join(' ')).toMatch(/unknown style key "cellSze".*cellSize/i);
+  });
+
   it('ERRORS when style keys are placed under properties', () => {
     const r = lintComponentSpec({ name: 'title', type: 'Text', properties: { textColor: { value: '#111' } } });
     expect(r.errors.join(' ')).toMatch(/style keys \["textColor"\] are under `properties`/);

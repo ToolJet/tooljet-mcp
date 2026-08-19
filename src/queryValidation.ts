@@ -32,6 +32,10 @@ function isTruthyStatic(value: unknown): boolean {
   return value === true || value === 'true' || value === '{{true}}';
 }
 
+function isDynamicBinding(value: unknown): value is string {
+  return typeof value === 'string' && value.includes('{{');
+}
+
 function valueAtPath(source: Record<string, unknown>, path: string): unknown {
   let cursor: unknown = source;
   for (const segment of path.split('.')) {
@@ -57,7 +61,8 @@ function operationFromOptions(
 function variantMatches(variant: DatasourceContractVariant, options: Record<string, unknown>): boolean {
   return Object.entries(variant.when).every(([selector, accepted]) => {
     const actual = options[selector];
-    return actual === undefined || (typeof actual === 'string' && accepted.includes(actual));
+    return actual === undefined || isDynamicBinding(actual) ||
+      (typeof actual === 'string' && accepted.includes(actual));
   });
 }
 
@@ -208,6 +213,20 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
       }
     }
     return { kind, operation, schemaFound: true, errors, warnings };
+  }
+
+  const dynamicSelectors = [...new Set(
+    contract.variants.flatMap((variant) => Object.keys(variant.when))
+      .filter((selector) => isDynamicBinding(options[selector]))
+  )];
+  for (const selector of dynamicSelectors) {
+    warnings.push({
+      code: 'runtime_selector_binding',
+      path: selector,
+      message:
+        `Selector "${selector}" is a dynamic binding, so MCP validated the fields shared by every possible ` +
+        `${kind}/${operation} variant. Browser-verify any fields required only by the runtime-selected value.`,
+    });
   }
 
   const fields = fieldMap(matching);

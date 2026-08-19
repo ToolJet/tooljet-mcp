@@ -2,7 +2,7 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
-import { getComponentSchema } from './catalog.js';
+import { getCatalog, getComponentSchema } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
@@ -122,6 +122,31 @@ export interface LintComponent {
 function propVal(props: Record<string, unknown> | undefined, key: string): unknown {
   const p = props?.[key] as { value?: unknown } | undefined;
   return p && typeof p === 'object' && 'value' in p ? p.value : p;
+}
+
+function editDistance(left: string, right: string): number {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1]! + 1,
+        previous[rightIndex]! + 1,
+        previous[rightIndex - 1]! + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1)
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[right.length]!;
+}
+
+function nearestCatalogKey(value: string, candidates: string[]): string | undefined {
+  const normalized = value.toLowerCase();
+  const ranked = candidates
+    .map((candidate) => ({ candidate, distance: editDistance(normalized, candidate.toLowerCase()) }))
+    .sort((left, right) => left.distance - right.distance || left.candidate.localeCompare(right.candidate));
+  const best = ranked[0];
+  return best && best.distance <= Math.max(2, Math.floor(normalized.length * 0.25)) ? best.candidate : undefined;
 }
 
 function projectedTableDataKeys(value: unknown): string[] | undefined {
@@ -610,11 +635,30 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   }
 
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
+  if (!spec.type) {
+    errors.push(`Component "${label}": type is required.`);
+  } else if (!componentSchema) {
+    const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
+    errors.push(
+      `Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` +
+        (suggestion ? ` Did you mean "${suggestion}"?` : ' Call get_component_catalog with no type to list supported types.')
+    );
+  }
   for (const [sectionName, authored, entries] of [
     ['property', spec.properties, componentSchema?.properties],
     ['style', spec.styles, componentSchema?.styles],
   ] as const) {
     if (!authored || !entries) continue;
+    const knownKeys = entries.map((entry) => entry.key);
+    for (const key of Object.keys(authored)) {
+      if (knownKeys.includes(key)) continue;
+      if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
+      const suggestion = nearestCatalogKey(key, knownKeys);
+      warnings.push(
+        `Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it.` +
+          (suggestion ? ` Did you mean "${suggestion}"?` : ' Check get_component_catalog before authoring this key.')
+      );
+    }
     for (const entry of entries) {
       if (!entry.allowedValues?.length) continue;
       const value = propVal(authored, entry.key);

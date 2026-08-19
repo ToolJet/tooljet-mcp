@@ -14,6 +14,18 @@ describe('validateQueryOptions', () => {
     expect(result.warnings).toEqual([]);
   });
 
+  it('accepts a dynamic datasource selector and validates fields common to every runtime variant', () => {
+    const result = validateQueryOptions('openai', {
+      operation: 'chat',
+      model: '{{components.model.value}}',
+      prompt: 'Summarize this ticket',
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'runtime_selector_binding', path: 'model' }),
+    ]));
+  });
+
   it('blocks missing required wrapper options', () => {
     const result = validateQueryOptions('openai', { operation: 'chat', model: 'gpt-4o-mini' });
     expect(result.errors.map((issue) => issue.code)).toContain('missing_required_option');

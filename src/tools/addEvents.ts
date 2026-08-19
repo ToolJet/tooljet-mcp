@@ -59,7 +59,7 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
       "  • show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n" +
       "  • show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n" +
       "  • set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n" +
-      "  • control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: 'setValue'|'clear'|'setVisibility'|'setDisable'|'setLoading', ... }\n" +
+      "  • control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n" +
       "  • reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n" +
       "  • other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\n" +
       "For reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. " +

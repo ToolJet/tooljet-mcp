@@ -476,6 +476,87 @@ describe('get_component_catalog tool', () => {
 });
 
 describe('add_events tool', () => {
+  it('blocks modal actions aimed at non-modal components', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [
+        { id: 'btn1', name: 'open', type: 'Button' },
+        { id: 'txt1', name: 'notAModal', type: 'Text' },
+      ] }],
+      queries: [], events: [],
+    });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+        action: { actionId: 'show-modal', modal: 'txt1' },
+      }],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/show-modal target must be a Modal or ModalV2, not Text/i);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
+
+  it('validates control-component handles and required parameter arrays from the target catalog', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [
+        { id: 'btn1', name: 'setTitle', type: 'Button' },
+        { id: 'txt1', name: 'title', type: 'Text' },
+      ] }],
+      queries: [], events: [],
+    });
+
+    const invalidHandle = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+        action: {
+          actionId: 'control-component', componentId: 'txt1',
+          componentSpecificActionHandle: 'definitely-not-real', componentSpecificActionParams: [],
+        },
+      }],
+    });
+    expect(invalidHandle.isError).toBe(true);
+    expect(invalidHandle.content[0]!.text).toMatch(/not valid for Text.*Valid actions/i);
+
+    const missingParams = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+        action: { actionId: 'control-component', componentId: 'txt1', componentSpecificActionHandle: 'setText' },
+      }],
+    });
+    expect(missingParams.isError).toBe(true);
+    expect(missingParams.content[0]!.text).toMatch(/setText.*requires componentSpecificActionParams.*text/i);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
+
+  it('blocks alert actions that would silently display nothing', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{ id: 'btn1', name: 'save', type: 'Button' }] }],
+      queries: [], events: [],
+    });
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'btn1', source_type: 'component', trigger: 'onClick',
+        action: { actionId: 'show-alert', message: 'Saved' },
+      }],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/alertType must be success, info, warning, or error/i);
+    expect(client.createEvents).not.toHaveBeenCalled();
+  });
+
   it('blocks a dead Kanban onCardSelected handler when the card modal is disabled', async () => {
     const client = makeClient();
     client.getAppSummary.mockResolvedValue({

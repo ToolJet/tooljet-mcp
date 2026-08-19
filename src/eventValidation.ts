@@ -35,6 +35,14 @@ function isFalseBinding(value: unknown): boolean {
   return value === false || value === 'false' || value === '{{false}}';
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function validateTableColumnRef(
   source: AppSummary['pages'][number]['components'][number],
   ref: string | undefined
@@ -133,15 +141,87 @@ export function validateEvents(summary: AppSummary, events: EventSpec[]): EventV
     }
     if (['show-modal', 'close-modal'].includes(actionId)) {
       const modal = event.action.modal;
-      if (typeof modal !== 'string' || !components.has(modal)) {
+      const target = typeof modal === 'string' ? components.get(modal) : undefined;
+      if (!target) {
         errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
+      } else if (!['Modal', 'ModalV2'].includes(target.type ?? '')) {
+        errors.push(
+          `${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? 'unknown'} ` +
+            `"${target.name ?? target.id}".`
+        );
       }
     }
     if (actionId === 'control-component') {
       const componentId = event.action.componentId;
-      if (typeof componentId !== 'string' || !components.has(componentId)) {
+      const target = typeof componentId === 'string' ? components.get(componentId) : undefined;
+      if (!target) {
         errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
+      } else {
+        const handle = event.action.componentSpecificActionHandle;
+        const schema = target.type ? getComponentSchema(target.type) : null;
+        const componentAction = typeof handle === 'string'
+          ? schema?.actions?.find((candidate) => candidate.handle === handle)
+          : undefined;
+        if (!nonEmptyString(handle)) {
+          errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
+        } else if (!componentAction) {
+          errors.push(
+            `${label}: control-component action "${handle}" is not valid for ${target.type ?? 'unknown'} ` +
+              `"${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(', ') || 'none'}.`
+          );
+        } else {
+          const params = event.action.componentSpecificActionParams;
+          if (params !== undefined && !Array.isArray(params)) {
+            errors.push(`${label}: componentSpecificActionParams must be an array.`);
+          } else if (Array.isArray(params)) {
+            const supplied = new Set(params.flatMap((param) =>
+              isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []
+            ));
+            if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
+              errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
+            }
+            const requiredHandles = (componentAction.params ?? []).flatMap((param) =>
+              nonEmptyString(param.handle) ? [param.handle] : []
+            );
+            const missing = requiredHandles.filter((required) => !supplied.has(required));
+            if (missing.length) {
+              errors.push(
+                `${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(', ')}.`
+              );
+            }
+          } else if ((componentAction.params?.length ?? 0) > 0) {
+            errors.push(
+              `${label}: control-component action "${handle}" requires componentSpecificActionParams for ` +
+                `${componentAction.params!.map((param) => String(param.handle)).join(', ')}.`
+            );
+          }
+        }
       }
+    }
+    if (actionId === 'scroll-component-into-view') {
+      const componentId = event.action.componentId;
+      if (typeof componentId !== 'string' || !components.has(componentId)) {
+        errors.push(`${label}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
+      }
+    }
+    if (actionId === 'show-alert') {
+      if (!nonEmptyString(event.action.message)) errors.push(`${label}: show-alert requires a non-empty message.`);
+      if (!['success', 'info', 'warning', 'error'].includes(String(event.action.alertType))) {
+        errors.push(`${label}: show-alert alertType must be success, info, warning, or error.`);
+      }
+    }
+    if (['set-custom-variable', 'set-page-variable', 'set-localstorage-value'].includes(actionId)) {
+      if (!nonEmptyString(event.action.key)) errors.push(`${label}: ${actionId} requires a non-empty key.`);
+      if (!Object.prototype.hasOwnProperty.call(event.action, 'value')) errors.push(`${label}: ${actionId} requires value.`);
+    }
+    if (actionId === 'unset-custom-variable' && !nonEmptyString(event.action.key)) {
+      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
+    }
+    if (actionId === 'open-webpage' && !nonEmptyString(event.action.url)) {
+      errors.push(`${label}: open-webpage requires a non-empty url.`);
+    }
+    if (actionId === 'copy-to-clipboard' && !Object.prototype.hasOwnProperty.call(event.action, 'contentToCopy')) {
+      errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
     }
     if (actionId === 'set-table-page') {
       const tableId = event.action.table;
