@@ -265,6 +265,13 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
     expect(skill).toMatch(/never dispatch the linter and the apply call as siblings in parallel/i);
   });
 
+  it('routes final visual QA through the bounded one-shot browser audit helper', () => {
+    expect(skill).toMatch(/scripts\/browser-audit\.js/);
+    expect(skill).toMatch(/complete IIFE once/i);
+    expect(skill).toMatch(/one confirmation audit \+ screenshot/i);
+    expect(skill).toMatch(/does not check console\/network failures.*mutation correctness/i);
+  });
+
   it('uses update_pages to restyle and reorder existing pages including Home', () => {
     expect(skill).toMatch(/update_pages\(\{ app_id, version_id, updates\?, order\? \}\)/);
     expect(skill).toMatch(/including the auto-created Home page/i);

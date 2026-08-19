@@ -10,7 +10,7 @@
 // The bundle is built from the tsc output (dist/), NOT src/, so the NodeNext `.js` import
 // specifiers resolve to real files (esbuild can't map `./foo.js` → `foo.ts` on its own).
 import { execSync } from 'node:child_process';
-import { mkdirSync, copyFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import { mkdirSync, cpSync, existsSync, rmSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,10 +36,7 @@ for (const f of ['component-schemas.json', 'datasource-schemas.json']) {
 const skillSrc = resolve(root, 'skill');
 const skillDst = resolve(root, 'skills/tooljet-app-builder');
 rmSync(skillDst, { recursive: true, force: true });
-mkdirSync(resolve(skillDst, 'references'), { recursive: true });
-copyFileSync(resolve(skillSrc, 'SKILL.md'), resolve(skillDst, 'SKILL.md'));
-for (const f of readdirSync(resolve(skillSrc, 'references'))) {
-  copyFileSync(resolve(skillSrc, 'references', f), resolve(skillDst, 'references', f));
-}
+mkdirSync(skillDst, { recursive: true });
+cpSync(skillSrc, skillDst, { recursive: true, force: true });
 
 console.log('✓ Plugin built: bundle/index.js + skills/tooljet-app-builder/ (data/ shipped from repo).');

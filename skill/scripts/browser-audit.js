@@ -1,0 +1,131 @@
+(() => {
+  const limit = 120;
+  const viewport = { width: window.innerWidth, height: window.innerHeight };
+  const scrollingElement = document.scrollingElement || document.documentElement;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const rect = (element) => {
+    const value = element.getBoundingClientRect();
+    return {
+      top: Math.round(value.top),
+      left: Math.round(value.left),
+      right: Math.round(value.right),
+      bottom: Math.round(value.bottom),
+      width: Math.round(value.width),
+      height: Math.round(value.height),
+    };
+  };
+  const visible = (element) => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0 &&
+      box.width > 0 && box.height > 0;
+  };
+  const label = (element) => ({
+    id: element.id || undefined,
+    tag: element.tagName.toLowerCase(),
+    text: (element.innerText || element.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 100),
+    rect: rect(element),
+  });
+  const componentElements = [...document.querySelectorAll('[id]')]
+    .filter((element) => uuid.test(element.id) && visible(element));
+  const components = componentElements.slice(0, limit).map((element, index) => ({
+    key: `${element.id}@${index}`,
+    ...label(element),
+  }));
+
+  const overlaps = [];
+  for (let leftIndex = 0; leftIndex < componentElements.length; leftIndex += 1) {
+    const left = componentElements[leftIndex];
+    const leftRect = left.getBoundingClientRect();
+    for (let rightIndex = leftIndex + 1; rightIndex < componentElements.length; rightIndex += 1) {
+      const right = componentElements[rightIndex];
+      if (left.contains(right) || right.contains(left)) continue;
+      const rightRect = right.getBoundingClientRect();
+      const xOverlap = Math.min(leftRect.right, rightRect.right) - Math.max(leftRect.left, rightRect.left);
+      const yOverlap = Math.min(leftRect.bottom, rightRect.bottom) - Math.max(leftRect.top, rightRect.top);
+      if (xOverlap > 1 && yOverlap > 1) {
+        overlaps.push({
+          first: label(left),
+          second: label(right),
+          overlap: { width: Math.round(xOverlap), height: Math.round(yOverlap) },
+        });
+        if (overlaps.length >= limit) break;
+      }
+    }
+    if (overlaps.length >= limit) break;
+  }
+
+  const scrollable = (element) => {
+    if (element === scrollingElement) return element.scrollHeight > viewport.height + 2;
+    if (!visible(element)) return false;
+    const style = getComputedStyle(element);
+    return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 2;
+  };
+  const innerScrollers = [...document.querySelectorAll('body *')].filter(scrollable).slice(0, limit);
+  const pageScrolls = scrollingElement.scrollHeight > viewport.height + 2;
+  const nestedScrollPairs = pageScrolls
+    ? innerScrollers.map((inner) => ({ outer: 'document', inner: label(inner) }))
+    : [];
+  for (let outerIndex = 0; outerIndex < innerScrollers.length; outerIndex += 1) {
+    for (let innerIndex = 0; innerIndex < innerScrollers.length; innerIndex += 1) {
+      if (outerIndex === innerIndex) continue;
+      const outer = innerScrollers[outerIndex];
+      const inner = innerScrollers[innerIndex];
+      if (outer.contains(inner)) nestedScrollPairs.push({ outer: label(outer), inner: label(inner) });
+      if (nestedScrollPairs.length >= limit) break;
+    }
+    if (nestedScrollPairs.length >= limit) break;
+  }
+
+  const textSelectors = 'h1,h2,h3,h4,h5,h6,p,label,strong,button,[role="heading"]';
+  const clippedText = [...document.querySelectorAll(textSelectors)]
+    .filter((element) => visible(element) && (element.innerText || '').trim())
+    .filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
+    .slice(0, limit)
+    .map(label);
+  const blankComponents = componentElements
+    .filter((element) => !(element.innerText || '').trim())
+    .filter((element) => !element.querySelector('input,textarea,select,img,svg,canvas,video,[role="progressbar"]'))
+    .slice(0, limit)
+    .map(label);
+  const buttonsBelowFold = [...document.querySelectorAll('button')]
+    .filter(visible)
+    .filter((button) => button.getBoundingClientRect().top >= viewport.height)
+    .filter((button) => !innerScrollers.some((scroller) => scroller.contains(button)))
+    .slice(0, limit)
+    .map(label);
+  const dialogs = [...document.querySelectorAll('[role="dialog"],.modal,.tj-modal')]
+    .filter(visible)
+    .slice(0, limit)
+    .map((element) => ({
+      ...label(element),
+      scroll: {
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        clipped: element.scrollHeight > element.clientHeight + 2,
+      },
+    }));
+
+  return {
+    url: location.href,
+    viewport,
+    document: {
+      clientHeight: scrollingElement.clientHeight,
+      scrollHeight: scrollingElement.scrollHeight,
+      pageScrolls,
+    },
+    counts: {
+      visibleComponentInstances: componentElements.length,
+      overlaps: overlaps.length,
+      clippedText: clippedText.length,
+      blankComponentCandidates: blankComponents.length,
+      innerScrollers: innerScrollers.length,
+      nestedScrollPairs: nestedScrollPairs.length,
+      buttonsBelowFold: buttonsBelowFold.length,
+      dialogs: dialogs.length,
+    },
+    issues: { overlaps, clippedText, blankComponents, nestedScrollPairs, buttonsBelowFold, dialogs },
+    components,
+    notChecked: ['network failures', 'browser console errors', 'hidden conditional states', 'mutation correctness'],
+  };
+})()
