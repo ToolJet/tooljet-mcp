@@ -73,6 +73,16 @@ describe('generated skill — progressive disclosure', () => {
     expect(datasources).toMatch(/explicit columns.*capped at 100 rows.*server-side pagination above 1,000/is);
   });
 
+  it('keeps REST contracts and remote-read approval in the datasource reference', () => {
+    expect(skill).not.toContain('## REST API queries');
+    expect(datasources).toMatch(/method.*do not persist an `operation` option/is);
+    expect(datasources).toMatch(/headers.*url_params.*cookies.*body.*two-item.*key, value.*tuples/is);
+    expect(datasources).toMatch(/raw_body.*json_body.*legacy/is);
+    expect(datasources).toMatch(/exact saved query.*user_confirmed_remote_read:true.*only static GET/is);
+    expect(datasources).toMatch(/metadata\.request.*metadata\.response.*rate-limit/is);
+    expect(datasources).toMatch(/Avoid one REST request per Table\/Listview row/is);
+  });
+
   it('generates identical canonical and packaged host outputs', () => {
     const canonical = resolve(root, 'skill');
     const packaged = resolve(root, 'skills/tooljet-app-builder');

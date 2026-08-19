@@ -10,7 +10,7 @@ const SQL_KINDS = new Set([
 const BILLABLE_SCAN_SQL_KINDS = new Set(['bigquery', 'snowflake', 'redshift']);
 
 interface ReadSource {
-  kind: 'sql_table' | 'table_id' | 'gui_table';
+  kind: 'sql_table' | 'table_id' | 'gui_table' | 'remote_endpoint';
   value: string;
 }
 
@@ -21,6 +21,8 @@ export interface QueryReadAssessment {
   selectStar: boolean;
   requiresCountPreflight: boolean;
   requiresBillableReadConfirmation?: boolean;
+  /** Remote API reads may expose sensitive data, consume quota, or return an unbounded payload. */
+  requiresRemoteReadConfirmation?: boolean;
   /** True only when a count covers the entire simple source and can upper-bound a target read. */
   fullSourceCount?: boolean;
   /** True only for a single-table read whose cardinality is upper-bounded by a full-source count. */
@@ -43,6 +45,50 @@ function staticPositiveInteger(value: unknown): number | undefined {
   if (typeof value !== 'string') return undefined;
   const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
   return match ? Number(match[1]) : undefined;
+}
+
+function containsBinding(value: unknown): boolean {
+  if (typeof value === 'string') return value.includes('{{');
+  if (Array.isArray(value)) return value.some(containsBinding);
+  return !!record(value) && Object.values(record(value)!).some(containsBinding);
+}
+
+function assessRestGet(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const identity = { datasourceKind: 'restapi', ...(datasourceId ? { datasourceId } : {}) };
+  const method = typeof options.method === 'string' ? options.method.toLowerCase() : undefined;
+  if (method !== 'get') {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false,
+      reason: `REST method ${method ?? '<missing>'} is not a proven read; only static GET queries can be previewed.`,
+      ...identity,
+    };
+  }
+  const url = typeof options.url === 'string' ? options.url.trim() : '';
+  if (!url || containsBinding(url)) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false,
+      reason: 'REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.',
+      ...identity,
+    };
+  }
+  const requestFields = ['url_params', 'headers', 'cookies'].map((key) => options[key]);
+  if (requestFields.some(containsBinding)) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false,
+      reason: 'REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.',
+      ...identity,
+    };
+  }
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, requiresRemoteReadConfirmation: true,
+    source: { kind: 'remote_endpoint', value: url },
+    reason: 'REST GET may expose remote data, consume quota, or return an unbounded payload.',
+    ...identity,
+  };
 }
 
 function stripSql(sql: string): string {
@@ -238,6 +284,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
     };
   }
   const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+
+  if (kind === 'restapi') return assessRestGet(options, datasourceId);
 
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);

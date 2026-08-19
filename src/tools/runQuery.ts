@@ -8,6 +8,39 @@ import {
 } from '../queryExecutionSafety.js';
 import { ok, fail, type ToolDef } from './types.js';
 
+const REMOTE_RESULT_MAX_JSON_CHARS = 30_000;
+
+function truncateRemoteResult(result: Record<string, unknown>): {
+  result: Record<string, unknown>;
+  warning?: string;
+} {
+  if (!Object.prototype.hasOwnProperty.call(result, 'data')) return { result };
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(result.data);
+  } catch {
+    return {
+      result: { ...result, data: { mcp_truncated: true, preview_json: '<unserializable response>' } },
+      warning: 'The REST response data could not be serialized for MCP output; inspect it in ToolJet.',
+    };
+  }
+  if (typeof serialized !== 'string') return { result };
+  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS) return { result };
+  return {
+    result: {
+      ...result,
+      data: {
+        mcp_truncated: true,
+        original_json_characters: serialized.length,
+        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS),
+      },
+    },
+    warning:
+      `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. ` +
+      'The remote request already completed; add API-specific pagination or a smaller limit before another run.',
+  };
+}
+
 export function containsComponentBinding(value: unknown): boolean {
   if (typeof value === 'string') return /\bcomponents\s*\./.test(value);
   if (Array.isArray(value)) return value.some(containsComponentBinding);
@@ -42,6 +75,8 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       `observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. ` +
       'BigQuery, Snowflake, and Redshift reads also require explicit cost approval with ' +
       'user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. ' +
+      'A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive ' +
+      'data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. ' +
       'If saved options reference `components.*`, the result ' +
       'includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.',
     inputSchema: {
@@ -51,6 +86,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       count_query_id: z.string().optional(),
       user_confirmed_large_read: z.boolean().optional(),
       user_confirmed_billable_read: z.boolean().optional(),
+      user_confirmed_remote_read: z.boolean().optional(),
     },
     async handler(args: {
       query_id: string;
@@ -59,6 +95,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       count_query_id?: string;
       user_confirmed_large_read?: boolean;
       user_confirmed_billable_read?: boolean;
+      user_confirmed_remote_read?: boolean;
     }) {
       try {
         const warnings: string[] = [];
@@ -72,6 +109,19 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         if (containsComponentBinding(query.options)) {
           warnings.push(
             'Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.'
+          );
+        }
+
+        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
+          return fail(new Error(
+            `run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive ` +
+              'data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask ' +
+              'explicitly; retry with user_confirmed_remote_read:true only after they approve that request.'
+          ));
+        }
+        if (assessment.requiresRemoteReadConfirmation) {
+          warnings.push(
+            'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.'
           );
         }
 
@@ -150,8 +200,12 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           });
         }
         const recovery = result.status === 'failed' ? datasourceRecovery(query) : undefined;
+        const output = assessment.requiresRemoteReadConfirmation
+          ? truncateRemoteResult(result as Record<string, unknown>)
+          : { result: result as Record<string, unknown> };
+        if (output.warning) warnings.push(output.warning);
         return ok({
-          ...result,
+          ...output.result,
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
           ...(recovery ? { recovery } : {}),

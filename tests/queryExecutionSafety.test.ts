@@ -124,6 +124,24 @@ describe('query execution safety', () => {
     });
   });
 
+  it('classifies only static REST GET requests as confirmable remote reads', () => {
+    expect(assessQueryRead({
+      id: 'rest-get', kind: 'restapi', data_source_id: 'github',
+      options: { method: 'get', url: '/repos/facebook/react/releases/latest', url_params: [['per_page', '3']] },
+    })).toMatchObject({
+      provenRead: true,
+      directSafe: false,
+      requiresRemoteReadConfirmation: true,
+      source: { kind: 'remote_endpoint', value: '/repos/facebook/react/releases/latest' },
+    });
+    expect(assessQueryRead({
+      id: 'rest-post', kind: 'restapi', options: { method: 'post', url: '/issues' },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+    expect(assessQueryRead({
+      id: 'rest-dynamic', kind: 'restapi', options: { method: 'get', url: '/repos/{{components.repo.value}}' },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+  });
+
   it('extracts only an unambiguous one-row numeric count', () => {
     expect(extractRowCount({ status: 'ok', data: [{ total: '2400' }] })).toBe(2400);
     expect(extractRowCount({ status: 'ok', data: [{ total: 20, other: 2 }] })).toBeUndefined();

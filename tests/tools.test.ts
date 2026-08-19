@@ -300,6 +300,60 @@ describe('run_query tool', () => {
     expect(textOf(approved)).toMatchObject({ status: 'ok', data: [{ id: 1 }] });
     expect(client.runQuery).toHaveBeenCalledOnce();
   });
+
+  it('requires exact approval for a static REST GET and returns its diagnostic metadata', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'latest-release', name: 'getLatestRelease', kind: 'restapi', data_source_id: 'github',
+      options: { method: 'get', url: '/repos/facebook/react/releases/latest', url_params: [['per_page', '3']] },
+    });
+
+    const refused = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'latest-release', version_id: 'v1',
+    });
+    expect(refused.isError).toBe(true);
+    expect(refused.content[0]!.text).toMatch(/remote reads.*quota.*unbounded.*ask explicitly.*user_confirmed_remote_read:true/i);
+    expect(client.runQuery).not.toHaveBeenCalled();
+
+    client.runQuery.mockResolvedValue({
+      status: 'ok',
+      data: { tag_name: 'v19.2.8' },
+      metadata: {
+        request: { url: 'https://api.github.com/repos/facebook/react/releases/latest', params: { per_page: '3' } },
+        response: { statusCode: 200, headers: { 'x-ratelimit-remaining': '59' } },
+      },
+    });
+    const approved = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'latest-release', version_id: 'v1', user_confirmed_remote_read: true,
+    });
+    expect(textOf(approved)).toMatchObject({
+      status: 'ok',
+      data: { tag_name: 'v19.2.8' },
+      metadata: {
+        request: { params: { per_page: '3' } },
+        response: { statusCode: 200 },
+      },
+      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.request.*pagination/i)],
+    });
+    expect(client.runQuery).toHaveBeenCalledOnce();
+  });
+
+  it('truncates oversized REST data returned to MCP after the approved request completes', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'large-rest', kind: 'restapi', options: { method: 'get', url: '/large' },
+    });
+    client.runQuery.mockResolvedValue({ status: 'ok', data: { payload: 'x'.repeat(40_000) } });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'large-rest', version_id: 'v1', user_confirmed_remote_read: true,
+    });
+    expect(textOf(result)).toMatchObject({
+      status: 'ok',
+      data: { mcp_truncated: true, original_json_characters: expect.any(Number) },
+      warnings: expect.arrayContaining([expect.stringMatching(/truncated.*request already completed.*pagination/i)]),
+    });
+  });
 });
 
 describe('run_queries tool', () => {
@@ -368,7 +422,7 @@ describe('run_queries tool', () => {
     expect(batchSafeRead({ id: 'u', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT id FROM users' } }).safe).toBe(false);
     expect(batchSafeRead({ id: 'star', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT * FROM users LIMIT 25' } }).safe).toBe(false);
     expect(batchSafeRead({ id: 'w', kind: 'postgresql', options: { mode: 'sql', query: 'UPDATE users SET active=true' } }).safe).toBe(false);
-    expect(batchSafeRead({ id: 'r', kind: 'restapi', options: { operation: 'get' } }).safe).toBe(false);
+    expect(batchSafeRead({ id: 'r', kind: 'restapi', options: { method: 'get', url: '/items' } }).safe).toBe(false);
   });
 });
 
