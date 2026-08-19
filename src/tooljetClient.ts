@@ -1177,19 +1177,31 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
     if (!table) throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
 
-    // Use PostgREST's ordinary INSERT path. Unlike bulk-upload, this endpoint does not upsert on
-    // primary-key conflicts, and omitted serial/generated keys use the table's real sequence.
-    const res = await auth.authedFetch(
-      `/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rows),
+    // ToolJet's PostgREST proxy object-spreads POST bodies while validating JSONB values, which
+    // turns an array payload into numeric column names. Send one ordinary INSERT per row instead.
+    // Unlike bulk-upload, this path does not upsert on primary-key conflicts, and omitted
+    // serial/generated keys use the table's real sequence.
+    let processedRows = 0;
+    for (const [index, row] of rows.entries()) {
+      try {
+        const res = await auth.authedFetch(
+          `/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(row),
+          }
+        );
+        await assertOk(res, 'insertRows');
+        processedRows += 1;
+      } catch (error) {
+        if (!processedRows) throw error;
+        throw new PartialWriteError('insertRows', [{ processed_rows: processedRows }], [
+          `row ${index + 1}/${rows.length}: ${error instanceof Error ? error.message : String(error)}`,
+        ]);
       }
-    );
-    await assertOk(res, 'insertRows');
-    const inserted = await res.json().catch(() => undefined);
-    return { processed_rows: Array.isArray(inserted) ? inserted.length : rows.length };
+    }
+    return { processed_rows: processedRows };
   }
 
   async function insertRowsBatch(params: InsertRowsBatchParams): Promise<InsertRowsBatchResult[]> {
@@ -1199,6 +1211,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         const result = await insertRows(table);
         results.push({ table_name: table.tableName, processed_rows: result.processed_rows });
       } catch (error) {
+        const partialRows = completedPartialWrites<{ processed_rows: number }>(error)
+          .reduce((total, result) => total + result.processed_rows, 0);
+        if (partialRows) results.push({ table_name: table.tableName, processed_rows: partialRows });
         throw new PartialWriteError('insertRowsBatch', results, [
           `${table.tableName}: ${error instanceof Error ? error.message : String(error)}`,
         ]);

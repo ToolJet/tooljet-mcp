@@ -1022,22 +1022,24 @@ describe('createClient', () => {
   });
 
   describe('insertRows', () => {
-    it('omits generated ids and uses the insert-only PostgREST path', async () => {
+    it('omits generated ids and sends one object per insert-only PostgREST request', async () => {
       auth.authedFetch
         // getTableSchema
         .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'id', data_type: 'integer', column_default: "nextval('people_id_seq'::regclass)", constraints_type: { is_primary_key: true } }, { column_name: 'name', data_type: 'character varying' }] } } }))
         // listTables
         .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
-        // insert-only PostgREST proxy
-        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }, { id: 42, name: 'B' }] }));
+        // insert-only PostgREST proxy, one object at a time because ToolJet's proxy mangles arrays
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }] }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 42, name: 'B' }] }));
 
       const client = createClient(auth, config);
       const result = await client.insertRows({ tableName: 'people', rows: [{ name: 'A' }, { name: 'B' }] });
 
-      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(4);
       expect(auth.authedFetch.mock.calls[2][0]).toBe('/api/tooljet-db/proxy/people-id');
       expect(auth.authedFetch.mock.calls[2][1]).toMatchObject({ method: 'POST' });
-      expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual([{ name: 'A' }, { name: 'B' }]);
+      expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual({ name: 'A' });
+      expect(JSON.parse(auth.authedFetch.mock.calls[3][1].body)).toEqual({ name: 'B' });
       expect(result).toEqual({ processed_rows: 2 });
     });
 
@@ -1095,6 +1097,36 @@ describe('createClient', () => {
         { table_name: 'parents', processed_rows: 1 },
       ]);
       expect(String(caught)).toMatch(/children.*schema unavailable.*not deleted/i);
+    });
+
+    it('reports rows already inserted when a later row in the same table fails', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { result: { columns: [{ column_name: 'id', data_type: 'serial', constraints_type: { is_primary_key: true } }] } },
+        }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { result: [{ id: 'people-id', table_name: 'people' }] },
+        }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 1, name: 'A' }] }))
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: 'duplicate key value violates unique constraint' }));
+
+      const client = createClient(auth, config);
+      let caught: unknown;
+      try {
+        await client.insertRowsBatch({
+          tables: [{ tableName: 'people', rows: [{ name: 'A' }, { name: 'duplicate' }] }],
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(PartialWriteError);
+      expect((caught as PartialWriteError<unknown>).completed).toEqual([
+        { table_name: 'people', processed_rows: 1 },
+      ]);
+      expect(String(caught)).toMatch(/people.*row 2\/2.*duplicate key.*not deleted/i);
     });
   });
 
