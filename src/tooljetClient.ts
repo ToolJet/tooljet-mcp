@@ -211,6 +211,13 @@ export interface UpdatePageSpec {
   hidden?: boolean;
 }
 
+export interface DeletePageParams {
+  appId: string;
+  versionId: string;
+  pageId: string;
+  deleteAssociatedPages?: boolean;
+}
+
 export interface UpdatePagesParams {
   appId: string;
   versionId: string;
@@ -321,6 +328,7 @@ export interface ToolJetClient {
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
   createPages(params: CreatePagesParams): Promise<CreatePageResult[]>;
   updatePages(params: UpdatePagesParams): Promise<UpdatePagesResult>;
+  deletePage(params: DeletePageParams): Promise<{ deleted: boolean }>;
   createEvents(params: CreateEventsParams): Promise<{ created: number }>;
   getDevelopmentEnvironmentId(): Promise<string>;
   listDatasources(versionId: string): Promise<Datasource[]>;
@@ -1380,6 +1388,22 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { deleted: true };
   }
 
+  async function deletePage(params: DeletePageParams): Promise<{ deleted: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pageId: params.pageId,
+          deleteAssociatedPages: params.deleteAssociatedPages ?? false,
+        }),
+      }
+    );
+    await assertOk(res, 'deletePage');
+    return { deleted: true };
+  }
+
   async function getQueries(versionId: string): Promise<QuerySummary[]> {
     const res = await auth.authedFetch(`/api/data-queries/${versionId}`);
     await assertOk(res, 'getQueries');
@@ -1501,6 +1525,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createPage,
     createPages,
     updatePages,
+    deletePage,
     createEvents,
     getDevelopmentEnvironmentId,
     listDatasources,

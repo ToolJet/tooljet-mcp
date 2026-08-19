@@ -1144,6 +1144,24 @@ describe('createClient', () => {
     });
   });
 
+  describe('deletePage', () => {
+    it('calls the v2 page delete endpoint with the page id and association choice', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 204 }));
+      const client = createClient(auth, config);
+      const result = await client.deletePage({
+        appId: 'app1',
+        versionId: 'ver1',
+        pageId: 'page-analytics',
+        deleteAssociatedPages: false,
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1/pages');
+      expect(init.method).toBe('DELETE');
+      expect(JSON.parse(init.body)).toEqual({ pageId: 'page-analytics', deleteAssociatedPages: false });
+      expect(result).toEqual({ deleted: true });
+    });
+  });
+
   describe('runQuery', () => {
     it('resolves the dev env, POSTs to /run/:env with empty options, returns the result', async () => {
       auth.authedFetch

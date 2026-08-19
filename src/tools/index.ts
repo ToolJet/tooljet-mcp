@@ -27,6 +27,7 @@ import { applyAppPhaseTool } from './applyAppPhase.js';
 import { addPageTool } from './addPage.js';
 import { addPagesTool } from './addPages.js';
 import { updatePagesTool } from './updatePages.js';
+import { deletePageTool } from './deletePage.js';
 import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
@@ -86,6 +87,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     addPageTool(client),
     addPagesTool(client),
     updatePagesTool(client),
+    deletePageTool(client),
     addQueryTool(client),
     addQueriesTool(client),
     updateQueryTool(client),
