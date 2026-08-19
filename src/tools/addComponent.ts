@@ -23,6 +23,8 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
     description:
       'Place a component on an app page. `name` is required. A Table binds data via ' +
       'properties.data.value = "{{queries.<queryName>.data}}". ' +
+      'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
+      '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in the top-level `styles` object, NOT under `properties` — ToolJet silently ignores styles nested ' +
       'in properties (and this tool will reject them). Provide either `layout` (one rectangle applied to ' +

@@ -75,6 +75,41 @@ describe('ToolJet DB maintenance tools', () => {
 });
 
 describe('update_components validation', () => {
+  it('canonicalizes concise raw definition leaves before an update', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{
+          id: 'title', name: 'pageTitle', type: 'Text',
+          properties: { text: { value: 'Old' } }, styles: { textSize: { value: 20 } },
+        }] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{
+        component_id: 'title',
+        definition: {
+          properties: { text: 'Payments control tower' },
+          styles: { textSize: 32 },
+          others: { showOnDesktop: '{{true}}' },
+        },
+      }],
+    });
+
+    expect(client.updateComponents).toHaveBeenCalledWith(expect.objectContaining({
+      updates: [expect.objectContaining({
+        definition: expect.objectContaining({
+          properties: { text: { value: 'Payments control tower' } },
+          styles: { textSize: { value: 32 } },
+          others: { showOnDesktop: { value: '{{true}}' } },
+        }),
+      })],
+    }));
+  });
+
   it('moves a body title into the current modal native header with slot_name only', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

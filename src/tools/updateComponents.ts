@@ -34,7 +34,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
     description:
       'Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves ' +
       'under `definition` (properties/styles/validation/others) — ToolJet deep-merges, so untouched ' +
-      'values are preserved. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are ' +
+      'values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. ' +
+      'NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are ' +
       'REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, ' +
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +
       'regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.',
@@ -94,6 +95,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           const definition = update.definition as {
             properties?: Record<string, unknown>;
             styles?: Record<string, unknown>;
+            validation?: Record<string, unknown>;
+            others?: Record<string, unknown>;
           } | undefined;
           const next: LintComponent = {
             id: current.id,
@@ -112,21 +115,26 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             type: next.type ?? current.type ?? '',
             properties: next.properties ?? {},
             styles: next.styles,
+            validation: definition?.validation,
+            others: { ...(current.others ?? {}), ...(definition?.others ?? {}) },
             layouts: next.layouts,
             parent: next.parent,
           });
           const normalizedNext = normalized.component as LintComponent;
           projected.set(current.id, normalizedNext);
           warnings.push(...normalized.warnings);
-          const normalizedDefinition = update.definition && normalized.patch.properties
-            ? {
-                ...update.definition,
-                properties: {
-                  ...((update.definition as { properties?: Record<string, unknown> }).properties ?? {}),
-                  ...normalized.patch.properties,
-                },
-              }
-            : update.definition;
+          let normalizedDefinition = update.definition;
+          if (update.definition && Object.keys(normalized.patch).length) {
+            normalizedDefinition = { ...update.definition };
+            for (const section of ['properties', 'styles', 'validation', 'others'] as const) {
+              const sectionPatch = normalized.patch[section];
+              if (!sectionPatch) continue;
+              normalizedDefinition[section] = {
+                ...((update.definition as Record<string, Record<string, unknown> | undefined>)[section] ?? {}),
+                ...sectionPatch,
+              };
+            }
+          }
           resolvedUpdates.push({
             componentId: update.component_id,
             definition: normalizedDefinition,

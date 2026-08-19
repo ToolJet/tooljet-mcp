@@ -3,8 +3,34 @@ import type { ComponentSpec } from './tooljetClient.js';
 
 export interface ComponentNormalization<T extends ComponentSpec = ComponentSpec> {
   component: T;
-  patch: { properties?: Record<string, unknown> };
+  patch: {
+    properties?: Record<string, unknown>;
+    styles?: Record<string, unknown>;
+    validation?: Record<string, unknown>;
+    others?: Record<string, unknown>;
+  };
   warnings: string[];
+}
+
+type DefinitionSection = 'properties' | 'styles' | 'validation' | 'others';
+
+function normalizeSection(
+  section: Record<string, unknown> | undefined
+): { value: Record<string, unknown> | undefined; patch: Record<string, unknown> | undefined } {
+  if (!section) return { value: undefined, patch: undefined };
+  const value: Record<string, unknown> = {};
+  const patch: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(section)) {
+    const canonical = entry !== null && typeof entry === 'object' && !Array.isArray(entry) && 'value' in entry
+      ? entry
+      : { value: entry };
+    value[key] = canonical;
+    if (canonical !== entry) patch[key] = canonical;
+  }
+  return {
+    value,
+    patch: Object.keys(patch).length ? patch : undefined,
+  };
 }
 
 function propValue(properties: Record<string, unknown>, key: string): unknown {
@@ -25,7 +51,13 @@ function catalogDefault(type: string, key: string, fallback: unknown): unknown {
 
 /** Apply small persisted-definition compatibility fixes without changing component intent. */
 export function normalizeComponentSpec<T extends ComponentSpec>(component: T): ComponentNormalization<T> {
-  const properties = { ...component.properties };
+  const normalizedSections = Object.fromEntries(
+    (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).map((section) => [
+      section,
+      normalizeSection(component[section]),
+    ])
+  ) as Record<DefinitionSection, ReturnType<typeof normalizeSection>>;
+  const properties = { ...(normalizedSections.properties.value ?? {}) };
   const propertyPatch: Record<string, unknown> = {};
   const warnings: string[] = [];
   const setProperty = (key: string, value: unknown): void => {
@@ -101,9 +133,24 @@ export function normalizeComponentSpec<T extends ComponentSpec>(component: T): C
     }
   }
 
+  const patch = Object.fromEntries(
+    (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).flatMap((section) => {
+      const envelopePatch = normalizedSections[section].patch ?? {};
+      const semanticPatch = section === 'properties' ? propertyPatch : {};
+      const merged = { ...envelopePatch, ...semanticPatch };
+      return Object.keys(merged).length ? [[section, merged]] : [];
+    })
+  ) as ComponentNormalization['patch'];
+
   return {
-    component: { ...component, properties } as T,
-    patch: Object.keys(propertyPatch).length ? { properties: propertyPatch } : {},
+    component: {
+      ...component,
+      properties,
+      ...(normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {}),
+      ...(normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {}),
+      ...(normalizedSections.others.value ? { others: normalizedSections.others.value } : {}),
+    } as T,
+    patch,
     warnings,
   };
 }

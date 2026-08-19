@@ -702,6 +702,32 @@ describe('add_query tool', () => {
 });
 
 describe('add_component tool', () => {
+  it('canonicalizes concise raw component leaves before persisting them', async () => {
+    const client = makeClient();
+    client.createComponent.mockResolvedValue({ component_id: 'text1' });
+    const result = await addComponentTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1', name: 'pageTitle', type: 'Text',
+      properties: { text: 'Payments control tower', visibility: '{{true}}' },
+      styles: { textSize: 32, fontWeight: 'bold' },
+      others: { showOnDesktop: '{{true}}', showOnMobile: '{{false}}' },
+      layout: { top: 0, left: 0, width: 20, height: 60 },
+    });
+
+    expect(result.isError).not.toBe(true);
+
+    expect(client.createComponent).toHaveBeenCalledWith(expect.objectContaining({
+      properties: expect.objectContaining({
+        text: { value: 'Payments control tower' },
+        visibility: { value: '{{true}}' },
+      }),
+      styles: expect.objectContaining({ textSize: { value: 32 }, fontWeight: { value: 'bold' } }),
+      others: expect.objectContaining({
+        showOnDesktop: { value: '{{true}}' },
+        showOnMobile: { value: '{{false}}' },
+      }),
+    }));
+  });
+
   it('suppresses KeyValuePair catalog demo fields when explicit fields are authored', async () => {
     const client = makeClient();
     client.createComponent.mockResolvedValue({ component_id: 'kv1' });
@@ -888,6 +914,34 @@ describe('add_component tool', () => {
 });
 
 describe('add_components tool', () => {
+  it('canonicalizes raw arrays and objects in an atomic batch', async () => {
+    const client = makeClient();
+    client.createComponents.mockResolvedValue([{ component_id: 'table-id', name: 'ordersTable' }]);
+    await addComponentsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      components: [{
+        name: 'ordersTable', type: 'Table',
+        properties: {
+          data: '{{queries.orders.data.map(r => ({id:r.id}))}}',
+          dataSourceSelector: 'rawJson',
+          columns: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }],
+        },
+        styles: { borderRadius: 10 },
+        layout: { top: 0, left: 0, width: 40, height: 400 },
+      }],
+    });
+
+    expect(client.createComponents).toHaveBeenCalledWith(expect.objectContaining({
+      components: [expect.objectContaining({
+        properties: expect.objectContaining({
+          data: { value: '{{queries.orders.data.map(r => ({id:r.id}))}}' },
+          columns: { value: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }] },
+        }),
+        styles: expect.objectContaining({ borderRadius: { value: 10 } }),
+      })],
+    }));
+  });
+
   it('normalizes each static Table before the atomic batch write', async () => {
     const client = makeClient();
     client.createComponents.mockResolvedValue([{ component_id: 'table-id', name: 'ordersTable' }]);

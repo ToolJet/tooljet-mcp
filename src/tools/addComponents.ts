@@ -41,6 +41,8 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'Prefer this over repeated add_component when building an app — it is one request. Returns ' +
       '[{ component_id, name }]. Note: the batch is atomic — if one component is invalid (e.g. missing ' +
       'name), the whole call fails; fix that component and retry. ' +
+      'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
+      '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in each component’s top-level `styles` object, NOT under `properties` — ToolJet silently ignores ' +
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
