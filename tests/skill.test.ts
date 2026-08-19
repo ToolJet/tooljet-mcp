@@ -61,6 +61,11 @@ describe('generated skill — progressive disclosure', () => {
     expect(qa).toContain('## Verify your work — browser-free checks first');
   });
 
+  it('documents compact app settings discovery, theme selection, and readback warnings', () => {
+    expect(toolWorkflows).toMatch(/get_app_settings.*list_app_themes.*update_app_settings/is);
+    expect(toolWorkflows).toMatch(/reads back every requested field.*warnings.*silent-drop|license-gating/is);
+  });
+
   it('generates identical canonical and packaged host outputs', () => {
     const canonical = resolve(root, 'skill');
     const packaged = resolve(root, 'skills/tooljet-app-builder');

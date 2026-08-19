@@ -1425,4 +1425,56 @@ describe('createClient', () => {
       expect(init.method).toBe('DELETE');
     });
   });
+
+  describe('app settings', () => {
+    it('reads the current editing version settings and rejects a mismatched version', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {
+        id: 'app1',
+        editing_version: {
+          id: 'ver1',
+          global_settings: { appMode: 'dark' },
+          page_settings: { definition: { properties: { hideHeader: true } } },
+          show_viewer_navigation: true,
+        },
+      } }));
+      const client = createClient(auth, config);
+      await expect(client.getAppSettings('app1', 'ver1')).resolves.toEqual({
+        app_id: 'app1', version_id: 'ver1',
+        global_settings: { appMode: 'dark' },
+        page_settings: { definition: { properties: { hideHeader: true } } },
+        show_viewer_navigation: true,
+      });
+
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {
+        id: 'app1', editing_version: { id: 'ver2' },
+      } }));
+      await expect(client.getAppSettings('app1', 'ver1')).rejects.toThrow(/not the current editing version/i);
+    });
+
+    it('updates global and page settings through one exact version PUT', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+      const client = createClient(auth, config);
+      await client.updateAppSettings({
+        appId: 'app1', versionId: 'ver1',
+        globalSettings: { appMode: 'auto' },
+        pageSettings: { definition: { properties: { hideHeader: true } } },
+      });
+      const [path, init] = auth.authedFetch.mock.calls[0];
+      expect(path).toBe('/api/v2/apps/app1/versions/ver1');
+      expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body)).toEqual({
+        globalSettings: { appMode: 'auto' },
+        pageSettings: { definition: { properties: { hideHeader: true } } },
+      });
+    });
+
+    it('lists themes from the workspace theme endpoint', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: [
+        { id: 'theme1', name: 'ToolJet', definition: {} },
+      ] }));
+      const themes = await createClient(auth, config).listAppThemes();
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/themes');
+      expect(themes).toEqual([{ id: 'theme1', name: 'ToolJet', definition: {} }]);
+    });
+  });
 });

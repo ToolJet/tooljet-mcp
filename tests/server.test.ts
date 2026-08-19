@@ -27,6 +27,9 @@ describe('buildServer', () => {
       for (const required of [
         'get_runtime_info',
         'create_app',
+        'get_app_settings',
+        'list_app_themes',
+        'update_app_settings',
         'get_app',
         'get_app_summary',
         'get_component',

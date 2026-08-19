@@ -23,6 +23,32 @@ export interface Datasource {
   settings_url: string;
 }
 
+export interface AppTheme {
+  id: string;
+  name: string;
+  definition: Record<string, unknown>;
+  isDefault?: boolean;
+  isBasic?: boolean;
+  isDisabled?: boolean;
+  [key: string]: unknown;
+}
+
+export interface AppSettingsSnapshot {
+  app_id: string;
+  version_id: string;
+  global_settings: Record<string, unknown>;
+  page_settings: Record<string, unknown>;
+  show_viewer_navigation?: boolean;
+}
+
+export interface UpdateAppSettingsParams {
+  appId: string;
+  versionId: string;
+  globalSettings?: Record<string, unknown>;
+  pageSettings?: Record<string, unknown>;
+  showViewerNavigation?: boolean;
+}
+
 export interface CreateQueryParams {
   versionId: string;
   dataSourceId: string;
@@ -355,6 +381,9 @@ export interface ToolJetClient {
   createApp(name: string): Promise<CreateAppResult>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
+  getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot>;
+  listAppThemes(): Promise<AppTheme[]>;
+  updateAppSettings(params: UpdateAppSettingsParams): Promise<void>;
   getComponent(appId: string, componentId: string): Promise<ComponentSummary & { page_id: string }>;
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
   createPages(params: CreatePagesParams): Promise<CreatePageResult[]>;
@@ -577,6 +606,55 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
     return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
+  }
+
+  async function getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot> {
+    const app = await getApp(appId);
+    const editingVersion = app.editing_version ?? app.editingVersion;
+    if (!editingVersion || editingVersion.id !== versionId) {
+      throw new Error(
+        `ToolJet getAppSettings failed: version "${versionId}" is not the current editing version for app "${appId}".`
+      );
+    }
+    return {
+      app_id: appId,
+      version_id: versionId,
+      global_settings: editingVersion.global_settings ?? editingVersion.globalSettings ?? {},
+      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {},
+      ...(typeof (editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation) === 'boolean'
+        ? { show_viewer_navigation: editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation }
+        : {}),
+    };
+  }
+
+  async function listAppThemes(): Promise<AppTheme[]> {
+    const res = await auth.authedFetch('/api/themes');
+    await assertOk(res, 'listAppThemes');
+    const body = await res.json();
+    if (!Array.isArray(body)) throw new Error('ToolJet listAppThemes failed: expected an array response.');
+    return body as AppTheme[];
+  }
+
+  async function updateAppSettings(params: UpdateAppSettingsParams): Promise<void> {
+    const body: Record<string, unknown> = {
+      ...(params.globalSettings ? { globalSettings: params.globalSettings } : {}),
+      ...(params.pageSettings ? { pageSettings: params.pageSettings } : {}),
+      ...(params.showViewerNavigation !== undefined
+        ? { showViewerNavigation: params.showViewerNavigation }
+        : {}),
+    };
+    if (!Object.keys(body).length) {
+      throw new Error('ToolJet updateAppSettings failed: provide at least one setting.');
+    }
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${params.appId}/versions/${params.versionId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+    await assertOk(res, 'updateAppSettings');
   }
 
   async function getComponent(
@@ -1630,6 +1708,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createApp,
     getApp,
     getAppSummary,
+    getAppSettings,
+    listAppThemes,
+    updateAppSettings,
     getComponent,
     createPage,
     createPages,

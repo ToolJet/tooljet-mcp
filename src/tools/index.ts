@@ -4,6 +4,9 @@ import type { ToolDef } from './types.js';
 import { listWorkspacesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
+import { getAppSettingsTool } from './getAppSettings.js';
+import { listAppThemesTool } from './listAppThemes.js';
+import { updateAppSettingsTool } from './updateAppSettings.js';
 import { listDatasourcesTool } from './listDatasources.js';
 import { listTablesTool } from './listTables.js';
 import { createTableTool } from './createTable.js';
@@ -76,6 +79,9 @@ export function registerTools(
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     createAppTool(client),
+    getAppSettingsTool(client),
+    listAppThemesTool(client),
+    updateAppSettingsTool(client),
     listDatasourcesTool(client),
     listTablesTool(client),
     createTableTool(client),
