@@ -188,9 +188,9 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - Both return a **\`warnings\`** array of non-blocking lint hints — an undersized Text heading, a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
 - \`add_events({ app_id, version_id, events: [...] })\` → wire component behavior plus query/page lifecycle events. Each event uses \`source_id\`, \`source_type: "component" | "data_query" | "page" | "table_column"\`, \`trigger\`, and \`action\` (\`component_id\` remains shorthand for components). Table Button-column events also require \`ref: "<column key or name>::<button id>"\`.
 - \`add_query_lifecycles({ app_id, version_id, lifecycles:[...] })\` → expand many mutation success/failure flows into ordinary validated events in one write: refresh queries, clear standalone inputs, close a modal, show alerts, and optional extra actions. It is datasource-neutral; use \`add_events\` when custom action ordering is required.
-- \`lint_app_spec({ version_id?, tables?, queries?, pages?, events?, lifecycles? })\` → dry-run a complete logical plan before writes. Give planned objects stable \`client_ref\` values; events use \`source_ref\`, and a targeted action uses \`target_ref\`. Fix every error and review warnings, then author with the normal batch tools. Its \`not_checked\` list still requires safe reads/browser QA.
+- \`lint_app_spec({ version_id?, tables?, queries?, pages?, events?, lifecycles? })\` → dry-run a complete logical plan before writes. Give planned objects stable \`client_ref\` values; events use \`source_ref\`, and a targeted action uses \`target_ref\`. Treat this as an **awaited preflight barrier**: call it by itself, inspect its result, fix every error and review warnings, and only then start authoring. Never run it in parallel with, or in the same tool batch as, any mutating call. Its \`not_checked\` list still requires safe reads/browser QA.
 
-**Batch for the build, singular for edits.** Plan first, call \`lint_app_spec\`, then use \`create_tables\` / \`insert_rows_batch\` / \`add_pages\` / \`add_queries\`, one \`add_components\` call per page, one app-wide \`add_events\` call, and at most one \`add_query_lifecycles\` call. Use singular tools afterwards for incremental edits. Component/query/event batches are atomic; multi-table creation cannot be atomic because ToolJet has no bulk endpoint.
+**Batch for the build, singular for edits.** Plan first, await \`lint_app_spec\` as a standalone barrier, inspect the result, and only then use \`create_tables\` / \`insert_rows_batch\` / \`add_pages\` / \`add_queries\`, one \`add_components\` call per page, one app-wide \`add_events\` call, and at most one \`add_query_lifecycles\` call. The linter must never be a sibling of those writes in a parallel tool call. Use singular tools afterwards for incremental edits. Component/query/event batches are atomic; multi-table creation cannot be atomic because ToolJet has no bulk endpoint.
 
 ### Reuse existing components deliberately
 
@@ -204,6 +204,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`update_components({ app_id, version_id, page_id, updates:[{ component_id, definition:{properties?,styles?,...} }] })\` → edit in place. Send only CHANGED leaves (deep-merged); arrays like Table \`columns\` / dropdown \`options\` are REPLACED. Rename/reparent via \`name\`/\`parent\`/\`slot_name\` (separate from \`definition\`); \`slot_name\` alone keeps the current parent.
 - \`delete_components({ app_id, version_id, page_id, component_ids:[...] })\` · \`update_layout({ ..., layouts:[{ component_id, desktop?, mobile?, parent?, slot_name? }] })\` (move/resize/reparent).
 - \`update_query({ query_id, version_id, app_id?, datasource_id?, options })\` (options REPLACE wholesale; optional datasource repoint is contract-validated and rollback-aware) · \`delete_query({ query_id, version_id })\`.
+- \`update_pages({ app_id, version_id, updates?, order? })\` → rename pages, set sidebar icons, toggle hidden state, and/or reorder existing pages (including the auto-created Home page). \`order\` must be the complete ordered list of current page ids; use \`get_app_summary\` to fetch ids/indexes first. The write is read back and verified.
 - \`list_events({ app_id, version_id, source_id? })\` · \`update_events({ ..., events:[{ event_id, name, event }] })\` · \`delete_event({ app_id, version_id, event_id })\`.
 - \`validate_app(app_id)\` → static \`{ ok, checked, not_checked, errors, warnings }\`. It validates persisted references, component/event compatibility, and query option contracts **without executing queries**. A clean result does not prove external APIs, mutations, browser event delivery, or rendering work.
 
@@ -211,6 +212,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`get_app(app_id)\` → the FULL raw app (large; prefer \`get_app_summary\`).
 - \`add_page({ app_id, version_id, name, icon })\` → \`{ page_id, name }\`. Add one page during an edit.
 - \`add_pages({ app_id, version_id, pages:[{name,icon,hidden?}] })\` → add the initial page set in one call, preserving order and verifying sidebar icon/hidden metadata. Pass returned page ids to \`add_components\`.
+- \`update_pages({ app_id, version_id, updates?, order? })\` → retouch or reorder existing pages without rebuilding them. This is how to give Home a relevant icon/name and place it correctly after the initial page set exists.
 
 ## Workspace — confirm which one first
 
@@ -427,7 +429,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 ## Verify your work — browser-free checks first, then a real browser pass
 
 **Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
-- Before the first write, run one \`lint_app_spec\` over the planned tables, queries, pages/components, events, and lifecycles. Use stable logical refs; correct all reported errors in the plan rather than discovering them through partial writes.
+- Before the first write, run one \`lint_app_spec\` over the planned tables, queries, pages/components, events, and lifecycles. This is an **awaited preflight barrier**: call it alone, wait for and inspect the result, correct all reported errors, and only then issue writes. Never run it concurrently with \`add_pages\`, \`create_tables\`, or any other mutating tool.
 - For one safe, non-mutating, non-billable read query, call \`run_query(query_id, version_id)\`; for two or more independent ToolJet DB/SQL reads, prefer one preflighted \`run_queries(query_ids, version_id)\` batch. Inspect real values before hardcoding chart series/options. If a result warns about \`components.*\`, verify those runtime-resolved values in the viewer. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
 - Inspect with a **scoped** \`get_app_summary\` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; \`update_*\` anything wrong.
 - Run \`validate_app(app_id)\` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every \`error\`; review the \`warnings\`. Its explicit \`not_checked\` list still needs targeted runtime/browser verification.
@@ -450,7 +452,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 
 1. Plan the page/data model and stable logical refs locally; do not write a skeleton first.
 2. Fetch all needed complex component contracts in one selective \`get_component_catalog({types:[...]})\` call and all datasource operation contracts in one \`get_datasource_query_schema({requests:[...]})\` call. Reuse both results for the whole build.
-3. Run \`lint_app_spec\`, then create the model/pages/queries with one batch call per tool.
+3. Run and await \`lint_app_spec\` **by itself**. Inspect/fix its result; only after it passes, create the model/pages/queries with one batch call per tool. Never dispatch the linter and a write as siblings in parallel.
 4. Add each complete page with one \`add_components\` call; after all ids exist, add ordinary events once and lifecycle flows once.
 5. Run selected safe reads + \`validate_app\`, then make one collected browser tour across the completed primary flows, one repair batch, and one confirmation pass. Do not screenshot-poll or reopen catalogs between pages.
 

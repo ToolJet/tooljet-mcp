@@ -249,6 +249,19 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
     expect(skill).toMatch(/array of non-blocking lint hints/);
   });
 
+  it('treats lint_app_spec as an awaited barrier before every write', () => {
+    expect(skill).toMatch(/awaited preflight barrier/i);
+    expect(skill).toMatch(/call it alone.*only then issue writes/is);
+    expect(skill).toMatch(/Never run it concurrently with `add_pages`, `create_tables`, or any other mutating tool/i);
+    expect(skill).toMatch(/Never dispatch the linter and a write as siblings in parallel/i);
+  });
+
+  it('uses update_pages to restyle and reorder existing pages including Home', () => {
+    expect(skill).toMatch(/update_pages\(\{ app_id, version_id, updates\?, order\? \}\)/);
+    expect(skill).toMatch(/including the auto-created Home page/i);
+    expect(skill).toMatch(/complete ordered list of current page ids/i);
+  });
+
   it('does not overstate datasource response coverage', () => {
     expect(skill).toMatch(/response shape and `status` when known/i);
     expect(skill).toMatch(/`runtime-dependent` or `unknown`.*safe successful run/is);
@@ -416,6 +429,8 @@ describe('generated skill is synchronized with the generator', () => {
     'give EVERY page a relevant sidebar icon',
     'no per-app datasource attach/link step',
     'validate_app(app_id)',
+    'awaited preflight barrier',
+    'update_pages({ app_id, version_id, updates?, order? })',
     'Immediately share the clickable `app_url` in chat',
     'Repeat the clickable `app_url` in the final handoff',
     'how many MCP tool calls it took',
