@@ -18,6 +18,18 @@ describe('lintComponentSpec', () => {
     expect(misspelled.warnings.join(' ')).toMatch(/unknown style key "cellSze".*cellSize/i);
   });
 
+  it('warns on legacy component creation without blocking existing-app repair', () => {
+    const result = lintComponentSpec({
+      name: 'oldModal',
+      type: 'Modal',
+      properties: {},
+      layout: { top: 0, left: 0, width: 12, height: 200 },
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.join(' ')).toMatch(/"Modal" is legacy.*use "ModalV2"/i);
+  });
+
   it('ERRORS when style keys are placed under properties', () => {
     const r = lintComponentSpec({ name: 'title', type: 'Text', properties: { textColor: { value: '#111' } } });
     expect(r.errors.join(' ')).toMatch(/style keys \["textColor"\] are under `properties`/);

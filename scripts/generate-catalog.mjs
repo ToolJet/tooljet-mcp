@@ -231,12 +231,6 @@ function extractExposedVariables(config) {
     });
 }
 
-// Legacy components we deliberately hide from agents — a modern replacement exists, so surfacing
-// the old one just invites the agent to pick the wrong (deprecated) widget.
-//   DropDown    -> use DropdownV2
-//   Multiselect -> use MultiselectV2
-const LEGACY_EXCLUDED = new Set(['DropDown', 'Multiselect']);
-
 // --- Harvest ---
 const files = readdirSync(widgetsDir).filter((f) => /\.(js|ts)$/.test(f) && f !== 'index.js');
 const schemas = {};
@@ -257,10 +251,6 @@ for (const f of files) {
   }
   const name = strProp(config, 'name');
   const type = strProp(config, 'component') || name;
-  if (LEGACY_EXCLUDED.has(type)) {
-    skipped.push(f + ' (legacy — replaced by a V2)');
-    continue;
-  }
   schemas[type] = {
     type,
     name,

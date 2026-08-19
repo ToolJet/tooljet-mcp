@@ -383,6 +383,19 @@ describe('get_component_catalog tool', () => {
     expect(batch.unknown_types).toEqual(['NotAComponent']);
   });
 
+  it('serves legacy schemas only for repair and names the modern replacement', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const result = textOf(await tool.handler({ type: 'KanbanBoard', sections: ['overview'] })) as any;
+
+    expect(result).toMatchObject({
+      type: 'KanbanBoard',
+      deprecated: true,
+      replacement: 'Kanban',
+    });
+    expect(result.deprecation_note).toMatch(/existing apps.*Use "Kanban" for new components/i);
+  });
+
   it('can narrow property/style arrays for one component contract', async () => {
     const client = makeClient();
     const tool = getComponentCatalogTool(client as unknown as ToolJetClient);

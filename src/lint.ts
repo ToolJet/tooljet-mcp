@@ -2,7 +2,7 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
-import { getCatalog, getComponentSchema } from './catalog.js';
+import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
@@ -643,6 +643,14 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       `Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` +
         (suggestion ? ` Did you mean "${suggestion}"?` : ' Call get_component_catalog with no type to list supported types.')
     );
+  } else {
+    const replacement = getLegacyComponentReplacement(spec.type);
+    if (replacement) {
+      warnings.push(
+        `Component "${label}": "${spec.type}" is legacy. Keep it only when repairing an existing app; ` +
+          `use "${replacement}" for new components.`
+      );
+    }
   }
   for (const [sectionName, authored, entries] of [
     ['property', spec.properties, componentSchema?.properties],

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ComponentSchema } from '../catalog.js';
-import { getCatalog, getComponentSchema } from '../catalog.js';
+import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from '../catalog.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const CATALOG_SECTIONS = [
@@ -78,6 +78,19 @@ function selectSchema(schema: ComponentSchema, args: CatalogArgs): Record<string
   return result;
 }
 
+function legacyNotice(type: string): Record<string, unknown> {
+  const replacement = getLegacyComponentReplacement(type);
+  return replacement
+    ? {
+        deprecated: true,
+        replacement,
+        deprecation_note:
+          `"${type}" remains available only for inspecting or repairing existing apps. ` +
+          `Use "${replacement}" for new components.`,
+      }
+    : {};
+}
+
 export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
   return {
     name: 'get_component_catalog',
@@ -114,7 +127,11 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
           if (!schema) {
             return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
           }
-          return ok({ ...selectSchema(schema, args), ...(resolved.alias ? { alias: resolved.alias } : {}) });
+          return ok({
+            ...selectSchema(schema, args),
+            ...legacyNotice(schema.type),
+            ...(resolved.alias ? { alias: resolved.alias } : {}),
+          });
         }
 
         const requestedTypes = [...new Set(args.types)];
@@ -135,6 +152,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
         for (const { schema, aliases } of byResolvedType.values()) {
           components.push({
             ...selectSchema(schema, args),
+            ...legacyNotice(schema.type),
             ...(aliases.length ? { requested_aliases: aliases } : {}),
           });
         }

@@ -7,7 +7,7 @@ describe('catalog', () => {
     const types = getCatalog().map((c) => c.type);
     expect(types).toContain('Table');
     expect(types).toContain('Statistics');
-    expect(types.length).toBeGreaterThanOrEqual(80);
+    expect(types.length).toBeGreaterThanOrEqual(70);
     // every entry carries a purpose
     expect(getCatalog().every((c) => typeof c.type === 'string')).toBe(true);
   });
@@ -47,12 +47,24 @@ describe('catalog', () => {
     expect(getComponentSchema('NotAComponent')).toBeNull();
   });
 
-  it('excludes legacy dropdowns but keeps the V2s', () => {
+  it('hides every legacy component from new-authoring palette but keeps schemas for repairs', () => {
     const types = getCatalog().map((c) => c.type);
-    expect(types).not.toContain('DropDown');
-    expect(types).not.toContain('Multiselect');
-    expect(types).toContain('DropdownV2');
-    expect(types).toContain('MultiselectV2');
+    const replacements = {
+      ButtonGroup: 'ButtonGroupV2',
+      Datepicker: 'DatePickerV2',
+      DropDown: 'DropdownV2',
+      KanbanBoard: 'Kanban',
+      Modal: 'ModalV2',
+      Multiselect: 'MultiselectV2',
+      RadioButton: 'RadioButtonV2',
+      RangeSlider: 'RangeSliderV2',
+      ToggleSwitch: 'ToggleSwitchV2',
+    };
+    for (const [legacy, modern] of Object.entries(replacements)) {
+      expect(types).not.toContain(legacy);
+      expect(types).toContain(modern);
+      expect(getComponentSchema(legacy)?.type).toBe(legacy);
+    }
   });
 
   it('serves curated renderingHints for Chart and Statistics', () => {

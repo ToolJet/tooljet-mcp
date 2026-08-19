@@ -14,6 +14,9 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TJAI = process.env.TJAI_ROOT || resolve(homedir(), 'Claude/Projects/TJ-AI');
 const TOOLJET = process.env.TOOLJET_ROOT || resolve(homedir(), 'Claude/Projects/ToolJet/ToolJet');
+const { legacyReplacements: LEGACY_REPLACEMENTS } = JSON.parse(
+  readFileSync(resolve(root, 'data/component-compatibility.json'), 'utf8')
+);
 
 // --- 1. Extract COMPONENT_BINDING_RULES (dict[str,str]) from the agent via Python ast ---
 function extractBindingRules() {
@@ -53,10 +56,6 @@ function readGridConstants() {
   };
 }
 
-// Legacy components hidden from agents — a modern V2 replacement exists. Keep in sync with
-// generate-catalog.mjs's LEGACY_EXCLUDED (DropDown -> DropdownV2, Multiselect -> MultiselectV2).
-const LEGACY_EXCLUDED = new Set(['DropDown', 'Multiselect']);
-
 // --- 2b. Harvest the built-in component catalog from ToolJet widget defs ---
 // Capture the callable `component` TYPE (what add_component wants) alongside the display name +
 // purpose — the palette must show the type, not the display name (they differ: name 'Dropdown'
@@ -70,7 +69,7 @@ function readWidgetCatalog() {
     const name = txt.match(/\bname:\s*'([^']+)'/)?.[1];
     const desc = txt.match(/\bdescription:\s*'([^']+)'/)?.[1];
     const type = txt.match(/\bcomponent:\s*'([^']+)'/)?.[1] || name;
-    if (name && desc && !LEGACY_EXCLUDED.has(type)) items.push({ type, name, description: desc });
+    if (name && desc && !LEGACY_REPLACEMENTS[type]) items.push({ type, name, description: desc });
   }
   // de-dupe by type, sort by type
   const seen = new Set();
@@ -108,14 +107,19 @@ const rules = extractBindingRules();
 const grid = readGridConstants();
 const catalog = readWidgetCatalog();
 const componentList = Object.keys(rules).sort();
+const referenceComponentList = componentList.filter((name) => {
+  const replacement = LEGACY_REPLACEMENTS[name];
+  return !replacement || !rules[replacement];
+});
 
 const catalogSection = catalog
   .map((c) => `| \`${c.type}\` | ${c.name} — ${c.description} |`)
   .join('\n');
 
-const componentSection = componentList
+const componentSection = referenceComponentList
   .map((name) => {
     let rule = deAgent(rules[name]);
+    const publishedName = LEGACY_REPLACEMENTS[name] ?? name;
     if (name === 'Table') {
       // Verified in TableContainer/TableExposedVariables: the exposed pageIndex is 1-based and
       // setPage converts it to the internal zero-based index.
@@ -133,7 +137,7 @@ const componentSection = componentList
     if (name === 'KeyValuePair') {
       rule += ' An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection.';
     }
-    return `### ${name}\n${rule}`;
+    return `### ${publishedName}\n${rule}`;
   })
   .join('\n\n');
 

@@ -1,0 +1,13 @@
+{
+  "legacyReplacements": {
+    "ButtonGroup": "ButtonGroupV2",
+    "Datepicker": "DatePickerV2",
+    "DropDown": "DropdownV2",
+    "KanbanBoard": "Kanban",
+    "Modal": "ModalV2",
+    "Multiselect": "MultiselectV2",
+    "RadioButton": "RadioButtonV2",
+    "RangeSlider": "RangeSliderV2",
+    "ToggleSwitch": "ToggleSwitchV2"
+  }
+}

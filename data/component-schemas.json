@@ -5459,6 +5459,143 @@
     "actions": [],
     "exposedVariables": []
   },
+  "DropDown": {
+    "type": "DropDown",
+    "name": "DropdownLegacy",
+    "description": "Single item selector",
+    "defaultSize": {
+      "width": 8,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Select"
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Select an option"
+      },
+      {
+        "key": "advanced",
+        "label": "Advanced",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "union",
+        "default": "{{2}}"
+      },
+      {
+        "key": "values",
+        "label": "Option values",
+        "valueType": "array",
+        "default": "{{[1,2,3]}}"
+      },
+      {
+        "key": "display_values",
+        "label": "Option labels",
+        "valueType": "array",
+        "default": "{{[\"one\", \"two\", \"three\"]}}"
+      },
+      {
+        "key": "schema",
+        "label": "Schema",
+        "default": "{{[ {label: 'One',value: 1,disable: false,visible: true,default: true},{label: 'Two',value: 2,disable: false,visible: true},{label: 'Three',value: 3,disable:…"
+      },
+      {
+        "key": "loadingState",
+        "label": "Options loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "union",
+        "default": 4
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean"
+      },
+      {
+        "key": "selectedTextColor",
+        "label": "Selected text color",
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": false
+      },
+      {
+        "key": "justifyContent",
+        "label": "Align Text",
+        "valueType": "string",
+        "default": "left"
+      }
+    ],
+    "events": [
+      {
+        "id": "onSelect",
+        "label": "On select"
+      },
+      {
+        "id": "onSearchTextChanged",
+        "label": "On search text changed"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "selectOption",
+        "displayName": "Select option",
+        "params": [
+          {
+            "handle": "select",
+            "displayName": "Select"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "value",
+        "default": 2
+      },
+      {
+        "name": "searchText",
+        "default": ""
+      },
+      {
+        "name": "label",
+        "default": "Select"
+      },
+      {
+        "name": "optionLabels",
+        "default": [
+          "one",
+          "two",
+          "three"
+        ]
+      },
+      {
+        "name": "selectedOptionLabel",
+        "default": "two"
+      }
+    ]
+  },
   "DropdownV2": {
     "type": "DropdownV2",
     "name": "Dropdown",
@@ -10424,6 +10561,117 @@
     "events": [],
     "actions": [],
     "exposedVariables": []
+  },
+  "Multiselect": {
+    "type": "Multiselect",
+    "name": "MultiselectLegacy",
+    "description": "Multiple item selector",
+    "defaultSize": {
+      "width": 12,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Select"
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "array",
+        "default": "{{[2,3]}}"
+      },
+      {
+        "key": "values",
+        "label": "Option values",
+        "valueType": "array",
+        "default": "{{[1,2,3]}}"
+      },
+      {
+        "key": "display_values",
+        "label": "Option labels",
+        "valueType": "array",
+        "default": "{{[\"one\", \"two\", \"three\"]}}"
+      },
+      {
+        "key": "showAllOption",
+        "label": "Enable select All option",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visible",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number",
+        "default": 4
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": true
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": false
+      }
+    ],
+    "events": [
+      {
+        "id": "onSelect",
+        "label": "On select"
+      },
+      {
+        "id": "onSearchTextChanged",
+        "label": "On search text changed"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "selectOption",
+        "displayName": "Select Option",
+        "params": [
+          {
+            "handle": "option",
+            "displayName": "Option"
+          }
+        ]
+      },
+      {
+        "handle": "deselectOption",
+        "displayName": "Deselect Option",
+        "params": [
+          {
+            "handle": "option",
+            "displayName": "Option"
+          }
+        ]
+      },
+      {
+        "handle": "clearSelections",
+        "displayName": "Clear selections"
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "values",
+        "default": {}
+      },
+      {
+        "name": "searchText",
+        "default": ""
+      }
+    ]
   },
   "MultiselectV2": {
     "type": "MultiselectV2",
