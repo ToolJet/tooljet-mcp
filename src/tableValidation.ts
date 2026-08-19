@@ -1,7 +1,7 @@
 import type { CreateTableParams } from './tooljetClient.js';
 
 /** Column names the ToolJet DB API has explicitly rejected as reserved keywords. */
-export const TOOLJET_DB_RESERVED_COLUMN_NAMES = new Set(['action', 'comment']);
+export const TOOLJET_DB_RESERVED_COLUMN_NAMES = new Set(['action', 'comment', 'condition']);
 
 function normalized(value: string): string {
   return value.trim().toLowerCase();
@@ -31,7 +31,7 @@ export function validateTableBatch(tables: CreateTableParams[]): string[] {
       if (TOOLJET_DB_RESERVED_COLUMN_NAMES.has(columnKey)) {
         errors.push(
           `Table "${table.tableName}" uses reserved column name "${column.name}". ` +
-            'Use a descriptive name such as step_action or result_comment.'
+            'Use a descriptive name such as step_action, result_comment, or item_condition.'
         );
       }
     }

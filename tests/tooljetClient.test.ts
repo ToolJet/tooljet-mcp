@@ -958,6 +958,12 @@ describe('createClient', () => {
         column: { name: 'comment', type: 'string' },
       })).rejects.toThrow(/reserved column name: comment.*result_comment/i);
       expect(auth.authedFetch).not.toHaveBeenCalled();
+
+      await expect(client.createTable({
+        tableName: 'inspections',
+        columns: [{ name: 'condition', type: 'string' }],
+      })).rejects.toThrow(/reserved column name: condition.*item_condition/i);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
     });
   });
 

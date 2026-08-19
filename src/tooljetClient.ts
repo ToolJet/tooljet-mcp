@@ -151,7 +151,7 @@ function assertAllowedToolJetDbColumnNames(operation: 'createTable' | 'addTableC
   if (reserved.length) {
     throw new Error(
       `ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? '' : 's'}: ${reserved.join(', ')}. ` +
-        'Use a descriptive name such as step_action or result_comment.'
+        'Use a descriptive name such as step_action, result_comment, or item_condition.'
     );
   }
 }

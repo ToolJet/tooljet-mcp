@@ -29,10 +29,12 @@ describe('table batch validation', () => {
     const errors = validateTableBatch([
       { tableName: 'tickets', columns: [{ name: 'action', type: 'string' }, { name: 'ACTION', type: 'string' }] },
       { tableName: 'Tickets', columns: [{ name: 'id', type: 'integer' }] },
+      { tableName: 'inspections', columns: [{ name: 'condition', type: 'string' }] },
     ]);
     expect(errors.join(' ')).toMatch(/duplicate table name/i);
     expect(errors.join(' ')).toMatch(/duplicate column name/i);
     expect(errors.join(' ')).toMatch(/reserved column name/i);
+    expect(errors.join(' ')).toMatch(/condition.*item_condition/i);
   });
 });
 
