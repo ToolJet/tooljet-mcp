@@ -71,6 +71,7 @@ describe('create_app tool', () => {
       app_url: 'http://localhost:8082/apps/app1',
       editor_url: 'http://localhost:8082/apps/app1',
       viewer_url: 'http://localhost:8082/applications/app1/home?env=development&version=v1',
+      datasources_url: 'http://localhost:8082/tooljets-workspace/data-sources',
     };
     client.createApp.mockResolvedValue(created);
 
@@ -160,6 +161,29 @@ describe('run_query tool', () => {
     });
 
     expect(textOf(result)).toEqual({ status: 'ok', data: [{ '?column?': 1 }] });
+  });
+
+  it('returns a user-operated datasource repair link after a runtime connection failure', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'q1', kind: 'postgresql', data_source_id: 'pg1',
+      datasource_settings_url: 'http://localhost:8082/acme/data-sources/pg1',
+      options: { mode: 'sql', query: 'select id from orders limit 25' },
+    });
+    client.runQuery.mockResolvedValue({ status: 'failed', message: 'connection refused' });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'q1', version_id: 'v1',
+    });
+
+    expect(textOf(result)).toMatchObject({
+      status: 'failed',
+      recovery: {
+        action: 'open_datasource_settings',
+        url: 'http://localhost:8082/acme/data-sources/pg1',
+        instruction: expect.stringMatching(/Ask the user.*in-app browser.*do not enter credentials.*Retry only after/is),
+      },
+    });
   });
 
   it('refuses SELECT star before execution, even when it has a limit', async () => {
@@ -291,6 +315,7 @@ describe('run_queries tool', () => {
       },
       {
         id: 'q2', name: 'page', kind: 'tooljetdb',
+        datasource_settings_url: 'http://localhost:8082/acme/data-sources/tjdb',
         options: {
           operation: 'list_rows', table_id: 'orders',
           list_rows: { limit: 25, offset: '{{components.orders.pageIndex}}' },
@@ -314,6 +339,11 @@ describe('run_queries tool', () => {
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'upstream timeout',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
+        recovery: {
+          action: 'open_datasource_settings',
+          url: 'http://localhost:8082/acme/data-sources/tjdb',
+          instruction: expect.stringMatching(/user.*in-app browser.*do not enter credentials/is),
+        },
       },
     ] });
   });

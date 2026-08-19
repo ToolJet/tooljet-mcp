@@ -13,12 +13,14 @@ export interface CreateAppResult {
   app_url: string;
   editor_url: string;
   viewer_url: string;
+  datasources_url: string;
 }
 
 export interface Datasource {
   id: string;
   name: string;
   kind: string;
+  settings_url: string;
 }
 
 export interface CreateQueryParams {
@@ -343,6 +345,7 @@ export interface QuerySummary {
   name?: string;
   kind?: string;
   data_source_id?: string;
+  datasource_settings_url?: string;
   options?: unknown;
 }
 
@@ -514,6 +517,9 @@ function tableForeignKeyDto(foreignKey: TableForeignKey): Record<string, unknown
 
 export function createClient(auth: Auth, config: Config): ToolJetClient {
   let developmentEnvironmentIdPromise: Promise<string> | undefined;
+  const datasourceManagementUrl = (workspaceSlug: string, datasourceId?: string) =>
+    `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
+    (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
@@ -630,6 +636,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       app_url: editorUrl,
       editor_url: editorUrl,
       viewer_url: viewerUrl,
+      datasources_url: datasourceManagementUrl(orgSlug),
     };
   }
 
@@ -956,7 +963,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function listDatasources(versionId: string): Promise<Datasource[]> {
-    const [orgId, envId] = await Promise.all([auth.getOrganizationId(), getDevelopmentEnvironmentId()]);
+    const [orgId, orgSlug, envId] = await Promise.all([
+      auth.getOrganizationId(),
+      auth.getOrganizationSlug(),
+      getDevelopmentEnvironmentId(),
+    ]);
     // The route retains versionId for API compatibility, but ToolJet resolves workspace/global sources
     // available to this user + environment; a new app does not need a per-app datasource-link operation.
     const res = await auth.authedFetch(
@@ -964,10 +975,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     );
     await assertOk(res, 'listDatasources');
     // The API returns fully-hydrated datasource objects (options, plugin, scope, …) — ~22KB in a
-    // typical app. The agent only needs {id,name,kind}; strip the rest at runtime (the TS type does
+    // typical app. The agent only needs identity + a repair URL; strip the rest at runtime (the TS type does
     // NOT strip fields on its own).
     const body = (await res.json()) as { data_sources: Array<Datasource & Record<string, unknown>> };
-    return body.data_sources.map((d) => ({ id: d.id, name: d.name, kind: d.kind }));
+    return body.data_sources.map((d) => ({
+      id: d.id,
+      name: d.name,
+      kind: d.kind,
+      settings_url: datasourceManagementUrl(orgSlug, d.id),
+    }));
   }
 
   async function createTable(params: CreateTableParams): Promise<CreateTableResult> {
@@ -1480,7 +1496,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/data-queries/${versionId}`);
     await assertOk(res, 'getQueries');
     const body = (await res.json()) as { data_queries?: QuerySummary[] };
-    return body.data_queries ?? [];
+    const orgSlug = await auth.getOrganizationSlug();
+    return (body.data_queries ?? []).map((query) => ({
+      ...query,
+      ...(query.data_source_id
+        ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query.data_source_id) }
+        : {}),
+    }));
   }
 
   async function getQuery(queryId: string, versionId: string): Promise<QuerySummary> {

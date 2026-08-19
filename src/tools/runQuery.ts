@@ -15,6 +15,19 @@ export function containsComponentBinding(value: unknown): boolean {
   return false;
 }
 
+export function datasourceRecovery(query: {
+  datasource_settings_url?: string;
+}): Record<string, unknown> | undefined {
+  if (!query.datasource_settings_url) return undefined;
+  return {
+    action: 'open_datasource_settings',
+    url: query.datasource_settings_url,
+    instruction:
+      'Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; ' +
+      'do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair.',
+  };
+}
+
 export function runQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_query',
@@ -119,15 +132,29 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
             );
           }
         }
-        const result = await client.runQuery({
-          queryId: args.query_id,
-          versionId: args.version_id,
-          environmentId: args.environment_id,
-        });
+        let result;
+        try {
+          result = await client.runQuery({
+            queryId: args.query_id,
+            versionId: args.version_id,
+            environmentId: args.environment_id,
+          });
+        } catch (error) {
+          const recovery = datasourceRecovery(query);
+          return ok({
+            status: 'failed',
+            message: error instanceof Error ? error.message : String(error),
+            ...(preflight ? { preflight } : {}),
+            ...(warnings.length ? { warnings } : {}),
+            ...(recovery ? { recovery } : {}),
+          });
+        }
+        const recovery = result.status === 'failed' ? datasourceRecovery(query) : undefined;
         return ok({
           ...result,
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
+          ...(recovery ? { recovery } : {}),
         });
       } catch (err) {
         return fail(err);

@@ -78,6 +78,7 @@ describe('createClient', () => {
         app_url: 'http://localhost:8082/myworkspace/apps/app1',
         editor_url: 'http://localhost:8082/myworkspace/apps/app1',
         viewer_url: 'http://localhost:8082/applications/app1/home?env=development&version=v1',
+        datasources_url: 'http://localhost:8082/myworkspace/data-sources',
       });
     });
 
@@ -343,10 +344,16 @@ describe('createClient', () => {
         2,
         '/api/data-sources/org1/environments/env-dev/versions/ver1'
       );
-      // exactly {id,name,kind} — bulky fields stripped
+      // compact identity + repair link — bulky fields stripped
       expect(datasources).toEqual([
-        { id: 'ds1', name: 'tjdb', kind: 'tooljetdb' },
-        { id: 'ds2', name: 'restapi1', kind: 'restapi' },
+        {
+          id: 'ds1', name: 'tjdb', kind: 'tooljetdb',
+          settings_url: 'http://localhost:8082/myworkspace/data-sources/ds1',
+        },
+        {
+          id: 'ds2', name: 'restapi1', kind: 'restapi',
+          settings_url: 'http://localhost:8082/myworkspace/data-sources/ds2',
+        },
       ]);
     });
 
@@ -361,6 +368,27 @@ describe('createClient', () => {
       await expect(client.listDatasources('ver1')).rejects.toThrow(
         /ToolJet listDatasources failed \(403\): forbidden/
       );
+    });
+  });
+
+  describe('getQueries', () => {
+    it('adds a direct datasource settings URL without exposing datasource credentials', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+        status: 200,
+        json: {
+          data_queries: [{
+            id: 'q1', name: 'orders', kind: 'postgresql', data_source_id: 'pg1',
+            options: { mode: 'sql', query: 'select id from orders limit 25' },
+          }],
+        },
+      }));
+
+      const queries = await createClient(auth, config).getQueries('ver1');
+
+      expect(queries).toEqual([expect.objectContaining({
+        id: 'q1',
+        datasource_settings_url: 'http://localhost:8082/myworkspace/data-sources/pg1',
+      })]);
     });
   });
 

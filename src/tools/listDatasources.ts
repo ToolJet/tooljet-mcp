@@ -9,7 +9,8 @@ export function listDatasourcesTool(client: ToolJetClient): ToolDef {
       "List the workspace-connected datasources available to the current user/environment, including the built-in " +
       "ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear " +
       'automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected ' +
-      'source is absent, check workspace, permissions, connection, and environment configuration.',
+      'source is absent, check workspace, permissions, connection, and environment configuration. Each returned ' +
+      'source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user.',
     inputSchema: {
       version_id: z.string(),
     },

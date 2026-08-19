@@ -7,6 +7,8 @@ export interface Workspace {
   id: string;
   name: string;
   slug: string;
+  /** User-facing ToolJet page for connecting or repairing workspace datasources. */
+  datasources_url: string;
   is_default?: boolean;
   /** True for the workspace that is currently active for this session. */
   is_current?: boolean;
@@ -27,6 +29,10 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
   let workspaceId: string | undefined;
   let workspaceSlug: string | undefined;
   let workspaceName: string | undefined;
+
+  const datasourceManagementUrl = (slug: string, datasourceId?: string) =>
+    `${config.appUrl}/${encodeURIComponent(slug)}/data-sources` +
+    (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
 
   function captureCookie(res: Response): void {
     const cookie = res.headers.getSetCookie().find((c) => c.startsWith(COOKIE_PREFIX));
@@ -96,6 +102,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
       id: o.id as string,
       name: o.name as string,
       slug: o.slug as string,
+      datasources_url: datasourceManagementUrl(o.slug as string),
       is_default: !!o.is_default,
       is_current: o.id === workspaceId,
     }));
@@ -127,7 +134,13 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
         workspaceName = found.name;
       }
     }
-    return { id: workspaceId!, name: workspaceName ?? '', slug: workspaceSlug ?? '', is_current: true };
+    return {
+      id: workspaceId!,
+      name: workspaceName ?? '',
+      slug: workspaceSlug ?? '',
+      datasources_url: datasourceManagementUrl(workspaceSlug ?? ''),
+      is_current: true,
+    };
   }
 
   async function applyConfiguredWorkspace(): Promise<void> {

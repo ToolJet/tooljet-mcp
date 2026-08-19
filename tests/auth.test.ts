@@ -179,8 +179,16 @@ describe('createAuth', () => {
 
       expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/organizations?status=active');
       expect(ws).toEqual([
-        { id: 'org1', name: 'Acme', slug: 'acme', is_default: true, is_current: true },
-        { id: 'org2', name: 'Beta', slug: 'beta', is_default: false, is_current: false },
+        {
+          id: 'org1', name: 'Acme', slug: 'acme',
+          datasources_url: 'http://localhost:8082/acme/data-sources',
+          is_default: true, is_current: true,
+        },
+        {
+          id: 'org2', name: 'Beta', slug: 'beta',
+          datasources_url: 'http://localhost:8082/beta/data-sources',
+          is_default: false, is_current: false,
+        },
       ]);
     });
 
@@ -198,7 +206,11 @@ describe('createAuth', () => {
 
       const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
       const active = await auth.switchWorkspace('org2');
-      expect(active).toEqual({ id: 'org2', name: 'Beta', slug: 'beta', is_current: true });
+      expect(active).toEqual({
+        id: 'org2', name: 'Beta', slug: 'beta',
+        datasources_url: 'http://localhost:8082/beta/data-sources',
+        is_current: true,
+      });
       expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/switch/org2');
 
       await auth.authedFetch('/api/apps');

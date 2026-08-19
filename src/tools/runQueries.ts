@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead } from '../queryExecutionSafety.js';
-import { containsComponentBinding } from './runQuery.js';
+import { containsComponentBinding, datasourceRecovery } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 /** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query. */
@@ -56,13 +56,16 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
           const warnings = containsComponentBinding(query.options)
             ? ['Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer.']
             : [];
+          const datasourceRepair = datasourceRecovery(query);
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
+            const recovery = result.status === 'failed' ? datasourceRepair : undefined;
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
               ...result,
               ...(warnings.length ? { warnings } : {}),
+              ...(recovery ? { recovery } : {}),
             };
           } catch (error) {
             return {
@@ -71,6 +74,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               status: 'failed',
               message: error instanceof Error ? error.message : String(error),
               ...(warnings.length ? { warnings } : {}),
+              ...(datasourceRepair ? { recovery: datasourceRepair } : {}),
             };
           }
         }));
