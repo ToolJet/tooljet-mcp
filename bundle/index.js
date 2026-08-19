@@ -31804,6 +31804,31 @@ function lintComponentSpec(spec) {
     } else if (typeof title === "string" && title.trim() !== "") {
       warnings.push(`Chart "${label}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
     }
+    const plotFromJson = propVal(props, "plotFromJson");
+    const jsonDescription = propVal(props, "jsonDescription");
+    if (isTruthyBinding(plotFromJson)) {
+      if (jsonDescription === void 0) {
+        errors.push(`Chart "${label}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
+      } else if (isDynamicBinding(jsonDescription)) {
+        warnings.push(`Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
+      } else {
+        let parsed = jsonDescription;
+        if (typeof jsonDescription === "string") {
+          try {
+            parsed = JSON.parse(jsonDescription);
+          } catch {
+            errors.push(`Chart "${label}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
+            parsed = void 0;
+          }
+        }
+        if (parsed !== void 0) {
+          const description = recordValue(parsed);
+          if (!description || !Array.isArray(description.data) || description.data.length === 0) {
+            errors.push(`Chart "${label}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
+          }
+        }
+      }
+    }
   }
   if (spec.type === "Html" && nestedMapInValue(propVal(props, "rawHtml"))) {
     warnings.push(`Html "${label}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
@@ -31833,6 +31858,17 @@ function lintComponentSpec(spec) {
     const options = propVal(props, "options");
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
     const customOptions = differsFromCatalogDefault("DropdownV2", "options", options);
+    if (customOptions && !Array.isArray(options)) {
+      errors.push(`DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options === "string" && isDynamicBinding(options) ? "a dynamic {{ }} binding" : typeof options}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
+    } else if (Array.isArray(options)) {
+      const malformedIndexes = options.flatMap((option, index) => {
+        const entry = recordValue(option);
+        return entry && "label" in entry && "value" in entry ? [] : [index];
+      });
+      if (malformedIndexes.length) {
+        errors.push(`DropdownV2 "${label}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
+      }
+    }
     if (customSchema && customOptions) {
       warnings.push(`DropdownV2 "${label}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
     }
@@ -32467,18 +32503,6 @@ function tableForeignKeyDto(foreignKey) {
     ...foreignKey.onUpdate ? { on_update: foreignKey.onUpdate } : {}
   };
 }
-function toCsv(headers, rows) {
-  const esc2 = (v) => {
-    if (v === null || v === void 0)
-      return "";
-    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  };
-  const lines = [headers.join(",")];
-  for (const row of rows)
-    lines.push(headers.map((h) => esc2(row[h])).join(","));
-  return lines.join("\n") + "\n";
-}
 function createClient(auth, config2) {
   let developmentEnvironmentIdPromise;
   async function getApp(appId) {
@@ -32937,26 +32961,23 @@ function createClient(auth, config2) {
   async function insertRows(params) {
     if (!params.rows.length)
       return { processed_rows: 0 };
-    const orgId = await auth.getOrganizationId();
     const schema = await getTableSchema(params.tableName);
-    const pk = schema.find((c) => c.isPrimaryKey);
     const rows = params.rows.map((r) => ({ ...r }));
-    if (pk && !(pk.name in (rows[0] ?? {})) && /int|serial|numeric/i.test(pk.type)) {
-      rows.forEach((r, i) => r[pk.name] = i + 1);
+    const generatedPrimaryKey = schema.find((column) => column.isPrimaryKey && (/serial/i.test(column.type) || /^nextval\(/i.test(String(column.defaultValue ?? ""))));
+    if (generatedPrimaryKey && rows.some((row) => generatedPrimaryKey.name in row)) {
+      throw new Error(`insertRows: omit generated primary key "${generatedPrimaryKey.name}" for table "${params.tableName}". ToolJet will allocate it from the real table sequence; explicit generated ids can collide or desynchronize future inserts.`);
     }
-    const keys = /* @__PURE__ */ new Set();
-    for (const r of rows)
-      Object.keys(r).forEach((k) => keys.add(k));
-    const headers = [
-      ...schema.map((c) => c.name).filter((n) => keys.has(n)),
-      ...[...keys].filter((k) => !schema.some((c) => c.name === k))
-    ];
-    const form = new FormData();
-    form.append("file", new Blob([toCsv(headers, rows)], { type: "text/csv" }), "seed.csv");
-    const res = await auth.authedFetch(`/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(params.tableName)}/bulk-upload`, { method: "POST", body: form });
+    const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
+    if (!table)
+      throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
+    const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rows)
+    });
     await assertOk(res, "insertRows");
-    const body = await res.json();
-    return { processed_rows: body.result?.processed_rows ?? rows.length };
+    const inserted = await res.json().catch(() => void 0);
+    return { processed_rows: Array.isArray(inserted) ? inserted.length : rows.length };
   }
   async function insertRowsBatch(params) {
     const results = [];
@@ -33163,6 +33184,18 @@ function createClient(auth, config2) {
     await assertOk(res, "deleteQuery");
     return { deleted: true };
   }
+  async function deletePage(params) {
+    const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageId: params.pageId,
+        deleteAssociatedPages: params.deleteAssociatedPages ?? false
+      })
+    });
+    await assertOk(res, "deletePage");
+    return { deleted: true };
+  }
   async function getQueries(versionId) {
     const res = await auth.authedFetch(`/api/data-queries/${versionId}`);
     await assertOk(res, "getQueries");
@@ -33246,6 +33279,7 @@ function createClient(auth, config2) {
     createPage,
     createPages,
     updatePages,
+    deletePage,
     createEvents,
     getDevelopmentEnvironmentId,
     listDatasources,
@@ -33562,7 +33596,7 @@ function getTableSchemaTool(client) {
 function insertRowsTool(client) {
   return {
     name: "insert_rows",
-    description: "Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by column name. You may omit an integer/serial primary key \u2014 sequential ids are assigned automatically. Returns { processed_rows }. Optional: only seed when the user wants sample data.",
+    description: "Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by column name. Omit generated serial primary keys so ToolJet uses the table sequence. This is insert-only: explicit duplicate keys fail instead of updating existing rows. Returns { processed_rows }. Optional: only seed when the user wants sample data.",
     inputSchema: {
       table_name: external_exports.string(),
       rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
@@ -33585,7 +33619,7 @@ var seedSchema = external_exports.object({
 function insertRowsBatchTool(client) {
   return {
     name: "insert_rows_batch",
-    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Returns {tables:[{table_name,processed_rows}],processed_rows}. Keep initial demo data representative and small.",
+    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. Keep initial demo data representative and small.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -35052,7 +35086,7 @@ function validatePersistedAppSummary(summary) {
 function validateAppTool(client) {
   return {
     name: "validate_app",
-    description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
+    description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references or invalid persisted contracts you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
     inputSchema: {
       app_id: external_exports.string()
     },
@@ -36288,6 +36322,68 @@ function updatePagesTool(client) {
   };
 }
 
+// dist/tools/deletePage.js
+function containsValue(value, expected) {
+  if (value === expected)
+    return true;
+  if (Array.isArray(value))
+    return value.some((entry) => containsValue(entry, expected));
+  if (value && typeof value === "object") {
+    return Object.values(value).some((entry) => containsValue(entry, expected));
+  }
+  return false;
+}
+function deletePageTool(client) {
+  return {
+    name: "delete_page",
+    description: "Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user approval for the named page, then pass confirm:true. The tool refuses pages still targeted by events outside that page, because ToolJet does not safely retarget those references. Set delete_associated_pages:true only when explicitly deleting a page group and its children.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      page_id: external_exports.string(),
+      delete_associated_pages: external_exports.boolean().optional(),
+      confirm: external_exports.literal(true)
+    },
+    async handler(args) {
+      try {
+        const before = await client.getAppSummary(args.app_id);
+        const page = before.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          throw new Error(`delete_page: page ${args.page_id} was not found in app ${args.app_id}.`);
+        if (page.handle === "home" || page.name === "Home") {
+          throw new Error("delete_page: the native Home page cannot be deleted; rename, restyle, or reorder it with update_pages.");
+        }
+        const ownedSourceIds = /* @__PURE__ */ new Set([page.id, ...page.components.map((component) => component.id)]);
+        const incomingEvents = before.events.filter((event) => !ownedSourceIds.has(event.sourceId ?? "") && containsValue(event.event, page.id));
+        if (incomingEvents.length) {
+          throw new Error(`delete_page: page "${page.name ?? page.id}" is still targeted by external event(s): ` + incomingEvents.map((event) => event.name ?? event.id).join(", ") + ". Update or delete those events first so the app does not retain dangling navigation.");
+        }
+        await client.deletePage({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: args.page_id,
+          deleteAssociatedPages: args.delete_associated_pages
+        });
+        const after = await client.getAppSummary(args.app_id);
+        if (after.pages.some((candidate) => candidate.id === args.page_id)) {
+          throw new Error(`delete_page: ToolJet returned success but page ${args.page_id} still exists.`);
+        }
+        const deletedEventCount = before.events.filter((event) => ownedSourceIds.has(event.sourceId ?? "")).length;
+        return ok({
+          deleted: true,
+          page_id: page.id,
+          page_name: page.name,
+          components_deleted: page.components.length,
+          source_events_deleted: deletedEventCount,
+          delete_associated_pages: args.delete_associated_pages ?? false
+        });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/addQuery.js
 function addQueryTool(client) {
   return {
@@ -37306,6 +37402,7 @@ function registerTools(server, client) {
     addPageTool(client),
     addPagesTool(client),
     updatePagesTool(client),
+    deletePageTool(client),
     addQueryTool(client),
     addQueriesTool(client),
     updateQueryTool(client),
