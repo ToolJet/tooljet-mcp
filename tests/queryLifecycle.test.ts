@@ -33,15 +33,25 @@ describe('query lifecycle expansion', () => {
       closeModalId: 'modal',
       successAlert: { message: 'Case created' },
       failureAlert: { message: 'Could not create case' },
+      successActions: [{ actionId: 'set-custom-variable', key: 'saved', value: true }],
+      failureActions: [{ actionId: 'set-custom-variable', key: 'failed', value: true }],
     }]);
     expect(result.events.map((event) => [event.trigger, event.action.actionId])).toEqual([
       ['onDataQuerySuccess', 'run-query'],
-      ['onDataQuerySuccess', 'control-component'],
+      ['onDataQuerySuccess', 'set-custom-variable'],
       ['onDataQuerySuccess', 'close-modal'],
+      ['onDataQuerySuccess', 'control-component'],
       ['onDataQuerySuccess', 'show-alert'],
+      ['onDataQueryFailure', 'set-custom-variable'],
       ['onDataQueryFailure', 'show-alert'],
     ]);
     expect(result.events[0].action).toMatchObject({ queryId: 'list', queryName: 'list_cases' });
+    expect(result.events[3].action).toEqual({
+      actionId: 'control-component',
+      componentId: 'title',
+      componentSpecificActionHandle: 'clear',
+      componentSpecificActionParams: [],
+    });
   });
 
   it('rejects a non-modal close target', () => {

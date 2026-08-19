@@ -56,17 +56,15 @@ export function expandQueryLifecycles(
       });
     }
 
-    for (const componentId of clearIds) {
-      const component = components.get(componentId);
-      if (!component) throw new Error(`Query "${sourceName}" lifecycle clear target "${componentId}" does not exist.`);
+    (lifecycle.successActions ?? []).forEach((action, index) => {
       events.push({
         sourceId: lifecycle.queryId,
         sourceType: 'data_query',
         trigger: 'onDataQuerySuccess',
-        action: { actionId: 'control-component', componentId, componentSpecificActionHandle: 'clear' },
-        name: `Clear ${component.name ?? componentId} after ${sourceName}`,
+        action,
+        name: `${sourceName} success action ${index + 1}`,
       });
-    }
+    });
 
     if (lifecycle.closeModalId) {
       const modal = components.get(lifecycle.closeModalId);
@@ -85,22 +83,30 @@ export function expandQueryLifecycles(
       });
     }
 
-    if (lifecycle.successAlert) {
-      events.push(alertEvent(lifecycle.queryId, sourceName, 'onDataQuerySuccess', lifecycle.successAlert, 'success'));
-    }
-    (lifecycle.successActions ?? []).forEach((action, index) => {
+    // Keep cosmetic cleanup after refresh/custom work and modal close. ToolJet stops the remaining
+    // same-trigger chain when an event action throws, so this order degrades without trapping the
+    // user in the modal. The runner expects params to be an array even for the parameterless clear.
+    for (const componentId of clearIds) {
+      const component = components.get(componentId);
+      if (!component) throw new Error(`Query "${sourceName}" lifecycle clear target "${componentId}" does not exist.`);
       events.push({
         sourceId: lifecycle.queryId,
         sourceType: 'data_query',
         trigger: 'onDataQuerySuccess',
-        action,
-        name: `${sourceName} success action ${index + 1}`,
+        action: {
+          actionId: 'control-component',
+          componentId,
+          componentSpecificActionHandle: 'clear',
+          componentSpecificActionParams: [],
+        },
+        name: `Clear ${component.name ?? componentId} after ${sourceName}`,
       });
-    });
-
-    if (lifecycle.failureAlert) {
-      events.push(alertEvent(lifecycle.queryId, sourceName, 'onDataQueryFailure', lifecycle.failureAlert, 'error'));
     }
+
+    if (lifecycle.successAlert) {
+      events.push(alertEvent(lifecycle.queryId, sourceName, 'onDataQuerySuccess', lifecycle.successAlert, 'success'));
+    }
+
     (lifecycle.failureActions ?? []).forEach((action, index) => {
       events.push({
         sourceId: lifecycle.queryId,
@@ -110,6 +116,9 @@ export function expandQueryLifecycles(
         name: `${sourceName} failure action ${index + 1}`,
       });
     });
+    if (lifecycle.failureAlert) {
+      events.push(alertEvent(lifecycle.queryId, sourceName, 'onDataQueryFailure', lifecycle.failureAlert, 'error'));
+    }
   }
 
   return { events, warnings };
