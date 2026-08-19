@@ -761,9 +761,16 @@ const datasourceRepair = `## Missing or broken datasource recovery
 \`list_workspaces\` returns \`datasources_url\`; \`list_datasources\` returns a direct \`settings_url\` for each source; failed query runs may return \`recovery:{action:"open_datasource_settings",url,instruction}\`.
 
 When the expected datasource is absent or a connection-backed query fails, explain the failure and ask the user to repair it. If the host has a built-in browser, open the most specific returned URL there; otherwise send the clickable link. Navigation is the only automated action: never enter credentials, authorize OAuth, test the connection, or save settings for the user. Wait for the user to confirm the repair, then refresh \`list_datasources\` and retry at most one explicitly selected safe read. If it still fails, report the error instead of looping.`;
+const restApiGuidance = `## REST API queries
+
+For \`kind:"restapi"\`, fetch the contract for the intended HTTP method, but do not persist an \`operation\` option: REST queries are selected by \`method\`. \`headers\`, \`url_params\`, \`cookies\`, and structured \`body\` are arrays of two-item \`[key, value]\` tuples. For a raw body use \`body_toggle:true\` with \`raw_body\`; \`json_body\` is a legacy fallback for existing queries.
+
+\`queries.<name>.data\` is the remote response body directly—parsed JSON object/array, text, or supported binary base64—not a normalized row array. After an explicitly approved safe GET, inspect \`metadata.request.url/params/headers\` to confirm the resolved request and \`metadata.response.statusCode/headers\` for status, pagination, and rate-limit information. A deployment that reached one public endpoint does not prove outbound access to every host.
+
+Pagination is defined by the remote API. Put its page/limit/cursor fields in \`url_params\`, guard first-load Table state, and bind totals or next cursors from the response body or headers. Avoid one REST request per Table/Listview row; prefer a batch endpoint or enrich only the selected/detail record. Authentication and token repair stay user-owned in datasource settings—never copy, inspect, or author credentials in query options.`;
 const datasources = `# Datasources and query contracts
 
-Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n`;
+Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n`;
 const security = makeReference(
   'Security and authorization boundaries',
   'Read this before adding sensitive data access, user-scoped behavior, permissions, or destructive writes.',
