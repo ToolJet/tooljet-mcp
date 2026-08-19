@@ -305,7 +305,13 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   };
   if (eventSpecs.length) {
     checked.push('event/lifecycle sources, triggers, action ids, and logical targets');
-    const eventValidation = validateEvents(summary, eventSpecs);
+    // `eventSpecs` are supplied separately below. Keep only genuinely persisted events in the
+    // chain context; including the planned rows in `summary.events` duplicates every handler and
+    // makes a sole final switch-page look as though another switch-page follows it.
+    const eventValidation = validateEvents(
+      { ...summary, events: existingSummary?.events ?? [] },
+      eventSpecs
+    );
     errors.push(...eventValidation.errors);
     warnings.push(...eventValidation.warnings);
   }
