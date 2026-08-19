@@ -98,13 +98,14 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
 | `list_tables()` / `get_table_schema(table_name)` | Inspect ToolJet DB tables, constraints, defaults, and relationships |
 | `create_tables(...)` / `add_table_column(...)` | Create one or more ToolJet DB tables or evolve an existing model; the batch preflights dependencies before writes |
-| `insert_rows_batch(...)` | Seed one or several ToolJet DB tables in parent-before-child order |
+| `insert_rows_batch(...)` | Insert-only seed writes for one or several ToolJet DB tables; generated serial keys use the real sequence and conflicts fail loudly |
 | `drop_table_column(..., confirm:true)` / `drop_table(..., confirm:true)` | Explicitly confirmed destructive ToolJet DB cleanup |
 | `get_component_catalog({type?, types?, sections?, ...})` | Component palette or selective one/batched contracts, including nested `authoringHints` |
 | `generate_form_schema({table_name, mode, ...})` | Generate one schema-driven create/edit Form from a ToolJet DB table |
 | `lint_app_spec(...)` / `apply_app_phase(...)` / `validate_app(app_id)` | Dry-run a logical phase, apply its one-time plan token, then statically validate persisted state |
 | `get_app_summary({app_id, sections?, filters?, *_fields?})` | Selectively inspect actual persisted values |
 | `add_pages(...)` / `update_pages(...)` | Add one or more pages, then restyle, hide, rename, or reorder existing sidebar pages (including Home) |
+| `delete_page(..., confirm:true)` | Permanently delete a non-Home page after checking external event references |
 | `add_queries(...)` | Create one or more datasource queries; use the schema tool for `options` |
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |

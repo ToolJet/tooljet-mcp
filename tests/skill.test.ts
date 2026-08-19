@@ -148,6 +148,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(guidance).toMatch(/general permission to build or inspect an app is not consent for a large read/i);
   });
 
+  it('documents insert-only seeding and generated-key safety', () => {
+    expect(guidance).toMatch(/Seed writes are insert-only.*omit generated serial primary keys.*real sequence/is);
+    expect(guidance).toMatch(/duplicate-key failure.*never.*permission to update/is);
+  });
+
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {
     expect(guidance).toMatch(/explicit, complete `columns` array/i);
     expect(guidance).toMatch(/property order of a transformed query object to reorder/i);
@@ -163,6 +168,13 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   it('keeps the DropdownV2 dynamic-mode prerequisite in the compact skill', () => {
     expect(guidance).toMatch(/Dynamic `schema` requires `advanced="\{\{true\}\}"`/);
     expect(guidance).toMatch(/silently uses static `options`/);
+    expect(guidance).toMatch(/`options` accepts a literal static array only.*dynamic `\{\{ \}\}` string.*character objects/is);
+  });
+
+  it('defaults to simple Charts and requires trace verification for dynamic Plotly JSON', () => {
+    expect(guidance).toMatch(/default to simple `type` \+ explicit `data:\[\{x,y\}\]`/i);
+    expect(guidance).toMatch(/Static descriptions must be valid JSON with a non-empty `data` array/i);
+    expect(guidance).toMatch(/visible Chart with zero evaluated traces/i);
   });
 });
 
@@ -290,6 +302,11 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
     expect(guidance).toMatch(/update_pages\(\{ app_id, version_id, updates\?, order\? \}\)/);
     expect(guidance).toMatch(/including the auto-created Home page/i);
     expect(guidance).toMatch(/complete ordered list of current page ids/i);
+  });
+
+  it('requires explicit confirmation for guarded page deletion', () => {
+    expect(guidance).toMatch(/delete_page\(\{ app_id, version_id, page_id, confirm:true \}\)/);
+    expect(guidance).toMatch(/refuses external events that still target the page/i);
   });
 
   it('does not overstate datasource response coverage', () => {
@@ -464,6 +481,9 @@ describe('generated skill is synchronized with the generator', () => {
     'Immediately share the clickable `app_url` in chat',
     'Repeat the clickable `app_url` in the final handoff',
     'how many MCP tool calls it took',
+    'Seed writes are insert-only',
+    'delete_page({ app_id, version_id, page_id, confirm:true })',
+    'visible Plotly Charts with zero evaluated traces',
     'Reuse existing components deliberately',
     'collect every issue before editing',
     'detail:"structure"',

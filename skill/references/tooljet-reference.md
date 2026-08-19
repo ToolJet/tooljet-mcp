@@ -271,10 +271,10 @@ Call `get_datasource_query_schema({ datasource_id, version_id, operation })` for
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
 1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
 2. `create_tables` once for the confirmed model (it accepts one or many tables).
-3. Optionally `insert_rows_batch` once to seed a small representative set so the app doesn't render empty (only if the user wants sample data; avoid dozens of rows unless density/pagination is under test).
+3. Optionally `insert_rows_batch` once to seed a small representative set so the app doesn't render empty. It is insert-only: omit generated serial primary keys, and treat an explicit duplicate-key error as a conflict to resolve—not an update path. Avoid dozens of rows unless density/pagination is under test.
 4. Then `add_queries` + `add_components` as usual.
 For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
-Use `add_table_column` to evolve a ToolJet DB table in place. Dropping a column/table is irreversible: inspect dependencies and obtain explicit approval for the exact target before `drop_table_column(..., confirm:true)` or `drop_table(..., confirm:true)`.
+Use `add_table_column` to evolve a ToolJet DB table in place. Dropping a column/table/page is irreversible: inspect dependencies and obtain explicit approval for the exact target before `drop_table_column(..., confirm:true)`, `drop_table(..., confirm:true)`, or `delete_page(..., confirm:true)`.
 
 ### ToolJet DB (`kind: "tooljetdb"`)
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
@@ -312,6 +312,6 @@ The `Chart` component fails in a specific, common way: **ToolJet's chart-propert
    ```
    For a straight mapping, `queries.q.data.map(r => ({ x: r.category, y: r.amount }))` is fine — simple and explicit.
 3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind `data` to a query that already returns `[{x,y}]` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: `{{queries.chartData.data}}`. Query engines evaluate JS reliably; the chart property evaluator does not.
-4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with `JSON.stringify(...)`.
+4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts. Static descriptions must be valid JSON with a non-empty `data` array. For a dynamic description, keep the expression simple, use explicit field names, wrap the object with `JSON.stringify(...)`, and confirm the browser audit does not report a visible Chart with zero evaluated traces.
 
 Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a `.map()` nested inside another `.map()` can throw before an `||` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.

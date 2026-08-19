@@ -12,8 +12,9 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
       'dangling event references (event on a deleted component/query, run-query pointing at a missing query), ' +
       'ambiguous duplicate component/query names, bindings to non-existent queries/components ' +
       '({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without ' +
-      'rawJson, Chart left with its clipping default title, bad headerCasing). Run it before you call the app ' +
-      'done (then still do the one browser pass). `errors` are broken references you should fix; `warnings` ' +
+      'rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default ' +
+      'title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). ' +
+      '`errors` are broken references or invalid persisted contracts you should fix; `warnings` ' +
       'are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event ' +
       'delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.',
     inputSchema: {
