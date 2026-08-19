@@ -35988,7 +35988,7 @@ function lintPlannedApp(spec, existingSummary) {
   };
   if (eventSpecs.length) {
     checked.push("event/lifecycle sources, triggers, action ids, and logical targets");
-    const eventValidation = validateEvents(summary, eventSpecs);
+    const eventValidation = validateEvents({ ...summary, events: existingSummary?.events ?? [] }, eventSpecs);
     errors.push(...eventValidation.errors);
     warnings.push(...eventValidation.warnings);
   }
@@ -37955,7 +37955,7 @@ function updateEventsTool(client) {
             return updateType === "update" ? { ...event, name: update.name, event: update.event } : { ...event, index: update.index };
           })
         };
-        const validation = validateEvents(summary, persistedEventSpecs(changedSummary));
+        const validation = validateEvents(changedSummary, persistedEventSpecs(changedSummary), { includePersistedChains: false });
         if (validation.errors.length)
           return fail(new Error(validation.errors.join(" ")));
         const result = await client.updateEvents({
