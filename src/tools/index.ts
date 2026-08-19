@@ -46,6 +46,13 @@ import { listEventsTool } from './listEvents.js';
 import { updateEventsTool } from './updateEvents.js';
 import { deleteEventTool } from './deleteEvent.js';
 import { withToolTelemetry } from '../telemetry.js';
+import {
+  runtimeFreshness,
+  staleRuntimeResult,
+  withRuntimeStatus,
+  type RuntimeFreshnessMonitor,
+} from '../runtimeFreshness.js';
+import { getRuntimeInfoTool } from './getRuntimeInfo.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -59,8 +66,13 @@ function includeLegacySingularCreateTools(): boolean {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? '');
 }
 
-export function registerTools(server: McpServer, client: ToolJetClient): void {
+export function registerTools(
+  server: McpServer,
+  client: ToolJetClient,
+  runtime: RuntimeFreshnessMonitor = runtimeFreshness
+): void {
   const tools: ToolDef[] = [
+    getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     createAppTool(client),
@@ -115,7 +127,13 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     server.registerTool(
       tool.name,
       { description: tool.description, inputSchema: tool.inputSchema },
-      (args: any) => withToolTelemetry(tool.name, () => tool.handler(args)) as any
+      (args: any) => withToolTelemetry(tool.name, async () => {
+        const status = runtime.status();
+        if (status.restart_required && tool.name !== 'get_runtime_info') {
+          return staleRuntimeResult(status);
+        }
+        return withRuntimeStatus(await tool.handler(args), status);
+      }) as any
     );
   }
 }

@@ -25,6 +25,7 @@ describe('buildServer', () => {
       const names = Object.keys(registered);
       // Robust to added tools: assert the core surface is present rather than an exact count.
       for (const required of [
+        'get_runtime_info',
         'create_app',
         'get_app',
         'get_app_summary',
