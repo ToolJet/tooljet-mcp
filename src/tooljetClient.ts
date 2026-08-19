@@ -476,17 +476,6 @@ function tableForeignKeyDto(foreignKey: TableForeignKey): Record<string, unknown
   };
 }
 
-function toCsv(headers: string[], rows: Array<Record<string, unknown>>): string {
-  const esc = (v: unknown): string => {
-    if (v === null || v === undefined) return '';
-    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  };
-  const lines = [headers.join(',')];
-  for (const row of rows) lines.push(headers.map((h) => esc(row[h])).join(','));
-  return lines.join('\n') + '\n';
-}
-
 export function createClient(auth: Auth, config: Config): ToolJetClient {
   let developmentEnvironmentIdPromise: Promise<string> | undefined;
   async function getApp(appId: string): Promise<any> {
@@ -1087,31 +1076,36 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   async function insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }> {
     if (!params.rows.length) return { processed_rows: 0 };
-    const orgId = await auth.getOrganizationId();
     const schema = await getTableSchema(params.tableName);
-    const pk = schema.find((c) => c.isPrimaryKey);
-    // bulk-upload upserts by PK and does NOT auto-fill serial ids — if the rows omit an
-    // integer PK, assign sequential values so seeding "just works".
     const rows = params.rows.map((r) => ({ ...r }));
-    if (pk && !(pk.name in (rows[0] ?? {})) && /int|serial|numeric/i.test(pk.type)) {
-      rows.forEach((r, i) => (r[pk.name] = i + 1));
+    const generatedPrimaryKey = schema.find(
+      (column) => column.isPrimaryKey && (
+        /serial/i.test(column.type) || /^nextval\(/i.test(String(column.defaultValue ?? ''))
+      )
+    );
+    if (generatedPrimaryKey && rows.some((row) => generatedPrimaryKey.name in row)) {
+      throw new Error(
+        `insertRows: omit generated primary key "${generatedPrimaryKey.name}" for table "${params.tableName}". ` +
+          'ToolJet will allocate it from the real table sequence; explicit generated ids can collide or desynchronize future inserts.'
+      );
     }
-    const keys = new Set<string>();
-    for (const r of rows) Object.keys(r).forEach((k) => keys.add(k));
-    const headers = [
-      ...schema.map((c) => c.name).filter((n) => keys.has(n)),
-      ...[...keys].filter((k) => !schema.some((c) => c.name === k)),
-    ];
 
-    const form = new FormData();
-    form.append('file', new Blob([toCsv(headers, rows)], { type: 'text/csv' }), 'seed.csv');
+    const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
+    if (!table) throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
+
+    // Use PostgREST's ordinary INSERT path. Unlike bulk-upload, this endpoint does not upsert on
+    // primary-key conflicts, and omitted serial/generated keys use the table's real sequence.
     const res = await auth.authedFetch(
-      `/api/tooljet-db/organizations/${orgId}/table/${encodeURIComponent(params.tableName)}/bulk-upload`,
-      { method: 'POST', body: form }
+      `/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rows),
+      }
     );
     await assertOk(res, 'insertRows');
-    const body = (await res.json()) as { result?: { processed_rows?: number } };
-    return { processed_rows: body.result?.processed_rows ?? rows.length };
+    const inserted = await res.json().catch(() => undefined);
+    return { processed_rows: Array.isArray(inserted) ? inserted.length : rows.length };
   }
 
   async function insertRowsBatch(params: InsertRowsBatchParams): Promise<InsertRowsBatchResult[]> {

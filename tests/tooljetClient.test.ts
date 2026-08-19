@@ -934,20 +934,46 @@ describe('createClient', () => {
   });
 
   describe('insertRows', () => {
-    it('resolves schema, auto-fills the serial PK, then bulk-uploads', async () => {
+    it('omits generated ids and uses the insert-only PostgREST path', async () => {
       auth.authedFetch
         // getTableSchema
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'id', data_type: 'integer', constraints_type: { is_primary_key: true } }, { column_name: 'name', data_type: 'character varying' }] } } }))
-        // bulk-upload
-        .mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { processed_rows: 2 } } }));
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'id', data_type: 'integer', column_default: "nextval('people_id_seq'::regclass)", constraints_type: { is_primary_key: true } }, { column_name: 'name', data_type: 'character varying' }] } } }))
+        // listTables
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+        // insert-only PostgREST proxy
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }, { id: 42, name: 'B' }] }));
 
       const client = createClient(auth, config);
       const result = await client.insertRows({ tableName: 'people', rows: [{ name: 'A' }, { name: 'B' }] });
 
-      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
-      expect(auth.authedFetch.mock.calls[1][0]).toBe('/api/tooljet-db/organizations/org1/table/people/bulk-upload');
-      expect(auth.authedFetch.mock.calls[1][1].method).toBe('POST');
+      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
+      expect(auth.authedFetch.mock.calls[2][0]).toBe('/api/tooljet-db/proxy/people-id');
+      expect(auth.authedFetch.mock.calls[2][1]).toMatchObject({ method: 'POST' });
+      expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual([{ name: 'A' }, { name: 'B' }]);
       expect(result).toEqual({ processed_rows: 2 });
+    });
+
+    it('rejects explicit values for a generated primary key before writing', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+        status: 200,
+        json: { result: { columns: [{ column_name: 'id', data_type: 'integer', column_default: "nextval('people_id_seq'::regclass)", constraints_type: { is_primary_key: true } }] } },
+      }));
+
+      const client = createClient(auth, config);
+      await expect(client.insertRows({ tableName: 'people', rows: [{ id: 1, name: 'replacement' }] }))
+        .rejects.toThrow(/omit generated primary key "id".*collide/i);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('surfaces a primary-key conflict instead of silently upserting', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'code', data_type: 'character varying', constraints_type: { is_primary_key: true } }] } } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: 'duplicate key value violates unique constraint' }));
+
+      const client = createClient(auth, config);
+      await expect(client.insertRows({ tableName: 'people', rows: [{ code: 'existing', name: 'replacement' }] }))
+        .rejects.toThrow(/insertRows failed \(409\).*duplicate key/i);
     });
   });
 

@@ -7,8 +7,8 @@ export function insertRowsTool(client: ToolJetClient): ToolDef {
     name: 'insert_rows',
     description:
       'Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by ' +
-      'column name. You may omit an integer/serial primary key — sequential ids are assigned automatically. ' +
-      'Returns { processed_rows }. Optional: only seed when the user wants sample data.',
+      'column name. Omit generated serial primary keys so ToolJet uses the table sequence. This is insert-only: ' +
+      'explicit duplicate keys fail instead of updating existing rows. Returns { processed_rows }. Optional: only seed when the user wants sample data.',
     inputSchema: {
       table_name: z.string(),
       rows: z.array(z.record(z.string(), z.any())).min(1),
