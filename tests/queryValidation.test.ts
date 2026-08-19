@@ -66,6 +66,31 @@ describe('validateQueryOptions', () => {
     );
   });
 
+  it('selects a REST contract from method without inventing an operation option', () => {
+    const result = validateQueryOptions('restapi', {
+      method: 'get',
+      url: '/repos/facebook/react/releases/latest',
+      url_params: [['per_page', '3']],
+    });
+
+    expect(result.operation).toBe('get');
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('does not silently accept the legacy MCP-only REST operation key', () => {
+    const result = validateQueryOptions('restapi', {
+      operation: 'get',
+      method: 'get',
+      url: '/repos/facebook/react/releases/latest',
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'unknown_option_key', path: 'operation' }),
+    ]));
+  });
+
   it('warns when a ToolJet DB order-filter map key differs from its inner id', () => {
     const result = validateQueryOptions('tooljetdb', {
       operation: 'list_rows',

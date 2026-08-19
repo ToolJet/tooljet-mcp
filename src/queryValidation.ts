@@ -1,6 +1,7 @@
 import {
   COMMON_QUERY_OPTION_FIELDS,
   getDatasourceQuerySchema,
+  type DatasourceOperationContract,
   type DatasourceContractVariant,
   type DatasourceFieldContract,
 } from './datasourceCatalog.js';
@@ -47,7 +48,7 @@ function valueAtPath(source: Record<string, unknown>, path: string): unknown {
 
 function operationFromOptions(
   options: Record<string, unknown>,
-  contracts: Record<string, unknown>,
+  contracts: Record<string, DatasourceOperationContract>,
   defaults: Record<string, unknown>
 ): string | undefined {
   const operation = options.operation ?? defaults.operation;
@@ -55,6 +56,20 @@ function operationFromOptions(
   const mode = options.mode ?? defaults.mode;
   if (typeof mode === 'string' && mode && Object.prototype.hasOwnProperty.call(contracts, mode)) return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, 'default')) return 'default';
+
+  // Some ToolJet wrappers select their contract through a plugin-native field rather than
+  // `operation` or `mode` (REST uses `method`). Resolve a contract only when its declared
+  // selectors produce one unambiguous static match; dynamic selectors remain fail-closed.
+  const selectorMatches = Object.entries(contracts).filter(([, contract]) =>
+    contract.variants.some((variant) => {
+      const selectors = Object.entries(variant.when);
+      return selectors.length > 0 && selectors.every(([selector, accepted]) => {
+        const actual = options[selector] ?? defaults[selector];
+        return typeof actual === 'string' && !isDynamicBinding(actual) && accepted.includes(actual);
+      });
+    })
+  );
+  if (selectorMatches.length === 1) return selectorMatches[0]![0];
   return undefined;
 }
 
