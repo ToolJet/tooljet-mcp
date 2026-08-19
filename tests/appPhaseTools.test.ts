@@ -143,4 +143,71 @@ describe('plan token + apply_app_phase', () => {
     expect(result.content[0]!.text).toMatch(/no resources were auto-deleted/i);
     expect(result.content[0]!.text).toMatch(/Persisted before failure.*page-a/i);
   });
+
+  it('applies a repair phase that targets an existing query without recreating it', async () => {
+    let created = false;
+    let persistedEvents: EventSpec[] = [];
+    const client = {
+      getAppSummary: vi.fn().mockImplementation(async () => ({
+        app_id: 'app1', name: 'Returns', version_id: 'v1',
+        pages: [{
+          id: 'home-id', name: 'Home', handle: 'home', icon: 'IconHome2', hidden: true,
+          components: created ? [{
+            id: 'refresh-id', name: 'refreshReturns', type: 'Button',
+            properties: { text: { value: 'Refresh' } },
+            layouts: { desktop: { top: 20, left: 2, width: 6, height: 40 } },
+          }] : [],
+        }],
+        queries: [{
+          id: 'returns-id', name: 'returnsPage', kind: 'tooljetdb', data_source_id: 'tjdb',
+          options: { operation: 'list_rows', table_id: 'returns-table', list_rows: { limit: 7 } },
+        }],
+        events: persistedEvents.map((event, index) => ({
+          id: `event-${index}`, name: event.name, sourceId: event.sourceId, target: event.sourceType,
+          event: { eventId: event.trigger, ...event.action },
+        })),
+      })),
+      listTables: vi.fn().mockResolvedValue([]),
+      createPages: vi.fn(),
+      updatePages: vi.fn(),
+      insertRowsBatch: vi.fn(),
+      createQueries: vi.fn(),
+      createComponents: vi.fn().mockImplementation(async () => {
+        created = true;
+        return [{ component_id: 'refresh-id', name: 'refreshReturns' }];
+      }),
+      createEvents: vi.fn().mockImplementation(async ({ events }: { events: EventSpec[] }) => {
+        persistedEvents = events;
+        return { created: events.length };
+      }),
+    } as unknown as ToolJetClient;
+
+    const lintResult = await lintAppSpecTool(client).handler({
+      app_id: 'app1', version_id: 'v1',
+      pages: [{
+        client_ref: 'home', name: 'Home', icon: 'IconHome2',
+        components: [{
+          client_ref: 'refresh', name: 'refreshReturns', type: 'Button',
+          properties: { text: 'Refresh' }, layout: { top: 20, left: 2, width: 6, height: 40 },
+        }],
+      }],
+      events: [{
+        source_ref: 'refresh', source_type: 'component', trigger: 'onClick',
+        action: { actionId: 'run-query', target_ref: 'returnsPage' },
+      }],
+    });
+    expect(textOf(lintResult).ok).toBe(true);
+
+    const result = await applyAppPhaseTool(client).handler({
+      app_id: 'app1', version_id: 'v1', plan_token: textOf(lintResult).plan_token,
+    });
+    const body = textOf(result);
+    expect(body.applied).toMatchObject({ queries: 0, components: 1, events: 1 });
+    expect(body.refs.queries).toEqual({});
+    expect(client.createQueries).not.toHaveBeenCalled();
+    expect(client.updatePages).not.toHaveBeenCalled();
+    expect(client.createEvents).toHaveBeenCalledWith(expect.objectContaining({
+      events: [expect.objectContaining({ action: expect.objectContaining({ queryId: 'returns-id' }) })],
+    }));
+  });
 });

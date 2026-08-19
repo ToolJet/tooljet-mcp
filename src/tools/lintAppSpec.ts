@@ -15,7 +15,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
       'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
       'values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ' +
-      'ToolJet DB table into options.table_id. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
+      'ToolJet DB table into options.table_id. For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
+      'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
       'Treat this call as an awaited barrier; it never mutates ToolJet.',
     inputSchema: appPlanSchema.shape,
     async handler(args: AppPlanInput) {
@@ -27,7 +28,15 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
 
         const preflightErrors: string[] = [];
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
-        const existingTables = needsTables ? await client.listTables() : [];
+        const [existingTables, existingSummary] = await Promise.all([
+          needsTables ? client.listTables() : Promise.resolve([]),
+          args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(undefined),
+        ]);
+        if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
+          preflightErrors.push(
+            `App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`
+          );
+        }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
@@ -122,7 +131,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions,
           })),
-        });
+        }, existingSummary);
         const result: AppSpecLintResult = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,

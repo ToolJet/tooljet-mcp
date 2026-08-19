@@ -55,6 +55,49 @@ describe('lint_app_spec', () => {
     expect(client.listDatasources).toHaveBeenCalledOnce();
   });
 
+  it('uses existing app context for repair bindings and event targets', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1', name: 'Returns', version_id: 'v1',
+        pages: [{ id: 'home-id', name: 'Home', handle: 'home', icon: 'IconHome2', components: [] }],
+        queries: [{
+          id: 'returns-id', name: 'returnsPage', kind: 'tooljetdb', data_source_id: 'tjdb',
+          options: { operation: 'list_rows', table_id: 'returns-table', list_rows: { limit: 7 } },
+        }],
+        events: [],
+      }),
+    } as unknown as ToolJetClient;
+
+    const result = await lintAppSpecTool(client).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      pages: [{
+        client_ref: 'home', name: 'Home', icon: 'IconHome2',
+        components: [
+          {
+            client_ref: 'count', name: 'returnCount', type: 'Text',
+            properties: { text: '{{queries.returnsPage.data.length}}' },
+            layout: { top: 20, left: 2, width: 12, height: 40 },
+          },
+          {
+            client_ref: 'refresh', name: 'refreshReturns', type: 'Button',
+            properties: { text: 'Refresh' }, layout: { top: 80, left: 2, width: 6, height: 40 },
+          },
+        ],
+      }],
+      events: [{
+        source_ref: 'refresh', source_type: 'component', trigger: 'onClick',
+        action: { actionId: 'run-query', target_ref: 'returnsPage' },
+      }],
+    });
+
+    const body = textOf(result);
+    expect(body.ok).toBe(true);
+    expect(body.counts).toMatchObject({ pages: 1, components: 2, queries: 0, events: 1 });
+    expect(body.warnings.join(' ')).not.toMatch(/no query is named "returnsPage"/i);
+    expect(client.getAppSummary).toHaveBeenCalledWith('app1');
+  });
+
   it('collects mechanical failures across tables, components, queries, and events in one pass', async () => {
     const client = { listDatasources: vi.fn(), listTables: vi.fn().mockResolvedValue([]) } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({

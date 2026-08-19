@@ -69,7 +69,7 @@ export interface AppSpecLintResult {
 }
 
 /** Validate a complete logical app plan without performing any writes. */
-export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
+export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary): AppSpecLintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const checked: string[] = [];
@@ -95,9 +95,22 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
 
   const queryRefs = new Map<string, { id: string; name: string }>();
   const queryIds = new Map<string, { id: string; name: string }>();
-  const queries = (spec.queries ?? []).map((query, index) => {
+  const existingQueries = existingSummary?.queries ?? [];
+  const existingQueryNames = new Set<string>();
+  for (const query of existingQueries) {
+    const target = { id: query.id, name: query.name ?? query.id };
+    queryRefs.set(query.id, target);
+    queryIds.set(query.id, target);
+    if (query.name) {
+      if (existingQueryNames.has(query.name)) errors.push(`Existing app has duplicate query name "${query.name}".`);
+      existingQueryNames.add(query.name);
+      queryRefs.set(query.name, target);
+    }
+  }
+  const plannedQueries = (spec.queries ?? []).map((query, index) => {
     const ref = query.clientRef ?? query.name;
     const id = `planned-query:${index}:${ref}`;
+    if (existingQueryNames.has(query.name)) errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
     if (!query.kind) {
@@ -115,17 +128,42 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
       options: query.options,
     };
   });
-  if (queries.length) checked.push('datasource query option contracts and duplicate logical query references');
+  const queries = [...existingQueries, ...plannedQueries];
+  if (plannedQueries.length) checked.push('datasource query option contracts and duplicate logical query references');
 
   const pageRefs = new Map<string, { id: string; name: string }>();
   const componentRefs = new Map<string, { id: string; name: string; type?: string }>();
-  const pages: AppSummary['pages'] = [];
+  const pages: AppSummary['pages'] = (existingSummary?.pages ?? []).map((page) => ({
+    ...page,
+    components: page.components.map((component) => ({ ...component })),
+  }));
+  const componentNameCounts = new Map<string, number>();
+  for (const page of pages) {
+    bindRef(pageRefs, page.id, { id: page.id, name: page.name ?? page.id });
+    if (page.name) bindRef(pageRefs, page.name, { id: page.id, name: page.name });
+    if (page.handle) bindRef(pageRefs, page.handle, { id: page.id, name: page.name ?? page.handle });
+    for (const component of page.components) {
+      const target = { id: component.id, name: component.name ?? component.id, type: component.type };
+      bindRef(componentRefs, component.id, target);
+      if (component.name) componentNameCounts.set(component.name, (componentNameCounts.get(component.name) ?? 0) + 1);
+    }
+  }
+  for (const page of pages) {
+    for (const component of page.components) {
+      if (component.name && componentNameCounts.get(component.name) === 1) {
+        bindRef(componentRefs, component.name, { id: component.id, name: component.name, type: component.type });
+      }
+    }
+  }
   let componentCount = 0;
 
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
-    const pageId = `planned-page:${pageIndex}:${pageRef}`;
-    registerRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
+    const existingPage = pages.find((page) =>
+      page.name === plannedPage.name || (plannedPage.name === 'Home' && page.handle === 'home')
+    );
+    const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
+    bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
     if (!plannedPage.icon.trim()) errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
 
     const normalized = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component));
@@ -137,9 +175,16 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
 
     const localRefs = new Map<string, string>();
+    for (const component of existingPage?.components ?? []) {
+      if (component.name) localRefs.set(component.name, component.id);
+      localRefs.set(component.id, component.id);
+    }
     const componentEntries = expansion.components.map((component, componentIndex) => {
       const ref = component.clientRef ?? component.name;
       const id = `planned-component:${pageIndex}:${componentIndex}:${ref}`;
+      if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
+        errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
+      }
       if (localRefs.has(ref)) errors.push(`Page "${plannedPage.name}" has duplicate component ref "${ref}".`);
       else localRefs.set(ref, id);
       registerRef(componentRefs, ref, { id, name: component.name, type: component.type }, 'component', errors);
@@ -147,43 +192,49 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
       return { component, id };
     });
 
-    pages.push({
+    const plannedComponents = componentEntries.map(({ component, id }) => {
+      let parent: string | undefined;
+      if (component.parentRef) {
+        parent = localRefs.get(component.parentRef);
+        if (!parent) {
+          errors.push(
+            `Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`
+          );
+        }
+      } else if (component.parent) {
+        warnings.push(
+          `Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; ` +
+            'its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.'
+        );
+        parent = component.parent;
+      }
+      if (parent) parent = encodeComponentParent(parent, component.slotName);
+      return {
+        id,
+        name: component.name,
+        type: component.type,
+        properties: component.properties,
+        styles: component.styles,
+        others: component.others,
+        layouts: component.layouts ?? (component.layout
+          ? { desktop: component.layout, mobile: component.layout }
+          : undefined),
+        parent,
+        ...(component.slotName && component.slotName !== 'body' ? { slot_name: component.slotName } : {}),
+      };
+    });
+    const pageSummary = existingPage ?? {
       id: pageId,
       name: plannedPage.name,
       handle: plannedPage.name === 'Home' ? 'home' : slug(plannedPage.name),
       icon: plannedPage.icon,
-      components: componentEntries.map(({ component, id }) => {
-        let parent: string | undefined;
-        if (component.parentRef) {
-          parent = localRefs.get(component.parentRef);
-          if (!parent) {
-            errors.push(
-              `Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`
-            );
-          }
-        } else if (component.parent) {
-          warnings.push(
-            `Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; ` +
-              'its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.'
-          );
-          parent = component.parent;
-        }
-        if (parent) parent = encodeComponentParent(parent, component.slotName);
-        return {
-          id,
-          name: component.name,
-          type: component.type,
-          properties: component.properties,
-          styles: component.styles,
-          others: component.others,
-          layouts: component.layouts ?? (component.layout
-            ? { desktop: component.layout, mobile: component.layout }
-            : undefined),
-          parent,
-          ...(component.slotName && component.slotName !== 'body' ? { slot_name: component.slotName } : {}),
-        };
-      }),
-    });
+      components: [],
+    };
+    pageSummary.name = plannedPage.name;
+    pageSummary.icon = plannedPage.icon;
+    if (plannedPage.hidden !== undefined) pageSummary.hidden = plannedPage.hidden;
+    pageSummary.components.push(...plannedComponents);
+    if (!existingPage) pages.push(pageSummary);
   });
   if (pages.length) checked.push('page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs');
 
@@ -225,7 +276,7 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
     });
     try {
       const expanded = expandQueryLifecycles(
-        { app_id: 'planned-app', pages, queries, events: [] },
+        { app_id: existingSummary?.app_id ?? 'planned-app', pages, queries, events: existingSummary?.events ?? [] },
         lifecycleSpecs
       );
       eventSpecs.push(...expanded.events);
@@ -236,18 +287,21 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
   }
 
   const summary: AppSummary = {
-    app_id: 'planned-app',
-    name: 'Planned app',
-    version_id: 'planned-version',
+    app_id: existingSummary?.app_id ?? 'planned-app',
+    name: existingSummary?.name ?? 'Planned app',
+    version_id: existingSummary?.version_id ?? 'planned-version',
     pages,
     queries,
-    events: eventSpecs.map((event, index) => ({
-      id: `planned-event:${index}`,
-      name: event.name,
-      sourceId: event.sourceId,
-      target: event.sourceType,
-      event: { eventId: event.trigger, ...(event.ref ? { ref: event.ref } : {}), ...event.action },
-    })),
+    events: [
+      ...(existingSummary?.events ?? []),
+      ...eventSpecs.map((event, index) => ({
+        id: `planned-event:${index}`,
+        name: event.name,
+        sourceId: event.sourceId,
+        target: event.sourceType,
+        event: { eventId: event.trigger, ...(event.ref ? { ref: event.ref } : {}), ...event.action },
+      })),
+    ],
   };
   if (eventSpecs.length) {
     checked.push('event/lifecycle sources, triggers, action ids, and logical targets');
@@ -273,13 +327,25 @@ export function lintPlannedApp(spec: PlannedAppSpec): AppSpecLintResult {
     counts: {
       tables: tables.length,
       seed_rows: seedRows,
-      pages: pages.length,
+      pages: spec.pages?.length ?? 0,
       components: componentCount,
-      queries: queries.length,
+      queries: plannedQueries.length,
       events: eventSpecs.length,
       lifecycles: spec.lifecycles?.length ?? 0,
     },
   };
+}
+
+function bindRef<T extends { id: string }>(
+  map: Map<string, T>,
+  ref: string,
+  value: T,
+  type?: string,
+  errors?: string[]
+): void {
+  const existing = map.get(ref);
+  if (!existing || existing.id === value.id) map.set(ref, value);
+  else if (type && errors) errors.push(`Duplicate ${type} client_ref/name "${ref}" in planned app.`);
 }
 
 function registerRef<T>(map: Map<string, T>, ref: string, value: T, type: string, errors: string[]): void {

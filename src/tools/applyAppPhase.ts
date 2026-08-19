@@ -108,6 +108,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       try {
         const stored = consumeAppPlan(args.plan_token);
         const spec: AppPlanInput = stored.spec;
+        if (spec.app_id && spec.app_id !== args.app_id) {
+          throw new Error(`Plan app_id "${spec.app_id}" does not match "${args.app_id}".`);
+        }
         if (spec.version_id && spec.version_id !== args.version_id) {
           throw new Error(`Plan version_id "${spec.version_id}" does not match "${args.version_id}".`);
         }
@@ -181,7 +184,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
 
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables) tableIds.set(table.table_name.toLowerCase(), table.table_id);
-        const pageTargets = new Map<string, LogicalTarget>();
+        const pageTargets = persistedTargets(
+          initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] }))
+        );
         for (const page of spec.pages ?? []) {
           const ref = logicalRef(page);
           const existing = plannedPageMatches.get(ref);
@@ -197,7 +202,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           const update = {
             pageId: existing.id,
             ...(existing.icon !== page.icon ? { icon: page.icon } : {}),
-            ...(Boolean(existing.hidden) !== Boolean(page.hidden) ? { hidden: Boolean(page.hidden) } : {}),
+            ...(page.hidden !== undefined && Boolean(existing.hidden) !== page.hidden ? { hidden: page.hidden } : {}),
           };
           return Object.keys(update).length > 1 ? [update] : [];
         });
@@ -244,7 +249,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             : []),
         ];
         if (dataFailures.length) throw new Error(dataFailures.join(' | '));
-        const queryTargets = new Map<string, LogicalTarget>();
+        const queryTargets = persistedTargets(
+          initialSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id }))
+        );
         (spec.queries ?? []).forEach((query, index) => {
           const created = createdQueries[index];
           if (!created) throw new Error(`Could not resolve query "${query.name}" after creation.`);
@@ -273,7 +280,13 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const componentFailures = componentWrites.flatMap((result, index) => result.status === 'rejected'
           ? [`page ${preparedPages[index]!.page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
           : []);
-        const componentTargets = new Map<string, LogicalTarget>();
+        const componentTargets = persistedTargets(
+          initialSummary.pages.flatMap((page) => page.components).map((component) => ({
+            id: component.id,
+            name: component.name ?? component.id,
+            type: component.type,
+          }))
+        );
         const warnings: string[] = [];
         for (const page of componentResults) {
           applied.components += page.created.length;
@@ -350,9 +363,12 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           applied,
           refs: {
             tables: Object.fromEntries([...relevantTableNames].map((name) => [name, tableIds.get(name.toLowerCase())])),
-            pages: Object.fromEntries([...pageTargets].map(([ref, target]) => [ref, target.id])),
-            queries: Object.fromEntries([...queryTargets].map(([ref, target]) => [ref, target.id])),
-            components: Object.fromEntries([...componentTargets].map(([ref, target]) => [ref, target.id])),
+            pages: selectedRefs(pageTargets, (spec.pages ?? []).map(logicalRef)),
+            queries: selectedRefs(queryTargets, (spec.queries ?? []).map(logicalRef)),
+            components: selectedRefs(
+              componentTargets,
+              (spec.pages ?? []).flatMap((page) => (page.components ?? []).map(logicalRef))
+            ),
           },
           warnings: [...new Set(warnings)],
           validation,
@@ -366,4 +382,25 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+function persistedTargets(
+  values: Array<LogicalTarget & { aliases?: Array<string | undefined> }>
+): Map<string, LogicalTarget> {
+  const targets = new Map<string, LogicalTarget>();
+  const nameCounts = new Map<string, number>();
+  values.forEach((value) => nameCounts.set(value.name, (nameCounts.get(value.name) ?? 0) + 1));
+  for (const { aliases, ...value } of values) {
+    targets.set(value.id, value);
+    if (nameCounts.get(value.name) === 1) targets.set(value.name, value);
+    for (const alias of aliases ?? []) if (alias && !targets.has(alias)) targets.set(alias, value);
+  }
+  return targets;
+}
+
+function selectedRefs(targets: Map<string, LogicalTarget>, refs: string[]): Record<string, string> {
+  return Object.fromEntries(refs.flatMap((ref) => {
+    const target = targets.get(ref);
+    return target ? [[ref, target.id]] : [];
+  }));
 }
