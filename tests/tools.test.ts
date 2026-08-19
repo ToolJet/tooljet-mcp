@@ -69,6 +69,8 @@ describe('create_app tool', () => {
       version_id: 'v1',
       home_page_id: 'p1',
       app_url: 'http://localhost:8082/apps/app1',
+      editor_url: 'http://localhost:8082/apps/app1',
+      viewer_url: 'http://localhost:8082/applications/app1/home?env=development&version=v1',
     };
     client.createApp.mockResolvedValue(created);
 

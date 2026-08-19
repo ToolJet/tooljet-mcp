@@ -49,10 +49,10 @@ describe('createClient', () => {
             json: {
               id: 'app1',
               name: 'My App',
-              editing_version: { id: 'ver1' },
+              editing_version: { id: 'ver1', name: 'v1' },
               pages: [
                 { id: 'page-other', name: 'Other', index: 1 },
-                { id: 'page-home', name: 'Home', index: 0 },
+                { id: 'page-home', name: 'Home', handle: 'home', index: 0 },
               ],
             },
           })
@@ -76,6 +76,8 @@ describe('createClient', () => {
         version_id: 'ver1',
         home_page_id: 'page-home',
         app_url: 'http://localhost:8082/myworkspace/apps/app1',
+        editor_url: 'http://localhost:8082/myworkspace/apps/app1',
+        viewer_url: 'http://localhost:8082/applications/app1/home?env=development&version=v1',
       });
     });
 

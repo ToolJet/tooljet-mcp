@@ -9,7 +9,10 @@ export interface CreateAppResult {
   app_id: string;
   version_id: string;
   home_page_id: string;
+  /** Backward-compatible alias for editor_url. */
   app_url: string;
+  editor_url: string;
+  viewer_url: string;
 }
 
 export interface Datasource {
@@ -603,7 +606,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
     const app = await getApp(created.id);
     const versionId: string = app.editing_version.id;
-    const pages: Array<{ id: string; name: string }> = app.pages ?? [];
+    const versionName: string = app.editing_version.name ?? 'v1';
+    const pages: Array<{ id: string; name: string; handle?: string }> = app.pages ?? [];
     const homePage = pages.find((p) => p.name === 'Home') ?? pages[0];
     if (!homePage) {
       throw new Error('ToolJet createApp failed: app has no pages');
@@ -613,11 +617,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
 
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const homeHandle = homePage.handle ?? 'home';
+    const viewerUrl =
+      `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}` +
+      `?env=development&version=${encodeURIComponent(versionName)}`;
+
     return {
       app_id: created.id,
       version_id: versionId,
       home_page_id: homePage.id,
-      app_url: `${config.appUrl}/${orgSlug}/apps/${appSlug}`,
+      app_url: editorUrl,
+      editor_url: editorUrl,
+      viewer_url: viewerUrl,
     };
   }
 
