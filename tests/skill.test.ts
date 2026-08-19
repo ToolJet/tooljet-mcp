@@ -559,6 +559,7 @@ describe('generated skill is synchronized with the generator', () => {
     'no per-app datasource attach/link step',
     'validate_app(app_id)',
     'awaited preflight barrier',
+    'Pass `app_id` for every repair or continuation phase',
     'update_pages({ app_id, version_id, updates?, order? })',
     'Share `editor_url` so the user can follow authoring live',
     'Repeat the clickable `viewer_url` and `editor_url` in the final handoff',
