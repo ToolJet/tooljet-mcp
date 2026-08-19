@@ -488,6 +488,7 @@ function toCsv(headers: string[], rows: Array<Record<string, unknown>>): string 
 }
 
 export function createClient(auth: Auth, config: Config): ToolJetClient {
+  let developmentEnvironmentIdPromise: Promise<string> | undefined;
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
@@ -875,15 +876,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function getDevelopmentEnvironmentId(): Promise<string> {
-    const res = await auth.authedFetch('/api/app-environments');
-    await assertOk(res, 'getDevelopmentEnvironmentId');
-    const body = await res.json();
-    const envs: Array<{ id: string; name: string }> = Array.isArray(body) ? body : body.environments;
-    const dev = envs.find((e) => e.name === 'development');
-    if (!dev) {
-      throw new Error('ToolJet getDevelopmentEnvironmentId failed: no development environment found');
+    if (!developmentEnvironmentIdPromise) {
+      developmentEnvironmentIdPromise = (async () => {
+        const res = await auth.authedFetch('/api/app-environments');
+        await assertOk(res, 'getDevelopmentEnvironmentId');
+        const body = await res.json();
+        const envs: Array<{ id: string; name: string }> = Array.isArray(body) ? body : body.environments;
+        const dev = envs.find((e) => e.name === 'development');
+        if (!dev) {
+          throw new Error('ToolJet getDevelopmentEnvironmentId failed: no development environment found');
+        }
+        return dev.id;
+      })().catch((error) => {
+        developmentEnvironmentIdPromise = undefined;
+        throw error;
+      });
     }
-    return dev.id;
+    return developmentEnvironmentIdPromise;
   }
 
   async function listDatasources(versionId: string): Promise<Datasource[]> {

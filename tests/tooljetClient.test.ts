@@ -267,6 +267,20 @@ describe('createClient', () => {
       expect(envId).toBe('env-dev');
     });
 
+    it('caches the development environment for repeated and concurrent callers', async () => {
+      auth.authedFetch.mockResolvedValue(
+        mockResponse({ status: 200, json: [{ id: 'env-dev', name: 'development' }] })
+      );
+      const client = createClient(auth, config);
+
+      await expect(Promise.all([
+        client.getDevelopmentEnvironmentId(),
+        client.getDevelopmentEnvironmentId(),
+      ])).resolves.toEqual(['env-dev', 'env-dev']);
+      await expect(client.getDevelopmentEnvironmentId()).resolves.toBe('env-dev');
+      expect(auth.authedFetch).toHaveBeenCalledOnce();
+    });
+
     it('finds the development environment from a wrapped { environments } response', async () => {
       auth.authedFetch.mockResolvedValueOnce(
         mockResponse({

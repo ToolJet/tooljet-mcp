@@ -42,6 +42,7 @@ import { runQueriesTool } from './runQueries.js';
 import { listEventsTool } from './listEvents.js';
 import { updateEventsTool } from './updateEvents.js';
 import { deleteEventTool } from './deleteEvent.js';
+import { withToolTelemetry } from '../telemetry.js';
 
 export function registerTools(server: McpServer, client: ToolJetClient): void {
   const tools: ToolDef[] = [
@@ -92,7 +93,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     server.registerTool(
       tool.name,
       { description: tool.description, inputSchema: tool.inputSchema },
-      (args: any) => tool.handler(args) as any
+      (args: any) => withToolTelemetry(tool.name, () => tool.handler(args)) as any
     );
   }
 }

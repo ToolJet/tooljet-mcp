@@ -1,4 +1,5 @@
 import type { Config } from './config.js';
+import { recordHttpResponse } from './telemetry.js';
 
 const COOKIE_PREFIX = 'tj_auth_token=';
 
@@ -38,6 +39,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: config.email, password: config.password }),
     });
+    recordHttpResponse(res);
 
     // Surface the REAL cause — a 401 (bad creds / SSO-only), a 404 (wrong URL), etc. all otherwise
     // collapse into the generic "no cookie" message below, which is misleading.
@@ -79,7 +81,9 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     const headers = new Headers(init?.headers);
     headers.set('Cookie', `tj_auth_token=${token}`);
     if (workspaceId) headers.set('tj-workspace-id', workspaceId);
-    return fetchImpl(`${config.apiUrl}${path}`, { ...init, headers });
+    const response = await fetchImpl(`${config.apiUrl}${path}`, { ...init, headers });
+    recordHttpResponse(response);
+    return response;
   }
 
   async function fetchWorkspaceList(): Promise<Workspace[]> {

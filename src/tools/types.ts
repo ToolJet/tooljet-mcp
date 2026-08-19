@@ -8,6 +8,7 @@ export interface ToolTextContent {
 export interface ToolResult {
   content: ToolTextContent[];
   isError?: boolean;
+  _meta?: Record<string, unknown>;
 }
 
 export interface ToolDef {
