@@ -5,7 +5,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
     - TJ-AI COMPONENT_BINDING_RULES (22 components)
-    - ToolJet WidgetManager catalog (81 built-in components)
+    - ToolJet WidgetManager catalog (74 built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
 
@@ -13,7 +13,7 @@ metadata:
 
 ## What this skill is
 
-Facts you need to build ToolJet apps through the `tooljet-mcp` tools — the component binding rules, the canvas coordinate system, and query schemas. It contains **no design opinions**: which components to use, how to lay them out, and how they look are **your** decisions. Aim for a clean, polished, enterprise-grade result.
+Facts you need to build ToolJet apps through the `tooljet-mcp` tools — component binding rules, canvas mechanics, query schemas, and adaptable quality defaults. User requirements and the app's real job take precedence over those defaults; you still own the final layout and design decisions.
 
 Every tool call goes through ToolJet's governed API (your session + permissions). ToolJet apps are configuration over a fixed component library, not code.
 
@@ -28,13 +28,14 @@ Tool input schemas, catalog responses, and returned warnings are authoritative. 
 - Read `references/ui-authoring.md` before laying out a new page or using a layout-sensitive Table/Chart/nested view.
 - Read `references/forms-and-interactions.md` only for forms, modals, mutations, or event wiring.
 - Read `references/tool-workflows.md` only for a non-obvious authoring/update path, an existing-app repair, or a silent runtime/configuration failure.
+- Read `references/verification.md` when a page or primary flow is ready for QA.
 - Read `references/tooljet-reference.md` selectively for exact per-component binding rules, the built-in palette, and datasource query shapes. Prefer batched, section-filtered catalog tools over loading broad reference material.
 
 For a new phase, use `lint_app_spec` as an awaited barrier, inspect its warnings/errors, then pass its one-time `plan_token` to `apply_app_phase`. Never dispatch the linter and an apply/write as siblings in parallel. Batch tools are the default surface and accept one item for targeted creates; use update tools for persisted objects. Set `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true` only for an older client that still calls `create_table`, `insert_rows`, `add_page`, `add_query`, or `add_component`.
 
 For reads, inspect schema first, request explicit columns, and never author or execute `SELECT *` against an unfamiliar table. Count first when size is unknown; above 1,000 rows, propose server-side pagination and require explicit user approval before a full read. General permission to build or inspect an app is not consent for a large read.
 
-Seed writes are insert-only: omit generated serial primary keys so ToolJet uses the real sequence. A duplicate-key failure must never be treated as permission to update an existing row. Page/table/column deletion requires explicit approval for the exact target and `confirm:true`.
+Seed writes are insert-only: omit generated serial primary keys so ToolJet uses the real sequence. A duplicate-key failure must never be treated as permission to update an existing row. Page/query/component/table/column deletion requires explicit approval for the exact target and `confirm:true`; current page-group deletion is deliberately unsupported.
 
 Fix persisted work in place: use bounded `get_app_summary`/`get_component`, then the relevant `update_*` or `delete_*` tool. Do not rebuild an app to correct one value.
 
@@ -104,43 +105,16 @@ Any element backed by a query is **not done** until its states are handled. Thes
 - **Success:** confirm and close/reset only from `onDataQuerySuccess`; show an error and preserve input from `onDataQueryFailure`.
 - **Disabled / no double-fire:** while a mutation runs, **disable the button that triggered it** — bind its `Disable` to the mutation query's `{{queries.<mutation>.isLoading}}` (or `control-component` setDisable/setLoading around the action). A double-click must never fire the mutation twice.
 
-## Verify your work — browser-free checks first, then a real browser pass
+## Verify every completed page or primary flow
 
-**Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
-- Before the first write, run one `lint_app_spec` over the planned tables/seed data, queries, pages/components, events, and lifecycles. This is an **awaited preflight barrier**: call it alone, inspect the result, correct all errors, then consume its `plan_token` with `apply_app_phase`. Never run the linter concurrently with that or any other mutating tool.
-- For one bounded, non-mutating, non-billable read query, call `run_query(query_id, version_id)`; for two or more independent bounded ToolJet DB/SQL reads, prefer one preflighted `run_queries(query_ids, version_id)` batch. For an unbounded read, use the count-first flow above—never bypass it with `SELECT *` or inferred user consent. Inspect real values before hardcoding chart series/options. If a result warns about `components.*`, verify those runtime-resolved values in the viewer. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
-- Inspect with a **scoped** `get_app_summary` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; `update_*` anything wrong.
-- Run `validate_app(app_id)` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every `error`; review the `warnings`. Its explicit `not_checked` list still needs targeted runtime/browser verification.
-
-**Then run one page-level browser QA loop for each completed page/primary flow.** Open or refresh the same **VIEWER** tab (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas). Read `scripts/browser-audit.js` from this skill and evaluate its complete IIFE once in that page; it returns bounded component rectangles, real two-axis overlaps, clipped text, blank-widget candidates, nested scroll pairs, dialogs, below-fold buttons, and visible Plotly Charts with zero evaluated traces. Take one screenshot for visual context, exercise the key flow, and **collect every issue before editing** unless a blank/error/blocker prevents further inspection. The audit explicitly does not check console/network failures, hidden conditional states, or mutation correctness—use the browser's relevant facilities for those only when the flow needs them. Group fixes by page/tool, apply the smallest number of batched `update_components` / `update_layout` / `update_events` calls, then do **one confirmation audit + screenshot**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
-
-For an **Operate** page, this browser pass must also confirm that its primary action is visible without first scrolling the page and that a bounded Table/Listview does not introduce a second vertical scroll region around the whole page. If both scroll regions are deliberate, report that explicitly; otherwise shorten/reposition the operational surface in one repair batch.
-
-**For every form/modal, measure geometry once—screenshots can hide small overlaps.** ToolJet widget wrappers use `id=<component_id>`, so one browser evaluation can collect each child's `getBoundingClientRect()`. A real collision requires overlap on **both axes** (`xOverlap && yOverlap`), which avoids false positives for side-by-side fields; also compare child bottoms with the modal body/bounds. MCP warnings from `add_components`, `update_components`, `update_layout`, and `validate_app` catch static rendered-height/modal sizing mistakes, while this DOM check confirms runtime/dynamic layout.
-
-**Triage before repairing:**
-- **Always fix:** blank/error rendering, incorrect or unbound data, broken navigation, failed primary actions, misleading values, unreadable core charts/tables, and missing loading/error behavior that breaks the workflow.
-- **Fix at the default target viewport:** usability/accessibility problems that impede the page's intended job.
-- **Report unless requested:** tiny spacing/font differences, cosmetic wrapping seen only at an unusual viewport, and evidence-backed ToolJet/editor limitations. Allow at most one collected cosmetic repair batch; do not enter repeated pixel-polish loops.
-- If something appears to be a platform/manual-builder limitation, make one targeted evidence check, then report the exact limitation and manual step instead of probing repeatedly. Get one complete primary loop working before cosmetic work; before declaring the **whole requested app** complete, verify every requested primary flow.
-
-**Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
-
-**When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with `get_app_summary` / `run_query`, then fix in place with `update_components` / `update_query` / `update_events`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
-
-### Fast default build sequence
-
-1. Plan the page/data model and stable logical refs locally; do not write a skeleton first.
-2. Fetch all needed complex component contracts in one selective `get_component_catalog({types:[...]})` call and all datasource operation contracts in one `get_datasource_query_schema({requests:[...]})` call. Reuse both results for the whole build.
-3. Run and await `lint_app_spec` **by itself**. Inspect/fix its result, then consume the returned token with one `apply_app_phase` call; never dispatch the linter and the apply call as siblings in parallel.
-4. Run selected safe reads, review the static validation returned by the apply call (use `validate_app` again only after later manual edits), then make one collected browser tour across the completed primary flows, one repair batch, and one confirmation pass. Do not screenshot-poll or reopen catalogs between pages.
+Read `references/verification.md` at the verification stage. The required loop is: await `lint_app_spec` before writes; run only explicitly selected safe reads (with count/large-read/billable-read approval when applicable); inspect scoped persisted values; run `validate_app`; then use one viewer-tab browser audit + screenshot, exercise the primary flow, collect all issues, repair in one batch, and run one confirmation pass. Validation is static and never proves query execution, event delivery, or rendering. Never test mutations, AI, email, or other side effects merely to validate a build. For forms/modals, include the DOM rectangle overlap and bounds check.
 
 ## Build guidance
 
 - Always `create_app` first; thread `app_id` / `version_id` / `home_page_id` into later calls.
 - Give each component a `name`; bind data by query name: `{{queries.<name>.data}}`.
 - Use the grid mechanics above to lay components out without overlap. Design the layout yourself — make it clean and enterprise-grade.
-- Repeat the clickable `app_url` in the final handoff even when you already opened it in the built-in browser.
+- Repeat the clickable `viewer_url` and `editor_url` in the final handoff even when you already opened the viewer in the built-in browser. `app_url` is only a compatibility alias for the editor.
 - **Close the loop with an efficiency note.** After building (and after each phase), tell the user roughly **how many MCP tool calls it took** — you can count your own calls, and fewer round-trips is the goal (batch with `add_components`/`add_queries`). Include **token usage only if your runtime actually surfaces it** to you; never fabricate a token number you don't have. Keep it to one line.
 
 ---

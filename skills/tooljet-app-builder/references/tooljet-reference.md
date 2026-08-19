@@ -12,7 +12,6 @@ Companion to the **tooljet-app-builder** skill. The skill covers the workflow (i
 | `AudioRecorder` | AudioRecorder — Records audio |
 | `BoundedBox` | BoundedBox — An infinitely customizable image annotation widget |
 | `Button` | Button — Trigger actions: queries, alerts, set variables etc. |
-| `ButtonGroup` | ButtonGroupLegacy — Group of buttons |
 | `ButtonGroupV2` | ButtonGroup — Group of buttons |
 | `Calendar` | Calendar — Display calendar events |
 | `Camera` | Camera — Captures video & photos from camera |
@@ -26,7 +25,6 @@ Companion to the **tooljet-app-builder** skill. The skill covers the workflow (i
 | `Container` | Container — Group components |
 | `CurrencyInput` | CurrencyInput — Currency input field |
 | `CustomComponent` | CustomComponent — Create React components |
-| `Datepicker` | DatePickerLegacy — Choose date and time |
 | `DatePickerV2` | DatePicker — Choose date |
 | `DaterangePicker` | DateRangePicker — Choose date ranges |
 | `DatetimePickerV2` | DatetimePicker — Choose date and time |
@@ -45,12 +43,10 @@ Companion to the **tooljet-app-builder** skill. The skill covers the workflow (i
 | `JSONEditor` | JSONEditor — Edit JSON data |
 | `JSONExplorer` | JSONExplorer — Explore JSON data |
 | `Kanban` | Kanban — Task management board |
-| `KanbanBoard` | KanbanBoard — Task management board |
 | `KeyValuePair` | KeyValuePair — Display data in key-value format |
 | `Link` | Link — Add link to the text |
 | `Listview` | Listview — List multiple items |
 | `Map` | Map — Display map locations |
-| `Modal` | ModalLegacy — Show pop-up windows |
 | `ModalV2` | Modal — Show pop-up windows |
 | `ModuleContainer` | ModuleContainer — Module Container |
 | `ModuleViewer` | ModuleViewer — Module |
@@ -64,9 +60,7 @@ Companion to the **tooljet-app-builder** skill. The skill covers the workflow (i
 | `PopoverMenu` | PopoverMenu — Popover Menu |
 | `ProgressBar` | ProgressBar — Show progress |
 | `QrScanner` | QrScanner — Scan QR codes and hold its data |
-| `RadioButton` | RadioButtonLegacy — Select one from multiple choices |
 | `RadioButtonV2` | RadioButton — Select one from multiple choices |
-| `RangeSlider` | RangeSliderLegacy — Adjust value range |
 | `RangeSliderV2` | RangeSlider — Adjust value range |
 | `ReorderableList` | ReorderableList — Reorderable List |
 | `RichTextEditor` | RichTextEditor — Rich text editor |
@@ -85,7 +79,6 @@ Companion to the **tooljet-app-builder** skill. The skill covers the workflow (i
 | `Timeline` | Timeline — Show event timeline |
 | `TimePicker` | TimePicker — Choose date and time |
 | `Timer` | Timer — Countdown or stopwatch |
-| `ToggleSwitch` | ToggleSwitchLegacy — User-controlled on-off switch |
 | `ToggleSwitchV2` | ToggleSwitch — User-controlled on-off switch |
 | `TreeSelect` | TreeSelect — Hierarchical item selector |
 | `VerticalDivider` | VerticalDivider — Vertical line separator |
@@ -118,7 +111,7 @@ TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: 
 ### Form
 Access child fields via: `{{components.formName.data.childName.value}}`. Gate submit queries with runOnlyIf=`{{components.formName.isValid}}` on the run-query event — always implement client-side validation before triggering write operations. onSubmit event pattern by datasource: PostgreSQL → INSERT/UPDATE; MongoDB → insert_one/update_one; BigQuery → insert_record/update_record; OpenAPI → POST/PUT. Prefill from query: bind initialValues to `{{queries.queryName.data[0]}}`. For generated forms, read direct submitted values from `{{components.formName.formData}}`; `.data` remains the detailed child-state object. Supported schema field types are textinput, textarea, dropdown, multiselect, number, emailinput, password, datepicker, checkbox, radio, toggle, starrating, and filepicker—but only textinput/number/emailinput/password/datepicker/checkbox are layout-safe in generated Form. If any other type is needed, build the whole form from standalone components. Filepicker also crashes the Form. Dropdown/multiselect fields use values + displayValues, not options. There is no required flag; use validation.minLength or validation.customRule.
 
-### KanbanBoard
+### Kanban
 Bind cardData from query array shaped as [{id, title, columnId}]; bind columnData from query array shaped as [{id, title}]. lastCardMovement exposes {cardId, sourceColumn, destinationColumn} — use in update queries triggered by onCardMoved event to persist reordering.
 
 ### KeyValuePair
@@ -126,9 +119,6 @@ Bind data property to a query object for display/edit: `{{queries.queryName.data
 
 ### Listview
 Bind data property to a query array: `{{queries.queryName.data}}`. Child components inside the list access the current row via the list's data binding context.
-
-### Modal
-show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
 
 ### ModalV2
 show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
@@ -149,7 +139,7 @@ Exposed variable is `.label` — there is NO `.value` on RadioButtonV2. Use `{{c
 primaryValue must be a scalar — bind `queries.name.data[0].fieldName` from an aggregate query, never the full array. secondarySignDisplay accepted values: 'positive', 'negative', 'none' — never a boolean. icon is MANDATORY — always set it; never leave empty. primaryPrefixText / primarySuffixText are static strings only — do not bind expressions here. Statistics is display-only — its exposed variables are read-back values, not filter inputs.
 
 ### Table
-Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector.value=`"rawJson"` — both MUST be set together or the table renders nothing. NEVER set the table-level `autogenerateColumns.value` to false — it must always be true so columns render from the query rows automatically; false makes the table show ONLY the explicit `columns` array and blanks out on any key mismatch. This is separate from a column's own `autogenerated` field — individual columns may have `autogenerated: false` (that is normal for custom columns); only the table-level `autogenerateColumns` flag must never be false. pageIndex is 1-based: offset pagination uses (pageIndex - 1) * pageSize. selectedRow columns come from actual query result fields — never fabricate column names. Columns support JavaScript transforms on query fields. Dynamic columns: only set `useDynamicColumn`/`columnData` for a FLAT, build-time column list. `columnData` is evaluated once with no row in scope, so it MUST NOT reference `rowData`/`cellValue`, MUST NOT contain nested `{{ }}`, and cannot express per-cell conditions — any conditional `cellBackgroundColor`/`textColor`/`isEditable`/`dynamicOptions`/etc. MUST go on static `columns` (resolved per cell). Otherwise the table renders ZERO columns. Explicit `columns` entries are objects `{name, key, id, columnType, columnSize, autogenerated: false}` — set `autogenerated: false` on custom columns so they PERSIST; an `autogenerated: true` column whose `key` does not match a query field is dropped. MISLEADING FAILURE: if the table shows unrelated demo columns (e.g. photo/email/name) that you never defined, its `data` binding resolved EMPTY — that is a broken DATA binding (wrong query name, or the query returned nothing), NOT a column problem. Fix the data binding; do not touch columns.
+Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector.value=`"rawJson"` — both MUST be set together or the table renders nothing. NEVER set the table-level `autogenerateColumns.value` to false — it must always be true so columns render from the query rows automatically; false makes the table show ONLY the explicit `columns` array and blanks out on any key mismatch. This is separate from a column's own `autogenerated` field — individual columns may have `autogenerated: false` (that is normal for custom columns); only the table-level `autogenerateColumns` flag must never be false. pageIndex is 1-based and can be undefined on the first evaluation: offset pagination uses ((pageIndex || 1) - 1) * pageSize. selectedRow columns come from actual query result fields — never fabricate column names. Columns support JavaScript transforms on query fields. Dynamic columns: only set `useDynamicColumn`/`columnData` for a FLAT, build-time column list. `columnData` is evaluated once with no row in scope, so it MUST NOT reference `rowData`/`cellValue`, MUST NOT contain nested `{{ }}`, and cannot express per-cell conditions — any conditional `cellBackgroundColor`/`textColor`/`isEditable`/`dynamicOptions`/etc. MUST go on static `columns` (resolved per cell). Otherwise the table renders ZERO columns. Explicit `columns` entries are objects `{name, key, id, columnType, columnSize, autogenerated: false}` — set `autogenerated: false` on custom columns so they PERSIST; an `autogenerated: true` column whose `key` does not match a query field is dropped. MISLEADING FAILURE: if the table shows unrelated demo columns (e.g. photo/email/name) that you never defined, its `data` binding resolved EMPTY — that is a broken DATA binding (wrong query name, or the query returned nothing), NOT a column problem. Fix the data binding; do not touch columns.
 
 ### TagsInput
 Bind schema to a query for dynamic tag options: schema=`{{queries.queryName.data}}` (array of {label, value}). selectedTags exposes only the checked tags; values exposes all current tags.
@@ -261,7 +251,7 @@ Workspace-connected datasources available to the current user and selected envir
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in `list_datasources`:
 > - **Say so plainly** — ToolJet has no native integration for it (or it simply isn't connected), and you can't connect one from here. Don't fabricate a query against it or present placeholder data as if it were live.
 > - **Offer the real paths:** (a) the user connects it in ToolJet first — for a third-party API that usually means a **REST API datasource** pointed at that API; auth/OAuth is a manual setup step and you must **never handle credentials yourself** — then you build queries + UI against it; or (b) build the app's full UI and structure **now** against a **ToolJet DB table seeded with representative sample data**, clearly labelled as placeholder, so it's ready to rewire to the real source later. Confirm which the user prefers.
-- **tooljetdb** — `{ operation: "list_rows", table_id: "<id>", list_rows: {}, runOnPageLoad: true }` (see below)
+- **tooljetdb** — `{ operation: "list_rows", table_id: "<id>", list_rows: { limit: 25, offset: 0 }, runOnPageLoad: true }` (bounded preview; see below)
 - **postgresql / mysql** — `{ mode: "sql", query: "SELECT …", query_params: [], runOnPageLoad: true }`
 - **runjs** — `{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }` (great for chart aggregation — reference other queries' data, return a shaped value). Plain `queries.q1` reads inside RunJS code are **not inferred as reactive dependencies**: `runOnDependencyChange:true` alone can leave the result at its first empty/stale value. For derived data, run the RunJS query explicitly from each source query's `onDataQuerySuccess`; for user-driven transforms, invoke it only after the source query has completed.
 - **servicenow** — `{ operation: "list_records", table: "incident", … }`
@@ -274,11 +264,11 @@ Many requests ("build a CRM", "an expense tracker") come with **no table yet** �
 3. Optionally `insert_rows_batch` once to seed a small representative set so the app doesn't render empty. It is insert-only: omit generated serial primary keys, and treat an explicit duplicate-key error as a conflict to resolve—not an update path. Avoid dozens of rows unless density/pagination is under test.
 4. Then `add_queries` + `add_components` as usual.
 For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
-Use `add_table_column` to evolve a ToolJet DB table in place. Dropping a column/table/page is irreversible: inspect dependencies and obtain explicit approval for the exact target before `drop_table_column(..., confirm:true)`, `drop_table(..., confirm:true)`, or `delete_page(..., confirm:true)`.
+Use `add_table_column` to evolve a ToolJet DB table in place. Destructive deletes are irreversible: inspect dependencies and obtain explicit approval for the exact target before any `drop_*` or `delete_*` call, then pass `confirm:true`.
 
 ### ToolJet DB (`kind: "tooljetdb"`)
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
-- List all rows: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }`.
+- Bounded preview: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": { "limit": 25, "offset": 0 }, "runOnPageLoad": true }`. Do not author an automatic unbounded `list_rows`; count first and use the server-side Table recipe when size is unknown or growing.
 - `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
 - `list_rows` may carry `limit`, `offset`, `where_filters`, and `order_filters`. In `order_filters`, the outer map key must match the clause's inner `id`; a mismatch can silently disable sorting. Fetch `get_datasource_query_schema(..., operation:"list_rows")` for the exact nested shapes instead of guessing.
 - Prefer ToolJet DB aggregation over fetching every row just to count or sum: use `list_rows.aggregates` and optional `list_rows.group_by`. The aggregate configuration key is not the result key; results use `<table_name>_<column>_<aggFx>` (for example `starlink_terminals_id_count`). Multi-table reads use `operation: "join_tables"` with `join_table`.

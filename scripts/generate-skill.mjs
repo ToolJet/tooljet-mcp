@@ -1,6 +1,6 @@
 // Generates skill/SKILL.md from the TJ-AI agent's authoritative knowledge (component
-// binding rules) + ToolJet's canvas grid constants. KNOWLEDGE ONLY — no layout/design
-// opinions (Codex owns those). Re-run when the agent's rules change to avoid drift.
+// binding rules) + ToolJet's canvas grid constants. It also carries adaptable quality
+// defaults; explicit user requirements always win. Re-run when source rules change to avoid drift.
 //
 // Usage: node scripts/generate-skill.mjs
 //   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
@@ -125,7 +125,7 @@ const componentSection = referenceComponentList
       // setPage converts it to the internal zero-based index.
       rule = rule.replace(
         'pageIndex is 0-based: SQL offset = pageIndex * pageSize.',
-        'pageIndex is 1-based: offset pagination uses (pageIndex - 1) * pageSize.'
+        'pageIndex is 1-based and can be undefined on the first evaluation: offset pagination uses ((pageIndex || 1) - 1) * pageSize.'
       );
     }
     if (name === 'Form') {
@@ -156,7 +156,7 @@ metadata:
 
 ## What this skill is
 
-Facts you need to build ToolJet apps through the \`tooljet-mcp\` tools — the component binding rules, the canvas coordinate system, and query schemas. It contains **no design opinions**: which components to use, how to lay them out, and how they look are **your** decisions. Aim for a clean, polished, enterprise-grade result.
+Facts you need to build ToolJet apps through the \`tooljet-mcp\` tools — component binding rules, canvas mechanics, query schemas, and adaptable quality defaults. User requirements and the app's real job take precedence over those defaults; you still own the final layout and design decisions.
 
 Every tool call goes through ToolJet's governed API (your session + permissions). ToolJet apps are configuration over a fixed component library, not code.
 
@@ -174,7 +174,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current }]\`. The workspaces (organizations) this user belongs to.
 - \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug }\`.
-- \`create_app(name)\` → \`{ app_id, version_id, home_page_id, app_url }\`. Call first; keep all four. Immediately share the clickable \`app_url\` in chat so the user can follow the build. If a built-in browser is available, wait until the first meaningful page works, then open that viewer URL and reuse the same tab; reload it at page-level checkpoints instead of opening new tabs or presenting a blank app. The URL alone is sufficient when no built-in browser is available.
+- \`create_app(name)\` → \`{ app_id, version_id, home_page_id, editor_url, viewer_url, app_url }\`. \`app_url\` is a backward-compatible alias for \`editor_url\`. Call first and keep the ids. Share \`editor_url\` so the user can follow authoring live. If a built-in browser is available, wait until the first meaningful page works, then open \`viewer_url\` and reuse that tab at page-level checkpoints. When no browser is available, share both links rather than calling the editor URL a viewer.
 - \`list_datasources(version_id)\` → \`[{ id, name, kind }]\`. Workspace-connected sources available to the current user/environment appear automatically in existing and brand-new apps—there is **no per-app datasource attach/link step**. Use a returned \`id\` directly; if an expected source is absent, check the active workspace, permissions, connection, and environment configuration. ToolJet DB is \`kind: "tooljetdb"\`.
 - \`list_tables()\` → \`[{ id, table_name }]\`. A ToolJet-DB query needs the table's **id** as \`table_id\`.
 - \`get_table_schema(table_name)\` → columns with types, primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships.
@@ -182,7 +182,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`insert_rows_batch({ tables:[{table_name,rows}] })\` → insert-only seed writes in listed parent-before-child order. Omit generated serial primary keys so ToolJet uses the real sequence; explicit duplicate keys fail instead of updating existing rows. Keep the first build representative rather than exhaustive: usually 5–8 primary records and 2–3 examples per important state are enough unless density/pagination is itself under test.
 - \`get_component_catalog()\` → the lightweight component palette. Typed/batched selective calls are described above.
 - \`add_queries({ version_id, queries: [...] })\` → \`[{ query_id, name }]\`. **Create ALL an app's queries in one call.**
-- \`run_query({ query_id, version_id, count_query_id?, user_confirmed_large_read? })\` → \`{ status, data, preflight?, warnings?, ... }\`. Run only an explicitly selected **safe, non-mutating, non-billable read** to inspect real rows. It refuses \`SELECT *\`; a row read without a static limit of at most 1,000 requires a same-table count query first. If that count exceeds 1,000, the target stays blocked until the user explicitly approves and you retry with \`user_confirmed_large_read:true\`. Never infer that approval. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure. A \`components.*\` warning means the static datasource path passed but live pagination/filter values still require the viewer.
+- \`run_query({ query_id, version_id, count_query_id?, user_confirmed_large_read?, user_confirmed_billable_read? })\` → \`{ status, data, preflight?, warnings?, ... }\`. Run only an explicitly selected safe, non-mutating read to inspect real rows. It refuses \`SELECT *\`; a row read without a static limit of at most 1,000 requires a same-table count query first. If that count exceeds 1,000, the target stays blocked until the user explicitly approves and you retry with \`user_confirmed_large_read:true\`. BigQuery, Snowflake, and Redshift reads also require separate explicit approval via \`user_confirmed_billable_read:true\`, even when bounded. Never infer either approval. Check \`status\` ("ok"/"failed") — HTTP is 200 even on failure. A \`components.*\` warning means the static datasource path passed but live pagination/filter values still require the viewer.
 - \`run_queries({ query_ids, version_id })\` executes up to ten **proven bounded read-only** ToolJet DB/SQL reads concurrently after preflighting the whole batch. Use it when two or more independent safe reads need real response shapes; it refuses \`SELECT *\`, unbounded reads, mutations, RunJS, paid/remote APIs, and unknown kinds before executing anything. Use singular \`run_query\` for the count-first flow.
 - \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique \`client_ref\` and each child the matching \`parent_ref\`; MCP resolves real IDs atomically and lints overlaps within the correct parent. Use child \`slot_name:"header" | "body" | "footer"\` for ModalV2/Form/Container native regions (body is the default). A Kanban with no explicit child gets its catalog card children automatically; an explicit child targeting its \`client_ref\` suppresses those defaults.
 - \`add_component_batches({ app_id, version_id, pages:[{page_id,components}] })\` → preflight and create complete batches for **2–20 independent pages concurrently**. Prefer it over serial \`add_components\` calls once all target page ids and bindings exist. Each page is atomic; ToolJet has no cross-page transaction, so an upstream partial failure reports completed/failed pages for in-place repair.
@@ -192,7 +192,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`lint_app_spec({ version_id?, tables?, seed_data?, queries?, pages?, events?, lifecycles? })\` → dry-run one exact phase before writes. Give planned objects stable \`client_ref\` values; events use \`source_ref\`, targeted actions use \`target_ref\`, and ToolJet DB queries may use \`table_ref\` instead of a not-yet-created table id. Treat this as an **awaited preflight barrier**: call it by itself, inspect its result, fix every error and review warnings. A clean result includes a one-time 30-minute \`plan_token\`; never run this linter in parallel with a mutating call.
 - \`apply_app_phase({ app_id, version_id, plan_token })\` → consume that exact plan once. MCP creates dependency stages internally, batches independent pages concurrently, resolves all logical refs, combines ordinary events + lifecycles into one write, and returns final static validation. It never runs queries. ToolJet has no cross-resource transaction, so a rare partial failure reports exactly what persisted and never auto-deletes it; lint again before an in-place repair.
 
-**Plan/apply for a new phase; update tools for persisted objects.** Plan first, await \`lint_app_spec\` as a standalone barrier, inspect the result, then pass its token to one \`apply_app_phase\` call. Do not retransmit or manually replay a clean plan through separate authoring tools. Batch create tools accept one item for a targeted addition; use \`add_component_batches\` for several pages and \`update_*\` for incremental repairs. Page/query/event batches are atomic; cross-resource phase application cannot be atomic because ToolJet has no matching transaction.
+**Plan/apply for a new phase; update tools for persisted objects.** Plan first, await \`lint_app_spec\` as a standalone barrier, inspect the result, then pass its token to one \`apply_app_phase\` call. Do not retransmit or manually replay a clean plan through separate authoring tools. Batch create tools accept one item for a targeted addition; use \`add_component_batches\` for several pages and \`update_*\` for incremental repairs. A page's component diff and the combined event diff each use one upstream write. Page, query, table, and seed batches use multiple upstream requests and can partially persist; their errors report exactly what completed. Cross-resource phase application is likewise non-atomic and never auto-deletes persisted work.
 
 ### Large-data read safety
 
@@ -200,6 +200,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - When row count is unknown, create a cheap same-source \`COUNT(*)\` (or ToolJet DB count aggregate) query before running an unbounded row query. Pass its id as \`count_query_id\`; MCP runs the count first and does not execute the target on a failed, ambiguous, or mismatched count.
 - Treat more than 1,000 rows—or a remote/growing table likely to cross that size—as server-side-pagination territory. Prefer a bounded preview plus page/count queries instead of loading the full dataset into the app or agent context.
 - If a full read above the threshold is genuinely required, tell the user the observed row count and why pagination is not sufficient, then ask explicitly. Set \`user_confirmed_large_read:true\` only after that answer; general permission to build or inspect an app is not consent for a large read.
+- For BigQuery, Snowflake, or Redshift, separately explain that even a bounded verification read can incur cost and ask before setting \`user_confirmed_billable_read:true\`. Large-read approval does not imply billable-read approval, or vice versa.
 
 ### Reuse existing components deliberately
 
@@ -211,10 +212,10 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`get_app_summary({ app_id, ...filters })\` → selective actual app values. It defaults to bounded \`detail:"structure"\`; filter by page/component/query/event and request exact dotted fields such as \`properties.data.value\`. Use \`detail:"full"\` only after narrowing the target. **Do not pull every value from a multi-page app for routine inspection** (\`get_app\` is much larger; avoid it).
 - \`get_component(app_id, component_id)\` → one component's values + its \`page_id\`.
 - \`update_components({ app_id, version_id, page_id, updates:[{ component_id, definition:{properties?,styles?,...} }] })\` → edit in place. Send only CHANGED leaves (deep-merged); arrays like Table \`columns\` / dropdown \`options\` are REPLACED. Rename/reparent via \`name\`/\`parent\`/\`slot_name\` (separate from \`definition\`); \`slot_name\` alone keeps the current parent.
-- \`delete_components({ app_id, version_id, page_id, component_ids:[...] })\` · \`update_layout({ ..., layouts:[{ component_id, desktop?, mobile?, parent?, slot_name? }] })\` (move/resize/reparent).
-- \`update_query({ query_id, version_id, app_id?, datasource_id?, options })\` (options REPLACE wholesale; optional datasource repoint is contract-validated and rollback-aware) · \`delete_query({ query_id, version_id })\`.
+- \`delete_components({ app_id, version_id, page_id, component_ids:[...], confirm:true })\` permanently removes only dependency-free components after exact-target approval; otherwise update in place. \`update_layout({ ..., layouts:[{ component_id, desktop?, mobile?, parent?, slot_name? }] })\` moves/resizes/reparents.
+- \`update_query({ query_id, version_id, app_id?, datasource_id?, options })\` (options REPLACE wholesale; optional datasource repoint is contract-validated and rollback-aware) · \`delete_query({ app_id, query_id, version_id, confirm:true })\` permanently removes only a query with no component/event references after exact-target approval.
 - \`update_pages({ app_id, version_id, updates?, order? })\` → rename pages, set sidebar icons, toggle hidden state, and/or reorder existing pages (including the auto-created Home page). \`order\` must be the complete ordered list of current page ids; use \`get_app_summary\` to fetch ids/indexes first. The write is read back and verified.
-- \`delete_page({ app_id, version_id, page_id, confirm:true })\` → permanently delete one non-Home page after explicit approval. It refuses external events that still target the page; update/delete those first. Use \`delete_associated_pages:true\` only with explicit approval to delete a page group and its children.
+- \`delete_page({ app_id, version_id, page_id, confirm:true })\` → permanently delete one non-Home, non-group page after exact-target approval. It refuses pages with external event targets or components referenced from elsewhere. Page-group deletion is intentionally disabled until the complete child deletion set can be preflighted and verified.
 - \`list_events({ app_id, version_id, source_id? })\` · \`update_events({ ..., events:[{ event_id, name, event }] })\` · \`delete_event({ app_id, version_id, event_id })\`.
 - \`validate_app(app_id)\` → static \`{ ok, checked, not_checked, errors, warnings }\`. It validates persisted references, component/event compatibility, and query option contracts **without executing queries**. A clean result does not prove external APIs, mutations, browser event delivery, or rendering work.
 
@@ -349,7 +350,7 @@ Use server-side behavior for large/remote datasets; keep client-side behavior fo
 
 1. Batch-fetch only the page/count operation contracts with \`get_datasource_query_schema({requests:[...]})\`. Create a **page query** and a **total-count/metadata query** using that datasource's real options.
 2. Configure Table with \`dataSourceSelector="rawJson"\`, \`data\` bound to the page query, \`serverSidePagination=true\`, \`serverSideRowsPerPage\`, and \`totalRecords\` bound to the count query. ToolJet's exposed \`pageIndex\` is **1-based**, but it can be undefined when the first page-load query evaluates. Guard the offset as \`((components.<table>.pageIndex || 1) - 1) * pageSize\`; the unguarded subtraction produces \`NaN\` and an empty Table.
-3. When page/count options reference Table or external-filter state, set \`runOnDependencyChange:true\` on those reads so they run **after** the exposed value is published. Keep page-load runs for initial hydration and explicit \`onRefresh\` runs. Use \`onSearch\`, \`onSort\`, \`onFilterChanged\`, and external-filter events only for non-query effects such as resetting the Table to page 1; do **not** also run the same reactive queries from those events. Immediate ButtonGroupV2 \`onClick\` reads can observe the previous \`selected\` value.
+3. Choose exactly one query-wiring mode and never mix them. **Preferred reactive mode:** set \`runOnDependencyChange:true\` on reads whose options reference Table/filter state, keep an initial page-load run, and let search/sort/filter events only reset the Table to page 1. **Explicit-event fallback:** disable dependency-change runs, then wire page/search/sort/filter events to run the necessary page/count queries after resetting page 1. Use the fallback only when a dependency cannot be represented reliably. Immediate ButtonGroupV2 \`onClick\` reads can observe the previous \`selected\` value, so reactive mode is safer for that control.
 4. Exact Table shapes are \`searchText: string\`, \`sortApplied: [{column,columnKey,direction}]\`, and \`filters: [{column,condition,value}]\`; request Table \`exposedVariables\` + \`authoringHints\` for the machine-readable contract. An empty \`DaterangePicker\` can become the literal strings \`"undefined"\` or \`"Invalid date"\` in datasource options, so read its authoring hint instead of relying only on \`value || fallback\`.
 5. Keep translation at the query boundary: SQL/TJDB use limit+offset and a count query; page-number APIs send page+size; cursor/token APIs store the returned cursor and drive \`enableNextButton\`/\`enablePrevButton\`. Do not pretend a cursor API supports random page offsets.
 6. Mutations from inline/bulk edit run only the write query. Its \`onDataQuerySuccess\` re-runs page+count queries; failure preserves edits and shows an error.
@@ -432,7 +433,7 @@ Components and queries alone make a *static* app. Use \`add_events\` for compone
 - **Page initialization:** attach \`onPageLoad\` to the page when a query must run each time that page is entered. Use a page event instead of assuming app-level \`runOnPageLoad\` will re-run on in-app navigation.
 - **Master → detail:** on Table \`onRowClicked\`, order handlers as: (1) \`set-custom-variable\` for the selected row/id, (2) optional \`run-query\` for fresh detail data, (3) \`switch-page\` **LAST**. ToolJet stops the same-trigger chain after navigation, so later handlers silently never run. Bind directly to \`{{variables.selectedTicket.<field>}}\` when a snapshot is enough. A detail-page \`onPageLoad\` query is also valid; do not rely on app-level \`runOnPageLoad\` re-running on navigation.
 - **Refresh on an external filter:** an input's \`onChange\`/\`onEnterPressed\` → \`run-query\` on the list query whose filter references the input.
-- **Server-side Table search/filter:** keep datasource-specific pagination/filter syntax in the query contract. Bind its page size and offset/cursor to the Table's exposed pagination state, bind \`totalRecords\` to a matching count query, and run the row query on \`onPageChanged\`. On \`onSearch\`/filter change, FIRST \`set-table-page\` to page 1, THEN run the row and count queries; otherwise a page-5 offset can make a valid filtered result look empty or fail.
+- **Server-side Table search/filter:** keep datasource-specific pagination/filter syntax in the query contract and bind \`totalRecords\` to a matching count query. Use one mode only: reactive reads with events limited to resetting page 1, or non-reactive reads explicitly run by page/search/sort/filter events after the reset. Never wire both, which duplicates requests and can race stale state. Guard offset pagination with \`((components.<table>.pageIndex || 1) - 1) * pageSize\`.
 - **Prevent double-submit:** bind the submit Button's \`Disable\` to the mutation query's loading (\`{{queries.<mutation>.isLoading}}\`) so it can't fire twice, and show its native loading state while the mutation runs. (See "Async & UI states".)
 
 Wire events AFTER the components and queries exist (you need their ids). Prefer one \`add_events\` call for all ordinary events and one \`add_query_lifecycles\` call for every standard mutation flow.
@@ -494,7 +495,7 @@ ToolJet plugins are wrappers, so upstream API knowledge can be actively misleadi
 - Always \`create_app\` first; thread \`app_id\` / \`version_id\` / \`home_page_id\` into later calls.
 - Give each component a \`name\`; bind data by query name: \`{{queries.<name>.data}}\`.
 - Use the grid mechanics above to lay components out without overlap. Design the layout yourself — make it clean and enterprise-grade.
-- Repeat the clickable \`app_url\` in the final handoff even when you already opened it in the built-in browser.
+- Repeat the clickable \`viewer_url\` and \`editor_url\` in the final handoff even when you already opened the viewer in the built-in browser. \`app_url\` is only a compatibility alias for the editor.
 - **Close the loop with an efficiency note.** After building (and after each phase), tell the user roughly **how many MCP tool calls it took** — you can count your own calls, and fewer round-trips is the goal (batch with \`add_components\`/\`add_queries\`). Include **token usage only if your runtime actually surfaces it** to you; never fabricate a token number you don't have. Keep it to one line.
 
 ---
@@ -622,7 +623,7 @@ Workspace-connected datasources available to the current user and selected envir
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in \`list_datasources\`:
 > - **Say so plainly** — ToolJet has no native integration for it (or it simply isn't connected), and you can't connect one from here. Don't fabricate a query against it or present placeholder data as if it were live.
 > - **Offer the real paths:** (a) the user connects it in ToolJet first — for a third-party API that usually means a **REST API datasource** pointed at that API; auth/OAuth is a manual setup step and you must **never handle credentials yourself** — then you build queries + UI against it; or (b) build the app's full UI and structure **now** against a **ToolJet DB table seeded with representative sample data**, clearly labelled as placeholder, so it's ready to rewire to the real source later. Confirm which the user prefers.
-- **tooljetdb** — \`{ operation: "list_rows", table_id: "<id>", list_rows: {}, runOnPageLoad: true }\` (see below)
+- **tooljetdb** — \`{ operation: "list_rows", table_id: "<id>", list_rows: { limit: 25, offset: 0 }, runOnPageLoad: true }\` (bounded preview; see below)
 - **postgresql / mysql** — \`{ mode: "sql", query: "SELECT …", query_params: [], runOnPageLoad: true }\`
 - **runjs** — \`{ code: "return queries.q1.data.filter(r => r.status === 'Open').length;" }\` (great for chart aggregation — reference other queries' data, return a shaped value). Plain \`queries.q1\` reads inside RunJS code are **not inferred as reactive dependencies**: \`runOnDependencyChange:true\` alone can leave the result at its first empty/stale value. For derived data, run the RunJS query explicitly from each source query's \`onDataQuerySuccess\`; for user-driven transforms, invoke it only after the source query has completed.
 - **servicenow** — \`{ operation: "list_records", table: "incident", … }\`
@@ -635,11 +636,11 @@ Many requests ("build a CRM", "an expense tracker") come with **no table yet** �
 3. Optionally \`insert_rows_batch\` once to seed a small representative set so the app doesn't render empty. It is insert-only: omit generated serial primary keys, and treat an explicit duplicate-key error as a conflict to resolve—not an update path. Avoid dozens of rows unless density/pagination is under test.
 4. Then \`add_queries\` + \`add_components\` as usual.
 For an **existing** table, call \`get_table_schema(table_name)\` first so you use its real column names and types.
-Use \`add_table_column\` to evolve a ToolJet DB table in place. Dropping a column/table/page is irreversible: inspect dependencies and obtain explicit approval for the exact target before \`drop_table_column(..., confirm:true)\`, \`drop_table(..., confirm:true)\`, or \`delete_page(..., confirm:true)\`.
+Use \`add_table_column\` to evolve a ToolJet DB table in place. Destructive deletes are irreversible: inspect dependencies and obtain explicit approval for the exact target before any \`drop_*\` or \`delete_*\` call, then pass \`confirm:true\`.
 
 ### ToolJet DB (\`kind: "tooljetdb"\`)
 - Resolve the table id with \`list_tables()\` — the query references the table by **\`table_id\`** (the id), NOT the name.
-- List all rows: \`options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }\`.
+- Bounded preview: \`options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": { "limit": 25, "offset": 0 }, "runOnPageLoad": true }\`. Do not author an automatic unbounded \`list_rows\`; count first and use the server-side Table recipe when size is unknown or growing.
 - \`runOnPageLoad: true\` runs the query when the app opens so bound components populate automatically.
 - \`list_rows\` may carry \`limit\`, \`offset\`, \`where_filters\`, and \`order_filters\`. In \`order_filters\`, the outer map key must match the clause's inner \`id\`; a mismatch can silently disable sorting. Fetch \`get_datasource_query_schema(..., operation:"list_rows")\` for the exact nested shapes instead of guessing.
 - Prefer ToolJet DB aggregation over fetching every row just to count or sum: use \`list_rows.aggregates\` and optional \`list_rows.group_by\`. The aggregate configuration key is not the result key; results use \`<table_name>_<column>_<aggFx>\` (for example \`starlink_terminals_id_count\`). Multi-table reads use \`operation: "join_tables"\` with \`join_table\`.
@@ -711,6 +712,7 @@ const routedSections = {
     '## Forms & modals — field layout (avoid cramped, misaligned fields)',
     '## Interactivity — wire events so the app DOES things (not just displays)',
   ],
+  verification: ['## Verify your work — browser-free checks first, then a real browser pass'],
 };
 
 const makeReference = (title, purpose, headings) => `# ${title}\n\n${purpose}\n\n${headings
@@ -732,6 +734,15 @@ const formsAndInteractions = makeReference(
   'Read this only when the requested phase contains forms, modals, mutations, or component/query event wiring.',
   routedSections.formsAndInteractions
 );
+const verification = makeReference(
+  'Verification and browser QA',
+  'Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.',
+  routedSections.verification
+);
+
+const compactVerification = `## Verify every completed page or primary flow
+
+Read \`references/verification.md\` at the verification stage. The required loop is: await \`lint_app_spec\` before writes; run only explicitly selected safe reads (with count/large-read/billable-read approval when applicable); inspect scoped persisted values; run \`validate_app\`; then use one viewer-tab browser audit + screenshot, exercise the primary flow, collect all issues, repair in one batch, and run one confirmation pass. Validation is static and never proves query execution, event delivery, or rendering. Never test mutations, AI, email, or other side effects merely to validate a build. For forms/modals, include the DOM rectangle overlap and bounds check.`;
 
 const compactRouting = `## Keep context small — load only the relevant reference
 
@@ -740,17 +751,19 @@ Tool input schemas, catalog responses, and returned warnings are authoritative. 
 - Read \`references/ui-authoring.md\` before laying out a new page or using a layout-sensitive Table/Chart/nested view.
 - Read \`references/forms-and-interactions.md\` only for forms, modals, mutations, or event wiring.
 - Read \`references/tool-workflows.md\` only for a non-obvious authoring/update path, an existing-app repair, or a silent runtime/configuration failure.
+- Read \`references/verification.md\` when a page or primary flow is ready for QA.
 - Read \`references/tooljet-reference.md\` selectively for exact per-component binding rules, the built-in palette, and datasource query shapes. Prefer batched, section-filtered catalog tools over loading broad reference material.
 
 For a new phase, use \`lint_app_spec\` as an awaited barrier, inspect its warnings/errors, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never dispatch the linter and an apply/write as siblings in parallel. Batch tools are the default surface and accept one item for targeted creates; use update tools for persisted objects. Set \`TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true\` only for an older client that still calls \`create_table\`, \`insert_rows\`, \`add_page\`, \`add_query\`, or \`add_component\`.
 
 For reads, inspect schema first, request explicit columns, and never author or execute \`SELECT *\` against an unfamiliar table. Count first when size is unknown; above 1,000 rows, propose server-side pagination and require explicit user approval before a full read. General permission to build or inspect an app is not consent for a large read.
 
-Seed writes are insert-only: omit generated serial primary keys so ToolJet uses the real sequence. A duplicate-key failure must never be treated as permission to update an existing row. Page/table/column deletion requires explicit approval for the exact target and \`confirm:true\`.
+Seed writes are insert-only: omit generated serial primary keys so ToolJet uses the real sequence. A duplicate-key failure must never be treated as permission to update an existing row. Page/query/component/table/column deletion requires explicit approval for the exact target and \`confirm:true\`; current page-group deletion is deliberately unsupported.
 
 Fix persisted work in place: use bounded \`get_app_summary\`/\`get_component\`, then the relevant \`update_*\` or \`delete_*\` tool. Do not rebuild an app to correct one value.`;
 
 let skill = replaceTopLevelSection(fullSkill, routedSections.toolWorkflows[0], compactRouting);
+skill = replaceTopLevelSection(skill, routedSections.verification[0], compactVerification);
 for (const heading of [
   ...routedSections.toolWorkflows.slice(1),
   ...routedSections.uiAuthoring,
@@ -766,6 +779,7 @@ writeFileSync(resolve(root, 'skill/references/tooljet-reference.md'), reference)
 writeFileSync(resolve(root, 'skill/references/tool-workflows.md'), toolWorkflows);
 writeFileSync(resolve(root, 'skill/references/ui-authoring.md'), uiAuthoring);
 writeFileSync(resolve(root, 'skill/references/forms-and-interactions.md'), formsAndInteractions);
+writeFileSync(resolve(root, 'skill/references/verification.md'), verification);
 console.log(
-  `Generated compact skill/SKILL.md (${skill.trim().split(/\s+/).length} words) + 4 routed references — ${componentList.length} components, grid ${grid.columns} cols / ${grid.rowSnapPx}px snap.`
+  `Generated compact skill/SKILL.md (${skill.trim().split(/\s+/).length} words) + 5 routed references — ${componentList.length} components, grid ${grid.columns} cols / ${grid.rowSnapPx}px snap.`
 );

@@ -9,7 +9,8 @@ const reference = readFileSync(resolve(root, 'skill/references/tooljet-reference
 const toolWorkflows = readFileSync(resolve(root, 'skill/references/tool-workflows.md'), 'utf8');
 const uiAuthoring = readFileSync(resolve(root, 'skill/references/ui-authoring.md'), 'utf8');
 const formsAndInteractions = readFileSync(resolve(root, 'skill/references/forms-and-interactions.md'), 'utf8');
-const guidance = [skill, reference, toolWorkflows, uiAuthoring, formsAndInteractions].join('\n');
+const verification = readFileSync(resolve(root, 'skill/references/verification.md'), 'utf8');
+const guidance = [skill, reference, toolWorkflows, uiAuthoring, formsAndInteractions, verification].join('\n');
 const both = guidance;
 // The generator holds the skill body in a template literal, so backticks are escaped (\`) in source.
 // Unescape them so anchor comparisons match the rendered skill text.
@@ -27,11 +28,12 @@ const designSection = section(uiAuthoring, '## Design — decide before you buil
 
 describe('generated skill — progressive disclosure', () => {
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
-    expect(skill.trim().split(/\s+/).length).toBeLessThan(4_000);
+    expect(skill.trim().split(/\s+/).length).toBeLessThan(3_000);
     expect(guidance).toContain('## Keep context small — load only the relevant reference');
     expect(guidance).toContain('`references/ui-authoring.md`');
     expect(guidance).toContain('`references/forms-and-interactions.md`');
     expect(guidance).toContain('`references/tool-workflows.md`');
+    expect(guidance).toContain('`references/verification.md`');
   });
 });
 
@@ -108,6 +110,17 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(guidance).toMatch(/custom Html child.*native modal.*blank/is);
   });
 
+  it('publishes modern component names instead of legacy palette choices', () => {
+    expect(reference).toContain('### Kanban');
+    expect(reference).not.toContain('### KanbanBoard');
+    for (const legacy of [
+      'ButtonGroup', 'Datepicker', 'DropDown', 'KanbanBoard', 'Modal',
+      'Multiselect', 'RadioButton', 'RangeSlider', 'ToggleSwitch',
+    ]) {
+      expect(reference).not.toContain(`| \`${legacy}\` |`);
+    }
+  });
+
   it('limits the nested-map warning to Html and preserves supported Table lookup joins', () => {
     expect(guidance).toMatch(/Html rawHtml expressions.*map\(\).*inside another.*completely blank/is);
     expect(guidance).toMatch(/Do not generalize this to Table data.*filter\(\.\.\.\)\[0\].*inside.*map\(\).*work/is);
@@ -125,9 +138,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(reference).toContain('`starlink_terminals_id_count`');
   });
 
-  it('uses dependency-driven server-side reads with exact Table state shapes', () => {
-    expect(guidance).toMatch(/server-side Tables[\s\S]*runOnDependencyChange:true.*after.*exposed value is published/i);
-    expect(guidance).toMatch(/do \*\*not\*\* also run the same reactive queries from those events/i);
+  it('documents mutually exclusive server-side wiring modes with exact Table state shapes', () => {
+    expect(guidance).toMatch(/Choose exactly one query-wiring mode and never mix them/i);
+    expect(guidance).toMatch(/Preferred reactive mode.*runOnDependencyChange:true.*events only reset.*page 1/is);
+    expect(guidance).toMatch(/Explicit-event fallback.*disable dependency-change runs.*run the necessary page\/count queries/is);
+    expect(guidance).toMatch(/Never wire both.*duplicates requests.*race stale state/is);
     expect(guidance).toMatch(/sortApplied: \[\{column,columnKey,direction\}\].*filters: \[\{column,condition,value\}\]/i);
     expect(guidance).toMatch(/ButtonGroupV2.*previous `selected` value/i);
     expect(guidance).toMatch(/DaterangePicker.*literal strings `"undefined"` or `"Invalid date"`/i);
@@ -146,6 +161,15 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(guidance).toMatch(/more than 1,000 rows.*server-side-pagination territory/is);
     expect(guidance).toMatch(/tell the user the observed row count.*ask explicitly.*user_confirmed_large_read:true/is);
     expect(guidance).toMatch(/general permission to build or inspect an app is not consent for a large read/i);
+    expect(guidance).toMatch(/BigQuery, Snowflake, or Redshift.*user_confirmed_billable_read:true/is);
+    expect(guidance).toMatch(/Large-read approval does not imply billable-read approval/is);
+  });
+
+  it('keeps ToolJet DB examples bounded and guards first-load pagination state', () => {
+    expect(reference).not.toMatch(/List all rows:/i);
+    expect(reference).toMatch(/Bounded preview:.*"limit": 25.*"offset": 0/is);
+    expect(reference).not.toContain('offset pagination uses (pageIndex - 1) * pageSize');
+    expect(reference).toContain('offset pagination uses ((pageIndex || 1) - 1) * pageSize');
   });
 
   it('documents insert-only seeding and generated-key safety', () => {
@@ -306,7 +330,14 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
 
   it('requires explicit confirmation for guarded page deletion', () => {
     expect(guidance).toMatch(/delete_page\(\{ app_id, version_id, page_id, confirm:true \}\)/);
-    expect(guidance).toMatch(/refuses external events that still target the page/i);
+    expect(guidance).toMatch(/refuses pages with external event targets or components referenced from elsewhere/i);
+    expect(guidance).toMatch(/Page-group deletion is intentionally disabled/i);
+  });
+
+  it('does not overstate batch atomicity and guards query/component deletion', () => {
+    expect(guidance).toMatch(/Page, query, table, and seed batches use multiple upstream requests and can partially persist/i);
+    expect(guidance).toMatch(/delete_components\(\{ app_id, version_id, page_id, component_ids:\[\.\.\.\], confirm:true \}\)/);
+    expect(guidance).toMatch(/delete_query\(\{ app_id, query_id, version_id, confirm:true \}\)/);
   });
 
   it('does not overstate datasource response coverage', () => {
@@ -366,10 +397,10 @@ describe('generated skill — information architecture & phasing (the crowded-pa
 
 describe('generated skill — selective reads, reuse, and page-level QA', () => {
   it('shares the app URL early and reuses one built-in browser tab after meaningful progress', () => {
-    expect(guidance).toMatch(/Immediately share the clickable `app_url` in chat/i);
-    expect(guidance).toMatch(/built-in browser.*first meaningful page works.*reuse the same tab/is);
-    expect(guidance).toMatch(/reload it at page-level checkpoints.*instead of opening new tabs/is);
-    expect(guidance).toMatch(/Repeat the clickable `app_url` in the final handoff/i);
+    expect(guidance).toMatch(/Share `editor_url` so the user can follow authoring live/i);
+    expect(guidance).toMatch(/built-in browser.*first meaningful page works.*open `viewer_url`.*reuse that tab/is);
+    expect(guidance).toMatch(/Repeat the clickable `viewer_url` and `editor_url` in the final handoff/i);
+    expect(guidance).toMatch(/`app_url` is.*compatibility alias for the editor/i);
   });
 
   it('batches only relevant catalog contracts and avoids redundant simple lookups', () => {
@@ -478,8 +509,8 @@ describe('generated skill is synchronized with the generator', () => {
     'validate_app(app_id)',
     'awaited preflight barrier',
     'update_pages({ app_id, version_id, updates?, order? })',
-    'Immediately share the clickable `app_url` in chat',
-    'Repeat the clickable `app_url` in the final handoff',
+    'Share `editor_url` so the user can follow authoring live',
+    'Repeat the clickable `viewer_url` and `editor_url` in the final handoff',
     'how many MCP tool calls it took',
     'Seed writes are insert-only',
     'delete_page({ app_id, version_id, page_id, confirm:true })',

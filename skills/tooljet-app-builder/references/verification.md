@@ -1,0 +1,34 @@
+# Verification and browser QA
+
+Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.
+
+## Verify your work — browser-free checks first, then a real browser pass
+
+**Do the cheap checks continuously, without a browser** (this replaces the slow open-screenshot-adjust loop, NOT the final visual check):
+- Before the first write, run one `lint_app_spec` over the planned tables/seed data, queries, pages/components, events, and lifecycles. This is an **awaited preflight barrier**: call it alone, inspect the result, correct all errors, then consume its `plan_token` with `apply_app_phase`. Never run the linter concurrently with that or any other mutating tool.
+- For one bounded, non-mutating, non-billable read query, call `run_query(query_id, version_id)`; for two or more independent bounded ToolJet DB/SQL reads, prefer one preflighted `run_queries(query_ids, version_id)` batch. For an unbounded read, use the count-first flow above—never bypass it with `SELECT *` or inferred user consent. Inspect real values before hardcoding chart series/options. If a result warns about `components.*`, verify those runtime-resolved values in the viewer. Do **not** test mutations, AI, email, or other side effects merely to validate a build.
+- Inspect with a **scoped** `get_app_summary` (the current page/component plus exact dotted fields, not the whole app) to confirm bindings/values are what you intended; `update_*` anything wrong.
+- Run `validate_app(app_id)` — it statically checks references, query option contracts, event compatibility, and render traps with no browser or query execution. Fix every `error`; review the `warnings`. Its explicit `not_checked` list still needs targeted runtime/browser verification.
+
+**Then run one page-level browser QA loop for each completed page/primary flow.** Open or refresh the same **VIEWER** tab (`.../applications/<appId>/<pageHandle>?env=development&version=v1`, not the editor canvas). Read `scripts/browser-audit.js` from this skill and evaluate its complete IIFE once in that page; it returns bounded component rectangles, real two-axis overlaps, clipped text, blank-widget candidates, nested scroll pairs, dialogs, below-fold buttons, and visible Plotly Charts with zero evaluated traces. Take one screenshot for visual context, exercise the key flow, and **collect every issue before editing** unless a blank/error/blocker prevents further inspection. The audit explicitly does not check console/network failures, hidden conditional states, or mutation correctness—use the browser's relevant facilities for those only when the flow needs them. Group fixes by page/tool, apply the smallest number of batched `update_components` / `update_layout` / `update_events` calls, then do **one confirmation audit + screenshot**. Do an additional browser check only at a genuine new risk point such as a newly added Chart, dense custom layout, or multi-step interaction.
+
+For an **Operate** page, this browser pass must also confirm that its primary action is visible without first scrolling the page and that a bounded Table/Listview does not introduce a second vertical scroll region around the whole page. If both scroll regions are deliberate, report that explicitly; otherwise shorten/reposition the operational surface in one repair batch.
+
+**For every form/modal, measure geometry once—screenshots can hide small overlaps.** ToolJet widget wrappers use `id=<component_id>`, so one browser evaluation can collect each child's `getBoundingClientRect()`. A real collision requires overlap on **both axes** (`xOverlap && yOverlap`), which avoids false positives for side-by-side fields; also compare child bottoms with the modal body/bounds. MCP warnings from `add_components`, `update_components`, `update_layout`, and `validate_app` catch static rendered-height/modal sizing mistakes, while this DOM check confirms runtime/dynamic layout.
+
+**Triage before repairing:**
+- **Always fix:** blank/error rendering, incorrect or unbound data, broken navigation, failed primary actions, misleading values, unreadable core charts/tables, and missing loading/error behavior that breaks the workflow.
+- **Fix at the default target viewport:** usability/accessibility problems that impede the page's intended job.
+- **Report unless requested:** tiny spacing/font differences, cosmetic wrapping seen only at an unusual viewport, and evidence-backed ToolJet/editor limitations. Allow at most one collected cosmetic repair batch; do not enter repeated pixel-polish loops.
+- If something appears to be a platform/manual-builder limitation, make one targeted evidence check, then report the exact limitation and manual step instead of probing repeatedly. Get one complete primary loop working before cosmetic work; before declaring the **whole requested app** complete, verify every requested primary flow.
+
+**Verify the default desktop render only** — don't cycle through many viewport sizes; you don't know the customer's target device, and resizing the window doesn't validate ToolJet's real mobile layout anyway. Test other viewports only if the user asks.
+
+**When the browser shows something wrong, do NOT enter a click-by-click repair loop.** Diagnose with `get_app_summary` / `run_query`, then fix in place with `update_components` / `update_query` / `update_events`, and reload the viewer to confirm. The browser is for *verifying* and catching what data checks can't (visual/render/runtime), not for authoring or as the repair mechanism.
+
+### Fast default build sequence
+
+1. Plan the page/data model and stable logical refs locally; do not write a skeleton first.
+2. Fetch all needed complex component contracts in one selective `get_component_catalog({types:[...]})` call and all datasource operation contracts in one `get_datasource_query_schema({requests:[...]})` call. Reuse both results for the whole build.
+3. Run and await `lint_app_spec` **by itself**. Inspect/fix its result, then consume the returned token with one `apply_app_phase` call; never dispatch the linter and the apply call as siblings in parallel.
+4. Run selected safe reads, review the static validation returned by the apply call (use `validate_app` again only after later manual edits), then make one collected browser tour across the completed primary flows, one repair batch, and one confirmation pass. Do not screenshot-poll or reopen catalogs between pages.

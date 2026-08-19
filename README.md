@@ -71,9 +71,9 @@ export TOOLJET_PASSWORD="your-password"
 export TOOLJET_URL="https://your-instance.tooljet.com"
 export TOOLJET_APP_URL="https://your-instance.tooljet.com"
 ```
-If those aren't set, the server starts but every ToolJet call fails auth — set them and restart.
+If either credential is missing, the server exits during startup with a clear required-variable error. Set both and restart.
 
-**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads `data/component-schemas.json` and `data/datasource-schemas.json` at runtime; the skill lives at `skills/tooljet-app-builder/`. Rebuild all of that after a source or catalog change with:
+**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime; the skill lives at `skills/tooljet-app-builder/`. Rebuild all of that after a source or catalog change with:
 ```bash
 npm run generate:catalogs && npm run generate:skill && npm run build:plugin
 ```
@@ -85,14 +85,14 @@ In Codex:
 
 > **Build me a tickets dashboard on my ToolJet DB.**
 
-Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply_app_phase`, using `add_queries`/`add_components` for later targeted additions, then return an `app_url`. Open it at `http://localhost:8082/apps/…` — the Table renders the seeded tickets.
+Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply_app_phase`, using `add_queries`/`add_components` for later targeted additions. `create_app` returns an editor link for following the build and a viewer link for testing the completed page.
 
 ## Tools
 
 | Tool | Purpose |
 |---|---|
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace |
-| `create_app(name)` | New app + version + Home page → `{ app_id, version_id, home_page_id, app_url }` |
+| `create_app(name)` | New app + version + Home page → ids plus explicit `editor_url` and `viewer_url` (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |
 | `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
@@ -105,11 +105,11 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `lint_app_spec(...)` / `apply_app_phase(...)` / `validate_app(app_id)` | Dry-run a logical phase, apply its one-time plan token, then statically validate persisted state |
 | `get_app_summary({app_id, sections?, filters?, *_fields?})` | Selectively inspect actual persisted values |
 | `add_pages(...)` / `update_pages(...)` | Add one or more pages, then restyle, hide, rename, or reorder existing sidebar pages (including Home) |
-| `delete_page(..., confirm:true)` | Permanently delete a non-Home page after checking external event references |
+| `delete_page(..., confirm:true)` | Permanently delete one non-Home/non-group page after checking event and component references |
 | `add_queries(...)` | Create one or more datasource queries; use the schema tool for `options` |
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
-| `update_*` / `delete_*` / `run_query(...)` | Repair apps in place; execute only explicitly selected safe reads for verification |
+| `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
 
 ## Development
 
@@ -120,4 +120,4 @@ npm run dev       # tsx src/index.ts (stdio server)
 npm run generate:catalogs  # refresh component + datasource contracts from local ToolJet source
 ```
 
-Confirmed ToolJet endpoint contracts are in `docs/contracts.md` (all verified live).
+Endpoint implementation notes and their evidence level are in `docs/contracts.md`; current mocked contract tests are the regression source of truth.
