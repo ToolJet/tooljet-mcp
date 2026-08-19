@@ -1199,15 +1199,32 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
   for (const table of allComponents.filter((component) => component.type === 'Table')) {
     const triggers = eventsBySource.get(table.id) ?? new Set<string>();
-    const requirements: Array<[string, string]> = [
-      ['serverSidePagination', 'onPageChanged'],
-      ['serverSideSearch', 'onSearch'],
-      ['serverSideSort', 'onSort'],
-      ['serverSideFilter', 'onFilterChanged'],
+    const dataBinding = JSON.stringify(propVal(table.properties, 'data') ?? '');
+    const boundDataQueries = [...new Set(
+      [...dataBinding.matchAll(/queries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]!)
+    )];
+    const hasReactiveDataQuery = (stateName: string): boolean => boundDataQueries.some((queryName) => {
+      const query = queryByName.get(queryName);
+      const options = recordValue(query?.options);
+      if (!options || !isTruthyBinding(propVal(options, 'runOnDependencyChange'))) return false;
+      return typeof table.name === 'string' && JSON.stringify(options).includes(`components.${table.name}.${stateName}`);
+    });
+    const requirements: Array<[string, string, string]> = [
+      ['serverSidePagination', 'onPageChanged', 'pageIndex'],
+      ['serverSideSearch', 'onSearch', 'searchText'],
+      ['serverSideSort', 'onSort', 'sortApplied'],
+      ['serverSideFilter', 'onFilterChanged', 'filters'],
     ];
-    for (const [property, trigger] of requirements) {
-      if (isTruthyBinding(propVal(table.properties, property)) && !triggers.has(trigger)) {
-        warnings.push(`Table "${table.name ?? table.id}": ${property} is enabled but no ${trigger} event refreshes its data query.`);
+    for (const [property, trigger, stateName] of requirements) {
+      if (
+        isTruthyBinding(propVal(table.properties, property)) &&
+        !triggers.has(trigger) &&
+        !hasReactiveDataQuery(stateName)
+      ) {
+        warnings.push(
+          `Table "${table.name ?? table.id}": ${property} is enabled but no ${trigger} event refreshes its data query ` +
+            `and no runOnDependencyChange data query is bound to components.${table.name ?? '<table>'}.${stateName}.`
+        );
       }
     }
 

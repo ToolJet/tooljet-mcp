@@ -894,6 +894,42 @@ describe('validateAppStructure', () => {
     expect(warnings).toMatch(/no onSort event/);
   });
 
+  it('accepts dependency-driven server-side Table reads without duplicate refresh events', () => {
+    const table = {
+      ...base.pages[0].components[0],
+      name: 'ordersTable',
+      properties: {
+        data: { value: '{{queries.orderPage.data}}' },
+        dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        serverSidePagination: { value: '{{true}}' },
+        serverSideRowsPerPage: { value: '{{25}}' },
+        totalRecords: { value: '{{queries.orderCount.data[0].count}}' },
+        serverSideSearch: { value: '{{true}}' },
+        serverSideSort: { value: '{{true}}' },
+      },
+    };
+    const app: AppSummary = {
+      ...base,
+      pages: [{ ...base.pages[0], components: [table] }],
+      queries: [{
+        id: 'page', name: 'orderPage', kind: 'postgresql',
+        options: {
+          query: 'select * from orders',
+          offset: '{{(components.ordersTable.pageIndex - 1) * 25}}',
+          search: '{{components.ordersTable.searchText}}',
+          sort: '{{components.ordersTable.sortApplied[0]?.columnKey}}',
+          runOnDependencyChange: true,
+        },
+      }],
+      events: [],
+    };
+    const warnings = validateAppStructure(app).warnings.join(' ');
+    expect(warnings).not.toMatch(/serverSidePagination.*onPageChanged/);
+    expect(warnings).not.toMatch(/serverSideSearch.*onSearch/);
+    expect(warnings).not.toMatch(/serverSideSort.*onSort/);
+  });
+
   it('warns on a binding to a non-existent query', () => {
     const bad: AppSummary = {
       ...base,
