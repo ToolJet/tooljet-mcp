@@ -678,10 +678,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const sourceKey = `${e.sourceType}:${e.sourceId}:${e.ref ?? ''}`;
       const index = indexBySource[sourceKey] ?? 0;
       indexBySource[sourceKey] = index + 1;
+      const action =
+        e.action.actionId === 'control-component' && e.action.componentSpecificActionParams === undefined
+          ? { ...e.action, componentSpecificActionParams: [] }
+          : e.action;
       return {
         // name is NOT NULL server-side (the DTO marks it optional but the column requires it).
         name: e.name ?? `${e.trigger} → ${(e.action.actionId as string) ?? 'action'}`,
-        event: { eventId: e.trigger, ...(e.ref ? { ref: e.ref } : {}), ...e.action },
+        event: { eventId: e.trigger, ...(e.ref ? { ref: e.ref } : {}), ...action },
         eventType: e.sourceType,
         attachedTo: e.sourceId,
         index,

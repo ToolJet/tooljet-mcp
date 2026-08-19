@@ -645,6 +645,32 @@ describe('createClient', () => {
       expect(body.events[1]).toMatchObject({ index: 0, event: { ref: 'actions::delete' } });
       expect(body.events[2]).toMatchObject({ index: 1, event: { ref: 'actions::view' } });
     });
+
+    it('adds the empty params array required by parameterless control-component actions', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: {} }));
+      const client = createClient(auth, config);
+      await client.createEvents({
+        appId: 'app1',
+        versionId: 'ver1',
+        events: [{
+          sourceId: 'save1',
+          sourceType: 'data_query',
+          trigger: 'onDataQuerySuccess',
+          action: {
+            actionId: 'control-component',
+            componentId: 'notes1',
+            componentSpecificActionHandle: 'clear',
+          },
+        }],
+      });
+
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.events[0].event).toMatchObject({
+        actionId: 'control-component',
+        componentSpecificActionHandle: 'clear',
+        componentSpecificActionParams: [],
+      });
+    });
   });
 
   describe('createPage', () => {
