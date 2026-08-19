@@ -62,6 +62,7 @@ describe('catalog', () => {
     expect(String(chart!.renderingHints!.note)).toMatch(/title/i);
     const stat = getComponentSchema('Statistics');
     expect(String(stat!.renderingHints!.recommendedMinHeightPx)).toMatch(/110.?120/);
+    expect(String(stat!.renderingHints!.narrowValueOnlyLabel)).toMatch(/12.?17.*one- or two-word.*hide the value/i);
     expect(String(stat!.renderingHints!.secondaryValueUsage)).toMatch(/narrow delta slot.*number or percentage/i);
     const modal = getComponentSchema('ModalV2');
     expect(modal!.renderingHints!.recommendedFieldAlignment).toBe('top');

@@ -310,6 +310,10 @@ describe('generated skill — selective reads, reuse, and page-level QA', () => 
 });
 
 describe('generated skill — async states & density guardrails', () => {
+  it('keeps narrow Statistics labels short enough to preserve the value', () => {
+    expect(skill).toMatch(/Statistics sizing.*12.?17 columns.*one- or two-word label.*hide the value/is);
+  });
+
   it('requires the full set of async/query states incl. no-double-fire', () => {
     expect(skill).toMatch(/## Async & UI states — required, not polish/);
     for (const s of ['Loading:', 'Empty:', 'Error:', 'Refresh:', 'Success:', 'Disabled']) {

@@ -536,6 +536,22 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           `to keep labels and values readable. ${secondaryHidden ? 'Use no more than three tiles per content row.' : 'Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns.'}`
       );
     }
+    const primaryLabel = catalogValue('Statistics', props, 'primaryValueLabel');
+    if (
+      secondaryHidden &&
+      typeof width === 'number' &&
+      width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS &&
+      width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS &&
+      typeof primaryLabel === 'string' &&
+      !primaryLabel.includes('{{') &&
+      (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)
+    ) {
+      warnings.push(
+        `Statistics "${label}": value-only width ${width} columns is only safe for a short one- or two-word ` +
+          `primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. ` +
+          'Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.'
+      );
+    }
   }
 
   // DropdownV2 has two mutually exclusive option surfaces. ToolJet persists defaults for both, so

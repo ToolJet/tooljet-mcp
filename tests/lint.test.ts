@@ -135,8 +135,34 @@ describe('lintComponentSpec', () => {
     expect(lintComponentSpec({
       name: 'openCases',
       type: 'Statistics',
-      properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
+      properties: {
+        primaryValue: { value: '42' },
+        primaryValueLabel: { value: 'Open' },
+        hideSecondary: { value: true },
+      },
       layout: { top: 0, left: 0, width: 13, height: 120 },
+    }).warnings).toEqual([]);
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: {
+        primaryValue: { value: '42' },
+        primaryValueLabel: { value: 'Open work orders' },
+        hideSecondary: { value: true },
+      },
+      layout: { top: 0, left: 0, width: 13, height: 120 },
+    }).warnings.join(' ')).toMatch(/only safe for a short one- or two-word.*Open work orders.*wrap vertically.*at least 18/is);
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: {
+        primaryValue: { value: '42' },
+        primaryValueLabel: { value: 'Open work orders' },
+        hideSecondary: { value: true },
+      },
+      layout: { top: 0, left: 0, width: 18, height: 120 },
     }).warnings).toEqual([]);
   });
 

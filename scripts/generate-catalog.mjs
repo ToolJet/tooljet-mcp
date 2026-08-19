@@ -328,6 +328,7 @@ const RENDERING_HINTS = {
   Statistics: {
     recommendedMinHeightPx: '≈110–120 for a compact tile with no visible secondary content; ≈130–150 with useful secondary content',
     recommendedMinWidthCols: 'At least 12 for a value-only tile with hideSecondary=true; at least 18 when secondary content is visible. Prefer at most three value-only or two secondary-content tiles per content row.',
+    narrowValueOnlyLabel: 'A 12–17 column value-only tile is safe only for a short one- or two-word primaryValueLabel (roughly 12 characters or fewer). Longer labels can wrap vertically and hide the value; shorten them, use at least 18 columns, or browser-verify.',
     secondaryValueUsage: 'secondaryValue renders in a narrow delta slot: reserve it for a number or percentage. Put prose in secondaryValueLabel and leave secondaryValue empty.',
   },
   Table: {
