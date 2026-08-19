@@ -27210,8 +27210,8 @@ var getRefs = (options) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key, errorMessage, refs) {
-  if (!refs?.errorMessages)
+function addErrorMessage(res, key, errorMessage, refs2) {
+  if (!refs2?.errorMessages)
     return;
   if (errorMessage) {
     res.errorMessage = {
@@ -27220,9 +27220,9 @@ function addErrorMessage(res, key, errorMessage, refs) {
     };
   }
 }
-function setResponseValueAndErrors(res, key, value, errorMessage, refs) {
+function setResponseValueAndErrors(res, key, value, errorMessage, refs2) {
   res[key] = value;
-  addErrorMessage(res, key, errorMessage, refs);
+  addErrorMessage(res, key, errorMessage, refs2);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -27236,47 +27236,47 @@ var getRelativePath = (pathA, pathB) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/any.js
-function parseAnyDef(refs) {
-  if (refs.target !== "openAi") {
+function parseAnyDef(refs2) {
+  if (refs2.target !== "openAi") {
     return {};
   }
   const anyDefinitionPath = [
-    ...refs.basePath,
-    refs.definitionPath,
-    refs.openAiAnyTypeName
+    ...refs2.basePath,
+    refs2.definitionPath,
+    refs2.openAiAnyTypeName
   ];
-  refs.flags.hasReferencedOpenAiAnyType = true;
+  refs2.flags.hasReferencedOpenAiAnyType = true;
   return {
-    $ref: refs.$refStrategy === "relative" ? getRelativePath(anyDefinitionPath, refs.currentPath) : anyDefinitionPath.join("/")
+    $ref: refs2.$refStrategy === "relative" ? getRelativePath(anyDefinitionPath, refs2.currentPath) : anyDefinitionPath.join("/")
   };
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/array.js
-function parseArrayDef(def, refs) {
+function parseArrayDef(def, refs2) {
   const res = {
     type: "array"
   };
   if (def.type?._def && def.type?._def?.typeName !== ZodFirstPartyTypeKind2.ZodAny) {
     res.items = parseDef(def.type._def, {
-      ...refs,
-      currentPath: [...refs.currentPath, "items"]
+      ...refs2,
+      currentPath: [...refs2.currentPath, "items"]
     });
   }
   if (def.minLength) {
-    setResponseValueAndErrors(res, "minItems", def.minLength.value, def.minLength.message, refs);
+    setResponseValueAndErrors(res, "minItems", def.minLength.value, def.minLength.message, refs2);
   }
   if (def.maxLength) {
-    setResponseValueAndErrors(res, "maxItems", def.maxLength.value, def.maxLength.message, refs);
+    setResponseValueAndErrors(res, "maxItems", def.maxLength.value, def.maxLength.message, refs2);
   }
   if (def.exactLength) {
-    setResponseValueAndErrors(res, "minItems", def.exactLength.value, def.exactLength.message, refs);
-    setResponseValueAndErrors(res, "maxItems", def.exactLength.value, def.exactLength.message, refs);
+    setResponseValueAndErrors(res, "minItems", def.exactLength.value, def.exactLength.message, refs2);
+    setResponseValueAndErrors(res, "maxItems", def.exactLength.value, def.exactLength.message, refs2);
   }
   return res;
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
-function parseBigintDef(def, refs) {
+function parseBigintDef(def, refs2) {
   const res = {
     type: "integer",
     format: "int64"
@@ -27286,35 +27286,35 @@ function parseBigintDef(def, refs) {
   for (const check2 of def.checks) {
     switch (check2.kind) {
       case "min":
-        if (refs.target === "jsonSchema7") {
+        if (refs2.target === "jsonSchema7") {
           if (check2.inclusive) {
-            setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs2);
           } else {
-            setResponseValueAndErrors(res, "exclusiveMinimum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "exclusiveMinimum", check2.value, check2.message, refs2);
           }
         } else {
           if (!check2.inclusive) {
             res.exclusiveMinimum = true;
           }
-          setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs2);
         }
         break;
       case "max":
-        if (refs.target === "jsonSchema7") {
+        if (refs2.target === "jsonSchema7") {
           if (check2.inclusive) {
-            setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs2);
           } else {
-            setResponseValueAndErrors(res, "exclusiveMaximum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "exclusiveMaximum", check2.value, check2.message, refs2);
           }
         } else {
           if (!check2.inclusive) {
             res.exclusiveMaximum = true;
           }
-          setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs2);
         }
         break;
       case "multipleOf":
-        setResponseValueAndErrors(res, "multipleOf", check2.value, check2.message, refs);
+        setResponseValueAndErrors(res, "multipleOf", check2.value, check2.message, refs2);
         break;
     }
   }
@@ -27329,21 +27329,21 @@ function parseBooleanDef() {
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
-function parseBrandedDef(_def, refs) {
-  return parseDef(_def.type._def, refs);
+function parseBrandedDef(_def, refs2) {
+  return parseDef(_def.type._def, refs2);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
-var parseCatchDef = (def, refs) => {
-  return parseDef(def.innerType._def, refs);
+var parseCatchDef = (def, refs2) => {
+  return parseDef(def.innerType._def, refs2);
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/date.js
-function parseDateDef(def, refs, overrideDateStrategy) {
-  const strategy = overrideDateStrategy ?? refs.dateStrategy;
+function parseDateDef(def, refs2, overrideDateStrategy) {
+  const strategy = overrideDateStrategy ?? refs2.dateStrategy;
   if (Array.isArray(strategy)) {
     return {
-      anyOf: strategy.map((item, i) => parseDateDef(def, refs, item))
+      anyOf: strategy.map((item, i) => parseDateDef(def, refs2, item))
     };
   }
   switch (strategy) {
@@ -27359,15 +27359,15 @@ function parseDateDef(def, refs, overrideDateStrategy) {
         format: "date"
       };
     case "integer":
-      return integerDateParser(def, refs);
+      return integerDateParser(def, refs2);
   }
 }
-var integerDateParser = (def, refs) => {
+var integerDateParser = (def, refs2) => {
   const res = {
     type: "integer",
     format: "unix-time"
   };
-  if (refs.target === "openApi3") {
+  if (refs2.target === "openApi3") {
     return res;
   }
   for (const check2 of def.checks) {
@@ -27379,7 +27379,7 @@ var integerDateParser = (def, refs) => {
           check2.value,
           // This is in milliseconds
           check2.message,
-          refs
+          refs2
         );
         break;
       case "max":
@@ -27389,7 +27389,7 @@ var integerDateParser = (def, refs) => {
           check2.value,
           // This is in milliseconds
           check2.message,
-          refs
+          refs2
         );
         break;
     }
@@ -27398,16 +27398,16 @@ var integerDateParser = (def, refs) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/default.js
-function parseDefaultDef(_def, refs) {
+function parseDefaultDef(_def, refs2) {
   return {
-    ...parseDef(_def.innerType._def, refs),
+    ...parseDef(_def.innerType._def, refs2),
     default: _def.defaultValue()
   };
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
-function parseEffectsDef(_def, refs) {
-  return refs.effectStrategy === "input" ? parseDef(_def.schema._def, refs) : parseAnyDef(refs);
+function parseEffectsDef(_def, refs2) {
+  return refs2.effectStrategy === "input" ? parseDef(_def.schema._def, refs2) : parseAnyDef(refs2);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
@@ -27424,18 +27424,18 @@ var isJsonSchema7AllOfType = (type) => {
     return false;
   return "allOf" in type;
 };
-function parseIntersectionDef(def, refs) {
+function parseIntersectionDef(def, refs2) {
   const allOf = [
     parseDef(def.left._def, {
-      ...refs,
-      currentPath: [...refs.currentPath, "allOf", "0"]
+      ...refs2,
+      currentPath: [...refs2.currentPath, "allOf", "0"]
     }),
     parseDef(def.right._def, {
-      ...refs,
-      currentPath: [...refs.currentPath, "allOf", "1"]
+      ...refs2,
+      currentPath: [...refs2.currentPath, "allOf", "1"]
     })
   ].filter((x) => !!x);
-  let unevaluatedProperties = refs.target === "jsonSchema2019-09" ? { unevaluatedProperties: false } : void 0;
+  let unevaluatedProperties = refs2.target === "jsonSchema2019-09" ? { unevaluatedProperties: false } : void 0;
   const mergedAllOf = [];
   allOf.forEach((schema) => {
     if (isJsonSchema7AllOfType(schema)) {
@@ -27461,14 +27461,14 @@ function parseIntersectionDef(def, refs) {
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
-function parseLiteralDef(def, refs) {
+function parseLiteralDef(def, refs2) {
   const parsedType2 = typeof def.value;
   if (parsedType2 !== "bigint" && parsedType2 !== "number" && parsedType2 !== "boolean" && parsedType2 !== "string") {
     return {
       type: Array.isArray(def.value) ? "array" : "object"
     };
   }
-  if (refs.target === "openApi3") {
+  if (refs2.target === "openApi3") {
     return {
       type: parsedType2 === "bigint" ? "integer" : parsedType2,
       enum: [def.value]
@@ -27529,7 +27529,7 @@ var zodPatterns = {
   nanoid: /^[a-zA-Z0-9_-]{21}$/,
   jwt: /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/
 };
-function parseStringDef(def, refs) {
+function parseStringDef(def, refs2) {
   const res = {
     type: "string"
   };
@@ -27537,115 +27537,115 @@ function parseStringDef(def, refs) {
     for (const check2 of def.checks) {
       switch (check2.kind) {
         case "min":
-          setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number" ? Math.max(res.minLength, check2.value) : check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number" ? Math.max(res.minLength, check2.value) : check2.value, check2.message, refs2);
           break;
         case "max":
-          setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number" ? Math.min(res.maxLength, check2.value) : check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number" ? Math.min(res.maxLength, check2.value) : check2.value, check2.message, refs2);
           break;
         case "email":
-          switch (refs.emailStrategy) {
+          switch (refs2.emailStrategy) {
             case "format:email":
-              addFormat(res, "email", check2.message, refs);
+              addFormat(res, "email", check2.message, refs2);
               break;
             case "format:idn-email":
-              addFormat(res, "idn-email", check2.message, refs);
+              addFormat(res, "idn-email", check2.message, refs2);
               break;
             case "pattern:zod":
-              addPattern(res, zodPatterns.email, check2.message, refs);
+              addPattern(res, zodPatterns.email, check2.message, refs2);
               break;
           }
           break;
         case "url":
-          addFormat(res, "uri", check2.message, refs);
+          addFormat(res, "uri", check2.message, refs2);
           break;
         case "uuid":
-          addFormat(res, "uuid", check2.message, refs);
+          addFormat(res, "uuid", check2.message, refs2);
           break;
         case "regex":
-          addPattern(res, check2.regex, check2.message, refs);
+          addPattern(res, check2.regex, check2.message, refs2);
           break;
         case "cuid":
-          addPattern(res, zodPatterns.cuid, check2.message, refs);
+          addPattern(res, zodPatterns.cuid, check2.message, refs2);
           break;
         case "cuid2":
-          addPattern(res, zodPatterns.cuid2, check2.message, refs);
+          addPattern(res, zodPatterns.cuid2, check2.message, refs2);
           break;
         case "startsWith":
-          addPattern(res, RegExp(`^${escapeLiteralCheckValue(check2.value, refs)}`), check2.message, refs);
+          addPattern(res, RegExp(`^${escapeLiteralCheckValue(check2.value, refs2)}`), check2.message, refs2);
           break;
         case "endsWith":
-          addPattern(res, RegExp(`${escapeLiteralCheckValue(check2.value, refs)}$`), check2.message, refs);
+          addPattern(res, RegExp(`${escapeLiteralCheckValue(check2.value, refs2)}$`), check2.message, refs2);
           break;
         case "datetime":
-          addFormat(res, "date-time", check2.message, refs);
+          addFormat(res, "date-time", check2.message, refs2);
           break;
         case "date":
-          addFormat(res, "date", check2.message, refs);
+          addFormat(res, "date", check2.message, refs2);
           break;
         case "time":
-          addFormat(res, "time", check2.message, refs);
+          addFormat(res, "time", check2.message, refs2);
           break;
         case "duration":
-          addFormat(res, "duration", check2.message, refs);
+          addFormat(res, "duration", check2.message, refs2);
           break;
         case "length":
-          setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number" ? Math.max(res.minLength, check2.value) : check2.value, check2.message, refs);
-          setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number" ? Math.min(res.maxLength, check2.value) : check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number" ? Math.max(res.minLength, check2.value) : check2.value, check2.message, refs2);
+          setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number" ? Math.min(res.maxLength, check2.value) : check2.value, check2.message, refs2);
           break;
         case "includes": {
-          addPattern(res, RegExp(escapeLiteralCheckValue(check2.value, refs)), check2.message, refs);
+          addPattern(res, RegExp(escapeLiteralCheckValue(check2.value, refs2)), check2.message, refs2);
           break;
         }
         case "ip": {
           if (check2.version !== "v6") {
-            addFormat(res, "ipv4", check2.message, refs);
+            addFormat(res, "ipv4", check2.message, refs2);
           }
           if (check2.version !== "v4") {
-            addFormat(res, "ipv6", check2.message, refs);
+            addFormat(res, "ipv6", check2.message, refs2);
           }
           break;
         }
         case "base64url":
-          addPattern(res, zodPatterns.base64url, check2.message, refs);
+          addPattern(res, zodPatterns.base64url, check2.message, refs2);
           break;
         case "jwt":
-          addPattern(res, zodPatterns.jwt, check2.message, refs);
+          addPattern(res, zodPatterns.jwt, check2.message, refs2);
           break;
         case "cidr": {
           if (check2.version !== "v6") {
-            addPattern(res, zodPatterns.ipv4Cidr, check2.message, refs);
+            addPattern(res, zodPatterns.ipv4Cidr, check2.message, refs2);
           }
           if (check2.version !== "v4") {
-            addPattern(res, zodPatterns.ipv6Cidr, check2.message, refs);
+            addPattern(res, zodPatterns.ipv6Cidr, check2.message, refs2);
           }
           break;
         }
         case "emoji":
-          addPattern(res, zodPatterns.emoji(), check2.message, refs);
+          addPattern(res, zodPatterns.emoji(), check2.message, refs2);
           break;
         case "ulid": {
-          addPattern(res, zodPatterns.ulid, check2.message, refs);
+          addPattern(res, zodPatterns.ulid, check2.message, refs2);
           break;
         }
         case "base64": {
-          switch (refs.base64Strategy) {
+          switch (refs2.base64Strategy) {
             case "format:binary": {
-              addFormat(res, "binary", check2.message, refs);
+              addFormat(res, "binary", check2.message, refs2);
               break;
             }
             case "contentEncoding:base64": {
-              setResponseValueAndErrors(res, "contentEncoding", "base64", check2.message, refs);
+              setResponseValueAndErrors(res, "contentEncoding", "base64", check2.message, refs2);
               break;
             }
             case "pattern:zod": {
-              addPattern(res, zodPatterns.base64, check2.message, refs);
+              addPattern(res, zodPatterns.base64, check2.message, refs2);
               break;
             }
           }
           break;
         }
         case "nanoid": {
-          addPattern(res, zodPatterns.nanoid, check2.message, refs);
+          addPattern(res, zodPatterns.nanoid, check2.message, refs2);
         }
         case "toLowerCase":
         case "toUpperCase":
@@ -27659,8 +27659,8 @@ function parseStringDef(def, refs) {
   }
   return res;
 }
-function escapeLiteralCheckValue(literal2, refs) {
-  return refs.patternStrategy === "escape" ? escapeNonAlphaNumeric(literal2) : literal2;
+function escapeLiteralCheckValue(literal2, refs2) {
+  return refs2.patternStrategy === "escape" ? escapeNonAlphaNumeric(literal2) : literal2;
 }
 var ALPHA_NUMERIC = new Set("ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789");
 function escapeNonAlphaNumeric(source) {
@@ -27673,7 +27673,7 @@ function escapeNonAlphaNumeric(source) {
   }
   return result;
 }
-function addFormat(schema, value, message, refs) {
+function addFormat(schema, value, message, refs2) {
   if (schema.format || schema.anyOf?.some((x) => x.format)) {
     if (!schema.anyOf) {
       schema.anyOf = [];
@@ -27681,7 +27681,7 @@ function addFormat(schema, value, message, refs) {
     if (schema.format) {
       schema.anyOf.push({
         format: schema.format,
-        ...schema.errorMessage && refs.errorMessages && {
+        ...schema.errorMessage && refs2.errorMessages && {
           errorMessage: { format: schema.errorMessage.format }
         }
       });
@@ -27695,13 +27695,13 @@ function addFormat(schema, value, message, refs) {
     }
     schema.anyOf.push({
       format: value,
-      ...message && refs.errorMessages && { errorMessage: { format: message } }
+      ...message && refs2.errorMessages && { errorMessage: { format: message } }
     });
   } else {
-    setResponseValueAndErrors(schema, "format", value, message, refs);
+    setResponseValueAndErrors(schema, "format", value, message, refs2);
   }
 }
-function addPattern(schema, regex, message, refs) {
+function addPattern(schema, regex, message, refs2) {
   if (schema.pattern || schema.allOf?.some((x) => x.pattern)) {
     if (!schema.allOf) {
       schema.allOf = [];
@@ -27709,7 +27709,7 @@ function addPattern(schema, regex, message, refs) {
     if (schema.pattern) {
       schema.allOf.push({
         pattern: schema.pattern,
-        ...schema.errorMessage && refs.errorMessages && {
+        ...schema.errorMessage && refs2.errorMessages && {
           errorMessage: { pattern: schema.errorMessage.pattern }
         }
       });
@@ -27722,15 +27722,15 @@ function addPattern(schema, regex, message, refs) {
       }
     }
     schema.allOf.push({
-      pattern: stringifyRegExpWithFlags(regex, refs),
-      ...message && refs.errorMessages && { errorMessage: { pattern: message } }
+      pattern: stringifyRegExpWithFlags(regex, refs2),
+      ...message && refs2.errorMessages && { errorMessage: { pattern: message } }
     });
   } else {
-    setResponseValueAndErrors(schema, "pattern", stringifyRegExpWithFlags(regex, refs), message, refs);
+    setResponseValueAndErrors(schema, "pattern", stringifyRegExpWithFlags(regex, refs2), message, refs2);
   }
 }
-function stringifyRegExpWithFlags(regex, refs) {
-  if (!refs.applyRegexFlags || !regex.flags) {
+function stringifyRegExpWithFlags(regex, refs2) {
+  if (!refs2.applyRegexFlags || !regex.flags) {
     return regex.source;
   }
   const flags = {
@@ -27799,43 +27799,43 @@ function stringifyRegExpWithFlags(regex, refs) {
   try {
     new RegExp(pattern);
   } catch {
-    console.warn(`Could not convert regex pattern at ${refs.currentPath.join("/")} to a flag-independent form! Falling back to the flag-ignorant source`);
+    console.warn(`Could not convert regex pattern at ${refs2.currentPath.join("/")} to a flag-independent form! Falling back to the flag-ignorant source`);
     return regex.source;
   }
   return pattern;
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/record.js
-function parseRecordDef(def, refs) {
-  if (refs.target === "openAi") {
+function parseRecordDef(def, refs2) {
+  if (refs2.target === "openAi") {
     console.warn("Warning: OpenAI may not support records in schemas! Try an array of key-value pairs instead.");
   }
-  if (refs.target === "openApi3" && def.keyType?._def.typeName === ZodFirstPartyTypeKind2.ZodEnum) {
+  if (refs2.target === "openApi3" && def.keyType?._def.typeName === ZodFirstPartyTypeKind2.ZodEnum) {
     return {
       type: "object",
       required: def.keyType._def.values,
       properties: def.keyType._def.values.reduce((acc, key) => ({
         ...acc,
         [key]: parseDef(def.valueType._def, {
-          ...refs,
-          currentPath: [...refs.currentPath, "properties", key]
-        }) ?? parseAnyDef(refs)
+          ...refs2,
+          currentPath: [...refs2.currentPath, "properties", key]
+        }) ?? parseAnyDef(refs2)
       }), {}),
-      additionalProperties: refs.rejectedAdditionalProperties
+      additionalProperties: refs2.rejectedAdditionalProperties
     };
   }
   const schema = {
     type: "object",
     additionalProperties: parseDef(def.valueType._def, {
-      ...refs,
-      currentPath: [...refs.currentPath, "additionalProperties"]
-    }) ?? refs.allowedAdditionalProperties
+      ...refs2,
+      currentPath: [...refs2.currentPath, "additionalProperties"]
+    }) ?? refs2.allowedAdditionalProperties
   };
-  if (refs.target === "openApi3") {
+  if (refs2.target === "openApi3") {
     return schema;
   }
   if (def.keyType?._def.typeName === ZodFirstPartyTypeKind2.ZodString && def.keyType._def.checks?.length) {
-    const { type, ...keyType } = parseStringDef(def.keyType._def, refs);
+    const { type, ...keyType } = parseStringDef(def.keyType._def, refs2);
     return {
       ...schema,
       propertyNames: keyType
@@ -27848,7 +27848,7 @@ function parseRecordDef(def, refs) {
       }
     };
   } else if (def.keyType?._def.typeName === ZodFirstPartyTypeKind2.ZodBranded && def.keyType._def.type._def.typeName === ZodFirstPartyTypeKind2.ZodString && def.keyType._def.type._def.checks?.length) {
-    const { type, ...keyType } = parseBrandedDef(def.keyType._def, refs);
+    const { type, ...keyType } = parseBrandedDef(def.keyType._def, refs2);
     return {
       ...schema,
       propertyNames: keyType
@@ -27858,18 +27858,18 @@ function parseRecordDef(def, refs) {
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/map.js
-function parseMapDef(def, refs) {
-  if (refs.mapStrategy === "record") {
-    return parseRecordDef(def, refs);
+function parseMapDef(def, refs2) {
+  if (refs2.mapStrategy === "record") {
+    return parseRecordDef(def, refs2);
   }
   const keys = parseDef(def.keyType._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "items", "items", "0"]
-  }) || parseAnyDef(refs);
+    ...refs2,
+    currentPath: [...refs2.currentPath, "items", "items", "0"]
+  }) || parseAnyDef(refs2);
   const values = parseDef(def.valueType._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "items", "items", "1"]
-  }) || parseAnyDef(refs);
+    ...refs2,
+    currentPath: [...refs2.currentPath, "items", "items", "1"]
+  }) || parseAnyDef(refs2);
   return {
     type: "array",
     maxItems: 125,
@@ -27897,18 +27897,18 @@ function parseNativeEnumDef(def) {
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/never.js
-function parseNeverDef(refs) {
-  return refs.target === "openAi" ? void 0 : {
+function parseNeverDef(refs2) {
+  return refs2.target === "openAi" ? void 0 : {
     not: parseAnyDef({
-      ...refs,
-      currentPath: [...refs.currentPath, "not"]
+      ...refs2,
+      currentPath: [...refs2.currentPath, "not"]
     })
   };
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/null.js
-function parseNullDef(refs) {
-  return refs.target === "openApi3" ? {
+function parseNullDef(refs2) {
+  return refs2.target === "openApi3" ? {
     enum: ["null"],
     nullable: true
   } : {
@@ -27924,9 +27924,9 @@ var primitiveMappings = {
   ZodBoolean: "boolean",
   ZodNull: "null"
 };
-function parseUnionDef(def, refs) {
-  if (refs.target === "openApi3")
-    return asAnyOf(def, refs);
+function parseUnionDef(def, refs2) {
+  if (refs2.target === "openApi3")
+    return asAnyOf(def, refs2);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => x._def.typeName in primitiveMappings && (!x._def.checks || !x._def.checks.length))) {
     const types = options.reduce((types2, x) => {
@@ -27974,20 +27974,20 @@ function parseUnionDef(def, refs) {
       ], [])
     };
   }
-  return asAnyOf(def, refs);
+  return asAnyOf(def, refs2);
 }
-var asAnyOf = (def, refs) => {
+var asAnyOf = (def, refs2) => {
   const anyOf = (def.options instanceof Map ? Array.from(def.options.values()) : def.options).map((x, i) => parseDef(x._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "anyOf", `${i}`]
-  })).filter((x) => !!x && (!refs.strictUnions || typeof x === "object" && Object.keys(x).length > 0));
+    ...refs2,
+    currentPath: [...refs2.currentPath, "anyOf", `${i}`]
+  })).filter((x) => !!x && (!refs2.strictUnions || typeof x === "object" && Object.keys(x).length > 0));
   return anyOf.length ? { anyOf } : void 0;
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
-function parseNullableDef(def, refs) {
+function parseNullableDef(def, refs2) {
   if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) && (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
-    if (refs.target === "openApi3") {
+    if (refs2.target === "openApi3") {
       return {
         type: primitiveMappings[def.innerType._def.typeName],
         nullable: true
@@ -28000,24 +28000,24 @@ function parseNullableDef(def, refs) {
       ]
     };
   }
-  if (refs.target === "openApi3") {
+  if (refs2.target === "openApi3") {
     const base2 = parseDef(def.innerType._def, {
-      ...refs,
-      currentPath: [...refs.currentPath]
+      ...refs2,
+      currentPath: [...refs2.currentPath]
     });
     if (base2 && "$ref" in base2)
       return { allOf: [base2], nullable: true };
     return base2 && { ...base2, nullable: true };
   }
   const base = parseDef(def.innerType._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "anyOf", "0"]
+    ...refs2,
+    currentPath: [...refs2.currentPath, "anyOf", "0"]
   });
   return base && { anyOf: [base, { type: "null" }] };
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/number.js
-function parseNumberDef(def, refs) {
+function parseNumberDef(def, refs2) {
   const res = {
     type: "number"
   };
@@ -28027,38 +28027,38 @@ function parseNumberDef(def, refs) {
     switch (check2.kind) {
       case "int":
         res.type = "integer";
-        addErrorMessage(res, "type", check2.message, refs);
+        addErrorMessage(res, "type", check2.message, refs2);
         break;
       case "min":
-        if (refs.target === "jsonSchema7") {
+        if (refs2.target === "jsonSchema7") {
           if (check2.inclusive) {
-            setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs2);
           } else {
-            setResponseValueAndErrors(res, "exclusiveMinimum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "exclusiveMinimum", check2.value, check2.message, refs2);
           }
         } else {
           if (!check2.inclusive) {
             res.exclusiveMinimum = true;
           }
-          setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "minimum", check2.value, check2.message, refs2);
         }
         break;
       case "max":
-        if (refs.target === "jsonSchema7") {
+        if (refs2.target === "jsonSchema7") {
           if (check2.inclusive) {
-            setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs2);
           } else {
-            setResponseValueAndErrors(res, "exclusiveMaximum", check2.value, check2.message, refs);
+            setResponseValueAndErrors(res, "exclusiveMaximum", check2.value, check2.message, refs2);
           }
         } else {
           if (!check2.inclusive) {
             res.exclusiveMaximum = true;
           }
-          setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs);
+          setResponseValueAndErrors(res, "maximum", check2.value, check2.message, refs2);
         }
         break;
       case "multipleOf":
-        setResponseValueAndErrors(res, "multipleOf", check2.value, check2.message, refs);
+        setResponseValueAndErrors(res, "multipleOf", check2.value, check2.message, refs2);
         break;
     }
   }
@@ -28066,8 +28066,8 @@ function parseNumberDef(def, refs) {
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/object.js
-function parseObjectDef(def, refs) {
-  const forceOptionalIntoNullable = refs.target === "openAi";
+function parseObjectDef(def, refs2) {
+  const forceOptionalIntoNullable = refs2.target === "openAi";
   const result = {
     type: "object",
     properties: {}
@@ -28090,9 +28090,9 @@ function parseObjectDef(def, refs) {
       propOptional = false;
     }
     const parsedDef = parseDef(propDef._def, {
-      ...refs,
-      currentPath: [...refs.currentPath, "properties", propName],
-      propertyPath: [...refs.currentPath, "properties", propName]
+      ...refs2,
+      currentPath: [...refs2.currentPath, "properties", propName],
+      propertyPath: [...refs2.currentPath, "properties", propName]
     });
     if (parsedDef === void 0) {
       continue;
@@ -28105,26 +28105,26 @@ function parseObjectDef(def, refs) {
   if (required2.length) {
     result.required = required2;
   }
-  const additionalProperties = decideAdditionalProperties(def, refs);
+  const additionalProperties = decideAdditionalProperties(def, refs2);
   if (additionalProperties !== void 0) {
     result.additionalProperties = additionalProperties;
   }
   return result;
 }
-function decideAdditionalProperties(def, refs) {
+function decideAdditionalProperties(def, refs2) {
   if (def.catchall._def.typeName !== "ZodNever") {
     return parseDef(def.catchall._def, {
-      ...refs,
-      currentPath: [...refs.currentPath, "additionalProperties"]
+      ...refs2,
+      currentPath: [...refs2.currentPath, "additionalProperties"]
     });
   }
   switch (def.unknownKeys) {
     case "passthrough":
-      return refs.allowedAdditionalProperties;
+      return refs2.allowedAdditionalProperties;
     case "strict":
-      return refs.rejectedAdditionalProperties;
+      return refs2.rejectedAdditionalProperties;
     case "strip":
-      return refs.removeAdditionalStrategy === "strict" ? refs.allowedAdditionalProperties : refs.rejectedAdditionalProperties;
+      return refs2.removeAdditionalStrategy === "strict" ? refs2.allowedAdditionalProperties : refs2.rejectedAdditionalProperties;
   }
 }
 function safeIsOptional(schema) {
@@ -28136,38 +28136,38 @@ function safeIsOptional(schema) {
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
-var parseOptionalDef = (def, refs) => {
-  if (refs.currentPath.toString() === refs.propertyPath?.toString()) {
-    return parseDef(def.innerType._def, refs);
+var parseOptionalDef = (def, refs2) => {
+  if (refs2.currentPath.toString() === refs2.propertyPath?.toString()) {
+    return parseDef(def.innerType._def, refs2);
   }
   const innerSchema = parseDef(def.innerType._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "anyOf", "1"]
+    ...refs2,
+    currentPath: [...refs2.currentPath, "anyOf", "1"]
   });
   return innerSchema ? {
     anyOf: [
       {
-        not: parseAnyDef(refs)
+        not: parseAnyDef(refs2)
       },
       innerSchema
     ]
-  } : parseAnyDef(refs);
+  } : parseAnyDef(refs2);
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
-var parsePipelineDef = (def, refs) => {
-  if (refs.pipeStrategy === "input") {
-    return parseDef(def.in._def, refs);
-  } else if (refs.pipeStrategy === "output") {
-    return parseDef(def.out._def, refs);
+var parsePipelineDef = (def, refs2) => {
+  if (refs2.pipeStrategy === "input") {
+    return parseDef(def.in._def, refs2);
+  } else if (refs2.pipeStrategy === "output") {
+    return parseDef(def.out._def, refs2);
   }
   const a = parseDef(def.in._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "allOf", "0"]
+    ...refs2,
+    currentPath: [...refs2.currentPath, "allOf", "0"]
   });
   const b = parseDef(def.out._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "allOf", a ? "1" : "0"]
+    ...refs2,
+    currentPath: [...refs2.currentPath, "allOf", a ? "1" : "0"]
   });
   return {
     allOf: [a, b].filter((x) => x !== void 0)
@@ -28175,15 +28175,15 @@ var parsePipelineDef = (def, refs) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
-function parsePromiseDef(def, refs) {
-  return parseDef(def.type._def, refs);
+function parsePromiseDef(def, refs2) {
+  return parseDef(def.type._def, refs2);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/set.js
-function parseSetDef(def, refs) {
+function parseSetDef(def, refs2) {
   const items = parseDef(def.valueType._def, {
-    ...refs,
-    currentPath: [...refs.currentPath, "items"]
+    ...refs2,
+    currentPath: [...refs2.currentPath, "items"]
   });
   const schema = {
     type: "array",
@@ -28191,27 +28191,27 @@ function parseSetDef(def, refs) {
     items
   };
   if (def.minSize) {
-    setResponseValueAndErrors(schema, "minItems", def.minSize.value, def.minSize.message, refs);
+    setResponseValueAndErrors(schema, "minItems", def.minSize.value, def.minSize.message, refs2);
   }
   if (def.maxSize) {
-    setResponseValueAndErrors(schema, "maxItems", def.maxSize.value, def.maxSize.message, refs);
+    setResponseValueAndErrors(schema, "maxItems", def.maxSize.value, def.maxSize.message, refs2);
   }
   return schema;
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
-function parseTupleDef(def, refs) {
+function parseTupleDef(def, refs2) {
   if (def.rest) {
     return {
       type: "array",
       minItems: def.items.length,
       items: def.items.map((x, i) => parseDef(x._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "items", `${i}`]
+        ...refs2,
+        currentPath: [...refs2.currentPath, "items", `${i}`]
       })).reduce((acc, x) => x === void 0 ? acc : [...acc, x], []),
       additionalItems: parseDef(def.rest._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "additionalItems"]
+        ...refs2,
+        currentPath: [...refs2.currentPath, "additionalItems"]
       })
     };
   } else {
@@ -28220,97 +28220,97 @@ function parseTupleDef(def, refs) {
       minItems: def.items.length,
       maxItems: def.items.length,
       items: def.items.map((x, i) => parseDef(x._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "items", `${i}`]
+        ...refs2,
+        currentPath: [...refs2.currentPath, "items", `${i}`]
       })).reduce((acc, x) => x === void 0 ? acc : [...acc, x], [])
     };
   }
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
-function parseUndefinedDef(refs) {
+function parseUndefinedDef(refs2) {
   return {
-    not: parseAnyDef(refs)
+    not: parseAnyDef(refs2)
   };
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
-function parseUnknownDef(refs) {
-  return parseAnyDef(refs);
+function parseUnknownDef(refs2) {
+  return parseAnyDef(refs2);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
-var parseReadonlyDef = (def, refs) => {
-  return parseDef(def.innerType._def, refs);
+var parseReadonlyDef = (def, refs2) => {
+  return parseDef(def.innerType._def, refs2);
 };
 
 // node_modules/zod-to-json-schema/dist/esm/selectParser.js
-var selectParser = (def, typeName, refs) => {
+var selectParser = (def, typeName, refs2) => {
   switch (typeName) {
     case ZodFirstPartyTypeKind2.ZodString:
-      return parseStringDef(def, refs);
+      return parseStringDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodNumber:
-      return parseNumberDef(def, refs);
+      return parseNumberDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodObject:
-      return parseObjectDef(def, refs);
+      return parseObjectDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodBigInt:
-      return parseBigintDef(def, refs);
+      return parseBigintDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodBoolean:
       return parseBooleanDef();
     case ZodFirstPartyTypeKind2.ZodDate:
-      return parseDateDef(def, refs);
+      return parseDateDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodUndefined:
-      return parseUndefinedDef(refs);
+      return parseUndefinedDef(refs2);
     case ZodFirstPartyTypeKind2.ZodNull:
-      return parseNullDef(refs);
+      return parseNullDef(refs2);
     case ZodFirstPartyTypeKind2.ZodArray:
-      return parseArrayDef(def, refs);
+      return parseArrayDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodUnion:
     case ZodFirstPartyTypeKind2.ZodDiscriminatedUnion:
-      return parseUnionDef(def, refs);
+      return parseUnionDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodIntersection:
-      return parseIntersectionDef(def, refs);
+      return parseIntersectionDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodTuple:
-      return parseTupleDef(def, refs);
+      return parseTupleDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodRecord:
-      return parseRecordDef(def, refs);
+      return parseRecordDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodLiteral:
-      return parseLiteralDef(def, refs);
+      return parseLiteralDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodEnum:
       return parseEnumDef(def);
     case ZodFirstPartyTypeKind2.ZodNativeEnum:
       return parseNativeEnumDef(def);
     case ZodFirstPartyTypeKind2.ZodNullable:
-      return parseNullableDef(def, refs);
+      return parseNullableDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodOptional:
-      return parseOptionalDef(def, refs);
+      return parseOptionalDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodMap:
-      return parseMapDef(def, refs);
+      return parseMapDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodSet:
-      return parseSetDef(def, refs);
+      return parseSetDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodLazy:
       return () => def.getter()._def;
     case ZodFirstPartyTypeKind2.ZodPromise:
-      return parsePromiseDef(def, refs);
+      return parsePromiseDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodNaN:
     case ZodFirstPartyTypeKind2.ZodNever:
-      return parseNeverDef(refs);
+      return parseNeverDef(refs2);
     case ZodFirstPartyTypeKind2.ZodEffects:
-      return parseEffectsDef(def, refs);
+      return parseEffectsDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodAny:
-      return parseAnyDef(refs);
+      return parseAnyDef(refs2);
     case ZodFirstPartyTypeKind2.ZodUnknown:
-      return parseUnknownDef(refs);
+      return parseUnknownDef(refs2);
     case ZodFirstPartyTypeKind2.ZodDefault:
-      return parseDefaultDef(def, refs);
+      return parseDefaultDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodBranded:
-      return parseBrandedDef(def, refs);
+      return parseBrandedDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodReadonly:
-      return parseReadonlyDef(def, refs);
+      return parseReadonlyDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodCatch:
-      return parseCatchDef(def, refs);
+      return parseCatchDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodPipeline:
-      return parsePipelineDef(def, refs);
+      return parsePipelineDef(def, refs2);
     case ZodFirstPartyTypeKind2.ZodFunction:
     case ZodFirstPartyTypeKind2.ZodVoid:
     case ZodFirstPartyTypeKind2.ZodSymbol:
@@ -28321,55 +28321,55 @@ var selectParser = (def, typeName, refs) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/parseDef.js
-function parseDef(def, refs, forceResolution = false) {
-  const seenItem = refs.seen.get(def);
-  if (refs.override) {
-    const overrideResult = refs.override?.(def, refs, seenItem, forceResolution);
+function parseDef(def, refs2, forceResolution = false) {
+  const seenItem = refs2.seen.get(def);
+  if (refs2.override) {
+    const overrideResult = refs2.override?.(def, refs2, seenItem, forceResolution);
     if (overrideResult !== ignoreOverride) {
       return overrideResult;
     }
   }
   if (seenItem && !forceResolution) {
-    const seenSchema = get$ref(seenItem, refs);
+    const seenSchema = get$ref(seenItem, refs2);
     if (seenSchema !== void 0) {
       return seenSchema;
     }
   }
-  const newItem = { def, path: refs.currentPath, jsonSchema: void 0 };
-  refs.seen.set(def, newItem);
-  const jsonSchemaOrGetter = selectParser(def, def.typeName, refs);
-  const jsonSchema = typeof jsonSchemaOrGetter === "function" ? parseDef(jsonSchemaOrGetter(), refs) : jsonSchemaOrGetter;
+  const newItem = { def, path: refs2.currentPath, jsonSchema: void 0 };
+  refs2.seen.set(def, newItem);
+  const jsonSchemaOrGetter = selectParser(def, def.typeName, refs2);
+  const jsonSchema = typeof jsonSchemaOrGetter === "function" ? parseDef(jsonSchemaOrGetter(), refs2) : jsonSchemaOrGetter;
   if (jsonSchema) {
-    addMeta(def, refs, jsonSchema);
+    addMeta(def, refs2, jsonSchema);
   }
-  if (refs.postProcess) {
-    const postProcessResult = refs.postProcess(jsonSchema, def, refs);
+  if (refs2.postProcess) {
+    const postProcessResult = refs2.postProcess(jsonSchema, def, refs2);
     newItem.jsonSchema = jsonSchema;
     return postProcessResult;
   }
   newItem.jsonSchema = jsonSchema;
   return jsonSchema;
 }
-var get$ref = (item, refs) => {
-  switch (refs.$refStrategy) {
+var get$ref = (item, refs2) => {
+  switch (refs2.$refStrategy) {
     case "root":
       return { $ref: item.path.join("/") };
     case "relative":
-      return { $ref: getRelativePath(refs.currentPath, item.path) };
+      return { $ref: getRelativePath(refs2.currentPath, item.path) };
     case "none":
     case "seen": {
-      if (item.path.length < refs.currentPath.length && item.path.every((value, index) => refs.currentPath[index] === value)) {
-        console.warn(`Recursive reference detected at ${refs.currentPath.join("/")}! Defaulting to any`);
-        return parseAnyDef(refs);
+      if (item.path.length < refs2.currentPath.length && item.path.every((value, index) => refs2.currentPath[index] === value)) {
+        console.warn(`Recursive reference detected at ${refs2.currentPath.join("/")}! Defaulting to any`);
+        return parseAnyDef(refs2);
       }
-      return refs.$refStrategy === "seen" ? parseAnyDef(refs) : void 0;
+      return refs2.$refStrategy === "seen" ? parseAnyDef(refs2) : void 0;
     }
   }
 };
-var addMeta = (def, refs, jsonSchema) => {
+var addMeta = (def, refs2, jsonSchema) => {
   if (def.description) {
     jsonSchema.description = def.description;
-    if (refs.markdownDescription) {
+    if (refs2.markdownDescription) {
       jsonSchema.markdownDescription = def.description;
     }
   }
@@ -28378,36 +28378,36 @@ var addMeta = (def, refs, jsonSchema) => {
 
 // node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
 var zodToJsonSchema = (schema, options) => {
-  const refs = getRefs(options);
+  const refs2 = getRefs(options);
   let definitions = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce((acc, [name2, schema2]) => ({
     ...acc,
     [name2]: parseDef(schema2._def, {
-      ...refs,
-      currentPath: [...refs.basePath, refs.definitionPath, name2]
-    }, true) ?? parseAnyDef(refs)
+      ...refs2,
+      currentPath: [...refs2.basePath, refs2.definitionPath, name2]
+    }, true) ?? parseAnyDef(refs2)
   }), {}) : void 0;
   const name = typeof options === "string" ? options : options?.nameStrategy === "title" ? void 0 : options?.name;
-  const main2 = parseDef(schema._def, name === void 0 ? refs : {
-    ...refs,
-    currentPath: [...refs.basePath, refs.definitionPath, name]
-  }, false) ?? parseAnyDef(refs);
+  const main2 = parseDef(schema._def, name === void 0 ? refs2 : {
+    ...refs2,
+    currentPath: [...refs2.basePath, refs2.definitionPath, name]
+  }, false) ?? parseAnyDef(refs2);
   const title = typeof options === "object" && options.name !== void 0 && options.nameStrategy === "title" ? options.name : void 0;
   if (title !== void 0) {
     main2.title = title;
   }
-  if (refs.flags.hasReferencedOpenAiAnyType) {
+  if (refs2.flags.hasReferencedOpenAiAnyType) {
     if (!definitions) {
       definitions = {};
     }
-    if (!definitions[refs.openAiAnyTypeName]) {
-      definitions[refs.openAiAnyTypeName] = {
+    if (!definitions[refs2.openAiAnyTypeName]) {
+      definitions[refs2.openAiAnyTypeName] = {
         // Skipping "object" as no properties can be defined and additionalProperties must be "false"
         type: ["string", "number", "integer", "boolean", "array", "null"],
         items: {
-          $ref: refs.$refStrategy === "relative" ? "1" : [
-            ...refs.basePath,
-            refs.definitionPath,
-            refs.openAiAnyTypeName
+          $ref: refs2.$refStrategy === "relative" ? "1" : [
+            ...refs2.basePath,
+            refs2.definitionPath,
+            refs2.openAiAnyTypeName
           ].join("/")
         }
       };
@@ -28415,24 +28415,24 @@ var zodToJsonSchema = (schema, options) => {
   }
   const combined = name === void 0 ? definitions ? {
     ...main2,
-    [refs.definitionPath]: definitions
+    [refs2.definitionPath]: definitions
   } : main2 : {
     $ref: [
-      ...refs.$refStrategy === "relative" ? [] : refs.basePath,
-      refs.definitionPath,
+      ...refs2.$refStrategy === "relative" ? [] : refs2.basePath,
+      refs2.definitionPath,
       name
     ].join("/"),
-    [refs.definitionPath]: {
+    [refs2.definitionPath]: {
       ...definitions,
       [name]: main2
     }
   };
-  if (refs.target === "jsonSchema7") {
+  if (refs2.target === "jsonSchema7") {
     combined.$schema = "http://json-schema.org/draft-07/schema#";
-  } else if (refs.target === "jsonSchema2019-09" || refs.target === "openAi") {
+  } else if (refs2.target === "jsonSchema2019-09" || refs2.target === "openAi") {
     combined.$schema = "https://json-schema.org/draft/2019-09/schema#";
   }
-  if (refs.target === "openAi" && ("anyOf" in combined || "oneOf" in combined || "allOf" in combined || "type" in combined && Array.isArray(combined.type))) {
+  if (refs2.target === "openAi" && ("anyOf" in combined || "oneOf" in combined || "allOf" in combined || "type" in combined && Array.isArray(combined.type))) {
     console.warn("Warning: OpenAI may not support schemas with unions as roots! Try wrapping it in an object property.");
   }
   return combined;
@@ -31018,6 +31018,57 @@ function loadConfig() {
   };
 }
 
+// dist/telemetry.js
+import { AsyncLocalStorage } from "node:async_hooks";
+import { appendFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
+var storage = new AsyncLocalStorage();
+function recordHttpResponse(response) {
+  const context = storage.getStore();
+  if (!context)
+    return;
+  context.httpRequests += 1;
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > 0) {
+    context.upstreamResponseBytes += contentLength;
+  }
+}
+function countWarnings(result) {
+  try {
+    const value = JSON.parse(result.content.map((item) => item.text).join(""));
+    return Array.isArray(value.warnings) ? value.warnings.length : 0;
+  } catch {
+    return 0;
+  }
+}
+async function optionallyLog(metrics) {
+  const path = process.env.TOOLJET_TELEMETRY_PATH;
+  if (!path)
+    return;
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    await appendFile(path, `${JSON.stringify({ ts: (/* @__PURE__ */ new Date()).toISOString(), ...metrics })}
+`, "utf8");
+  } catch {
+  }
+}
+async function withToolTelemetry(tool, handler) {
+  const context = { httpRequests: 0, upstreamResponseBytes: 0 };
+  const started = performance.now();
+  const result = await storage.run(context, handler);
+  const metrics = {
+    tool,
+    duration_ms: Math.round((performance.now() - started) * 10) / 10,
+    http_requests: context.httpRequests,
+    upstream_response_bytes: context.upstreamResponseBytes,
+    result_bytes: Buffer.byteLength(result.content.map((item) => item.text).join(""), "utf8"),
+    warnings: countWarnings(result),
+    error: result.isError === true
+  };
+  await optionallyLog(metrics);
+  return { ...result, _meta: { ...result._meta ?? {}, tooljet_metrics: metrics } };
+}
+
 // dist/auth.js
 var COOKIE_PREFIX = "tj_auth_token=";
 function createAuth(config2, fetchImpl = fetch) {
@@ -31036,6 +31087,7 @@ function createAuth(config2, fetchImpl = fetch) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: config2.email, password: config2.password })
     });
+    recordHttpResponse(res);
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 500);
       const hint = res.status === 401 ? " \u2014 TOOLJET_EMAIL / TOOLJET_PASSWORD were rejected by this instance (or this workspace requires SSO, not form login)." : res.status === 404 ? " \u2014 check TOOLJET_URL is the API origin with no path, e.g. https://your-instance.tooljet.com." : "";
@@ -31056,7 +31108,9 @@ function createAuth(config2, fetchImpl = fetch) {
     headers.set("Cookie", `tj_auth_token=${token}`);
     if (workspaceId)
       headers.set("tj-workspace-id", workspaceId);
-    return fetchImpl(`${config2.apiUrl}${path}`, { ...init, headers });
+    const response = await fetchImpl(`${config2.apiUrl}${path}`, { ...init, headers });
+    recordHttpResponse(response);
+    return response;
   }
   async function fetchWorkspaceList() {
     const res = await rawFetch("/api/organizations?status=active");
@@ -31154,8 +31208,8 @@ import { randomUUID } from "node:crypto";
 // dist/catalog.js
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
-var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+import { dirname as dirname2, resolve } from "node:path";
+var dataPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
 var cache = null;
 function load() {
   if (!cache)
@@ -31618,7 +31672,7 @@ function placementKey(component) {
 }
 function lintComponentSlots(components) {
   const errors = [];
-  const refs = new Map(components.flatMap((component) => {
+  const refs2 = new Map(components.flatMap((component) => {
     const key = componentKey(component);
     return key ? [[key, component]] : [];
   }));
@@ -31628,7 +31682,7 @@ function lintComponentSlots(components) {
     if (!slotName)
       continue;
     const placement = parentPlacement(component);
-    const parent = placement ? refs.get(placement.parentId) : void 0;
+    const parent = placement ? refs2.get(placement.parentId) : void 0;
     if (parent && !SLOT_PARENT_TYPES.has(parent.type ?? "")) {
       errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; native slots are supported only by ModalV2, Form, and Container.`);
     }
@@ -31655,12 +31709,12 @@ function lintKanbanInteractions(components) {
 }
 function lintListviewChildren(components) {
   const warnings = [];
-  const refs = new Map(components.flatMap((component) => {
+  const refs2 = new Map(components.flatMap((component) => {
     const key = componentKey(component);
     return key ? [[key, component]] : [];
   }));
   for (const child of components.filter((component) => component.type === "Html")) {
-    const parent = refs.get(parentPlacement(child)?.parentId ?? "");
+    const parent = refs2.get(parentPlacement(child)?.parentId ?? "");
     if (parent?.type !== "Listview")
       continue;
     const rawHtml = propVal(child.properties, "rawHtml");
@@ -31725,10 +31779,10 @@ function lintComponentSpec(spec) {
       warnings.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
-  const componentSchema3 = spec.type ? getComponentSchema(spec.type) : null;
+  const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
   for (const [sectionName, authored, entries] of [
-    ["property", spec.properties, componentSchema3?.properties],
-    ["style", spec.styles, componentSchema3?.styles]
+    ["property", spec.properties, componentSchema?.properties],
+    ["style", spec.styles, componentSchema?.styles]
   ]) {
     if (!authored || !entries)
       continue;
@@ -32006,11 +32060,11 @@ function isTitleLikeText(component) {
 }
 function lintModalChildren(components) {
   const warnings = [];
-  const refs = new Map(components.flatMap((component) => {
+  const refs2 = new Map(components.flatMap((component) => {
     const key = componentKey(component);
     return key ? [[key, component]] : [];
   }));
-  const parentOf = (component) => refs.get(parentPlacement(component)?.parentId ?? "");
+  const parentOf = (component) => refs2.get(parentPlacement(component)?.parentId ?? "");
   const modalChildren = components.filter((component) => {
     const parent = parentOf(component);
     return parent?.type === "ModalV2" || parent?.type === "Modal";
@@ -32426,6 +32480,7 @@ function toCsv(headers, rows) {
   return lines.join("\n") + "\n";
 }
 function createClient(auth, config2) {
+  let developmentEnvironmentIdPromise;
   async function getApp(appId) {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, "getApp");
@@ -32736,15 +32791,23 @@ function createClient(auth, config2) {
     return { created: events.length };
   }
   async function getDevelopmentEnvironmentId() {
-    const res = await auth.authedFetch("/api/app-environments");
-    await assertOk(res, "getDevelopmentEnvironmentId");
-    const body = await res.json();
-    const envs = Array.isArray(body) ? body : body.environments;
-    const dev = envs.find((e) => e.name === "development");
-    if (!dev) {
-      throw new Error("ToolJet getDevelopmentEnvironmentId failed: no development environment found");
+    if (!developmentEnvironmentIdPromise) {
+      developmentEnvironmentIdPromise = (async () => {
+        const res = await auth.authedFetch("/api/app-environments");
+        await assertOk(res, "getDevelopmentEnvironmentId");
+        const body = await res.json();
+        const envs = Array.isArray(body) ? body : body.environments;
+        const dev = envs.find((e) => e.name === "development");
+        if (!dev) {
+          throw new Error("ToolJet getDevelopmentEnvironmentId failed: no development environment found");
+        }
+        return dev.id;
+      })().catch((error51) => {
+        developmentEnvironmentIdPromise = void 0;
+        throw error51;
+      });
     }
-    return dev.id;
+    return developmentEnvironmentIdPromise;
   }
   async function listDatasources(versionId) {
     const [orgId, envId] = await Promise.all([auth.getOrganizationId(), getDevelopmentEnvironmentId()]);
@@ -33660,7 +33723,7 @@ function getComponentCatalogTool(_client) {
 // dist/datasourceCatalog.js
 import { readFileSync as readFileSync2 } from "node:fs";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { dirname as dirname2, resolve as resolve2 } from "node:path";
+import { dirname as dirname3, resolve as resolve2 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
@@ -33678,7 +33741,7 @@ var COMMON_QUERY_OPTION_FIELDS = {
   disableQuery: { path: "disableQuery", type: "boolean|binding" },
   disabledMessage: { path: "disabledMessage", type: "string|binding" }
 };
-var dataPath2 = resolve2(dirname2(fileURLToPath2(import.meta.url)), "../data/datasource-schemas.json");
+var dataPath2 = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/datasource-schemas.json");
 var cache2 = null;
 function load2() {
   if (!cache2)
@@ -34288,6 +34351,191 @@ function getComponentTool(client) {
   };
 }
 
+// dist/eventValidation.js
+var ACTION_IDS = /* @__PURE__ */ new Set([
+  "run-query",
+  "switch-page",
+  "show-alert",
+  "show-modal",
+  "close-modal",
+  "set-custom-variable",
+  "unset-custom-variable",
+  "set-page-variable",
+  "set-table-page",
+  "copy-to-clipboard",
+  "generate-file",
+  "open-webpage",
+  "go-to-app",
+  "logout",
+  "control-component",
+  "set-localstorage-value",
+  "scroll-component-into-view"
+]);
+function propVal2(properties, key) {
+  const value = properties?.[key];
+  return value && typeof value === "object" && "value" in value ? value.value : value;
+}
+function isFalseBinding2(value) {
+  return value === false || value === "false" || value === "{{false}}";
+}
+function validateTableColumnRef(source, ref) {
+  if (!ref)
+    return 'Table Button-column events require ref "<column key or name>::<button id>".';
+  const separator = ref.lastIndexOf("::");
+  if (separator <= 0 || separator === ref.length - 2)
+    return `Table Button-column ref "${ref}" is malformed.`;
+  const columnRef = ref.slice(0, separator);
+  const buttonId = ref.slice(separator + 2);
+  const columns = propVal2(source.properties, "columns");
+  if (!Array.isArray(columns))
+    return `Table "${source.name ?? source.id}" has no explicit columns array for ref "${ref}".`;
+  const column = columns.find((candidate) => {
+    const item = candidate;
+    return item?.key === columnRef || item?.name === columnRef;
+  });
+  if (!column || column.columnType !== "button") {
+    return `Table "${source.name ?? source.id}" has no Button column keyed/named "${columnRef}".`;
+  }
+  if (!Array.isArray(column.buttons) || !column.buttons.some((button) => button?.id === buttonId)) {
+    return `Table Button column "${columnRef}" has no button id "${buttonId}".`;
+  }
+  return void 0;
+}
+function validateEvents(summary, events) {
+  const errors = [];
+  const warnings = [];
+  const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
+  const queries = new Set(summary.queries.map((query) => query.id));
+  const pages = new Set(summary.pages.map((page) => page.id));
+  events.forEach((event, index) => {
+    const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
+    if (event.sourceType === "component") {
+      const source = components.get(event.sourceId);
+      if (!source)
+        errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
+      else if (source.type) {
+        const schema = getComponentSchema(source.type);
+        const validTriggers = schema?.events?.map((item) => item.id) ?? [];
+        if (schema && !validTriggers.includes(event.trigger)) {
+          errors.push(`${label}: trigger "${event.trigger}" is not valid for ${source.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
+        }
+        if (source.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal2(source.properties, "openModalOnCardClick"))) {
+          errors.push(`${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
+        }
+      }
+    } else if (event.sourceType === "data_query") {
+      if (!queries.has(event.sourceId))
+        errors.push(`${label}: query source "${event.sourceId}" does not exist.`);
+      if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
+        errors.push(`${label}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
+      }
+    } else if (event.sourceType === "page") {
+      if (!pages.has(event.sourceId))
+        errors.push(`${label}: page source "${event.sourceId}" does not exist.`);
+      if (event.trigger !== "onPageLoad")
+        errors.push(`${label}: page trigger must be onPageLoad, not "${event.trigger}".`);
+    } else if (event.sourceType === "table_column") {
+      const source = components.get(event.sourceId);
+      if (!source)
+        errors.push(`${label}: Table source "${event.sourceId}" does not exist.`);
+      else if (source.type !== "Table")
+        errors.push(`${label}: table_column source must be a Table, not ${source.type ?? "unknown"}.`);
+      else {
+        if (event.trigger !== "onClick")
+          errors.push(`${label}: Table Button-column trigger must be onClick.`);
+        const refError = validateTableColumnRef(source, event.ref);
+        if (refError)
+          errors.push(`${label}: ${refError}`);
+      }
+    } else if (event.sourceType === "table_action") {
+      errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
+    }
+    const actionId = event.action.actionId;
+    if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
+      errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
+      return;
+    }
+    if (actionId === "run-query") {
+      const queryId = event.action.queryId;
+      if (typeof queryId !== "string" || !queries.has(queryId)) {
+        errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
+      }
+    }
+    if (actionId === "switch-page") {
+      const pageId = event.action.pageId;
+      if (typeof pageId !== "string" || !pages.has(pageId)) {
+        errors.push(`${label}: switch-page target "${String(pageId)}" does not exist.`);
+      }
+    }
+    if (["show-modal", "close-modal"].includes(actionId)) {
+      const modal = event.action.modal;
+      if (typeof modal !== "string" || !components.has(modal)) {
+        errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
+      }
+    }
+    if (actionId === "control-component") {
+      const componentId = event.action.componentId;
+      if (typeof componentId !== "string" || !components.has(componentId)) {
+        errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
+      }
+    }
+    if (actionId === "set-table-page") {
+      const tableId = event.action.table;
+      const table = typeof tableId === "string" ? components.get(tableId) : void 0;
+      if (!table) {
+        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
+      } else if (table.type !== "Table") {
+        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
+      }
+      const pageIndex = event.action.pageIndex;
+      if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
+        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
+      }
+    }
+    if (actionId === "generate-file") {
+      const format = ["fileType", "type", "format", "extension"].map((key) => event.action[key]).find((value) => typeof value === "string");
+      if (format && /\bpdf\b/i.test(format)) {
+        warnings.push(`${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
+      }
+    }
+  });
+  const chains = /* @__PURE__ */ new Map();
+  events.forEach((event, index) => {
+    const key = [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0");
+    const chain = chains.get(key) ?? [];
+    chain.push({ event, index });
+    chains.set(key, chain);
+  });
+  for (const chain of chains.values()) {
+    const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
+    if (navigationIndex === -1 || navigationIndex === chain.length - 1)
+      continue;
+    const navigation = chain[navigationIndex];
+    const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
+    const label = navigation.event.name ? `Event "${navigation.event.name}"` : `Event[${navigation.index}]`;
+    errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
+  }
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
+}
+function persistedEventSpecs(summary) {
+  return summary.events.map((event, position) => ({ event, position })).sort((left, right) => (left.event.index ?? left.position) - (right.event.index ?? right.position)).flatMap(({ event }) => {
+    if (!event.sourceId || !event.target || !event.event || typeof event.event !== "object")
+      return [];
+    const payload = event.event;
+    if (typeof payload.eventId !== "string")
+      return [];
+    const { eventId, ref, ...action } = payload;
+    return [{
+      sourceId: event.sourceId,
+      sourceType: event.target,
+      ...typeof ref === "string" ? { ref } : {},
+      trigger: eventId,
+      action,
+      name: event.name
+    }];
+  });
+}
+
 // dist/queryExecutionSafety.js
 var LARGE_READ_ROW_THRESHOLD = 1e3;
 var SQL_KINDS = /* @__PURE__ */ new Set([
@@ -34762,189 +35010,42 @@ function issueMessages(issues, prefix) {
   return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
 }
 
-// dist/eventValidation.js
-var ACTION_IDS = /* @__PURE__ */ new Set([
-  "run-query",
-  "switch-page",
-  "show-alert",
-  "show-modal",
-  "close-modal",
-  "set-custom-variable",
-  "unset-custom-variable",
-  "set-page-variable",
-  "set-table-page",
-  "copy-to-clipboard",
-  "generate-file",
-  "open-webpage",
-  "go-to-app",
-  "logout",
-  "control-component",
-  "set-localstorage-value",
-  "scroll-component-into-view"
-]);
-function propVal2(properties, key) {
-  const value = properties?.[key];
-  return value && typeof value === "object" && "value" in value ? value.value : value;
-}
-function isFalseBinding2(value) {
-  return value === false || value === "false" || value === "{{false}}";
-}
-function validateTableColumnRef(source, ref) {
-  if (!ref)
-    return 'Table Button-column events require ref "<column key or name>::<button id>".';
-  const separator = ref.lastIndexOf("::");
-  if (separator <= 0 || separator === ref.length - 2)
-    return `Table Button-column ref "${ref}" is malformed.`;
-  const columnRef = ref.slice(0, separator);
-  const buttonId = ref.slice(separator + 2);
-  const columns = propVal2(source.properties, "columns");
-  if (!Array.isArray(columns))
-    return `Table "${source.name ?? source.id}" has no explicit columns array for ref "${ref}".`;
-  const column = columns.find((candidate) => {
-    const item = candidate;
-    return item?.key === columnRef || item?.name === columnRef;
-  });
-  if (!column || column.columnType !== "button") {
-    return `Table "${source.name ?? source.id}" has no Button column keyed/named "${columnRef}".`;
-  }
-  if (!Array.isArray(column.buttons) || !column.buttons.some((button) => button?.id === buttonId)) {
-    return `Table Button column "${columnRef}" has no button id "${buttonId}".`;
-  }
-  return void 0;
-}
-function validateEvents(summary, events) {
-  const errors = [];
-  const warnings = [];
-  const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
-  const queries = new Set(summary.queries.map((query) => query.id));
-  const pages = new Set(summary.pages.map((page) => page.id));
-  events.forEach((event, index) => {
-    const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
-    if (event.sourceType === "component") {
-      const source = components.get(event.sourceId);
-      if (!source)
-        errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
-      else if (source.type) {
-        const schema = getComponentSchema(source.type);
-        const validTriggers = schema?.events?.map((item) => item.id) ?? [];
-        if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label}: trigger "${event.trigger}" is not valid for ${source.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
-        }
-        if (source.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal2(source.properties, "openModalOnCardClick"))) {
-          errors.push(`${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
-        }
-      }
-    } else if (event.sourceType === "data_query") {
-      if (!queries.has(event.sourceId))
-        errors.push(`${label}: query source "${event.sourceId}" does not exist.`);
-      if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
-        errors.push(`${label}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
-      }
-    } else if (event.sourceType === "page") {
-      if (!pages.has(event.sourceId))
-        errors.push(`${label}: page source "${event.sourceId}" does not exist.`);
-      if (event.trigger !== "onPageLoad")
-        errors.push(`${label}: page trigger must be onPageLoad, not "${event.trigger}".`);
-    } else if (event.sourceType === "table_column") {
-      const source = components.get(event.sourceId);
-      if (!source)
-        errors.push(`${label}: Table source "${event.sourceId}" does not exist.`);
-      else if (source.type !== "Table")
-        errors.push(`${label}: table_column source must be a Table, not ${source.type ?? "unknown"}.`);
-      else {
-        if (event.trigger !== "onClick")
-          errors.push(`${label}: Table Button-column trigger must be onClick.`);
-        const refError = validateTableColumnRef(source, event.ref);
-        if (refError)
-          errors.push(`${label}: ${refError}`);
-      }
-    } else if (event.sourceType === "table_action") {
-      errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
-    }
-    const actionId = event.action.actionId;
-    if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
-      errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
-      return;
-    }
-    if (actionId === "run-query") {
-      const queryId = event.action.queryId;
-      if (typeof queryId !== "string" || !queries.has(queryId)) {
-        errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
-      }
-    }
-    if (actionId === "switch-page") {
-      const pageId = event.action.pageId;
-      if (typeof pageId !== "string" || !pages.has(pageId)) {
-        errors.push(`${label}: switch-page target "${String(pageId)}" does not exist.`);
-      }
-    }
-    if (["show-modal", "close-modal"].includes(actionId)) {
-      const modal = event.action.modal;
-      if (typeof modal !== "string" || !components.has(modal)) {
-        errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
-      }
-    }
-    if (actionId === "control-component") {
-      const componentId = event.action.componentId;
-      if (typeof componentId !== "string" || !components.has(componentId)) {
-        errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
-      }
-    }
-    if (actionId === "set-table-page") {
-      const tableId = event.action.table;
-      const table = typeof tableId === "string" ? components.get(tableId) : void 0;
-      if (!table) {
-        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
-      } else if (table.type !== "Table") {
-        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
-      }
-      const pageIndex = event.action.pageIndex;
-      if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
-        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
-      }
-    }
-    if (actionId === "generate-file") {
-      const format = ["fileType", "type", "format", "extension"].map((key) => event.action[key]).find((value) => typeof value === "string");
-      if (format && /\bpdf\b/i.test(format)) {
-        warnings.push(`${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
-      }
-    }
-  });
-  const chains = /* @__PURE__ */ new Map();
-  events.forEach((event, index) => {
-    const key = [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0");
-    const chain = chains.get(key) ?? [];
-    chain.push({ event, index });
-    chains.set(key, chain);
-  });
-  for (const chain of chains.values()) {
-    const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
-    if (navigationIndex === -1 || navigationIndex === chain.length - 1)
+// dist/appValidation.js
+function validatePersistedAppSummary(summary) {
+  const structural = validateAppStructure(summary);
+  const errors = [...structural.errors];
+  const warnings = [...structural.warnings];
+  const eventValidation = validateEvents(summary, persistedEventSpecs(summary));
+  errors.push(...eventValidation.errors);
+  warnings.push(...eventValidation.warnings);
+  for (const query of summary.queries) {
+    const label = `Query "${query.name ?? query.id}"`;
+    if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
+      warnings.push(`${label}: kind/options are unavailable, so its datasource contract was not validated.`);
       continue;
-    const navigation = chain[navigationIndex];
-    const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label = navigation.event.name ? `Event "${navigation.event.name}"` : `Event[${navigation.index}]`;
-    errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
+    }
+    const validation = validateQueryOptions(query.kind, query.options);
+    errors.push(...issueMessages(validation.errors, label));
+    warnings.push(...issueMessages(validation.warnings, label));
   }
-  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
-}
-function persistedEventSpecs(summary) {
-  return summary.events.map((event, position) => ({ event, position })).sort((left, right) => (left.event.index ?? left.position) - (right.event.index ?? right.position)).flatMap(({ event }) => {
-    if (!event.sourceId || !event.target || !event.event || typeof event.event !== "object")
-      return [];
-    const payload = event.event;
-    if (typeof payload.eventId !== "string")
-      return [];
-    const { eventId, ref, ...action } = payload;
-    return [{
-      sourceId: event.sourceId,
-      sourceType: event.target,
-      ...typeof ref === "string" ? { ref } : {},
-      trigger: eventId,
-      action,
-      name: event.name
-    }];
-  });
+  return {
+    ok: errors.length === 0,
+    scope: "structural_and_contract",
+    checked: [
+      "persisted references and bindings",
+      "component render traps",
+      "event source/trigger compatibility",
+      "saved datasource option contracts"
+    ],
+    not_checked: [
+      "query execution or external API success",
+      "mutating/billable query behavior",
+      "browser event delivery",
+      "visual rendering"
+    ],
+    errors: [...new Set(errors)],
+    warnings: [...new Set(warnings)]
+  };
 }
 
 // dist/tools/validateApp.js
@@ -34958,40 +35059,7 @@ function validateAppTool(client) {
     async handler(args) {
       try {
         const summary = await client.getAppSummary(args.app_id);
-        const structural = validateAppStructure(summary);
-        const errors = [...structural.errors];
-        const warnings = [...structural.warnings];
-        const eventValidation = validateEvents(summary, persistedEventSpecs(summary));
-        errors.push(...eventValidation.errors);
-        warnings.push(...eventValidation.warnings);
-        for (const query of summary.queries) {
-          const label = `Query "${query.name ?? query.id}"`;
-          if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
-            warnings.push(`${label}: kind/options are unavailable, so its datasource contract was not validated.`);
-            continue;
-          }
-          const validation = validateQueryOptions(query.kind, query.options);
-          errors.push(...issueMessages(validation.errors, label));
-          warnings.push(...issueMessages(validation.warnings, label));
-        }
-        return ok({
-          ok: errors.length === 0,
-          scope: "structural_and_contract",
-          checked: [
-            "persisted references and bindings",
-            "component render traps",
-            "event source/trigger compatibility",
-            "saved datasource option contracts"
-          ],
-          not_checked: [
-            "query execution or external API success",
-            "mutating/billable query behavior",
-            "browser event delivery",
-            "visual rendering"
-          ],
-          errors: [...new Set(errors)],
-          warnings: [...new Set(warnings)]
-        });
+        return ok(validatePersistedAppSummary(summary));
       } catch (err) {
         return fail(err);
       }
@@ -35296,6 +35364,20 @@ function lintPlannedApp(spec) {
     checked.push("ToolJet DB table names, columns, foreign keys, reserved names, and dependency order");
     errors.push(...validateTableBatch(tables));
   }
+  const seedData = spec.seedData ?? [];
+  const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
+  if (seedData.length) {
+    checked.push("seed batches have unique table targets and non-empty rows");
+    const seen = /* @__PURE__ */ new Set();
+    for (const seed of seedData) {
+      const key = seed.tableName.toLowerCase();
+      if (seen.has(key))
+        errors.push(`Seed data targets table "${seed.tableName}" more than once.`);
+      seen.add(key);
+      if (!seed.rows.length)
+        errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+    }
+  }
   const queryRefs = /* @__PURE__ */ new Map();
   const queryIds = /* @__PURE__ */ new Map();
   const queries = (spec.queries ?? []).map((query, index) => {
@@ -35458,6 +35540,7 @@ function lintPlannedApp(spec) {
     ],
     counts: {
       tables: tables.length,
+      seed_rows: seedRows,
       pages: pages.length,
       components: componentCount,
       queries: queries.length,
@@ -35506,8 +35589,8 @@ function resolveAction(raw, queries, pages, components, errors, label) {
     return { ...action, table: target.id };
   return action;
 }
-function resolveRefs(refs, map2, errors, label) {
-  return refs?.flatMap((ref) => {
+function resolveRefs(refs2, map2, errors, label) {
+  return refs2?.flatMap((ref) => {
     const value = map2.get(ref);
     if (!value) {
       errors.push(`${label} ref "${ref}" does not exist.`);
@@ -35533,9 +35616,14 @@ function unique2(values) {
   return [...new Set(values)];
 }
 
-// dist/tools/lintAppSpec.js
-var layoutSchema = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
-var componentSchema = external_exports.object({
+// dist/componentBatch.js
+var layoutSchema = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number(),
+  width: external_exports.number(),
+  height: external_exports.number()
+});
+var componentInputSchema = external_exports.object({
   name: external_exports.string(),
   type: external_exports.string(),
   properties: external_exports.record(external_exports.string(), external_exports.any()),
@@ -35549,6 +35637,55 @@ var componentSchema = external_exports.object({
   parent: external_exports.string().optional(),
   slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
 });
+function containsListItemBinding(value) {
+  if (typeof value === "string")
+    return /\blistItem\b/.test(value);
+  if (Array.isArray(value))
+    return value.some(containsListItemBinding);
+  if (value && typeof value === "object") {
+    return Object.values(value).some(containsListItemBinding);
+  }
+  return false;
+}
+function prepareComponentBatch(inputs) {
+  const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
+    ...component,
+    clientRef: client_ref,
+    parentRef: parent_ref,
+    slotName: slot_name
+  }));
+  const normalized2 = requested.map((component) => normalizeComponentSpec(component));
+  const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
+  const lint = lintComponents(expanded.components);
+  const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
+    properties: component.properties,
+    styles: component.styles,
+    validation: component.validation,
+    others: component.others
+  }) ? [
+    `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one component batch using client_ref/parent_ref.`
+  ] : []);
+  return {
+    components: expanded.components,
+    errors: lint.errors,
+    warnings: [
+      ...normalized2.flatMap((item) => item.warnings),
+      ...expanded.warnings,
+      ...lint.warnings,
+      ...lateListviewChildWarnings
+    ]
+  };
+}
+
+// dist/appPlanSchema.js
+var foreignKeyAction4 = external_exports.enum(["RESTRICT", "NO ACTION", "CASCADE", "SET NULL", "SET DEFAULT"]);
+var foreignKeySchema4 = external_exports.object({
+  columns: external_exports.array(external_exports.string()).min(1),
+  referencedTable: external_exports.string(),
+  referencedColumns: external_exports.array(external_exports.string()).min(1),
+  onDelete: foreignKeyAction4.optional(),
+  onUpdate: foreignKeyAction4.optional()
+});
 var columnSchema4 = external_exports.object({
   name: external_exports.string(),
   type: external_exports.string(),
@@ -35558,34 +35695,32 @@ var columnSchema4 = external_exports.object({
   defaultValue: external_exports.any().optional(),
   configurations: external_exports.record(external_exports.string(), external_exports.any()).optional()
 });
-var foreignKeyAction4 = external_exports.enum(["RESTRICT", "NO ACTION", "CASCADE", "SET NULL", "SET DEFAULT"]);
-var foreignKeySchema4 = external_exports.object({
-  columns: external_exports.array(external_exports.string()).min(1),
-  referencedTable: external_exports.string(),
-  referencedColumns: external_exports.array(external_exports.string()).min(1),
-  onDelete: foreignKeyAction4.optional(),
-  onUpdate: foreignKeyAction4.optional()
-});
-var tableSchema2 = external_exports.object({
+var plannedTableSchema = external_exports.object({
   table_name: external_exports.string(),
   columns: external_exports.array(columnSchema4).min(1),
   foreign_keys: external_exports.array(foreignKeySchema4).optional()
 });
-var querySchema = external_exports.object({
+var plannedSeedSchema = external_exports.object({
+  table_name: external_exports.string(),
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
+});
+var plannedQuerySchema = external_exports.object({
   client_ref: external_exports.string().optional(),
-  datasource_id: external_exports.string().optional(),
+  datasource_id: external_exports.string(),
   name: external_exports.string(),
   kind: external_exports.string().optional(),
+  /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
+  table_ref: external_exports.string().optional(),
   options: external_exports.record(external_exports.string(), external_exports.any())
 });
-var pageSchema = external_exports.object({
+var plannedPageSchema = external_exports.object({
   client_ref: external_exports.string().optional(),
   name: external_exports.string(),
   icon: external_exports.string().min(1),
   hidden: external_exports.boolean().optional(),
-  components: external_exports.array(componentSchema).optional()
+  components: external_exports.array(componentInputSchema).optional()
 });
-var eventSchema = external_exports.object({
+var plannedEventSchema = external_exports.object({
   source_ref: external_exports.string(),
   source_type: external_exports.enum(["component", "data_query", "page", "table_column", "table_action"]),
   ref: external_exports.string().optional(),
@@ -35597,7 +35732,7 @@ var alertSchema = external_exports.object({
   message: external_exports.string().min(1),
   alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
 });
-var lifecycleSchema = external_exports.object({
+var plannedLifecycleSchema = external_exports.object({
   query_ref: external_exports.string(),
   refresh_query_refs: external_exports.array(external_exports.string()).optional(),
   clear_component_refs: external_exports.array(external_exports.string()).optional(),
@@ -35607,39 +35742,114 @@ var lifecycleSchema = external_exports.object({
   success_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
   failure_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional()
 });
+var appPlanSchema = external_exports.object({
+  version_id: external_exports.string().optional(),
+  tables: external_exports.array(plannedTableSchema).max(50).optional(),
+  seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
+  queries: external_exports.array(plannedQuerySchema).max(200).optional(),
+  pages: external_exports.array(plannedPageSchema).max(50).optional(),
+  events: external_exports.array(plannedEventSchema).max(1e3).optional(),
+  lifecycles: external_exports.array(plannedLifecycleSchema).max(200).optional()
+});
+
+// dist/appPlanStore.js
+import { randomUUID as randomUUID2 } from "node:crypto";
+var PLAN_TTL_MS = 30 * 60 * 1e3;
+var MAX_PLANS = 20;
+var plans = /* @__PURE__ */ new Map();
+function prune(now = Date.now()) {
+  for (const [token, plan] of plans)
+    if (plan.expiresAt <= now)
+      plans.delete(token);
+  while (plans.size >= MAX_PLANS)
+    plans.delete(plans.keys().next().value);
+}
+function storeAppPlan(spec, lint) {
+  prune();
+  const planToken = randomUUID2();
+  plans.set(planToken, {
+    spec: structuredClone(spec),
+    lint: structuredClone(lint),
+    expiresAt: Date.now() + PLAN_TTL_MS
+  });
+  return { plan_token: planToken, expires_in_seconds: PLAN_TTL_MS / 1e3 };
+}
+function consumeAppPlan(planToken) {
+  prune();
+  const plan = plans.get(planToken);
+  if (!plan)
+    throw new Error("Unknown or expired plan_token. Run lint_app_spec again.");
+  plans.delete(planToken);
+  return plan;
+}
+
+// dist/tools/lintAppSpec.js
+function unique3(values) {
+  return [...new Set(values)];
+}
 function lintAppSpecTool(client) {
   return {
     name: "lint_app_spec",
-    description: "Dry-run a planned app before any writes. It validates optional tables, queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values (name is the fallback); events use source_ref, and actions that target another planned object use target_ref. Query kind can be supplied directly, or resolved from datasource_id when version_id is present. Returns structured {ok,errors,warnings,checked,not_checked,counts}; it never mutates ToolJet.",
-    inputSchema: {
-      version_id: external_exports.string().optional(),
-      tables: external_exports.array(tableSchema2).max(50).optional(),
-      queries: external_exports.array(querySchema).max(200).optional(),
-      pages: external_exports.array(pageSchema).max(50).optional(),
-      events: external_exports.array(eventSchema).max(1e3).optional(),
-      lifecycles: external_exports.array(lifecycleSchema).max(200).optional()
-    },
+    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
+    inputSchema: appPlanSchema.shape,
     async handler(args) {
       try {
-        if (![args.tables, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
-          return fail(new Error("lint_app_spec needs at least one table, query, page, event, or lifecycle."));
+        if (![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
+          return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
         }
-        const needsDatasourceResolution = (args.queries ?? []).some((query) => !query.kind && query.datasource_id);
-        const datasources = needsDatasourceResolution && args.version_id ? await client.listDatasources(args.version_id) : [];
+        const preflightErrors = [];
+        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
+        const existingTables = needsTables ? await client.listTables() : [];
+        const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        for (const table of args.tables ?? []) {
+          const key = table.table_name.toLowerCase();
+          if (tableIds.has(key))
+            preflightErrors.push(`Planned table "${table.table_name}" already exists.`);
+          else
+            tableIds.set(key, `planned-table:${table.table_name}`);
+        }
+        for (const seed of args.seed_data ?? []) {
+          if (!tableIds.has(seed.table_name.toLowerCase())) {
+            preflightErrors.push(`Seed data targets unknown planned/existing table "${seed.table_name}".`);
+          }
+        }
+        if (args.queries?.length && !args.version_id) {
+          preflightErrors.push("version_id is required when a plan contains queries.");
+        }
+        const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        return ok(lintPlannedApp({
+        const queries = (args.queries ?? []).map((query) => {
+          const datasourceKind = datasourceKinds.get(query.datasource_id);
+          if (args.version_id && !datasourceKind) {
+            preflightErrors.push(`Query "${query.name}" datasource "${query.datasource_id}" is not available.`);
+          }
+          if (query.kind && datasourceKind && query.kind !== datasourceKind) {
+            preflightErrors.push(`Query "${query.name}" kind "${query.kind}" does not match datasource kind "${datasourceKind}".`);
+          }
+          const options = structuredClone(query.options);
+          if (query.table_ref) {
+            const tableId = tableIds.get(query.table_ref.toLowerCase());
+            if (!tableId)
+              preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
+            else
+              options.table_id = tableId;
+          }
+          return {
+            clientRef: query.client_ref,
+            datasourceId: query.datasource_id,
+            name: query.name,
+            kind: datasourceKind ?? query.kind,
+            options
+          };
+        });
+        const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
             columns: table.columns,
             foreignKeys: table.foreign_keys
           })),
-          queries: args.queries?.map((query) => ({
-            clientRef: query.client_ref,
-            datasourceId: query.datasource_id,
-            name: query.name,
-            kind: query.kind ?? (query.datasource_id ? datasourceKinds.get(query.datasource_id) : void 0),
-            options: query.options
-          })),
+          seedData: args.seed_data?.map((seed) => ({ tableName: seed.table_name, rows: seed.rows })),
+          queries,
           pages: args.pages?.map((page) => ({
             clientRef: page.client_ref,
             name: page.name,
@@ -35678,9 +35888,305 @@ function lintAppSpecTool(client) {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions
           }))
-        }));
+        });
+        const result = {
+          ...lint,
+          ok: lint.ok && preflightErrors.length === 0,
+          errors: unique3([...preflightErrors, ...lint.errors])
+        };
+        return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
       } catch (error51) {
         return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/applyAppPhase.js
+function logicalRef(value) {
+  return value.client_ref ?? value.name;
+}
+function sourceTarget(sourceType, ref, pages, queries, components) {
+  if (sourceType === "page")
+    return pages.get(ref);
+  if (sourceType === "data_query")
+    return queries.get(ref);
+  return components.get(ref);
+}
+function resolveAction2(raw, pages, queries, components) {
+  const { target_ref: targetRef, ...action } = raw;
+  if (targetRef === void 0)
+    return action;
+  if (typeof targetRef !== "string")
+    throw new Error("Event action target_ref must be a string.");
+  const actionId = String(action.actionId);
+  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(actionId) ? components.get(targetRef) : void 0;
+  if (!target)
+    throw new Error(`Action "${actionId}" has unknown or unsupported target_ref "${targetRef}".`);
+  if (actionId === "run-query")
+    return { ...action, queryId: target.id, queryName: target.name };
+  if (actionId === "switch-page")
+    return { ...action, pageId: target.id };
+  if (actionId === "show-modal" || actionId === "close-modal")
+    return { ...action, modal: target.id };
+  if (actionId === "control-component" || actionId === "scroll-component-into-view") {
+    return { ...action, componentId: target.id };
+  }
+  if (actionId === "set-table-page")
+    return { ...action, table: target.id };
+  return action;
+}
+function refs(values, targets, label) {
+  return values?.map((ref) => {
+    const target = targets.get(ref);
+    if (!target)
+      throw new Error(`${label} ref "${ref}" does not exist.`);
+    return target.id;
+  });
+}
+function oneRef(value, targets, label) {
+  if (!value)
+    return void 0;
+  const target = targets.get(value);
+  if (!target)
+    throw new Error(`${label} ref "${value}" does not exist.`);
+  return target.id;
+}
+function appliedSummary(applied) {
+  return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(", ");
+}
+function applyAppPhaseTool(client) {
+  return {
+    name: "apply_app_phase",
+    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      plan_token: external_exports.string()
+    },
+    async handler(args) {
+      const applied = { tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
+      let stage = "consume plan";
+      try {
+        const stored = consumeAppPlan(args.plan_token);
+        const spec = stored.spec;
+        if (spec.version_id && spec.version_id !== args.version_id) {
+          throw new Error(`Plan version_id "${spec.version_id}" does not match "${args.version_id}".`);
+        }
+        stage = "read current app context";
+        const [initialSummary, existingTables, datasources] = await Promise.all([
+          client.getAppSummary(args.app_id),
+          client.listTables(),
+          spec.queries?.length ? client.listDatasources(args.version_id) : Promise.resolve([])
+        ]);
+        if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
+          throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
+        }
+        const plannedPageMatches = /* @__PURE__ */ new Map();
+        for (const page of spec.pages ?? []) {
+          const match = initialSummary.pages.find((candidate) => candidate.name === page.name || candidate.handle === (page.name === "Home" ? "home" : void 0));
+          if (match)
+            plannedPageMatches.set(logicalRef(page), match);
+          const existingNames = new Set((match?.components ?? []).map((component) => component.name).filter(Boolean));
+          const collision = (page.components ?? []).find((component) => existingNames.has(component.name));
+          if (collision) {
+            throw new Error(`Page "${page.name}" already has a component named "${collision.name}".`);
+          }
+        }
+        const existingQueryNames = new Set(initialSummary.queries.map((query) => query.name).filter(Boolean));
+        const queryCollision = (spec.queries ?? []).find((query) => existingQueryNames.has(query.name));
+        if (queryCollision)
+          throw new Error(`App already has a query named "${queryCollision.name}".`);
+        const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
+        stage = "create tables and pages";
+        const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
+        const [tableWrite, pageWrite] = await Promise.allSettled([
+          spec.tables?.length ? client.createTables({
+            tables: spec.tables.map((table) => ({
+              tableName: table.table_name,
+              columns: table.columns,
+              foreignKeys: table.foreign_keys
+            }))
+          }) : Promise.resolve([]),
+          newPages.length ? client.createPages({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pages: newPages.map((page) => ({ name: page.name, icon: page.icon, hidden: page.hidden }))
+          }) : Promise.resolve([])
+        ]);
+        const createdTables = tableWrite.status === "fulfilled" ? tableWrite.value : [];
+        const createdPages = pageWrite.status === "fulfilled" ? pageWrite.value : [];
+        applied.tables = createdTables.length;
+        applied.pages = createdPages.length;
+        const foundationFailures = [
+          ...tableWrite.status === "rejected" ? [`tables: ${tableWrite.reason instanceof Error ? tableWrite.reason.message : String(tableWrite.reason)}`] : [],
+          ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
+        ];
+        if (foundationFailures.length)
+          throw new Error(foundationFailures.join(" | "));
+        const tableIds = new Map(existingTableIds);
+        for (const table of createdTables)
+          tableIds.set(table.table_name.toLowerCase(), table.table_id);
+        const pageTargets = /* @__PURE__ */ new Map();
+        for (const page of spec.pages ?? []) {
+          const ref = logicalRef(page);
+          const existing = plannedPageMatches.get(ref);
+          const created = createdPages.find((candidate) => candidate.name === page.name);
+          const id = existing?.id ?? created?.page_id;
+          if (!id)
+            throw new Error(`Could not resolve page "${page.name}" after creation.`);
+          pageTargets.set(ref, { id, name: page.name });
+        }
+        const pageUpdates = (spec.pages ?? []).flatMap((page) => {
+          const existing = plannedPageMatches.get(logicalRef(page));
+          if (!existing)
+            return [];
+          const update = {
+            pageId: existing.id,
+            ...existing.icon !== page.icon ? { icon: page.icon } : {},
+            ...Boolean(existing.hidden) !== Boolean(page.hidden) ? { hidden: Boolean(page.hidden) } : {}
+          };
+          return Object.keys(update).length > 1 ? [update] : [];
+        });
+        if (pageUpdates.length) {
+          await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
+        }
+        stage = "seed data and create queries";
+        const queryInputs = (spec.queries ?? []).map((query) => {
+          const kind = datasourceKinds.get(query.datasource_id);
+          if (!kind)
+            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
+          const options = structuredClone(query.options);
+          if (query.table_ref) {
+            const tableId = tableIds.get(query.table_ref.toLowerCase());
+            if (!tableId)
+              throw new Error(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
+            options.table_id = tableId;
+          }
+          return { dataSourceId: query.datasource_id, name: query.name, options, kind };
+        });
+        const [seedWrite, queryWrite] = await Promise.allSettled([
+          spec.seed_data?.length ? client.insertRowsBatch({
+            tables: spec.seed_data.map((seed) => ({ tableName: seed.table_name, rows: seed.rows }))
+          }) : Promise.resolve([]),
+          queryInputs.length ? client.createQueries({ versionId: args.version_id, queries: queryInputs }) : Promise.resolve([])
+        ]);
+        const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : [];
+        const createdQueries = queryWrite.status === "fulfilled" ? queryWrite.value : [];
+        applied.seed_rows = seedResults.reduce((total, result) => total + result.processed_rows, 0);
+        applied.queries = createdQueries.length;
+        const dataFailures = [
+          ...seedWrite.status === "rejected" ? [`seed_data: ${seedWrite.reason instanceof Error ? seedWrite.reason.message : String(seedWrite.reason)}`] : [],
+          ...queryWrite.status === "rejected" ? [`queries: ${queryWrite.reason instanceof Error ? queryWrite.reason.message : String(queryWrite.reason)}`] : []
+        ];
+        if (dataFailures.length)
+          throw new Error(dataFailures.join(" | "));
+        const queryTargets = /* @__PURE__ */ new Map();
+        (spec.queries ?? []).forEach((query, index) => {
+          const created = createdQueries[index];
+          if (!created)
+            throw new Error(`Could not resolve query "${query.name}" after creation.`);
+          queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
+        });
+        stage = "create page components";
+        const preparedPages = (spec.pages ?? []).flatMap((page) => {
+          if (!page.components?.length)
+            return [];
+          const target = pageTargets.get(logicalRef(page));
+          if (!target)
+            throw new Error(`Could not resolve component page "${page.name}".`);
+          const prepared = prepareComponentBatch(page.components);
+          if (prepared.errors.length)
+            throw new Error(prepared.errors.join(" "));
+          return [{ page, pageId: target.id, prepared }];
+        });
+        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => ({
+          ...page,
+          created: await client.createComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: page.pageId,
+            components: page.prepared.components
+          })
+        })));
+        const componentResults = componentWrites.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+        const componentFailures = componentWrites.flatMap((result, index) => result.status === "rejected" ? [`page ${preparedPages[index].page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
+        const componentTargets = /* @__PURE__ */ new Map();
+        const warnings = [];
+        for (const page of componentResults) {
+          applied.components += page.created.length;
+          warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
+          page.prepared.components.forEach((component, index) => {
+            const created = page.created[index];
+            if (!created)
+              throw new Error(`Could not resolve component "${component.name}" after creation.`);
+            componentTargets.set(component.clientRef ?? component.name, {
+              id: created.component_id,
+              name: created.name,
+              type: component.type
+            });
+          });
+        }
+        if (componentFailures.length)
+          throw new Error(componentFailures.join(" | "));
+        stage = "create events and lifecycles";
+        const summaryBeforeEvents = await client.getAppSummary(args.app_id);
+        const ordinaryEvents = (spec.events ?? []).map((event) => {
+          const source = sourceTarget(event.source_type, event.source_ref, pageTargets, queryTargets, componentTargets);
+          if (!source)
+            throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
+          return {
+            sourceId: source.id,
+            sourceType: event.source_type,
+            ref: event.ref,
+            trigger: event.trigger,
+            action: resolveAction2(event.action, pageTargets, queryTargets, componentTargets),
+            name: event.name
+          };
+        });
+        const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
+          queryId: oneRef(lifecycle.query_ref, queryTargets, "Lifecycle query"),
+          refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, "Lifecycle refresh query"),
+          clearComponentIds: refs(lifecycle.clear_component_refs, componentTargets, "Lifecycle clear component"),
+          closeModalId: oneRef(lifecycle.close_modal_ref, componentTargets, "Lifecycle modal"),
+          successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
+          failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
+          successActions: lifecycle.success_actions?.map((action) => resolveAction2(action, pageTargets, queryTargets, componentTargets)),
+          failureActions: lifecycle.failure_actions?.map((action) => resolveAction2(action, pageTargets, queryTargets, componentTargets))
+        }));
+        const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
+        warnings.push(...expanded.warnings);
+        const allEvents = [...ordinaryEvents, ...expanded.events];
+        const eventValidation = validateEvents(summaryBeforeEvents, allEvents);
+        if (eventValidation.errors.length)
+          throw new Error(eventValidation.errors.join(" "));
+        warnings.push(...eventValidation.warnings);
+        if (allEvents.length) {
+          await client.createEvents({ appId: args.app_id, versionId: args.version_id, events: allEvents });
+          applied.events = allEvents.length;
+        }
+        stage = "validate persisted phase";
+        const validation = validatePersistedAppSummary(await client.getAppSummary(args.app_id));
+        warnings.push(...validation.warnings);
+        const relevantTableNames = /* @__PURE__ */ new Set([
+          ...(spec.tables ?? []).map((table) => table.table_name),
+          ...(spec.seed_data ?? []).map((seed) => seed.table_name),
+          ...(spec.queries ?? []).flatMap((query) => query.table_ref ? [query.table_ref] : [])
+        ]);
+        return ok({
+          applied,
+          refs: {
+            tables: Object.fromEntries([...relevantTableNames].map((name) => [name, tableIds.get(name.toLowerCase())])),
+            pages: Object.fromEntries([...pageTargets].map(([ref, target]) => [ref, target.id])),
+            queries: Object.fromEntries([...queryTargets].map(([ref, target]) => [ref, target.id])),
+            components: Object.fromEntries([...componentTargets].map(([ref, target]) => [ref, target.id]))
+          },
+          warnings: [...new Set(warnings)],
+          validation
+        });
+      } catch (error51) {
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}`));
       }
     }
   };
@@ -35715,7 +36221,7 @@ function addPageTool(client) {
 }
 
 // dist/tools/addPages.js
-var pageSchema2 = external_exports.object({
+var pageSchema = external_exports.object({
   name: external_exports.string(),
   icon: external_exports.string().min(1),
   hidden: external_exports.boolean().optional()
@@ -35727,7 +36233,7 @@ function addPagesTool(client) {
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      pages: external_exports.array(pageSchema2).min(1).max(50)
+      pages: external_exports.array(pageSchema).min(1).max(50)
     },
     async handler(args) {
       try {
@@ -35827,7 +36333,7 @@ function addQueryTool(client) {
 }
 
 // dist/tools/addQueries.js
-var querySchema2 = external_exports.object({
+var querySchema = external_exports.object({
   datasource_id: external_exports.string(),
   name: external_exports.string(),
   options: external_exports.record(external_exports.string(), external_exports.any()),
@@ -35839,7 +36345,7 @@ function addQueriesTool(client) {
     description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}.",
     inputSchema: {
       version_id: external_exports.string(),
-      queries: external_exports.array(querySchema2).min(1)
+      queries: external_exports.array(querySchema).min(1)
     },
     async handler(args) {
       try {
@@ -35966,40 +36472,6 @@ function addComponentTool(client) {
 }
 
 // dist/tools/addComponents.js
-var layoutSchema3 = external_exports.object({
-  top: external_exports.number(),
-  left: external_exports.number(),
-  width: external_exports.number(),
-  height: external_exports.number()
-});
-var layoutsSchema2 = external_exports.object({
-  desktop: layoutSchema3.optional(),
-  mobile: layoutSchema3.optional()
-});
-var componentSchema2 = external_exports.object({
-  name: external_exports.string(),
-  type: external_exports.string(),
-  properties: external_exports.record(external_exports.string(), external_exports.any()),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  layout: layoutSchema3.optional(),
-  layouts: layoutsSchema2.optional(),
-  client_ref: external_exports.string().optional(),
-  parent_ref: external_exports.string().optional(),
-  parent: external_exports.string().optional(),
-  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
-});
-function containsListItemBinding(value) {
-  if (typeof value === "string")
-    return /\blistItem\b/.test(value);
-  if (Array.isArray(value))
-    return value.some(containsListItemBinding);
-  if (value && typeof value === "object") {
-    return Object.values(value).some(containsListItemBinding);
-  }
-  return false;
-}
 function addComponentsTool(client) {
   return {
     name: "add_components",
@@ -36008,48 +36480,73 @@ function addComponentsTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      components: external_exports.array(componentSchema2).min(1)
+      components: external_exports.array(componentInputSchema).min(1)
     },
     async handler(args) {
-      const requested = args.components.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
-        ...component,
-        clientRef: client_ref,
-        parentRef: parent_ref,
-        slotName: slot_name
-      }));
-      const normalized2 = requested.map((component) => normalizeComponentSpec(component));
-      const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
-      const components = expanded.components;
-      const { errors, warnings } = lintComponents(components);
-      const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
-        properties: component.properties,
-        styles: component.styles,
-        validation: component.validation,
-        others: component.others
-      }) ? [
-        `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one add_components call using client_ref/parent_ref.`
-      ] : []);
-      if (errors.length)
-        return fail(new Error(errors.join(" ")));
+      const prepared = prepareComponentBatch(args.components);
+      if (prepared.errors.length)
+        return fail(new Error(prepared.errors.join(" ")));
       try {
         const result = await client.createComponents({
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          components
+          components: prepared.components
         });
         return ok({
           components: result,
-          warnings: [
-            ...normalized2.flatMap((item) => item.warnings),
-            ...expanded.warnings,
-            ...warnings,
-            ...lateListviewChildWarnings
-          ]
+          warnings: prepared.warnings
         });
       } catch (err) {
         return fail(err);
       }
+    }
+  };
+}
+
+// dist/tools/addComponentBatches.js
+var pageBatchSchema = external_exports.object({
+  page_id: external_exports.string(),
+  components: external_exports.array(componentInputSchema).min(1)
+});
+function addComponentBatchesTool(client) {
+  return {
+    name: "add_component_batches",
+    description: "Place complete component batches on 2\u201320 pages concurrently. MCP normalizes and lints every page before any write, then sends one atomic ToolJet component request per page in parallel. Use add_components for one page. Cross-page creation is not transactional because ToolJet has no multi-page component endpoint; an upstream partial failure names the completed and failed pages so it can be repaired in place.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      pages: external_exports.array(pageBatchSchema).min(2).max(20)
+    },
+    async handler(args) {
+      const pageIds = args.pages.map((page) => page.page_id);
+      if (new Set(pageIds).size !== pageIds.length) {
+        return fail(new Error("add_component_batches page_id values must be unique."));
+      }
+      const prepared = args.pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
+      const errors = prepared.flatMap((page) => page.prepared.errors.map((error51) => `Page ${page.page_id}: ${error51}`));
+      if (errors.length)
+        return fail(new Error(errors.join(" ")));
+      const settled = await Promise.allSettled(prepared.map(async (page) => ({
+        page_id: page.page_id,
+        components: await client.createComponents({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: page.page_id,
+          components: page.prepared.components
+        }),
+        warnings: page.prepared.warnings
+      })));
+      const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+      const failures = settled.flatMap((result, index) => result.status === "rejected" ? [`${prepared[index].page_id}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
+      if (failures.length) {
+        return fail(new Error(`add_component_batches partially failed. Completed pages: ${completed.map((page) => page.page_id).join(", ") || "none"}. Failed: ${failures.join(" | ")}. Existing components were not deleted automatically.`));
+      }
+      return ok({
+        pages: completed,
+        components_created: completed.reduce((total, page) => total + page.components.length, 0),
+        warnings: completed.flatMap((page) => page.warnings.map((warning) => `Page ${page.page_id}: ${warning}`))
+      });
     }
   };
 }
@@ -36290,7 +36787,7 @@ function updateLayoutTool(client) {
 }
 
 // dist/tools/addEvents.js
-var eventSchema2 = external_exports.object({
+var eventSchema = external_exports.object({
   source_id: external_exports.string().optional(),
   source_type: external_exports.enum(["component", "data_query", "page", "table_column", "table_action"]).optional(),
   /** Backward-compatible shorthand for source_type=component. */
@@ -36317,7 +36814,7 @@ function addEventsTool(client) {
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      events: external_exports.array(eventSchema2).min(1)
+      events: external_exports.array(eventSchema).min(1)
     },
     async handler(args) {
       try {
@@ -36351,7 +36848,7 @@ var alertSchema2 = external_exports.object({
   message: external_exports.string().min(1),
   alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
 });
-var lifecycleSchema2 = external_exports.object({
+var lifecycleSchema = external_exports.object({
   query_id: external_exports.string(),
   refresh_query_ids: external_exports.array(external_exports.string()).optional(),
   clear_component_ids: external_exports.array(external_exports.string()).optional(),
@@ -36368,7 +36865,7 @@ function addQueryLifecyclesTool(client) {
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      lifecycles: external_exports.array(lifecycleSchema2).min(1).max(100)
+      lifecycles: external_exports.array(lifecycleSchema).min(1).max(100)
     },
     async handler(args) {
       try {
@@ -36771,6 +37268,16 @@ function deleteEventTool(client) {
 }
 
 // dist/tools/index.js
+var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
+  "create_table",
+  "insert_rows",
+  "add_page",
+  "add_query",
+  "add_component"
+]);
+function includeLegacySingularCreateTools() {
+  return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
+}
 function registerTools(server, client) {
   const tools = [
     listWorkspacesTool(client),
@@ -36795,6 +37302,7 @@ function registerTools(server, client) {
     getComponentTool(client),
     validateAppTool(client),
     lintAppSpecTool(client),
+    applyAppPhaseTool(client),
     addPageTool(client),
     addPagesTool(client),
     updatePagesTool(client),
@@ -36806,6 +37314,7 @@ function registerTools(server, client) {
     runQueriesTool(client),
     addComponentTool(client),
     addComponentsTool(client),
+    addComponentBatchesTool(client),
     updateComponentsTool(client),
     deleteComponentsTool(client),
     updateLayoutTool(client),
@@ -36815,8 +37324,9 @@ function registerTools(server, client) {
     updateEventsTool(client),
     deleteEventTool(client)
   ];
-  for (const tool of tools) {
-    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema }, (args) => tool.handler(args));
+  const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
+  for (const tool of exposedTools) {
+    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema }, (args) => withToolTelemetry(tool.name, () => tool.handler(args)));
   }
 }
 

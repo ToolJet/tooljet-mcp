@@ -248,15 +248,15 @@ This keeps the field available in `selectedRow` and suppresses `autogenerateColu
 
 ## Kanban card content
 
-Kanban cards are nested canvases: `columnData` and `cardData` can resolve correctly, including card counts, while every card body remains blank if the Kanban has no child components. `add_component(s)` materializes the catalog default title/description children when no explicit child is supplied. For a custom body, give the Kanban a `client_ref` and create its child with the matching `parent_ref` in the same `add_components` call; any explicit child suppresses the defaults.
+Kanban cards are nested canvases: `columnData` and `cardData` can resolve correctly, including card counts, while every card body remains blank if the Kanban has no child components. `add_components` materializes the catalog default title/description children when no explicit child is supplied. For a custom body, give the Kanban a `client_ref` and create its child with the matching `parent_ref` in the same call; any explicit child suppresses the defaults.
 
 Nested `Text` clips to a single line. For multi-line title/description content, prefer one `Html` child bound to `cardData`, use normal wrapping plus `overflow-wrap:anywhere`, and pin its content width/max-width explicitly in CSS. Do not infer the physical Kanban column width from `cardWidth`; verify the card in the viewer because the rendered column can retain a wider minimum than the nested card canvas.
 
 ## Datasource query reference
 
-`add_query`/`add_queries` work on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call `list_datasources` to see each datasource's `kind`). Only the `options` differ per kind:
+`add_queries` works on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call `list_datasources` to see each datasource's `kind`). Only the `options` differ per kind:
 
-Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after `create_app`, call `list_datasources(version_id)` and pass the returned `id` to `add_query`/`add_queries`. An expected source missing from that result indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment.
+Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after `create_app`, call `list_datasources(version_id)` and pass the returned `id` to `add_queries`. An expected source missing from that result indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment.
 
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in `list_datasources`:
 > - **Say so plainly** — ToolJet has no native integration for it (or it simply isn't connected), and you can't connect one from here. Don't fabricate a query against it or present placeholder data as if it were live.
@@ -270,7 +270,7 @@ Call `get_datasource_query_schema({ datasource_id, version_id, operation })` for
 ### Building an app that needs a NEW data model (most real requests)
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
 1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
-2. `create_tables` once for the confirmed model (use `create_table` only for a later single-table edit).
+2. `create_tables` once for the confirmed model (it accepts one or many tables).
 3. Optionally `insert_rows_batch` once to seed a small representative set so the app doesn't render empty (only if the user wants sample data; avoid dozens of rows unless density/pagination is under test).
 4. Then `add_queries` + `add_components` as usual.
 For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
