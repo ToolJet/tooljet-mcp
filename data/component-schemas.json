@@ -1502,7 +1502,7 @@
       {
         "key": "events",
         "label": "Events",
-        "default": "{{[ { title: 'Sample event', start: `${moment().startOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`, end: `${moment().endOf('day').format('MM-DD…"
+        "default": "{{[\n\t\t{\n\t\t\t title: 'Sample event',\n\t\t\t start: `${moment().startOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`,\n\t\t\t end: `${moment().endOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`,\n\t\t\t allDay: false\n\t\t}\n]}}"
       },
       {
         "key": "resources",
@@ -8685,7 +8685,18 @@
         "name": "lastClickedField",
         "default": {}
       }
-    ]
+    ],
+    "authoringHints": {
+      "dataProjection": {
+        "rule": "An explicit fields array does not suppress undeclared keys from data; ToolJet appends those keys as visible rows. Bind data to a new object containing only intended field keys.",
+        "safeExample": "{{({work_order:variables.selectedWorkOrder.wo_ref,client:variables.selectedWorkOrder.client_name,status:variables.selectedWorkOrder.status})}}",
+        "unsafeExamples": [
+          "{{variables.selectedWorkOrder}}",
+          "{{({...variables.selectedWorkOrder, status:variables.selectedWorkOrder.status})}}"
+        ],
+        "updateRule": "Keep the complete fields array and the projected data object keyed identically. Object spreads are not safe projections."
+      }
+    }
   },
   "Link": {
     "type": "Link",
@@ -15879,7 +15890,7 @@
         "key": "data",
         "label": "Timeline data",
         "valueType": "array",
-        "default": "{{ [ { title: 'Product Launched', subTitle: 'First version of our product released to public', date: '20/10/2021', iconBackgroundColor: 'var(--cc-primary-…"
+        "default": "{{ [ \n\t\t{ title: 'Product Launched', subTitle: 'First version of our product released to public', date: '20/10/2021', iconBackgroundColor: 'var(--cc-primary-brand)'},\n\t\t { title: 'First Signup', subTitle: 'Congratulations! We got our first signup', date: '22/10/2021', iconBackgroundColor: 'var(--cc-primary-brand)'}, \n\t\t { title: 'First Payment', subTitle: 'Hurray! We got our first payment', date: '01/11/2021', iconBackgroundColor: 'var(--cc-primary-brand)'} \n] }}"
       },
       {
         "key": "hideDate",

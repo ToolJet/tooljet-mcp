@@ -126,6 +126,23 @@ describe('catalog', () => {
     expect(inputHints.valueTextSizing).toMatch(/does not enlarge.*value text.*labelFontSize/i);
   });
 
+  it('preserves exact nested Calendar and Timeline property contracts', () => {
+    const calendarEvents = getComponentSchema('Calendar')!.properties.find((property) => property.key === 'events')!;
+    const timelineData = getComponentSchema('Timeline')!.properties.find((property) => property.key === 'data')!;
+
+    expect(String(calendarEvents.default)).not.toContain('…');
+    expect(String(calendarEvents.default)).toMatch(/title.*start.*end.*allDay/s);
+    expect(String(timelineData.default)).not.toContain('…');
+    expect(String(timelineData.default)).toMatch(/title.*subTitle.*date.*iconBackgroundColor/s);
+  });
+
+  it('serves the KeyValuePair projection contract', () => {
+    const hints = getComponentSchema('KeyValuePair')!.authoringHints!.dataProjection as any;
+    expect(hints.rule).toMatch(/explicit fields.*does not suppress undeclared keys.*new object/i);
+    expect(hints.safeExample).toMatch(/work_order.*client.*status/);
+    expect(hints.updateRule).toMatch(/object spreads are not safe/i);
+  });
+
   it('serves the authoritative generated-Form field contract and FilePicker workaround', () => {
     const form = getComponentSchema('Form')!;
     const hints = form.authoringHints!.jsonSchemaFields as any;

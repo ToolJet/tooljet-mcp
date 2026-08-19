@@ -195,6 +195,23 @@ describe('get_component_catalog tool', () => {
     expect(body).not.toHaveProperty('events');
   });
 
+  it('returns exact nested defaults through a selective property lookup', async () => {
+    const client = makeClient();
+    const result = await getComponentCatalogTool(client as unknown as ToolJetClient).handler({
+      types: ['Calendar', 'Timeline'],
+      sections: ['properties'],
+      property_keys: ['events', 'data'],
+    });
+
+    const body = textOf(result) as any;
+    const calendarDefault = body.components[0].properties[0].default;
+    const timelineDefault = body.components[1].properties[0].default;
+    expect(calendarDefault).not.toContain('…');
+    expect(calendarDefault).toMatch(/title.*start.*end.*allDay/s);
+    expect(timelineDefault).not.toContain('…');
+    expect(timelineDefault).toMatch(/title.*subTitle.*date.*iconBackgroundColor/s);
+  });
+
   it('returns Text height guidance from the catalog', async () => {
     const client = makeClient();
     const result = await getComponentCatalogTool(client as unknown as ToolJetClient).handler({

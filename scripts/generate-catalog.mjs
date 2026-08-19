@@ -74,6 +74,15 @@ function trimDefault(v) {
   return v;
 }
 
+// These defaults are compact machine-readable contracts, not decorative demo data. Keeping them
+// exact lets callers request one property (via property_keys) without loading an entire component
+// schema or leaving the catalog for external documentation.
+const EXACT_PROPERTY_DEFAULTS = new Set([
+  'Calendar:events',
+  'Timeline:data',
+  'DropdownV2:schema',
+]);
+
 // Find the exported config ObjectExpression (has a `name` string prop).
 function findConfig(ast) {
   const objs = [];
@@ -145,9 +154,7 @@ function extractProps(config, componentType) {
       if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
       const key = keyName(pr);
       const rawValue = literal(prop(pr.value, 'value'));
-      // DropdownV2's exact built-in schema is needed by validate_app to distinguish the harmless
-      // persisted default from a custom dynamic schema left inactive. It is only ~250 characters.
-      const val = componentType === 'DropdownV2' && key === 'schema' ? rawValue : trimDefault(rawValue);
+      const val = EXACT_PROPERTY_DEFAULTS.has(`${componentType}:${key}`) ? rawValue : trimDefault(rawValue);
       if (!meta[key]) {
         order.push(key);
         meta[key] = { key, label: undefined, valueType: undefined, default: val };
@@ -400,6 +407,14 @@ const AUTHORING_HINTS = {
         textAreaLayout: 'Use a full-width, multi-line TextArea aligned to the same left/right edges.',
         conditionalVisibility: 'Bind visibility on each standalone component; do not place corrective fields beside a generated Form.',
       },
+    },
+  },
+  KeyValuePair: {
+    dataProjection: {
+      rule: 'An explicit fields array does not suppress undeclared keys from data; ToolJet appends those keys as visible rows. Bind data to a new object containing only intended field keys.',
+      safeExample: '{{({work_order:variables.selectedWorkOrder.wo_ref,client:variables.selectedWorkOrder.client_name,status:variables.selectedWorkOrder.status})}}',
+      unsafeExamples: ['{{variables.selectedWorkOrder}}', '{{({...variables.selectedWorkOrder, status:variables.selectedWorkOrder.status})}}'],
+      updateRule: 'Keep the complete fields array and the projected data object keyed identically. Object spreads are not safe projections.',
     },
   },
   Kanban: {
