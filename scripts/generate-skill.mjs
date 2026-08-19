@@ -740,7 +740,7 @@ const uiLayout = makeReference(
 const tableRule = componentRuleSections.find((section) => section.publishedName === 'Table')?.markdown ?? '';
 const tables = `# Tables\n\nRead this whenever a phase contains a Table: binding, row actions, sizing, or server-side pagination.\n\n${routedSections.tables
   .map((heading) => extractSection(fullSkill, heading))
-  .join('\n\n')}\n\n## Exact Table binding rule\n\n${tableRule}\n\n${extractSection(reference, '## Table row-action Button columns')}\n`;
+  .join('\n\n')}\n\n## Exact Table binding rule\n\n${tableRule}\n\nToolJet Table data bindings can silently become \`No data\` when a \`.map()\` callback uses a statement body such as \`map(row => { const value = ...; return {...}; })\`. Use the expression-body form \`map(row => ({...}))\`, or pre-shape multi-statement logic in the datasource/RunJS query. This is narrower than the Html nested-map limitation: supported Table lookup joins inside an expression-body map remain valid.\n\n${extractSection(reference, '## Table row-action Button columns')}\n`;
 
 const formRule = componentRuleSections.find((section) => section.publishedName === 'Form')?.markdown ?? '';
 const forms = `# Forms and modals\n\nRead this only when the phase contains generated or standalone forms, validation, uploads, or modal layout.\n\n${routedSections.forms

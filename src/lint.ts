@@ -336,6 +336,17 @@ function nestedMapInValue(value: unknown): boolean {
   return false;
 }
 
+function statementBodyMapInValue(value: unknown): boolean {
+  if (typeof value === 'string') {
+    return value.includes('{{') && /\.map\s*\(\s*(?:async\s+)?(?:[A-Za-z_$][\w$]*|\([^)]*\))\s*=>\s*\{/.test(value);
+  }
+  if (Array.isArray(value)) return value.some(statementBodyMapInValue);
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(statementBodyMapInValue);
+  }
+  return false;
+}
+
 function unsafeEmptyArrayFirstRowFallback(value: unknown): boolean {
   if (typeof value === 'string') {
     return value.includes('{{') && /\|\|\s*\[\s*\{\s*\}\s*\]\s*\)\s*\[\s*0\s*\]\s*\./.test(value);
@@ -902,6 +913,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         ? catalogValue('Table', props, 'serverSideRowsPerPage')
         : catalogValue('Table', props, 'rowsPerPage')
     );
+    if (statementBodyMapInValue(data)) {
+      errors.push(
+        `Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ` +
+          'ToolJet can silently evaluate this binding as no data. Use an expression body such as ' +
+          'map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.'
+      );
+    }
     if (
       typeof desktopHeight === 'number' &&
       rowsPerPage !== undefined &&

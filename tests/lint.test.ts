@@ -463,6 +463,28 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('blocks statement-body map callbacks in Table data but accepts expression bodies', () => {
+    const broken = lintComponentSpec({
+      name: 'claims',
+      type: 'Table',
+      properties: {
+        data: { value: '{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}' },
+        dataSourceSelector: { value: 'rawJson' },
+      },
+    });
+    expect(broken.errors.join(' ')).toMatch(/statement-body \.map\(\).*silently.*no data.*expression body/is);
+
+    const supported = lintComponentSpec({
+      name: 'claims',
+      type: 'Table',
+      properties: {
+        data: { value: '{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}' },
+        dataSourceSelector: { value: 'rawJson' },
+      },
+    });
+    expect(supported.errors).toEqual([]);
+  });
+
   it('warns when projected Table keys can still leak through autogeneration', () => {
     const r = lintComponentSpec({
       name: 'candidates',

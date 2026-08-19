@@ -168,6 +168,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(guidance).not.toMatch(/\*\*Html\/Chart expressions:/);
   });
 
+  it('documents the narrow Table statement-body map failure', () => {
+    expect(guidance).toMatch(/Table data bindings.*No data.*map\(row => \{.*expression-body form.*map\(row => \(\{\.\.\.\}\)\)/is);
+    expect(guidance).toMatch(/supported Table lookup joins.*remain valid/is);
+  });
+
   it('documents the empty-array first-row fallback trap', () => {
     expect(guidance).toContain('`(queries.<q>.data || [{}])[0].field`');
     expect(guidance).toMatch(/`\[\]` is truthy.*`\(queries\.<q>\.data \|\| \[\]\)\[0\]\?\.field`/is);
