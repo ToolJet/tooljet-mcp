@@ -154,6 +154,7 @@ describe('catalog', () => {
     expect(hints.rule).toMatch(/explicit fields.*does not suppress undeclared keys.*new object/i);
     expect(hints.safeExample).toMatch(/work_order.*client.*status/);
     expect(hints.updateRule).toMatch(/object spreads are not safe/i);
+    expect(hints.defaultFieldRule).toMatch(/MCP populates fieldDeletionHistory.*appended.*positionally merged/i);
   });
 
   it('serves the authoritative generated-Form field contract and FilePicker workaround', () => {

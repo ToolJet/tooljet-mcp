@@ -437,6 +437,7 @@ const AUTHORING_HINTS = {
       safeExample: '{{({work_order:variables.selectedWorkOrder.wo_ref,client:variables.selectedWorkOrder.client_name,status:variables.selectedWorkOrder.status})}}',
       unsafeExamples: ['{{variables.selectedWorkOrder}}', '{{({...variables.selectedWorkOrder, status:variables.selectedWorkOrder.status})}}'],
       updateRule: 'Keep the complete fields array and the projected data object keyed identically. Object spreads are not safe projections.',
+      defaultFieldRule: 'When explicit fields are authored, MCP populates fieldDeletionHistory to suppress ToolJet catalog demo fields that would otherwise be appended or positionally merged into custom field definitions.',
     },
   },
   Kanban: {

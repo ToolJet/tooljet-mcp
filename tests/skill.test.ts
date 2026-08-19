@@ -85,6 +85,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
 
   it('documents KeyValuePair projection and an empty DatePickerV2 create value', () => {
     expect(skill).toMatch(/KeyValuePair.*explicit.*fields.*does not suppress undeclared keys.*project/is);
+    expect(skill).toMatch(/KeyValuePair.*fieldDeletionHistory.*not appended.*positionally merged/is);
     expect(reference).toMatch(/DatePickerV2[\s\S]*defaultValue="\{\{null\}\}".*01\/01\/2022/i);
   });
 
