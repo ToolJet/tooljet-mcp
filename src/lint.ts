@@ -891,6 +891,44 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         );
       }
     }
+    if (Array.isArray(fields) && fields.length > 0) {
+      const catalogFields = getComponentSchema('KeyValuePair')?.properties.find(
+        (property) => property.key === 'fields'
+      )?.default;
+      const catalogKeyById = new Map<string, string>();
+      if (Array.isArray(catalogFields)) {
+        for (const field of catalogFields) {
+          const entry = recordValue(field);
+          if (typeof entry?.id === 'string' && typeof entry.key === 'string') {
+            catalogKeyById.set(entry.id, entry.key);
+          }
+        }
+      }
+      const deletionHistoryValue = propVal(props, 'fieldDeletionHistory');
+      const deletionHistory = new Set(
+        Array.isArray(deletionHistoryValue)
+          ? deletionHistoryValue.filter((key): key is string => typeof key === 'string')
+          : []
+      );
+      const hasCustomField = fields.some((field) => {
+        const id = recordValue(field)?.id;
+        return typeof id !== 'string' || !catalogKeyById.has(id);
+      });
+      const contradictoryDemoKeys = hasCustomField
+        ? fields.flatMap((field) => {
+            const id = recordValue(field)?.id;
+            const key = typeof id === 'string' ? catalogKeyById.get(id) : undefined;
+            return key && deletionHistory.has(key) ? [key] : [];
+          })
+        : [];
+      if (contradictoryDemoKeys.length) {
+        warnings.push(
+          `KeyValuePair "${label}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(', ')}) ` +
+            'are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove ' +
+            'already-persisted rows; replace properties.fields with the complete intended array in one update.'
+        );
+      }
+    }
   }
 
   // Table: data-binding + column config traps.
