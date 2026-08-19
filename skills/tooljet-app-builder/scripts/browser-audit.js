@@ -83,6 +83,20 @@
     .filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
     .slice(0, limit)
     .map(label);
+  const overflowingComponents = componentElements
+    .filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
+    .slice(0, limit)
+    .map((element) => ({
+      ...label(element),
+      overflow: {
+        horizontal: element.scrollWidth > element.clientWidth + 1,
+        vertical: element.scrollHeight > element.clientHeight + 1,
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+      },
+    }));
   const blankComponents = componentElements
     .filter((element) => !(element.innerText || '').trim())
     .filter((element) => !element.querySelector('input,textarea,select,img,svg,canvas,video,[role="progressbar"]'))
@@ -143,6 +157,7 @@
       visibleComponentInstances: componentElements.length,
       overlaps: overlaps.length,
       clippedText: clippedText.length,
+      overflowingComponents: overflowingComponents.length,
       blankComponentCandidates: blankComponents.length,
       innerScrollers: innerScrollers.length,
       nestedScrollPairs: nestedScrollPairs.length,
@@ -150,7 +165,16 @@
       dialogs: dialogs.length,
       chartsWithoutData: chartsWithoutData.length,
     },
-    issues: { overlaps, clippedText, blankComponents, nestedScrollPairs, buttonsBelowFold, dialogs, chartsWithoutData },
+    issues: {
+      overlaps,
+      clippedText,
+      overflowingComponents,
+      blankComponents,
+      nestedScrollPairs,
+      buttonsBelowFold,
+      dialogs,
+      chartsWithoutData,
+    },
     components,
     notChecked: ['network failures', 'browser console errors', 'hidden conditional states', 'mutation correctness'],
   };

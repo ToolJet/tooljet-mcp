@@ -85,6 +85,7 @@ function executeFixture(renderedChartWithoutDataProperty = false) {
   sideBySide.innerText = 'Side by side';
   const blank = new FixtureElement('div', { top: 180, left: 10, width: 100, height: 40 });
   blank.id = uuid('4');
+  blank.scrollWidth = 150;
 
   const clipped = new FixtureElement('strong', { top: 230, left: 10, width: 80, height: 20 });
   clipped.innerText = 'A clipped heading';
@@ -152,6 +153,7 @@ describe('one-shot browser audit helper', () => {
       visibleComponentInstances: 5,
       overlaps: 1,
       clippedText: 1,
+      overflowingComponents: 1,
       blankComponentCandidates: 1,
       innerScrollers: 1,
       nestedScrollPairs: 1,
@@ -161,6 +163,10 @@ describe('one-shot browser audit helper', () => {
     });
     expect(result.issues.overlaps[0].overlap).toEqual({ width: 50, height: 50 });
     expect(result.issues.clippedText[0].text).toBe('A clipped heading');
+    expect(result.issues.overflowingComponents[0]).toMatchObject({
+      id: '00000000-0000-4000-8000-000000000004',
+      overflow: { horizontal: true, vertical: false, clientWidth: 100, scrollWidth: 150 },
+    });
     expect(result.issues.chartsWithoutData[0].component.id).toBe('00000000-0000-4000-8000-000000000005');
     expect(result.notChecked).toEqual(expect.arrayContaining(['network failures', 'mutation correctness']));
   });
