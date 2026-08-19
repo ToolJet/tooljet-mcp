@@ -31650,6 +31650,25 @@ function lintKanbanInteractions(components) {
   }
   return warnings;
 }
+function lintListviewChildren(components) {
+  const warnings = [];
+  const refs = new Map(components.flatMap((component) => {
+    const key = componentKey(component);
+    return key ? [[key, component]] : [];
+  }));
+  for (const child of components.filter((component) => component.type === "Html")) {
+    const parent = refs.get(parentPlacement(child)?.parentId ?? "");
+    if (parent?.type !== "Listview")
+      continue;
+    const rawHtml = propVal(child.properties, "rawHtml");
+    if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
+      continue;
+    if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
+      continue;
+    warnings.push(`Html "${child.name ?? child.id ?? "Html"}" is repeated inside Listview "${parent.name ?? parent.id ?? "Listview"}" and uses a fixed pixel CSS height. The Listview wrapper's inner canvas can be shorter than the authored component, creating a scrollbar in every item. Use height:100%; box-sizing:border-box on the Html root instead.`);
+  }
+  return warnings;
+}
 function lintComponentSpec(spec) {
   const errors = [];
   const warnings = [];
@@ -32029,7 +32048,12 @@ function lintModalChildren(components) {
   return warnings;
 }
 function lintRenderedGeometry(components) {
-  return [...detectOverlaps(components), ...lintModalChildren(components), ...lintTextGeometry(components)];
+  return [
+    ...detectOverlaps(components),
+    ...lintModalChildren(components),
+    ...lintTextGeometry(components),
+    ...lintListviewChildren(components)
+  ];
 }
 function lintComponents(components) {
   const errors = [];

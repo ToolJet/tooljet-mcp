@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintModalChildren, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintListviewChildren, lintModalChildren, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -746,6 +746,38 @@ describe('lintModalChildren', () => {
       },
     ]);
     expect(warnings.join(' ')).not.toMatch(/modalHeight/);
+  });
+});
+
+describe('lintListviewChildren', () => {
+  const parent = {
+    name: 'fleetGrid', type: 'Listview', clientRef: 'fleet',
+    properties: { mode: { value: 'grid' } },
+  };
+
+  it('warns when a repeated Html root copies the authored pixel height', () => {
+    const warnings = lintComponents([
+      parent,
+      {
+        name: 'fleetCard', type: 'Html', parentRef: 'fleet',
+        properties: { rawHtml: { value: '<div style="height:170px; padding:12px">{{listItem.name}}</div>' } },
+      },
+    ]).warnings.join(' ');
+    expect(warnings).toMatch(/repeated inside Listview.*fixed pixel CSS height.*scrollbar in every item.*height:100%.*box-sizing:border-box/i);
+  });
+
+  it('accepts percentage sizing and ignores Html outside a Listview', () => {
+    expect(lintListviewChildren([
+      parent,
+      {
+        name: 'fleetCard', type: 'Html', parentRef: 'fleet',
+        properties: { rawHtml: { value: '<div style="height:100%;box-sizing:border-box">{{listItem.name}}</div>' } },
+      },
+    ])).toEqual([]);
+    expect(lintListviewChildren([{
+      name: 'pageHtml', type: 'Html',
+      properties: { rawHtml: { value: '<div style="height:170px">Static content</div>' } },
+    }])).toEqual([]);
   });
 });
 

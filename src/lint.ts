@@ -510,6 +510,32 @@ export function lintKanbanInteractions(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Repeated Html children render inside Listview wrapper chrome, so a CSS height copied from the
+ * authored component rectangle can exceed the real inner canvas and add a scrollbar to every row. */
+export function lintListviewChildren(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const refs = new Map(
+    components.flatMap((component) => {
+      const key = componentKey(component);
+      return key ? [[key, component] as const] : [];
+    })
+  );
+  for (const child of components.filter((component) => component.type === 'Html')) {
+    const parent = refs.get(parentPlacement(child)?.parentId ?? '');
+    if (parent?.type !== 'Listview') continue;
+    const rawHtml = propVal(child.properties, 'rawHtml');
+    if (typeof rawHtml !== 'string' || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml)) continue;
+    if (/\bheight\s*:\s*100%\b/i.test(rawHtml)) continue;
+    warnings.push(
+      `Html "${child.name ?? child.id ?? 'Html'}" is repeated inside Listview ` +
+        `"${parent.name ?? parent.id ?? 'Listview'}" and uses a fixed pixel CSS height. The Listview wrapper's ` +
+        'inner canvas can be shorter than the authored component, creating a scrollbar in every item. ' +
+        'Use height:100%; box-sizing:border-box on the Html root instead.'
+    );
+  }
+  return warnings;
+}
+
 /** Lint a single component spec (pre-write). */
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
@@ -1109,7 +1135,12 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 
 /** Geometry-only checks for a complete page after creates, property edits, or layout edits. */
 export function lintRenderedGeometry(components: LintComponent[]): string[] {
-  return [...detectOverlaps(components), ...lintModalChildren(components), ...lintTextGeometry(components)];
+  return [
+    ...detectOverlaps(components),
+    ...lintModalChildren(components),
+    ...lintTextGeometry(components),
+    ...lintListviewChildren(components),
+  ];
 }
 
 /** Lint a batch: per-component checks + overlap detection across the batch. */
