@@ -91,6 +91,12 @@ const TABLE_TOOLBAR_HEIGHT_PX = 56;
 const TABLE_FOOTER_HEIGHT_PX = 56;
 const TABLE_BORDER_PX = 2;
 const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
+/** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
+ * primary action above this authored-canvas boundary when it follows an independently scrolling
+ * Table/Listview, otherwise users must operate two nested vertical scroll regions. */
+const DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
+const BOUNDED_OPERATIONAL_SURFACE_TYPES = new Set(['Table', 'Listview']);
+const MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
 
 interface Rect {
   top?: number;
@@ -531,6 +537,40 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
         `"${parent.name ?? parent.id ?? 'Listview'}" and uses a fixed pixel CSS height. The Listview wrapper's ` +
         'inner canvas can be shorter than the authored component, creating a scrollbar in every item. ' +
         'Use height:100%; box-sizing:border-box on the Html root instead.'
+    );
+  }
+  return warnings;
+}
+
+/** Warn only for the high-confidence operational failure: a top-level primary action placed below
+ * a substantial, independently scrolling Table/Listview and below the common desktop fold. Long
+ * forms/detail pages without a bounded data pane remain valid and intentionally scrollable. */
+export function lintOperationalViewport(components: LintComponent[]): string[] {
+  const topLevel = components.filter((component) => !parentPlacement(component));
+  const surfaces = topLevel.flatMap((component) => {
+    if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? '')) return [];
+    const rect = component.layouts?.desktop ?? component.layout;
+    if (!rect || (rect.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX) return [];
+    return [{ component, bottom: (rect.top ?? 0) + (rect.height ?? 0) }];
+  });
+  if (!surfaces.length) return [];
+
+  const warnings: string[] = [];
+  for (const button of topLevel.filter((component) => component.type === 'Button')) {
+    if (propVal(button.styles, 'type') !== 'primary') continue;
+    const rect = button.layouts?.desktop ?? button.layout;
+    if (!rect) continue;
+    const buttonTop = rect.top ?? 0;
+    const buttonBottom = buttonTop + (rect.height ?? 0);
+    if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX) continue;
+    const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
+    if (!precedingSurface) continue;
+    warnings.push(
+      `Primary Button "${button.name ?? button.id ?? 'Button'}" ends at ${buttonBottom}px below a bounded ` +
+        `${precedingSurface.component.type} "${precedingSurface.component.name ?? precedingSurface.component.id ?? precedingSurface.component.type}" ` +
+        `and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's ` +
+        `inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, ` +
+        'or browser-verify that the extra page scroll is deliberate.'
     );
   }
   return warnings;
@@ -1140,6 +1180,7 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
     ...lintModalChildren(components),
     ...lintTextGeometry(components),
     ...lintListviewChildren(components),
+    ...lintOperationalViewport(components),
   ];
 }
 

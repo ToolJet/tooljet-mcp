@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintListviewChildren, lintModalChildren, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -778,6 +778,59 @@ describe('lintListviewChildren', () => {
       name: 'pageHtml', type: 'Html',
       properties: { rawHtml: { value: '<div style="height:170px">Static content</div>' } },
     }])).toEqual([]);
+  });
+});
+
+describe('lintOperationalViewport', () => {
+  const workQueue = {
+    name: 'workQueue', type: 'Listview',
+    layout: { top: 260, left: 2, width: 39, height: 450 },
+  };
+
+  it('warns when a primary action follows a bounded data pane below the common desktop fold', () => {
+    const warnings = lintOperationalViewport([
+      workQueue,
+      {
+        name: 'assignJob', type: 'Button',
+        styles: { type: { value: 'primary' } },
+        layout: { top: 730, left: 2, width: 12, height: 50 },
+      },
+    ]).join(' ');
+    expect(warnings).toMatch(
+      /Primary Button "assignJob" ends at 780px below a bounded Listview "workQueue".*page scrolling.*inner scrolling.*above about 720px/i
+    );
+  });
+
+  it('accepts an action within the first viewport and intentional long pages without a bounded pane', () => {
+    expect(lintOperationalViewport([
+      { ...workQueue, layout: { ...workQueue.layout, height: 350 } },
+      {
+        name: 'assignJob', type: 'Button',
+        styles: { type: { value: 'primary' } },
+        layout: { top: 630, left: 2, width: 12, height: 50 },
+      },
+    ])).toEqual([]);
+    expect(lintOperationalViewport([{
+      name: 'saveLongForm', type: 'Button',
+      styles: { type: { value: 'primary' } },
+      layout: { top: 900, left: 2, width: 12, height: 50 },
+    }])).toEqual([]);
+  });
+
+  it('ignores secondary actions and repeated child buttons', () => {
+    expect(lintOperationalViewport([
+      { ...workQueue, clientRef: 'queue' },
+      {
+        name: 'secondaryAction', type: 'Button',
+        styles: { type: { value: 'outline' } },
+        layout: { top: 730, left: 2, width: 12, height: 50 },
+      },
+      {
+        name: 'cardAction', type: 'Button', parentRef: 'queue',
+        styles: { type: { value: 'primary' } },
+        layout: { top: 730, left: 2, width: 12, height: 50 },
+      },
+    ])).toEqual([]);
   });
 });
 

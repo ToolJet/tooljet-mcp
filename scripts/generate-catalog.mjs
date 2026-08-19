@@ -520,6 +520,7 @@ const AUTHORING_HINTS = {
       bindingContext: ['listItem'],
       atomicBatchRule: 'Create the Listview and every child that reads listItem in the same add_components call using client_ref/parent_ref. A listItem-bound child added later under an existing Listview can mount with empty exposed values.',
       htmlSizingRule: 'For an Html child, make the root element height:100% and box-sizing:border-box. Do not repeat the authored component height as a fixed px CSS height; wrapper chrome can make the inner canvas shorter and create a scrollbar in every item.',
+      actionCompositionRule: 'When a native Button follows an Html card inside each repeated item, keep them visually contiguous (shared surface/border treatment and no arbitrary vertical gap) and set rowHeight to at least the lowest child bottom plus about 10px. A detached button reads as a separate record and an undersized row clips it.',
     },
     selection: {
       recommendedEvent: 'onRecordClicked',
