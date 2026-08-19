@@ -31076,6 +31076,7 @@ function createAuth(config2, fetchImpl = fetch) {
   let workspaceId;
   let workspaceSlug;
   let workspaceName;
+  const datasourceManagementUrl = (slug2, datasourceId) => `${config2.appUrl}/${encodeURIComponent(slug2)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
   function captureCookie(res) {
     const cookie = res.headers.getSetCookie().find((c) => c.startsWith(COOKIE_PREFIX));
     if (cookie)
@@ -31122,6 +31123,7 @@ function createAuth(config2, fetchImpl = fetch) {
       id: o.id,
       name: o.name,
       slug: o.slug,
+      datasources_url: datasourceManagementUrl(o.slug),
       is_default: !!o.is_default,
       is_current: o.id === workspaceId
     }));
@@ -31144,7 +31146,13 @@ function createAuth(config2, fetchImpl = fetch) {
         workspaceName = found.name;
       }
     }
-    return { id: workspaceId, name: workspaceName ?? "", slug: workspaceSlug ?? "", is_current: true };
+    return {
+      id: workspaceId,
+      name: workspaceName ?? "",
+      slug: workspaceSlug ?? "",
+      datasources_url: datasourceManagementUrl(workspaceSlug ?? ""),
+      is_current: true
+    };
   }
   async function applyConfiguredWorkspace() {
     let targetId = config2.workspaceId;
@@ -32568,6 +32576,7 @@ function tableForeignKeyDto(foreignKey) {
 }
 function createClient(auth, config2) {
   let developmentEnvironmentIdPromise;
+  const datasourceManagementUrl = (workspaceSlug, datasourceId) => `${config2.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
   async function getApp(appId) {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, "getApp");
@@ -32662,7 +32671,8 @@ function createClient(auth, config2) {
       home_page_id: homePage.id,
       app_url: editorUrl,
       editor_url: editorUrl,
-      viewer_url: viewerUrl
+      viewer_url: viewerUrl,
+      datasources_url: datasourceManagementUrl(orgSlug)
     };
   }
   async function listTables() {
@@ -32927,11 +32937,20 @@ function createClient(auth, config2) {
     return developmentEnvironmentIdPromise;
   }
   async function listDatasources(versionId) {
-    const [orgId, envId] = await Promise.all([auth.getOrganizationId(), getDevelopmentEnvironmentId()]);
+    const [orgId, orgSlug, envId] = await Promise.all([
+      auth.getOrganizationId(),
+      auth.getOrganizationSlug(),
+      getDevelopmentEnvironmentId()
+    ]);
     const res = await auth.authedFetch(`/api/data-sources/${orgId}/environments/${envId}/versions/${versionId}`);
     await assertOk(res, "listDatasources");
     const body = await res.json();
-    return body.data_sources.map((d) => ({ id: d.id, name: d.name, kind: d.kind }));
+    return body.data_sources.map((d) => ({
+      id: d.id,
+      name: d.name,
+      kind: d.kind,
+      settings_url: datasourceManagementUrl(orgSlug, d.id)
+    }));
   }
   async function createTable(params) {
     assertAllowedToolJetDbColumnNames("createTable", params.columns);
@@ -33304,7 +33323,11 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/data-queries/${versionId}`);
     await assertOk(res, "getQueries");
     const body = await res.json();
-    return body.data_queries ?? [];
+    const orgSlug = await auth.getOrganizationSlug();
+    return (body.data_queries ?? []).map((query) => ({
+      ...query,
+      ...query.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query.data_source_id) } : {}
+    }));
   }
   async function getQuery(queryId, versionId) {
     const query = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
@@ -33429,7 +33452,7 @@ function fail(err) {
 function listWorkspacesTool(client) {
   return {
     name: "list_workspaces",
-    description: "List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, is_default, is_current }]. A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ACTIVE one. If there is more than one, confirm which to use (then use_workspace) BEFORE creating anything. `is_current` marks the active workspace.",
+    description: "List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, is_current }]. datasources_url opens ToolJet connection management for user-assisted setup/repair. A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ACTIVE one. If there is more than one, confirm which to use (then use_workspace) BEFORE creating anything. `is_current` marks the active workspace.",
     inputSchema: {},
     async handler() {
       try {
@@ -33445,7 +33468,7 @@ function listWorkspacesTool(client) {
 function useWorkspaceTool(client) {
   return {
     name: "use_workspace",
-    description: "Switch the ACTIVE workspace (organization) for all subsequent calls \u2014 apps/tables/datasources you create afterwards go into this workspace. Pass a workspace id from list_workspaces. Returns the now-active { id, name, slug }. Errors if the user has no access to that workspace. Do this at setup when the user is in more than one workspace, and any time they ask to switch.",
+    description: "Switch the ACTIVE workspace (organization) for all subsequent calls \u2014 apps/tables/datasources you create afterwards go into this workspace. Pass a workspace id from list_workspaces. Returns the now-active { id, name, slug, datasources_url }. Errors if the user has no access to that workspace. Do this at setup when the user is in more than one workspace, and any time they ask to switch.",
     inputSchema: {
       workspace_id: external_exports.string()
     },
@@ -33463,7 +33486,7 @@ function useWorkspaceTool(client) {
 function createAppTool(client) {
   return {
     name: "create_app",
-    description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, and app_url (a backward-compatible alias for editor_url).",
+    description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, and app_url (a backward-compatible alias for editor_url).",
     inputSchema: {
       name: external_exports.string().min(1)
     },
@@ -33482,7 +33505,7 @@ function createAppTool(client) {
 function listDatasourcesTool(client) {
   return {
     name: "list_datasources",
-    description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration.",
+    description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user.",
     inputSchema: {
       version_id: external_exports.string()
     },
@@ -37585,6 +37608,15 @@ function containsComponentBinding(value) {
     return Object.values(value).some(containsComponentBinding);
   return false;
 }
+function datasourceRecovery(query) {
+  if (!query.datasource_settings_url)
+    return void 0;
+  return {
+    action: "open_datasource_settings",
+    url: query.datasource_settings_url,
+    instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
+  };
+}
 function runQueryTool(client) {
   return {
     name: "run_query",
@@ -37642,15 +37674,29 @@ function runQueryTool(client) {
             warnings.push(`User-confirmed large read: count preflight found ${rowCount} rows. Server-side pagination remains recommended.`);
           }
         }
-        const result = await client.runQuery({
-          queryId: args.query_id,
-          versionId: args.version_id,
-          environmentId: args.environment_id
-        });
+        let result;
+        try {
+          result = await client.runQuery({
+            queryId: args.query_id,
+            versionId: args.version_id,
+            environmentId: args.environment_id
+          });
+        } catch (error51) {
+          const recovery2 = datasourceRecovery(query);
+          return ok({
+            status: "failed",
+            message: error51 instanceof Error ? error51.message : String(error51),
+            ...preflight ? { preflight } : {},
+            ...warnings.length ? { warnings } : {},
+            ...recovery2 ? { recovery: recovery2 } : {}
+          });
+        }
+        const recovery = result.status === "failed" ? datasourceRecovery(query) : void 0;
         return ok({
           ...result,
           ...preflight ? { preflight } : {},
-          ...warnings.length ? { warnings } : {}
+          ...warnings.length ? { warnings } : {},
+          ...recovery ? { recovery } : {}
         });
       } catch (err) {
         return fail(err);
@@ -37697,13 +37743,16 @@ function runQueriesTool(client) {
         const queries = await Promise.all(args.query_ids.map(async (queryId) => {
           const query = byId.get(queryId);
           const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
+          const datasourceRepair = datasourceRecovery(query);
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
+            const recovery = result.status === "failed" ? datasourceRepair : void 0;
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
               ...result,
-              ...warnings.length ? { warnings } : {}
+              ...warnings.length ? { warnings } : {},
+              ...recovery ? { recovery } : {}
             };
           } catch (error51) {
             return {
@@ -37711,7 +37760,8 @@ function runQueriesTool(client) {
               ...query.name ? { name: query.name } : {},
               status: "failed",
               message: error51 instanceof Error ? error51.message : String(error51),
-              ...warnings.length ? { warnings } : {}
+              ...warnings.length ? { warnings } : {},
+              ...datasourceRepair ? { recovery: datasourceRepair } : {}
             };
           }
         }));
