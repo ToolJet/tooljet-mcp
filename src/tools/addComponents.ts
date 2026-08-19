@@ -1,46 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintComponents } from '../lint.js';
-import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
-import { COMPONENT_SLOT_NAMES } from '../componentParent.js';
-import { normalizeComponentSpec } from '../componentNormalization.js';
+import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { ok, fail, type ToolDef } from './types.js';
-
-const layoutSchema = z.object({
-  top: z.number(),
-  left: z.number(),
-  width: z.number(),
-  height: z.number(),
-});
-
-const layoutsSchema = z.object({
-  desktop: layoutSchema.optional(),
-  mobile: layoutSchema.optional(),
-});
-
-const componentSchema = z.object({
-  name: z.string(),
-  type: z.string(),
-  properties: z.record(z.string(), z.any()),
-  styles: z.record(z.string(), z.any()).optional(),
-  validation: z.record(z.string(), z.any()).optional(),
-  others: z.record(z.string(), z.any()).optional(),
-  layout: layoutSchema.optional(),
-  layouts: layoutsSchema.optional(),
-  client_ref: z.string().optional(),
-  parent_ref: z.string().optional(),
-  parent: z.string().optional(),
-  slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
-});
-
-function containsListItemBinding(value: unknown): boolean {
-  if (typeof value === 'string') return /\blistItem\b/.test(value);
-  if (Array.isArray(value)) return value.some(containsListItemBinding);
-  if (value && typeof value === 'object') {
-    return Object.values(value as Record<string, unknown>).some(containsListItemBinding);
-  }
-  return false;
-}
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -65,71 +26,26 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       app_id: z.string(),
       version_id: z.string(),
       page_id: z.string(),
-      components: z.array(componentSchema).min(1),
+      components: z.array(componentInputSchema).min(1),
     },
     async handler(args: {
       app_id: string;
       version_id: string;
       page_id: string;
-      components: Array<{
-        name: string;
-        type: string;
-        properties: Record<string, unknown>;
-        styles?: Record<string, unknown>;
-        validation?: Record<string, unknown>;
-        others?: Record<string, unknown>;
-        layout?: { top: number; left: number; width: number; height: number };
-        layouts?: {
-          desktop?: { top: number; left: number; width: number; height: number };
-          mobile?: { top: number; left: number; width: number; height: number };
-        };
-        client_ref?: string;
-        parent_ref?: string;
-        parent?: string;
-        slot_name?: 'body' | 'header' | 'footer';
-      }>;
+      components: ComponentInput[];
     }) {
-      const requested = args.components.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
-        ...component,
-        clientRef: client_ref,
-        parentRef: parent_ref,
-        slotName: slot_name,
-      }));
-      const normalized = requested.map((component) => normalizeComponentSpec(component));
-      const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
-      const components = expanded.components;
-      const { errors, warnings } = lintComponents(components);
-      const lateListviewChildWarnings = requested.flatMap((component) =>
-        component.parent &&
-        containsListItemBinding({
-          properties: component.properties,
-          styles: component.styles,
-          validation: component.validation,
-          others: component.others,
-        })
-          ? [
-              `Component "${component.name}" is being added under an existing parent and reads listItem. ` +
-                'ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all ' +
-                'listItem-bound children atomically in one add_components call using client_ref/parent_ref.',
-            ]
-          : []
-      );
-      if (errors.length) return fail(new Error(errors.join(' ')));
+      const prepared = prepareComponentBatch(args.components);
+      if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
       try {
         const result = await client.createComponents({
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          components,
+          components: prepared.components,
         });
         return ok({
           components: result,
-          warnings: [
-            ...normalized.flatMap((item) => item.warnings),
-            ...expanded.warnings,
-            ...warnings,
-            ...lateListviewChildWarnings,
-          ],
+          warnings: prepared.warnings,
         });
       } catch (err) {
         return fail(err);

@@ -4,6 +4,7 @@ import { createTablesTool } from '../src/tools/createTables.js';
 import { insertRowsBatchTool } from '../src/tools/insertRowsBatch.js';
 import { addPagesTool } from '../src/tools/addPages.js';
 import { updatePagesTool } from '../src/tools/updatePages.js';
+import { addComponentBatchesTool } from '../src/tools/addComponentBatches.js';
 import { tableCreationLevels, validateTableBatch } from '../src/tableValidation.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
@@ -36,6 +37,42 @@ describe('table batch validation', () => {
 });
 
 describe('batch authoring tools', () => {
+  it('preflights every page and creates independent component batches concurrently', async () => {
+    const client = {
+      createComponents: vi.fn()
+        .mockResolvedValueOnce([{ component_id: 'c1', name: 'title' }])
+        .mockResolvedValueOnce([{ component_id: 'c2', name: 'orders' }]),
+    } as unknown as ToolJetClient;
+    const result = await addComponentBatchesTool(client).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      pages: [
+        { page_id: 'home', components: [{ name: 'title', type: 'Text', properties: { text: 'Home' }, layout: { top: 0, left: 2, width: 20, height: 50 } }] },
+        { page_id: 'orders', components: [{ name: 'orders', type: 'Table', properties: {}, layout: { top: 100, left: 2, width: 39, height: 500 } }] },
+      ],
+    });
+
+    expect(client.createComponents).toHaveBeenCalledTimes(2);
+    expect(textOf(result)).toMatchObject({ components_created: 2 });
+    expect(textOf(result).pages.map((page: { page_id: string }) => page.page_id)).toEqual(['home', 'orders']);
+  });
+
+  it('rejects all page batches before writes when one page fails lint', async () => {
+    const client = { createComponents: vi.fn() } as unknown as ToolJetClient;
+    const result = await addComponentBatchesTool(client).handler({
+      app_id: 'app1',
+      version_id: 'v1',
+      pages: [
+        { page_id: 'home', components: [{ name: 'title', type: 'Text', properties: { text: 'Home' } }] },
+        { page_id: 'orders', components: [{ name: 'bad', type: 'Text', properties: { textColor: '#111827' } }] },
+      ],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Page orders.*style keys.*properties/i);
+    expect(client.createComponents).not.toHaveBeenCalled();
+  });
+
   it('creates a dependency-validated table batch through one client call', async () => {
     const client = {
       createTables: vi.fn().mockResolvedValue([

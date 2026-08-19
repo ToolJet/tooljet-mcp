@@ -30,6 +30,7 @@ import { addQueryTool } from './addQuery.js';
 import { addQueriesTool } from './addQueries.js';
 import { addComponentTool } from './addComponent.js';
 import { addComponentsTool } from './addComponents.js';
+import { addComponentBatchesTool } from './addComponentBatches.js';
 import { updateComponentsTool } from './updateComponents.js';
 import { deleteComponentsTool } from './deleteComponents.js';
 import { updateLayoutTool } from './updateLayout.js';
@@ -79,6 +80,7 @@ export function registerTools(server: McpServer, client: ToolJetClient): void {
     runQueriesTool(client),
     addComponentTool(client),
     addComponentsTool(client),
+    addComponentBatchesTool(client),
     updateComponentsTool(client),
     deleteComponentsTool(client),
     updateLayoutTool(client),

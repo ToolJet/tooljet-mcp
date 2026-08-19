@@ -27,6 +27,7 @@ describe('buildServer', () => {
         'get_component',
         'add_component',
         'add_components',
+        'add_component_batches',
         'add_query',
         'add_events',
         'update_pages',
