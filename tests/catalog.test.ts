@@ -185,6 +185,19 @@ describe('catalog', () => {
     expect(rule.interactionRule.customHtmlModal).toMatch(/custom Html.*built-in card modal.*blank/i);
   });
 
+  it('serves Listview grid, repeated-child, and selection semantics', () => {
+    const listview = getComponentSchema('Listview')!;
+    expect(listview.exposedVariables?.map((variable) => variable.name)).toEqual(
+      expect.arrayContaining(['selectedRecord', 'selectedRecordId', 'selectedRow', 'selectedRowId'])
+    );
+    const hints = listview.authoringHints as any;
+    expect(hints.modes.gridViewRule).toMatch(/no separate GridView.*type:"Listview".*mode:"grid"/i);
+    expect(hints.repeatedChildren.atomicBatchRule).toMatch(/same add_components call.*client_ref\/parent_ref.*empty exposed values/i);
+    expect(hints.repeatedChildren.htmlSizingRule).toMatch(/height:100%.*box-sizing:border-box.*scrollbar/i);
+    expect(hints.selection.selectedRecordShape).toMatch(/keyed by repeated child component name.*not the original listItem/i);
+    expect(hints.selection.paginationCaveat).toMatch(/page-local.*not.*durable record ids/i);
+  });
+
   it('serves the authoritative generated-Form field contract and FilePicker workaround', () => {
     const form = getComponentSchema('Form')!;
     const hints = form.authoringHints!.jsonSchemaFields as any;

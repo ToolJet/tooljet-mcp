@@ -33,6 +33,15 @@ const componentSchema = z.object({
   slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
 });
 
+function containsListItemBinding(value: unknown): boolean {
+  if (typeof value === 'string') return /\blistItem\b/.test(value);
+  if (Array.isArray(value)) return value.some(containsListItemBinding);
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(containsListItemBinding);
+  }
+  return false;
+}
+
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_components',
@@ -90,6 +99,21 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
       const components = expanded.components;
       const { errors, warnings } = lintComponents(components);
+      const lateListviewChildWarnings = requested.flatMap((component) =>
+        component.parent &&
+        containsListItemBinding({
+          properties: component.properties,
+          styles: component.styles,
+          validation: component.validation,
+          others: component.others,
+        })
+          ? [
+              `Component "${component.name}" is being added under an existing parent and reads listItem. ` +
+                'ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all ' +
+                'listItem-bound children atomically in one add_components call using client_ref/parent_ref.',
+            ]
+          : []
+      );
       if (errors.length) return fail(new Error(errors.join(' ')));
       try {
         const result = await client.createComponents({
@@ -100,7 +124,12 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         });
         return ok({
           components: result,
-          warnings: [...normalized.flatMap((item) => item.warnings), ...expanded.warnings, ...warnings],
+          warnings: [
+            ...normalized.flatMap((item) => item.warnings),
+            ...expanded.warnings,
+            ...warnings,
+            ...lateListviewChildWarnings,
+          ],
         });
       } catch (err) {
         return fail(err);

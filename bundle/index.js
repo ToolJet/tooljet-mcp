@@ -33494,6 +33494,16 @@ var CATALOG_SECTIONS = [
   "renderingHints",
   "authoringHints"
 ];
+var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
+  ["gridview", {
+    type: "Listview",
+    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
+  }]
+]);
+function resolveCatalogType(requestedType) {
+  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
+  return alias ? { type: alias.type, alias: { requested_type: requestedType, note: alias.note } } : { type: requestedType };
+}
 function selectSchema(schema, args) {
   const sections = new Set(args.sections ?? CATALOG_SECTIONS);
   const result = { type: schema.type };
@@ -33532,7 +33542,7 @@ function selectSchema(schema, args) {
 function getComponentCatalogTool(_client) {
   return {
     name: "get_component_catalog",
-    description: "Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.",
+    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
       type: external_exports.string().optional(),
       types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
@@ -33552,21 +33562,34 @@ function getComponentCatalogTool(_client) {
           return ok(getCatalog());
         }
         if (args.type) {
-          const schema = getComponentSchema(args.type);
+          const resolved = resolveCatalogType(args.type);
+          const schema = getComponentSchema(resolved.type);
           if (!schema) {
             return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
           }
-          return ok(selectSchema(schema, args));
+          return ok({ ...selectSchema(schema, args), ...resolved.alias ? { alias: resolved.alias } : {} });
         }
         const requestedTypes = [...new Set(args.types)];
         const components = [];
         const unknownTypes = [];
+        const byResolvedType = /* @__PURE__ */ new Map();
         for (const type of requestedTypes) {
-          const schema = getComponentSchema(type);
-          if (schema)
-            components.push(selectSchema(schema, args));
-          else
+          const resolved = resolveCatalogType(type);
+          const schema = getComponentSchema(resolved.type);
+          if (!schema) {
             unknownTypes.push(type);
+            continue;
+          }
+          const current = byResolvedType.get(resolved.type) ?? { schema, aliases: [] };
+          if (resolved.alias)
+            current.aliases.push(type);
+          byResolvedType.set(resolved.type, current);
+        }
+        for (const { schema, aliases } of byResolvedType.values()) {
+          components.push({
+            ...selectSchema(schema, args),
+            ...aliases.length ? { requested_aliases: aliases } : {}
+          });
         }
         return ok({ components, unknown_types: unknownTypes });
       } catch (err) {
@@ -35636,6 +35659,16 @@ var componentSchema2 = external_exports.object({
   parent: external_exports.string().optional(),
   slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
 });
+function containsListItemBinding(value) {
+  if (typeof value === "string")
+    return /\blistItem\b/.test(value);
+  if (Array.isArray(value))
+    return value.some(containsListItemBinding);
+  if (value && typeof value === "object") {
+    return Object.values(value).some(containsListItemBinding);
+  }
+  return false;
+}
 function addComponentsTool(client) {
   return {
     name: "add_components",
@@ -35657,6 +35690,14 @@ function addComponentsTool(client) {
       const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
       const components = expanded.components;
       const { errors, warnings } = lintComponents(components);
+      const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
+        properties: component.properties,
+        styles: component.styles,
+        validation: component.validation,
+        others: component.others
+      }) ? [
+        `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one add_components call using client_ref/parent_ref.`
+      ] : []);
       if (errors.length)
         return fail(new Error(errors.join(" ")));
       try {
@@ -35668,7 +35709,12 @@ function addComponentsTool(client) {
         });
         return ok({
           components: result,
-          warnings: [...normalized2.flatMap((item) => item.warnings), ...expanded.warnings, ...warnings]
+          warnings: [
+            ...normalized2.flatMap((item) => item.warnings),
+            ...expanded.warnings,
+            ...warnings,
+            ...lateListviewChildWarnings
+          ]
         });
       } catch (err) {
         return fail(err);

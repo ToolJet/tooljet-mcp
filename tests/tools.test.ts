@@ -233,6 +233,24 @@ describe('get_component_catalog tool', () => {
     expect(body.unknown_types).toEqual(['NotAComponent']);
   });
 
+  it('resolves GridView lookups to the real Listview mode without inventing a component type', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+
+    const single = textOf(await tool.handler({ type: 'GridView', sections: ['overview', 'authoringHints'] })) as any;
+    expect(single.type).toBe('Listview');
+    expect(single.alias).toMatchObject({ requested_type: 'GridView' });
+    expect(single.alias.note).toMatch(/mode:"grid".*type:"Listview"/i);
+
+    const batch = textOf(await tool.handler({
+      types: ['Listview', 'Gridview', 'NotAComponent'],
+      sections: ['overview'],
+    })) as any;
+    expect(batch.components).toHaveLength(1);
+    expect(batch.components[0]).toMatchObject({ type: 'Listview', requested_aliases: ['Gridview'] });
+    expect(batch.unknown_types).toEqual(['NotAComponent']);
+  });
+
   it('can narrow property/style arrays for one component contract', async () => {
     const client = makeClient();
     const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
@@ -997,6 +1015,23 @@ describe('add_components tool', () => {
         styles: expect.objectContaining({ borderRadius: { value: 10 } }),
       })],
     }));
+  });
+
+  it('warns when a listItem-bound child is added under an existing parent', async () => {
+    const client = makeClient();
+    client.createComponents.mockResolvedValue([{ component_id: 'child-id', name: 'lateCard' }]);
+    const result = await addComponentsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      components: [{
+        name: 'lateCard', type: 'Html', parent: 'persisted-listview-id',
+        properties: { rawHtml: '<div>{{listItem.title}}</div>' },
+        layout: { top: 0, left: 0, width: 40, height: 100 },
+      }],
+    });
+
+    expect(textOf(result).warnings.join(' ')).toMatch(
+      /existing parent.*listItem.*mount.*empty repeated values.*atomically.*client_ref\/parent_ref/i
+    );
   });
 
   it('normalizes each static Table before the atomic batch write', async () => {

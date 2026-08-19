@@ -281,6 +281,22 @@ for (const f of files) {
 const RUNTIME_EXPOSED_VARIABLES = {
   DropdownV2: [{ name: 'value' }, { name: 'selectedOption' }, { name: 'options' }],
   Form: [{ name: 'formData', default: {} }, { name: 'children', default: {} }],
+  Listview: [
+    {
+      name: 'selectedRecord',
+      default: null,
+      valueType: 'object',
+      semantics: 'Exposed values keyed by repeated child component name; this is not the original source listItem row.',
+    },
+    { name: 'selectedRecordId', default: null, valueType: 'number', semantics: 'Selected rendered item index.' },
+    {
+      name: 'selectedRow',
+      default: null,
+      valueType: 'object',
+      semantics: 'Alias of selectedRecord; exposed values keyed by repeated child component name.',
+    },
+    { name: 'selectedRowId', default: null, valueType: 'number', semantics: 'Alias of selectedRecordId.' },
+  ],
   Table: [
     { name: 'currentData', default: [] },
     { name: 'currentPageData', default: [] },
@@ -491,6 +507,26 @@ const AUTHORING_HINTS = {
         selectionDependency: 'onCardSelected fires only when openModalOnCardClick is true; ToolJet returns before setting lastSelectedCard or firing the event when it is false. MCP rejects that dead event binding.',
         customHtmlModal: 'A custom Html card child can render correctly while the enabled built-in card modal opens blank. Prefer openModalOnCardClick=false for a read-only board, or browser-verify a separate supported detail flow.',
       },
+    },
+  },
+  Listview: {
+    modes: {
+      componentType: 'Listview',
+      propertyPath: 'properties.mode.value',
+      allowedValues: ['list', 'grid'],
+      gridViewRule: 'There is no separate GridView component type. Create type:"Listview" with mode:"grid"; GridView is only a get_component_catalog lookup alias.',
+    },
+    repeatedChildren: {
+      bindingContext: ['listItem'],
+      atomicBatchRule: 'Create the Listview and every child that reads listItem in the same add_components call using client_ref/parent_ref. A listItem-bound child added later under an existing Listview can mount with empty exposed values.',
+      htmlSizingRule: 'For an Html child, make the root element height:100% and box-sizing:border-box. Do not repeat the authored component height as a fixed px CSS height; wrapper chrome can make the inner canvas shorter and create a scrollbar in every item.',
+    },
+    selection: {
+      recommendedEvent: 'onRecordClicked',
+      selectedRecordShape: 'Object keyed by repeated child component name. Each value is that child instance\'s exposed-variable object (for example selectedRecord.cardHtml.rawHTML); it is not the original listItem source row.',
+      sourceRowRule: 'If an action needs source-row fields, expose them through a repeated child or store the source row explicitly; do not assume components.<listview>.selectedRecord.<sourceField>.',
+      aliases: ['selectedRow is the same child-exposed-value map', 'selectedRowId is the same index as selectedRecordId'],
+      paginationCaveat: 'selectedRecordId/selectedRowId are rendered-item indexes and can be page-local when pagination is enabled; do not use them as durable record ids.',
     },
   },
   Table: {

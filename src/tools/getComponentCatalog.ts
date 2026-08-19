@@ -26,6 +26,23 @@ interface CatalogArgs {
   style_keys?: string[];
 }
 
+const CATALOG_TYPE_ALIASES = new Map([
+  ['gridview', {
+    type: 'Listview',
+    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.',
+  }],
+]);
+
+function resolveCatalogType(requestedType: string): {
+  type: string;
+  alias?: { requested_type: string; note: string };
+} {
+  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, '').toLowerCase());
+  return alias
+    ? { type: alias.type, alias: { requested_type: requestedType, note: alias.note } }
+    : { type: requestedType };
+}
+
 function selectSchema(schema: ComponentSchema, args: CatalogArgs): Record<string, unknown> {
   const sections = new Set(args.sections ?? CATALOG_SECTIONS);
   const result: Record<string, unknown> = { type: schema.type };
@@ -69,6 +86,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
       'component or types for a batch needed in the current page/phase. sections selects only overview, ' +
       'properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; ' +
       'property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. ' +
+      'GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". ' +
       'authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar ' +
       'contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
@@ -91,20 +109,34 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
         }
 
         if (args.type) {
-          const schema = getComponentSchema(args.type);
+          const resolved = resolveCatalogType(args.type);
+          const schema = getComponentSchema(resolved.type);
           if (!schema) {
             return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
           }
-          return ok(selectSchema(schema, args));
+          return ok({ ...selectSchema(schema, args), ...(resolved.alias ? { alias: resolved.alias } : {}) });
         }
 
         const requestedTypes = [...new Set(args.types)];
         const components: Record<string, unknown>[] = [];
         const unknownTypes: string[] = [];
+        const byResolvedType = new Map<string, { schema: ComponentSchema; aliases: string[] }>();
         for (const type of requestedTypes) {
-          const schema = getComponentSchema(type);
-          if (schema) components.push(selectSchema(schema, args));
-          else unknownTypes.push(type);
+          const resolved = resolveCatalogType(type);
+          const schema = getComponentSchema(resolved.type);
+          if (!schema) {
+            unknownTypes.push(type);
+            continue;
+          }
+          const current = byResolvedType.get(resolved.type) ?? { schema, aliases: [] };
+          if (resolved.alias) current.aliases.push(type);
+          byResolvedType.set(resolved.type, current);
+        }
+        for (const { schema, aliases } of byResolvedType.values()) {
+          components.push({
+            ...selectSchema(schema, args),
+            ...(aliases.length ? { requested_aliases: aliases } : {}),
+          });
         }
         return ok({ components, unknown_types: unknownTypes });
       } catch (err) {
