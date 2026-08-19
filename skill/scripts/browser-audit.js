@@ -105,6 +105,27 @@
         clipped: element.scrollHeight > element.clientHeight + 2,
       },
     }));
+  const componentOwner = (element) => {
+    let current = element;
+    while (current) {
+      if (current.id && uuid.test(current.id)) return current;
+      current = current.parentElement;
+    }
+    return undefined;
+  };
+  const chartsWithoutData = [...document.querySelectorAll('.js-plotly-plot')]
+    .filter(visible)
+    .flatMap((plot) => {
+      const plotData = Array.isArray(plot.data) ? plot.data : [];
+      if (plotData.length > 0) return [];
+      const owner = componentOwner(plot);
+      return [{
+        component: owner ? label(owner) : undefined,
+        plot: label(plot),
+        reason: 'visible Plotly chart has no evaluated traces',
+      }];
+    })
+    .slice(0, limit);
 
   return {
     url: location.href,
@@ -123,8 +144,9 @@
       nestedScrollPairs: nestedScrollPairs.length,
       buttonsBelowFold: buttonsBelowFold.length,
       dialogs: dialogs.length,
+      chartsWithoutData: chartsWithoutData.length,
     },
-    issues: { overlaps, clippedText, blankComponents, nestedScrollPairs, buttonsBelowFold, dialogs },
+    issues: { overlaps, clippedText, blankComponents, nestedScrollPairs, buttonsBelowFold, dialogs, chartsWithoutData },
     components,
     notChecked: ['network failures', 'browser console errors', 'hidden conditional states', 'mutation correctness'],
   };

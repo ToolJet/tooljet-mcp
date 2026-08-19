@@ -14,6 +14,7 @@ describe('one-shot browser audit helper', () => {
       'blankComponentCandidates',
       'nestedScrollPairs',
       'buttonsBelowFold',
+      'chartsWithoutData',
       'notChecked',
     ]) {
       expect(source).toContain(key);

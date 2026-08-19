@@ -643,6 +643,44 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           `+ a separate Text heading (enable a native title only after visual verification).`
       );
     }
+
+    const plotFromJson = propVal(props, 'plotFromJson');
+    const jsonDescription = propVal(props, 'jsonDescription');
+    if (isTruthyBinding(plotFromJson)) {
+      if (jsonDescription === undefined) {
+        errors.push(
+          `Chart "${label}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. ` +
+            'Provide a static Plotly object/string, or prefer the proven simple type + data mode.'
+        );
+      } else if (isDynamicBinding(jsonDescription)) {
+        warnings.push(
+          `Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode ` +
+            'unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.'
+        );
+      } else {
+        let parsed: unknown = jsonDescription;
+        if (typeof jsonDescription === 'string') {
+          try {
+            parsed = JSON.parse(jsonDescription);
+          } catch {
+            errors.push(
+              `Chart "${label}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ` +
+                'ToolJet silently renders an empty chart for invalid JSON.'
+            );
+            parsed = undefined;
+          }
+        }
+        if (parsed !== undefined) {
+          const description = recordValue(parsed);
+          if (!description || !Array.isArray(description.data) || description.data.length === 0) {
+            errors.push(
+              `Chart "${label}": plotFromJson jsonDescription must contain a non-empty data array. ` +
+                'Use simple type + data mode when an advanced Plotly object is not required.'
+            );
+          }
+        }
+      }
+    }
   }
 
   if (spec.type === 'Html' && nestedMapInValue(propVal(props, 'rawHtml'))) {

@@ -50,6 +50,53 @@ describe('lintComponentSpec', () => {
       .toEqual([]);
   });
 
+  it('validates static Plotly JSON and flags dynamic advanced mode for browser verification', () => {
+    const invalid = lintComponentSpec({
+      name: 'invalidChart',
+      type: 'Chart',
+      properties: {
+        title: { value: '' },
+        plotFromJson: { value: '{{true}}' },
+        jsonDescription: { value: '{not valid json}' },
+      },
+    });
+    expect(invalid.errors.join(' ')).toMatch(/valid JSON.*non-empty data array.*empty chart/is);
+
+    const empty = lintComponentSpec({
+      name: 'emptyChart',
+      type: 'Chart',
+      properties: {
+        title: { value: '' },
+        plotFromJson: { value: true },
+        jsonDescription: { value: { data: [] } },
+      },
+    });
+    expect(empty.errors.join(' ')).toMatch(/must contain a non-empty data array/i);
+
+    const dynamic = lintComponentSpec({
+      name: 'dynamicChart',
+      type: 'Chart',
+      properties: {
+        title: { value: '' },
+        plotFromJson: { value: '{{true}}' },
+        jsonDescription: { value: '{{queries.chartData.data}}' },
+      },
+    });
+    expect(dynamic.errors).toEqual([]);
+    expect(dynamic.warnings.join(' ')).toMatch(/cannot be evaluated statically.*simple type \+ data.*browser-verify/is);
+
+    const valid = lintComponentSpec({
+      name: 'validChart',
+      type: 'Chart',
+      properties: {
+        title: { value: '' },
+        plotFromJson: { value: true },
+        jsonDescription: { value: JSON.stringify({ data: [{ x: ['A'], y: [1], type: 'bar' }] }) },
+      },
+    });
+    expect(valid.errors).toEqual([]);
+  });
+
   it('warns only when Html rawHtml nests map calls and allows supported lookup joins elsewhere', () => {
     const nested =
       '{{(queries.groups.data || []).map(group => group.items.map(item => `<b>${item.name}</b>`).join(""))' +
