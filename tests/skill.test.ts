@@ -59,6 +59,14 @@ describe('generated skill — design decision framework', () => {
 });
 
 describe('generated skill — ToolJet rendering guardrails', () => {
+  it('uses the exact progress component type and correct layout input shapes', () => {
+    expect(skill).toContain('`CircularProgressBar`');
+    expect(skill).not.toContain('`CircularProgressbar`');
+    expect(skill).toMatch(/both resolutions.*flat `layout:\{top,left,width,height\}`/i);
+    expect(skill).toMatch(/`layouts:\{desktop:\{top,left,width,height\},mobile:\{top,left,width,height\}\}`/i);
+    expect(skill).toMatch(/Do not put `desktop`\/`mobile` inside `layout`.*rejects the entire atomic `add_components` batch/i);
+  });
+
   it('has the chart-title clipping guardrail (empty title + separate Text heading)', () => {
     expect(skill).toMatch(/Chart\.title` empty/);
     expect(skill).toMatch(/separate `Text` heading above the chart/);
@@ -78,6 +86,18 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   it('documents KeyValuePair projection and an empty DatePickerV2 create value', () => {
     expect(skill).toMatch(/KeyValuePair.*explicit.*fields.*does not suppress undeclared keys.*project/is);
     expect(reference).toMatch(/DatePickerV2[\s\S]*defaultValue="\{\{null\}\}".*01\/01\/2022/i);
+  });
+
+  it('limits the nested-map warning to Html and preserves supported Table lookup joins', () => {
+    expect(skill).toMatch(/Html rawHtml expressions.*map\(\).*inside another.*completely blank/is);
+    expect(skill).toMatch(/Do not generalize this to Table data.*filter\(\.\.\.\)\[0\].*inside.*map\(\).*work/is);
+    expect(skill).not.toMatch(/\*\*Html\/Chart expressions:/);
+  });
+
+  it('documents ToolJet DB sort ids and aggregate response aliases', () => {
+    expect(reference).toMatch(/order_filters.*outer map key.*inner `id`.*silently disable sorting/is);
+    expect(reference).toMatch(/aggregate configuration key is not the result key.*<table_name>_<column>_<aggFx>/is);
+    expect(reference).toContain('`starlink_terminals_id_count`');
   });
 
   it('has explicit table-column ordering guidance and the headerCasing fact', () => {

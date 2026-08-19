@@ -267,7 +267,7 @@ Plan the whole page architecture up front (above); **build it in phases.** A pha
 
 ## Component selection — built-in for interactive/data surfaces, HTML where it makes the UI better
 
-ToolJet's value is **visually-editable, governed low-code config**: a built-in component can be edited in the visual builder by anyone. So anything the user will **interact with, bind data to, or edit** should be a built-in — a KPI tile → \`Statistics\`, a chart → \`Chart\`, a data grid → \`Table\`, inputs → \`TextInput\`/\`NumberInput\`/\`DropdownV2\`, forms → \`Form\`, progress → \`CircularProgressbar\`. Don't rebuild those in HTML — you'd throw away the visual editing and governance that are the whole point.
+ToolJet's value is **visually-editable, governed low-code config**: a built-in component can be edited in the visual builder by anyone. So anything the user will **interact with, bind data to, or edit** should be a built-in — a KPI tile → \`Statistics\`, a chart → \`Chart\`, a data grid → \`Table\`, inputs → \`TextInput\`/\`NumberInput\`/\`DropdownV2\`, forms → \`Form\`, progress → \`CircularProgressBar\`. Don't rebuild those in HTML — you'd throw away the visual editing and governance that are the whole point.
 
 **But HTML is a first-class tool where it genuinely makes the app better — use it deliberately, not only as a last resort:**
 - **Presentational / display-only content** — a styled hero or banner, a rich info card, a legend, an empty state, a formatted read-only block — where custom markup gives better aesthetics and more flexible layout than stacking built-ins. If the user won't interact with it or need to edit it, HTML is often the cleaner, better-looking choice.
@@ -282,7 +282,7 @@ ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — t
 
 - The canvas is **${grid.columns} columns** wide. A component's \`left\` and \`width\` are in **columns** (0–${grid.columns}). Full width = \`left: 0, width: ${grid.columns}\`.
 - \`top\` and \`height\` are in **pixels**, snapped to a **${grid.rowSnapPx}px** vertical grid. A data table is commonly ~300–500px tall.
-- Every component's \`layout\` must be given for **both resolutions**: \`{ desktop: {top,left,width,height}, mobile: {top,left,width,height} }\`.
+- For one rectangle applied to both resolutions, use flat \`layout:{top,left,width,height}\`. For distinct resolution-specific placement, use \`layouts:{desktop:{top,left,width,height},mobile:{top,left,width,height}}\`. Do not put \`desktop\`/\`mobile\` inside \`layout\`; an invalid member rejects the entire atomic \`add_components\` batch.
 - **Stack using rendered height:** \`B.top = A.top + A.renderedHeight + gap\` (gap ~10–20px). Most widgets—including Text, Button, Html, Chart, Table, and Statistics—render at the authored \`height\`. ToolJet's top-aligned labelled form-input widgets render at **\`height + ${grid.topAlignmentHeightIncrement}px\`**. Standard single-line inputs use their catalog default **40px** authored height, occupy about **60px** with the top label/validation footprint, and need a **70px** top-to-top row step with a 10px gap. Raising the authored height does not absorb the increment or enlarge the value text.
 - A static-height **Text still needs enough internal room for its line box**: minimum single-line height is \`ceil(textSize * lineHeight + 6px)\`, then round up to the 10px grid. The default line-height is 1.5, so 24px text needs 50px authored height and 32px text needs 60px. The outer widget can be the authored height while its glyphs are clipped inside.
 - The full canvas is ${grid.columns} columns; how you use that space is a design choice (see Design defaults below) — don't reflexively span edge-to-edge.
@@ -384,7 +384,7 @@ The gotchas that most often break a build, inlined so you don't miss them:
 - **Kanban:** card columns/counts can look correct while every card is blank because the body is nested children bound to \`cardData\`. MCP creates catalog defaults when no explicit child is supplied. For multi-line card content, use one explicit \`Html\` child with wrapping CSS and an explicit CSS width/max-width; nested \`Text\` clips to one line, and \`cardWidth\` does not reliably predict the physical column width.
 - **DropdownV2:** the selection is \`.value\` (display text \`.selectedOption.label\`); \`.label\` is the field TITLE — never filter data on it. Dynamic \`schema\` requires \`advanced="{{true}}"\` or ToolJet silently uses static \`options\`; never author both modes. Bound options need \`visible:true\` + \`default:true\` to preselect.
 - **Styling** goes in the top-level \`styles\` object, **never** under \`properties\`.
-- **Html/Chart expressions:** never put a \`.map()\` inside another \`.map()\` in a component binding. ToolJet's property evaluator can throw and render the entire component blank before even an \`||\` fallback runs. Flatten to one \`filter().map()\` chain, or pre-shape nested data in a datasource/RunJS query and bind the simple result.
+- **Html rawHtml expressions:** a \`.map()\` inside another \`.map()\` can throw and render Html completely blank before even an \`||\` fallback runs. Flatten that Html expression or pre-shape it in a datasource/RunJS query. Do not generalize this to Table data: lookup joins such as \`.filter(...)[0]\` inside \`.map()\` work there.
 - **Chart:** empty native title + a separate \`Text\` heading; build \`data\` as a simple explicit \`[{x,y}]\` and do heavy aggregation in a **query**, not in the chart binding.
 - **Events:** the id is \`set-custom-variable\` (not \`set-variable\`); lifecycle sources are component/data_query/page. Mutation refresh/success belongs on \`onDataQuerySuccess\` and errors on \`onDataQueryFailure\`.
 - **Security:** visibility is UX, not authorization; use server-side permissions/RLS and \`globals.server.currentUser\` in server queries.
@@ -622,8 +622,8 @@ Use \`add_table_column\` to evolve a ToolJet DB table in place. Dropping a colum
 - Resolve the table id with \`list_tables()\` — the query references the table by **\`table_id\`** (the id), NOT the name.
 - List all rows: \`options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }\`.
 - \`runOnPageLoad: true\` runs the query when the app opens so bound components populate automatically.
-- \`list_rows\` may carry \`limit\`, \`offset\`, \`where_filters\`, \`order_filters\` for filtering/sorting. Fetch \`get_datasource_query_schema(..., operation:"list_rows")\` for their exact nested record shapes instead of guessing.
-- Aggregates/grouping live under \`list_rows.aggregates\` / \`list_rows.group_by\`. Multi-table reads use \`operation: "join_tables"\` with \`join_table\` (joins, fields, filters, ordering, aggregates, grouping, limit, offset).
+- \`list_rows\` may carry \`limit\`, \`offset\`, \`where_filters\`, and \`order_filters\`. In \`order_filters\`, the outer map key must match the clause's inner \`id\`; a mismatch can silently disable sorting. Fetch \`get_datasource_query_schema(..., operation:"list_rows")\` for the exact nested shapes instead of guessing.
+- Prefer ToolJet DB aggregation over fetching every row just to count or sum: use \`list_rows.aggregates\` and optional \`list_rows.group_by\`. The aggregate configuration key is not the result key; results use \`<table_name>_<column>_<aggFx>\` (for example \`starlink_terminals_id_count\`). Multi-table reads use \`operation: "join_tables"\` with \`join_table\`.
 - Primary-key batches use \`bulk_update_with_primary_key\` with \`rows_update\`, or \`bulk_upsert_with_primary_key\` with \`rows\`. Read the generated schema before composing these shapes.
 - **Write operations** (for edit/create flows) use indexed-object option shapes:
   - Create: \`{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }\`
@@ -656,7 +656,7 @@ The \`Chart\` component fails in a specific, common way: **ToolJet's chart-prope
 3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind \`data\` to a query that already returns \`[{x,y}]\` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: \`{{queries.chartData.data}}\`. Query engines evaluate JS reliably; the chart property evaluator does not.
 4. **Only use Plotly-JSON mode** (\`plotFromJson: true\` + \`jsonDescription\`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with \`JSON.stringify(...)\`.
 
-Rule of thumb: **an empty Chart or Html can mean the binding was too complex.** In particular, a \`.map()\` nested inside another \`.map()\` can throw before an \`||\` fallback runs. Flatten it to one \`filter().map()\` chain or pre-shape the nested data in a query; otherwise replace dynamic detection with explicit field names + simple \`.filter().length\` / \`.map()\`.
+Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a \`.map()\` nested inside another \`.map()\` can throw before an \`||\` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.
 `;
 
 writeFileSync(resolve(root, 'skill/SKILL.md'), skill);

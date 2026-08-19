@@ -280,8 +280,8 @@ Use `add_table_column` to evolve a ToolJet DB table in place. Dropping a column/
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
 - List all rows: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": {}, "runOnPageLoad": true }`.
 - `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
-- `list_rows` may carry `limit`, `offset`, `where_filters`, `order_filters` for filtering/sorting. Fetch `get_datasource_query_schema(..., operation:"list_rows")` for their exact nested record shapes instead of guessing.
-- Aggregates/grouping live under `list_rows.aggregates` / `list_rows.group_by`. Multi-table reads use `operation: "join_tables"` with `join_table` (joins, fields, filters, ordering, aggregates, grouping, limit, offset).
+- `list_rows` may carry `limit`, `offset`, `where_filters`, and `order_filters`. In `order_filters`, the outer map key must match the clause's inner `id`; a mismatch can silently disable sorting. Fetch `get_datasource_query_schema(..., operation:"list_rows")` for the exact nested shapes instead of guessing.
+- Prefer ToolJet DB aggregation over fetching every row just to count or sum: use `list_rows.aggregates` and optional `list_rows.group_by`. The aggregate configuration key is not the result key; results use `<table_name>_<column>_<aggFx>` (for example `starlink_terminals_id_count`). Multi-table reads use `operation: "join_tables"` with `join_table`.
 - Primary-key batches use `bulk_update_with_primary_key` with `rows_update`, or `bulk_upsert_with_primary_key` with `rows`. Read the generated schema before composing these shapes.
 - **Write operations** (for edit/create flows) use indexed-object option shapes:
   - Create: `{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }`
@@ -314,4 +314,4 @@ The `Chart` component fails in a specific, common way: **ToolJet's chart-propert
 3. **For heavy aggregation, do it in a QUERY, not the chart binding.** Bind `data` to a query that already returns `[{x,y}]` (a RunJS transform query, or a DB aggregate), and keep the chart's own binding a plain reference: `{{queries.chartData.data}}`. Query engines evaluate JS reliably; the chart property evaluator does not.
 4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts — and even then keep the expression simple, use explicit field names, and wrap the object with `JSON.stringify(...)`.
 
-Rule of thumb: **an empty Chart or Html can mean the binding was too complex.** In particular, a `.map()` nested inside another `.map()` can throw before an `||` fallback runs. Flatten it to one `filter().map()` chain or pre-shape the nested data in a query; otherwise replace dynamic detection with explicit field names + simple `.filter().length` / `.map()`.
+Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a `.map()` nested inside another `.map()` can throw before an `||` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.
