@@ -172,7 +172,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -198,7 +198,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -222,7 +222,7 @@
         "key": "autoPickChipColor",
         "label": "Auto pick chip color",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "tagBackgroundColor",
@@ -263,6 +263,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -465,12 +478,18 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -634,43 +653,59 @@
       {
         "key": "recorderIcon",
         "label": "Icon",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "IconMicrophone"
       },
       {
         "key": "recorderIconColor",
         "label": "Icon color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "#F6430D"
       },
       {
         "key": "labelColor",
         "label": "Label text",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "accentColor",
         "label": "Accent color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "backgroundColor",
         "label": "Background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "borderColor",
         "label": "Border",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -787,13 +822,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": false
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -890,6 +930,7 @@
         "key": "type",
         "label": "Type",
         "valueType": "string",
+        "default": "primary",
         "allowedValues": [
           "primary",
           "outline"
@@ -899,7 +940,7 @@
         "key": "backgroundColor",
         "label": "Background",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "hoverBackgroundMode",
@@ -915,17 +956,18 @@
         "key": "textColor",
         "label": "Text color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "fontWeight",
         "label": "Font Weight",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "medium",
@@ -938,13 +980,13 @@
         "key": "borderColor",
         "label": "Border color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "loaderColor",
         "label": "Loader color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "contentAlignment",
@@ -955,32 +997,53 @@
       {
         "key": "icon",
         "label": "Icon",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "IconAlignBoxBottomLeft"
       },
       {
         "key": "iconColor",
         "label": "Icon color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": false
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "default": "default",
         "allowedValues": [
           "default",
           "none"
         ]
+      },
+      {
+        "key": "hoverBackgroundColor",
+        "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -1146,37 +1209,37 @@
         "key": "backgroundColor",
         "label": "Background color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "textColor",
         "label": "Text color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": false
+        "default": "{{4}}"
       },
       {
         "key": "selectedTextColor",
         "label": "Selected text colour",
         "valueType": "string",
-        "default": "#fff"
+        "default": "#FFFFFF"
       },
       {
         "key": "selectedBackgroundColor",
@@ -1199,6 +1262,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -1370,7 +1438,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -1396,7 +1464,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -1430,11 +1498,12 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "fontWeight",
         "label": "Font Weight",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "medium",
@@ -1477,7 +1546,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": false
+        "default": "{{6}}"
       },
       {
         "key": "btnAlignment",
@@ -1500,6 +1569,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "hoverBackgroundColor",
+        "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -1655,11 +1737,13 @@
     "styles": [
       {
         "key": "visibility",
-        "label": "Visibility"
+        "label": "Visibility",
+        "default": "{{true}}"
       },
       {
         "key": "cellSizeInViewsClassifiedByResource",
         "label": "Cell size in views classified by resource",
+        "default": "spacious",
         "allowedValues": [
           "compact",
           "spacious"
@@ -1667,7 +1751,8 @@
       },
       {
         "key": "weekDateFormat",
-        "label": "Header date format on week view"
+        "label": "Header date format on week view",
+        "default": "DD MMM"
       },
       {
         "key": "borderColor",
@@ -1680,6 +1765,11 @@
         "label": "Border radius",
         "valueType": "number",
         "default": 6
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -1771,33 +1861,43 @@
       {
         "key": "textColor",
         "label": "Text color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "accentColor",
         "label": "Accent color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "backgroundColor",
         "label": "Background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "borderColor",
         "label": "Border",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -2128,7 +2228,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -2154,7 +2254,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -2224,7 +2324,8 @@
       {
         "key": "menuCustomWidth",
         "label": "Custom menu width",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "256"
       },
       {
         "key": "padding",
@@ -2235,6 +2336,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -2464,25 +2586,30 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": 50
+        "default": "50"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -2676,7 +2803,7 @@
         "key": "borderColorContainer",
         "label": "Border",
         "valueType": "string",
-        "default": "var(--cc-default-border)"
+        "default": "var(--cc-weak-border)"
       },
       {
         "key": "boxShadowContainer",
@@ -2688,7 +2815,12 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": 6
+        "default": "{{6}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -2934,37 +3066,44 @@
       {
         "key": "textColor",
         "label": "Text color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "borderColor",
         "label": "Border color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "checkboxColor",
         "label": "Checked color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "uncheckedColor",
         "label": "Unchecked color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "handleColor",
         "label": "Handle color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
+        "default": "right",
         "allowedValues": [
           "left",
           "right"
@@ -2979,6 +3118,15 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "disabledState",
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -3161,7 +3309,7 @@
         "key": "textSize",
         "label": "Size",
         "valueType": "number",
-        "default": 16
+        "default": "{{16}}"
       },
       {
         "key": "trackColor",
@@ -3191,13 +3339,13 @@
         "key": "strokeWidth",
         "label": "Progress bar width",
         "valueType": "number",
-        "default": 10
+        "default": "{{10}}"
       },
       {
         "key": "circleRatio",
         "label": "Circle ratio",
         "valueType": "number",
-        "default": 1
+        "default": "{{1}}"
       },
       {
         "key": "alignment",
@@ -3214,7 +3362,7 @@
         "key": "counterClockwise",
         "label": "Counter clockwise rotation",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
       },
       {
         "key": "boxShadow",
@@ -3231,6 +3379,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -3332,13 +3485,13 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
       },
       {
         "key": "borderRadius",
@@ -3357,6 +3510,11 @@
         "label": "Background",
         "valueType": "string",
         "default": "var(--cc-surface1-surface)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -3480,7 +3638,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -3496,7 +3654,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -3532,7 +3690,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -3549,6 +3707,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -3737,7 +3908,7 @@
         "key": "headerDividerColor",
         "label": "Divider",
         "valueType": "string",
-        "default": "var(--cc-default-border)"
+        "default": "var(--cc-weak-border)"
       },
       {
         "key": "borderColor",
@@ -3749,12 +3920,18 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -3950,7 +4127,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -3966,7 +4143,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -4002,7 +4179,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -4019,6 +4196,23 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -4163,25 +4357,30 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "borderColor",
         "label": "Border color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-weak-border)"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": false
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "string",
         "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -4252,19 +4451,24 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": 4
+        "default": "{{4}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -4373,13 +4577,13 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top",
+        "default": "side",
         "allowedValues": [
           "side",
           "top"
@@ -4399,7 +4603,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -4435,13 +4639,13 @@
         "key": "icon",
         "label": "Icon",
         "valueType": "string",
-        "default": "IconHome2"
+        "default": "IconCalendarEvent"
       },
       {
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -4458,6 +4662,31 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "20"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "iconDirection",
+        "default": "left"
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -4705,13 +4934,13 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top",
+        "default": "side",
         "allowedValues": [
           "side",
           "top"
@@ -4731,7 +4960,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -4767,13 +4996,13 @@
         "key": "icon",
         "label": "Icon",
         "valueType": "string",
-        "default": "IconHome2"
+        "default": "IconCalendarMonth"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -4790,6 +5019,31 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "20"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "iconDirection",
+        "default": "left"
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -5069,13 +5323,13 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top",
+        "default": "side",
         "allowedValues": [
           "side",
           "top"
@@ -5095,7 +5349,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -5131,13 +5385,13 @@
         "key": "icon",
         "label": "Icon",
         "valueType": "string",
-        "default": "IconHome2"
+        "default": "IconCalendarTime"
       },
       {
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -5154,6 +5408,31 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "20"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "iconDirection",
+        "default": "left"
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -5407,6 +5686,7 @@
         "key": "dividerStyle",
         "label": "Style",
         "valueType": "string",
+        "default": "solid",
         "allowedValues": [
           "solid",
           "dashed"
@@ -5416,7 +5696,7 @@
         "key": "labelAlignment",
         "label": "Label alignment",
         "valueType": "string",
-        "default": "left",
+        "default": "center",
         "allowedValues": [
           "left",
           "center",
@@ -5426,7 +5706,8 @@
       {
         "key": "labelColor",
         "label": "Label Color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-placeholder-text)"
       },
       {
         "key": "textWrap",
@@ -5453,6 +5734,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -5521,12 +5807,13 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 4
+        "default": "4"
       },
       {
         "key": "visibility",
         "label": "Visibility",
-        "valueType": "boolean"
+        "valueType": "boolean",
+        "default": "{{true}}"
       },
       {
         "key": "selectedTextColor",
@@ -5538,13 +5825,18 @@
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
       },
       {
         "key": "justifyContent",
         "label": "Align Text",
         "valueType": "string",
         "default": "left"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -5778,7 +6070,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -5804,7 +6096,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -5874,7 +6166,8 @@
       {
         "key": "menuCustomWidth",
         "label": "Custom menu width",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "256"
       },
       {
         "key": "padding",
@@ -5885,6 +6178,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -6083,7 +6397,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -6099,7 +6413,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -6147,7 +6461,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -6164,6 +6478,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -6365,7 +6700,7 @@
         "key": "labelSize",
         "label": "Label size",
         "valueType": "union",
-        "default": 14
+        "default": "14"
       },
       {
         "key": "labelWeight",
@@ -6405,6 +6740,7 @@
       {
         "key": "contentAlignment",
         "label": "Content alignment",
+        "default": "center",
         "allowedValues": [
           "left",
           "center",
@@ -6431,7 +6767,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "boxShadow",
@@ -6448,6 +6784,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "iconDirection",
+        "default": "left"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -6639,7 +6988,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -6665,7 +7014,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "icon",
@@ -6707,7 +7056,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -6724,6 +7073,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -6929,19 +7299,19 @@
         "key": "dropzoneTitleColor",
         "label": "Title",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "borderRadius",
         "label": "Border Radius",
         "valueType": "number",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "string",
-        "default": "0px 1px 3px 0px #0000001A"
+        "default": "0px 1px 3px #0000001A"
       },
       {
         "key": "padding",
@@ -6952,6 +7322,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -7192,12 +7567,18 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -7395,7 +7776,8 @@
       {
         "key": "backgroundColor",
         "label": "Background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "footerBackgroundColor",
@@ -7419,7 +7801,12 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -7663,6 +8050,11 @@
         "label": "Box shadow",
         "valueType": "union",
         "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -7795,6 +8187,11 @@
         "label": "Box shadow",
         "valueType": "union",
         "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -7905,7 +8302,13 @@
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -8117,7 +8520,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 0
+        "default": "{{0}}"
       },
       {
         "key": "boxShadow",
@@ -8139,7 +8542,12 @@
         "key": "customPadding",
         "label": "Padding",
         "valueType": "union",
-        "default": 0
+        "default": "{{0}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -8306,7 +8714,12 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
-        "default": "{{0px 0px 0px 0px #00000040}}"
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -8506,7 +8919,12 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
-        "default": "{{0px 0px 0px 0px #00000040}}"
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -8683,15 +9101,23 @@
     "styles": [
       {
         "key": "disabledState",
-        "label": "Disable"
+        "label": "Disable",
+        "default": "{{false}}"
       },
       {
         "key": "visibility",
-        "label": "Visibility"
+        "label": "Visibility",
+        "default": "{{true}}"
       },
       {
         "key": "accentColor",
-        "label": "Accent color"
+        "label": "Accent color",
+        "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -8901,23 +9327,36 @@
     "styles": [
       {
         "key": "disabledState",
-        "label": "Disable"
+        "label": "Disable",
+        "default": "{{false}}"
       },
       {
         "key": "visibility",
-        "label": "Visibility"
+        "label": "Visibility",
+        "default": "{{true}}"
       },
       {
         "key": "width",
-        "label": "Width"
+        "label": "Width",
+        "default": "{{400}}"
       },
       {
         "key": "minWidth",
-        "label": "Min Width"
+        "label": "Min Width",
+        "default": "{{200}}"
       },
       {
         "key": "accentColor",
         "label": "Accent color"
+      },
+      {
+        "key": "textColor",
+        "default": ""
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -9230,7 +9669,7 @@
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top",
+        "default": "side",
         "allowedValues": [
           "top",
           "side"
@@ -9240,7 +9679,7 @@
         "key": "autoLabelWidth",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{false}}"
       },
       {
         "key": "accentColor",
@@ -9280,12 +9719,13 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "hoverBackgroundMode",
@@ -9296,6 +9736,23 @@
           "auto",
           "manual"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "labelWidth",
+        "default": "{{33}}"
+      },
+      {
+        "key": "hoverBackgroundColor",
+        "default": "var(--cc-surface2-surface)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -9458,7 +9915,7 @@
         "key": "textSize",
         "label": "Text size",
         "valueType": "number",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "horizontalAlignment",
@@ -9470,7 +9927,7 @@
         "key": "icon",
         "label": "Icon",
         "valueType": "string",
-        "default": "IconHome2"
+        "default": "IconLink"
       },
       {
         "key": "underline",
@@ -9498,6 +9955,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "verticalAlignment",
+        "default": "center"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -9710,12 +10180,18 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -9877,13 +10353,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -10025,25 +10506,30 @@
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
       },
       {
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "triggerButtonBackgroundColor",
         "label": "Trigger button background color",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "triggerButtonTextColor",
         "label": "Trigger button text color",
         "valueType": "string",
-        "default": false
+        "default": "#ffffffff"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -10233,7 +10719,7 @@
         "key": "triggerButtonBackgroundColor",
         "label": "Background",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "triggerButtonHoverBackgroundMode",
@@ -10249,17 +10735,18 @@
         "key": "triggerButtonTextColor",
         "label": "Text",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "triggerButtonTextSize",
         "label": "Font size",
         "valueType": "union",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "triggerButtonFontWeight",
         "label": "Font Weight",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "medium",
@@ -10277,12 +10764,31 @@
       {
         "key": "icon",
         "label": "Icon",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "IconAlignBoxBottomLeft"
       },
       {
         "key": "iconColor",
         "label": "Icon color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "triggerButtonHoverBackgroundColor",
+        "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -10513,7 +11019,17 @@
         "default": "{{false}}"
       }
     ],
-    "styles": [],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "default": "#fff"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
     "events": [],
     "actions": [],
     "exposedVariables": []
@@ -10556,6 +11072,15 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "backgroundColor",
+        "default": "#fff"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -10611,19 +11136,24 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "number",
-        "default": 4
+        "default": "4"
       },
       {
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -10873,7 +11403,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -10899,7 +11429,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -10964,6 +11494,23 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -11185,7 +11732,7 @@
         "key": "hoverPillBackgroundColor",
         "label": "Hover pill background",
         "valueType": "string",
-        "default": "var(--cc-surface1-surface)"
+        "default": "var(--cc-surface3-surface)"
       },
       {
         "key": "selectedTextColor",
@@ -11209,12 +11756,13 @@
         "key": "pillBorderRadius",
         "label": "Pill border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "orientation",
         "label": "Orientation",
         "valueType": "string",
+        "default": "horizontal",
         "allowedValues": [
           "horizontal",
           "vertical"
@@ -11224,6 +11772,7 @@
         "key": "displayStyle",
         "label": "Style",
         "valueType": "string",
+        "default": "textAndIcon",
         "allowedValues": [
           "textAndIcon",
           "textOnly",
@@ -11278,13 +11827,22 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 8
+        "default": "8"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
-        "default": 8
+        "default": "2"
+      },
+      {
+        "key": "verticalAlignment",
+        "default": "center"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -11471,7 +12029,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -11487,7 +12045,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -11541,7 +12099,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -11558,6 +12116,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -11722,7 +12301,13 @@
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -11882,7 +12467,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -11898,7 +12483,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -11952,7 +12537,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -11969,6 +12554,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -12112,7 +12718,7 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "borderColor",
@@ -12125,6 +12731,11 @@
         "label": "Border radius",
         "valueType": "number",
         "default": 6
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -12222,7 +12833,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -12238,7 +12849,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -12274,7 +12885,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -12291,6 +12902,23 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -12578,11 +13206,12 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "fontWeight",
         "label": "Font Weight",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "medium",
@@ -12612,18 +13241,20 @@
       {
         "key": "icon",
         "label": "Icon",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "IconMenu2"
       },
       {
         "key": "iconColor",
         "label": "Icon color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "#FFFFFF"
       },
       {
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "6"
       },
       {
         "key": "boxShadow",
@@ -12648,6 +13279,23 @@
         "label": "Description",
         "valueType": "string",
         "default": "var(--cc-placeholder-text)"
+      },
+      {
+        "key": "hoverBackgroundColor",
+        "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "iconVisibility",
+        "default": "{{true}}"
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -12790,13 +13438,13 @@
         "key": "textSize",
         "label": "Size",
         "valueType": "number",
-        "default": 30
+        "default": "{{30}}"
       },
       {
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "trackColor",
@@ -12820,7 +13468,7 @@
         "key": "progressBarThickness",
         "label": "Progress bar width",
         "valueType": "number",
-        "default": 20
+        "default": "{{20}}"
       },
       {
         "key": "boxShadow",
@@ -12837,6 +13485,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -12906,13 +13567,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -13074,13 +13740,13 @@
         "key": "labelColor",
         "label": "Color",
         "valueType": "string",
-        "default": "#1B1F24"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -13106,32 +13772,37 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "borderColor",
         "label": "Border",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "switchOnBackgroundColor",
         "label": "Checked background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "switchOffBackgroundColor",
         "label": "Unchecked background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "handleColor",
         "label": "Handle color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "optionsTextColor",
         "label": "Text",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "padding",
@@ -13142,6 +13813,19 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -13270,13 +13954,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -13338,25 +14027,30 @@
         "key": "lineColor",
         "label": "Line color",
         "valueType": "string",
-        "default": "#375FCF"
+        "default": ""
       },
       {
         "key": "handleColor",
         "label": "Handle color",
         "valueType": "string",
-        "default": "#375FCF"
+        "default": ""
       },
       {
         "key": "trackColor",
         "label": "Track color",
         "valueType": "string",
-        "default": "#375FCF"
+        "default": ""
       },
       {
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -13475,13 +14169,13 @@
         "key": "color",
         "label": "Color",
         "valueType": "string",
-        "default": "#1B1F24"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -13497,36 +14191,37 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "lineColor",
         "label": "Track",
         "valueType": "string",
-        "default": "#E4E7EB"
+        "default": "var(--cc-surface3-surface)"
       },
       {
         "key": "trackColor",
         "label": "Accent",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "handleColor",
         "label": "Handle",
         "valueType": "string",
-        "default": "#FFFFFF"
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "handleBorderColor",
         "label": "Handle border",
         "valueType": "string",
-        "default": "#ACB2B9"
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "markerLabel",
         "label": "Marker label",
         "valueType": "string",
-        "default": "#1B1F24"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "padding",
@@ -13537,6 +14232,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "visibility",
+        "default": "{{true}}"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -13723,6 +14439,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -13833,13 +14554,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -13913,7 +14639,7 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "colour",
@@ -13930,6 +14656,11 @@
           "sm",
           "lg"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -14057,7 +14788,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -14073,13 +14804,13 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "textColor",
         "label": "Selected background",
         "valueType": "string",
-        "default": "#ffb400"
+        "default": "#EFB82D"
       },
       {
         "key": "selectedBackgroundHearts",
@@ -14091,7 +14822,7 @@
         "key": "unselectedBackground",
         "label": "Unselected background",
         "valueType": "string",
-        "default": "#ffb400"
+        "default": "var(--cc-surface3-surface)"
       },
       {
         "key": "boxShadow",
@@ -14108,6 +14839,23 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "labelWidth",
+        "default": "{{33}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -14316,7 +15064,7 @@
       {
         "key": "primaryLabelSize",
         "label": "Label size",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "primaryLabelColour",
@@ -14327,7 +15075,7 @@
       {
         "key": "primaryValueSize",
         "label": "Value size",
-        "default": 34
+        "default": "{{34}}"
       },
       {
         "key": "primaryTextColour",
@@ -14344,7 +15092,7 @@
       {
         "key": "secondaryLabelSize",
         "label": "Label size",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "secondaryLabelColour",
@@ -14355,7 +15103,7 @@
       {
         "key": "secondaryValueSize",
         "label": "Value size",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "positiveSecondaryValueColor",
@@ -14385,7 +15133,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -14402,6 +15150,15 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -14613,13 +15370,13 @@
         "key": "incompletedAccent",
         "label": "Incompleted accent",
         "valueType": "string",
-        "default": "#CCD1D5"
+        "default": "var(--cc-surface3-surface)"
       },
       {
         "key": "incompletedLabel",
         "label": "Incompleted label",
         "valueType": "string",
-        "default": "#1B1F24"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "completedAccent",
@@ -14631,13 +15388,13 @@
         "key": "completedLabel",
         "label": "Completed label",
         "valueType": "string",
-        "default": "#1B1F24"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "currentStepLabel",
         "label": "Current step label",
         "valueType": "string",
-        "default": "#1B1F24"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "padding",
@@ -14648,6 +15405,15 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "visibility",
+        "default": "{{true}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -14757,13 +15523,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
         "default": "left"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -15167,12 +15938,13 @@
         "key": "columnTitleColor",
         "label": "Column title",
         "valueType": "string",
-        "default": "var(--cc-placeholder-text)"
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "columnHeaderWrap",
         "label": "Overflow",
         "valueType": "string",
+        "default": "fixed",
         "allowedValues": [
           "fixed",
           "wrap"
@@ -15182,6 +15954,7 @@
         "key": "headerCasing",
         "label": "Header casing",
         "valueType": "string",
+        "default": "none",
         "allowedValues": [
           "none",
           "uppercase"
@@ -15191,7 +15964,7 @@
         "key": "columnBackgroundColor",
         "label": "Background",
         "valueType": "string",
-        "default": "var(--cc-surface2-surface)"
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "textColor",
@@ -15230,6 +16003,7 @@
         "key": "maxRowHeight",
         "label": "Max row height",
         "valueType": "string",
+        "default": "auto",
         "allowedValues": [
           "auto",
           "custom"
@@ -15238,7 +16012,8 @@
       {
         "key": "actionButtonRadius",
         "label": "Action button radius",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0"
       },
       {
         "key": "containerBackgroundColor",
@@ -15249,27 +16024,43 @@
       {
         "key": "borderRadius",
         "label": "Border radius",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "6"
       },
       {
         "key": "borderColor",
         "label": "Border",
         "valueType": "string",
-        "default": false
+        "default": "var(--cc-weak-border)"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "default": "default",
         "allowedValues": [
           "default",
           "none"
         ]
+      },
+      {
+        "key": "maxRowHeightValue",
+        "default": "{{0}}"
+      },
+      {
+        "key": "contentWrap",
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -15891,7 +16682,7 @@
         "key": "unselectedText",
         "label": "Unselected text",
         "valueType": "string",
-        "default": "#375FCF"
+        "default": "var(--cc-placeholder-text)"
       },
       {
         "key": "selectedText",
@@ -15909,13 +16700,13 @@
         "key": "unselectedIcon",
         "label": "Unselected Icon",
         "valueType": "string",
-        "default": "#CCD1D5"
+        "default": "var(--cc-default-icon)"
       },
       {
         "key": "selectedIcon",
         "label": "Selected Icon",
         "valueType": "string",
-        "default": "#CCD1D5"
+        "default": "var(--cc-default-icon)"
       },
       {
         "key": "accent",
@@ -15926,6 +16717,7 @@
       {
         "key": "tabWidth",
         "label": "Tab width",
+        "default": "auto",
         "allowedValues": [
           "auto",
           "split"
@@ -15934,6 +16726,7 @@
       {
         "key": "transition",
         "label": "Transition",
+        "default": "none",
         "allowedValues": [
           "slide",
           "none"
@@ -15954,21 +16747,32 @@
       {
         "key": "borderRadius",
         "label": "Border radius",
-        "default": false
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "string",
+        "default": "default",
         "allowedValues": [
           "default",
           "none"
         ]
+      },
+      {
+        "key": "highlightColor",
+        "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -16252,7 +17056,7 @@
         "key": "size",
         "label": "Size",
         "valueType": "union",
-        "default": "large",
+        "default": "small",
         "allowedValues": [
           "small",
           "large"
@@ -16285,6 +17089,11 @@
         "label": "Alignment",
         "valueType": "string",
         "default": "left"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -16404,11 +17213,12 @@
       {
         "key": "textSize",
         "label": "Size",
-        "default": 14
+        "default": "{{14}}"
       },
       {
         "key": "fontWeight",
         "label": "Weight",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "bold",
@@ -16419,6 +17229,7 @@
       {
         "key": "fontStyle",
         "label": "Style",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "oblique",
@@ -16428,11 +17239,13 @@
       {
         "key": "textColor",
         "label": "Color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "isScrollRequired",
         "label": "Scroll",
+        "default": "enabled",
         "allowedValues": [
           "enabled",
           "disabled"
@@ -16440,11 +17253,13 @@
       },
       {
         "key": "lineHeight",
-        "label": "Line height"
+        "label": "Line height",
+        "default": "{{1.5}}"
       },
       {
         "key": "textIndent",
-        "label": "Text indent"
+        "label": "Text indent",
+        "default": "{{0}}"
       },
       {
         "key": "textAlign",
@@ -16455,6 +17270,7 @@
       {
         "key": "decoration",
         "label": "Decoration",
+        "default": "none",
         "allowedValues": [
           "none",
           "underline",
@@ -16465,6 +17281,7 @@
       {
         "key": "transformation",
         "label": "Transformation",
+        "default": "none",
         "allowedValues": [
           "none",
           "uppercase",
@@ -16474,15 +17291,18 @@
       },
       {
         "key": "letterSpacing",
-        "label": "Letter spacing"
+        "label": "Letter spacing",
+        "default": "{{0}}"
       },
       {
         "key": "wordSpacing",
-        "label": "Word spacing"
+        "label": "Word spacing",
+        "default": "{{0}}"
       },
       {
         "key": "fontVariant",
         "label": "Font variant",
+        "default": "normal",
         "allowedValues": [
           "normal",
           "small-caps",
@@ -16506,7 +17326,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -16523,6 +17343,15 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "verticalAlignment",
+        "default": "center"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -16688,7 +17517,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -16704,7 +17533,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -16752,7 +17581,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -16769,6 +17598,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -16985,7 +17835,7 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
@@ -17001,7 +17851,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "backgroundColor",
@@ -17055,7 +17905,7 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -17072,6 +17922,27 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "direction",
+        "default": "left"
+      },
+      {
+        "key": "width",
+        "default": "{{33}}"
+      },
+      {
+        "key": "iconVisibility",
+        "default": false
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -17231,7 +18102,13 @@
       {
         "key": "visibility",
         "label": "Visibility",
-        "valueType": "boolean"
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],
@@ -17332,13 +18209,13 @@
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
-        "default": "top",
+        "default": "side",
         "allowedValues": [
           "side",
           "top"
@@ -17358,7 +18235,7 @@
         "key": "auto",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "fieldBackgroundColor",
@@ -17394,13 +18271,13 @@
         "key": "icon",
         "label": "Icon",
         "valueType": "string",
-        "default": "IconHome2"
+        "default": "IconClock"
       },
       {
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
-        "default": 6
+        "default": "{{6}}"
       },
       {
         "key": "boxShadow",
@@ -17417,6 +18294,31 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "20"
+      },
+      {
+        "key": "iconVisibility",
+        "default": true
+      },
+      {
+        "key": "iconDirection",
+        "default": "left"
+      },
+      {
+        "key": "iconColor",
+        "default": "var(--cc-default-icon)"
+      },
+      {
+        "key": "widthType",
+        "default": "ofComponent"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -17569,13 +18471,18 @@
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
-        "default": false
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -17634,22 +18541,31 @@
       {
         "key": "textColor",
         "label": "Text color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "toggleSwitchColor",
         "label": "Toggle switch color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "visibility",
         "label": "Visibility",
-        "valueType": "boolean"
+        "valueType": "boolean",
+        "default": "{{true}}"
       },
       {
         "key": "disabledState",
         "label": "Disable",
-        "valueType": "boolean"
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -17736,32 +18652,38 @@
       {
         "key": "textColor",
         "label": "Text Color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "borderColor",
         "label": "Border color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "toggleSwitchColor",
         "label": "Checked color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "uncheckedColor",
         "label": "Unchecked color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface3-surface)"
       },
       {
         "key": "handleColor",
         "label": "Handle color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "alignment",
         "label": "Alignment",
         "valueType": "string",
+        "default": "right",
         "allowedValues": [
           "left",
           "right"
@@ -17770,7 +18692,8 @@
       {
         "key": "boxShadow",
         "label": "Box Shadow",
-        "valueType": "union"
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
@@ -17781,6 +18704,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -18120,17 +19048,19 @@
       {
         "key": "labelColor",
         "label": "Color",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "labelFontSize",
         "label": "Size",
         "valueType": "number",
-        "default": 12
+        "default": "{{12}}"
       },
       {
         "key": "labelStyle",
         "label": "Style",
+        "default": "new",
         "allowedValues": [
           "new",
           "legacy"
@@ -18160,32 +19090,37 @@
         "key": "autoLabelWidth",
         "label": "Width",
         "valueType": "boolean",
-        "default": true
+        "default": "{{true}}"
       },
       {
         "key": "borderColor",
         "label": "Border",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-default-border)"
       },
       {
         "key": "uncheckedBackground",
         "label": "Unchecked background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "checkboxColor",
         "label": "Checked background",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-brand)"
       },
       {
         "key": "checkmarkColor",
         "label": "Checkmark",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-surface1-surface)"
       },
       {
         "key": "textColor",
         "label": "Option text",
-        "valueType": "string"
+        "valueType": "string",
+        "default": "var(--cc-primary-text)"
       },
       {
         "key": "boxShadow",
@@ -18202,6 +19137,15 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "labelWidth",
+        "default": "33"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [
@@ -18362,6 +19306,7 @@
         "key": "dividerStyle",
         "label": "Style",
         "valueType": "string",
+        "default": "solid",
         "allowedValues": [
           "solid",
           "dashed"
@@ -18382,6 +19327,11 @@
           "default",
           "none"
         ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
       }
     ],
     "events": [],

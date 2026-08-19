@@ -135,6 +135,15 @@ function readNamedLiteral(file, variableName) {
   return value;
 }
 
+const componentTypesFile = resolve(TOOLJET, 'frontend/src/AppBuilder/WidgetManager/componentTypes.js');
+const universalProps = readNamedLiteral(componentTypesFile, 'universalProps');
+const legacyUniversalProps = readNamedLiteral(componentTypesFile, 'legacyUniversalProps');
+const GLOBAL_STYLES = { ...(legacyUniversalProps.styles ?? {}), ...(universalProps.styles ?? {}) };
+const GLOBAL_STYLE_DEFAULTS = {
+  ...(legacyUniversalProps.definition?.styles ?? {}),
+  ...(universalProps.definition?.styles ?? {}),
+};
+
 function extractProps(config, componentType) {
   // (1) editor `properties` schema → prop type + label (+ a fallback default)
   const meta = {};
@@ -179,22 +188,57 @@ function extractProps(config, componentType) {
 }
 
 function extractStyles(config) {
+  const meta = {};
+  const order = [];
   const stylesObj = prop(config, 'styles');
-  if (!stylesObj || stylesObj.type !== 'ObjectExpression') return [];
-  return stylesObj.properties
-    .filter((pr) => pr.type === 'ObjectProperty' && pr.value.type === 'ObjectExpression')
-    .map((pr) => {
+  if (stylesObj?.type === 'ObjectExpression') {
+    for (const pr of stylesObj.properties) {
+      if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
+      const label = strProp(pr.value, 'displayName');
+      if (!label) continue;
       const validation = prop(pr.value, 'validation');
       const schema = validation && validation.type === 'ObjectExpression' ? prop(validation, 'schema') : undefined;
-      return {
-        key: keyName(pr),
-        label: strProp(pr.value, 'displayName'),
+      const key = keyName(pr);
+      order.push(key);
+      meta[key] = {
+        key,
+        label,
         valueType: schema ? strProp(schema, 'type') : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
         allowedValues: allowedValues(pr.value),
       };
-    })
-    .filter((s) => s.label); // drop section dividers (no label)
+    }
+  }
+
+  // ToolJet persists additional definition.styles leaves that are not shown as authorable inspector
+  // controls. They are still valid runtime keys and must be recognized during persisted validation;
+  // otherwise validate_app warns about ToolJet's own generated defaults.
+  const defStyles = prop(prop(config, 'definition'), 'styles');
+  if (defStyles?.type === 'ObjectExpression') {
+    for (const pr of defStyles.properties) {
+      if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
+      const key = keyName(pr);
+      const value = trimDefault(literal(prop(pr.value, 'value')));
+      if (!meta[key]) {
+        order.push(key);
+        meta[key] = { key, default: value };
+      } else if (value !== undefined) {
+        meta[key].default = value;
+      }
+    }
+  }
+  for (const [key, definition] of Object.entries(GLOBAL_STYLES)) {
+    if (meta[key]) continue;
+    const validation = definition?.validation;
+    order.push(key);
+    meta[key] = {
+      key,
+      label: definition?.displayName,
+      valueType: validation?.schema?.type,
+      default: trimDefault(GLOBAL_STYLE_DEFAULTS[key]?.value ?? validation?.defaultValue),
+    };
+  }
+  return order.map((key) => meta[key]);
 }
 
 function extractEvents(config) {

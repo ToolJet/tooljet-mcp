@@ -32,6 +32,19 @@ describe('catalog', () => {
     expect(form.defaultChildren?.length).toBeGreaterThan(0);
   });
 
+  it('recognizes persisted definition styles that ToolJet adds outside the inspector', () => {
+    const expected = {
+      Statistics: ['iconVisibility'],
+      Text: ['verticalAlignment'],
+      Chart: ['cssClass'],
+      Table: ['maxRowHeightValue', 'contentWrap'],
+    };
+    for (const [type, keys] of Object.entries(expected)) {
+      const styles = new Set(getComponentSchema(type)!.styles.map((style) => style.key));
+      for (const key of keys) expect(styles.has(key), `${type}.${key}`).toBe(true);
+    }
+  });
+
   it('getComponentSchema returns full props for Table incl. the required binding props', () => {
     const t = getComponentSchema('Table');
     expect(t).toBeTruthy();
