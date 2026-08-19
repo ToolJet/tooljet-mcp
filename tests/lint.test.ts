@@ -80,6 +80,26 @@ describe('lintComponentSpec', () => {
       .toEqual([]);
   });
 
+  it('warns on an empty-array first-row fallback and accepts optional chaining', () => {
+    expect(lintComponentSpec({
+      name: 'totalOrders',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '{{(queries.countOrders.data || [{}])[0].count}}' } },
+    }).warnings.join(' ')).toMatch(/\(data \|\| \[\{\}\]\)\[0\]\.field.*empty array is truthy.*\[0\]\?\.field/i);
+
+    expect(lintComponentSpec({
+      name: 'totalOrders',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '{{(queries.countOrders.data || [])[0]?.count || 0}}' } },
+    }).warnings.join(' ')).not.toMatch(/first-row fallback|empty array is truthy/i);
+
+    expect(lintComponentSpec({
+      name: 'totalOrders',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '{{queries.countOrders.data?.[0]?.count || 0}}' } },
+    }).warnings.join(' ')).not.toMatch(/first-row fallback|empty array is truthy/i);
+  });
+
   it('blocks unsupported static component enum values but leaves dynamic bindings unresolved', () => {
     const invalid = lintComponentSpec({
       name: 'orders',

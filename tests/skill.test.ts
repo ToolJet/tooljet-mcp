@@ -100,6 +100,11 @@ describe('generated skill — ToolJet rendering guardrails', () => {
     expect(skill).not.toMatch(/\*\*Html\/Chart expressions:/);
   });
 
+  it('documents the empty-array first-row fallback trap', () => {
+    expect(skill).toContain('`(queries.<q>.data || [{}])[0].field`');
+    expect(skill).toMatch(/`\[\]` is truthy.*`\(queries\.<q>\.data \|\| \[\]\)\[0\]\?\.field`/is);
+  });
+
   it('documents ToolJet DB sort ids and aggregate response aliases', () => {
     expect(reference).toMatch(/order_filters.*outer map key.*inner `id`.*silently disable sorting/is);
     expect(reference).toMatch(/aggregate configuration key is not the result key.*<table_name>_<column>_<aggFx>/is);

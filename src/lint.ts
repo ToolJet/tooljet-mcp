@@ -238,6 +238,17 @@ function nestedMapInValue(value: unknown): boolean {
   return false;
 }
 
+function unsafeEmptyArrayFirstRowFallback(value: unknown): boolean {
+  if (typeof value === 'string') {
+    return value.includes('{{') && /\|\|\s*\[\s*\{\s*\}\s*\]\s*\)\s*\[\s*0\s*\]\s*\./.test(value);
+  }
+  if (Array.isArray(value)) return value.some(unsafeEmptyArrayFirstRowFallback);
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(unsafeEmptyArrayFirstRowFallback);
+  }
+  return false;
+}
+
 /** ToolJet's component-expression evaluator can fail on a map call nested inside another map callback.
  * Distinguish true nesting from safe sequential chains such as rows.map(...).map(...). */
 function hasNestedMapCall(source: string): boolean {
@@ -507,6 +518,14 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         'can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() ' +
         'chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize ' +
         'this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.'
+    );
+  }
+
+  if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
+    warnings.push(
+      `Component "${label}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array ` +
+        'is truthy, so zero rows still produce undefined.field and can blank the component. Use ' +
+        '(data || [])[0]?.field or data?.[0]?.field instead.'
     );
   }
 
