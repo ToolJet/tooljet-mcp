@@ -164,6 +164,16 @@ describe('generated skill — mobile & verification caveats', () => {
     expect(skill).toMatch(/phased checkpoints \(recommended\).*whole app in one run.*slower.*without feedback/is);
     expect(skill).toMatch(/Do not silently choose for them/i);
   });
+
+  it('presents customer-facing completion estimates without false precision', () => {
+    expect(skill).toMatch(/customer-facing and time-informed/i);
+    expect(skill).toMatch(/first usable result.*estimated total active build time.*excluding time waiting for customer feedback.*confidence level/is);
+    expect(skill).toMatch(/Estimate from substantive pages\/workflows and datasource\/schema certainty.*widen the range/is);
+    expect(skill).toMatch(/ranges rounded to about 5[–-]10 minutes.*never fake precision or present the estimate as a promise/is);
+    expect(skill).toContain('`likely 30+ minutes · low confidence`');
+    expect(skill).toMatch(/Phased \(recommended\): first usable part.*Whole app: estimated.*rough estimates/is);
+    expect(skill).toMatch(/Do not mention MCP calls, tokens, or internal implementation details/i);
+  });
 });
 
 describe('generated skill — modal form layout', () => {
@@ -388,6 +398,7 @@ describe('generated skill is synchronized with the generator', () => {
     'Verify the default desktop render only',
     "get the user's execution choice before any mutating build call",
     'phased checkpoints (recommended)',
+    'customer-facing and time-informed',
     'information architecture BEFORE any component',
     'page architecture and phasing are SEPARATE decisions',
     'Async & UI states — required, not polish',
