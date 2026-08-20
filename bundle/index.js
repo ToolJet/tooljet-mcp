@@ -32000,6 +32000,15 @@ function lintComponentSpec(spec) {
   if (spec.type === "KeyValuePair") {
     const data = propVal(props, "data");
     const fields = propVal(props, "fields");
+    const alignment = catalogValue("KeyValuePair", spec.styles, "alignment", "styles");
+    const autoLabelWidth = catalogValue("KeyValuePair", spec.styles, "autoLabelWidth", "styles");
+    const padding = catalogValue("KeyValuePair", spec.styles, "padding", "styles");
+    if (alignment === "side" && !isTruthyBinding(autoLabelWidth)) {
+      warnings.push(`KeyValuePair "${label}": side alignment with autoLabelWidth:false uses the persisted 33% label-width default, creating a large empty gap on wide detail panels. Set styles.autoLabelWidth.value="{{true}}" or use top alignment.`);
+    }
+    if (padding === "default") {
+      warnings.push(`KeyValuePair "${label}": this ToolJet renderer does not apply a visible content inset for styles.padding:"${padding}". Do not rely on it for card padding. For a polished read-only details card, prefer Html with an explicitly projected binding and root CSS padding/box-sizing; keep KeyValuePair when its native field editing/changeSet behavior is required.`);
+    }
     if (data !== void 0 && Array.isArray(fields) && fields.length > 0) {
       const declaredKeys = new Set(fields.flatMap((field) => {
         const key = recordValue(field)?.key;
