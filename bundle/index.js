@@ -31725,19 +31725,27 @@ function placementKey(component) {
   const placement = parentPlacement(component);
   return placement ? `${placement.parentId}::${placement.slotName}` : "__page__";
 }
-function lintComponentSlots(components) {
+function lintComponentSlots(components, options2 = {}) {
   const errors = [];
   const refs2 = new Map(components.flatMap((component) => {
     const key = componentKey(component);
     return key ? [[key, component]] : [];
   }));
   for (const component of components) {
+    const placement = parentPlacement(component);
+    const parent = placement ? refs2.get(placement.parentId) : void 0;
+    if (placement && !parent && options2.requireKnownParents) {
+      errors.push(`Component "${component.name ?? component.id ?? component.type}" has unknown parent "${placement.parentId}". A page id is not a component parent; omit parent for root components.`);
+      continue;
+    }
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : "body";
     const slotName = component.slotName ?? (persistedSlot === "body" ? void 0 : persistedSlot);
     if (!slotName)
       continue;
-    const placement = parentPlacement(component);
-    const parent = placement ? refs2.get(placement.parentId) : void 0;
+    if (!placement) {
+      errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" without a parent. Root components must omit slot_name; nested components need parent_ref or parent.`);
+      continue;
+    }
     if (parent && !SLOT_PARENT_TYPES.has(parent.type ?? "")) {
       errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; native slots are supported only by ModalV2, Form, and Container.`);
     }
@@ -31810,60 +31818,32 @@ function lintListviewChildren(components) {
   return warnings;
 }
 function lintOperationalViewport(components) {
-  const refs2 = new Map(components.flatMap((component) => {
-    const key = componentKey(component);
-    return key ? [[key, component]] : [];
-  }));
-  const absoluteTop = (component, seen = /* @__PURE__ */ new Set()) => {
-    const rect2 = component.layouts?.desktop ?? component.layout;
-    const localTop = rect2?.top ?? 0;
-    const placement = parentPlacement(component);
-    if (!placement || seen.has(placement.parentId))
-      return localTop;
-    const parent = refs2.get(placement.parentId);
-    if (!parent)
-      return localTop;
-    return localTop + absoluteTop(parent, /* @__PURE__ */ new Set([...seen, placement.parentId]));
-  };
-  const hasBoundedAncestor = (component) => {
-    let placement = parentPlacement(component);
-    const seen = /* @__PURE__ */ new Set();
-    while (placement && !seen.has(placement.parentId)) {
-      seen.add(placement.parentId);
-      const parent = refs2.get(placement.parentId);
-      if (!parent)
-        return false;
-      if (BOUNDED_OPERATIONAL_SURFACE_TYPES.has(parent.type ?? ""))
-        return true;
-      placement = parentPlacement(parent);
-    }
-    return false;
-  };
-  const surfaces = components.flatMap((component) => {
+  const topLevel = components.filter((component) => !parentPlacement(component));
+  const surfaces = topLevel.flatMap((component) => {
     if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? ""))
       return [];
     const rect2 = component.layouts?.desktop ?? component.layout;
     if (!rect2 || (rect2.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX)
       return [];
-    return [{ component, bottom: absoluteTop(component) + (rect2.height ?? 0) }];
+    return [{ component, bottom: (rect2.top ?? 0) + (rect2.height ?? 0) }];
   });
   if (!surfaces.length)
     return [];
   const warnings = [];
-  for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
+  for (const button of topLevel.filter((component) => component.type === "Button")) {
     if (propVal(button.styles, "type") !== "primary")
       continue;
     const rect2 = button.layouts?.desktop ?? button.layout;
     if (!rect2)
       continue;
-    const buttonTop = absoluteTop(button);
+    const buttonTop = rect2.top ?? 0;
     const buttonBottom = buttonTop + (rect2.height ?? 0);
     if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX)
       continue;
     const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
-    const surface = precedingSurface ?? surfaces[0];
-    const relation = precedingSurface ? "below" : "on a page with";
-    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px ${relation} a bounded ${surface.component.type} "${surface.component.name ?? surface.component.id ?? surface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
+    if (!precedingSurface)
+      continue;
+    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px below a bounded ${precedingSurface.component.type} "${precedingSurface.component.name ?? precedingSurface.component.id ?? precedingSurface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
   }
   return warnings;
 }
@@ -32135,6 +32115,16 @@ function lintComponentSpec(spec) {
         if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
           warnings.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
+        if (c?.columnType === "badge" || c?.columnType === "badges") {
+          const values = c.values;
+          const labels = c.labels;
+          const configured = (value) => Array.isArray(value) && value.length > 0 || typeof value === "string" && value.trim().length > 0;
+          if (!configured(values) || !configured(labels)) {
+            errors.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" uses columnType:"${c.columnType}" without non-empty values and labels, so cells render blank. Configure both mappings or use columnType:"string".`);
+          } else if (Array.isArray(values) && Array.isArray(labels) && values.length !== labels.length) {
+            errors.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" has ${values.length} badge values but ${labels.length} labels. Badge values and labels must have matching lengths.`);
+          }
+        }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
           if (!Array.isArray(buttons) || buttons.length === 0) {
@@ -32380,6 +32370,7 @@ function validateAppStructure(summary) {
     for (const c of p.components)
       if (c.name)
         counts.set(c.name, (counts.get(c.name) ?? 0) + 1);
+    errors.push(...lintComponentSlots(p.components, { requireKnownParents: true }));
     for (const [name, n] of counts) {
       if (n > 1)
         warnings.push(`Page "${p.name}": ${n} components named "${name}" \u2014 {{components.${name}}} is ambiguous.`);
@@ -32434,29 +32425,6 @@ function validateAppStructure(summary) {
     });
     if (missing.length) {
       warnings.push(`RunJS query "${query.name ?? query.id}" sets runOnDependencyChange=true but reads ${missing.map((name) => `queries.${name}`).join(", ")} as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. Run this query explicitly from each source query's onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.`);
-    }
-  }
-  const successChains = new Set(summary.events.flatMap((event) => {
-    if (event.target !== "data_query")
-      return [];
-    const payload = recordValue(event.event);
-    return payload?.eventId === "onDataQuerySuccess" && payload.actionId === "run-query" && typeof payload.queryId === "string" ? [`${event.sourceId}->${payload.queryId}`] : [];
-  }));
-  for (const query of summary.queries.filter((candidate) => candidate.kind !== "runjs")) {
-    const options2 = recordValue(query.options);
-    if (!options2)
-      continue;
-    const automatic = isTruthyBinding(propVal(options2, "runOnPageLoad")) || isTruthyBinding(propVal(options2, "runOnDependencyChange"));
-    if (!automatic)
-      continue;
-    const blob = JSON.stringify(options2);
-    const referencedNames = [...new Set([...blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
-    const missing = referencedNames.filter((name) => {
-      const source2 = queryByName.get(name);
-      return source2 && source2.id !== query.id && !successChains.has(`${source2.id}->${query.id}`);
-    });
-    if (missing.length) {
-      warnings.push(`Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ${missing.map((name) => `queries.${name}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
     }
   }
   for (const e of summary.events) {
@@ -32560,6 +32528,7 @@ function validateAppStructure(summary) {
 
 // dist/tableValidation.js
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set(["action", "comment", "condition"]);
+var TOOLJET_DB_MAX_TABLE_NAME_LENGTH = 31;
 function normalized(value) {
   return value.trim().toLowerCase();
 }
@@ -32568,6 +32537,11 @@ function validateTableBatch(tables) {
   const tablesByName = /* @__PURE__ */ new Map();
   for (const table of tables) {
     const tableKey = normalized(table.tableName);
+    if (!table.tableName.trim()) {
+      errors.push("ToolJet DB table names cannot be empty.");
+    } else if (table.tableName.length > TOOLJET_DB_MAX_TABLE_NAME_LENGTH) {
+      errors.push(`ToolJet DB table name "${table.tableName}" is ${table.tableName.length} characters; the maximum is ${TOOLJET_DB_MAX_TABLE_NAME_LENGTH}. Shorten it before creating the table.`);
+    }
     if (tablesByName.has(tableKey)) {
       errors.push(`Duplicate table name "${table.tableName}" in batch.`);
     } else {
@@ -34159,12 +34133,12 @@ function insertRowsTool(client) {
 // dist/tools/insertRowsBatch.js
 var seedSchema = external_exports.object({
   table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
 });
 function insertRowsBatchTool(client) {
   return {
     name: "insert_rows_batch",
-    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
+    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -34250,30 +34224,58 @@ function legacyNotice(type) {
 function getComponentCatalogTool(_client) {
   return {
     name: "get_component_catalog",
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
+    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. Use requests:[{type,sections,property_keys?,style_keys?}] when different component types need different sections without loading the union of every contract. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
       type: external_exports.string().optional(),
       types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
+      requests: external_exports.array(external_exports.object({
+        type: external_exports.string(),
+        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
+        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
+        style_keys: external_exports.array(external_exports.string()).min(1).optional()
+      })).min(1).max(25).optional(),
       sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
       property_keys: external_exports.array(external_exports.string()).min(1).optional(),
       style_keys: external_exports.array(external_exports.string()).min(1).optional()
     },
     async handler(args) {
       try {
-        if (args?.type && args.types?.length) {
-          return fail(new Error("Pass either `type` or `types`, not both."));
+        const selectorCount = Number(Boolean(args?.type)) + Number(Boolean(args?.types?.length)) + Number(Boolean(args?.requests?.length));
+        if (selectorCount > 1) {
+          return fail(new Error("Pass exactly one of `type`, `types`, or `requests`."));
         }
-        if (!args?.type && !args.types?.length) {
+        if (!selectorCount) {
           if (args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog sections/key filters require `type` or `types`."));
+            return fail(new Error("Catalog sections/key filters require `type`, `types`, or `requests`."));
           }
           return ok(getCatalog());
+        }
+        if (args.requests?.length) {
+          if (args.sections || args.property_keys || args.style_keys) {
+            return fail(new Error("Put sections/property_keys/style_keys inside each `requests` entry."));
+          }
+          const components2 = [];
+          const unknownTypes2 = [];
+          for (const request of args.requests) {
+            const resolved = resolveCatalogType(request.type);
+            const schema = getComponentSchema(resolved.type);
+            if (!schema) {
+              unknownTypes2.push(request.type);
+              continue;
+            }
+            components2.push({
+              ...selectSchema(schema, request),
+              ...legacyNotice(schema.type),
+              ...resolved.alias ? { alias: resolved.alias } : {}
+            });
+          }
+          return ok({ components: components2, unknown_types: unknownTypes2 });
         }
         if (args.type) {
           const resolved = resolveCatalogType(args.type);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
-            return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
+            return fail(new Error(`Unknown component type "${args.type}". Call with no argument to list valid types.`));
           }
           return ok({
             ...selectSchema(schema, args),
@@ -34307,6 +34309,216 @@ function getComponentCatalogTool(_client) {
         return ok({ components, unknown_types: unknownTypes });
       } catch (err) {
         return fail(err);
+      }
+    }
+  };
+}
+
+// dist/eventActions.js
+var EVENT_ACTION_CONTRACTS = [
+  {
+    id: "run-query",
+    label: "Run query",
+    group: "query",
+    params: [
+      { name: "queryId", required: true, type: "query id" },
+      { name: "queryName", required: false, type: "string" }
+    ],
+    example: { actionId: "run-query", queryId: "<query id>", queryName: "<query name>" }
+  },
+  {
+    id: "switch-page",
+    label: "Switch page",
+    group: "navigation",
+    params: [{ name: "pageId", required: true, type: "page id" }],
+    example: { actionId: "switch-page", pageId: "<page id>" },
+    notes: ["Navigation must be the last handler for the same source and trigger."]
+  },
+  {
+    id: "show-alert",
+    label: "Show alert",
+    group: "output",
+    params: [
+      { name: "message", required: true, type: "string or binding" },
+      { name: "alertType", required: true, type: "string", allowedValues: ["success", "info", "warning", "error"] }
+    ],
+    example: { actionId: "show-alert", message: "Saved", alertType: "success" }
+  },
+  {
+    id: "show-modal",
+    label: "Show modal",
+    group: "component",
+    params: [{ name: "modal", required: true, type: "Modal/ModalV2 component id" }],
+    example: { actionId: "show-modal", modal: "<modal component id>" }
+  },
+  {
+    id: "close-modal",
+    label: "Close modal",
+    group: "component",
+    params: [{ name: "modal", required: true, type: "Modal/ModalV2 component id" }],
+    example: { actionId: "close-modal", modal: "<modal component id>" }
+  },
+  {
+    id: "control-component",
+    label: "Control component",
+    group: "component",
+    params: [
+      { name: "componentId", required: true, type: "component id" },
+      { name: "componentSpecificActionHandle", required: true, type: "component action handle" },
+      { name: "componentSpecificActionParams", required: true, type: "array of {handle,value}", default: [] }
+    ],
+    example: {
+      actionId: "control-component",
+      componentId: "<component id>",
+      componentSpecificActionHandle: "setValue",
+      componentSpecificActionParams: [{ handle: "value", value: "{{1}}" }]
+    },
+    notes: ["Fetch the target component actions from get_component_catalog. Use [] for a parameterless action."]
+  },
+  {
+    id: "set-table-page",
+    label: "Set table page",
+    group: "component",
+    params: [
+      { name: "table", required: true, type: "Table component id" },
+      { name: "pageIndex", required: true, type: "number or binding", default: "{{1}}" }
+    ],
+    example: { actionId: "set-table-page", table: "<table component id>", pageIndex: "{{1}}" }
+  },
+  {
+    id: "scroll-component-into-view",
+    label: "Scroll component into view",
+    group: "component",
+    params: [
+      { name: "componentId", required: true, type: "component id" },
+      { name: "scrollBehavior", required: false, type: "string", default: "smooth", allowedValues: ["auto", "smooth"] },
+      { name: "scrollBlock", required: false, type: "string", default: "nearest", allowedValues: ["start", "center", "end", "nearest"] }
+    ],
+    example: { actionId: "scroll-component-into-view", componentId: "<component id>", scrollBehavior: "smooth", scrollBlock: "nearest" }
+  },
+  {
+    id: "set-custom-variable",
+    label: "Set custom variable",
+    group: "variable",
+    params: [
+      { name: "key", required: true, type: "string" },
+      { name: "value", required: true, type: "any or binding" }
+    ],
+    example: { actionId: "set-custom-variable", key: "selectedRow", value: "{{components.table1.selectedRow}}" }
+  },
+  {
+    id: "unset-custom-variable",
+    label: "Unset custom variable",
+    group: "variable",
+    params: [{ name: "key", required: true, type: "string" }],
+    example: { actionId: "unset-custom-variable", key: "selectedRow" }
+  },
+  {
+    id: "set-page-variable",
+    label: "Set page variable",
+    group: "variable",
+    params: [
+      { name: "key", required: true, type: "string" },
+      { name: "value", required: true, type: "any or binding" }
+    ],
+    example: { actionId: "set-page-variable", key: "filter", value: "{{components.search.value}}" }
+  },
+  {
+    id: "set-localstorage-value",
+    label: "Set local storage value",
+    group: "variable",
+    params: [
+      { name: "key", required: true, type: "string or binding" },
+      { name: "value", required: true, type: "string or binding" }
+    ],
+    example: { actionId: "set-localstorage-value", key: "viewMode", value: "compact" },
+    notes: ["This is client-side persistence, not an authorization boundary."]
+  },
+  {
+    id: "open-webpage",
+    label: "Open webpage",
+    group: "navigation",
+    params: [
+      { name: "url", required: true, type: "string or binding" },
+      { name: "windowTarget", required: false, type: "string", default: "newTab", allowedValues: ["newTab", "currentTab"] }
+    ],
+    example: { actionId: "open-webpage", url: "https://example.com", windowTarget: "newTab" },
+    notes: ["The browser or operating system must have a handler for non-http schemes such as sms:."]
+  },
+  {
+    id: "go-to-app",
+    label: "Go to app",
+    group: "navigation",
+    params: [
+      { name: "correlationId", required: true, type: "linked app correlation id" },
+      { name: "queryParams", required: false, type: "array of [key,value] pairs", default: [] }
+    ],
+    example: { actionId: "go-to-app", correlationId: "<linked app correlation id>", queryParams: [] }
+  },
+  {
+    id: "copy-to-clipboard",
+    label: "Copy to clipboard",
+    group: "output",
+    params: [{ name: "contentToCopy", required: true, type: "string or binding" }],
+    example: { actionId: "copy-to-clipboard", contentToCopy: "{{components.text1.text}}" }
+  },
+  {
+    id: "generate-file",
+    label: "Generate file",
+    group: "output",
+    params: [
+      { name: "fileName", required: false, type: "string or binding", default: "data.txt" },
+      { name: "fileType", required: false, type: "string or binding", default: "csv", allowedValues: ["csv", "plaintext", "pdf"] },
+      { name: "data", required: true, type: "array/string/PDF bytes or binding" }
+    ],
+    example: { actionId: "generate-file", fileName: "export.csv", fileType: "csv", data: "{{queries.list.data}}" },
+    notes: ["PDF is pass-through only and requires pre-formed PDF bytes."]
+  },
+  {
+    id: "logout",
+    label: "Logout",
+    group: "session",
+    params: [],
+    example: { actionId: "logout" }
+  }
+];
+var EVENT_ACTION_IDS = new Set(EVENT_ACTION_CONTRACTS.map((contract) => contract.id));
+function getEventActionContract(actionId) {
+  return EVENT_ACTION_CONTRACTS.find((contract) => contract.id === actionId);
+}
+
+// dist/tools/getEventActionCatalog.js
+function getEventActionCatalogTool(_client) {
+  return {
+    name: "get_event_action_catalog",
+    description: "Discover exact MCP-authorable ToolJet event action payloads. With no selector, returns the lightweight action palette. Use action_id for one full contract or action_ids to batch several. Contracts include required parameter names, defaults, allowed values, examples, and runtime caveats such as open-webpage windowTarget and copy-to-clipboard contentToCopy.",
+    inputSchema: {
+      action_id: external_exports.string().optional(),
+      action_ids: external_exports.array(external_exports.string()).min(1).max(25).optional()
+    },
+    async handler(args) {
+      try {
+        if (args.action_id && args.action_ids?.length) {
+          return fail(new Error("Pass either `action_id` or `action_ids`, not both."));
+        }
+        if (args.action_id) {
+          const contract = getEventActionContract(args.action_id);
+          return contract ? ok(contract) : fail(new Error(`Unknown event action "${args.action_id}".`));
+        }
+        if (args.action_ids?.length) {
+          const requested = [...new Set(args.action_ids)];
+          const actions = requested.flatMap((actionId) => {
+            const contract = getEventActionContract(actionId);
+            return contract ? [contract] : [];
+          });
+          return ok({
+            actions,
+            unknown_action_ids: requested.filter((actionId) => !getEventActionContract(actionId))
+          });
+        }
+        return ok(EVENT_ACTION_CONTRACTS.map(({ id, label, group }) => ({ id, label, group })));
+      } catch (error51) {
+        return fail(error51);
       }
     }
   };
@@ -34481,7 +34693,10 @@ function getDatasourceQuerySchemaTool(client) {
             operation: request.operation,
             sections: request.sections
           });
-          schemas.push(selected ?? { error: `Unknown datasource kind "${kind}". Call with no selector to list known schemas.` });
+          if (!selected) {
+            throw new Error(`Unknown datasource kind "${kind}". Call with no selector to list known schemas.`);
+          }
+          schemas.push(selected);
         }
         return ok(args.requests ? { schemas } : schemas[0]);
       } catch (err) {
@@ -35176,25 +35391,6 @@ function getComponentTool(client) {
 }
 
 // dist/eventValidation.js
-var ACTION_IDS = /* @__PURE__ */ new Set([
-  "run-query",
-  "switch-page",
-  "show-alert",
-  "show-modal",
-  "close-modal",
-  "set-custom-variable",
-  "unset-custom-variable",
-  "set-page-variable",
-  "set-table-page",
-  "copy-to-clipboard",
-  "generate-file",
-  "open-webpage",
-  "go-to-app",
-  "logout",
-  "control-component",
-  "set-localstorage-value",
-  "scroll-component-into-view"
-]);
 function propVal2(properties, key) {
   const value = properties?.[key];
   return value && typeof value === "object" && "value" in value ? value.value : value;
@@ -35281,7 +35477,7 @@ function validateEvents(summary, events, options2 = {}) {
       errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
     }
     const actionId = event.action.actionId;
-    if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
+    if (typeof actionId !== "string" || !EVENT_ACTION_IDS.has(actionId)) {
       errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
     }
@@ -35477,63 +35673,6 @@ function staticPositiveInteger(value) {
     return void 0;
   const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
   return match ? Number(match[1]) : void 0;
-}
-function containsBinding(value) {
-  if (typeof value === "string")
-    return value.includes("{{");
-  if (Array.isArray(value))
-    return value.some(containsBinding);
-  return !!record2(value) && Object.values(record2(value)).some(containsBinding);
-}
-function assessRestGet(options2, datasourceId) {
-  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
-  const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
-  if (method !== "get") {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
-      ...identity
-    };
-  }
-  const url2 = typeof options2.url === "string" ? options2.url.trim() : "";
-  if (!url2 || containsBinding(url2)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
-      ...identity
-    };
-  }
-  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
-  if (requestFields.some(containsBinding)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
-      ...identity
-    };
-  }
-  return {
-    provenRead: true,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    requiresRemoteReadConfirmation: true,
-    source: { kind: "remote_endpoint", value: url2 },
-    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
-    ...identity
-  };
 }
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
@@ -35800,8 +35939,6 @@ function assessQueryRead(query) {
     };
   }
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  if (kind === "restapi")
-    return assessRestGet(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -35902,15 +36039,6 @@ function operationFromOptions(options2, contracts, defaults) {
     return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, "default"))
     return "default";
-  const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
-    const selectors = Object.entries(variant.when);
-    return selectors.length > 0 && selectors.every(([selector, accepted]) => {
-      const actual = options2[selector] ?? defaults[selector];
-      return typeof actual === "string" && !isDynamicBinding2(actual) && accepted.includes(actual);
-    });
-  }));
-  if (selectorMatches.length === 1)
-    return selectorMatches[0][0];
   return void 0;
 }
 function variantMatches(variant, options2) {
@@ -35939,10 +36067,6 @@ function nestedChildren(fields, root) {
 function suffixSuggestion(key, fields) {
   const matches2 = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
   return matches2.length === 1 ? matches2[0] : void 0;
-}
-function tupleArity(field) {
-  const tuple2 = field.shape?.["<index>"];
-  return Array.isArray(tuple2) && tuple2.length > 0 ? tuple2.length : void 0;
 }
 function bindingStrings(value, path = "") {
   if (typeof value === "string")
@@ -36098,28 +36222,9 @@ function validateQueryOptions(kind, options2) {
     }
   }
   for (const [path, field] of Object.entries(fields)) {
-    const value = valueAtPath(options2, path);
-    const arity = tupleArity(field);
-    if (arity !== void 0 && value !== void 0 && !isDynamicBinding2(value)) {
-      if (!Array.isArray(value)) {
-        errors.push({
-          code: "invalid_option_shape",
-          path,
-          message: `Option "${path}" for ${kind}/${operation} must be an array of ${arity}-item tuples.`
-        });
-      } else {
-        const invalidIndex = value.findIndex((item) => !Array.isArray(item) || item.length !== arity);
-        if (invalidIndex >= 0) {
-          errors.push({
-            code: "invalid_option_shape",
-            path: `${path}[${invalidIndex}]`,
-            message: `Option "${path}" for ${kind}/${operation} must contain ${arity}-item tuples such as [["key", "value"]].`
-          });
-        }
-      }
-    }
     if (!field.allowedValues?.length)
       continue;
+    const value = valueAtPath(options2, path);
     if (typeof value === "string" && !value.includes("{{") && !field.allowedValues.includes(value)) {
       errors.push({
         code: "invalid_option_value",
@@ -36643,6 +36748,7 @@ function lintPlannedApp(spec, existingSummary) {
         ...component.slotName && component.slotName !== "body" ? { slot_name: component.slotName } : {}
       };
     });
+    errors.push(...lintComponentSlots([...existingPage?.components ?? [], ...plannedComponents], { requireKnownParents: true }).map((message) => `Page "${plannedPage.name}": ${message}`));
     const pageSummary = existingPage ?? {
       id: pageId,
       name: plannedPage.name,
@@ -36660,6 +36766,50 @@ function lintPlannedApp(spec, existingSummary) {
   });
   if (pages.length)
     checked.push("page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs");
+  const componentUpdates = spec.componentUpdates ?? [];
+  for (const [index, update] of componentUpdates.entries()) {
+    const pageTarget = pageRefs.get(update.pageRef);
+    if (!pageTarget) {
+      errors.push(`Component update[${index}] has unknown page_ref "${update.pageRef}".`);
+      continue;
+    }
+    const componentTarget = componentRefs.get(update.componentRef);
+    if (!componentTarget) {
+      errors.push(`Component update[${index}] has unknown component_ref "${update.componentRef}".`);
+      continue;
+    }
+    if (componentTarget.id.startsWith("planned-component:")) {
+      errors.push(`Component update[${index}] targets planned-new component "${update.componentRef}". Put its final definition directly in pages[].components instead.`);
+      continue;
+    }
+    const page = pages.find((candidate) => candidate.id === pageTarget.id);
+    const componentIndex = page?.components.findIndex((candidate) => candidate.id === componentTarget.id) ?? -1;
+    if (!page || componentIndex < 0) {
+      errors.push(`Component update[${index}] component_ref "${update.componentRef}" is not on page_ref "${update.pageRef}".`);
+      continue;
+    }
+    const current = page.components[componentIndex];
+    const normalized2 = normalizeComponentSpec({
+      name: current.name ?? current.id,
+      type: current.type ?? "",
+      properties: { ...current.properties ?? {}, ...update.definition.properties ?? {} },
+      styles: { ...current.styles ?? {}, ...update.definition.styles ?? {} },
+      others: { ...current.others ?? {}, ...update.definition.others ?? {} },
+      validation: update.definition.validation,
+      layouts: current.layouts,
+      parent: current.parent
+    });
+    warnings.push(...normalized2.warnings.map((warning) => `Component update[${index}]: ${warning}`));
+    page.components[componentIndex] = {
+      ...current,
+      properties: normalized2.component.properties,
+      styles: normalized2.component.styles,
+      others: normalized2.component.others
+    };
+  }
+  if (componentUpdates.length) {
+    checked.push("persisted component update refs, contracts, bindings, and projected render state");
+  }
   const eventSpecs = [];
   (spec.events ?? []).forEach((event, index) => {
     const source2 = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
@@ -36724,8 +36874,8 @@ function lintPlannedApp(spec, existingSummary) {
     warnings.push(...eventValidation.warnings);
   }
   const structure = validateAppStructure(summary);
-  errors.push(...structure.errors);
-  warnings.push(...structure.warnings);
+  appendNovelMessages(errors, structure.errors);
+  appendNovelMessages(warnings, structure.warnings);
   return {
     ok: unique2(errors).length === 0,
     errors: unique2(errors),
@@ -36741,6 +36891,7 @@ function lintPlannedApp(spec, existingSummary) {
       seed_rows: seedRows,
       pages: spec.pages?.length ?? 0,
       components: componentCount,
+      component_updates: componentUpdates.length,
       queries: plannedQueries.length,
       events: eventSpecs.length,
       lifecycles: spec.lifecycles?.length ?? 0
@@ -36820,6 +36971,13 @@ function slug(value) {
 function unique2(values) {
   return [...new Set(values)];
 }
+function appendNovelMessages(target, candidates) {
+  for (const message of candidates) {
+    if (!target.some((existing) => existing === message || existing.endsWith(`: ${message}`))) {
+      target.push(message);
+    }
+  }
+}
 
 // dist/componentBatch.js
 var layoutSchema = external_exports.object({
@@ -36852,7 +37010,7 @@ function containsListItemBinding(value) {
   }
   return false;
 }
-function prepareComponentBatch(inputs) {
+function prepareComponentBatch(inputs, pageId) {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,
@@ -36862,6 +37020,7 @@ function prepareComponentBatch(inputs) {
   const normalized2 = requested.map((component) => normalizeComponentSpec(component));
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
+  const pageParentErrors = pageId ? expanded.components.filter((component) => component.parent && component.parent === pageId).map((component) => `Component "${component.name}" uses page id "${pageId}" as parent. Omit parent for root components.`) : [];
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
     styles: component.styles,
@@ -36872,7 +37031,7 @@ function prepareComponentBatch(inputs) {
   ] : []);
   return {
     components: expanded.components,
-    errors: lint.errors,
+    errors: [...pageParentErrors, ...lint.errors],
     warnings: [
       ...normalized2.flatMap((item) => item.warnings),
       ...expanded.warnings,
@@ -36907,7 +37066,7 @@ var plannedTableSchema = external_exports.object({
 });
 var plannedSeedSchema = external_exports.object({
   table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
 });
 var plannedQuerySchema = external_exports.object({
   client_ref: external_exports.string().optional(),
@@ -36933,6 +37092,21 @@ var plannedEventSchema = external_exports.object({
   action: external_exports.record(external_exports.string(), external_exports.any()),
   name: external_exports.string().optional()
 });
+var plannedComponentDefinitionSchema = external_exports.object({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+});
+var plannedComponentUpdateSchema = external_exports.object({
+  /** Existing page id/name/handle or a logical page ref declared in this plan. */
+  page_ref: external_exports.string(),
+  /** Existing component id or unique component name. */
+  component_ref: external_exports.string(),
+  definition: plannedComponentDefinitionSchema
+});
 var alertSchema = external_exports.object({
   message: external_exports.string().min(1),
   alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
@@ -36955,6 +37129,7 @@ var appPlanSchema = external_exports.object({
   seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
   queries: external_exports.array(plannedQuerySchema).max(200).optional(),
   pages: external_exports.array(plannedPageSchema).max(50).optional(),
+  component_updates: external_exports.array(plannedComponentUpdateSchema).max(500).optional(),
   events: external_exports.array(plannedEventSchema).max(1e3).optional(),
   lifecycles: external_exports.array(plannedLifecycleSchema).max(200).optional()
 });
@@ -36997,14 +37172,17 @@ function unique3(values) {
 function lintAppSpecTool(client) {
   return {
     name: "lint_app_spec",
-    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
+    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. component_updates can patch persisted components by page_ref/component_ref in the same preflighted phase. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
     inputSchema: appPlanSchema.shape,
     async handler(args) {
       try {
-        if (![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
-          return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
+        if (![args.tables, args.seed_data, args.queries, args.pages, args.component_updates, args.events, args.lifecycles].some((items) => items?.length)) {
+          return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, component_update, event, or lifecycle."));
         }
         const preflightErrors = [];
+        if (args.component_updates?.length && !args.app_id) {
+          preflightErrors.push("app_id is required when a plan contains component_updates.");
+        }
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -37082,6 +37260,11 @@ function lintAppSpecTool(client) {
               parent: component.parent,
               slotName: component.slot_name
             }))
+          })),
+          componentUpdates: args.component_updates?.map((update) => ({
+            pageRef: update.page_ref,
+            componentRef: update.component_ref,
+            definition: update.definition
           })),
           events: args.events?.map((event) => ({
             sourceRef: event.source_ref,
@@ -37168,17 +37351,35 @@ function oneRef(value, targets, label) {
 function appliedSummary(applied) {
   return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(", ");
 }
+var schemaCacheRetryDelays = process.env.NODE_ENV === "test" ? [0, 0, 0, 0] : [250, 500, 1e3, 2e3];
+function isSchemaCacheMiss(error51) {
+  const message = error51 instanceof Error ? error51.message : String(error51);
+  return /PGRST205|schema[ -]cache|could not find the table/i.test(message);
+}
+async function seedNewTableWithSchemaCacheRetry(client, table) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await client.insertRowsBatch({ tables: [table] });
+    } catch (error51) {
+      const partiallyWritten = completedPartialWrites(error51);
+      const delay = schemaCacheRetryDelays[attempt];
+      if (delay === void 0 || partiallyWritten.length > 0 || !isSchemaCacheMiss(error51))
+        throw error51;
+      await new Promise((resolve3) => setTimeout(resolve3, delay));
+    }
+  }
+}
 function applyAppPhaseTool(client) {
   return {
     name: "apply_app_phase",
-    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
+    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows (with a bounded schema-cache retry for newly created tables), creates independent page component batches concurrently, patches persisted components declared in component_updates, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       plan_token: external_exports.string()
     },
     async handler(args) {
-      const applied = { tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
+      const applied = { tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, component_updates: 0, events: 0 };
       let stage = "consume plan";
       try {
         const stored = consumeAppPlan(args.plan_token);
@@ -37269,6 +37470,10 @@ function applyAppPhaseTool(client) {
           await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
         }
         stage = "seed data and create queries";
+        const createdTableNames = new Set(createdTables.map((table) => table.table_name.toLowerCase()));
+        const seedTables = (spec.seed_data ?? []).map((seed) => ({ tableName: seed.table_name, rows: seed.rows }));
+        const existingSeedTables = seedTables.filter((seed) => !createdTableNames.has(seed.tableName.toLowerCase()));
+        const newSeedTables = seedTables.filter((seed) => createdTableNames.has(seed.tableName.toLowerCase()));
         const queryInputs = (spec.queries ?? []).map((query) => {
           const kind = datasourceKinds.get(query.datasource_id);
           if (!kind)
@@ -37283,9 +37488,10 @@ function applyAppPhaseTool(client) {
           return { dataSourceId: query.datasource_id, name: query.name, options: options2, kind };
         });
         const [seedWrite, queryWrite] = await Promise.allSettled([
-          spec.seed_data?.length ? client.insertRowsBatch({
-            tables: spec.seed_data.map((seed) => ({ tableName: seed.table_name, rows: seed.rows }))
-          }) : Promise.resolve([]),
+          seedTables.length ? Promise.all([
+            ...existingSeedTables.length ? [client.insertRowsBatch({ tables: existingSeedTables })] : [],
+            ...newSeedTables.map((table) => seedNewTableWithSchemaCacheRetry(client, table))
+          ]).then((results) => results.flat()) : Promise.resolve([]),
           queryInputs.length ? client.createQueries({ versionId: args.version_id, queries: queryInputs }) : Promise.resolve([])
         ]);
         const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : completedPartialWrites(seedWrite.reason);
@@ -37312,7 +37518,7 @@ function applyAppPhaseTool(client) {
           const target = pageTargets.get(logicalRef(page));
           if (!target)
             throw new Error(`Could not resolve component page "${page.name}".`);
-          const prepared = prepareComponentBatch(page.components);
+          const prepared = prepareComponentBatch(page.components, target.id);
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           return [{ page, pageId: target.id, prepared }];
@@ -37350,6 +37556,49 @@ function applyAppPhaseTool(client) {
         }
         if (componentFailures.length)
           throw new Error(componentFailures.join(" | "));
+        stage = "update persisted components";
+        const componentUpdateGroups = /* @__PURE__ */ new Map();
+        for (const update of spec.component_updates ?? []) {
+          const page = pageTargets.get(update.page_ref);
+          if (!page)
+            throw new Error(`Component update has unknown page_ref "${update.page_ref}".`);
+          const component = componentTargets.get(update.component_ref);
+          if (!component)
+            throw new Error(`Component update has unknown component_ref "${update.component_ref}".`);
+          const currentPage = initialSummary.pages.find((candidate) => candidate.id === page.id);
+          const current = currentPage?.components.find((candidate) => candidate.id === component.id);
+          if (!current) {
+            throw new Error(`Component update "${update.component_ref}" must target a persisted component on page "${update.page_ref}".`);
+          }
+          const normalized2 = normalizeComponentSpec({
+            name: current.name ?? current.id,
+            type: current.type ?? "",
+            properties: { ...current.properties ?? {}, ...update.definition.properties ?? {} },
+            styles: { ...current.styles ?? {}, ...update.definition.styles ?? {} },
+            others: { ...current.others ?? {}, ...update.definition.others ?? {} },
+            validation: update.definition.validation,
+            layouts: current.layouts,
+            parent: current.parent
+          });
+          warnings.push(...normalized2.warnings.map((warning) => `Component update ${update.component_ref}: ${warning}`));
+          const definition = { ...update.definition };
+          for (const section of ["properties", "styles", "validation", "others"]) {
+            const patch = normalized2.patch[section];
+            if (!patch)
+              continue;
+            definition[section] = {
+              ...update.definition[section] ?? {},
+              ...patch
+            };
+          }
+          const group = componentUpdateGroups.get(page.id) ?? [];
+          group.push({ componentId: component.id, definition });
+          componentUpdateGroups.set(page.id, group);
+        }
+        if (componentUpdateGroups.size) {
+          const updateWrites = await Promise.all([...componentUpdateGroups.entries()].map(([pageId, updates]) => client.updateComponents({ appId: args.app_id, versionId: args.version_id, pageId, updates })));
+          applied.component_updates = updateWrites.reduce((total, result) => total + result.updated, 0);
+        }
         stage = "create events and lifecycles";
         const summaryBeforeEvents = await client.getAppSummary(args.app_id);
         const ordinaryEvents = (spec.events ?? []).map((event) => {
@@ -37813,7 +38062,7 @@ function addComponentsTool(client) {
       components: external_exports.array(componentInputSchema).min(1)
     },
     async handler(args) {
-      const prepared = prepareComponentBatch(args.components);
+      const prepared = prepareComponentBatch(args.components, args.page_id);
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
       try {
@@ -37853,7 +38102,10 @@ function addComponentBatchesTool(client) {
       if (new Set(pageIds).size !== pageIds.length) {
         return fail(new Error("add_component_batches page_id values must be unique."));
       }
-      const prepared = args.pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
+      const prepared = args.pages.map((page) => ({
+        ...page,
+        prepared: prepareComponentBatch(page.components, page.page_id)
+      }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error51) => `Page ${page.page_id}: ${error51}`));
       if (errors.length)
         return fail(new Error(errors.join(" ")));
@@ -37918,6 +38170,10 @@ function updateComponentsTool(client) {
         const errors = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
+          if (update.parent === args.page_id) {
+            errors.push(`Component "${update.component_id}": a page id is not a component parent; omit parent for root components.`);
+            continue;
+          }
           const current = components.get(update.component_id);
           if (!current) {
             errors.push(`Component "${update.component_id}" does not exist on page "${args.page_id}".`);
@@ -37985,7 +38241,7 @@ function updateComponentsTool(client) {
           errors.push(...lint.errors);
           warnings.push(...lint.warnings);
         }
-        errors.push(...lintComponentSlots([...projected.values()]));
+        errors.push(...lintComponentSlots([...projected.values()], { requireKnownParents: true }));
         if (errors.length)
           return fail(new Error(errors.join(" ")));
         warnings.push(...lintRenderedGeometry([...projected.values()]));
@@ -38122,6 +38378,9 @@ function updateLayoutTool(client) {
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id);
           let parent = layout.parent;
+          if (parent === args.page_id) {
+            throw new Error(`Component "${layout.component_id}": a page id is not a component parent; omit parent for root components.`);
+          }
           if (layout.slot_name !== void 0) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
             if (!parent) {
@@ -38147,7 +38406,7 @@ function updateLayoutTool(client) {
             slotName: change.slot_name
           };
         });
-        const slotErrors = lintComponentSlots(projected);
+        const slotErrors = lintComponentSlots(projected, { requireKnownParents: true });
         if (slotErrors.length)
           return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
@@ -38446,35 +38705,6 @@ function deleteQueryTool(client) {
 }
 
 // dist/tools/runQuery.js
-var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
-function truncateRemoteResult(result) {
-  if (!Object.prototype.hasOwnProperty.call(result, "data"))
-    return { result };
-  let serialized;
-  try {
-    serialized = JSON.stringify(result.data);
-  } catch {
-    return {
-      result: { ...result, data: { mcp_truncated: true, preview_json: "<unserializable response>" } },
-      warning: "The REST response data could not be serialized for MCP output; inspect it in ToolJet."
-    };
-  }
-  if (typeof serialized !== "string")
-    return { result };
-  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS)
-    return { result };
-  return {
-    result: {
-      ...result,
-      data: {
-        mcp_truncated: true,
-        original_json_characters: serialized.length,
-        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS)
-      }
-    },
-    warning: `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. The remote request already completed; add API-specific pagination or a smaller limit before another run.`
-  };
-}
 function containsComponentBinding(value) {
   if (typeof value === "string")
     return /\bcomponents\s*\./.test(value);
@@ -38496,15 +38726,14 @@ function datasourceRecovery(query) {
 function runQueryTool(client) {
   return {
     name: "run_query",
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
       environment_id: external_exports.string().optional(),
       count_query_id: external_exports.string().optional(),
       user_confirmed_large_read: external_exports.boolean().optional(),
-      user_confirmed_billable_read: external_exports.boolean().optional(),
-      user_confirmed_remote_read: external_exports.boolean().optional()
+      user_confirmed_billable_read: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
@@ -38516,12 +38745,6 @@ function runQueryTool(client) {
         }
         if (containsComponentBinding(query.options)) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
-        }
-        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
-        }
-        if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push("User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -38575,11 +38798,8 @@ function runQueryTool(client) {
           });
         }
         const recovery = result.status === "failed" ? datasourceRecovery(query) : void 0;
-        const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
-        if (output.warning)
-          warnings.push(output.warning);
         return ok({
-          ...output.result,
+          ...result,
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {}
@@ -38873,6 +39093,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),
+    getEventActionCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),
     getComponentTool(client),

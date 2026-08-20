@@ -11,7 +11,7 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 - **Custom markup inside a component's own properties** — many components take HTML in their content/cell/tooltip properties (a Table column rendered as HTML, a `Text` set to HTML, custom cell formatting). Use it to polish the UI in place.
 - **Rule of thumb:** built-in when it's **interactive, data-bound, or meant to be tweaked visually**; HTML when it's **static presentation or fine UI customization** and HTML expresses it more cleanly.
 
-The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` (or use `type` for one) and request their exact needed sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
+The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` when they share filters, or per-type `requests:[...]` when they need different sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 

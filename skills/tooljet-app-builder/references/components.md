@@ -1,6 +1,6 @@
 # Component contracts and specialized rendering
 
-Read this selectively for exact component binding rules or the built-in palette. Prefer batched, section-filtered `get_component_catalog` calls for the types actually used.
+Read this selectively for exact component binding rules or the built-in palette. Prefer batched, section-filtered `get_component_catalog` calls for the types actually used. Use per-type `requests` when those types need different sections.
 
 ## Built-in components (pick from these first)
 
@@ -139,6 +139,10 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 
 ### TextInput
 Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
+
+## Map marker selection
+
+Map exposes both `center` and `selectedMarker`. After `onMarkerClick`, `{{components.mapName.selectedMarker}}` is the complete clicked marker object from `defaultMarkers`; include every downstream field you need (for example `vehicle_id`, `driver_name`, `latitude`, `longitude`, and status) in each marker object, then bind a details modal or panel to `selectedMarker.<field>`. Fetch the live Map `events` and `exposedVariables` contract before authoring this flow. A common chain is marker click → show-modal; if the chain also navigates, keep navigation last.
 
 ## File generation formats
 
