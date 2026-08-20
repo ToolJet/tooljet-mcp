@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
+    "dev:http": "tsx src/http.ts",
+    "start:http": "node dist/http.js",
     "test": "npm run check:datasource-catalog && vitest run",
     "check:datasource-catalog": "node scripts/datasource-coverage.mjs --check",
     "generate:catalogs": "node scripts/generate-catalog.mjs && node scripts/generate-datasource-catalog.mjs",

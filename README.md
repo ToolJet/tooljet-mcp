@@ -48,6 +48,24 @@ Then install the skill so Codex knows how to drive the tools: copy the complete 
 
 Restart Codex; it should expose the ToolJet tools, including `create_app`, `list_datasources`, `get_datasource_query_schema`, `get_component_catalog`, `lint_app_spec`, the batch authoring tools, and `validate_app`.
 
+## Run over Streamable HTTP
+
+The same MCP server can also run as a stateful Streamable HTTP service. It uses the same ToolJet environment variables and authentication flow as stdio; only the MCP transport changes.
+
+```bash
+npm run build
+npm run start:http
+```
+
+The defaults are:
+
+- MCP endpoint: `http://127.0.0.1:3001/mcp`
+- Health endpoint: `http://127.0.0.1:3001/health`
+
+Set `TOOLJET_MCP_HTTP_HOST` and `TOOLJET_MCP_HTTP_PORT` (or `PORT`) to change the listener. For a container or remote agent deployment, bind to `0.0.0.0` and put authentication/TLS at the service boundary before exposing the endpoint publicly.
+
+Each Streamable HTTP session gets its own MCP server instance, while all ToolJet API authentication remains exactly the same as the stdio mode.
+
 ## Install as a Claude Code plugin
 
 This repo is also a **self-contained Claude Code plugin** — installing it registers the MCP server *and* the `tooljet-app-builder` skill together. No `npm install`/build on the user's side: a single-file bundle (`bundle/index.js`) plus the runtime catalogs in `data/` are committed.
@@ -117,6 +135,7 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 npm test          # vitest (unit tests, mocked HTTP)
 npm run build     # tsc → dist/
 npm run dev       # tsx src/index.ts (stdio server)
+npm run dev:http  # tsx src/http.ts (Streamable HTTP server)
 npm run generate:catalogs  # refresh component + datasource contracts from local ToolJet source
 ```
 
