@@ -620,28 +620,55 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
  * a substantial, independently scrolling Table/Listview and below the common desktop fold. Long
  * forms/detail pages without a bounded data pane remain valid and intentionally scrollable. */
 export function lintOperationalViewport(components: LintComponent[]): string[] {
-  const topLevel = components.filter((component) => !parentPlacement(component));
-  const surfaces = topLevel.flatMap((component) => {
+  const refs = new Map(
+    components.flatMap((component) => {
+      const key = componentKey(component);
+      return key ? [[key, component] as const] : [];
+    })
+  );
+  const absoluteTop = (component: LintComponent, seen = new Set<string>()): number => {
+    const rect = component.layouts?.desktop ?? component.layout;
+    const localTop = rect?.top ?? 0;
+    const placement = parentPlacement(component);
+    if (!placement || seen.has(placement.parentId)) return localTop;
+    const parent = refs.get(placement.parentId);
+    if (!parent) return localTop;
+    return localTop + absoluteTop(parent, new Set([...seen, placement.parentId]));
+  };
+  const hasBoundedAncestor = (component: LintComponent): boolean => {
+    let placement = parentPlacement(component);
+    const seen = new Set<string>();
+    while (placement && !seen.has(placement.parentId)) {
+      seen.add(placement.parentId);
+      const parent = refs.get(placement.parentId);
+      if (!parent) return false;
+      if (BOUNDED_OPERATIONAL_SURFACE_TYPES.has(parent.type ?? '')) return true;
+      placement = parentPlacement(parent);
+    }
+    return false;
+  };
+  const surfaces = components.flatMap((component) => {
     if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? '')) return [];
     const rect = component.layouts?.desktop ?? component.layout;
     if (!rect || (rect.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX) return [];
-    return [{ component, bottom: (rect.top ?? 0) + (rect.height ?? 0) }];
+    return [{ component, bottom: absoluteTop(component) + (rect.height ?? 0) }];
   });
   if (!surfaces.length) return [];
 
   const warnings: string[] = [];
-  for (const button of topLevel.filter((component) => component.type === 'Button')) {
+  for (const button of components.filter((component) => component.type === 'Button' && !hasBoundedAncestor(component))) {
     if (propVal(button.styles, 'type') !== 'primary') continue;
     const rect = button.layouts?.desktop ?? button.layout;
     if (!rect) continue;
-    const buttonTop = rect.top ?? 0;
+    const buttonTop = absoluteTop(button);
     const buttonBottom = buttonTop + (rect.height ?? 0);
     if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX) continue;
     const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
-    if (!precedingSurface) continue;
+    const surface = precedingSurface ?? surfaces[0]!;
+    const relation = precedingSurface ? 'below' : 'on a page with';
     warnings.push(
-      `Primary Button "${button.name ?? button.id ?? 'Button'}" ends at ${buttonBottom}px below a bounded ` +
-        `${precedingSurface.component.type} "${precedingSurface.component.name ?? precedingSurface.component.id ?? precedingSurface.component.type}" ` +
+      `Primary Button "${button.name ?? button.id ?? 'Button'}" ends at ${buttonBottom}px ${relation} a bounded ` +
+        `${surface.component.type} "${surface.component.name ?? surface.component.id ?? surface.component.type}" ` +
         `and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's ` +
         `inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, ` +
         'or browser-verify that the extra page scroll is deliberate.'
@@ -1535,6 +1562,43 @@ export function validateAppStructure(summary: AppSummary): LintResult {
         `RunJS query "${query.name ?? query.id}" sets runOnDependencyChange=true but reads ${missing.map((name) => `queries.${name}`).join(', ')} ` +
           'as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. ' +
           'Run this query explicitly from each source query\'s onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.'
+      );
+    }
+  }
+
+  // Datasource query options can bind filters/parameters to another query's data. Starting both
+  // automatically lets the dependent query evaluate before its source has returned, and ToolJet does
+  // not necessarily retry it. Require an explicit source-success chain for these saved dependencies.
+  const successChains = new Set(
+    summary.events.flatMap((event) => {
+      if (event.target !== 'data_query') return [];
+      const payload = recordValue(event.event);
+      return payload?.eventId === 'onDataQuerySuccess' &&
+        payload.actionId === 'run-query' && typeof payload.queryId === 'string'
+        ? [`${event.sourceId}->${payload.queryId}`]
+        : [];
+    })
+  );
+  for (const query of summary.queries.filter((candidate) => candidate.kind !== 'runjs')) {
+    const options = recordValue(query.options);
+    if (!options) continue;
+    const automatic = isTruthyBinding(propVal(options, 'runOnPageLoad')) ||
+      isTruthyBinding(propVal(options, 'runOnDependencyChange'));
+    if (!automatic) continue;
+    const blob = JSON.stringify(options);
+    const referencedNames = [...new Set(
+      [...blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]!)
+    )];
+    const missing = referencedNames.filter((name) => {
+      const source = queryByName.get(name);
+      return source && source.id !== query.id && !successChains.has(`${source.id}->${query.id}`);
+    });
+    if (missing.length) {
+      warnings.push(
+        `Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ` +
+          `${missing.map((name) => `queries.${name}.data`).join(', ')}. The dependent query can run before its source ` +
+          'has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source ' +
+          `query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`
       );
     }
   }

@@ -1020,6 +1020,22 @@ describe('lintOperationalViewport', () => {
       },
     ])).toEqual([]);
   });
+
+  it('computes nested container offsets and catches a primary action below the fold', () => {
+    const warnings = lintOperationalViewport([
+      { name: 'history', type: 'Table', clientRef: 'history', layout: { top: 820, left: 2, width: 39, height: 300 } },
+      { name: 'decisionCard', type: 'Container', clientRef: 'decision', layout: { top: 340, left: 22, width: 19, height: 800 } },
+      {
+        name: 'saveReview', type: 'Button', parentRef: 'decision',
+        styles: { type: { value: 'primary' } },
+        layout: { top: 700, left: 1, width: 16, height: 40 },
+      },
+    ]).join(' ');
+
+    expect(warnings).toMatch(
+      /Primary Button "saveReview" ends at 1080px on a page with a bounded Table "history".*outside the initial desktop viewport/i
+    );
+  });
 });
 
 describe('lintComponents (batch)', () => {
@@ -1155,6 +1171,35 @@ describe('validateAppStructure', () => {
       }],
     };
     expect(validateAppStructure(chained).warnings.join(' ')).not.toMatch(/does not infer.*reactive dependencies/i);
+  });
+
+  it('warns when an automatic datasource query races a source-query binding', () => {
+    const raced: AppSummary = {
+      ...base,
+      queries: [
+        { id: 'q1', name: 'returnDetail', kind: 'tooljetdb', options: { runOnPageLoad: true } },
+        {
+          id: 'q2', name: 'customerDetail', kind: 'tooljetdb',
+          options: {
+            runOnPageLoad: true,
+            list_rows: { where_filters: { customer: { id: 'customer_id', value: '{{queries.returnDetail.data[0].customer_id}}' } } },
+          },
+        },
+      ],
+      events: [],
+    };
+    expect(validateAppStructure(raced).warnings.join(' ')).toMatch(
+      /Query dependency race.*customerDetail.*queries\.returnDetail\.data.*onDataQuerySuccess/i
+    );
+
+    const chained: AppSummary = {
+      ...raced,
+      events: [{
+        id: 'e1', sourceId: 'q1', target: 'data_query',
+        event: { eventId: 'onDataQuerySuccess', actionId: 'run-query', queryId: 'q2', queryName: 'customerDetail' },
+      }],
+    };
+    expect(validateAppStructure(chained).warnings.join(' ')).not.toMatch(/Query dependency race/i);
   });
 
   it('errors on an event whose query no longer exists', () => {

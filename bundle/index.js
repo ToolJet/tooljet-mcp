@@ -31810,32 +31810,60 @@ function lintListviewChildren(components) {
   return warnings;
 }
 function lintOperationalViewport(components) {
-  const topLevel = components.filter((component) => !parentPlacement(component));
-  const surfaces = topLevel.flatMap((component) => {
+  const refs2 = new Map(components.flatMap((component) => {
+    const key = componentKey(component);
+    return key ? [[key, component]] : [];
+  }));
+  const absoluteTop = (component, seen = /* @__PURE__ */ new Set()) => {
+    const rect2 = component.layouts?.desktop ?? component.layout;
+    const localTop = rect2?.top ?? 0;
+    const placement = parentPlacement(component);
+    if (!placement || seen.has(placement.parentId))
+      return localTop;
+    const parent = refs2.get(placement.parentId);
+    if (!parent)
+      return localTop;
+    return localTop + absoluteTop(parent, /* @__PURE__ */ new Set([...seen, placement.parentId]));
+  };
+  const hasBoundedAncestor = (component) => {
+    let placement = parentPlacement(component);
+    const seen = /* @__PURE__ */ new Set();
+    while (placement && !seen.has(placement.parentId)) {
+      seen.add(placement.parentId);
+      const parent = refs2.get(placement.parentId);
+      if (!parent)
+        return false;
+      if (BOUNDED_OPERATIONAL_SURFACE_TYPES.has(parent.type ?? ""))
+        return true;
+      placement = parentPlacement(parent);
+    }
+    return false;
+  };
+  const surfaces = components.flatMap((component) => {
     if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? ""))
       return [];
     const rect2 = component.layouts?.desktop ?? component.layout;
     if (!rect2 || (rect2.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX)
       return [];
-    return [{ component, bottom: (rect2.top ?? 0) + (rect2.height ?? 0) }];
+    return [{ component, bottom: absoluteTop(component) + (rect2.height ?? 0) }];
   });
   if (!surfaces.length)
     return [];
   const warnings = [];
-  for (const button of topLevel.filter((component) => component.type === "Button")) {
+  for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
     if (propVal(button.styles, "type") !== "primary")
       continue;
     const rect2 = button.layouts?.desktop ?? button.layout;
     if (!rect2)
       continue;
-    const buttonTop = rect2.top ?? 0;
+    const buttonTop = absoluteTop(button);
     const buttonBottom = buttonTop + (rect2.height ?? 0);
     if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX)
       continue;
     const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
-    if (!precedingSurface)
-      continue;
-    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px below a bounded ${precedingSurface.component.type} "${precedingSurface.component.name ?? precedingSurface.component.id ?? precedingSurface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
+    const surface = precedingSurface ?? surfaces[0];
+    const relation = precedingSurface ? "below" : "on a page with";
+    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px ${relation} a bounded ${surface.component.type} "${surface.component.name ?? surface.component.id ?? surface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
   }
   return warnings;
 }
@@ -32406,6 +32434,29 @@ function validateAppStructure(summary) {
     });
     if (missing.length) {
       warnings.push(`RunJS query "${query.name ?? query.id}" sets runOnDependencyChange=true but reads ${missing.map((name) => `queries.${name}`).join(", ")} as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. Run this query explicitly from each source query's onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.`);
+    }
+  }
+  const successChains = new Set(summary.events.flatMap((event) => {
+    if (event.target !== "data_query")
+      return [];
+    const payload = recordValue(event.event);
+    return payload?.eventId === "onDataQuerySuccess" && payload.actionId === "run-query" && typeof payload.queryId === "string" ? [`${event.sourceId}->${payload.queryId}`] : [];
+  }));
+  for (const query of summary.queries.filter((candidate) => candidate.kind !== "runjs")) {
+    const options2 = recordValue(query.options);
+    if (!options2)
+      continue;
+    const automatic = isTruthyBinding(propVal(options2, "runOnPageLoad")) || isTruthyBinding(propVal(options2, "runOnDependencyChange"));
+    if (!automatic)
+      continue;
+    const blob = JSON.stringify(options2);
+    const referencedNames = [...new Set([...blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
+    const missing = referencedNames.filter((name) => {
+      const source2 = queryByName.get(name);
+      return source2 && source2.id !== query.id && !successChains.has(`${source2.id}->${query.id}`);
+    });
+    if (missing.length) {
+      warnings.push(`Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ${missing.map((name) => `queries.${name}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
     }
   }
   for (const e of summary.events) {
@@ -34108,12 +34159,12 @@ function insertRowsTool(client) {
 // dist/tools/insertRowsBatch.js
 var seedSchema = external_exports.object({
   table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
 });
 function insertRowsBatchTool(client) {
   return {
     name: "insert_rows_batch",
-    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small.",
+    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -36856,7 +36907,7 @@ var plannedTableSchema = external_exports.object({
 });
 var plannedSeedSchema = external_exports.object({
   table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
 });
 var plannedQuerySchema = external_exports.object({
   client_ref: external_exports.string().optional(),

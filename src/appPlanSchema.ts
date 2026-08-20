@@ -25,7 +25,7 @@ export const plannedTableSchema = z.object({
 });
 export const plannedSeedSchema = z.object({
   table_name: z.string(),
-  rows: z.array(z.record(z.string(), z.any())).min(1),
+  rows: z.array(z.record(z.string(), z.any())).min(1).max(40),
 });
 export const plannedQuerySchema = z.object({
   client_ref: z.string().optional(),
