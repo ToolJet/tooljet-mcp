@@ -677,6 +677,25 @@ export function lintOperationalViewport(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Catch an accidentally half-width desktop composition while allowing deliberate narrow forms/details. */
+export function lintDesktopCanvasCoverage(components: LintComponent[]): string[] {
+  const roots = components.filter((component) => !parentPlacement(component));
+  if (roots.length < 4) return [];
+  if (!roots.some((component) => ['Table', 'Chart', 'Listview', 'Kanban'].includes(component.type ?? ''))) return [];
+  const rects = roots
+    .map((component) => component.layouts?.desktop ?? component.layout)
+    .filter((rect): rect is Rect => Boolean(rect && typeof rect.left === 'number' && typeof rect.width === 'number'));
+  if (rects.length < 4) return [];
+  const left = Math.min(...rects.map((rect) => rect.left!));
+  const right = Math.max(...rects.map((rect) => rect.left! + rect.width!));
+  if (right - left > 27 || right > 29) return [];
+  return [
+    `Desktop page content spans only columns ${left}-${right} of ToolJet's 43-column canvas despite having ` +
+      'multiple operational/analytical surfaces. This often produces an accidental half-width app. Expand the ' +
+      'main composition toward the standard columns 2-41, or browser-verify that the narrow rail is deliberate.',
+  ];
+}
+
 /** Lint a single component spec (pre-write). */
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
@@ -1435,6 +1454,7 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
     ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
+    ...lintDesktopCanvasCoverage(components),
   ];
 }
 

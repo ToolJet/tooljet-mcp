@@ -11,7 +11,7 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 - **Custom markup inside a component's own properties** — many components take HTML in their content/cell/tooltip properties (a Table column rendered as HTML, a `Text` set to HTML, custom cell formatting). Use it to polish the UI in place.
 - **Rule of thumb:** built-in when it's **interactive, data-bound, or meant to be tweaked visually**; HTML when it's **static presentation or fine UI customization** and HTML expresses it more cleanly.
 
-The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` when they share filters, or per-type `requests:[...]` when they need different sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
+The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` (or use `type` for one) and request their exact needed sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
 
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
@@ -46,6 +46,7 @@ Then hold to these:
 - **Polish:** it must read as a **designed app, not components dropped on a canvas** — real hierarchy, grouped sections, consistent spacing, aligned edges, no overlaps.
 - **Page header (every page):** a title + one-line subtitle, styled via the Text's *native* styles so it reads as a header (a default-styled Text looks unfinished). Title `Text` ≈ `styles.textSize {{24}}`, `fontWeight bold`, `textColor` a strong dark (e.g. `#111827`), **height 50px**; subtitle `Text` ≈ `textSize {{14}}`, muted grey (e.g. `#6b7280`), height 40px; ~8px under the title, ~24px before content. (Exact keys and height formula from `get_component_catalog({type:"Text",sections:["styles","renderingHints"]})`.)
 - **Canvas padding:** don't run edge-to-edge across all 43 columns — keep a consistent side gutter (top-level content ≈ columns **2–41**). Full-bleed only if asked.
+- A dense operational or analytical page with several root surfaces should not accidentally stop around the middle of the desktop canvas. MCP warns when four or more root components including a Table/Chart/Listview/Kanban occupy only about columns 0–27; expand the main composition toward columns 2–41 unless a narrow rail is deliberate and browser-verified.
 - **Consistent spacing:** ONE vertical gap between stacked sections (~16–24px) and ONE shared left edge for all top-level components.
 - **Peer components** in a row (KPI tiles, filters) share equal widths, equal gaps and a common top — unless importance or label length justifies otherwise (see framing).
 

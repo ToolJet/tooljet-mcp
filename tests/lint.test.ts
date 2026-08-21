@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -808,6 +808,31 @@ describe('detectOverlaps', () => {
       { name: 'first', layout, properties: { visibility: { value: '{{variables.showFirst}}' } } },
       { name: 'second', layout, properties: { visibility: { value: '{{variables.showSecond}}' } } },
     ])).toHaveLength(1);
+  });
+});
+
+describe('lintDesktopCanvasCoverage', () => {
+  it('warns for a dense operational page accidentally confined to half the desktop canvas', () => {
+    const warnings = lintDesktopCanvasCoverage([
+      { name: 'title', type: 'Text', layout: { top: 0, left: 2, width: 18, height: 40 } },
+      { name: 'open', type: 'Statistics', layout: { top: 60, left: 2, width: 7, height: 90 } },
+      { name: 'urgent', type: 'Statistics', layout: { top: 60, left: 10, width: 7, height: 90 } },
+      { name: 'tickets', type: 'Table', layout: { top: 170, left: 2, width: 22, height: 360 } },
+    ]);
+    expect(warnings.join(' ')).toMatch(/only columns 2-24.*43-column canvas.*half-width app.*columns 2-41/i);
+  });
+
+  it('allows a full desktop composition and a deliberately narrow simple form', () => {
+    expect(lintDesktopCanvasCoverage([
+      { name: 'title', type: 'Text', layout: { top: 0, left: 2, width: 39, height: 40 } },
+      { name: 'chart', type: 'Chart', layout: { top: 60, left: 2, width: 15, height: 300 } },
+      { name: 'tickets', type: 'Table', layout: { top: 60, left: 18, width: 23, height: 300 } },
+      { name: 'refresh', type: 'Button', layout: { top: 380, left: 35, width: 6, height: 40 } },
+    ])).toEqual([]);
+    expect(lintDesktopCanvasCoverage([
+      { name: 'subject', type: 'TextInput', layout: { top: 0, left: 2, width: 18, height: 60 } },
+      { name: 'save', type: 'Button', layout: { top: 80, left: 2, width: 6, height: 40 } },
+    ])).toEqual([]);
   });
 });
 
