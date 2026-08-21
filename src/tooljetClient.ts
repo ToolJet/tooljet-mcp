@@ -379,6 +379,7 @@ export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   createApp(name: string): Promise<CreateAppResult>;
+  renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
   getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot>;
@@ -716,6 +717,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       viewer_url: viewerUrl,
       datasources_url: datasourceManagementUrl(orgSlug),
     };
+  }
+
+  async function renameApp(appId: string, versionId: string, name: string): Promise<void> {
+    const res = await auth.authedFetch(`/api/apps/${appId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app: { name, editingVersionId: versionId } }),
+    });
+    await assertOk(res, 'renameApp');
+    const refreshed = await getApp(appId);
+    if (refreshed.name !== name) {
+      throw new Error(`ToolJet renameApp failed: expected name "${name}", received "${String(refreshed.name)}".`);
+    }
   }
 
   async function listTables(): Promise<Array<{ id: string; table_name: string }>> {
@@ -1706,6 +1720,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     listWorkspaces,
     useWorkspace,
     createApp,
+    renameApp,
     getApp,
     getAppSummary,
     getAppSettings,

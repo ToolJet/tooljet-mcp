@@ -88,6 +88,36 @@ function appliedSummary(applied: Record<string, number>): string {
   return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(', ');
 }
 
+const TABLE_READY_DELAYS_MS = [100, 200, 400, 800, 1000];
+
+async function waitForCreatedTables(
+  client: ToolJetClient,
+  tableNames: string[]
+): Promise<void> {
+  await Promise.all(tableNames.map(async (tableName) => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= TABLE_READY_DELAYS_MS.length; attempt += 1) {
+      try {
+        const [tables, schema] = await Promise.all([client.listTables(), client.getTableSchema(tableName)]);
+        if (!tables.some((table) => table.table_name === tableName)) {
+          throw new Error(`table is not visible in list_tables yet`);
+        }
+        if (!schema.length) throw new Error('schema has no columns yet');
+        return;
+      } catch (error) {
+        lastError = error;
+        const delay = TABLE_READY_DELAYS_MS[attempt];
+        if (delay === undefined) break;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+    throw new Error(
+      `Created table "${tableName}" did not become readable before seeding: ` +
+        `${lastError instanceof Error ? lastError.message : String(lastError)}`
+    );
+  }));
+}
+
 export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
   return {
     name: 'apply_app_phase',
@@ -103,7 +133,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       plan_token: z.string(),
     },
     async handler(args: { app_id: string; version_id: string; plan_token: string }) {
-      const applied = { tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
+      const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = 'consume plan';
       try {
         const stored = consumeAppPlan(args.plan_token);
@@ -125,12 +155,26 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
 
+        if (spec.app_name && spec.app_name !== initialSummary.name) {
+          stage = 'rename target app';
+          await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          applied.app_metadata = 1;
+        }
+
         const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();
+        const claimedPageIds = new Set<string>();
+        const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === 'home' &&
+          initialSummary.pages[0].components.length === 0
+          ? initialSummary.pages[0]
+          : undefined;
         for (const page of spec.pages ?? []) {
-          const match = initialSummary.pages.find((candidate) =>
-            candidate.name === page.name || candidate.handle === (page.name === 'Home' ? 'home' : undefined)
+          let match = initialSummary.pages.find((candidate) =>
+            !claimedPageIds.has(candidate.id) &&
+            (candidate.name === page.name || candidate.handle === (page.name === 'Home' ? 'home' : undefined))
           );
+          if (!match && reusableHome && !claimedPageIds.has(reusableHome.id)) match = reusableHome;
           if (match) plannedPageMatches.set(logicalRef(page), match);
+          if (match) claimedPageIds.add(match.id);
           const existingNames = new Set((match?.components ?? []).map((component) => component.name).filter(Boolean));
           const collision = (page.components ?? []).find((component) => existingNames.has(component.name));
           if (collision) {
@@ -184,6 +228,13 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
 
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables) tableIds.set(table.table_name.toLowerCase(), table.table_id);
+        const newlyCreatedSeedTables = createdTables
+          .map((table) => table.table_name)
+          .filter((tableName) => spec.seed_data?.some((seed) => seed.table_name === tableName));
+        if (newlyCreatedSeedTables.length) {
+          stage = 'wait for created table schemas';
+          await waitForCreatedTables(client, newlyCreatedSeedTables);
+        }
         const pageTargets = persistedTargets(
           initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] }))
         );
@@ -201,6 +252,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           if (!existing) return [];
           const update = {
             pageId: existing.id,
+            ...(existing.name !== page.name ? { name: page.name } : {}),
             ...(existing.icon !== page.icon ? { icon: page.icon } : {}),
             ...(page.hidden !== undefined && Boolean(existing.hidden) !== page.hidden ? { hidden: page.hidden } : {}),
           };

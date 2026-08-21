@@ -112,6 +112,24 @@ describe('createClient', () => {
     });
   });
 
+  describe('renameApp', () => {
+    it('updates the app name and verifies readback', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { id: 'app1', name: 'Support Operations' } }));
+
+      const client = createClient(auth, config);
+      await client.renameApp('app1', 'ver1', 'Support Operations');
+
+      expect(auth.authedFetch).toHaveBeenNthCalledWith(1, '/api/apps/app1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app: { name: 'Support Operations', editingVersionId: 'ver1' } }),
+      });
+      expect(auth.authedFetch).toHaveBeenNthCalledWith(2, '/api/apps/app1');
+    });
+  });
+
   describe('getApp', () => {
     it('fetches the app by id', async () => {
       auth.authedFetch.mockResolvedValueOnce(

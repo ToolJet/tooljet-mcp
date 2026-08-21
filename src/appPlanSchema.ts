@@ -70,6 +70,8 @@ export const appPlanSchema = z.object({
   /** Existing app context for repair phases. Lets lint/apply resolve persisted refs safely. */
   app_id: z.string().optional(),
   version_id: z.string().optional(),
+  /** Rename the target app as part of the same governed phase. */
+  app_name: z.string().trim().min(1).max(100).optional(),
   tables: z.array(plannedTableSchema).max(50).optional(),
   seed_data: z.array(plannedSeedSchema).max(50).optional(),
   queries: z.array(plannedQuerySchema).max(200).optional(),

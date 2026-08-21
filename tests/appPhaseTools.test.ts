@@ -15,6 +15,10 @@ describe('plan token + apply_app_phase', () => {
   it('applies the exact validated phase, resolves refs, combines events, and consumes the token', async () => {
     let persistedEvents: EventSpec[] = [];
     let summaryReads = 0;
+    let tableCreated = false;
+    let appName = 'Cases';
+    let pageName = 'Home';
+    let pageIcon = 'IconHome2';
     const componentSummaries = [
       {
         id: 'title-id', name: 'caseTitle', type: 'TextInput',
@@ -29,10 +33,10 @@ describe('plan token + apply_app_phase', () => {
     ];
     const currentSummary = (): AppSummary => ({
       app_id: 'app1',
-      name: 'Cases',
+      name: appName,
       version_id: 'v1',
       pages: [{
-        id: 'home-id', name: 'Home', handle: 'home', icon: 'IconHome2', components: summaryReads === 1 ? [] : componentSummaries,
+        id: 'home-id', name: pageName, handle: 'home', icon: pageIcon, components: summaryReads === 1 ? [] : componentSummaries,
       }],
       queries: summaryReads === 1 ? [] : [
         { id: 'list-id', name: 'list_cases', kind: 'tooljetdb', data_source_id: 'tjdb', options: { operation: 'list_rows', table_id: 'table-id', list_rows: {} } },
@@ -48,15 +52,30 @@ describe('plan token + apply_app_phase', () => {
       })),
     });
     const client = {
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockImplementation(async () => tableCreated
+        ? [{ id: 'table-id', table_name: 'cases' }]
+        : []),
       listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
       getAppSummary: vi.fn().mockImplementation(async () => {
         summaryReads += 1;
         return currentSummary();
       }),
-      createTables: vi.fn().mockResolvedValue([{ table_id: 'table-id', table_name: 'cases' }]),
+      renameApp: vi.fn().mockImplementation(async (_appId: string, _versionId: string, name: string) => {
+        appName = name;
+      }),
+      createTables: vi.fn().mockImplementation(async () => {
+        tableCreated = true;
+        return [{ table_id: 'table-id', table_name: 'cases' }];
+      }),
+      getTableSchema: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('schema cache stale'))
+        .mockResolvedValue([{ name: 'id', type: 'serial', isPrimaryKey: true }]),
       createPages: vi.fn(),
-      updatePages: vi.fn(),
+      updatePages: vi.fn().mockImplementation(async ({ updates }) => {
+        pageName = updates?.[0]?.name ?? pageName;
+        pageIcon = updates?.[0]?.icon ?? pageIcon;
+      }),
       insertRowsBatch: vi.fn().mockResolvedValue([{ table_name: 'cases', processed_rows: 1 }]),
       createQueries: vi.fn().mockResolvedValue([
         { query_id: 'list-id', name: 'list_cases' },
@@ -73,7 +92,7 @@ describe('plan token + apply_app_phase', () => {
     } as unknown as ToolJetClient;
 
     const lintResult = await lintAppSpecTool(client).handler({
-      version_id: 'v1',
+      version_id: 'v1', app_name: 'Support Cases',
       tables: [{ table_name: 'cases', columns: [{ name: 'title', type: 'string' }] }],
       seed_data: [{ table_name: 'cases', rows: [{ id: 1, title: 'Broken login' }] }],
       queries: [
@@ -81,7 +100,7 @@ describe('plan token + apply_app_phase', () => {
         { client_ref: 'create', datasource_id: 'tjdb', table_ref: 'cases', name: 'create_case', options: { operation: 'create_row', create_row: { title: '{{components.caseTitle.value}}' } } },
       ],
       pages: [{
-        client_ref: 'home', name: 'Home', icon: 'IconHome2',
+        client_ref: 'home', name: 'Overview', icon: 'IconLayoutDashboard',
         components: [
           { client_ref: 'title', name: 'caseTitle', type: 'TextInput', properties: { label: 'Title' }, styles: { alignment: 'top' }, layout: { top: 20, left: 2, width: 20, height: 60 } },
           { client_ref: 'save', name: 'saveCase', type: 'Button', properties: { text: 'Save' }, layout: { top: 120, left: 2, width: 6, height: 40 } },
@@ -95,7 +114,7 @@ describe('plan token + apply_app_phase', () => {
 
     const applyResult = await applyAppPhaseTool(client).handler({ app_id: 'app1', version_id: 'v1', plan_token: planToken });
     const body = textOf(applyResult);
-    expect(body.applied).toMatchObject({ tables: 1, seed_rows: 1, pages: 0, queries: 2, components: 2, events: 5 });
+    expect(body.applied).toMatchObject({ app_metadata: 1, tables: 1, seed_rows: 1, pages: 0, queries: 2, components: 2, events: 5 });
     expect(body.refs).toMatchObject({
       pages: { home: 'home-id' },
       queries: { list: 'list-id', create: 'create-id' },
@@ -103,6 +122,11 @@ describe('plan token + apply_app_phase', () => {
     });
     expect(body.validation.ok).toBe(true);
     expect(client.createPages).not.toHaveBeenCalled();
+    expect(client.renameApp).toHaveBeenCalledWith('app1', 'v1', 'Support Cases');
+    expect(client.getTableSchema).toHaveBeenCalledTimes(2);
+    expect(client.updatePages).toHaveBeenCalledWith(expect.objectContaining({
+      updates: [expect.objectContaining({ pageId: 'home-id', name: 'Overview', icon: 'IconLayoutDashboard' })],
+    }));
     expect(client.createQueries).toHaveBeenCalledWith(expect.objectContaining({
       queries: expect.arrayContaining([expect.objectContaining({ options: expect.objectContaining({ table_id: 'table-id' }) })]),
     }));

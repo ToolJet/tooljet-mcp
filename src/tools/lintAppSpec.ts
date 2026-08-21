@@ -15,13 +15,14 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
       'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
       'values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ' +
-      'ToolJet DB table into options.table_id. For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
+      'ToolJet DB table into options.table_id. Set app_name when the target app should be renamed in the same governed phase. ' +
+      'For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
       'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
       'Treat this call as an awaited barrier; it never mutates ToolJet.',
     inputSchema: appPlanSchema.shape,
     async handler(args: AppPlanInput) {
       try {
-        if (![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles]
+        if (!args.app_name && ![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles]
           .some((items) => items?.length)) {
           return fail(new Error('lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle.'));
         }
