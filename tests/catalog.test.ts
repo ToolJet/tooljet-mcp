@@ -107,6 +107,17 @@ describe('catalog', () => {
     ]);
   });
 
+  it('does not advertise clientServerSwitch labels as persisted boolean enum values', () => {
+    const table = getComponentSchema('Table')!;
+    expect(table.properties.find((property) => property.key === 'serverSidePagination')).toMatchObject({
+      valueType: 'boolean',
+      default: '{{false}}',
+    });
+    expect(table.properties.find((property) => property.key === 'serverSidePagination')).not.toHaveProperty(
+      'allowedValues'
+    );
+  });
+
   it('serves the source-verified Table row-action Button-column contract', () => {
     const table = getComponentSchema('Table')!;
     const rowActions = table.authoringHints!.rowActionButtons as any;

@@ -451,6 +451,41 @@ describe('get_component_catalog tool', () => {
     expect(body.unknown_types).toEqual(['NotAComponent']);
   });
 
+  it('defaults typed reads to compact authoring contracts and preserves exact key lookups', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+
+    const compact = textOf(await tool.handler({ type: 'Table' })) as any;
+    const compactData = compact.properties.find((property: any) => property.key === 'data');
+    expect(compactData).toEqual(expect.objectContaining({ key: 'data' }));
+    expect(compactData).not.toHaveProperty('label');
+    expect(compactData).not.toHaveProperty('default');
+    expect(compact).not.toHaveProperty('styles');
+
+    const exact = textOf(await tool.handler({
+      type: 'Table',
+      sections: ['properties'],
+      property_keys: ['data'],
+    })) as any;
+    expect(exact.properties[0]).toHaveProperty('default');
+  });
+
+  it('batches per-type catalog projections without loading the union of their sections', async () => {
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const body = textOf(await tool.handler({
+      requests: [
+        { type: 'Table', sections: ['authoringHints'] },
+        { type: 'Text', sections: ['styles'], style_keys: ['textSize'] },
+      ],
+    })) as any;
+
+    expect(body.components[0]).toHaveProperty('authoringHints');
+    expect(body.components[0]).not.toHaveProperty('styles');
+    expect(body.components[1].styles.map((style: any) => style.key)).toEqual(['textSize']);
+    expect(body.components[1]).not.toHaveProperty('authoringHints');
+  });
+
   it('resolves GridView lookups to the real Listview mode without inventing a component type', async () => {
     const client = makeClient();
     const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
@@ -1189,6 +1224,27 @@ describe('add_component tool', () => {
       }),
     }));
     expect(textOf(result).warnings.join(' ')).toMatch(/normalized autogenerateColumns.*runtime compatibility/i);
+  });
+
+  it('normalizes client/server editor labels to persisted booleans before writing', async () => {
+    const client = makeClient();
+    client.createComponent.mockResolvedValue({ component_id: 'c1' });
+    const result = await addComponentTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1', name: 'usersTable', type: 'Table',
+      properties: {
+        serverSidePagination: { value: 'serverSide' },
+        serverSideSearch: { value: 'clientSide' },
+      },
+      layout: { top: 0, left: 0, width: 20, height: 300 },
+    });
+
+    expect(client.createComponent).toHaveBeenCalledWith(expect.objectContaining({
+      properties: expect.objectContaining({
+        serverSidePagination: { value: true },
+        serverSideSearch: { value: false },
+      }),
+    }));
+    expect(textOf(result).warnings.join(' ')).toMatch(/serverSidePagination.*normalized.*boolean/i);
   });
 
   it('maps snake_case args to client.createComponent params and returns the result', async () => {

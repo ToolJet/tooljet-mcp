@@ -75,6 +75,10 @@ function trimDefault(v) {
 }
 
 function allowedValues(definition) {
+  // clientServerSwitch presents string labels internally, but persists a boolean binding.
+  // Advertising those editor-only strings as valid component values causes agents to author
+  // an enum that ToolJet does not persist correctly.
+  if (strProp(definition, 'type') === 'clientServerSwitch') return undefined;
   const options = literal(prop(definition, 'options'));
   if (!Array.isArray(options)) return undefined;
   const values = options.flatMap((option) => {
@@ -420,6 +424,12 @@ const RENDERING_HINTS = {
     recommendedTextAreaHeightPx: '90–100',
     recommendedTwoColumnGutterCols: 2,
   },
+  KeyValuePair: {
+    currentPaddingBehavior: 'In the current ToolJet renderer, styles.padding values "default" and "none" do not add a visible content inset. Do not rely on this property to create card padding.',
+    compactSideAlignment: 'The persisted defaults alignment="side", autoLabelWidth=false, and labelWidth=33 reserve one third of a wide component for labels and look broken. For a native horizontal details panel, set styles.autoLabelWidth.value="{{true}}" so the value column starts after the longest label.',
+    approximateStaticHeight: 'Rows occupy about 38px plus a 12px gap. For N read-only fields, start near 50*N-12px rather than stretching the component; browser-verify wrapping and date/JSON fields.',
+    polishedReadOnlyAlternative: 'For a display-only details card that needs reliable inset, spacing, and responsive columns, prefer one Html component with an explicitly projected binding and root CSS padding/box-sizing instead of KeyValuePair.',
+  },
 };
 for (const t of ['TextInput', 'NumberInput', 'CurrencyInput', 'EmailInput', 'TextArea', 'DropdownV2', 'MultiselectV2', 'DatePickerV2', 'DatetimePickerV2']) {
   RENDERING_HINTS[t] = {
@@ -523,6 +533,11 @@ const AUTHORING_HINTS = {
       unsafeExamples: ['{{variables.selectedWorkOrder}}', '{{({...variables.selectedWorkOrder, status:variables.selectedWorkOrder.status})}}'],
       updateRule: 'Keep the complete fields array and the projected data object keyed identically. Object spreads are not safe projections.',
       defaultFieldRule: 'When explicit fields are authored, MCP populates fieldDeletionHistory to suppress ToolJet catalog demo fields that would otherwise be appended or positionally merged into custom field definitions.',
+    },
+    detailPanelLayout: {
+      nativeSideRule: 'Never accept the persisted side-alignment defaults for a wide details panel. Set styles.autoLabelWidth.value="{{true}}"; fixed autoLabelWidth=false with labelWidth=33 creates an oversized empty label column.',
+      paddingCaveat: 'In the current renderer, styles.padding default/none does not create a content inset. Use the native component only when that edge treatment is acceptable and browser-verified.',
+      readOnlyAlternative: 'For a polished read-only details card, prefer Html with a freshly projected object and explicit root padding, gap, and box-sizing. Keep KeyValuePair when native field editing/changeSet behavior is required.',
     },
   },
   Kanban: {

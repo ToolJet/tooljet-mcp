@@ -49,6 +49,13 @@ function catalogDefault(type: string, key: string, fallback: unknown): unknown {
   return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
 }
 
+const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
+  'serverSidePagination',
+  'serverSideSearch',
+  'serverSideSort',
+  'serverSideFilter',
+]);
+
 /** Apply small persisted-definition compatibility fixes without changing component intent. */
 export function normalizeComponentSpec<T extends ComponentSpec>(component: T): ComponentNormalization<T> {
   const normalizedSections = Object.fromEntries(
@@ -68,6 +75,18 @@ export function normalizeComponentSpec<T extends ComponentSpec>(component: T): C
     properties[key] = wrapped;
     propertyPatch[key] = wrapped;
   };
+
+  // Older catalog snapshots exposed clientServerSwitch's editor labels as enum values even
+  // though ToolJet persists these controls as booleans. Accept the common model-authored form
+  // and canonicalize it before linting/writing so it does not create a repair turn.
+  for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
+    const current = propValue(properties, key);
+    if (current !== 'clientSide' && current !== 'serverSide') continue;
+    setProperty(key, current === 'serverSide');
+    warnings.push(
+      `${component.name} "${key}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`
+    );
+  }
 
   if (component.type === 'Table') {
     if (properties.useDynamicColumn === undefined) {

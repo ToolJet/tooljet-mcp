@@ -33,9 +33,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/ajv/dist/compile/codegen/code.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/codegen/code.js
 var require_code = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/code.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/codegen/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.regexpCode = exports.getEsmExportName = exports.getProperty = exports.safeStringify = exports.stringify = exports.strConcat = exports.addCodeArg = exports.str = exports._ = exports.nil = exports._Code = exports.Name = exports.IDENTIFIER = exports._CodeOrName = void 0;
@@ -187,9 +187,9 @@ var require_code = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/scope.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/codegen/scope.js
 var require_scope = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
@@ -332,9 +332,9 @@ var require_scope = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/codegen/index.js
 var require_codegen = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/codegen/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.or = exports.and = exports.not = exports.CodeGen = exports.operators = exports.varKinds = exports.ValueScopeName = exports.ValueScope = exports.Scope = exports.Name = exports.regexpCode = exports.stringify = exports.getProperty = exports.nil = exports.strConcat = exports.str = exports._ = void 0;
@@ -1052,9 +1052,9 @@ var require_codegen = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/util.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/util.js
 var require_util = __commonJS({
-  "node_modules/ajv/dist/compile/util.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/util.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.checkStrictMode = exports.getErrorPath = exports.Type = exports.useFunc = exports.setEvaluated = exports.evaluatedPropsToName = exports.mergeEvaluated = exports.eachItem = exports.unescapeJsonPointer = exports.escapeJsonPointer = exports.escapeFragment = exports.unescapeFragment = exports.schemaRefOrVal = exports.schemaHasRulesButRef = exports.schemaHasRules = exports.checkUnknownRules = exports.alwaysValidSchema = exports.toHash = void 0;
@@ -1219,9 +1219,9 @@ var require_util = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/names.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/names.js
 var require_names = __commonJS({
-  "node_modules/ajv/dist/compile/names.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/names.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -1258,9 +1258,9 @@ var require_names = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/errors.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/errors.js
 var require_errors = __commonJS({
-  "node_modules/ajv/dist/compile/errors.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/errors.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendErrors = exports.resetErrorsCount = exports.reportExtraError = exports.reportError = exports.keyword$DataError = exports.keywordError = void 0;
@@ -1380,9 +1380,9 @@ var require_errors = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/boolSchema.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/boolSchema.js
 var require_boolSchema = __commonJS({
-  "node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.boolOrEmptySchema = exports.topBoolOrEmptySchema = void 0;
@@ -1431,9 +1431,9 @@ var require_boolSchema = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/rules.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/rules.js
 var require_rules = __commonJS({
-  "node_modules/ajv/dist/compile/rules.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/rules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getRules = exports.isJSONType = void 0;
@@ -1462,9 +1462,9 @@ var require_rules = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/applicability.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/applicability.js
 var require_applicability = __commonJS({
-  "node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.shouldUseRule = exports.shouldUseGroup = exports.schemaHasRulesForType = void 0;
@@ -1485,9 +1485,9 @@ var require_applicability = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/dataType.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/dataType.js
 var require_dataType = __commonJS({
-  "node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.reportTypeError = exports.checkDataTypes = exports.checkDataType = exports.coerceAndCheckDataType = exports.getJSONTypes = exports.getSchemaTypes = exports.DataType = void 0;
@@ -1669,9 +1669,9 @@ var require_dataType = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/defaults.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/defaults.js
 var require_defaults = __commonJS({
-  "node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.assignDefaults = void 0;
@@ -1706,9 +1706,9 @@ var require_defaults = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/code.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/code.js
 var require_code2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/code.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateUnion = exports.validateArray = exports.usePattern = exports.callValidateCode = exports.schemaProperties = exports.allSchemaProperties = exports.noPropertyInData = exports.propertyInData = exports.isOwnProperty = exports.hasPropFunc = exports.reportMissingProp = exports.checkMissingProp = exports.checkReportMissingProp = void 0;
@@ -1839,9 +1839,9 @@ var require_code2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/keyword.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/keyword.js
 var require_keyword = __commonJS({
-  "node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateKeywordUsage = exports.validSchemaType = exports.funcKeywordCode = exports.macroKeywordCode = void 0;
@@ -1957,9 +1957,9 @@ var require_keyword = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/subschema.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/subschema.js
 var require_subschema = __commonJS({
-  "node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendSubschemaMode = exports.extendSubschemaData = exports.getSubschema = void 0;
@@ -2040,9 +2040,9 @@ var require_subschema = __commonJS({
   }
 });
 
-// node_modules/fast-deep-equal/index.js
+// ../tooljet-mcp-http/node_modules/fast-deep-equal/index.js
 var require_fast_deep_equal = __commonJS({
-  "node_modules/fast-deep-equal/index.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
     module.exports = function equal(a, b) {
       if (a === b) return true;
@@ -2075,9 +2075,9 @@ var require_fast_deep_equal = __commonJS({
   }
 });
 
-// node_modules/json-schema-traverse/index.js
+// ../tooljet-mcp-http/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse = __commonJS({
-  "node_modules/json-schema-traverse/index.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/json-schema-traverse/index.js"(exports, module) {
     "use strict";
     var traverse = module.exports = function(schema, opts, cb) {
       if (typeof opts == "function") {
@@ -2163,9 +2163,9 @@ var require_json_schema_traverse = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/resolve.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/resolve.js
 var require_resolve = __commonJS({
-  "node_modules/ajv/dist/compile/resolve.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/resolve.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getSchemaRefs = exports.resolveUrl = exports.normalizeId = exports._getFullPath = exports.getFullPath = exports.inlineRef = void 0;
@@ -2319,9 +2319,9 @@ var require_resolve = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/index.js
 var require_validate = __commonJS({
-  "node_modules/ajv/dist/compile/validate/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/validate/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getData = exports.KeywordCxt = exports.validateFunctionCode = void 0;
@@ -2827,9 +2827,9 @@ var require_validate = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/validation_error.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/runtime/validation_error.js
 var require_validation_error = __commonJS({
-  "node_modules/ajv/dist/runtime/validation_error.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/runtime/validation_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ValidationError = class extends Error {
@@ -2843,9 +2843,9 @@ var require_validation_error = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/ref_error.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/ref_error.js
 var require_ref_error = __commonJS({
-  "node_modules/ajv/dist/compile/ref_error.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/ref_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var resolve_1 = require_resolve();
@@ -2860,9 +2860,9 @@ var require_ref_error = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/compile/index.js
 var require_compile = __commonJS({
-  "node_modules/ajv/dist/compile/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/compile/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.resolveSchema = exports.getCompilingSchema = exports.resolveRef = exports.compileSchema = exports.SchemaEnv = void 0;
@@ -3084,9 +3084,9 @@ var require_compile = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/refs/data.json
+// ../tooljet-mcp-http/node_modules/ajv/dist/refs/data.json
 var require_data = __commonJS({
-  "node_modules/ajv/dist/refs/data.json"(exports, module) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/refs/data.json"(exports, module) {
     module.exports = {
       $id: "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#",
       description: "Meta-schema for $data reference (JSON AnySchema extension proposal)",
@@ -3103,9 +3103,9 @@ var require_data = __commonJS({
   }
 });
 
-// node_modules/fast-uri/lib/utils.js
+// ../tooljet-mcp-http/node_modules/fast-uri/lib/utils.js
 var require_utils = __commonJS({
-  "node_modules/fast-uri/lib/utils.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/fast-uri/lib/utils.js"(exports, module) {
     "use strict";
     var isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu);
     var isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u);
@@ -3416,9 +3416,9 @@ var require_utils = __commonJS({
   }
 });
 
-// node_modules/fast-uri/lib/schemes.js
+// ../tooljet-mcp-http/node_modules/fast-uri/lib/schemes.js
 var require_schemes = __commonJS({
-  "node_modules/fast-uri/lib/schemes.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/fast-uri/lib/schemes.js"(exports, module) {
     "use strict";
     var { isUUID } = require_utils();
     var URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu;
@@ -3626,9 +3626,9 @@ var require_schemes = __commonJS({
   }
 });
 
-// node_modules/fast-uri/index.js
+// ../tooljet-mcp-http/node_modules/fast-uri/index.js
 var require_fast_uri = __commonJS({
-  "node_modules/fast-uri/index.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/fast-uri/index.js"(exports, module) {
     "use strict";
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
@@ -3938,9 +3938,9 @@ var require_fast_uri = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/uri.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/runtime/uri.js
 var require_uri = __commonJS({
-  "node_modules/ajv/dist/runtime/uri.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/runtime/uri.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var uri = require_fast_uri();
@@ -3949,9 +3949,9 @@ var require_uri = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/core.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/core.js
 var require_core = __commonJS({
-  "node_modules/ajv/dist/core.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/core.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
@@ -4560,9 +4560,9 @@ var require_core = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/id.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/core/id.js
 var require_id = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var def = {
@@ -4575,9 +4575,9 @@ var require_id = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/ref.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/core/ref.js
 var require_ref = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.callRef = exports.getValidate = void 0;
@@ -4697,9 +4697,9 @@ var require_ref = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/core/index.js
 var require_core2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var id_1 = require_id();
@@ -4718,9 +4718,9 @@ var require_core2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitNumber.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitNumber.js
 var require_limitNumber = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4750,9 +4750,9 @@ var require_limitNumber = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/multipleOf.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/multipleOf.js
 var require_multipleOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4778,9 +4778,9 @@ var require_multipleOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/ucs2length.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
-  "node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function ucs2length(str) {
@@ -4804,9 +4804,9 @@ var require_ucs2length = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitLength.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitLength.js
 var require_limitLength = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4836,9 +4836,9 @@ var require_limitLength = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/pattern.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/pattern.js
 var require_pattern = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -4873,9 +4873,9 @@ var require_pattern = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitProperties.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitProperties.js
 var require_limitProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4902,9 +4902,9 @@ var require_limitProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/required.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/required.js
 var require_required = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -4984,9 +4984,9 @@ var require_required = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitItems.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitItems.js
 var require_limitItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5013,9 +5013,9 @@ var require_limitItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/equal.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/runtime/equal.js
 var require_equal = __commonJS({
-  "node_modules/ajv/dist/runtime/equal.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var equal = require_fast_deep_equal();
@@ -5024,9 +5024,9 @@ var require_equal = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
 var require_uniqueItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var dataType_1 = require_dataType();
@@ -5091,9 +5091,9 @@ var require_uniqueItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/const.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/const.js
 var require_const = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5120,9 +5120,9 @@ var require_const = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/enum.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/enum.js
 var require_enum = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5169,9 +5169,9 @@ var require_enum = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/index.js
 var require_validation = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var limitNumber_1 = require_limitNumber();
@@ -5207,9 +5207,9 @@ var require_validation = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
 var require_additionalItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateAdditionalItems = void 0;
@@ -5260,9 +5260,9 @@ var require_additionalItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/items.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/items.js
 var require_items = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateTuple = void 0;
@@ -5317,9 +5317,9 @@ var require_items = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
 var require_prefixItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var items_1 = require_items();
@@ -5334,9 +5334,9 @@ var require_prefixItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/items2020.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/items2020.js
 var require_items2020 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5369,9 +5369,9 @@ var require_items2020 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/contains.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/contains.js
 var require_contains = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5463,9 +5463,9 @@ var require_contains = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/dependencies.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/dependencies.js
 var require_dependencies = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateSchemaDeps = exports.validatePropertyDeps = exports.error = void 0;
@@ -5557,9 +5557,9 @@ var require_dependencies = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
 var require_propertyNames = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5600,9 +5600,9 @@ var require_propertyNames = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
 var require_additionalProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5706,9 +5706,9 @@ var require_additionalProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/properties.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/properties.js
 var require_properties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var validate_1 = require_validate();
@@ -5764,9 +5764,9 @@ var require_properties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
 var require_patternProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5838,9 +5838,9 @@ var require_patternProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/not.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/not.js
 var require_not = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -5869,9 +5869,9 @@ var require_not = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/anyOf.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/anyOf.js
 var require_anyOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5886,9 +5886,9 @@ var require_anyOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/oneOf.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/oneOf.js
 var require_oneOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5944,9 +5944,9 @@ var require_oneOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/allOf.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/allOf.js
 var require_allOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -5971,9 +5971,9 @@ var require_allOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/if.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/if.js
 var require_if = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6040,9 +6040,9 @@ var require_if = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/thenElse.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/thenElse.js
 var require_thenElse = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6058,9 +6058,9 @@ var require_thenElse = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/index.js
 var require_applicator = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var additionalItems_1 = require_additionalItems();
@@ -6106,9 +6106,9 @@ var require_applicator = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/format/format.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/format/format.js
 var require_format = __commonJS({
-  "node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6196,9 +6196,9 @@ var require_format = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/format/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/format/index.js
 var require_format2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var format_1 = require_format();
@@ -6207,9 +6207,9 @@ var require_format2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/metadata.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/metadata.js
 var require_metadata = __commonJS({
-  "node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.contentVocabulary = exports.metadataVocabulary = void 0;
@@ -6230,9 +6230,9 @@ var require_metadata = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/draft7.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/draft7.js
 var require_draft7 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var core_1 = require_core2();
@@ -6252,9 +6252,9 @@ var require_draft7 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/discriminator/types.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/discriminator/types.js
 var require_types = __commonJS({
-  "node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DiscrError = void 0;
@@ -6266,9 +6266,9 @@ var require_types = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/discriminator/index.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/discriminator/index.js
 var require_discriminator = __commonJS({
-  "node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6371,9 +6371,9 @@ var require_discriminator = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/refs/json-schema-draft-07.json
+// ../tooljet-mcp-http/node_modules/ajv/dist/refs/json-schema-draft-07.json
 var require_json_schema_draft_07 = __commonJS({
-  "node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
     module.exports = {
       $schema: "http://json-schema.org/draft-07/schema#",
       $id: "http://json-schema.org/draft-07/schema#",
@@ -6528,9 +6528,9 @@ var require_json_schema_draft_07 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/ajv.js
+// ../tooljet-mcp-http/node_modules/ajv/dist/ajv.js
 var require_ajv = __commonJS({
-  "node_modules/ajv/dist/ajv.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/ajv/dist/ajv.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv = void 0;
@@ -6598,9 +6598,9 @@ var require_ajv = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/formats.js
+// ../tooljet-mcp-http/node_modules/ajv-formats/dist/formats.js
 var require_formats = __commonJS({
-  "node_modules/ajv-formats/dist/formats.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv-formats/dist/formats.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatNames = exports.fastFormats = exports.fullFormats = void 0;
@@ -6801,9 +6801,9 @@ var require_formats = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/limit.js
+// ../tooljet-mcp-http/node_modules/ajv-formats/dist/limit.js
 var require_limit = __commonJS({
-  "node_modules/ajv-formats/dist/limit.js"(exports) {
+  "../tooljet-mcp-http/node_modules/ajv-formats/dist/limit.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatLimitDefinition = void 0;
@@ -6873,9 +6873,9 @@ var require_limit = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/index.js
+// ../tooljet-mcp-http/node_modules/ajv-formats/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/ajv-formats/dist/index.js"(exports, module) {
+  "../tooljet-mcp-http/node_modules/ajv-formats/dist/index.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var formats_1 = require_formats();
@@ -6915,10 +6915,10 @@ var require_dist = __commonJS({
   }
 });
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
 
-// node_modules/zod/v4/classic/external.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
   $brand: () => $brand,
@@ -7161,7 +7161,7 @@ __export(external_exports, {
   xor: () => xor
 });
 
-// node_modules/zod/v4/core/index.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/index.js
 var core_exports2 = {};
 __export(core_exports2, {
   $ZodAny: () => $ZodAny,
@@ -7440,7 +7440,7 @@ __export(core_exports2, {
   version: () => version
 });
 
-// node_modules/zod/v4/core/core.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/core.js
 var _a;
 var NEVER = /* @__PURE__ */ Object.freeze({
   status: "aborted"
@@ -7517,7 +7517,7 @@ function config(newConfig) {
   return globalConfig;
 }
 
-// node_modules/zod/v4/core/util.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
   BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
@@ -8213,7 +8213,7 @@ var Class = class {
   }
 };
 
-// node_modules/zod/v4/core/errors.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/errors.js
 var initializer = (inst, def) => {
   inst.name = "$ZodError";
   Object.defineProperty(inst, "_zod", {
@@ -8352,7 +8352,7 @@ function prettifyError(error51) {
   return lines.join("\n");
 }
 
-// node_modules/zod/v4/core/parse.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/parse.js
 var _parse = (_Err) => (schema, value, _ctx, _params) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
   const result = schema._zod.run({ value, issues: [] }, ctx);
@@ -8440,7 +8440,7 @@ var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
-// node_modules/zod/v4/core/regexes.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/regexes.js
 var regexes_exports = {};
 __export(regexes_exports, {
   base64: () => base64,
@@ -8599,7 +8599,7 @@ var sha512_hex = /^[0-9a-fA-F]{128}$/;
 var sha512_base64 = /* @__PURE__ */ fixedBase64(86, "==");
 var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
-// node_modules/zod/v4/core/checks.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a3;
   inst._zod ?? (inst._zod = {});
@@ -9147,7 +9147,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// node_modules/zod/v4/core/doc.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/doc.js
 var Doc = class {
   constructor(args = []) {
     this.content = [];
@@ -9183,14 +9183,14 @@ var Doc = class {
   }
 };
 
-// node_modules/zod/v4/core/versions.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 4,
   patch: 3
 };
 
-// node_modules/zod/v4/core/schemas.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a3;
   inst ?? (inst = {});
@@ -11283,7 +11283,7 @@ function handleRefineResult(result, payload, input, inst) {
   }
 }
 
-// node_modules/zod/v4/locales/index.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/index.js
 var locales_exports = {};
 __export(locales_exports, {
   ar: () => ar_default,
@@ -11340,7 +11340,7 @@ __export(locales_exports, {
   zhTW: () => zh_TW_default
 });
 
-// node_modules/zod/v4/locales/ar.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ar.js
 var error = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0641", verb: "\u0623\u0646 \u064A\u062D\u0648\u064A" },
@@ -11447,7 +11447,7 @@ function ar_default() {
   };
 }
 
-// node_modules/zod/v4/locales/az.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/az.js
 var error2 = () => {
   const Sizable = {
     string: { unit: "simvol", verb: "olmal\u0131d\u0131r" },
@@ -11553,7 +11553,7 @@ function az_default() {
   };
 }
 
-// node_modules/zod/v4/locales/be.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/be.js
 function getBelarusianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -11710,7 +11710,7 @@ function be_default() {
   };
 }
 
-// node_modules/zod/v4/locales/bg.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/bg.js
 var error4 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0430", verb: "\u0434\u0430 \u0441\u044A\u0434\u044A\u0440\u0436\u0430" },
@@ -11831,7 +11831,7 @@ function bg_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ca.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ca.js
 var error5 = () => {
   const Sizable = {
     string: { unit: "car\xE0cters", verb: "contenir" },
@@ -11940,7 +11940,7 @@ function ca_default() {
   };
 }
 
-// node_modules/zod/v4/locales/cs.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/cs.js
 var error6 = () => {
   const Sizable = {
     string: { unit: "znak\u016F", verb: "m\xEDt" },
@@ -12052,7 +12052,7 @@ function cs_default() {
   };
 }
 
-// node_modules/zod/v4/locales/da.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/da.js
 var error7 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "havde" },
@@ -12168,7 +12168,7 @@ function da_default() {
   };
 }
 
-// node_modules/zod/v4/locales/de.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/de.js
 var error8 = () => {
   const Sizable = {
     string: { unit: "Zeichen", verb: "zu haben" },
@@ -12277,7 +12277,7 @@ function de_default() {
   };
 }
 
-// node_modules/zod/v4/locales/el.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/el.js
 var error9 = () => {
   const Sizable = {
     string: { unit: "\u03C7\u03B1\u03C1\u03B1\u03BA\u03C4\u03AE\u03C1\u03B5\u03C2", verb: "\u03BD\u03B1 \u03AD\u03C7\u03B5\u03B9" },
@@ -12387,7 +12387,7 @@ function el_default() {
   };
 }
 
-// node_modules/zod/v4/locales/en.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/en.js
 var error10 = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -12500,7 +12500,7 @@ function en_default() {
   };
 }
 
-// node_modules/zod/v4/locales/eo.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/eo.js
 var error11 = () => {
   const Sizable = {
     string: { unit: "karaktrojn", verb: "havi" },
@@ -12610,7 +12610,7 @@ function eo_default() {
   };
 }
 
-// node_modules/zod/v4/locales/es.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/es.js
 var error12 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "tener" },
@@ -12743,7 +12743,7 @@ function es_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fa.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/fa.js
 var error13 = () => {
   const Sizable = {
     string: { unit: "\u06A9\u0627\u0631\u0627\u06A9\u062A\u0631", verb: "\u062F\u0627\u0634\u062A\u0647 \u0628\u0627\u0634\u062F" },
@@ -12858,7 +12858,7 @@ function fa_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fi.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/fi.js
 var error14 = () => {
   const Sizable = {
     string: { unit: "merkki\xE4", subject: "merkkijonon" },
@@ -12971,7 +12971,7 @@ function fi_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fr.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/fr.js
 var error15 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -13097,7 +13097,7 @@ function fr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fr-CA.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/fr-CA.js
 var error16 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -13205,7 +13205,7 @@ function fr_CA_default() {
   };
 }
 
-// node_modules/zod/v4/locales/he.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/he.js
 var error17 = () => {
   const TypeNames = {
     string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA", gender: "f" },
@@ -13400,7 +13400,7 @@ function he_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hr.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/hr.js
 var error18 = () => {
   const Sizable = {
     string: { unit: "znakova", verb: "imati" },
@@ -13523,7 +13523,7 @@ function hr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hu.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/hu.js
 var error19 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "legyen" },
@@ -13632,7 +13632,7 @@ function hu_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hy.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/hy.js
 function getArmenianPlural(count, one, many) {
   return Math.abs(count) === 1 ? one : many;
 }
@@ -13780,7 +13780,7 @@ function hy_default() {
   };
 }
 
-// node_modules/zod/v4/locales/id.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/id.js
 var error21 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "memiliki" },
@@ -13887,7 +13887,7 @@ function id_default() {
   };
 }
 
-// node_modules/zod/v4/locales/is.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/is.js
 var error22 = () => {
   const Sizable = {
     string: { unit: "stafi", verb: "a\xF0 hafa" },
@@ -13997,7 +13997,7 @@ function is_default() {
   };
 }
 
-// node_modules/zod/v4/locales/it.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/it.js
 var error23 = () => {
   const Sizable = {
     string: { unit: "caratteri", verb: "avere" },
@@ -14106,7 +14106,7 @@ function it_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ja.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ja.js
 var error24 = () => {
   const Sizable = {
     string: { unit: "\u6587\u5B57", verb: "\u3067\u3042\u308B" },
@@ -14214,7 +14214,7 @@ function ja_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ka.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ka.js
 var error25 = () => {
   const Sizable = {
     string: { unit: "\u10E1\u10D8\u10DB\u10D1\u10DD\u10DA\u10DD", verb: "\u10E3\u10DC\u10D3\u10D0 \u10E8\u10D4\u10D8\u10EA\u10D0\u10D5\u10D3\u10D4\u10E1" },
@@ -14327,7 +14327,7 @@ function ka_default() {
   };
 }
 
-// node_modules/zod/v4/locales/km.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/km.js
 var error26 = () => {
   const Sizable = {
     string: { unit: "\u178F\u17BD\u17A2\u1780\u17D2\u179F\u179A", verb: "\u1782\u17BD\u179A\u1798\u17B6\u1793" },
@@ -14438,12 +14438,12 @@ function km_default() {
   };
 }
 
-// node_modules/zod/v4/locales/kh.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/kh.js
 function kh_default() {
   return km_default();
 }
 
-// node_modules/zod/v4/locales/ko.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ko.js
 var error27 = () => {
   const Sizable = {
     string: { unit: "\uBB38\uC790", verb: "to have" },
@@ -14555,7 +14555,7 @@ function ko_default() {
   };
 }
 
-// node_modules/zod/v4/locales/lt.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/lt.js
 var capitalizeFirstCharacter = (text) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
@@ -14759,7 +14759,7 @@ function lt_default() {
   };
 }
 
-// node_modules/zod/v4/locales/mk.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/mk.js
 var error29 = () => {
   const Sizable = {
     string: { unit: "\u0437\u043D\u0430\u0446\u0438", verb: "\u0434\u0430 \u0438\u043C\u0430\u0430\u0442" },
@@ -14869,7 +14869,7 @@ function mk_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ms.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ms.js
 var error30 = () => {
   const Sizable = {
     string: { unit: "aksara", verb: "mempunyai" },
@@ -14977,7 +14977,7 @@ function ms_default() {
   };
 }
 
-// node_modules/zod/v4/locales/nl.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/nl.js
 var error31 = () => {
   const Sizable = {
     string: { unit: "tekens", verb: "heeft" },
@@ -15088,7 +15088,7 @@ function nl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/no.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/no.js
 var error32 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "\xE5 ha" },
@@ -15197,7 +15197,7 @@ function no_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ota.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ota.js
 var error33 = () => {
   const Sizable = {
     string: { unit: "harf", verb: "olmal\u0131d\u0131r" },
@@ -15307,7 +15307,7 @@ function ota_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ps.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ps.js
 var error34 = () => {
   const Sizable = {
     string: { unit: "\u062A\u0648\u06A9\u064A", verb: "\u0648\u0644\u0631\u064A" },
@@ -15422,7 +15422,7 @@ function ps_default() {
   };
 }
 
-// node_modules/zod/v4/locales/pl.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/pl.js
 var error35 = () => {
   const Sizable = {
     string: { unit: "znak\xF3w", verb: "mie\u0107" },
@@ -15532,7 +15532,7 @@ function pl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/pt.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/pt.js
 var error36 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "ter" },
@@ -15641,7 +15641,7 @@ function pt_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ro.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ro.js
 var error37 = () => {
   const Sizable = {
     string: { unit: "caractere", verb: "s\u0103 aib\u0103" },
@@ -15761,7 +15761,7 @@ function ro_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ru.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ru.js
 function getRussianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -15918,7 +15918,7 @@ function ru_default() {
   };
 }
 
-// node_modules/zod/v4/locales/sl.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/sl.js
 var error39 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "imeti" },
@@ -16028,7 +16028,7 @@ function sl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/sv.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/sv.js
 var error40 = () => {
   const Sizable = {
     string: { unit: "tecken", verb: "att ha" },
@@ -16139,7 +16139,7 @@ function sv_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ta.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ta.js
 var error41 = () => {
   const Sizable = {
     string: { unit: "\u0B8E\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BCD\u0B95\u0BB3\u0BCD", verb: "\u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BBF\u0BB0\u0BC1\u0B95\u0BCD\u0B95 \u0BB5\u0BC7\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD" },
@@ -16250,7 +16250,7 @@ function ta_default() {
   };
 }
 
-// node_modules/zod/v4/locales/th.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/th.js
 var error42 = () => {
   const Sizable = {
     string: { unit: "\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23", verb: "\u0E04\u0E27\u0E23\u0E21\u0E35" },
@@ -16361,7 +16361,7 @@ function th_default() {
   };
 }
 
-// node_modules/zod/v4/locales/tr.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/tr.js
 var error43 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "olmal\u0131" },
@@ -16467,7 +16467,7 @@ function tr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/uk.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/uk.js
 var error44 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0456\u0432", verb: "\u043C\u0430\u0442\u0438\u043C\u0435" },
@@ -16576,12 +16576,12 @@ function uk_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ua.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ua.js
 function ua_default() {
   return uk_default();
 }
 
-// node_modules/zod/v4/locales/ur.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/ur.js
 var error45 = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0648\u0641", verb: "\u06C1\u0648\u0646\u0627" },
@@ -16692,7 +16692,7 @@ function ur_default() {
   };
 }
 
-// node_modules/zod/v4/locales/uz.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/uz.js
 var error46 = () => {
   const Sizable = {
     string: { unit: "belgi", verb: "bo\u2018lishi kerak" },
@@ -16803,7 +16803,7 @@ function uz_default() {
   };
 }
 
-// node_modules/zod/v4/locales/vi.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/vi.js
 var error47 = () => {
   const Sizable = {
     string: { unit: "k\xFD t\u1EF1", verb: "c\xF3" },
@@ -16912,7 +16912,7 @@ function vi_default() {
   };
 }
 
-// node_modules/zod/v4/locales/zh-CN.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/zh-CN.js
 var error48 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u7B26", verb: "\u5305\u542B" },
@@ -17022,7 +17022,7 @@ function zh_CN_default() {
   };
 }
 
-// node_modules/zod/v4/locales/zh-TW.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/zh-TW.js
 var error49 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u5143", verb: "\u64C1\u6709" },
@@ -17130,7 +17130,7 @@ function zh_TW_default() {
   };
 }
 
-// node_modules/zod/v4/locales/yo.js
+// ../tooljet-mcp-http/node_modules/zod/v4/locales/yo.js
 var error50 = () => {
   const Sizable = {
     string: { unit: "\xE0mi", verb: "n\xED" },
@@ -17238,7 +17238,7 @@ function yo_default() {
   };
 }
 
-// node_modules/zod/v4/core/registries.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -17288,7 +17288,7 @@ function registry() {
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
 
-// node_modules/zod/v4/core/api.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/api.js
 // @__NO_SIDE_EFFECTS__
 function _string(Class2, params) {
   return new Class2({
@@ -18327,7 +18327,7 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
   return inst;
 }
 
-// node_modules/zod/v4/core/to-json-schema.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
   let target = params?.target ?? "draft-2020-12";
   if (target === "draft-4")
@@ -18686,7 +18686,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   return finalize(ctx, schema);
 };
 
-// node_modules/zod/v4/core/json-schema-processors.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/json-schema-processors.js
 var formatMap = {
   guid: "uuid",
   url: "uri",
@@ -19230,7 +19230,7 @@ function toJSONSchema(input, params) {
   return finalize(ctx, input);
 }
 
-// node_modules/zod/v4/core/json-schema-generator.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/json-schema-generator.js
 var JSONSchemaGenerator = class {
   /** @deprecated Access via ctx instead */
   get metadataRegistry() {
@@ -19305,10 +19305,10 @@ var JSONSchemaGenerator = class {
   }
 };
 
-// node_modules/zod/v4/core/json-schema.js
+// ../tooljet-mcp-http/node_modules/zod/v4/core/json-schema.js
 var json_schema_exports = {};
 
-// node_modules/zod/v4/classic/schemas.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/schemas.js
 var schemas_exports2 = {};
 __export(schemas_exports2, {
   ZodAny: () => ZodAny,
@@ -19479,7 +19479,7 @@ __export(schemas_exports2, {
   xor: () => xor
 });
 
-// node_modules/zod/v4/classic/checks.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/checks.js
 var checks_exports2 = {};
 __export(checks_exports2, {
   endsWith: () => _endsWith,
@@ -19513,7 +19513,7 @@ __export(checks_exports2, {
   uppercase: () => _uppercase
 });
 
-// node_modules/zod/v4/classic/iso.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/iso.js
 var iso_exports = {};
 __export(iso_exports, {
   ZodISODate: () => ZodISODate,
@@ -19554,7 +19554,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// node_modules/zod/v4/classic/errors.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/errors.js
 var initializer2 = (inst, issues) => {
   $ZodError.init(inst, issues);
   inst.name = "ZodError";
@@ -19594,7 +19594,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, {
   Parent: Error
 });
 
-// node_modules/zod/v4/classic/parse.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse2 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -19608,7 +19608,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// node_modules/zod/v4/classic/schemas.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/schemas.js
 var _installedGroups = /* @__PURE__ */ new WeakMap();
 function _installLazyMethods(inst, group, methods) {
   const proto = Object.getPrototypeOf(inst);
@@ -20898,7 +20898,7 @@ function preprocess(fn, schema) {
   });
 }
 
-// node_modules/zod/v4/classic/compat.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/compat.js
 var ZodIssueCode = {
   invalid_type: "invalid_type",
   too_big: "too_big",
@@ -20924,7 +20924,7 @@ var ZodFirstPartyTypeKind;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind3) {
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
 
-// node_modules/zod/v4/classic/from-json-schema.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/from-json-schema.js
 var z = {
   ...schemas_exports2,
   ...checks_exports2,
@@ -21404,7 +21404,7 @@ function fromJSONSchema(schema, params) {
   return convertSchema(normalized2, ctx);
 }
 
-// node_modules/zod/v4/classic/coerce.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/coerce.js
 var coerce_exports = {};
 __export(coerce_exports, {
   bigint: () => bigint3,
@@ -21429,10 +21429,10 @@ function date4(params) {
   return _coercedDate(ZodDate, params);
 }
 
-// node_modules/zod/v4/classic/external.js
+// ../tooljet-mcp-http/node_modules/zod/v4/classic/external.js
 config(en_default());
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
 var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
 var RELATED_TASK_META_KEY = "io.modelcontextprotocol/related-task";
@@ -22963,7 +22963,7 @@ var UrlElicitationRequiredError = class extends McpError {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
   constructor(options2) {
@@ -23000,7 +23000,7 @@ function serializeMessage(message) {
   return JSON.stringify(message) + "\n";
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 var StdioServerTransport = class {
   constructor(_stdin = process3.stdin, _stdout = process3.stdout, options2) {
     this._stdin = _stdin;
@@ -23067,7 +23067,7 @@ var StdioServerTransport = class {
   }
 };
 
-// node_modules/zod/v3/helpers/util.js
+// ../tooljet-mcp-http/node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
   util2.assertEqual = (_) => {
@@ -23201,7 +23201,7 @@ var getParsedType2 = (data) => {
   }
 };
 
-// node_modules/zod/v3/ZodError.js
+// ../tooljet-mcp-http/node_modules/zod/v3/ZodError.js
 var ZodIssueCode2 = util.arrayToEnum([
   "invalid_type",
   "invalid_literal",
@@ -23315,7 +23315,7 @@ ZodError2.create = (issues) => {
   return error51;
 };
 
-// node_modules/zod/v3/locales/en.js
+// ../tooljet-mcp-http/node_modules/zod/v3/locales/en.js
 var errorMap = (issue2, _ctx) => {
   let message;
   switch (issue2.code) {
@@ -23418,13 +23418,13 @@ var errorMap = (issue2, _ctx) => {
 };
 var en_default2 = errorMap;
 
-// node_modules/zod/v3/errors.js
+// ../tooljet-mcp-http/node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default2;
 function getErrorMap2() {
   return overrideErrorMap;
 }
 
-// node_modules/zod/v3/helpers/parseUtil.js
+// ../tooljet-mcp-http/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
   const { data, path, errorMaps, issueData } = params;
   const fullPath = [...path, ...issueData.path || []];
@@ -23533,14 +23533,14 @@ var isDirty = (x) => x.status === "dirty";
 var isValid = (x) => x.status === "valid";
 var isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-// node_modules/zod/v3/helpers/errorUtil.js
+// ../tooljet-mcp-http/node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil;
 (function(errorUtil2) {
   errorUtil2.errToObj = (message) => typeof message === "string" ? { message } : message || {};
   errorUtil2.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil || (errorUtil = {}));
 
-// node_modules/zod/v3/types.js
+// ../tooljet-mcp-http/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
   constructor(parent, value, path, key) {
     this._cachedPath = [];
@@ -26943,7 +26943,7 @@ var nullableType = ZodNullable2.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
 
-// node_modules/zod/v4/mini/schemas.js
+// ../tooljet-mcp-http/node_modules/zod/v4/mini/schemas.js
 var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
   if (!inst._zod)
     throw new Error("Uninitialized schema in ZodMiniType.");
@@ -26989,7 +26989,7 @@ function object2(shape, params) {
   return new ZodMiniObject(def);
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
 function isZ4Schema(s) {
   const schema = s;
   return !!schema._zod;
@@ -27149,12 +27149,12 @@ function getLiteralValue(schema) {
   return void 0;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
 function isTerminal(status) {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 
-// node_modules/zod-to-json-schema/dist/esm/Options.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/Options.js
 var ignoreOverride = /* @__PURE__ */ Symbol("Let zodToJsonSchema decide on which parser to use");
 var defaultOptions = {
   name: void 0,
@@ -27188,7 +27188,7 @@ var getDefaultOptions = (options2) => typeof options2 === "string" ? {
   ...options2
 };
 
-// node_modules/zod-to-json-schema/dist/esm/Refs.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/Refs.js
 var getRefs = (options2) => {
   const _options = getDefaultOptions(options2);
   const currentPath = _options.name !== void 0 ? [..._options.basePath, _options.definitionPath, _options.name] : _options.basePath;
@@ -27209,7 +27209,7 @@ var getRefs = (options2) => {
   };
 };
 
-// node_modules/zod-to-json-schema/dist/esm/errorMessages.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/errorMessages.js
 function addErrorMessage(res, key, errorMessage, refs2) {
   if (!refs2?.errorMessages)
     return;
@@ -27225,7 +27225,7 @@ function setResponseValueAndErrors(res, key, value, errorMessage, refs2) {
   addErrorMessage(res, key, errorMessage, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
 var getRelativePath = (pathA, pathB) => {
   let i = 0;
   for (; i < pathA.length && i < pathB.length; i++) {
@@ -27235,7 +27235,7 @@ var getRelativePath = (pathA, pathB) => {
   return [(pathA.length - i).toString(), ...pathB.slice(i)].join("/");
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/any.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/any.js
 function parseAnyDef(refs2) {
   if (refs2.target !== "openAi") {
     return {};
@@ -27251,7 +27251,7 @@ function parseAnyDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/array.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/array.js
 function parseArrayDef(def, refs2) {
   const res = {
     type: "array"
@@ -27275,7 +27275,7 @@ function parseArrayDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
 function parseBigintDef(def, refs2) {
   const res = {
     type: "integer",
@@ -27321,24 +27321,24 @@ function parseBigintDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
 function parseBooleanDef() {
   return {
     type: "boolean"
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
 function parseBrandedDef(_def, refs2) {
   return parseDef(_def.type._def, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
 var parseCatchDef = (def, refs2) => {
   return parseDef(def.innerType._def, refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/date.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/date.js
 function parseDateDef(def, refs2, overrideDateStrategy) {
   const strategy = overrideDateStrategy ?? refs2.dateStrategy;
   if (Array.isArray(strategy)) {
@@ -27397,7 +27397,7 @@ var integerDateParser = (def, refs2) => {
   return res;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/default.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/default.js
 function parseDefaultDef(_def, refs2) {
   return {
     ...parseDef(_def.innerType._def, refs2),
@@ -27405,12 +27405,12 @@ function parseDefaultDef(_def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
 function parseEffectsDef(_def, refs2) {
   return refs2.effectStrategy === "input" ? parseDef(_def.schema._def, refs2) : parseAnyDef(refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
 function parseEnumDef(def) {
   return {
     type: "string",
@@ -27418,7 +27418,7 @@ function parseEnumDef(def) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
 var isJsonSchema7AllOfType = (type) => {
   if ("type" in type && type.type === "string")
     return false;
@@ -27460,7 +27460,7 @@ function parseIntersectionDef(def, refs2) {
   } : void 0;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
 function parseLiteralDef(def, refs2) {
   const parsedType2 = typeof def.value;
   if (parsedType2 !== "bigint" && parsedType2 !== "number" && parsedType2 !== "boolean" && parsedType2 !== "string") {
@@ -27480,7 +27480,7 @@ function parseLiteralDef(def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/string.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/string.js
 var emojiRegex2 = void 0;
 var zodPatterns = {
   /**
@@ -27805,7 +27805,7 @@ function stringifyRegExpWithFlags(regex, refs2) {
   return pattern;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/record.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/record.js
 function parseRecordDef(def, refs2) {
   if (refs2.target === "openAi") {
     console.warn("Warning: OpenAI may not support records in schemas! Try an array of key-value pairs instead.");
@@ -27857,7 +27857,7 @@ function parseRecordDef(def, refs2) {
   return schema;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/map.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/map.js
 function parseMapDef(def, refs2) {
   if (refs2.mapStrategy === "record") {
     return parseRecordDef(def, refs2);
@@ -27882,7 +27882,7 @@ function parseMapDef(def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object3 = def.values;
   const actualKeys = Object.keys(def.values).filter((key) => {
@@ -27896,7 +27896,7 @@ function parseNativeEnumDef(def) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/never.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/never.js
 function parseNeverDef(refs2) {
   return refs2.target === "openAi" ? void 0 : {
     not: parseAnyDef({
@@ -27906,7 +27906,7 @@ function parseNeverDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/null.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/null.js
 function parseNullDef(refs2) {
   return refs2.target === "openApi3" ? {
     enum: ["null"],
@@ -27916,7 +27916,7 @@ function parseNullDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/union.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/union.js
 var primitiveMappings = {
   ZodString: "string",
   ZodNumber: "number",
@@ -27984,7 +27984,7 @@ var asAnyOf = (def, refs2) => {
   return anyOf.length ? { anyOf } : void 0;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
 function parseNullableDef(def, refs2) {
   if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) && (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
     if (refs2.target === "openApi3") {
@@ -28016,7 +28016,7 @@ function parseNullableDef(def, refs2) {
   return base && { anyOf: [base, { type: "null" }] };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/number.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/number.js
 function parseNumberDef(def, refs2) {
   const res = {
     type: "number"
@@ -28065,7 +28065,7 @@ function parseNumberDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/object.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/object.js
 function parseObjectDef(def, refs2) {
   const forceOptionalIntoNullable = refs2.target === "openAi";
   const result = {
@@ -28135,7 +28135,7 @@ function safeIsOptional(schema) {
   }
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
 var parseOptionalDef = (def, refs2) => {
   if (refs2.currentPath.toString() === refs2.propertyPath?.toString()) {
     return parseDef(def.innerType._def, refs2);
@@ -28154,7 +28154,7 @@ var parseOptionalDef = (def, refs2) => {
   } : parseAnyDef(refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
 var parsePipelineDef = (def, refs2) => {
   if (refs2.pipeStrategy === "input") {
     return parseDef(def.in._def, refs2);
@@ -28174,12 +28174,12 @@ var parsePipelineDef = (def, refs2) => {
   };
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
 function parsePromiseDef(def, refs2) {
   return parseDef(def.type._def, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/set.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/set.js
 function parseSetDef(def, refs2) {
   const items = parseDef(def.valueType._def, {
     ...refs2,
@@ -28199,7 +28199,7 @@ function parseSetDef(def, refs2) {
   return schema;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
 function parseTupleDef(def, refs2) {
   if (def.rest) {
     return {
@@ -28227,24 +28227,24 @@ function parseTupleDef(def, refs2) {
   }
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
 function parseUndefinedDef(refs2) {
   return {
     not: parseAnyDef(refs2)
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
 function parseUnknownDef(refs2) {
   return parseAnyDef(refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
 var parseReadonlyDef = (def, refs2) => {
   return parseDef(def.innerType._def, refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/selectParser.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/selectParser.js
 var selectParser = (def, typeName, refs2) => {
   switch (typeName) {
     case ZodFirstPartyTypeKind2.ZodString:
@@ -28320,7 +28320,7 @@ var selectParser = (def, typeName, refs2) => {
   }
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parseDef.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/parseDef.js
 function parseDef(def, refs2, forceResolution = false) {
   const seenItem = refs2.seen.get(def);
   if (refs2.override) {
@@ -28376,7 +28376,7 @@ var addMeta = (def, refs2, jsonSchema) => {
   return jsonSchema;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
+// ../tooljet-mcp-http/node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
 var zodToJsonSchema = (schema, options2) => {
   const refs2 = getRefs(options2);
   let definitions = typeof options2 === "object" && options2.definitions ? Object.entries(options2.definitions).reduce((acc, [name2, schema2]) => ({
@@ -28438,7 +28438,7 @@ var zodToJsonSchema = (schema, options2) => {
   return combined;
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
 function mapMiniTarget(t) {
   if (!t)
     return "draft-7";
@@ -28480,7 +28480,7 @@ function parseWithCompat(schema, data) {
   return result.data;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
 var DEFAULT_REQUEST_TIMEOUT_MSEC = 6e4;
 var Protocol = class {
   constructor(_options) {
@@ -29434,7 +29434,7 @@ function mergeCapabilities(base, additional) {
   return result;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
 var import_ajv = __toESM(require_ajv(), 1);
 var import_ajv_formats = __toESM(require_dist(), 1);
 function createDefaultAjvInstance() {
@@ -29502,7 +29502,7 @@ var AjvJsonSchemaValidator = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
 var ExperimentalServerTasks = class {
   constructor(_server) {
     this._server = _server;
@@ -29715,7 +29715,7 @@ var ExperimentalServerTasks = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
 function assertToolsCallTaskCapability(requests, method, entityName) {
   if (!requests) {
     throw new Error(`${entityName} does not support task creation (required for ${method})`);
@@ -29750,7 +29750,7 @@ function assertClientRequestTaskCapability(requests, method, entityName) {
   }
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
 var Server = class extends Protocol {
   /**
    * Initializes this server with the given name and version information.
@@ -30121,7 +30121,7 @@ var Server = class extends Protocol {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
 var COMPLETABLE_SYMBOL = /* @__PURE__ */ Symbol.for("mcp.completable");
 function isCompletable(schema) {
   return !!schema && typeof schema === "object" && COMPLETABLE_SYMBOL in schema;
@@ -30135,7 +30135,7 @@ var McpZodTypeKind;
   McpZodTypeKind2["Completable"] = "McpCompletable";
 })(McpZodTypeKind || (McpZodTypeKind = {}));
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
 var TOOL_NAME_REGEX = /^[A-Za-z0-9._-]{1,128}$/;
 function validateToolName(name) {
   const warnings = [];
@@ -30193,7 +30193,7 @@ function validateAndWarnToolName(name) {
   return result.isValid;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
 var ExperimentalMcpServerTasks = class {
   constructor(_mcpServer) {
     this._mcpServer = _mcpServer;
@@ -30208,7 +30208,7 @@ var ExperimentalMcpServerTasks = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
+// ../tooljet-mcp-http/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
 var McpServer = class {
   constructor(serverInfo, options2) {
     this._registeredResources = {};
@@ -31725,27 +31725,19 @@ function placementKey(component) {
   const placement = parentPlacement(component);
   return placement ? `${placement.parentId}::${placement.slotName}` : "__page__";
 }
-function lintComponentSlots(components, options2 = {}) {
+function lintComponentSlots(components) {
   const errors = [];
   const refs2 = new Map(components.flatMap((component) => {
     const key = componentKey(component);
     return key ? [[key, component]] : [];
   }));
   for (const component of components) {
-    const placement = parentPlacement(component);
-    const parent = placement ? refs2.get(placement.parentId) : void 0;
-    if (placement && !parent && options2.requireKnownParents) {
-      errors.push(`Component "${component.name ?? component.id ?? component.type}" has unknown parent "${placement.parentId}". A page id is not a component parent; omit parent for root components.`);
-      continue;
-    }
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : "body";
     const slotName = component.slotName ?? (persistedSlot === "body" ? void 0 : persistedSlot);
     if (!slotName)
       continue;
-    if (!placement) {
-      errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" without a parent. Root components must omit slot_name; nested components need parent_ref or parent.`);
-      continue;
-    }
+    const placement = parentPlacement(component);
+    const parent = placement ? refs2.get(placement.parentId) : void 0;
     if (parent && !SLOT_PARENT_TYPES.has(parent.type ?? "")) {
       errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; native slots are supported only by ModalV2, Form, and Container.`);
     }
@@ -31818,32 +31810,60 @@ function lintListviewChildren(components) {
   return warnings;
 }
 function lintOperationalViewport(components) {
-  const topLevel = components.filter((component) => !parentPlacement(component));
-  const surfaces = topLevel.flatMap((component) => {
+  const refs2 = new Map(components.flatMap((component) => {
+    const key = componentKey(component);
+    return key ? [[key, component]] : [];
+  }));
+  const absoluteTop = (component, seen = /* @__PURE__ */ new Set()) => {
+    const rect2 = component.layouts?.desktop ?? component.layout;
+    const localTop = rect2?.top ?? 0;
+    const placement = parentPlacement(component);
+    if (!placement || seen.has(placement.parentId))
+      return localTop;
+    const parent = refs2.get(placement.parentId);
+    if (!parent)
+      return localTop;
+    return localTop + absoluteTop(parent, /* @__PURE__ */ new Set([...seen, placement.parentId]));
+  };
+  const hasBoundedAncestor = (component) => {
+    let placement = parentPlacement(component);
+    const seen = /* @__PURE__ */ new Set();
+    while (placement && !seen.has(placement.parentId)) {
+      seen.add(placement.parentId);
+      const parent = refs2.get(placement.parentId);
+      if (!parent)
+        return false;
+      if (BOUNDED_OPERATIONAL_SURFACE_TYPES.has(parent.type ?? ""))
+        return true;
+      placement = parentPlacement(parent);
+    }
+    return false;
+  };
+  const surfaces = components.flatMap((component) => {
     if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? ""))
       return [];
     const rect2 = component.layouts?.desktop ?? component.layout;
     if (!rect2 || (rect2.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX)
       return [];
-    return [{ component, bottom: (rect2.top ?? 0) + (rect2.height ?? 0) }];
+    return [{ component, bottom: absoluteTop(component) + (rect2.height ?? 0) }];
   });
   if (!surfaces.length)
     return [];
   const warnings = [];
-  for (const button of topLevel.filter((component) => component.type === "Button")) {
+  for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
     if (propVal(button.styles, "type") !== "primary")
       continue;
     const rect2 = button.layouts?.desktop ?? button.layout;
     if (!rect2)
       continue;
-    const buttonTop = rect2.top ?? 0;
+    const buttonTop = absoluteTop(button);
     const buttonBottom = buttonTop + (rect2.height ?? 0);
     if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX)
       continue;
     const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
-    if (!precedingSurface)
-      continue;
-    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px below a bounded ${precedingSurface.component.type} "${precedingSurface.component.name ?? precedingSurface.component.id ?? precedingSurface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
+    const surface = precedingSurface ?? surfaces[0];
+    const relation = precedingSurface ? "below" : "on a page with";
+    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px ${relation} a bounded ${surface.component.type} "${surface.component.name ?? surface.component.id ?? surface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
   }
   return warnings;
 }
@@ -32000,15 +32020,6 @@ function lintComponentSpec(spec) {
   if (spec.type === "KeyValuePair") {
     const data = propVal(props, "data");
     const fields = propVal(props, "fields");
-    const alignment = catalogValue("KeyValuePair", spec.styles, "alignment", "styles");
-    const autoLabelWidth = catalogValue("KeyValuePair", spec.styles, "autoLabelWidth", "styles");
-    const padding = catalogValue("KeyValuePair", spec.styles, "padding", "styles");
-    if (alignment === "side" && !isTruthyBinding(autoLabelWidth)) {
-      warnings.push(`KeyValuePair "${label}": side alignment with autoLabelWidth:false uses the persisted 33% label-width default, creating a large empty gap on wide detail panels. Set styles.autoLabelWidth.value="{{true}}" or use top alignment.`);
-    }
-    if (padding === "default") {
-      warnings.push(`KeyValuePair "${label}": this ToolJet renderer does not apply a visible content inset for styles.padding:"${padding}". Do not rely on it for card padding. For a polished read-only details card, prefer Html with an explicitly projected binding and root CSS padding/box-sizing; keep KeyValuePair when its native field editing/changeSet behavior is required.`);
-    }
     if (data !== void 0 && Array.isArray(fields) && fields.length > 0) {
       const declaredKeys = new Set(fields.flatMap((field) => {
         const key = recordValue(field)?.key;
@@ -32123,16 +32134,6 @@ function lintComponentSpec(spec) {
         }
         if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
           warnings.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
-        }
-        if (c?.columnType === "badge" || c?.columnType === "badges") {
-          const values = c.values;
-          const labels = c.labels;
-          const configured = (value) => Array.isArray(value) && value.length > 0 || typeof value === "string" && value.trim().length > 0;
-          if (!configured(values) || !configured(labels)) {
-            errors.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" uses columnType:"${c.columnType}" without non-empty values and labels, so cells render blank. Configure both mappings or use columnType:"string".`);
-          } else if (Array.isArray(values) && Array.isArray(labels) && values.length !== labels.length) {
-            errors.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" has ${values.length} badge values but ${labels.length} labels. Badge values and labels must have matching lengths.`);
-          }
         }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
@@ -32379,7 +32380,6 @@ function validateAppStructure(summary) {
     for (const c of p.components)
       if (c.name)
         counts.set(c.name, (counts.get(c.name) ?? 0) + 1);
-    errors.push(...lintComponentSlots(p.components, { requireKnownParents: true }));
     for (const [name, n] of counts) {
       if (n > 1)
         warnings.push(`Page "${p.name}": ${n} components named "${name}" \u2014 {{components.${name}}} is ambiguous.`);
@@ -32434,6 +32434,29 @@ function validateAppStructure(summary) {
     });
     if (missing.length) {
       warnings.push(`RunJS query "${query.name ?? query.id}" sets runOnDependencyChange=true but reads ${missing.map((name) => `queries.${name}`).join(", ")} as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. Run this query explicitly from each source query's onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.`);
+    }
+  }
+  const successChains = new Set(summary.events.flatMap((event) => {
+    if (event.target !== "data_query")
+      return [];
+    const payload = recordValue(event.event);
+    return payload?.eventId === "onDataQuerySuccess" && payload.actionId === "run-query" && typeof payload.queryId === "string" ? [`${event.sourceId}->${payload.queryId}`] : [];
+  }));
+  for (const query of summary.queries.filter((candidate) => candidate.kind !== "runjs")) {
+    const options2 = recordValue(query.options);
+    if (!options2)
+      continue;
+    const automatic = isTruthyBinding(propVal(options2, "runOnPageLoad")) || isTruthyBinding(propVal(options2, "runOnDependencyChange"));
+    if (!automatic)
+      continue;
+    const blob = JSON.stringify(options2);
+    const referencedNames = [...new Set([...blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
+    const missing = referencedNames.filter((name) => {
+      const source2 = queryByName.get(name);
+      return source2 && source2.id !== query.id && !successChains.has(`${source2.id}->${query.id}`);
+    });
+    if (missing.length) {
+      warnings.push(`Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ${missing.map((name) => `queries.${name}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
     }
   }
   for (const e of summary.events) {
@@ -32537,7 +32560,6 @@ function validateAppStructure(summary) {
 
 // dist/tableValidation.js
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set(["action", "comment", "condition"]);
-var TOOLJET_DB_MAX_TABLE_NAME_LENGTH = 31;
 function normalized(value) {
   return value.trim().toLowerCase();
 }
@@ -32546,11 +32568,6 @@ function validateTableBatch(tables) {
   const tablesByName = /* @__PURE__ */ new Map();
   for (const table of tables) {
     const tableKey = normalized(table.tableName);
-    if (!table.tableName.trim()) {
-      errors.push("ToolJet DB table names cannot be empty.");
-    } else if (table.tableName.length > TOOLJET_DB_MAX_TABLE_NAME_LENGTH) {
-      errors.push(`ToolJet DB table name "${table.tableName}" is ${table.tableName.length} characters; the maximum is ${TOOLJET_DB_MAX_TABLE_NAME_LENGTH}. Shorten it before creating the table.`);
-    }
     if (tablesByName.has(tableKey)) {
       errors.push(`Duplicate table name "${table.tableName}" in batch.`);
     } else {
@@ -34142,12 +34159,12 @@ function insertRowsTool(client) {
 // dist/tools/insertRowsBatch.js
 var seedSchema = external_exports.object({
   table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
 });
 function insertRowsBatchTool(client) {
   return {
     name: "insert_rows_batch",
-    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small.",
+    description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -34177,6 +34194,12 @@ var CATALOG_SECTIONS = [
   "renderingHints",
   "authoringHints"
 ];
+var DEFAULT_TYPED_SECTIONS = [
+  "overview",
+  "properties",
+  "events",
+  "actions"
+];
 var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
   ["gridview", {
     type: "Listview",
@@ -34187,8 +34210,21 @@ function resolveCatalogType(requestedType) {
   const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
   return alias ? { type: alias.type, alias: { requested_type: requestedType, note: alias.note } } : { type: requestedType };
 }
+function selectEntries(entries, keys, detail) {
+  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
+  if (detail === "full" || keys?.length)
+    return selected;
+  return selected.map(({ key, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
+    key,
+    ...valueType !== void 0 ? { valueType } : {},
+    ...allowedValues !== void 0 ? { allowedValues } : {},
+    ...requires !== void 0 ? { requires } : {},
+    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
+  }));
+}
 function selectSchema(schema, args) {
-  const sections = new Set(args.sections ?? CATALOG_SECTIONS);
+  const detail = args.detail ?? "compact";
+  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
   const result = { type: schema.type };
   if (sections.has("overview")) {
     if (schema.name !== void 0)
@@ -34199,10 +34235,10 @@ function selectSchema(schema, args) {
       result.defaultSize = schema.defaultSize;
   }
   if (sections.has("properties")) {
-    result.properties = args.property_keys?.length ? schema.properties.filter((property) => args.property_keys.includes(property.key)) : schema.properties;
+    result.properties = selectEntries(schema.properties, args.property_keys, detail);
   }
   if (sections.has("styles")) {
-    result.styles = args.style_keys?.length ? schema.styles.filter((style) => args.style_keys.includes(style.key)) : schema.styles;
+    result.styles = selectEntries(schema.styles, args.style_keys, detail);
   }
   if (sections.has("events") && schema.events !== void 0)
     result.events = schema.events;
@@ -34233,36 +34269,47 @@ function legacyNotice(type) {
 function getComponentCatalogTool(_client) {
   return {
     name: "get_component_catalog",
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. Use requests:[{type,sections,property_keys?,style_keys?}] when different component types need different sections without loading the union of every contract. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
+    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
       type: external_exports.string().optional(),
       types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
       requests: external_exports.array(external_exports.object({
         type: external_exports.string(),
+        detail: external_exports.enum(["compact", "full"]).optional(),
         sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
         property_keys: external_exports.array(external_exports.string()).min(1).optional(),
         style_keys: external_exports.array(external_exports.string()).min(1).optional()
       })).min(1).max(25).optional(),
+      detail: external_exports.enum(["compact", "full"]).optional(),
       sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
       property_keys: external_exports.array(external_exports.string()).min(1).optional(),
       style_keys: external_exports.array(external_exports.string()).min(1).optional()
     },
     async handler(args) {
       try {
-        const selectorCount = Number(Boolean(args?.type)) + Number(Boolean(args?.types?.length)) + Number(Boolean(args?.requests?.length));
-        if (selectorCount > 1) {
+        const selectors = Number(Boolean(args?.type)) + Number(Boolean(args?.types?.length)) + Number(Boolean(args?.requests?.length));
+        if (selectors > 1) {
           return fail(new Error("Pass exactly one of `type`, `types`, or `requests`."));
         }
-        if (!selectorCount) {
-          if (args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog sections/key filters require `type`, `types`, or `requests`."));
+        if (!selectors) {
+          if (args.detail || args.sections || args.property_keys || args.style_keys) {
+            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
           }
           return ok(getCatalog());
         }
-        if (args.requests?.length) {
-          if (args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Put sections/property_keys/style_keys inside each `requests` entry."));
+        if (args.type) {
+          const resolved = resolveCatalogType(args.type);
+          const schema = getComponentSchema(resolved.type);
+          if (!schema) {
+            return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
           }
+          return ok({
+            ...selectSchema(schema, args),
+            ...legacyNotice(schema.type),
+            ...resolved.alias ? { alias: resolved.alias } : {}
+          });
+        }
+        if (args.requests?.length) {
           const components2 = [];
           const unknownTypes2 = [];
           for (const request of args.requests) {
@@ -34280,19 +34327,7 @@ function getComponentCatalogTool(_client) {
           }
           return ok({ components: components2, unknown_types: unknownTypes2 });
         }
-        if (args.type) {
-          const resolved = resolveCatalogType(args.type);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            return fail(new Error(`Unknown component type "${args.type}". Call with no argument to list valid types.`));
-          }
-          return ok({
-            ...selectSchema(schema, args),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {}
-          });
-        }
-        const requestedTypes = [...new Set(args.types)];
+        const requestedTypes = [...new Set(args.types ?? [])];
         const components = [];
         const unknownTypes = [];
         const byResolvedType = /* @__PURE__ */ new Map();
@@ -34318,216 +34353,6 @@ function getComponentCatalogTool(_client) {
         return ok({ components, unknown_types: unknownTypes });
       } catch (err) {
         return fail(err);
-      }
-    }
-  };
-}
-
-// dist/eventActions.js
-var EVENT_ACTION_CONTRACTS = [
-  {
-    id: "run-query",
-    label: "Run query",
-    group: "query",
-    params: [
-      { name: "queryId", required: true, type: "query id" },
-      { name: "queryName", required: false, type: "string" }
-    ],
-    example: { actionId: "run-query", queryId: "<query id>", queryName: "<query name>" }
-  },
-  {
-    id: "switch-page",
-    label: "Switch page",
-    group: "navigation",
-    params: [{ name: "pageId", required: true, type: "page id" }],
-    example: { actionId: "switch-page", pageId: "<page id>" },
-    notes: ["Navigation must be the last handler for the same source and trigger."]
-  },
-  {
-    id: "show-alert",
-    label: "Show alert",
-    group: "output",
-    params: [
-      { name: "message", required: true, type: "string or binding" },
-      { name: "alertType", required: true, type: "string", allowedValues: ["success", "info", "warning", "error"] }
-    ],
-    example: { actionId: "show-alert", message: "Saved", alertType: "success" }
-  },
-  {
-    id: "show-modal",
-    label: "Show modal",
-    group: "component",
-    params: [{ name: "modal", required: true, type: "Modal/ModalV2 component id" }],
-    example: { actionId: "show-modal", modal: "<modal component id>" }
-  },
-  {
-    id: "close-modal",
-    label: "Close modal",
-    group: "component",
-    params: [{ name: "modal", required: true, type: "Modal/ModalV2 component id" }],
-    example: { actionId: "close-modal", modal: "<modal component id>" }
-  },
-  {
-    id: "control-component",
-    label: "Control component",
-    group: "component",
-    params: [
-      { name: "componentId", required: true, type: "component id" },
-      { name: "componentSpecificActionHandle", required: true, type: "component action handle" },
-      { name: "componentSpecificActionParams", required: true, type: "array of {handle,value}", default: [] }
-    ],
-    example: {
-      actionId: "control-component",
-      componentId: "<component id>",
-      componentSpecificActionHandle: "setValue",
-      componentSpecificActionParams: [{ handle: "value", value: "{{1}}" }]
-    },
-    notes: ["Fetch the target component actions from get_component_catalog. Use [] for a parameterless action."]
-  },
-  {
-    id: "set-table-page",
-    label: "Set table page",
-    group: "component",
-    params: [
-      { name: "table", required: true, type: "Table component id" },
-      { name: "pageIndex", required: true, type: "number or binding", default: "{{1}}" }
-    ],
-    example: { actionId: "set-table-page", table: "<table component id>", pageIndex: "{{1}}" }
-  },
-  {
-    id: "scroll-component-into-view",
-    label: "Scroll component into view",
-    group: "component",
-    params: [
-      { name: "componentId", required: true, type: "component id" },
-      { name: "scrollBehavior", required: false, type: "string", default: "smooth", allowedValues: ["auto", "smooth"] },
-      { name: "scrollBlock", required: false, type: "string", default: "nearest", allowedValues: ["start", "center", "end", "nearest"] }
-    ],
-    example: { actionId: "scroll-component-into-view", componentId: "<component id>", scrollBehavior: "smooth", scrollBlock: "nearest" }
-  },
-  {
-    id: "set-custom-variable",
-    label: "Set custom variable",
-    group: "variable",
-    params: [
-      { name: "key", required: true, type: "string" },
-      { name: "value", required: true, type: "any or binding" }
-    ],
-    example: { actionId: "set-custom-variable", key: "selectedRow", value: "{{components.table1.selectedRow}}" }
-  },
-  {
-    id: "unset-custom-variable",
-    label: "Unset custom variable",
-    group: "variable",
-    params: [{ name: "key", required: true, type: "string" }],
-    example: { actionId: "unset-custom-variable", key: "selectedRow" }
-  },
-  {
-    id: "set-page-variable",
-    label: "Set page variable",
-    group: "variable",
-    params: [
-      { name: "key", required: true, type: "string" },
-      { name: "value", required: true, type: "any or binding" }
-    ],
-    example: { actionId: "set-page-variable", key: "filter", value: "{{components.search.value}}" }
-  },
-  {
-    id: "set-localstorage-value",
-    label: "Set local storage value",
-    group: "variable",
-    params: [
-      { name: "key", required: true, type: "string or binding" },
-      { name: "value", required: true, type: "string or binding" }
-    ],
-    example: { actionId: "set-localstorage-value", key: "viewMode", value: "compact" },
-    notes: ["This is client-side persistence, not an authorization boundary."]
-  },
-  {
-    id: "open-webpage",
-    label: "Open webpage",
-    group: "navigation",
-    params: [
-      { name: "url", required: true, type: "string or binding" },
-      { name: "windowTarget", required: false, type: "string", default: "newTab", allowedValues: ["newTab", "currentTab"] }
-    ],
-    example: { actionId: "open-webpage", url: "https://example.com", windowTarget: "newTab" },
-    notes: ["The browser or operating system must have a handler for non-http schemes such as sms:."]
-  },
-  {
-    id: "go-to-app",
-    label: "Go to app",
-    group: "navigation",
-    params: [
-      { name: "correlationId", required: true, type: "linked app correlation id" },
-      { name: "queryParams", required: false, type: "array of [key,value] pairs", default: [] }
-    ],
-    example: { actionId: "go-to-app", correlationId: "<linked app correlation id>", queryParams: [] }
-  },
-  {
-    id: "copy-to-clipboard",
-    label: "Copy to clipboard",
-    group: "output",
-    params: [{ name: "contentToCopy", required: true, type: "string or binding" }],
-    example: { actionId: "copy-to-clipboard", contentToCopy: "{{components.text1.text}}" }
-  },
-  {
-    id: "generate-file",
-    label: "Generate file",
-    group: "output",
-    params: [
-      { name: "fileName", required: false, type: "string or binding", default: "data.txt" },
-      { name: "fileType", required: false, type: "string or binding", default: "csv", allowedValues: ["csv", "plaintext", "pdf"] },
-      { name: "data", required: true, type: "array/string/PDF bytes or binding" }
-    ],
-    example: { actionId: "generate-file", fileName: "export.csv", fileType: "csv", data: "{{queries.list.data}}" },
-    notes: ["PDF is pass-through only and requires pre-formed PDF bytes."]
-  },
-  {
-    id: "logout",
-    label: "Logout",
-    group: "session",
-    params: [],
-    example: { actionId: "logout" }
-  }
-];
-var EVENT_ACTION_IDS = new Set(EVENT_ACTION_CONTRACTS.map((contract) => contract.id));
-function getEventActionContract(actionId) {
-  return EVENT_ACTION_CONTRACTS.find((contract) => contract.id === actionId);
-}
-
-// dist/tools/getEventActionCatalog.js
-function getEventActionCatalogTool(_client) {
-  return {
-    name: "get_event_action_catalog",
-    description: "Discover exact MCP-authorable ToolJet event action payloads. With no selector, returns the lightweight action palette. Use action_id for one full contract or action_ids to batch several. Contracts include required parameter names, defaults, allowed values, examples, and runtime caveats such as open-webpage windowTarget and copy-to-clipboard contentToCopy.",
-    inputSchema: {
-      action_id: external_exports.string().optional(),
-      action_ids: external_exports.array(external_exports.string()).min(1).max(25).optional()
-    },
-    async handler(args) {
-      try {
-        if (args.action_id && args.action_ids?.length) {
-          return fail(new Error("Pass either `action_id` or `action_ids`, not both."));
-        }
-        if (args.action_id) {
-          const contract = getEventActionContract(args.action_id);
-          return contract ? ok(contract) : fail(new Error(`Unknown event action "${args.action_id}".`));
-        }
-        if (args.action_ids?.length) {
-          const requested = [...new Set(args.action_ids)];
-          const actions = requested.flatMap((actionId) => {
-            const contract = getEventActionContract(actionId);
-            return contract ? [contract] : [];
-          });
-          return ok({
-            actions,
-            unknown_action_ids: requested.filter((actionId) => !getEventActionContract(actionId))
-          });
-        }
-        return ok(EVENT_ACTION_CONTRACTS.map(({ id, label, group }) => ({ id, label, group })));
-      } catch (error51) {
-        return fail(error51);
       }
     }
   };
@@ -34702,10 +34527,7 @@ function getDatasourceQuerySchemaTool(client) {
             operation: request.operation,
             sections: request.sections
           });
-          if (!selected) {
-            throw new Error(`Unknown datasource kind "${kind}". Call with no selector to list known schemas.`);
-          }
-          schemas.push(selected);
+          schemas.push(selected ?? { error: `Unknown datasource kind "${kind}". Call with no selector to list known schemas.` });
         }
         return ok(args.requests ? { schemas } : schemas[0]);
       } catch (err) {
@@ -35400,6 +35222,25 @@ function getComponentTool(client) {
 }
 
 // dist/eventValidation.js
+var ACTION_IDS = /* @__PURE__ */ new Set([
+  "run-query",
+  "switch-page",
+  "show-alert",
+  "show-modal",
+  "close-modal",
+  "set-custom-variable",
+  "unset-custom-variable",
+  "set-page-variable",
+  "set-table-page",
+  "copy-to-clipboard",
+  "generate-file",
+  "open-webpage",
+  "go-to-app",
+  "logout",
+  "control-component",
+  "set-localstorage-value",
+  "scroll-component-into-view"
+]);
 function propVal2(properties, key) {
   const value = properties?.[key];
   return value && typeof value === "object" && "value" in value ? value.value : value;
@@ -35486,7 +35327,7 @@ function validateEvents(summary, events, options2 = {}) {
       errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
     }
     const actionId = event.action.actionId;
-    if (typeof actionId !== "string" || !EVENT_ACTION_IDS.has(actionId)) {
+    if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
       errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
     }
@@ -35682,6 +35523,63 @@ function staticPositiveInteger(value) {
     return void 0;
   const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
   return match ? Number(match[1]) : void 0;
+}
+function containsBinding(value) {
+  if (typeof value === "string")
+    return value.includes("{{");
+  if (Array.isArray(value))
+    return value.some(containsBinding);
+  return !!record2(value) && Object.values(record2(value)).some(containsBinding);
+}
+function assessRestGet(options2, datasourceId) {
+  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
+  const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
+  if (method !== "get") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
+      ...identity
+    };
+  }
+  const url2 = typeof options2.url === "string" ? options2.url.trim() : "";
+  if (!url2 || containsBinding(url2)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
+      ...identity
+    };
+  }
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
+  if (requestFields.some(containsBinding)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: url2 },
+    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
 }
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
@@ -35948,6 +35846,8 @@ function assessQueryRead(query) {
     };
   }
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (kind === "restapi")
+    return assessRestGet(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -36048,6 +35948,15 @@ function operationFromOptions(options2, contracts, defaults) {
     return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, "default"))
     return "default";
+  const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
+    const selectors = Object.entries(variant.when);
+    return selectors.length > 0 && selectors.every(([selector, accepted]) => {
+      const actual = options2[selector] ?? defaults[selector];
+      return typeof actual === "string" && !isDynamicBinding2(actual) && accepted.includes(actual);
+    });
+  }));
+  if (selectorMatches.length === 1)
+    return selectorMatches[0][0];
   return void 0;
 }
 function variantMatches(variant, options2) {
@@ -36076,6 +35985,10 @@ function nestedChildren(fields, root) {
 function suffixSuggestion(key, fields) {
   const matches2 = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
   return matches2.length === 1 ? matches2[0] : void 0;
+}
+function tupleArity(field) {
+  const tuple2 = field.shape?.["<index>"];
+  return Array.isArray(tuple2) && tuple2.length > 0 ? tuple2.length : void 0;
 }
 function bindingStrings(value, path = "") {
   if (typeof value === "string")
@@ -36231,9 +36144,28 @@ function validateQueryOptions(kind, options2) {
     }
   }
   for (const [path, field] of Object.entries(fields)) {
+    const value = valueAtPath(options2, path);
+    const arity = tupleArity(field);
+    if (arity !== void 0 && value !== void 0 && !isDynamicBinding2(value)) {
+      if (!Array.isArray(value)) {
+        errors.push({
+          code: "invalid_option_shape",
+          path,
+          message: `Option "${path}" for ${kind}/${operation} must be an array of ${arity}-item tuples.`
+        });
+      } else {
+        const invalidIndex = value.findIndex((item) => !Array.isArray(item) || item.length !== arity);
+        if (invalidIndex >= 0) {
+          errors.push({
+            code: "invalid_option_shape",
+            path: `${path}[${invalidIndex}]`,
+            message: `Option "${path}" for ${kind}/${operation} must contain ${arity}-item tuples such as [["key", "value"]].`
+          });
+        }
+      }
+    }
     if (!field.allowedValues?.length)
       continue;
-    const value = valueAtPath(options2, path);
     if (typeof value === "string" && !value.includes("{{") && !field.allowedValues.includes(value)) {
       errors.push({
         code: "invalid_option_value",
@@ -36530,6 +36462,12 @@ function isTruthy(value) {
 function catalogDefault(type, key, fallback) {
   return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
 }
+var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
+  "serverSidePagination",
+  "serverSideSearch",
+  "serverSideSort",
+  "serverSideFilter"
+]);
 function normalizeComponentSpec(component) {
   const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
     section,
@@ -36544,6 +36482,13 @@ function normalizeComponentSpec(component) {
     properties[key] = wrapped;
     propertyPatch[key] = wrapped;
   };
+  for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
+    const current = propValue(properties, key);
+    if (current !== "clientSide" && current !== "serverSide")
+      continue;
+    setProperty(key, current === "serverSide");
+    warnings.push(`${component.name} "${key}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
+  }
   if (component.type === "Table") {
     if (properties.useDynamicColumn === void 0) {
       setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
@@ -36757,7 +36702,6 @@ function lintPlannedApp(spec, existingSummary) {
         ...component.slotName && component.slotName !== "body" ? { slot_name: component.slotName } : {}
       };
     });
-    errors.push(...lintComponentSlots([...existingPage?.components ?? [], ...plannedComponents], { requireKnownParents: true }).map((message) => `Page "${plannedPage.name}": ${message}`));
     const pageSummary = existingPage ?? {
       id: pageId,
       name: plannedPage.name,
@@ -36775,50 +36719,6 @@ function lintPlannedApp(spec, existingSummary) {
   });
   if (pages.length)
     checked.push("page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs");
-  const componentUpdates = spec.componentUpdates ?? [];
-  for (const [index, update] of componentUpdates.entries()) {
-    const pageTarget = pageRefs.get(update.pageRef);
-    if (!pageTarget) {
-      errors.push(`Component update[${index}] has unknown page_ref "${update.pageRef}".`);
-      continue;
-    }
-    const componentTarget = componentRefs.get(update.componentRef);
-    if (!componentTarget) {
-      errors.push(`Component update[${index}] has unknown component_ref "${update.componentRef}".`);
-      continue;
-    }
-    if (componentTarget.id.startsWith("planned-component:")) {
-      errors.push(`Component update[${index}] targets planned-new component "${update.componentRef}". Put its final definition directly in pages[].components instead.`);
-      continue;
-    }
-    const page = pages.find((candidate) => candidate.id === pageTarget.id);
-    const componentIndex = page?.components.findIndex((candidate) => candidate.id === componentTarget.id) ?? -1;
-    if (!page || componentIndex < 0) {
-      errors.push(`Component update[${index}] component_ref "${update.componentRef}" is not on page_ref "${update.pageRef}".`);
-      continue;
-    }
-    const current = page.components[componentIndex];
-    const normalized2 = normalizeComponentSpec({
-      name: current.name ?? current.id,
-      type: current.type ?? "",
-      properties: { ...current.properties ?? {}, ...update.definition.properties ?? {} },
-      styles: { ...current.styles ?? {}, ...update.definition.styles ?? {} },
-      others: { ...current.others ?? {}, ...update.definition.others ?? {} },
-      validation: update.definition.validation,
-      layouts: current.layouts,
-      parent: current.parent
-    });
-    warnings.push(...normalized2.warnings.map((warning) => `Component update[${index}]: ${warning}`));
-    page.components[componentIndex] = {
-      ...current,
-      properties: normalized2.component.properties,
-      styles: normalized2.component.styles,
-      others: normalized2.component.others
-    };
-  }
-  if (componentUpdates.length) {
-    checked.push("persisted component update refs, contracts, bindings, and projected render state");
-  }
   const eventSpecs = [];
   (spec.events ?? []).forEach((event, index) => {
     const source2 = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
@@ -36883,8 +36783,8 @@ function lintPlannedApp(spec, existingSummary) {
     warnings.push(...eventValidation.warnings);
   }
   const structure = validateAppStructure(summary);
-  appendNovelMessages(errors, structure.errors);
-  appendNovelMessages(warnings, structure.warnings);
+  errors.push(...structure.errors);
+  warnings.push(...structure.warnings);
   return {
     ok: unique2(errors).length === 0,
     errors: unique2(errors),
@@ -36900,7 +36800,6 @@ function lintPlannedApp(spec, existingSummary) {
       seed_rows: seedRows,
       pages: spec.pages?.length ?? 0,
       components: componentCount,
-      component_updates: componentUpdates.length,
       queries: plannedQueries.length,
       events: eventSpecs.length,
       lifecycles: spec.lifecycles?.length ?? 0
@@ -36980,13 +36879,6 @@ function slug(value) {
 function unique2(values) {
   return [...new Set(values)];
 }
-function appendNovelMessages(target, candidates) {
-  for (const message of candidates) {
-    if (!target.some((existing) => existing === message || existing.endsWith(`: ${message}`))) {
-      target.push(message);
-    }
-  }
-}
 
 // dist/componentBatch.js
 var layoutSchema = external_exports.object({
@@ -37019,7 +36911,7 @@ function containsListItemBinding(value) {
   }
   return false;
 }
-function prepareComponentBatch(inputs, pageId) {
+function prepareComponentBatch(inputs) {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,
@@ -37029,7 +36921,6 @@ function prepareComponentBatch(inputs, pageId) {
   const normalized2 = requested.map((component) => normalizeComponentSpec(component));
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
-  const pageParentErrors = pageId ? expanded.components.filter((component) => component.parent && component.parent === pageId).map((component) => `Component "${component.name}" uses page id "${pageId}" as parent. Omit parent for root components.`) : [];
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
     styles: component.styles,
@@ -37040,7 +36931,7 @@ function prepareComponentBatch(inputs, pageId) {
   ] : []);
   return {
     components: expanded.components,
-    errors: [...pageParentErrors, ...lint.errors],
+    errors: lint.errors,
     warnings: [
       ...normalized2.flatMap((item) => item.warnings),
       ...expanded.warnings,
@@ -37075,7 +36966,7 @@ var plannedTableSchema = external_exports.object({
 });
 var plannedSeedSchema = external_exports.object({
   table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1)
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
 });
 var plannedQuerySchema = external_exports.object({
   client_ref: external_exports.string().optional(),
@@ -37101,21 +36992,6 @@ var plannedEventSchema = external_exports.object({
   action: external_exports.record(external_exports.string(), external_exports.any()),
   name: external_exports.string().optional()
 });
-var plannedComponentDefinitionSchema = external_exports.object({
-  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-});
-var plannedComponentUpdateSchema = external_exports.object({
-  /** Existing page id/name/handle or a logical page ref declared in this plan. */
-  page_ref: external_exports.string(),
-  /** Existing component id or unique component name. */
-  component_ref: external_exports.string(),
-  definition: plannedComponentDefinitionSchema
-});
 var alertSchema = external_exports.object({
   message: external_exports.string().min(1),
   alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
@@ -37138,7 +37014,6 @@ var appPlanSchema = external_exports.object({
   seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
   queries: external_exports.array(plannedQuerySchema).max(200).optional(),
   pages: external_exports.array(plannedPageSchema).max(50).optional(),
-  component_updates: external_exports.array(plannedComponentUpdateSchema).max(500).optional(),
   events: external_exports.array(plannedEventSchema).max(1e3).optional(),
   lifecycles: external_exports.array(plannedLifecycleSchema).max(200).optional()
 });
@@ -37181,17 +37056,14 @@ function unique3(values) {
 function lintAppSpecTool(client) {
   return {
     name: "lint_app_spec",
-    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. component_updates can patch persisted components by page_ref/component_ref in the same preflighted phase. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
+    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
     inputSchema: appPlanSchema.shape,
     async handler(args) {
       try {
-        if (![args.tables, args.seed_data, args.queries, args.pages, args.component_updates, args.events, args.lifecycles].some((items) => items?.length)) {
-          return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, component_update, event, or lifecycle."));
+        if (![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
+          return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
         }
         const preflightErrors = [];
-        if (args.component_updates?.length && !args.app_id) {
-          preflightErrors.push("app_id is required when a plan contains component_updates.");
-        }
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -37269,11 +37141,6 @@ function lintAppSpecTool(client) {
               parent: component.parent,
               slotName: component.slot_name
             }))
-          })),
-          componentUpdates: args.component_updates?.map((update) => ({
-            pageRef: update.page_ref,
-            componentRef: update.component_ref,
-            definition: update.definition
           })),
           events: args.events?.map((event) => ({
             sourceRef: event.source_ref,
@@ -37360,35 +37227,17 @@ function oneRef(value, targets, label) {
 function appliedSummary(applied) {
   return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(", ");
 }
-var schemaCacheRetryDelays = process.env.NODE_ENV === "test" ? [0, 0, 0, 0] : [250, 500, 1e3, 2e3];
-function isSchemaCacheMiss(error51) {
-  const message = error51 instanceof Error ? error51.message : String(error51);
-  return /PGRST205|schema[ -]cache|could not find the table/i.test(message);
-}
-async function seedNewTableWithSchemaCacheRetry(client, table) {
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      return await client.insertRowsBatch({ tables: [table] });
-    } catch (error51) {
-      const partiallyWritten = completedPartialWrites(error51);
-      const delay = schemaCacheRetryDelays[attempt];
-      if (delay === void 0 || partiallyWritten.length > 0 || !isSchemaCacheMiss(error51))
-        throw error51;
-      await new Promise((resolve3) => setTimeout(resolve3, delay));
-    }
-  }
-}
 function applyAppPhaseTool(client) {
   return {
     name: "apply_app_phase",
-    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows (with a bounded schema-cache retry for newly created tables), creates independent page component batches concurrently, patches persisted components declared in component_updates, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
+    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       plan_token: external_exports.string()
     },
     async handler(args) {
-      const applied = { tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, component_updates: 0, events: 0 };
+      const applied = { tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = "consume plan";
       try {
         const stored = consumeAppPlan(args.plan_token);
@@ -37479,10 +37328,6 @@ function applyAppPhaseTool(client) {
           await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
         }
         stage = "seed data and create queries";
-        const createdTableNames = new Set(createdTables.map((table) => table.table_name.toLowerCase()));
-        const seedTables = (spec.seed_data ?? []).map((seed) => ({ tableName: seed.table_name, rows: seed.rows }));
-        const existingSeedTables = seedTables.filter((seed) => !createdTableNames.has(seed.tableName.toLowerCase()));
-        const newSeedTables = seedTables.filter((seed) => createdTableNames.has(seed.tableName.toLowerCase()));
         const queryInputs = (spec.queries ?? []).map((query) => {
           const kind = datasourceKinds.get(query.datasource_id);
           if (!kind)
@@ -37497,10 +37342,9 @@ function applyAppPhaseTool(client) {
           return { dataSourceId: query.datasource_id, name: query.name, options: options2, kind };
         });
         const [seedWrite, queryWrite] = await Promise.allSettled([
-          seedTables.length ? Promise.all([
-            ...existingSeedTables.length ? [client.insertRowsBatch({ tables: existingSeedTables })] : [],
-            ...newSeedTables.map((table) => seedNewTableWithSchemaCacheRetry(client, table))
-          ]).then((results) => results.flat()) : Promise.resolve([]),
+          spec.seed_data?.length ? client.insertRowsBatch({
+            tables: spec.seed_data.map((seed) => ({ tableName: seed.table_name, rows: seed.rows }))
+          }) : Promise.resolve([]),
           queryInputs.length ? client.createQueries({ versionId: args.version_id, queries: queryInputs }) : Promise.resolve([])
         ]);
         const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : completedPartialWrites(seedWrite.reason);
@@ -37527,7 +37371,7 @@ function applyAppPhaseTool(client) {
           const target = pageTargets.get(logicalRef(page));
           if (!target)
             throw new Error(`Could not resolve component page "${page.name}".`);
-          const prepared = prepareComponentBatch(page.components, target.id);
+          const prepared = prepareComponentBatch(page.components);
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           return [{ page, pageId: target.id, prepared }];
@@ -37565,49 +37409,6 @@ function applyAppPhaseTool(client) {
         }
         if (componentFailures.length)
           throw new Error(componentFailures.join(" | "));
-        stage = "update persisted components";
-        const componentUpdateGroups = /* @__PURE__ */ new Map();
-        for (const update of spec.component_updates ?? []) {
-          const page = pageTargets.get(update.page_ref);
-          if (!page)
-            throw new Error(`Component update has unknown page_ref "${update.page_ref}".`);
-          const component = componentTargets.get(update.component_ref);
-          if (!component)
-            throw new Error(`Component update has unknown component_ref "${update.component_ref}".`);
-          const currentPage = initialSummary.pages.find((candidate) => candidate.id === page.id);
-          const current = currentPage?.components.find((candidate) => candidate.id === component.id);
-          if (!current) {
-            throw new Error(`Component update "${update.component_ref}" must target a persisted component on page "${update.page_ref}".`);
-          }
-          const normalized2 = normalizeComponentSpec({
-            name: current.name ?? current.id,
-            type: current.type ?? "",
-            properties: { ...current.properties ?? {}, ...update.definition.properties ?? {} },
-            styles: { ...current.styles ?? {}, ...update.definition.styles ?? {} },
-            others: { ...current.others ?? {}, ...update.definition.others ?? {} },
-            validation: update.definition.validation,
-            layouts: current.layouts,
-            parent: current.parent
-          });
-          warnings.push(...normalized2.warnings.map((warning) => `Component update ${update.component_ref}: ${warning}`));
-          const definition = { ...update.definition };
-          for (const section of ["properties", "styles", "validation", "others"]) {
-            const patch = normalized2.patch[section];
-            if (!patch)
-              continue;
-            definition[section] = {
-              ...update.definition[section] ?? {},
-              ...patch
-            };
-          }
-          const group = componentUpdateGroups.get(page.id) ?? [];
-          group.push({ componentId: component.id, definition });
-          componentUpdateGroups.set(page.id, group);
-        }
-        if (componentUpdateGroups.size) {
-          const updateWrites = await Promise.all([...componentUpdateGroups.entries()].map(([pageId, updates]) => client.updateComponents({ appId: args.app_id, versionId: args.version_id, pageId, updates })));
-          applied.component_updates = updateWrites.reduce((total, result) => total + result.updated, 0);
-        }
         stage = "create events and lifecycles";
         const summaryBeforeEvents = await client.getAppSummary(args.app_id);
         const ordinaryEvents = (spec.events ?? []).map((event) => {
@@ -38071,7 +37872,7 @@ function addComponentsTool(client) {
       components: external_exports.array(componentInputSchema).min(1)
     },
     async handler(args) {
-      const prepared = prepareComponentBatch(args.components, args.page_id);
+      const prepared = prepareComponentBatch(args.components);
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
       try {
@@ -38111,10 +37912,7 @@ function addComponentBatchesTool(client) {
       if (new Set(pageIds).size !== pageIds.length) {
         return fail(new Error("add_component_batches page_id values must be unique."));
       }
-      const prepared = args.pages.map((page) => ({
-        ...page,
-        prepared: prepareComponentBatch(page.components, page.page_id)
-      }));
+      const prepared = args.pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error51) => `Page ${page.page_id}: ${error51}`));
       if (errors.length)
         return fail(new Error(errors.join(" ")));
@@ -38179,10 +37977,6 @@ function updateComponentsTool(client) {
         const errors = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
-          if (update.parent === args.page_id) {
-            errors.push(`Component "${update.component_id}": a page id is not a component parent; omit parent for root components.`);
-            continue;
-          }
           const current = components.get(update.component_id);
           if (!current) {
             errors.push(`Component "${update.component_id}" does not exist on page "${args.page_id}".`);
@@ -38250,7 +38044,7 @@ function updateComponentsTool(client) {
           errors.push(...lint.errors);
           warnings.push(...lint.warnings);
         }
-        errors.push(...lintComponentSlots([...projected.values()], { requireKnownParents: true }));
+        errors.push(...lintComponentSlots([...projected.values()]));
         if (errors.length)
           return fail(new Error(errors.join(" ")));
         warnings.push(...lintRenderedGeometry([...projected.values()]));
@@ -38387,9 +38181,6 @@ function updateLayoutTool(client) {
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id);
           let parent = layout.parent;
-          if (parent === args.page_id) {
-            throw new Error(`Component "${layout.component_id}": a page id is not a component parent; omit parent for root components.`);
-          }
           if (layout.slot_name !== void 0) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
             if (!parent) {
@@ -38415,7 +38206,7 @@ function updateLayoutTool(client) {
             slotName: change.slot_name
           };
         });
-        const slotErrors = lintComponentSlots(projected, { requireKnownParents: true });
+        const slotErrors = lintComponentSlots(projected);
         if (slotErrors.length)
           return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
@@ -38714,6 +38505,35 @@ function deleteQueryTool(client) {
 }
 
 // dist/tools/runQuery.js
+var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
+function truncateRemoteResult(result) {
+  if (!Object.prototype.hasOwnProperty.call(result, "data"))
+    return { result };
+  let serialized;
+  try {
+    serialized = JSON.stringify(result.data);
+  } catch {
+    return {
+      result: { ...result, data: { mcp_truncated: true, preview_json: "<unserializable response>" } },
+      warning: "The REST response data could not be serialized for MCP output; inspect it in ToolJet."
+    };
+  }
+  if (typeof serialized !== "string")
+    return { result };
+  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS)
+    return { result };
+  return {
+    result: {
+      ...result,
+      data: {
+        mcp_truncated: true,
+        original_json_characters: serialized.length,
+        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS)
+      }
+    },
+    warning: `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. The remote request already completed; add API-specific pagination or a smaller limit before another run.`
+  };
+}
 function containsComponentBinding(value) {
   if (typeof value === "string")
     return /\bcomponents\s*\./.test(value);
@@ -38735,14 +38555,15 @@ function datasourceRecovery(query) {
 function runQueryTool(client) {
   return {
     name: "run_query",
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
       environment_id: external_exports.string().optional(),
       count_query_id: external_exports.string().optional(),
       user_confirmed_large_read: external_exports.boolean().optional(),
-      user_confirmed_billable_read: external_exports.boolean().optional()
+      user_confirmed_billable_read: external_exports.boolean().optional(),
+      user_confirmed_remote_read: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
@@ -38754,6 +38575,12 @@ function runQueryTool(client) {
         }
         if (containsComponentBinding(query.options)) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
+        }
+        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
+          return fail(new Error(`run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+        }
+        if (assessment.requiresRemoteReadConfirmation) {
+          warnings.push("User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -38807,8 +38634,11 @@ function runQueryTool(client) {
           });
         }
         const recovery = result.status === "failed" ? datasourceRecovery(query) : void 0;
+        const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
+        if (output.warning)
+          warnings.push(output.warning);
         return ok({
-          ...result,
+          ...output.result,
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {}
@@ -39102,7 +38932,6 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),
-    getEventActionCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),
     getComponentTool(client),

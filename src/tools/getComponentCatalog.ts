@@ -17,10 +17,29 @@ const CATALOG_SECTIONS = [
 ] as const;
 
 type CatalogSection = (typeof CATALOG_SECTIONS)[number];
+type CatalogDetail = 'compact' | 'full';
+
+// Typed catalog reads are often the largest fresh MCP result in an agent turn. Keep the
+// default useful for authoring while leaving secondary style/exposed/default-child branches
+// available through an explicit sections request.
+const DEFAULT_TYPED_SECTIONS: CatalogSection[] = [
+  'overview',
+  'properties',
+  'events',
+  'actions',
+];
 
 interface CatalogArgs {
   type?: string;
   types?: string[];
+  requests?: Array<{
+    type: string;
+    detail?: CatalogDetail;
+    sections?: CatalogSection[];
+    property_keys?: string[];
+    style_keys?: string[];
+  }>;
+  detail?: CatalogDetail;
   sections?: CatalogSection[];
   property_keys?: string[];
   style_keys?: string[];
@@ -43,8 +62,27 @@ function resolveCatalogType(requestedType: string): {
     : { type: requestedType };
 }
 
+function selectEntries(
+  entries: ComponentSchema['properties'],
+  keys: string[] | undefined,
+  detail: CatalogDetail
+): ComponentSchema['properties'] {
+  const selected = keys?.length
+    ? entries.filter((entry) => keys.includes(entry.key))
+    : entries;
+  if (detail === 'full' || keys?.length) return selected;
+  return selected.map(({ key, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
+    key,
+    ...(valueType !== undefined ? { valueType } : {}),
+    ...(allowedValues !== undefined ? { allowedValues } : {}),
+    ...(requires !== undefined ? { requires } : {}),
+    ...(mutuallyExclusiveWith !== undefined ? { mutuallyExclusiveWith } : {}),
+  }));
+}
+
 function selectSchema(schema: ComponentSchema, args: CatalogArgs): Record<string, unknown> {
-  const sections = new Set(args.sections ?? CATALOG_SECTIONS);
+  const detail = args.detail ?? 'compact';
+  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
   const result: Record<string, unknown> = { type: schema.type };
   if (sections.has('overview')) {
     if (schema.name !== undefined) result.name = schema.name;
@@ -52,14 +90,10 @@ function selectSchema(schema: ComponentSchema, args: CatalogArgs): Record<string
     if (schema.defaultSize !== undefined) result.defaultSize = schema.defaultSize;
   }
   if (sections.has('properties')) {
-    result.properties = args.property_keys?.length
-      ? schema.properties.filter((property) => args.property_keys!.includes(property.key))
-      : schema.properties;
+    result.properties = selectEntries(schema.properties, args.property_keys, detail);
   }
   if (sections.has('styles')) {
-    result.styles = args.style_keys?.length
-      ? schema.styles.filter((style) => args.style_keys!.includes(style.key))
-      : schema.styles;
+    result.styles = selectEntries(schema.styles, args.style_keys, detail);
   }
   if (sections.has('events') && schema.events !== undefined) result.events = schema.events;
   if (sections.has('actions') && schema.actions !== undefined) result.actions = schema.actions;
@@ -96,7 +130,12 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
     name: 'get_component_catalog',
     description:
       'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one ' +
-      'component or types for a batch needed in the current page/phase. sections selects only overview, ' +
+      'component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" ' +
+      'and the overview/properties/events/actions sections; compact ' +
+      'property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when ' +
+      'those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. ' +
+      'Use requests when different types need different sections/keys in one call. ' +
+      'sections selects only overview, ' +
       'properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; ' +
       'property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. ' +
       'GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". ' +
@@ -105,18 +144,27 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
     inputSchema: {
       type: z.string().optional(),
       types: z.array(z.string()).min(1).max(25).optional(),
+      requests: z.array(z.object({
+        type: z.string(),
+        detail: z.enum(['compact', 'full']).optional(),
+        sections: z.array(z.enum(CATALOG_SECTIONS)).min(1).optional(),
+        property_keys: z.array(z.string()).min(1).optional(),
+        style_keys: z.array(z.string()).min(1).optional(),
+      })).min(1).max(25).optional(),
+      detail: z.enum(['compact', 'full']).optional(),
       sections: z.array(z.enum(CATALOG_SECTIONS)).min(1).optional(),
       property_keys: z.array(z.string()).min(1).optional(),
       style_keys: z.array(z.string()).min(1).optional(),
     },
     async handler(args: CatalogArgs) {
       try {
-        if (args?.type && args.types?.length) {
-          return fail(new Error('Pass either `type` or `types`, not both.'));
+        const selectors = Number(Boolean(args?.type)) + Number(Boolean(args?.types?.length)) + Number(Boolean(args?.requests?.length));
+        if (selectors > 1) {
+          return fail(new Error('Pass exactly one of `type`, `types`, or `requests`.'));
         }
-        if (!args?.type && !args.types?.length) {
-          if (args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error('Catalog sections/key filters require `type` or `types`.'));
+        if (!selectors) {
+          if (args.detail || args.sections || args.property_keys || args.style_keys) {
+            return fail(new Error('Catalog detail/sections/key filters require `type`, `types`, or `requests`.'));
           }
           return ok(getCatalog());
         }
@@ -134,7 +182,26 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
           });
         }
 
-        const requestedTypes = [...new Set(args.types)];
+        if (args.requests?.length) {
+          const components: Record<string, unknown>[] = [];
+          const unknownTypes: string[] = [];
+          for (const request of args.requests) {
+            const resolved = resolveCatalogType(request.type);
+            const schema = getComponentSchema(resolved.type);
+            if (!schema) {
+              unknownTypes.push(request.type);
+              continue;
+            }
+            components.push({
+              ...selectSchema(schema, request),
+              ...legacyNotice(schema.type),
+              ...(resolved.alias ? { alias: resolved.alias } : {}),
+            });
+          }
+          return ok({ components, unknown_types: unknownTypes });
+        }
+
+        const requestedTypes = [...new Set(args.types ?? [])];
         const components: Record<string, unknown>[] = [];
         const unknownTypes: string[] = [];
         const byResolvedType = new Map<string, { schema: ComponentSchema; aliases: string[] }>();

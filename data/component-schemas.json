@@ -75,11 +75,7 @@
         "key": "serverSideSearch",
         "label": "Search type",
         "valueType": "boolean",
-        "default": "{{false}}",
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -5959,11 +5955,7 @@
         "key": "serverSideSearch",
         "label": "Search type",
         "valueType": "boolean",
-        "default": "{{false}}",
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -11307,11 +11299,7 @@
         "key": "serverSideSearch",
         "label": "Search type",
         "valueType": "boolean",
-        "default": "{{false}}",
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -15772,41 +15760,25 @@
         "key": "serverSidePagination",
         "label": "Type",
         "valueType": "boolean",
-        "default": "{{false}}",
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": "{{false}}"
       },
       {
         "key": "serverSideSearch",
         "label": "Type",
         "valueType": "boolean",
-        "default": false,
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": false
       },
       {
         "key": "serverSideSort",
         "label": "Type",
         "valueType": "boolean",
-        "default": "{{false}}",
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": "{{false}}"
       },
       {
         "key": "serverSideFilter",
         "label": "Type",
         "valueType": "boolean",
-        "default": "{{false}}",
-        "allowedValues": [
-          "clientSide",
-          "serverSide"
-        ]
+        "default": "{{false}}"
       },
       {
         "key": "actionButtonBackgroundColor",
