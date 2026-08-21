@@ -1,0 +1,26 @@
+# Adds tooljet-mcp to an already-running ToolJet stack (see docs/setup/docker on
+# docs.tooljet.com). Run from the mcp-v2 checkout, joined to ToolJet's own compose
+# network so it can reach the app by service name instead of a host IP/port:
+#
+#   docker compose -f docker-compose.mcp.yml up -d --build
+#
+# TOOLJET_NETWORK and PORT are read from .env (compose auto-loads .env for variable
+# substitution, same file passed below as env_file). Check `docker network ls` for
+# the ToolJet stack's actual network name — it's named after its compose project,
+# not always `<dir>_default` (e.g. the S3 docker-compose-db.yaml project is named
+# "Tooljet app", so its network is `tooljetapp_default`).
+services:
+  mcp:
+    build: .
+    container_name: tooljet-mcp
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${PORT:-8787}:${PORT:-8787}" # exposed directly; add a TLS-terminating proxy in front once a domain exists
+    networks:
+      - tooljet_net
+
+networks:
+  tooljet_net:
+    external: true
+    name: ${TOOLJET_NETWORK}
