@@ -94,7 +94,7 @@ describe('plan token + apply_app_phase', () => {
     const lintResult = await lintAppSpecTool(client).handler({
       version_id: 'v1', app_name: 'Support Cases',
       tables: [{ table_name: 'cases', columns: [{ name: 'title', type: 'string' }] }],
-      seed_data: [{ table_name: 'cases', rows: [{ id: 1, title: 'Broken login' }] }],
+      seed_data: [{ table_name: 'cases', rows: [{ title: 'Broken login' }] }],
       queries: [
         { client_ref: 'list', datasource_id: 'tjdb', table_ref: 'cases', name: 'list_cases', options: { operation: 'list_rows', list_rows: {} } },
         { client_ref: 'create', datasource_id: 'tjdb', table_ref: 'cases', name: 'create_case', options: { operation: 'create_row', create_row: { title: '{{components.caseTitle.value}}' } } },
@@ -135,6 +135,28 @@ describe('plan token + apply_app_phase', () => {
     const retry = await applyAppPhaseTool(client).handler({ app_id: 'app1', version_id: 'v1', plan_token: planToken });
     expect(retry.isError).toBe(true);
     expect(retry.content[0]!.text).toMatch(/Unknown or expired plan_token/i);
+  });
+
+  it('rejects seed rows that omit a required non-generated planned key', async () => {
+    const client = {
+      listTables: vi.fn().mockResolvedValue([]),
+      listDatasources: vi.fn().mockResolvedValue([]),
+    } as unknown as ToolJetClient;
+
+    const result = await lintAppSpecTool(client).handler({
+      tables: [{
+        table_name: 'tickets',
+        columns: [
+          { name: 'id', type: 'integer', primaryKey: true },
+          { name: 'subject', type: 'string', notNull: true },
+        ],
+      }],
+      seed_data: [{ table_name: 'tickets', rows: [{ subject: 'Login broken' }] }],
+    });
+
+    const body = textOf(result);
+    expect(body.ok).toBe(false);
+    expect(body.errors.join(' ')).toMatch(/required non-generated column "id".*type "serial"/i);
   });
 
   it('reports partial page persistence instead of claiming the failed batch wrote nothing', async () => {

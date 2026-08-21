@@ -37113,9 +37113,25 @@ function lintAppSpecTool(client) {
           else
             tableIds.set(key, `planned-table:${table.table_name}`);
         }
+        const plannedTables = new Map((args.tables ?? []).map((table) => [table.table_name.toLowerCase(), table]));
         for (const seed of args.seed_data ?? []) {
           if (!tableIds.has(seed.table_name.toLowerCase())) {
             preflightErrors.push(`Seed data targets unknown planned/existing table "${seed.table_name}".`);
+          }
+          const plannedTable = plannedTables.get(seed.table_name.toLowerCase());
+          if (plannedTable) {
+            const requiredColumns = plannedTable.columns.filter((column) => (column.primaryKey || column.notNull) && column.defaultValue === void 0 && !/serial/i.test(column.type));
+            for (const column of requiredColumns) {
+              const missingRows = seed.rows.reduce((indexes, row, index) => {
+                if (!(column.name in row) || row[column.name] === null || row[column.name] === void 0) {
+                  indexes.push(index + 1);
+                }
+                return indexes;
+              }, []);
+              if (missingRows.length) {
+                preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              }
+            }
           }
         }
         if (args.queries?.length && !args.version_id) {

@@ -44,9 +44,35 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           if (tableIds.has(key)) preflightErrors.push(`Planned table "${table.table_name}" already exists.`);
           else tableIds.set(key, `planned-table:${table.table_name}`);
         }
+        const plannedTables = new Map(
+          (args.tables ?? []).map((table) => [table.table_name.toLowerCase(), table])
+        );
         for (const seed of args.seed_data ?? []) {
           if (!tableIds.has(seed.table_name.toLowerCase())) {
             preflightErrors.push(`Seed data targets unknown planned/existing table "${seed.table_name}".`);
+          }
+          const plannedTable = plannedTables.get(seed.table_name.toLowerCase());
+          if (plannedTable) {
+            const requiredColumns = plannedTable.columns.filter((column) =>
+              (column.primaryKey || column.notNull) &&
+              column.defaultValue === undefined &&
+              !/serial/i.test(column.type)
+            );
+            for (const column of requiredColumns) {
+              const missingRows = seed.rows.reduce<number[]>((indexes, row, index) => {
+                if (!(column.name in row) || row[column.name] === null || row[column.name] === undefined) {
+                  indexes.push(index + 1);
+                }
+                return indexes;
+              }, []);
+              if (missingRows.length) {
+                preflightErrors.push(
+                  `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
+                  `"${column.name}" in row(s) ${missingRows.join(', ')}. Use type "serial" for a generated key, ` +
+                  'add a defaultValue, or provide explicit values.'
+                );
+              }
+            }
           }
         }
 
