@@ -32,6 +32,29 @@ export const STYLE_KEYS_IN_PROPERTIES = new Set([
   'iconColor',
 ]);
 
+/** Known wrong property/style keys (CSS or other-builder names, or bad casing) mapped to the correct
+ *  ToolJet key. The edit-distance suggester misses these because the names differ too much
+ *  (fontSize vs textSize). Lookup is case-insensitive; a match is only used when its target is actually
+ *  a valid key for the component. */
+export const PROPERTY_KEY_ALIASES: Record<string, string> = {
+  fontsize: 'textSize',
+  font_size: 'textSize',
+  size: 'textSize',
+  fontcolor: 'textColor',
+  fontcolour: 'textColor',
+  color: 'textColor',
+  colour: 'textColor',
+  textcolour: 'textColor',
+  bgcolor: 'backgroundColor',
+  bgcolour: 'backgroundColor',
+  background: 'backgroundColor',
+  background_color: 'backgroundColor',
+  backgroundcolour: 'backgroundColor',
+  bordercolour: 'borderColor',
+  weight: 'fontWeight',
+  align: 'textAlign',
+};
+
 /** ToolJet Table column header casing — the ONLY valid values (table.js: 'As typed' / 'AA'). */
 export const VALID_HEADER_CASING = new Set(['none', 'uppercase']);
 
@@ -756,11 +779,26 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     for (const key of Object.keys(authored)) {
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
-      const suggestion = nearestCatalogKey(key, knownKeys);
-      warnings.push(
-        `Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it.` +
-          (suggestion ? ` Did you mean "${suggestion}"?` : ' Check get_component_catalog before authoring this key.')
-      );
+      const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+      const alias =
+        aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))
+          ? aliasTarget
+          : undefined;
+      const suggestion = alias ?? nearestCatalogKey(key, knownKeys);
+      if (suggestion) {
+        // A known alias or a close typo is almost certainly a mistake that ToolJet silently drops. Make it
+        // a hard error with the exact fix, so it's corrected in one turn instead of being ignored into a
+        // false "verification_ok" (the submitted property never actually applied).
+        errors.push(
+          `Component "${label}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is ` +
+            `silently ignored — use "${suggestion}" instead.`
+        );
+      } else {
+        warnings.push(
+          `Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ` +
+            'ignore it. Check get_component_catalog before authoring this key.'
+        );
+      }
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length) continue;

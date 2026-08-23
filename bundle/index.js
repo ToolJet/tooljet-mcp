@@ -33464,6 +33464,24 @@ var STYLE_KEYS_IN_PROPERTIES = /* @__PURE__ */ new Set([
   "accentColor",
   "iconColor"
 ]);
+var PROPERTY_KEY_ALIASES = {
+  fontsize: "textSize",
+  font_size: "textSize",
+  size: "textSize",
+  fontcolor: "textColor",
+  fontcolour: "textColor",
+  color: "textColor",
+  colour: "textColor",
+  textcolour: "textColor",
+  bgcolor: "backgroundColor",
+  bgcolour: "backgroundColor",
+  background: "backgroundColor",
+  background_color: "backgroundColor",
+  backgroundcolour: "backgroundColor",
+  bordercolour: "borderColor",
+  weight: "fontWeight",
+  align: "textAlign"
+};
 var VALID_HEADER_CASING = /* @__PURE__ */ new Set(["none", "uppercase"]);
 var FORM_INPUT_TYPES = /* @__PURE__ */ new Set([
   "TextInput",
@@ -34087,8 +34105,14 @@ function lintComponentSpec(spec) {
         continue;
       if (sectionName === "property" && STYLE_KEYS_IN_PROPERTIES.has(key))
         continue;
-      const suggestion = nearestCatalogKey(key, knownKeys);
-      warnings.push(`Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Check get_component_catalog before authoring this key."));
+      const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+      const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
+      const suggestion = alias ?? nearestCatalogKey(key, knownKeys);
+      if (suggestion) {
+        errors.push(`Component "${label}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
+      } else {
+        warnings.push(`Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
+      }
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length)
