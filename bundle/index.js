@@ -36492,7 +36492,7 @@ function legacyNotice(type) {
 function getComponentCatalogTool(_client) {
   return {
     name: "get_component_catalog",
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
+    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
       type: external_exports.string().optional(),
       types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
@@ -36510,21 +36510,21 @@ function getComponentCatalogTool(_client) {
     },
     async handler(args) {
       try {
-        const selectors = Number(Boolean(args?.type)) + Number(Boolean(args?.types?.length)) + Number(Boolean(args?.requests?.length));
-        if (selectors > 1) {
-          return fail(new Error("Pass exactly one of `type`, `types`, or `requests`."));
-        }
-        if (!selectors) {
+        const singleType = args?.type;
+        const typesList = args?.types ?? [];
+        const batch = args?.requests ?? [];
+        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
+        if (!hasSelector) {
           if (args.detail || args.sections || args.property_keys || args.style_keys) {
             return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
           }
           return ok(getCatalog());
         }
-        if (args.type) {
-          const resolved = resolveCatalogType(args.type);
+        if (singleType && typesList.length === 0 && batch.length === 0) {
+          const resolved = resolveCatalogType(singleType);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
-            return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
+            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.` });
           }
           return ok({
             ...selectSchema(schema, args),
@@ -36532,45 +36532,41 @@ function getComponentCatalogTool(_client) {
             ...resolved.alias ? { alias: resolved.alias } : {}
           });
         }
-        if (args.requests?.length) {
-          const components2 = [];
-          const unknownTypes2 = [];
-          for (const request of args.requests) {
-            const resolved = resolveCatalogType(request.type);
-            const schema = getComponentSchema(resolved.type);
-            if (!schema) {
-              unknownTypes2.push(request.type);
-              continue;
-            }
-            components2.push({
-              ...selectSchema(schema, request),
-              ...legacyNotice(schema.type),
-              ...resolved.alias ? { alias: resolved.alias } : {}
-            });
-          }
-          return ok({ components: components2, unknown_types: unknownTypes2 });
-        }
-        const requestedTypes = [...new Set(args.types ?? [])];
+        const withDefaults = (type, over) => ({
+          type,
+          detail: over?.detail ?? args.detail,
+          sections: over?.sections ?? args.sections,
+          property_keys: over?.property_keys ?? args.property_keys,
+          style_keys: over?.style_keys ?? args.style_keys
+        });
+        const ordered = [
+          ...batch.map((r) => withDefaults(r.type, r)),
+          ...typesList.map((t) => withDefaults(t)),
+          ...singleType ? [withDefaults(singleType)] : []
+        ];
         const components = [];
         const unknownTypes = [];
-        const byResolvedType = /* @__PURE__ */ new Map();
-        for (const type of requestedTypes) {
-          const resolved = resolveCatalogType(type);
+        const seenResolved = /* @__PURE__ */ new Set();
+        const seenUnknown = /* @__PURE__ */ new Set();
+        for (const request of ordered) {
+          if (!request.type)
+            continue;
+          const resolved = resolveCatalogType(request.type);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
-            unknownTypes.push(type);
+            if (!seenUnknown.has(request.type)) {
+              seenUnknown.add(request.type);
+              unknownTypes.push(request.type);
+            }
             continue;
           }
-          const current = byResolvedType.get(resolved.type) ?? { schema, aliases: [] };
-          if (resolved.alias)
-            current.aliases.push(type);
-          byResolvedType.set(resolved.type, current);
-        }
-        for (const { schema, aliases } of byResolvedType.values()) {
+          if (seenResolved.has(resolved.type))
+            continue;
+          seenResolved.add(resolved.type);
           components.push({
-            ...selectSchema(schema, args),
+            ...selectSchema(schema, request),
             ...legacyNotice(schema.type),
-            ...aliases.length ? { requested_aliases: aliases } : {}
+            ...resolved.alias ? { alias: resolved.alias } : {}
           });
         }
         return ok({ components, unknown_types: unknownTypes });
@@ -36720,7 +36716,7 @@ async function resolveKind(client, request, fallbackVersionId, datasourceCache =
 function getDatasourceQuerySchemaTool(client) {
   return {
     name: "get_datasource_query_schema",
-    description: "Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts.",
+    description: "Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts; any top-level fields (kind/datasource_id/version_id/operation/sections) act as defaults for every entry, so mixing top-level and `requests` is fine.",
     inputSchema: {
       kind: external_exports.string().optional(),
       datasource_id: external_exports.string().optional(),
@@ -36731,17 +36727,25 @@ function getDatasourceQuerySchemaTool(client) {
     },
     async handler(args) {
       try {
-        const hasSingleSelector = !!args?.kind || !!args?.datasource_id;
-        if (args?.requests?.length && hasSingleSelector) {
-          return fail(new Error("Pass either top-level kind/datasource_id or `requests`, not both."));
-        }
-        if (!args?.requests?.length && !hasSingleSelector) {
+        const hasTopLevelSelector = !!args?.kind || !!args?.datasource_id;
+        const hasBatch = !!args?.requests?.length;
+        if (!hasBatch && !hasTopLevelSelector) {
           if (args?.operation || args?.sections) {
             return fail(new Error("operation/sections require kind, datasource_id, or requests."));
           }
           return ok(getDatasourceCatalog());
         }
-        const requests = args.requests ?? [args];
+        const base = hasBatch ? args.requests : [args];
+        const requests = base.map((request) => {
+          const hasOwnSelector = !!request.kind || !!request.datasource_id;
+          return {
+            kind: request.kind ?? (hasOwnSelector ? void 0 : args.kind),
+            datasource_id: request.datasource_id ?? (hasOwnSelector ? void 0 : args.datasource_id),
+            version_id: request.version_id ?? args.version_id,
+            operation: request.operation ?? args.operation,
+            sections: request.sections ?? args.sections
+          };
+        });
         const datasourceCache = /* @__PURE__ */ new Map();
         const schemas = [];
         for (const request of requests) {
@@ -36752,7 +36756,7 @@ function getDatasourceQuerySchemaTool(client) {
           });
           schemas.push(selected ?? { error: `Unknown datasource kind "${kind}". Call with no selector to list known schemas.` });
         }
-        return ok(args.requests ? { schemas } : schemas[0]);
+        return ok(hasBatch ? { schemas } : schemas[0]);
       } catch (err) {
         return fail(err);
       }
@@ -36807,12 +36811,9 @@ function inspectDatasourceSchemaTool(client) {
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        if (!!args.method === !!args.requests) {
-          return fail(new Error("Provide either one method or a requests batch, but not both."));
-        }
         const contract = getDatasourceQuerySchema(datasource.kind);
         const methods = contract?.introspectionMethods ?? [];
-        const requests = args.requests ?? [{
+        const topLevel = args.method ? [{
           method: args.method,
           schema: args.schema,
           table: args.table,
@@ -36820,7 +36821,21 @@ function inspectDatasourceSchemaTool(client) {
           page: args.page,
           limit: args.limit,
           args: args.args
-        }];
+        }] : [];
+        const seenRequests = /* @__PURE__ */ new Set();
+        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
+          if (!request.method)
+            return false;
+          const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
+          if (seenRequests.has(key))
+            return false;
+          seenRequests.add(key);
+          return true;
+        });
+        if (!requests.length) {
+          return fail(new Error("Provide a `method` or a `requests` batch."));
+        }
+        const asBatch = !!args.requests?.length || requests.length > 1;
         const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
         if (unsupported.length) {
           return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
@@ -36840,7 +36855,7 @@ function inspectDatasourceSchemaTool(client) {
           };
         }));
         const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
-        return args.requests ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
+        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
       } catch (err) {
         return fail(err);
       }

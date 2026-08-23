@@ -77,15 +77,26 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
             new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`)
           );
         }
-        if (!!args.method === !!args.requests) {
-          return fail(new Error('Provide either one method or a requests batch, but not both.'));
-        }
         const contract = getDatasourceQuerySchema(datasource.kind);
         const methods = contract?.introspectionMethods ?? [];
-        const requests: SchemaRequest[] = args.requests ?? [{
-          method: args.method!, schema: args.schema, table: args.table, search: args.search,
-          page: args.page, limit: args.limit, args: args.args,
-        }];
+        // Coalesce a top-level method and a `requests` batch into one deduped list, so callers
+        // can pass either or (as some models do) both without hitting a mutual-exclusion error.
+        const topLevel: SchemaRequest[] = args.method
+          ? [{ method: args.method, schema: args.schema, table: args.table, search: args.search,
+               page: args.page, limit: args.limit, args: args.args }]
+          : [];
+        const seenRequests = new Set<string>();
+        const requests: SchemaRequest[] = [...(args.requests ?? []), ...topLevel].filter((request) => {
+          if (!request.method) return false;
+          const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
+          if (seenRequests.has(key)) return false;
+          seenRequests.add(key);
+          return true;
+        });
+        if (!requests.length) {
+          return fail(new Error('Provide a `method` or a `requests` batch.'));
+        }
+        const asBatch = !!args.requests?.length || requests.length > 1;
         const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
         if (unsupported.length) {
           return fail(
@@ -106,7 +117,7 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
             ...(request.table ? { table: request.table } : {}), result };
         }));
         const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
-        return args.requests
+        return asBatch
           ? ok({ ...header, results })
           : ok({ ...header, method: results[0]!.method, result: results[0]!.result });
       } catch (err) {

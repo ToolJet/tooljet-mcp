@@ -54,7 +54,9 @@ export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
       'responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the ' +
       'datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. ' +
       'Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one ' +
-      'operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts.',
+      'operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts; any ' +
+      'top-level fields (kind/datasource_id/version_id/operation/sections) act as defaults for every entry, so mixing ' +
+      'top-level and `requests` is fine.',
     inputSchema: {
       kind: z.string().optional(),
       datasource_id: z.string().optional(),
@@ -65,18 +67,34 @@ export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: SchemaRequest & { requests?: SchemaRequest[] }) {
       try {
-        const hasSingleSelector = !!args?.kind || !!args?.datasource_id;
-        if (args?.requests?.length && hasSingleSelector) {
-          return fail(new Error('Pass either top-level kind/datasource_id or `requests`, not both.'));
-        }
-        if (!args?.requests?.length && !hasSingleSelector) {
+        const hasTopLevelSelector = !!args?.kind || !!args?.datasource_id;
+        const hasBatch = !!args?.requests?.length;
+
+        // No batch and no selector: the palette, or a misuse of operation/sections alone.
+        if (!hasBatch && !hasTopLevelSelector) {
           if (args?.operation || args?.sections) {
             return fail(new Error('operation/sections require kind, datasource_id, or requests.'));
           }
           return ok(getDatasourceCatalog());
         }
 
-        const requests = args.requests ?? [args];
+        // Top-level fields act as defaults for every batch entry. Callers may put the selector
+        // top-level, inside `requests`, or (as some models do) redundantly in both — each entry's
+        // own fields win, and it inherits anything it omits from the top level. A per-entry selector
+        // is atomic: if an entry names its own kind/datasource_id we don't graft the other kind of
+        // selector onto it from the top level.
+        const base = hasBatch ? args.requests! : [args];
+        const requests: SchemaRequest[] = base.map((request) => {
+          const hasOwnSelector = !!request.kind || !!request.datasource_id;
+          return {
+            kind: request.kind ?? (hasOwnSelector ? undefined : args.kind),
+            datasource_id: request.datasource_id ?? (hasOwnSelector ? undefined : args.datasource_id),
+            version_id: request.version_id ?? args.version_id,
+            operation: request.operation ?? args.operation,
+            sections: request.sections ?? args.sections,
+          };
+        });
+
         const datasourceCache = new Map<string, ReturnType<ToolJetClient['listDatasources']>>();
         const schemas = [];
         for (const request of requests) {
@@ -89,7 +107,7 @@ export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
             selected ?? { error: `Unknown datasource kind "${kind}". Call with no selector to list known schemas.` }
           );
         }
-        return ok(args.requests ? { schemas } : schemas[0]);
+        return ok(hasBatch ? { schemas } : schemas[0]);
       } catch (err) {
         return fail(err);
       }

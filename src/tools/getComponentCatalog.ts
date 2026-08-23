@@ -134,7 +134,9 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
       'and the overview/properties/events/actions sections; compact ' +
       'property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when ' +
       'those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. ' +
-      'Use requests when different types need different sections/keys in one call. ' +
+      'Use requests when different types need different sections/keys in one call; top-level ' +
+      'detail/sections/keys apply as defaults to every requested type, and the type/types/requests ' +
+      'selectors may be combined. ' +
       'sections selects only overview, ' +
       'properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; ' +
       'property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. ' +
@@ -158,22 +160,24 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
     },
     async handler(args: CatalogArgs) {
       try {
-        const selectors = Number(Boolean(args?.type)) + Number(Boolean(args?.types?.length)) + Number(Boolean(args?.requests?.length));
-        if (selectors > 1) {
-          return fail(new Error('Pass exactly one of `type`, `types`, or `requests`.'));
-        }
-        if (!selectors) {
+        const singleType = args?.type;
+        const typesList = args?.types ?? [];
+        const batch = args?.requests ?? [];
+        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
+
+        if (!hasSelector) {
           if (args.detail || args.sections || args.property_keys || args.style_keys) {
             return fail(new Error('Catalog detail/sections/key filters require `type`, `types`, or `requests`.'));
           }
           return ok(getCatalog());
         }
 
-        if (args.type) {
-          const resolved = resolveCatalogType(args.type);
+        // Back-compat: a lone `type` returns a single flat schema object.
+        if (singleType && typesList.length === 0 && batch.length === 0) {
+          const resolved = resolveCatalogType(singleType);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
-            return ok({ error: `Unknown component type "${args.type}". Call with no argument to list valid types.` });
+            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.` });
           }
           return ok({
             ...selectSchema(schema, args),
@@ -182,45 +186,45 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
           });
         }
 
-        if (args.requests?.length) {
-          const components: Record<string, unknown>[] = [];
-          const unknownTypes: string[] = [];
-          for (const request of args.requests) {
-            const resolved = resolveCatalogType(request.type);
-            const schema = getComponentSchema(resolved.type);
-            if (!schema) {
-              unknownTypes.push(request.type);
-              continue;
-            }
-            components.push({
-              ...selectSchema(schema, request),
-              ...legacyNotice(schema.type),
-              ...(resolved.alias ? { alias: resolved.alias } : {}),
-            });
-          }
-          return ok({ components, unknown_types: unknownTypes });
-        }
+        // Otherwise coalesce type + types + requests into one deduped batch. Top-level
+        // detail/sections/key filters are defaults; per-request fields win. Callers may pass
+        // any combination of the three selectors — some models fill several redundantly.
+        type NormReq = NonNullable<CatalogArgs['requests']>[number];
+        const withDefaults = (type: string, over?: Partial<NormReq>): NormReq => ({
+          type,
+          detail: over?.detail ?? args.detail,
+          sections: over?.sections ?? args.sections,
+          property_keys: over?.property_keys ?? args.property_keys,
+          style_keys: over?.style_keys ?? args.style_keys,
+        });
+        const ordered: NormReq[] = [
+          ...batch.map((r) => withDefaults(r.type, r)),
+          ...typesList.map((t) => withDefaults(t)),
+          ...(singleType ? [withDefaults(singleType)] : []),
+        ];
 
-        const requestedTypes = [...new Set(args.types ?? [])];
         const components: Record<string, unknown>[] = [];
         const unknownTypes: string[] = [];
-        const byResolvedType = new Map<string, { schema: ComponentSchema; aliases: string[] }>();
-        for (const type of requestedTypes) {
-          const resolved = resolveCatalogType(type);
+        const seenResolved = new Set<string>();
+        const seenUnknown = new Set<string>();
+        for (const request of ordered) {
+          if (!request.type) continue;
+          const resolved = resolveCatalogType(request.type);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
-            unknownTypes.push(type);
+            if (!seenUnknown.has(request.type)) {
+              seenUnknown.add(request.type);
+              unknownTypes.push(request.type);
+            }
             continue;
           }
-          const current = byResolvedType.get(resolved.type) ?? { schema, aliases: [] };
-          if (resolved.alias) current.aliases.push(type);
-          byResolvedType.set(resolved.type, current);
-        }
-        for (const { schema, aliases } of byResolvedType.values()) {
+          // Dedupe by resolved type so redundant selectors/aliases don't yield duplicate schemas.
+          if (seenResolved.has(resolved.type)) continue;
+          seenResolved.add(resolved.type);
           components.push({
-            ...selectSchema(schema, args),
+            ...selectSchema(schema, request),
             ...legacyNotice(schema.type),
-            ...(aliases.length ? { requested_aliases: aliases } : {}),
+            ...(resolved.alias ? { alias: resolved.alias } : {}),
           });
         }
         return ok({ components, unknown_types: unknownTypes });
