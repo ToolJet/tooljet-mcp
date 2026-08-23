@@ -171,7 +171,7 @@ function editDistance(left: string, right: string): number {
   return previous[right.length]!;
 }
 
-function nearestCatalogKey(value: string, candidates: string[]): string | undefined {
+export function nearestCatalogKey(value: string, candidates: string[]): string | undefined {
   const normalized = value.toLowerCase();
   const ranked = candidates
     .map((candidate) => ({ candidate, distance: editDistance(normalized, candidate.toLowerCase()) }))

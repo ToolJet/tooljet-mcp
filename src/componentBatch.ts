@@ -52,7 +52,7 @@ export function prepareComponentBatch(inputs: ComponentInput[]): PreparedCompone
     parentRef: parent_ref,
     slotName: slot_name,
   }));
-  const normalized = requested.map((component) => normalizeComponentSpec(component));
+  const normalized = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) =>

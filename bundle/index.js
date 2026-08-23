@@ -38749,7 +38749,19 @@ var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
   "serverSideSort",
   "serverSideFilter"
 ]);
-function normalizeComponentSpec(component) {
+function isStrippableUnknownKey(type, section, key, knownKeys) {
+  if (knownKeys.includes(key))
+    return false;
+  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key))
+    return false;
+  const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
+    return false;
+  if (nearestCatalogKey(key, knownKeys))
+    return false;
+  return true;
+}
+function normalizeComponentSpec(component, options2 = {}) {
   const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
     section,
     normalizeSection(component[section])
@@ -38810,6 +38822,26 @@ function normalizeComponentSpec(component) {
       if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
         setProperty("fieldDeletionHistory", [...deletionHistory]);
         warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
+      }
+    }
+  }
+  if (options2.stripUnknownKeys) {
+    const schema = getComponentSchema(component.type);
+    if (schema) {
+      const sections = [
+        ["properties", properties],
+        ["styles", normalizedSections.styles.value]
+      ];
+      for (const [section, sectionValue] of sections) {
+        if (!sectionValue)
+          continue;
+        const knownKeys = (schema[section] ?? []).map((entry) => entry.key);
+        for (const key of Object.keys(sectionValue)) {
+          if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
+            continue;
+          delete sectionValue[key];
+          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
+        }
       }
     }
   }
@@ -38931,7 +38963,7 @@ function lintPlannedApp(spec, existingSummary) {
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
     if (!plannedPage.icon.trim())
       errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
-    const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component));
+    const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
     warnings.push(...expansion.warnings);
@@ -39199,7 +39231,7 @@ function prepareComponentBatch(inputs) {
     parentRef: parent_ref,
     slotName: slot_name
   }));
-  const normalized2 = requested.map((component) => normalizeComponentSpec(component));
+  const normalized2 = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({

@@ -1,4 +1,5 @@
 import { getComponentSchema } from './catalog.js';
+import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, nearestCatalogKey } from './lint.js';
 import type { ComponentSpec } from './tooljetClient.js';
 
 export interface ComponentNormalization<T extends ComponentSpec = ComponentSpec> {
@@ -56,8 +57,30 @@ const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
   'serverSideFilter',
 ]);
 
-/** Apply small persisted-definition compatibility fixes without changing component intent. */
-export function normalizeComponentSpec<T extends ComponentSpec>(component: T): ComponentNormalization<T> {
+/** True unknown keys ToolJet silently ignores — not a catalog key, a misplaced style key, a known
+ *  alias, or a close typo (those are left for the linter to rename/error, never silently stripped). */
+function isStrippableUnknownKey(
+  type: string,
+  section: 'properties' | 'styles',
+  key: string,
+  knownKeys: string[]
+): boolean {
+  if (knownKeys.includes(key)) return false;
+  if (section === 'properties' && STYLE_KEYS_IN_PROPERTIES.has(key)) return false;
+  const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))) return false;
+  if (nearestCatalogKey(key, knownKeys)) return false;
+  return true;
+}
+
+/** Apply small persisted-definition compatibility fixes without changing component intent.
+ *  With `stripUnknownKeys` (new-component writes only — add_components / planned apply), unknown keys
+ *  ToolJet would silently ignore are removed from the saved definition instead of persisted as cruft
+ *  (e.g. dynamicHeight, collapseWhenHidden). Legacy in-place update paths do NOT pass this. */
+export function normalizeComponentSpec<T extends ComponentSpec>(
+  component: T,
+  options: { stripUnknownKeys?: boolean } = {}
+): ComponentNormalization<T> {
   const normalizedSections = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).map((section) => [
       section,
@@ -148,6 +171,30 @@ export function normalizeComponentSpec<T extends ComponentSpec>(component: T): C
           `KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or ` +
             'positionally merge catalog demo fields into the explicit fields array.'
         );
+      }
+    }
+  }
+
+  // Strict catalog validation for new components: strip keys ToolJet would silently ignore so they
+  // never persist as cruft. Skipped entirely for unknown component types (no schema to trust).
+  if (options.stripUnknownKeys) {
+    const schema = getComponentSchema(component.type);
+    if (schema) {
+      const sections: Array<['properties' | 'styles', Record<string, unknown> | undefined]> = [
+        ['properties', properties],
+        ['styles', normalizedSections.styles.value],
+      ];
+      for (const [section, sectionValue] of sections) {
+        if (!sectionValue) continue;
+        const knownKeys = ((schema[section] ?? []) as Array<{ key: string }>).map((entry) => entry.key);
+        for (const key of Object.keys(sectionValue)) {
+          if (!isStrippableUnknownKey(component.type, section, key, knownKeys)) continue;
+          delete sectionValue[key];
+          warnings.push(
+            `${component.type} "${component.name}": removed unknown ${section} key "${key}" — ToolJet ignores ` +
+              'it, so it is kept out of the saved definition rather than persisted as an unusable key.'
+          );
+        }
       }
     }
   }
