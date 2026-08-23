@@ -67,6 +67,24 @@ function validateTableColumnRef(
   return undefined;
 }
 
+const MUTATION_OPERATIONS = new Set([
+  'create_row', 'update_row', 'delete_rows', 'bulk_insert', 'bulk_update_pkey', 'bulk_upsert_pkey',
+]);
+
+/** A query that writes data (GUI mutation op, or a SQL statement that begins with a write keyword). */
+function isMutationQuery(query: { options?: unknown }): boolean {
+  const options = (query.options ?? {}) as Record<string, unknown>;
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+  if (operation && MUTATION_OPERATIONS.has(operation)) return true;
+  const sqlExecution = options.sql_execution as { sqlQuery?: unknown } | undefined;
+  const sql =
+    typeof options.query === 'string' ? options.query
+    : typeof options.sql === 'string' ? options.sql
+    : typeof sqlExecution?.sqlQuery === 'string' ? sqlExecution.sqlQuery
+    : undefined;
+  return typeof sql === 'string' && /^\s*(insert|update|delete|merge|upsert|replace)\b/i.test(sql);
+}
+
 export function validateEvents(
   summary: AppSummary,
   events: EventSpec[],
@@ -76,6 +94,7 @@ export function validateEvents(
   const warnings: string[] = [];
   const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
   const queries = new Set(summary.queries.map((query) => query.id));
+  const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
 
   events.forEach((event, index) => {
@@ -135,6 +154,22 @@ export function validateEvents(
       const queryId = event.action.queryId;
       if (typeof queryId !== 'string' || !queries.has(queryId)) {
         errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
+      } else if (event.sourceType === 'component' && event.trigger === 'onClick') {
+        // Double-submit guard: a button that fires a mutation query on click should disable itself while
+        // that query runs, or the user can submit the same create/update several times.
+        const source = components.get(event.sourceId);
+        const query = queryById.get(queryId);
+        if (source?.type === 'Button' && query && isMutationQuery(query)) {
+          const disabled = propVal(source.properties, 'disabledState');
+          const guarded = typeof disabled === 'string' && disabled.includes('{{') && /isloading/i.test(disabled);
+          if (!guarded) {
+            warnings.push(
+              `Button "${source.name ?? source.id}" runs the mutation query "${query.name ?? queryId}" on click ` +
+                `but its disabledState does not gate on the query's loading state, so it can be double-submitted. ` +
+                `Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`
+            );
+          }
+        }
       }
     }
     if (actionId === 'switch-page') {

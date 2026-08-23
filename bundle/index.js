@@ -37558,11 +37558,29 @@ function validateTableColumnRef(source2, ref) {
   }
   return void 0;
 }
+var MUTATION_OPERATIONS = /* @__PURE__ */ new Set([
+  "create_row",
+  "update_row",
+  "delete_rows",
+  "bulk_insert",
+  "bulk_update_pkey",
+  "bulk_upsert_pkey"
+]);
+function isMutationQuery(query) {
+  const options2 = query.options ?? {};
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (operation && MUTATION_OPERATIONS.has(operation))
+    return true;
+  const sqlExecution = options2.sql_execution;
+  const sql = typeof options2.query === "string" ? options2.query : typeof options2.sql === "string" ? options2.sql : typeof sqlExecution?.sqlQuery === "string" ? sqlExecution.sqlQuery : void 0;
+  return typeof sql === "string" && /^\s*(insert|update|delete|merge|upsert|replace)\b/i.test(sql);
+}
 function validateEvents(summary, events, options2 = {}) {
   const errors = [];
   const warnings = [];
   const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
   const queries = new Set(summary.queries.map((query) => query.id));
+  const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
   events.forEach((event, index) => {
     const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
@@ -37616,6 +37634,16 @@ function validateEvents(summary, events, options2 = {}) {
       const queryId = event.action.queryId;
       if (typeof queryId !== "string" || !queries.has(queryId)) {
         errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
+      } else if (event.sourceType === "component" && event.trigger === "onClick") {
+        const source2 = components.get(event.sourceId);
+        const query = queryById.get(queryId);
+        if (source2?.type === "Button" && query && isMutationQuery(query)) {
+          const disabled = propVal2(source2.properties, "disabledState");
+          const guarded = typeof disabled === "string" && disabled.includes("{{") && /isloading/i.test(disabled);
+          if (!guarded) {
+            warnings.push(`Button "${source2.name ?? source2.id}" runs the mutation query "${query.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`);
+          }
+        }
       }
     }
     if (actionId === "switch-page") {
