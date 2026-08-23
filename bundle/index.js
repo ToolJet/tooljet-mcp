@@ -38775,6 +38775,29 @@ function normalizeComponentSpec(component, options2 = {}) {
     properties[key] = wrapped;
     propertyPatch[key] = wrapped;
   };
+  const stylesValue = normalizedSections.styles.value ?? {};
+  let stylesChanged = false;
+  for (const key of Object.keys(properties)) {
+    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const canonical = aliasTarget ?? key;
+    const belongsInStyles = canonical !== "styles" && STYLE_KEYS_IN_PROPERTIES.has(canonical);
+    if (!aliasTarget && !belongsInStyles)
+      continue;
+    if (belongsInStyles) {
+      if (stylesValue[canonical] === void 0)
+        stylesValue[canonical] = properties[key];
+      delete properties[key];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical !== key) {
+      if (properties[canonical] === void 0)
+        properties[canonical] = properties[key];
+      delete properties[key];
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
+    }
+  }
+  if (stylesChanged)
+    normalizedSections.styles.value = stylesValue;
   for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
     const current = propValue(properties, key);
     if (current !== "clientSide" && current !== "serverSide")
@@ -38823,6 +38846,17 @@ function normalizeComponentSpec(component, options2 = {}) {
         setProperty("fieldDeletionHistory", [...deletionHistory]);
         warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
       }
+    }
+  }
+  if (component.type === "Statistics") {
+    const width = (component.layouts?.desktop ?? component.layout)?.width;
+    const iconName = propValue(properties, "icon");
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
+    const rawSize = propValue(properties, "primaryValueSize");
+    const numericSize = typeof rawSize === "number" ? rawSize : typeof rawSize === "string" && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : void 0;
+    if (isTruthy(propValue(properties, "hideSecondary")) && iconVisible && (numericSize === void 0 || numericSize > 22) && typeof width === "number" && width < 18) {
+      setProperty("primaryValueSize", 22);
+      warnings.push(`Statistics "${component.name}": set primaryValueSize to 22 so the value fits a ${width}-column tile with an icon (larger sizes clip the value).`);
     }
   }
   if (options2.stripUnknownKeys) {

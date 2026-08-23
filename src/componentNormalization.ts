@@ -99,6 +99,33 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     propertyPatch[key] = wrapped;
   };
 
+  // Auto-fix deterministic mechanical mistakes so they don't each cost a lint iteration:
+  //  (a) a known alias (fontsize, bgcolor, color, …) → its correct ToolJet key;
+  //  (b) a style key placed under `properties` → moved to `styles` (ToolJet reads style keys from
+  //      `styles` and silently drops them from `properties`).
+  const stylesValue: Record<string, unknown> = normalizedSections.styles.value ?? {};
+  let stylesChanged = false;
+  for (const key of Object.keys(properties)) {
+    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const canonical = aliasTarget ?? key;
+    const belongsInStyles = canonical !== 'styles' && STYLE_KEYS_IN_PROPERTIES.has(canonical);
+    if (!aliasTarget && !belongsInStyles) continue;
+    if (belongsInStyles) {
+      if (stylesValue[canonical] === undefined) stylesValue[canonical] = properties[key];
+      delete properties[key];
+      stylesChanged = true;
+      warnings.push(
+        `${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} ` +
+          `to styles.${canonical} (ToolJet reads it from styles, not properties).`
+      );
+    } else if (canonical !== key) {
+      if (properties[canonical] === undefined) properties[canonical] = properties[key];
+      delete properties[key];
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
+    }
+  }
+  if (stylesChanged) normalizedSections.styles.value = stylesValue;
+
   // Older catalog snapshots exposed clientServerSwitch's editor labels as enum values even
   // though ToolJet persists these controls as booleans. Accept the common model-authored form
   // and canonicalize it before linting/writing so it does not create a repair turn.
@@ -172,6 +199,34 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
             'positionally merge catalog demo fields into the explicit fields array.'
         );
       }
+    }
+  }
+
+  if (component.type === 'Statistics') {
+    // Auto-size the value so a value-only tile with an icon in a narrow card doesn't clip (e.g. a
+    // currency value rendering as "$3"). Deterministic fix — removes a lint iteration; the model can
+    // still widen or drop the icon instead if it prefers a larger value font.
+    const width = (component.layouts?.desktop ?? component.layout)?.width;
+    const iconName = propValue(properties, 'icon');
+    const iconVisible =
+      typeof iconName === 'string' && iconName.trim() !== '' &&
+      propValue(properties, 'iconVisibility') !== false && propValue(properties, 'iconVisibility') !== '{{false}}';
+    const rawSize = propValue(properties, 'primaryValueSize');
+    const numericSize =
+      typeof rawSize === 'number' ? rawSize
+      : typeof rawSize === 'string' && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : undefined;
+    if (
+      isTruthy(propValue(properties, 'hideSecondary')) &&
+      iconVisible &&
+      (numericSize === undefined || numericSize > 22) &&
+      typeof width === 'number' &&
+      width < 18
+    ) {
+      setProperty('primaryValueSize', 22);
+      warnings.push(
+        `Statistics "${component.name}": set primaryValueSize to 22 so the value fits a ${width}-column tile ` +
+          'with an icon (larger sizes clip the value).'
+      );
     }
   }
 
