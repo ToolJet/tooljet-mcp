@@ -1,4 +1,5 @@
 import { getComponentSchema } from './catalog.js';
+import { getEventActionIds } from './eventActionCatalog.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 
 export interface EventValidationResult {
@@ -6,25 +7,43 @@ export interface EventValidationResult {
   warnings: string[];
 }
 
-const ACTION_IDS = new Set([
-  'run-query',
-  'switch-page',
-  'show-alert',
-  'show-modal',
-  'close-modal',
-  'set-custom-variable',
-  'unset-custom-variable',
-  'set-page-variable',
-  'set-table-page',
-  'copy-to-clipboard',
-  'generate-file',
-  'open-webpage',
-  'go-to-app',
-  'logout',
-  'control-component',
-  'set-localstorage-value',
-  'scroll-component-into-view',
-]);
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (isRecord(value)) {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? String(value);
+}
+
+function eventSignature(event: EventSpec): string {
+  return [
+    event.sourceType,
+    event.sourceId,
+    event.ref ?? '',
+    event.trigger,
+    stableJson(event.action),
+  ].join('\u0000');
+}
+
+/** Drop exact handler duplicates both inside a new batch and against already-persisted handlers. */
+export function deduplicateEventSpecs(
+  events: EventSpec[],
+  persisted: EventSpec[] = []
+): { events: EventSpec[]; skipped: number } {
+  const seen = new Set(persisted.map(eventSignature));
+  const unique: EventSpec[] = [];
+  let skipped = 0;
+  for (const event of events) {
+    const signature = eventSignature(event);
+    if (seen.has(signature)) {
+      skipped += 1;
+      continue;
+    }
+    seen.add(signature);
+    unique.push(event);
+  }
+  return { events: unique, skipped };
+}
 
 function propVal(properties: Record<string, unknown> | undefined, key: string): unknown {
   const value = properties?.[key] as { value?: unknown } | undefined;
@@ -96,6 +115,7 @@ export function validateEvents(
   const queries = new Set(summary.queries.map((query) => query.id));
   const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
+  const actionIds = getEventActionIds();
 
   events.forEach((event, index) => {
     const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
@@ -146,15 +166,15 @@ export function validateEvents(
     }
 
     const actionId = event.action.actionId;
-    if (typeof actionId !== 'string' || !ACTION_IDS.has(actionId)) {
+    if (typeof actionId !== 'string' || !actionIds.has(actionId)) {
       errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
     }
-    if (actionId === 'run-query') {
+    if (['run-query', 'reset-query', 'abort-query'].includes(actionId)) {
       const queryId = event.action.queryId;
       if (typeof queryId !== 'string' || !queries.has(queryId)) {
-        errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
-      } else if (event.sourceType === 'component' && event.trigger === 'onClick') {
+        errors.push(`${label}: ${actionId} target "${String(queryId)}" does not exist.`);
+      } else if (actionId === 'run-query' && event.sourceType === 'component' && event.trigger === 'onClick') {
         // Double-submit guard: a button that fires a mutation query on click should disable itself while
         // that query runs, or the user can submit the same create/update several times.
         const source = components.get(event.sourceId);
@@ -253,14 +273,17 @@ export function validateEvents(
       if (!nonEmptyString(event.action.key)) errors.push(`${label}: ${actionId} requires a non-empty key.`);
       if (!Object.prototype.hasOwnProperty.call(event.action, 'value')) errors.push(`${label}: ${actionId} requires value.`);
     }
-    if (actionId === 'unset-custom-variable' && !nonEmptyString(event.action.key)) {
-      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
+    if (['unset-custom-variable', 'unset-page-variable'].includes(actionId) && !nonEmptyString(event.action.key)) {
+      errors.push(`${label}: ${actionId} requires a non-empty key.`);
     }
     if (actionId === 'open-webpage' && !nonEmptyString(event.action.url)) {
       errors.push(`${label}: open-webpage requires a non-empty url.`);
     }
     if (actionId === 'copy-to-clipboard' && !Object.prototype.hasOwnProperty.call(event.action, 'contentToCopy')) {
       errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
+    }
+    if (actionId === 'toggle-app-mode' && !['light', 'dark'].includes(String(event.action.appMode))) {
+      errors.push(`${label}: toggle-app-mode appMode must be light or dark.`);
     }
     if (actionId === 'set-table-page') {
       const tableId = event.action.table;

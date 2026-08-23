@@ -39,7 +39,7 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       'fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. ' +
       'Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never ' +
       'the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component' +
-      '(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and ' +
+      '(id/name/type/layouts/properties/styles/validation/general/generalStyles/others/parent/parent_id/slot_name/tab_id), query(id/name/kind/data_source_id/options), and ' +
       'event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false ' +
       'returns page metadata only.',
     inputSchema: {

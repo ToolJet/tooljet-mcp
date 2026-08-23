@@ -18,6 +18,7 @@ import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
+import { getEventActionCatalogTool } from './getEventActionCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
 import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
@@ -98,6 +99,7 @@ export function registerTools(
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),
+    getEventActionCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),
     getComponentTool(client),

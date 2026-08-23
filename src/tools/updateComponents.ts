@@ -26,6 +26,11 @@ const updateSchema = z.object({
   name: z.string().optional(),
   parent: z.string().optional(),
   slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+  tab_id: z.string().min(1).optional(),
+}).superRefine((update, context) => {
+  if (update.slot_name && update.tab_id !== undefined) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'Use slot_name or tab_id, not both.' });
+  }
 });
 
 export function updateComponentsTool(client: ToolJetClient): ToolDef {
@@ -33,12 +38,13 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
     name: 'update_components',
     description:
       'Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves ' +
-      'under `definition` (properties/styles/validation/others) — ToolJet deep-merges, so untouched ' +
+      'under `definition` (properties/styles/validation/general/general_styles/others) — ToolJet deep-merges, so untouched ' +
       'values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. ' +
       'NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are ' +
-      'REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, ' +
+      'REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name/tab_id per entry, ' +
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +
-      'regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.',
+      'regions. `tab_id` moves a child into that Tabs pane and must be the tab id, not its title. Omit parent ' +
+      'with slot_name/tab_id to keep the current parent. Get component ids + current values from get_app_summary / get_component.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -55,6 +61,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         name?: string;
         parent?: string;
         slot_name?: 'body' | 'header' | 'footer';
+        tab_id?: string;
       }>;
     }) {
       try {
@@ -71,6 +78,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           name?: string;
           parent?: string;
           slotName?: 'body' | 'header' | 'footer';
+          tabId?: string;
         }> = [];
         for (const update of args.updates) {
           const current = components.get(update.component_id);
@@ -78,18 +86,24 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             errors.push(`Component "${update.component_id}" does not exist on page "${args.page_id}".`);
             continue;
           }
-          if (update.definition && (update.name !== undefined || update.parent !== undefined || update.slot_name !== undefined)) {
+          if (update.definition && (
+            update.name !== undefined || update.parent !== undefined ||
+            update.slot_name !== undefined || update.tab_id !== undefined
+          )) {
             errors.push(
-              `Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`
+              `Component "${update.component_id}": set EITHER definition OR name/parent/slot_name/tab_id in one entry.`
             );
             continue;
           }
           let parent = update.parent;
           let slotName = update.slot_name;
-          if (slotName !== undefined) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
+          const tabId = update.tab_id;
+          const placementChanging =
+            update.parent !== undefined || update.slot_name !== undefined || update.tab_id !== undefined;
+          if (slotName !== undefined || tabId !== undefined) {
+            parent ??= current.parent_id ?? (current.parent ? decodeComponentParent(current.parent).parentId : undefined);
             if (!parent) {
-              if (slotName === 'body') {
+              if (slotName === 'body' && tabId === undefined) {
                 // Root/parentless component has no slots; "body" is the implicit default. Drop the
                 // redundant slot_name and warn instead of erroring (a frequent model mistake that
                 // otherwise triggers identical repair retries).
@@ -98,7 +112,10 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
                 );
                 slotName = undefined;
               } else {
-                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
+                errors.push(
+                  `Component "${update.component_id}": ${tabId !== undefined ? `tab_id:"${tabId}"` : `slot_name:"${slotName}"`} ` +
+                    'requires an existing or explicit parent.'
+                );
                 continue;
               }
             }
@@ -107,6 +124,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             properties?: Record<string, unknown>;
             styles?: Record<string, unknown>;
             validation?: Record<string, unknown>;
+            general?: Record<string, unknown>;
+            general_styles?: Record<string, unknown>;
             others?: Record<string, unknown>;
           } | undefined;
           const next: LintComponent = {
@@ -115,46 +134,76 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             type: current.type,
             properties: { ...(current.properties ?? {}), ...(definition?.properties ?? {}) },
             styles: { ...(current.styles ?? {}), ...(definition?.styles ?? {}) },
+            validation: { ...(current.validation ?? {}), ...(definition?.validation ?? {}) },
+            general: { ...(current.general ?? {}), ...(definition?.general ?? {}) },
+            generalStyles: { ...(current.generalStyles ?? {}), ...(definition?.general_styles ?? {}) },
+            others: { ...(current.others ?? {}), ...(definition?.others ?? {}) },
             layouts: current.layouts as Parameters<typeof lintComponentSpec>[0]['layouts'],
             parent: parent !== undefined
-              ? encodeComponentParent(parent, slotName)
+              ? encodeComponentParent(parent, slotName, tabId)
               : current.parent,
-            slotName: slotName,
+            parentId: parent ?? current.parent_id,
+            slotName: placementChanging ? slotName : current.slot_name,
+            tabId: placementChanging ? tabId : current.tab_id,
           };
           const normalized = normalizeComponentSpec({
+            id: next.id,
             name: next.name ?? current.id,
             type: next.type ?? current.type ?? '',
             properties: next.properties ?? {},
             styles: next.styles,
-            validation: definition?.validation,
-            others: { ...(current.others ?? {}), ...(definition?.others ?? {}) },
+            validation: next.validation,
+            general: next.general,
+            generalStyles: next.generalStyles,
+            others: next.others,
             layouts: next.layouts,
             parent: next.parent,
+            parentId: next.parentId,
+            slotName: next.slotName,
+            tabId: next.tabId,
           });
           const normalizedNext = normalized.component as LintComponent;
           projected.set(current.id, normalizedNext);
           warnings.push(...normalized.warnings);
           let normalizedDefinition = update.definition;
-          if (update.definition && Object.keys(normalized.patch).length) {
-            normalizedDefinition = { ...update.definition };
-            for (const section of ['properties', 'styles', 'validation', 'others'] as const) {
+          if (update.definition) {
+            const { general_styles: generalStyles, ...definitionSections } = update.definition;
+            normalizedDefinition = {
+              ...definitionSections,
+              ...(generalStyles ? { generalStyles } : {}),
+            };
+          }
+          if (normalizedDefinition && Object.keys(normalized.patch).length) {
+            for (const section of ['properties', 'styles', 'validation', 'general', 'generalStyles', 'others'] as const) {
               const sectionPatch = normalized.patch[section];
               if (!sectionPatch) continue;
+              const inputSection = section === 'generalStyles' ? 'general_styles' : section;
               normalizedDefinition[section] = {
-                ...((update.definition as Record<string, Record<string, unknown> | undefined>)[section] ?? {}),
+                ...((update.definition as Record<string, Record<string, unknown> | undefined>)[inputSection] ?? {}),
                 ...sectionPatch,
               };
             }
           }
-          resolvedUpdates.push({
-            componentId: update.component_id,
-            definition: normalizedDefinition,
-            name: update.name,
-            parent,
-            slotName: update.slot_name,
-          });
+          const hasDefinition = !!normalizedDefinition && Object.keys(normalizedDefinition).length > 0;
+          const hasRawUpdate =
+            update.name !== undefined || parent !== undefined || slotName !== undefined || tabId !== undefined;
+          if (hasDefinition || hasRawUpdate) {
+            resolvedUpdates.push({
+              componentId: update.component_id,
+              definition: normalizedDefinition,
+              name: update.name,
+              parent,
+              slotName,
+              tabId,
+            });
+          }
           if (!update.definition) continue;
-          const lint = lintComponentSpec(normalizedNext);
+          const lint = lintComponentSpec(normalizedNext, {
+            strictSuggestedKeys: {
+              property: new Set(Object.keys(definition?.properties ?? {})),
+              style: new Set(Object.keys(definition?.styles ?? {})),
+            },
+          });
           errors.push(...lint.errors);
           warnings.push(...lint.warnings);
         }
@@ -162,12 +211,14 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         if (errors.length) return fail(new Error(errors.join(' ')));
         warnings.push(...lintRenderedGeometry([...projected.values()]));
         warnings.push(...lintKanbanInteractions([...projected.values()]));
-        const result = await client.updateComponents({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          updates: resolvedUpdates,
-        });
+        const result = resolvedUpdates.length
+          ? await client.updateComponents({
+              appId: args.app_id,
+              versionId: args.version_id,
+              pageId: args.page_id,
+              updates: resolvedUpdates,
+            })
+          : { updated: 0 };
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
         return fail(err);

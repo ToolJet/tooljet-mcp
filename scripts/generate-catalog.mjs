@@ -17,6 +17,10 @@ const tableButtonManager = resolve(
   TOOLJET,
   'frontend/src/AppBuilder/RightSideBar/Inspector/Components/Table/hooks/useButtonManager.js'
 );
+const actionTypesFile = resolve(
+  TOOLJET,
+  'frontend/src/AppBuilder/RightSideBar/Inspector/ActionTypes.js'
+);
 
 // --- AST helpers ---
 const keyName = (p) => (p.key.type === 'Identifier' ? p.key.name : p.key.value);
@@ -116,7 +120,7 @@ function findConfig(ast) {
 }
 
 /** Read a source-exported literal so authoring contracts stay synchronized with ToolJet itself. */
-function readNamedLiteral(file, variableName) {
+function readNamedLiteral(file, variableName, fallback) {
   const ast = parse(readFileSync(file, 'utf8'), { sourceType: 'module', plugins: ['jsx'] });
   let value;
   const visit = (node) => {
@@ -135,18 +139,40 @@ function readNamedLiteral(file, variableName) {
     }
   };
   visit(ast.program);
+  if (value === undefined && fallback !== undefined) return fallback;
   if (value === undefined) throw new Error(`Could not extract literal ${variableName} from ${file}`);
   return value;
 }
 
 const componentTypesFile = resolve(TOOLJET, 'frontend/src/AppBuilder/WidgetManager/componentTypes.js');
 const universalProps = readNamedLiteral(componentTypesFile, 'universalProps');
-const legacyUniversalProps = readNamedLiteral(componentTypesFile, 'legacyUniversalProps');
+const renderWidgetFile = resolve(TOOLJET, 'frontend/src/AppBuilder/AppCanvas/RenderWidget.jsx');
+const propertyTooltipComponentTypes = new Set(
+  readNamedLiteral(renderWidgetFile, 'SHOULD_ADD_BOX_SHADOW_AND_VISIBILITY')
+);
+// Current ToolJet no longer exports legacyUniversalProps. Keep the generator compatible with
+// older supported checkouts without requiring a retired source symbol.
+const legacyUniversalProps = readNamedLiteral(componentTypesFile, 'legacyUniversalProps', {});
 const GLOBAL_STYLES = { ...(legacyUniversalProps.styles ?? {}), ...(universalProps.styles ?? {}) };
 const GLOBAL_STYLE_DEFAULTS = {
   ...(legacyUniversalProps.definition?.styles ?? {}),
   ...(universalProps.definition?.styles ?? {}),
 };
+const GLOBAL_SECTIONS = Object.fromEntries(
+  ['validation', 'others', 'general', 'generalStyles'].map((section) => [
+    section,
+    { ...(legacyUniversalProps[section] ?? {}), ...(universalProps[section] ?? {}) },
+  ])
+);
+const GLOBAL_SECTION_DEFAULTS = Object.fromEntries(
+  ['validation', 'others', 'general', 'generalStyles'].map((section) => [
+    section,
+    {
+      ...(legacyUniversalProps.definition?.[section] ?? {}),
+      ...(universalProps.definition?.[section] ?? {}),
+    },
+  ])
+);
 
 function extractProps(config, componentType) {
   // (1) editor `properties` schema → prop type + label (+ a fallback default)
@@ -245,6 +271,64 @@ function extractStyles(config) {
   return order.map((key) => meta[key]);
 }
 
+/** Harvest one persisted definition section using the same compact leaf contract as properties. */
+function extractDefinitionSection(config, section) {
+  const meta = {};
+  const order = [];
+  const editorSection = prop(config, section);
+  if (editorSection?.type === 'ObjectExpression') {
+    for (const pr of editorSection.properties) {
+      if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
+      const editorType = strProp(pr.value, 'type');
+      if (editorType === 'sectionHeader' || editorType === 'sectionSubHeader') continue;
+      const validation = prop(pr.value, 'validation');
+      const schema = validation?.type === 'ObjectExpression' ? prop(validation, 'schema') : undefined;
+      const key = keyName(pr);
+      order.push(key);
+      meta[key] = {
+        key,
+        label: strProp(pr.value, 'displayName'),
+        valueType: schema ? strProp(schema, 'type') : undefined,
+        default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
+        allowedValues: allowedValues(pr.value),
+      };
+    }
+  }
+
+  const definitionSection = prop(prop(config, 'definition'), section);
+  if (definitionSection?.type === 'ObjectExpression') {
+    for (const pr of definitionSection.properties) {
+      if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
+      const key = keyName(pr);
+      const value = trimDefault(literal(prop(pr.value, 'value')));
+      if (!meta[key]) {
+        order.push(key);
+        meta[key] = { key, default: value };
+      } else if (value !== undefined) {
+        meta[key].default = value;
+      }
+    }
+  }
+
+  for (const [key, definition] of Object.entries(GLOBAL_SECTIONS[section] ?? {})) {
+    if (meta[key]) continue;
+    const validation = definition?.validation;
+    order.push(key);
+    meta[key] = {
+      key,
+      label: definition?.displayName,
+      valueType: validation?.schema?.type,
+      default: trimDefault(GLOBAL_SECTION_DEFAULTS[section]?.[key]?.value ?? validation?.defaultValue),
+      allowedValues: Array.isArray(definition?.options)
+        ? [...new Set(definition.options.flatMap((option) =>
+            option && ['string', 'number', 'boolean'].includes(typeof option.value) ? [option.value] : []
+          ))]
+        : undefined,
+    };
+  }
+  return order.map((key) => meta[key]);
+}
+
 function extractEvents(config) {
   const events = prop(config, 'events');
   if (!events || events.type !== 'ObjectExpression') return [];
@@ -253,14 +337,20 @@ function extractEvents(config) {
     .map((pr) => ({
       id: keyName(pr),
       label: pr.value.type === 'ObjectExpression' ? strProp(pr.value, 'displayName') : undefined,
-    }));
+    }))
+    .filter((event) => !/deprecated/i.test(event.label ?? ''));
 }
 
 function extractActions(config) {
   const actions = literal(prop(config, 'actions'));
   if (!Array.isArray(actions)) return [];
   return actions
-    .filter((action) => action && typeof action === 'object' && typeof action.handle === 'string')
+    .filter((action) =>
+      action &&
+      typeof action === 'object' &&
+      typeof action.handle === 'string' &&
+      !/deprecated/i.test(String(action.displayName ?? ''))
+    )
     .map(({ handle, displayName, params }) => ({
       handle,
       ...(typeof displayName === 'string' ? { displayName } : {}),
@@ -299,13 +389,43 @@ for (const f of files) {
   }
   const name = strProp(config, 'name');
   const type = strProp(config, 'component') || name;
+  const properties = extractProps(config, type);
+  const styles = extractStyles(config);
+  const validation = extractDefinitionSection(config, 'validation');
+  const others = extractDefinitionSection(config, 'others');
+  let general = extractDefinitionSection(config, 'general');
+  let generalStyles = extractDefinitionSection(config, 'generalStyles');
+
+  // RenderWidget is the runtime authority for the persisted tooltip path. ToolJet keeps tooltip
+  // under definition.properties for this component set and under definition.general otherwise.
+  // componentTypes merges the universal general tooltip into every widget, so remove that shadowed
+  // duplicate and add it to properties only when the widget config itself does not already declare it.
+  if (propertyTooltipComponentTypes.has(type)) {
+    const generalTooltip = general.find(({ key }) => key === 'tooltip');
+    general = general.filter(({ key }) => key !== 'tooltip');
+    if (generalTooltip && !properties.some(({ key }) => key === 'tooltip')) {
+      properties.push(generalTooltip);
+    }
+  }
+
+  // RenderWidget merges generalStyles first and component styles second. A component-local
+  // boxShadow therefore overrides the universal generalStyles value, so exposing both paths
+  // would direct authors to a setting that cannot take effect.
+  if (styles.some(({ key }) => key === 'boxShadow')) {
+    generalStyles = generalStyles.filter(({ key }) => key !== 'boxShadow');
+  }
+
   schemas[type] = {
     type,
     name,
     description: strProp(config, 'description'),
     defaultSize: literal(prop(config, 'defaultSize')),
-    properties: extractProps(config, type),
-    styles: extractStyles(config),
+    properties,
+    styles,
+    ...(validation.length ? { validation } : {}),
+    ...(others.length ? { others } : {}),
+    ...(general.length ? { general } : {}),
+    ...(generalStyles.length ? { generalStyles } : {}),
     events: extractEvents(config),
     actions: extractActions(config),
     exposedVariables: extractExposedVariables(config),
@@ -319,6 +439,23 @@ for (const f of files) {
 const RUNTIME_EXPOSED_VARIABLES = {
   DropdownV2: [{ name: 'value' }, { name: 'selectedOption' }, { name: 'options' }],
   Form: [{ name: 'formData', default: {} }, { name: 'children', default: {} }],
+  MultiselectV2: [
+    { name: 'values', default: [] },
+    { name: 'selectedOptions', default: [] },
+    { name: 'options', default: [] },
+    { name: 'searchText', default: '' },
+    { name: 'label' },
+  ],
+  RadioButtonV2: [
+    { name: 'value' },
+    { name: 'label' },
+    { name: 'options', default: [] },
+    { name: 'isValid', default: true },
+    { name: 'isMandatory', default: false },
+    { name: 'isLoading', default: false },
+    { name: 'isVisible', default: true },
+    { name: 'isDisabled', default: false },
+  ],
   Listview: [
     {
       name: 'selectedRecord',
@@ -393,7 +530,8 @@ const RENDERING_HINTS = {
   Text: {
     minimumSingleLineHeight: 'ceil(textSize * lineHeight + 6px) for static height; round up to ToolJet\'s 10px grid',
     headingExamples: { '24px at 1.5 line-height': '50px authored height', '32px at 1.5 line-height': '60px authored height' },
-    note: 'The canvas wrapper and Text border consume 6px. A 24px Text at the default 1.5 line-height needs 42px, so the default 40px component clips glyphs/descenders. Use 50px, or dynamicHeight for wrapping content.',
+    wrappedContentEstimate: 'For static content, preserve each h1-h6/p/div/li/br block and estimate about four characters per canvas-width column. Multi-block or wrapped Text needs the full line count plus one line of safety; enable dynamicHeight when content is variable.',
+    note: 'The canvas wrapper and Text border consume 6px. A 24px Text at the default 1.5 line-height needs 42px, so the default 40px component clips glyphs/descenders. Multi-line content can overflow into the next component; size it from the wrapped line count or use dynamicHeight.',
   },
   Chart: {
     recommendedWidthCols: '≈13–15 for a compact few-category pie/donut; ≈20–24 for a categorical bar with longer labels',
@@ -423,6 +561,15 @@ const RENDERING_HINTS = {
     recommendedFieldRowStepPx: 'authored field height + 30px (20px label/validation footprint + 10px gap); this is 70px only for a 40px-authored field',
     recommendedTextAreaHeightPx: '90–100',
     recommendedTwoColumnGutterCols: 2,
+  },
+  Container: {
+    staticContentFit: 'Current ToolJet chrome is 20px before an optional header. For static height, use max(body child top + rendered height) + 20px; a shown header adds headerHeight + 11px. Enable dynamicHeight for variable content.',
+  },
+  Form: {
+    staticContentFit: 'Standalone-child Form body needs max(child top + rendered height) + 20px. A shown header adds headerHeight + 10px; a shown footer adds footerHeight + 14px.',
+  },
+  Tabs: {
+    staticContentFit: 'Size against the deepest child across every pane. Current pane chrome is 32px plus the 50px tab strip (82px total); hideTabs removes the 50px strip.',
   },
   KeyValuePair: {
     currentPaddingBehavior: 'In the current ToolJet renderer, styles.padding values "default" and "none" do not add a visible content inset. Do not rely on this property to create card padding.',
@@ -481,6 +628,9 @@ const AUTHORING_HINTS = {
       defaultValue: 'body',
       rule: 'Put the modal title Text in header, fields/content in body, and native action buttons in footer. Do not leave showHeader enabled with an empty header and add a duplicate title row to the body.',
       parentRule: 'Set parent_ref for a same-batch modal or parent for an existing modal; coordinates are relative to the selected slot canvas.',
+    },
+    reachability: {
+      rule: 'Every modal needs at least one reachable launcher. Use show-modal with the modal id, or control-component with componentSpecificActionHandle="open". A modal with no opener is incomplete.',
     },
   },
   DropdownV2: {
@@ -581,6 +731,18 @@ const AUTHORING_HINTS = {
     },
   },
   Table: {
+    columnTypes: {
+      active: ['string', 'number', 'text', 'datepicker', 'select', 'newMultiSelect', 'tagsV2', 'boolean', 'image', 'link', 'json', 'markdown', 'html', 'rating', 'button'],
+      deprecatedReplacements: {
+        default: 'string', badge: 'newMultiSelect', dropdown: 'select', badges: 'newMultiSelect',
+        tags: 'tagsV2', radio: 'select', multiselect: 'newMultiSelect', toggle: 'select',
+      },
+      exactCaseRule: 'Use exact lowercase/camel-case runtime ids: datepicker, select, newMultiSelect, and tagsV2.',
+    },
+    dynamicColumns: {
+      rule: 'columnData is evaluated once while ToolJet constructs the column model; rowData and cellValue do not exist there. Put per-cell transformations, editability, visibility, colors, and dynamicOptions on static columns instead.',
+      conditionalStyleRule: 'When textColor, cellBackgroundColor, isEditable, columnVisibility, linkTarget, or jsonIndentation is a {{ }} expression, include that exact property name in the column fxActiveFields array.',
+    },
     serverSideDataFlow: {
       exposedVariables: {
         pageIndex: '1-based number',
@@ -655,6 +817,64 @@ for (const [type, hints] of Object.entries(AUTHORING_HINTS)) {
 
 mkdirSync(resolve(root, 'data'), { recursive: true });
 writeFileSync(resolve(root, 'data/component-schemas.json'), JSON.stringify(schemas, null, 2) + '\n');
+
+// Event actions are global ToolJet contracts rather than component-local actions. Harvest the
+// active source list and enrich it with the persisted payload fields used by the runtime executor.
+const EVENT_ACTION_CONTRACTS = {
+  'run-query': { required: ['queryId'], optional: ['queryName', 'parameters'], target: 'query' },
+  'reset-query': { required: ['queryId'], target: 'query' },
+  'abort-query': { required: ['queryId'], target: 'query' },
+  'show-alert': { required: ['message', 'alertType'], allowedValues: { alertType: ['success', 'info', 'warning', 'error'] } },
+  'control-component': { required: ['componentId', 'componentSpecificActionHandle', 'componentSpecificActionParams'], target: 'component' },
+  'show-modal': { required: ['modal'], target: 'modal' },
+  'close-modal': { required: ['modal'], target: 'modal' },
+  'set-table-page': { required: ['table', 'pageIndex'], target: 'table' },
+  'scroll-component-into-view': {
+    required: ['componentId'],
+    optional: ['scrollBehavior', 'scrollBlock'],
+    allowedValues: {
+      scrollBehavior: ['smooth', 'instant', 'auto'],
+      scrollBlock: ['nearest', 'start', 'center', 'end'],
+    },
+    target: 'component',
+  },
+  'switch-page': { required: ['pageId'], optional: ['pageHandle'], target: 'page' },
+  'go-to-app': { required: ['slug'], optional: ['queryParams'] },
+  'open-webpage': { required: ['url'], optional: ['windowTarget'], allowedValues: { windowTarget: ['newTab', 'currentTab'] } },
+  'set-page-variable': { required: ['key', 'value'] },
+  'unset-page-variable': { required: ['key'] },
+  'unset-all-page-variables': { required: [] },
+  'set-custom-variable': { required: ['key', 'value'] },
+  'unset-custom-variable': { required: ['key'] },
+  'unset-all-custom-variables': { required: [] },
+  logout: { required: [] },
+  'generate-file': {
+    required: ['fileType', 'fileName', 'data'],
+    allowedValues: { fileType: ['csv', 'plaintext', 'pdf'] },
+    note: 'PDF is pass-through and requires pre-formed PDF bytes; ToolJet does not convert text or HTML to PDF.',
+  },
+  'set-localstorage-value': { required: ['key', 'value'] },
+  'copy-to-clipboard': { required: ['contentToCopy'] },
+  'toggle-app-mode': {
+    required: ['appMode'],
+    allowedValues: { appMode: ['light', 'dark'] },
+    note: 'Only takes effect when the app global mode is auto.',
+  },
+};
+const actionTypes = readNamedLiteral(actionTypesFile, 'ActionTypes');
+const eventActions = Object.fromEntries(actionTypes.map((action) => [
+  action.id,
+  {
+    id: action.id,
+    name: action.name,
+    group: action.group,
+    ...(EVENT_ACTION_CONTRACTS[action.id] ?? { required: [] }),
+  },
+]));
+writeFileSync(resolve(root, 'data/event-action-schemas.json'), JSON.stringify(eventActions, null, 2) + '\n');
 const total = Object.keys(schemas).length;
 const withProps = Object.values(schemas).filter((s) => s.properties.length).length;
-console.log(`Harvested ${total} components (${withProps} with property schemas). Skipped: ${skipped.length ? skipped.join(', ') : 'none'}`);
+console.log(
+  `Harvested ${total} components (${withProps} with property schemas) and ${Object.keys(eventActions).length} event actions. ` +
+    `Skipped: ${skipped.length ? skipped.join(', ') : 'none'}`
+);

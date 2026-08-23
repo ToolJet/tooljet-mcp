@@ -57,6 +57,14 @@ export interface ComponentSchema {
   defaultSize?: { width: number; height: number };
   properties: ComponentProp[];
   styles: ComponentProp[];
+  /** Component-level validation inspector fields persisted under definition.validation. */
+  validation?: ComponentProp[];
+  /** Responsive visibility and other persisted definition.others fields. */
+  others?: ComponentProp[];
+  /** Universal/general inspector fields such as tooltip. */
+  general?: ComponentProp[];
+  /** Universal visual fields persisted separately from component-native styles. */
+  generalStyles?: ComponentProp[];
   /** Trigger ids accepted by add_events for this component. */
   events?: ComponentEvent[];
   /** Runtime methods accepted by control-component's componentSpecificActionHandle. */
@@ -80,6 +88,7 @@ const compatibilityPath = resolve(
 
 let cache: Record<string, ComponentSchema> | null = null;
 let legacyReplacements: Record<string, string> | null = null;
+let authoringExclusions: Record<string, string> | null = null;
 function load(): Record<string, ComponentSchema> {
   if (!cache) cache = JSON.parse(readFileSync(dataPath, 'utf8')) as Record<string, ComponentSchema>;
   return cache;
@@ -95,11 +104,22 @@ function loadLegacyReplacements(): Record<string, string> {
   return legacyReplacements;
 }
 
+function loadAuthoringExclusions(): Record<string, string> {
+  if (!authoringExclusions) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, 'utf8')) as {
+      authoringExclusions?: Record<string, string>;
+    };
+    authoringExclusions = compatibility.authoringExclusions ?? {};
+  }
+  return authoringExclusions;
+}
+
 /** The palette for new authoring: modern component types + purpose (no per-prop detail). */
 export function getCatalog(): Array<{ type: string; description?: string }> {
   const legacy = loadLegacyReplacements();
+  const excluded = loadAuthoringExclusions();
   return Object.values(load())
-    .filter((c) => !legacy[c.type])
+    .filter((c) => !legacy[c.type] && !excluded[c.type])
     .map((c) => ({ type: c.type, description: c.description }))
     .sort((a, b) => a.type.localeCompare(b.type));
 }
@@ -112,4 +132,9 @@ export function getComponentSchema(type: string): ComponentSchema | null {
 /** Modern replacement for a legacy type, when one exists. */
 export function getLegacyComponentReplacement(type: string): string | null {
   return loadLegacyReplacements()[type] ?? null;
+}
+
+/** Why a known type is not available for ordinary new-page authoring. */
+export function getComponentAuthoringExclusion(type: string): string | null {
+  return loadAuthoringExclusions()[type] ?? null;
 }

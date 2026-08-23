@@ -1,0 +1,257 @@
+{
+  "run-query": {
+    "id": "run-query",
+    "name": "Run query",
+    "group": "run-action",
+    "required": [
+      "queryId"
+    ],
+    "optional": [
+      "queryName",
+      "parameters"
+    ],
+    "target": "query"
+  },
+  "reset-query": {
+    "id": "reset-query",
+    "name": "Reset query",
+    "group": "run-action",
+    "required": [
+      "queryId"
+    ],
+    "target": "query"
+  },
+  "abort-query": {
+    "id": "abort-query",
+    "name": "Abort query",
+    "group": "run-action",
+    "required": [
+      "queryId"
+    ],
+    "target": "query"
+  },
+  "show-alert": {
+    "id": "show-alert",
+    "name": "Show Alert",
+    "group": "run-action",
+    "required": [
+      "message",
+      "alertType"
+    ],
+    "allowedValues": {
+      "alertType": [
+        "success",
+        "info",
+        "warning",
+        "error"
+      ]
+    }
+  },
+  "control-component": {
+    "id": "control-component",
+    "name": "Control component",
+    "group": "control-component",
+    "required": [
+      "componentId",
+      "componentSpecificActionHandle",
+      "componentSpecificActionParams"
+    ],
+    "target": "component"
+  },
+  "show-modal": {
+    "id": "show-modal",
+    "name": "Show modal",
+    "group": "control-component",
+    "required": [
+      "modal"
+    ],
+    "target": "modal"
+  },
+  "close-modal": {
+    "id": "close-modal",
+    "name": "Close modal",
+    "group": "control-component",
+    "required": [
+      "modal"
+    ],
+    "target": "modal"
+  },
+  "set-table-page": {
+    "id": "set-table-page",
+    "name": "Set table page",
+    "group": "control-component",
+    "required": [
+      "table",
+      "pageIndex"
+    ],
+    "target": "table"
+  },
+  "scroll-component-into-view": {
+    "id": "scroll-component-into-view",
+    "name": "Scroll component into view",
+    "group": "control-component",
+    "required": [
+      "componentId"
+    ],
+    "optional": [
+      "scrollBehavior",
+      "scrollBlock"
+    ],
+    "allowedValues": {
+      "scrollBehavior": [
+        "smooth",
+        "instant",
+        "auto"
+      ],
+      "scrollBlock": [
+        "nearest",
+        "start",
+        "center",
+        "end"
+      ]
+    },
+    "target": "component"
+  },
+  "switch-page": {
+    "id": "switch-page",
+    "name": "Switch page",
+    "group": "navigation",
+    "required": [
+      "pageId"
+    ],
+    "optional": [
+      "pageHandle"
+    ],
+    "target": "page"
+  },
+  "go-to-app": {
+    "id": "go-to-app",
+    "name": "Go to app",
+    "group": "navigation",
+    "required": [
+      "slug"
+    ],
+    "optional": [
+      "queryParams"
+    ]
+  },
+  "open-webpage": {
+    "id": "open-webpage",
+    "name": "Open webpage",
+    "group": "navigation",
+    "required": [
+      "url"
+    ],
+    "optional": [
+      "windowTarget"
+    ],
+    "allowedValues": {
+      "windowTarget": [
+        "newTab",
+        "currentTab"
+      ]
+    }
+  },
+  "set-page-variable": {
+    "id": "set-page-variable",
+    "name": "Set page variable",
+    "group": "variable",
+    "required": [
+      "key",
+      "value"
+    ]
+  },
+  "unset-page-variable": {
+    "id": "unset-page-variable",
+    "name": "Unset page variable",
+    "group": "variable",
+    "required": [
+      "key"
+    ]
+  },
+  "unset-all-page-variables": {
+    "id": "unset-all-page-variables",
+    "name": "Unset all page variables",
+    "group": "variable",
+    "required": []
+  },
+  "set-custom-variable": {
+    "id": "set-custom-variable",
+    "name": "Set variable",
+    "group": "variable",
+    "required": [
+      "key",
+      "value"
+    ]
+  },
+  "unset-custom-variable": {
+    "id": "unset-custom-variable",
+    "name": "Unset variable",
+    "group": "variable",
+    "required": [
+      "key"
+    ]
+  },
+  "unset-all-custom-variables": {
+    "id": "unset-all-custom-variables",
+    "name": "Unset all variables",
+    "group": "variable",
+    "required": []
+  },
+  "logout": {
+    "id": "logout",
+    "name": "Logout",
+    "group": "other",
+    "required": []
+  },
+  "generate-file": {
+    "id": "generate-file",
+    "name": "Generate file",
+    "group": "other",
+    "required": [
+      "fileType",
+      "fileName",
+      "data"
+    ],
+    "allowedValues": {
+      "fileType": [
+        "csv",
+        "plaintext",
+        "pdf"
+      ]
+    },
+    "note": "PDF is pass-through and requires pre-formed PDF bytes; ToolJet does not convert text or HTML to PDF."
+  },
+  "set-localstorage-value": {
+    "id": "set-localstorage-value",
+    "name": "Set local storage",
+    "group": "other",
+    "required": [
+      "key",
+      "value"
+    ]
+  },
+  "copy-to-clipboard": {
+    "id": "copy-to-clipboard",
+    "name": "Copy to clipboard",
+    "group": "other",
+    "required": [
+      "contentToCopy"
+    ]
+  },
+  "toggle-app-mode": {
+    "id": "toggle-app-mode",
+    "name": "Toggle app mode",
+    "group": "other",
+    "required": [
+      "appMode"
+    ],
+    "allowedValues": {
+      "appMode": [
+        "light",
+        "dark"
+      ]
+    },
+    "note": "Only takes effect when the app global mode is auto."
+  }
+}

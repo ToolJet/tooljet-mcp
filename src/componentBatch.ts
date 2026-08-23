@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getComponentAuthoringExclusion, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES } from './componentParent.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { lintComponents } from './lint.js';
@@ -18,6 +19,8 @@ export const componentInputSchema = z.object({
   properties: z.record(z.string(), z.any()),
   styles: z.record(z.string(), z.any()).optional(),
   validation: z.record(z.string(), z.any()).optional(),
+  general: z.record(z.string(), z.any()).optional(),
+  general_styles: z.record(z.string(), z.any()).optional(),
   others: z.record(z.string(), z.any()).optional(),
   layout: layoutSchema.optional(),
   layouts: z.object({ desktop: layoutSchema.optional(), mobile: layoutSchema.optional() }).optional(),
@@ -25,6 +28,21 @@ export const componentInputSchema = z.object({
   parent_ref: z.string().optional(),
   parent: z.string().optional(),
   slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+  /** Target one pane of a Tabs parent. Use the tab's persisted string id, not its title. */
+  tab_id: z.string().min(1).optional(),
+}).superRefine((component, context) => {
+  if (component.slot_name && component.tab_id !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Use slot_name or tab_id, not both.',
+    });
+  }
+  if (component.tab_id !== undefined && !component.parent && !component.parent_ref) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'tab_id requires parent or parent_ref.',
+    });
+  }
 });
 
 export type ComponentInput = z.infer<typeof componentInputSchema>;
@@ -46,20 +64,34 @@ export interface PreparedComponentBatch {
 
 /** Normalize and fully lint one page's component batch before any ToolJet write. */
 export function prepareComponentBatch(inputs: ComponentInput[]): PreparedComponentBatch {
-  const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
+  const requested = inputs.map(({ client_ref, parent_ref, slot_name, tab_id, general_styles, ...component }) => ({
     ...component,
+    generalStyles: general_styles,
     clientRef: client_ref,
     parentRef: parent_ref,
     slotName: slot_name,
+    tabId: tab_id,
   }));
   const normalized = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
   const lint = lintComponents(expanded.components);
+  const authoringErrors = expanded.components.flatMap((component) => {
+    const replacement = getLegacyComponentReplacement(component.type);
+    if (replacement) {
+      return [
+        `Component "${component.name}": legacy type "${component.type}" cannot be created; use "${replacement}".`,
+      ];
+    }
+    const exclusion = getComponentAuthoringExclusion(component.type);
+    return exclusion ? [`Component "${component.name}": type "${component.type}" is not authorable here. ${exclusion}`] : [];
+  });
   const lateListviewChildWarnings = requested.flatMap((component) =>
     component.parent && containsListItemBinding({
       properties: component.properties,
       styles: component.styles,
       validation: component.validation,
+      general: component.general,
+      generalStyles: component.generalStyles,
       others: component.others,
     })
       ? [
@@ -71,7 +103,7 @@ export function prepareComponentBatch(inputs: ComponentInput[]): PreparedCompone
   );
   return {
     components: expanded.components,
-    errors: lint.errors,
+    errors: [...authoringErrors, ...lint.errors],
     warnings: [
       ...normalized.flatMap((item) => item.warnings),
       ...expanded.warnings,

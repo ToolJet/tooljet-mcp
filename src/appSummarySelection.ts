@@ -37,13 +37,28 @@ const COMPONENT_FIELDS = [
   'layouts',
   'properties',
   'styles',
+  'validation',
+  'general',
+  'generalStyles',
   'others',
   'parent',
+  'parent_id',
+  'slot_name',
+  'tab_id',
 ] as const;
 const QUERY_FIELDS = ['id', 'name', 'kind', 'data_source_id', 'options'] as const;
 const EVENT_FIELDS = ['id', 'name', 'sourceId', 'target', 'event'] as const;
 
-const STRUCTURE_COMPONENT_FIELDS = ['id', 'name', 'type', 'layouts', 'parent'];
+const STRUCTURE_COMPONENT_FIELDS = [
+  'id',
+  'name',
+  'type',
+  'layouts',
+  'parent',
+  'parent_id',
+  'slot_name',
+  'tab_id',
+];
 const STRUCTURE_QUERY_FIELDS = ['id', 'name', 'kind', 'data_source_id'];
 const STRUCTURE_EVENT_FIELDS = ['id', 'name', 'sourceId', 'target'];
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);

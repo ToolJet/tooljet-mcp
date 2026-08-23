@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getComponentAuthoringExclusion, getLegacyComponentReplacement } from '../catalog.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
 import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
@@ -23,7 +24,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
     description:
       'Place a component on an app page. `name` is required. A Table binds data via ' +
       'properties.data.value = "{{queries.<queryName>.data}}". ' +
-      'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
+      'Property/style/validation/general/general_styles/other leaves may be supplied as concise raw values or canonical ' +
       '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in the top-level `styles` object, NOT under `properties` — ToolJet silently ignores styles nested ' +
@@ -40,6 +41,8 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       properties: z.record(z.string(), z.any()),
       styles: z.record(z.string(), z.any()).optional(),
       validation: z.record(z.string(), z.any()).optional(),
+      general: z.record(z.string(), z.any()).optional(),
+      general_styles: z.record(z.string(), z.any()).optional(),
       others: z.record(z.string(), z.any()).optional(),
       layout: layoutSchema.optional(),
       layouts: layoutsSchema.optional(),
@@ -53,6 +56,8 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       properties: Record<string, unknown>;
       styles?: Record<string, unknown>;
       validation?: Record<string, unknown>;
+      general?: Record<string, unknown>;
+      general_styles?: Record<string, unknown>;
       others?: Record<string, unknown>;
       layout?: { top: number; left: number; width: number; height: number };
       layouts?: {
@@ -60,12 +65,22 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
         mobile?: { top: number; left: number; width: number; height: number };
       };
     }) {
+      const replacement = getLegacyComponentReplacement(args.type);
+      if (replacement) {
+        return fail(new Error(`Legacy component type "${args.type}" cannot be created; use "${replacement}".`));
+      }
+      const exclusion = getComponentAuthoringExclusion(args.type);
+      if (exclusion) {
+        return fail(new Error(`Component type "${args.type}" is not authorable here. ${exclusion}`));
+      }
       const requested = {
         name: args.name,
         type: args.type,
         properties: args.properties,
         styles: args.styles,
         validation: args.validation,
+        general: args.general,
+        generalStyles: args.general_styles,
         others: args.others,
         layout: args.layout,
         layouts: args.layouts,
@@ -98,6 +113,8 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
           properties: component.properties,
           styles: component.styles,
           validation: component.validation,
+          general: component.general,
+          generalStyles: component.generalStyles,
           others: component.others,
           layout: component.layout,
           layouts: component.layouts,
