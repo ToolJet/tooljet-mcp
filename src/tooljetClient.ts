@@ -1250,6 +1250,26 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
   }
 
+  // After a table is created, PostgREST's schema cache can lag behind the DDL, so the first proxy write
+  // returns PGRST205 ("Could not find the table ... in the schema cache") — a transient infra race, not
+  // an app error. Retry with backoff so seeding waits the cache out instead of failing the phase and
+  // handing an unfixable error to the model. Once the cache refreshes, later rows succeed on attempt 0.
+  const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4000];
+
+  async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
+    for (let attempt = 0; ; attempt += 1) {
+      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+      });
+      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
+      const body = await res.clone().text().catch(() => '');
+      if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
+      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+    }
+  }
+
   async function insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }> {
     if (!params.rows.length) return { processed_rows: 0 };
     const schema = await getTableSchema(params.tableName);
@@ -1276,14 +1296,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     let processedRows = 0;
     for (const [index, row] of rows.entries()) {
       try {
-        const res = await auth.authedFetch(
-          `/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(row),
-          }
-        );
+        const res = await insertRowViaProxy(table.id, row);
         await assertOk(res, 'insertRows');
         processedRows += 1;
       } catch (error) {

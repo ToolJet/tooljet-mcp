@@ -35428,6 +35428,22 @@ function createClient(auth, config2) {
       };
     });
   }
+  const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
+  async function insertRowViaProxy(tableId, row) {
+    for (let attempt = 0; ; attempt += 1) {
+      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row)
+      });
+      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
+        return res;
+      const body = await res.clone().text().catch(() => "");
+      if (!/PGRST205|schema cache/i.test(body))
+        return res;
+      await new Promise((resolve3) => setTimeout(resolve3, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+    }
+  }
   async function insertRows(params) {
     if (!params.rows.length)
       return { processed_rows: 0 };
@@ -35443,11 +35459,7 @@ function createClient(auth, config2) {
     let processedRows = 0;
     for (const [index, row] of rows.entries()) {
       try {
-        const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(table.id)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(row)
-        });
+        const res = await insertRowViaProxy(table.id, row);
         await assertOk(res, "insertRows");
         processedRows += 1;
       } catch (error51) {
