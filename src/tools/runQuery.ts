@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
+import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 import {
   LARGE_READ_ROW_THRESHOLD,
   assessQueryRead,
@@ -59,6 +60,112 @@ export function datasourceRecovery(query: {
       'Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; ' +
       'do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair.',
   };
+}
+
+export type QueryFailureClass = 'connection' | 'schema_name' | 'query';
+
+// SQLSTATE prefixes / message markers that mean the *connection* is broken (agent cannot fix by
+// editing SQL — the user must repair the datasource). Postgres classes: 08 connection_exception,
+// 28 invalid_authorization, 53 insufficient_resources, 57P0x admin/cannot-connect, 3D000 invalid_catalog.
+const CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
+const CONNECTION_MESSAGE =
+  /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
+// SQLSTATE / markers that mean a NAME in the query does not exist — recoverable by re-introspecting.
+// 42P01 undefined_table, 42703 undefined_column, 3F000 invalid_schema, 42P02 undefined_parameter, 42704 undefined_object.
+const SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
+const SCHEMA_NAME_MESSAGE =
+  /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
+
+/** Classify a failed query result so the caller offers the RIGHT recovery: a connection-repair
+ *  handoff only for genuine connection failures, and a re-introspect hint for wrong table/column
+ *  names — never the misleading "go fix your datasource" prompt for a plain SQL name error. */
+export function classifyQueryFailure(result: Record<string, unknown> | undefined): QueryFailureClass {
+  if (!result) return 'query';
+  const data = result.data as { code?: unknown } | undefined;
+  const code = data && typeof data === 'object' ? String(data.code ?? '') : '';
+  const text = `${result.description ?? ''} ${result.message ?? ''}`;
+  if ((code && CONNECTION_SQLSTATE.test(code)) || CONNECTION_MESSAGE.test(text)) return 'connection';
+  if ((code && SCHEMA_NAME_SQLSTATE.test(code)) || SCHEMA_NAME_MESSAGE.test(text)) return 'schema_name';
+  return 'query';
+}
+
+/** Connection-repair handoff ONLY when the failure is actually a connection problem. */
+export function failureRecovery(
+  query: { datasource_settings_url?: string },
+  result: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  return classifyQueryFailure(result) === 'connection' ? datasourceRecovery(query) : undefined;
+}
+
+function introspectedNames(result: unknown): string[] {
+  const data = (result as { data?: unknown } | undefined)?.data;
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((row) =>
+      typeof row === 'string'
+        ? row
+        : (row as { value?: unknown; label?: unknown; name?: unknown })?.value ??
+          (row as { label?: unknown })?.label ??
+          (row as { name?: unknown })?.name
+    )
+    .filter((value): value is string => typeof value === 'string' && value.length > 0);
+}
+
+/** Best-effort real table names for the failing datasource, so the agent stops guessing. Every call
+ *  is guarded by the caller's try/catch — a discovery failure must never mask the query failure. */
+async function availableTableNames(
+  client: ToolJetClient,
+  query: { data_source_id?: string; kind?: string }
+): Promise<string[] | undefined> {
+  if (!query.data_source_id || !query.kind) return undefined;
+  const methods = getDatasourceQuerySchema(query.kind)?.introspectionMethods ?? [];
+  const tableMethod = ['listTables', 'list_tables', 'getTables', 'tables'].find((m) => methods.includes(m));
+  if (!tableMethod) return undefined;
+  let methodArgs: Record<string, unknown> | undefined;
+  if (methods.includes('listSchemas')) {
+    const schemas = introspectedNames(
+      await client.invokeDatasourceMethod({ dataSourceId: query.data_source_id, method: 'listSchemas' })
+    );
+    const schema = schemas.includes('public') ? 'public' : schemas[0];
+    if (schema) methodArgs = { schema };
+  }
+  const tableResult = await client.invokeDatasourceMethod({
+    dataSourceId: query.data_source_id,
+    method: tableMethod,
+    ...(methodArgs ? { args: methodArgs } : {}),
+  });
+  const names = introspectedNames(tableResult);
+  return names.length ? names : undefined;
+}
+
+/** An actionable hint for a wrong-name failure: state plainly it is NOT a connection problem, list the
+ *  real tables when discoverable, and direct the agent to re-introspect instead of guessing again. This
+ *  converts a multi-turn "repair the connection / guess another name" grind into a one-turn correction. */
+export async function schemaNameHint(
+  client: ToolJetClient,
+  query: { data_source_id?: string; kind?: string },
+  result: Record<string, unknown>
+): Promise<Record<string, unknown> | undefined> {
+  if (classifyQueryFailure(result) !== 'schema_name') return undefined;
+  const data = result.data as { code?: unknown } | undefined;
+  const code = data && typeof data === 'object' ? String(data.code ?? '') : '';
+  const hint: Record<string, unknown> = {
+    kind: 'schema_name_error',
+    detail: String(result.description ?? result.message ?? 'a table or column named in the query does not exist'),
+    ...(code ? { sqlstate: code } : {}),
+    guidance:
+      'This is a schema/name error, NOT a connection problem — the datasource is reachable, so do NOT ask the ' +
+      'user to repair or test the connection. A table or column named in the SQL does not exist. Call ' +
+      'inspect_datasource_schema (listTables, then listColumns for the target table) to get the EXACT names, ' +
+      'correct the query, and retry. Never guess table or column names.',
+  };
+  try {
+    const tables = await availableTableNames(client, query);
+    if (tables?.length) hint.available_tables = tables.slice(0, 50);
+  } catch {
+    // Discovery is a bonus; its failure must not mask or replace the underlying query failure.
+  }
+  return hint;
 }
 
 export function runQueryTool(client: ToolJetClient): ToolDef {
@@ -190,16 +297,20 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
             environmentId: args.environment_id,
           });
         } catch (error) {
-          const recovery = datasourceRecovery(query);
+          const failure = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
+          const recovery = failureRecovery(query, failure);
+          const schemaHint = await schemaNameHint(client, query, failure);
           return ok({
-            status: 'failed',
-            message: error instanceof Error ? error.message : String(error),
+            ...failure,
             ...(preflight ? { preflight } : {}),
             ...(warnings.length ? { warnings } : {}),
             ...(recovery ? { recovery } : {}),
+            ...(schemaHint ? { schema_hint: schemaHint } : {}),
           });
         }
-        const recovery = result.status === 'failed' ? datasourceRecovery(query) : undefined;
+        const failed = result.status === 'failed';
+        const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
+        const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
         const output = assessment.requiresRemoteReadConfirmation
           ? truncateRemoteResult(result as Record<string, unknown>)
           : { result: result as Record<string, unknown> };
@@ -209,6 +320,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
           ...(recovery ? { recovery } : {}),
+          ...(schemaHint ? { schema_hint: schemaHint } : {}),
         });
       } catch (err) {
         return fail(err);

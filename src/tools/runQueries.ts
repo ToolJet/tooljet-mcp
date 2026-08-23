@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead } from '../queryExecutionSafety.js';
-import { containsComponentBinding, datasourceRecovery } from './runQuery.js';
+import { containsComponentBinding, failureRecovery, schemaNameHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 /** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query. */
@@ -67,10 +67,11 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
           const warnings = containsComponentBinding(query.options)
             ? ['Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer.']
             : [];
-          const datasourceRepair = datasourceRecovery(query);
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
-            const recovery = result.status === 'failed' ? datasourceRepair : undefined;
+            const failed = result.status === 'failed';
+            const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
+            const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
             // include_data:false keeps only the run status (+ row_count), dropping the row payload — the
             // caller just needs to confirm the query executed, and a large data array would bloat/risk the
             // response for no benefit.
@@ -87,15 +88,19 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               ...shaped,
               ...(warnings.length ? { warnings } : {}),
               ...(recovery ? { recovery } : {}),
+              ...(schemaHint ? { schema_hint: schemaHint } : {}),
             };
           } catch (error) {
+            const failure = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
+            const recovery = failureRecovery(query, failure);
+            const schemaHint = await schemaNameHint(client, query, failure);
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
-              status: 'failed',
-              message: error instanceof Error ? error.message : String(error),
+              ...failure,
               ...(warnings.length ? { warnings } : {}),
-              ...(datasourceRepair ? { recovery: datasourceRepair } : {}),
+              ...(recovery ? { recovery } : {}),
+              ...(schemaHint ? { schema_hint: schemaHint } : {}),
             };
           }
         }));

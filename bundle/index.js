@@ -41000,6 +41000,72 @@ function datasourceRecovery(query) {
     instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
   };
 }
+var CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
+var CONNECTION_MESSAGE = /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
+var SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
+var SCHEMA_NAME_MESSAGE = /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
+function classifyQueryFailure(result) {
+  if (!result)
+    return "query";
+  const data = result.data;
+  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
+  const text = `${result.description ?? ""} ${result.message ?? ""}`;
+  if (code && CONNECTION_SQLSTATE.test(code) || CONNECTION_MESSAGE.test(text))
+    return "connection";
+  if (code && SCHEMA_NAME_SQLSTATE.test(code) || SCHEMA_NAME_MESSAGE.test(text))
+    return "schema_name";
+  return "query";
+}
+function failureRecovery(query, result) {
+  return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
+}
+function introspectedNames(result) {
+  const data = result?.data;
+  if (!Array.isArray(data))
+    return [];
+  return data.map((row) => typeof row === "string" ? row : row?.value ?? row?.label ?? row?.name).filter((value) => typeof value === "string" && value.length > 0);
+}
+async function availableTableNames(client, query) {
+  if (!query.data_source_id || !query.kind)
+    return void 0;
+  const methods = getDatasourceQuerySchema(query.kind)?.introspectionMethods ?? [];
+  const tableMethod = ["listTables", "list_tables", "getTables", "tables"].find((m) => methods.includes(m));
+  if (!tableMethod)
+    return void 0;
+  let methodArgs;
+  if (methods.includes("listSchemas")) {
+    const schemas = introspectedNames(await client.invokeDatasourceMethod({ dataSourceId: query.data_source_id, method: "listSchemas" }));
+    const schema = schemas.includes("public") ? "public" : schemas[0];
+    if (schema)
+      methodArgs = { schema };
+  }
+  const tableResult = await client.invokeDatasourceMethod({
+    dataSourceId: query.data_source_id,
+    method: tableMethod,
+    ...methodArgs ? { args: methodArgs } : {}
+  });
+  const names = introspectedNames(tableResult);
+  return names.length ? names : void 0;
+}
+async function schemaNameHint(client, query, result) {
+  if (classifyQueryFailure(result) !== "schema_name")
+    return void 0;
+  const data = result.data;
+  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
+  const hint = {
+    kind: "schema_name_error",
+    detail: String(result.description ?? result.message ?? "a table or column named in the query does not exist"),
+    ...code ? { sqlstate: code } : {},
+    guidance: "This is a schema/name error, NOT a connection problem \u2014 the datasource is reachable, so do NOT ask the user to repair or test the connection. A table or column named in the SQL does not exist. Call inspect_datasource_schema (listTables, then listColumns for the target table) to get the EXACT names, correct the query, and retry. Never guess table or column names."
+  };
+  try {
+    const tables = await availableTableNames(client, query);
+    if (tables?.length)
+      hint.available_tables = tables.slice(0, 50);
+  } catch {
+  }
+  return hint;
+}
 function runQueryTool(client) {
   return {
     name: "run_query",
@@ -41072,16 +41138,20 @@ function runQueryTool(client) {
             environmentId: args.environment_id
           });
         } catch (error51) {
-          const recovery2 = datasourceRecovery(query);
+          const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
+          const recovery2 = failureRecovery(query, failure);
+          const schemaHint2 = await schemaNameHint(client, query, failure);
           return ok({
-            status: "failed",
-            message: error51 instanceof Error ? error51.message : String(error51),
+            ...failure,
             ...preflight ? { preflight } : {},
             ...warnings.length ? { warnings } : {},
-            ...recovery2 ? { recovery: recovery2 } : {}
+            ...recovery2 ? { recovery: recovery2 } : {},
+            ...schemaHint2 ? { schema_hint: schemaHint2 } : {}
           });
         }
-        const recovery = result.status === "failed" ? datasourceRecovery(query) : void 0;
+        const failed = result.status === "failed";
+        const recovery = failed ? failureRecovery(query, result) : void 0;
+        const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
         const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
         if (output.warning)
           warnings.push(output.warning);
@@ -41089,7 +41159,8 @@ function runQueryTool(client) {
           ...output.result,
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
-          ...recovery ? { recovery } : {}
+          ...recovery ? { recovery } : {},
+          ...schemaHint ? { schema_hint: schemaHint } : {}
         });
       } catch (err) {
         return fail(err);
@@ -41137,10 +41208,11 @@ function runQueriesTool(client) {
         const queries = await Promise.all(args.query_ids.map(async (queryId) => {
           const query = byId.get(queryId);
           const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
-          const datasourceRepair = datasourceRecovery(query);
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
-            const recovery = result.status === "failed" ? datasourceRepair : void 0;
+            const failed = result.status === "failed";
+            const recovery = failed ? failureRecovery(query, result) : void 0;
+            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
             const shaped = args.include_data === false ? (() => {
               const { data, ...rest } = result;
               return Array.isArray(data) ? { ...rest, row_count: data.length } : rest;
@@ -41150,16 +41222,20 @@ function runQueriesTool(client) {
               ...query.name ? { name: query.name } : {},
               ...shaped,
               ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {}
+              ...recovery ? { recovery } : {},
+              ...schemaHint ? { schema_hint: schemaHint } : {}
             };
           } catch (error51) {
+            const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
+            const recovery = failureRecovery(query, failure);
+            const schemaHint = await schemaNameHint(client, query, failure);
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
-              status: "failed",
-              message: error51 instanceof Error ? error51.message : String(error51),
+              ...failure,
               ...warnings.length ? { warnings } : {},
-              ...datasourceRepair ? { recovery: datasourceRepair } : {}
+              ...recovery ? { recovery } : {},
+              ...schemaHint ? { schema_hint: schemaHint } : {}
             };
           }
         }));
