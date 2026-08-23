@@ -30,18 +30,40 @@ async function resolveKind(
   fallbackVersionId?: string,
   datasourceCache = new Map<string, ReturnType<ToolJetClient['listDatasources']>>()
 ): Promise<string> {
-  if (!!request.kind === !!request.datasource_id) {
-    throw new Error('Each schema request needs exactly one of `kind` or `datasource_id`.');
+  const versionId = request.version_id ?? fallbackVersionId;
+  const datasourcesFor = async (vid: string) => {
+    let pending = datasourceCache.get(vid);
+    if (!pending) {
+      pending = client.listDatasources(vid);
+      datasourceCache.set(vid, pending);
+    }
+    return pending;
+  };
+  if (request.kind && request.datasource_id) {
+    throw new Error('Pass either `kind` or `datasource_id`, not both.');
+  }
+  if (!request.kind && !request.datasource_id) {
+    // The frequent model mistake: version_id/operation/sections but no selector. Turn the error into
+    // a one-shot recovery by naming the datasources available on this version, so the next call is correct.
+    let hint = '';
+    if (versionId) {
+      try {
+        const list = await datasourcesFor(versionId);
+        if (list.length) {
+          hint =
+            ' Available on this version: ' +
+            list.map((item) => `${item.kind} (datasource_id "${item.id}"${item.name ? `, "${item.name}"` : ''})`).join('; ') +
+            '.';
+        }
+      } catch {
+        /* fall through to the plain message if the datasource list can't be fetched */
+      }
+    }
+    throw new Error(`Each schema request needs a \`kind\` or a \`datasource_id\`.${hint}`);
   }
   if (request.kind) return request.kind;
-  const versionId = request.version_id ?? fallbackVersionId;
   if (!versionId) throw new Error('Resolving `datasource_id` requires `version_id`.');
-  let pending = datasourceCache.get(versionId);
-  if (!pending) {
-    pending = client.listDatasources(versionId);
-    datasourceCache.set(versionId, pending);
-  }
-  const datasource = (await pending).find((item) => item.id === request.datasource_id);
+  const datasource = (await datasourcesFor(versionId)).find((item) => item.id === request.datasource_id);
   if (!datasource) throw new Error(`Datasource "${request.datasource_id}" is not available on version "${versionId}".`);
   return datasource.kind;
 }
