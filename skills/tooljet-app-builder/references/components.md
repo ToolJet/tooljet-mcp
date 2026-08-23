@@ -84,7 +84,10 @@ Read this selectively for exact component binding rules or the built-in palette.
 ## Component binding reference
 
 ### Button
-isDisabled: bind to form validity (`{{components.form1.isValid}}`) or other conditional logic. isVisible: bind to conditional expressions to show/hide contextually. isLoading: bind to `{{queries.queryName.isLoading}}` to reflect query execution state.
+Set the WRITABLE properties `disabledState`, `loadingState`, `visibility` to control the button — NOT `isDisabled`/`isLoading`/`isVisible`, which are READ-ONLY exposed variables (read the live state via `{{components.btn.isLoading}}`; writing them does nothing).
+- `disabledState`: bind to disable conditionally — `{{!components.form1.isValid}}` for form validity, or, on a mutation button, `{{queries.<mutationQuery>.isLoading}}` to prevent double-submit while the query runs (a submit/save/create/update button MUST set this).
+- `loadingState`: bind to `{{queries.<queryName>.isLoading}}` to show the button spinner during execution.
+- `visibility`: bind to a conditional to show/hide contextually.
 
 ### Calendar
 `dateFormat` MUST match all event start/end date strings — mismatch causes events to not render. Default: 'MM-DD-YYYY HH:mm:ss A Z'. Always reformat query dates with moment(): `{{queries.q.data.map(e=>({title:e.title,start:moment(e.start).format('MM-DD-YYYY HH:mm:ss A Z'),end:moment(e.end).format('MM-DD-YYYY HH:mm:ss A Z'),allDay:false}))}}`. selectedSlots.start/.end: pre-fill new-event form on slot click. selectedEvent: read clicked event fields for edit/delete queries.
