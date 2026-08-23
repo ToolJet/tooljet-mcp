@@ -85,11 +85,22 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             continue;
           }
           let parent = update.parent;
-          if (update.slot_name !== undefined) {
+          let slotName = update.slot_name;
+          if (slotName !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
             if (!parent) {
-              errors.push(`Component "${update.component_id}": slot_name requires an existing or explicit parent.`);
-              continue;
+              if (slotName === 'body') {
+                // Root/parentless component has no slots; "body" is the implicit default. Drop the
+                // redundant slot_name and warn instead of erroring (a frequent model mistake that
+                // otherwise triggers identical repair retries).
+                warnings.push(
+                  `Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`
+                );
+                slotName = undefined;
+              } else {
+                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
+                continue;
+              }
             }
           }
           const definition = update.definition as {
@@ -106,9 +117,9 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             styles: { ...(current.styles ?? {}), ...(definition?.styles ?? {}) },
             layouts: current.layouts as Parameters<typeof lintComponentSpec>[0]['layouts'],
             parent: parent !== undefined
-              ? encodeComponentParent(parent, update.slot_name)
+              ? encodeComponentParent(parent, slotName)
               : current.parent,
-            slotName: update.slot_name,
+            slotName: slotName,
           };
           const normalized = normalizeComponentSpec({
             name: next.name ?? current.id,

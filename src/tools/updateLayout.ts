@@ -53,16 +53,28 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         if (missing.length) {
           return fail(new Error(`Components not found on page "${args.page_id}": ${missing.join(', ')}.`));
         }
+        const rootSlotWarnings: string[] = [];
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id)!;
           let parent = layout.parent;
-          if (layout.slot_name !== undefined) {
+          let slot_name = layout.slot_name;
+          if (slot_name !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
             if (!parent) {
-              throw new Error(`Component "${layout.component_id}": slot_name requires an existing or explicit parent.`);
+              if (slot_name === 'body') {
+                // A root/parentless component has no slots; "body" is the implicit default, so
+                // slot_name:"body" here is a redundant no-op. Drop it and warn instead of erroring —
+                // a frequent model mistake that otherwise triggers identical repair retries.
+                rootSlotWarnings.push(
+                  `Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`
+                );
+                slot_name = undefined;
+              } else {
+                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
+              }
             }
           }
-          return { ...layout, parent };
+          return { ...layout, parent, slot_name };
         });
         const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
         const projected = page.components.map((component) => {
@@ -86,6 +98,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         if (slotErrors.length) return fail(new Error(slotErrors.join(' ')));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
         const warnings = [...new Set([
+          ...rootSlotWarnings,
           ...projected
             .filter((component) => component.id && changedIds.has(component.id))
             .flatMap((component) => lintComponentSpec(component).warnings),

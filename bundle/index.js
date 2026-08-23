@@ -33532,6 +33532,7 @@ var TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
 var TABLE_TOOLBAR_HEIGHT_PX = 56;
 var TABLE_FOOTER_HEIGHT_PX = 56;
 var TABLE_BORDER_PX = 2;
+var TABLE_VISIBLE_COLUMN_WARN = 10;
 var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]);
 var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
 var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
@@ -33716,6 +33717,15 @@ function looksDateLikeField(value) {
 }
 function isTruthyBinding(v) {
   return v === true || v === "{{true}}" || v === "true";
+}
+function looksRawFieldHeader(value) {
+  return typeof value === "string" && /^[a-z0-9]+(?:_[a-z0-9]+)+$/.test(value.trim());
+}
+function looksInternalIdField(value) {
+  if (typeof value !== "string")
+    return false;
+  const normalized2 = value.trim().toLowerCase();
+  return /^id$/.test(normalized2) || /_id$/.test(normalized2) || /(?:^|_)uuid$/.test(normalized2);
 }
 function isFalseBinding(v) {
   return v === false || v === "{{false}}" || v === "false";
@@ -34351,6 +34361,14 @@ function lintComponentSpec(spec) {
           }
         }
       });
+      const visibleColumns = columns.map((column) => column).filter((column) => column && column.columnVisibility !== false && column.columnVisibility !== "{{false}}");
+      const rawHeaderColumns = visibleColumns.map((column) => String(column.name ?? column.key ?? "").trim()).filter((header) => header && (looksRawFieldHeader(header) || looksInternalIdField(header)));
+      if (rawHeaderColumns.length) {
+        warnings.push(`Table "${label}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
+      }
+      if (visibleColumns.length > TABLE_VISIBLE_COLUMN_WARN) {
+        warnings.push(`Table "${label}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
+      }
     }
     const legacyActions = propVal(props, "actions");
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
@@ -40284,11 +40302,17 @@ function updateComponentsTool(client) {
             continue;
           }
           let parent = update.parent;
-          if (update.slot_name !== void 0) {
+          let slotName = update.slot_name;
+          if (slotName !== void 0) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
             if (!parent) {
-              errors.push(`Component "${update.component_id}": slot_name requires an existing or explicit parent.`);
-              continue;
+              if (slotName === "body") {
+                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slotName = void 0;
+              } else {
+                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
+                continue;
+              }
             }
           }
           const definition = update.definition;
@@ -40299,8 +40323,8 @@ function updateComponentsTool(client) {
             properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
             styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
             layouts: current.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, update.slot_name) : current.parent,
-            slotName: update.slot_name
+            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
+            slotName
           };
           const normalized2 = normalizeComponentSpec({
             name: next.name ?? current.id,
@@ -40475,16 +40499,23 @@ function updateLayoutTool(client) {
         if (missing.length) {
           return fail(new Error(`Components not found on page "${args.page_id}": ${missing.join(", ")}.`));
         }
+        const rootSlotWarnings = [];
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id);
           let parent = layout.parent;
-          if (layout.slot_name !== void 0) {
+          let slot_name = layout.slot_name;
+          if (slot_name !== void 0) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
             if (!parent) {
-              throw new Error(`Component "${layout.component_id}": slot_name requires an existing or explicit parent.`);
+              if (slot_name === "body") {
+                rootSlotWarnings.push(`Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slot_name = void 0;
+              } else {
+                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
+              }
             }
           }
-          return { ...layout, parent };
+          return { ...layout, parent, slot_name };
         });
         const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
         const projected = page.components.map((component) => {
@@ -40508,6 +40539,7 @@ function updateLayoutTool(client) {
           return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
         const warnings = [.../* @__PURE__ */ new Set([
+          ...rootSlotWarnings,
           ...projected.filter((component) => component.id && changedIds.has(component.id)).flatMap((component) => lintComponentSpec(component).warnings),
           ...lintRenderedGeometry(projected)
         ])];

@@ -113,6 +113,8 @@ const TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
 const TABLE_TOOLBAR_HEIGHT_PX = 56;
 const TABLE_FOOTER_HEIGHT_PX = 56;
 const TABLE_BORDER_PX = 2;
+/** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
+const TABLE_VISIBLE_COLUMN_WARN = 10;
 const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
 /** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
  * primary action above this authored-canvas boundary when it follows an independently scrolling
@@ -334,6 +336,18 @@ function looksDateLikeField(value: unknown): boolean {
 
 function isTruthyBinding(v: unknown): boolean {
   return v === true || v === '{{true}}' || v === 'true';
+}
+
+/** A user-facing column header that is really a raw database field name (snake_case), e.g. "order_date". */
+function looksRawFieldHeader(value: unknown): boolean {
+  return typeof value === 'string' && /^[a-z0-9]+(?:_[a-z0-9]+)+$/.test(value.trim());
+}
+
+/** An internal identifier field usually meaningless to end users, e.g. "id", "row_id", "customer_id". */
+function looksInternalIdField(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const normalized = value.trim().toLowerCase();
+  return /^id$/.test(normalized) || /_id$/.test(normalized) || /(?:^|_)uuid$/.test(normalized);
 }
 
 function isFalseBinding(v: unknown): boolean {
@@ -1218,6 +1232,29 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           }
         }
       });
+      // Semantic quality (warnings only): a user-facing default table should not surface raw database
+      // field names or internal IDs as headers, and shouldn't be wide enough to force horizontal
+      // scrolling. Advisory — the model may keep them deliberately (e.g. an id needed by a row action).
+      const visibleColumns = (columns as unknown[])
+        .map((column) => column as Record<string, unknown> | null)
+        .filter((column) => column && column.columnVisibility !== false && column.columnVisibility !== '{{false}}');
+      const rawHeaderColumns = visibleColumns
+        .map((column) => String((column!.name ?? column!.key) ?? '').trim())
+        .filter((header) => header && (looksRawFieldHeader(header) || looksInternalIdField(header)));
+      if (rawHeaderColumns.length) {
+        warnings.push(
+          `Table "${label}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(', ')} expose raw ` +
+            'database field names or internal IDs as user-facing headers. Give them human-readable `name` labels, ' +
+            'or hide internal IDs with columnVisibility:false.'
+        );
+      }
+      if (visibleColumns.length > TABLE_VISIBLE_COLUMN_WARN) {
+        warnings.push(
+          `Table "${label}": ${visibleColumns.length} visible columns likely overflow the viewport width and force ` +
+            `horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and ` +
+            'hide the rest with columnVisibility:false.'
+        );
+      }
     }
     const legacyActions = propVal(props, 'actions');
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
