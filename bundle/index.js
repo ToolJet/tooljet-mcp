@@ -33526,6 +33526,8 @@ var TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 var NARROW_SIDE_LABEL_COLS = 18;
 var STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
 var STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
+var STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
+var STATISTICS_SAFE_VALUE_FONT_PX = 22;
 var TABLE_REGULAR_ROW_HEIGHT_PX = 46;
 var TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
 var TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
@@ -34184,6 +34186,13 @@ function lintComponentSpec(spec) {
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
       warnings.push(`Statistics "${label}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
+    }
+    const iconName = catalogValue("Statistics", props, "icon");
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal(props, "iconVisibility") !== false && propVal(props, "iconVisibility") !== "{{false}}";
+    const valueFontPx = optionalStaticNumber(catalogValue("Statistics", props, "primaryValueSize"));
+    const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
+    if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
+      errors.push(`Statistics "${label}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
     const primaryLabel = catalogValue("Statistics", props, "primaryValueLabel");
     if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)) {

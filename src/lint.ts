@@ -107,6 +107,12 @@ export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 const NARROW_SIDE_LABEL_COLS = 18;
 const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
 const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
+// A value-only tile with an icon needs more width: the icon sits beside the value, and the value font
+// defaults to ~34px and word-wraps then clips (overflow hidden). Below this, a currency/large number
+// renders as e.g. "$3" unless the value font is shrunk.
+const STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
+// A primaryValueSize at/under this is small enough that a value-only tile fits without the icon squeeze.
+const STATISTICS_SAFE_VALUE_FONT_PX = 22;
 const TABLE_REGULAR_ROW_HEIGHT_PX = 46;
 const TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
 const TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
@@ -923,6 +929,30 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         `Statistics "${label}": desktop width ${width} columns is too narrow; ` +
           `${secondaryHidden ? 'a value-only tile' : 'a tile with visible secondary content'} needs at least ${minimumWidth} columns ` +
           `to keep labels and values readable. ${secondaryHidden ? 'Use no more than three tiles per content row.' : 'Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns.'}`
+      );
+    }
+    // Value clipping (blocking): a value-only tile with an icon and the default large value font clips
+    // multi-digit/currency values in a narrow card (the value renders as e.g. "$3"). Any one of the
+    // three fixes below resolves it, so make it an error rather than another ignored warning.
+    const iconName = catalogValue('Statistics', props, 'icon');
+    const iconVisible =
+      typeof iconName === 'string' && iconName.trim() !== '' &&
+      propVal(props, 'iconVisibility') !== false && propVal(props, 'iconVisibility') !== '{{false}}';
+    const valueFontPx = optionalStaticNumber(catalogValue('Statistics', props, 'primaryValueSize'));
+    const largeValueFont = valueFontPx === undefined || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
+    if (
+      secondaryHidden &&
+      iconVisible &&
+      largeValueFont &&
+      typeof width === 'number' &&
+      width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS
+    ) {
+      errors.push(
+        `Statistics "${label}": a value-only tile with an icon at ${width} columns clips its value — the ` +
+          `default ~34px value font plus the icon leaves too little room, so a currency/large number renders ` +
+          `truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ` +
+          `${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ` +
+          `${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`
       );
     }
     const primaryLabel = catalogValue('Statistics', props, 'primaryValueLabel');
