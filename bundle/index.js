@@ -40907,11 +40907,12 @@ function batchSafeRead(query) {
 function runQueriesTool(client) {
   return {
     name: "run_queries",
-    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
+    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
     inputSchema: {
       query_ids: external_exports.array(external_exports.string()).min(1).max(10),
       version_id: external_exports.string(),
-      environment_id: external_exports.string().optional()
+      environment_id: external_exports.string().optional(),
+      include_data: external_exports.boolean().optional().describe("Default true. Set false to verify execution without returning rows: each result keeps status/message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.")
     },
     async handler(args) {
       try {
@@ -40938,10 +40939,14 @@ function runQueriesTool(client) {
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const recovery = result.status === "failed" ? datasourceRepair : void 0;
+            const shaped = args.include_data === false ? (() => {
+              const { data, ...rest } = result;
+              return Array.isArray(data) ? { ...rest, row_count: data.length } : rest;
+            })() : result;
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
-              ...result,
+              ...shaped,
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {}
             };

@@ -27,13 +27,24 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
       'one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, ' +
       'RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are ' +
       'loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure ' +
-      'does not hide other read results. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.',
+      'does not hide other read results. Pass include_data:false to only confirm each query runs — the ' +
+      'result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. ' +
+      'Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.',
     inputSchema: {
       query_ids: z.array(z.string()).min(1).max(10),
       version_id: z.string(),
       environment_id: z.string().optional(),
+      include_data: z.boolean().optional().describe(
+        'Default true. Set false to verify execution without returning rows: each result keeps status/' +
+          'message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.'
+      ),
     },
-    async handler(args: { query_ids: string[]; version_id: string; environment_id?: string }) {
+    async handler(args: {
+      query_ids: string[];
+      version_id: string;
+      environment_id?: string;
+      include_data?: boolean;
+    }) {
       try {
         if (new Set(args.query_ids).size !== args.query_ids.length) {
           return fail(new Error('run_queries query_ids must be unique.'));
@@ -60,10 +71,20 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const recovery = result.status === 'failed' ? datasourceRepair : undefined;
+            // include_data:false keeps only the run status (+ row_count), dropping the row payload — the
+            // caller just needs to confirm the query executed, and a large data array would bloat/risk the
+            // response for no benefit.
+            const shaped =
+              args.include_data === false
+                ? (() => {
+                    const { data, ...rest } = result as Record<string, unknown>;
+                    return Array.isArray(data) ? { ...rest, row_count: data.length } : rest;
+                  })()
+                : result;
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
-              ...result,
+              ...shaped,
               ...(warnings.length ? { warnings } : {}),
               ...(recovery ? { recovery } : {}),
             };
