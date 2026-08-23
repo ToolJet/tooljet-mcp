@@ -43,7 +43,7 @@ Use `add_table_column` to evolve a ToolJet DB table in place. Destructive delete
 ### ToolJet DB (`kind: "tooljetdb"`)
 - Resolve the table id with `list_tables()` — the query references the table by **`table_id`** (the id), NOT the name.
 - Bounded preview: `options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": { "limit": 25, "offset": 0 }, "runOnPageLoad": true }`. Do not author an automatic unbounded `list_rows`; count first and use the server-side Table recipe when size is unknown or growing.
-- `runOnPageLoad: true` runs the query when the app opens so bound components populate automatically.
+- `runOnPageLoad: true` runs once when the app opens. It does not mean "whenever this page opens." For a non-home/focused page that must refresh on every navigation entry, use `runOnPageLoad:false` plus one page `onPageLoad → run-query` event; never add both lifecycle paths to the same home query.
 - `list_rows` may carry `limit`, `offset`, `where_filters`, and `order_filters`. In `order_filters`, the outer map key must match the clause's inner `id`; a mismatch can silently disable sorting. Fetch `get_datasource_query_schema(..., operation:"list_rows")` for the exact nested shapes instead of guessing.
 - Prefer ToolJet DB aggregation over fetching every row just to count or sum: use `list_rows.aggregates` and optional `list_rows.group_by`. The aggregate configuration key is not the result key; results use `<table_name>_<column>_<aggFx>` (for example `starlink_terminals_id_count`). Multi-table reads use `operation: "join_tables"` with `join_table`.
 - Primary-key batches use `bulk_update_with_primary_key` with `rows_update`, or `bulk_upsert_with_primary_key` with `rows`. Read the generated schema before composing these shapes.

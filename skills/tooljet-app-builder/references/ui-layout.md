@@ -13,6 +13,41 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 
 The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` (or use `type` for one) and request their exact needed sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
 
+## Intent-to-component selection guide
+
+Select by the user's information need, not by the easiest component to bind. The live `get_component_catalog` palette and typed contracts remain authoritative.
+
+- **Headline measure or KPI:** `Statistics`. Bind one scalar aggregate, not a result array.
+- **Trend, distribution, share, ranking, or target comparison:** `Chart`. Shape the data explicitly and keep labels readable.
+- **Dense comparison, sorting, filtering, row selection, inline/bulk operations:** `Table`.
+- **Rich compact browsing of repeated records:** `Listview`; use `mode:"grid"` for a card grid. Do not invent a GridView type.
+- **Single-record facts:** `KeyValuePair` when native editing/changeSet behavior matters; projected `Html` for a polished read-only card.
+- **Chronology:** `Timeline`. **Ordered process:** `Steps`. **User-controlled ordering:** `ReorderableList`.
+- **Workflow board:** `Kanban`. **Calendar/schedule:** `Calendar`. Use them only when those interaction models are actually requested.
+- **Status labels:** `Tags`. **Linear completion:** `ProgressBar`. **Compact gauge:** `CircularProgressBar`.
+- **Large structured payload:** `JSONExplorer`; use `JSONEditor` only when the user must edit it.
+- **Layout/grouping:** `Container`, `FlexContainer`, `Tabs`, `Accordion`, `Form`, and `ModalV2` according to their real semantics—not as decorative wrappers.
+- **Text entry:** `TextInput`, `TextArea`, `RichTextEditor`, `NumberInput`, `CurrencyInput`, `PasswordInput`, `EmailInput`, `PhoneInput`, `CodeEditor`, or `JSONEditor` according to the value being collected.
+- **Selection:** `DropdownV2` for one compact choice; `MultiselectV2` for several; `RadioButtonV2` for a few visible exclusive choices; `Checkbox` for one independent boolean; `ToggleSwitchV2` for an immediate on/off setting. Use `TreeSelect`/`Cascader` only for real hierarchy.
+- **Date/time/range:** `DatePickerV2`, `DatetimePickerV2`, `TimePicker`, or `DaterangePicker`. **Files:** `FilePicker`. **Actions:** `Button`, `Icon`, `Link`, or `ButtonGroupV2`.
+- **Trusted external content:** `IFrame`. **CustomComponent:** only for an explicit advanced requirement with maintainable code and no suitable governed built-in.
+- **Navigation:** prefer ToolJet pages/sidebar; use `Navigation` only when the request needs a custom navigation surface.
+
+Selection rules: do not default every collection to Table; do not render a single record as a one-row Table; a dashboard normally combines a metric band, only the charts that answer real questions, and an operational detail surface. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.
+
+## Page body composition signatures
+
+After the shared title/subtitle frame, give every page a task-specific ordered body. Reusing the same generic stack on every page makes a multi-page app look accidental.
+
+- **Monitor:** status/KPI band → exception signal or trend → prioritized operational detail → one primary response action.
+- **Explore:** compact filters/search → result count/summary → dominant Table/Listview/Chart → drill-down affordance.
+- **Operate:** queue or selected work item → dominant operational surface → one obvious primary action → immediate success/failure feedback.
+- **Inspect:** identity/status header → grouped facts → chronology/related records → contextual secondary actions.
+- **Edit:** short context header → grouped validated fields → visible primary save action → cancel/reset and mutation feedback.
+- **Configure:** section navigation or Tabs → logically grouped settings → scope/permission explanation → save/reset feedback.
+
+Across pages, keep the same visual language but change the body signature to the job. Compare neighboring page plans before building: if two pages have the same sections in the same order, either differentiate their jobs or merge them.
+
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
 ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.
@@ -21,7 +56,9 @@ ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — t
 - `top` and `height` are in **pixels**, snapped to a **10px** vertical grid. A data table is commonly ~300–500px tall.
 - For one rectangle applied to both resolutions, use flat `layout:{top,left,width,height}`. For distinct resolution-specific placement, use `layouts:{desktop:{top,left,width,height},mobile:{top,left,width,height}}`. Do not put `desktop`/`mobile` inside `layout`; an invalid member rejects the entire atomic `add_components` batch.
 - **Stack using rendered height:** `B.top = A.top + A.renderedHeight + gap` (gap ~10–20px). Most widgets—including Text, Button, Html, Chart, Table, and Statistics—render at the authored `height`. ToolJet's top-aligned labelled form-input widgets render at **`height + 20px`**. Standard single-line inputs use their catalog default **40px** authored height, occupy about **60px** with the top label/validation footprint, and need a **70px** top-to-top row step with a 10px gap. Raising the authored height does not absorb the increment or enlarge the value text.
-- A static-height **Text still needs enough internal room for its line box**: minimum single-line height is `ceil(textSize * lineHeight + 6px)`, then round up to the 10px grid. The default line-height is 1.5, so 24px text needs 50px authored height and 32px text needs 60px. The outer widget can be the authored height while its glyphs are clipped inside.
+- **Check sibling overlap on both axes.** Two same-parent rectangles collide only when their horizontal ranges and rendered vertical ranges both intersect. Side-by-side controls need distinct `left` ranges; a +20px top offset aligns an unlabeled Button with top-labelled inputs but does not make two controls with the same `left` side-by-side.
+- A static-height **Text still needs enough internal room for every wrapped line**: minimum single-line height is `ceil(textSize * lineHeight + 6px)`, then round up to the 10px grid. Preserve h1–h6/p/div/li/br block boundaries and estimate roughly four characters per canvas-width column. Multi-block or wrapped text needs its full line count plus one line of safety; use `dynamicHeight` when content is variable. The outer widget can retain its authored height while text clips or visibly overflows into the next component.
+- **Content-fit nested canvases.** For static short/modest content, size to the deepest rendered child: Container base chrome = 20px (a shown header adds `headerHeight + 11`); standalone-child Form = 20px (shown header adds `headerHeight + 10`, footer adds `footerHeight + 14`); Tabs = 82px with its tab strip or 32px when `hideTabs` is true. Compute `max(child.top + child.renderedHeight) + chrome` across every pane/child—not array order. Use intentional fixed scrolling only for genuinely long content, and give side-by-side containers the larger fit height so their bottoms align.
 - The full canvas is 43 columns; how you use that space is a design choice (see Design defaults below) — don't reflexively span edge-to-edge.
 
 ## Design — decide before you build, then apply the visual defaults
@@ -55,6 +92,7 @@ Then hold to these:
 - **Chart widths** (defaults, not hard limits): a compact few-category pie/donut ≈ **13–15 columns**; a categorical bar with longer labels ≈ **20–24 columns**; at most **two** normal analytical charts in one ~39-column content row unless labels are short and readability is verified.
 - **Statistics sizing:** a value-only tile with `hideSecondary:true` needs at least **12 columns** and ≈ **110–120px** height (at most three per content row), but **12–17 columns is safe only for a short one- or two-word label**; longer labels can wrap vertically and hide the value, so shorten them or use at least 18 columns. A tile with visible secondary content needs at least **18 columns** and ≈ **130–150px** height (normally two per row).
 - **Table columns:** when presentation matters, set an **explicit, complete `columns` array** in the order you want and project the Table's `data` expression to new objects containing only visible and behavior-needed keys (for example, `queries.q.data.map(r => ({id:r.id,name:r.name,status:r.status}))`). An identity map (`.map(r => r)`) or object spread (`({...r})`) is **not** a safe projection: undeclared datasource fields can still leak. With `autogenerateColumns` enabled, ToolJet appends undeclared datasource fields after your explicit columns, which commonly exposes technical IDs and internal notes. For a behavior-only key such as `id`, keep it in `data` but declare its column with `columnVisibility:false`; this preserves it for `selectedRow`/actions and prevents autogeneration from showing it. Do not casually disable autogeneration: some ToolJet Table versions crash while generating column transformations when it is false. Do **not** rely on the property order of a transformed query object to reorder existing columns — it won't. Natural header casing is fine: **`headerCasing: "none"` is a valid value**.
+- **Table dynamic/conditional columns:** `columnData` is evaluated once before a row exists, so it must not reference `rowData` or `cellValue`. Put per-cell transformation/editability/visibility/color on static `columns`. Any dynamic `textColor`, `cellBackgroundColor`, `isEditable`, `columnVisibility`, `linkTarget`, or `jsonIndentation` also needs the matching name in `fxActiveFields`. Current types include `datepicker`, `select`, `newMultiSelect`, and `tagsV2`; do not author deprecated `dropdown`, `multiselect`, `tags`, `badge(s)`, `radio`, `toggle`, or `default` column types.
 - **Table row actions:** use a `columnType: "button"` column in the complete `columns` array; do not use deprecated `properties.actions`. Read `get_component_catalog({type:"Table",sections:["authoringHints"]})` for the exact column/button defaults. Wire each button with `source_type:"table_column"`, `trigger:"onClick"`, and `ref:"<column key or name>::<button id>"`. Button property expressions can use `rowData`/`cellValue`; event actions should read `components.<table>.selectedRow` (ToolJet sets it before the handler runs).
 - **Operational viewport:** on an **Operate** page with a bounded Table/Listview, avoid adding a page-level scrollbar on top of the pane's own vertical scrolling. Keep the single primary action inside the initial desktop viewport (as a safe authored-canvas default, its bottom should be around **720px or less**) by shortening the header/pane or moving the action above/beside the pane. Long forms and detail pages may deliberately scroll; browser-verify that choice instead of applying this threshold blindly.
 
