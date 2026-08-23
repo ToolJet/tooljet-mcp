@@ -31,7 +31,7 @@ If an expected source is absent or a query returns a connection failure, explain
 ## Load only the references the phase needs
 
 - `references/workflows.md` — tool selection, plan/apply behavior, repair, reuse, deletion, and silent-failure guardrails.
-- `references/ui-layout.md` — page design, canvas geometry, nested layouts, charts, and visual defaults.
+- `references/ui-layout.md` — page design, theme-aware styling, canvas geometry, nested layouts, charts, and visual defaults.
 - `references/tables.md` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - `references/forms.md` — generated-vs-standalone forms, validation, uploads, and modal geometry.
 - `references/events.md` — component/query/page events, mutation lifecycles, loading, empty, error, and success states.

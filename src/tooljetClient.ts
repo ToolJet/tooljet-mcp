@@ -391,6 +391,9 @@ export interface QuerySummary {
 }
 
 export interface ToolJetClient {
+  /** Internal transport for domain-oriented platform tools. MCP never exposes an arbitrary HTTP tool. */
+  apiRequest(params: PlatformApiRequest): Promise<unknown>;
+  getActiveWorkspaceId(): Promise<string>;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   createApp(name: string): Promise<CreateAppResult>;
@@ -434,6 +437,20 @@ export interface ToolJetClient {
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
+}
+
+export interface PlatformApiRequest {
+  operation: string;
+  path: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  query?: Record<string, string | number | boolean | undefined>;
+  body?: unknown;
+  multipart?: {
+    fieldName: string;
+    filename: string;
+    contentBase64: string;
+    contentType?: string;
+  };
 }
 
 /** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
@@ -567,6 +584,48 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const datasourceManagementUrl = (workspaceSlug: string, datasourceId?: string) =>
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
+
+  async function apiRequest(params: PlatformApiRequest): Promise<unknown> {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(params.query ?? {})) {
+      if (value !== undefined) search.set(key, String(value));
+    }
+    const path = `${params.path}${search.size ? `${params.path.includes('?') ? '&' : '?'}${search}` : ''}`;
+    const headers = new Headers();
+    let body: BodyInit | undefined;
+    if (params.multipart) {
+      const bytes = Buffer.from(params.multipart.contentBase64, 'base64');
+      const form = new FormData();
+      form.append(
+        params.multipart.fieldName,
+        new Blob([bytes], { type: params.multipart.contentType ?? 'application/octet-stream' }),
+        params.multipart.filename
+      );
+      body = form;
+    } else if (params.body !== undefined) {
+      headers.set('Content-Type', 'application/json');
+      body = JSON.stringify(params.body);
+    }
+    const res = await auth.authedFetch(path, {
+      method: params.method ?? 'GET',
+      ...(params.body !== undefined && !params.multipart ? { headers } : {}),
+      ...(body !== undefined ? { body } : {}),
+    });
+    await assertOk(res, params.operation);
+    if (res.status === 204) return { success: true };
+    const text = await res.text();
+    if (!text) return { success: true };
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  async function getActiveWorkspaceId(): Promise<string> {
+    return auth.getOrganizationId();
+  }
+
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
@@ -1772,6 +1831,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    apiRequest,
+    getActiveWorkspaceId,
     listWorkspaces,
     useWorkspace,
     createApp,

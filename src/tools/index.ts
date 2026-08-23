@@ -58,6 +58,9 @@ import {
   type RuntimeFreshnessMonitor,
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
+import { platformCoreTools } from './platformCore.js';
+import { platformDataTools } from './platformData.js';
+import { platformWorkflowOpsTools } from './platformWorkflowOps.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -127,6 +130,9 @@ export function registerTools(
     listEventsTool(client),
     updateEventsTool(client),
     deleteEventTool(client),
+    ...platformCoreTools(client),
+    ...platformDataTools(client),
+    ...platformWorkflowOpsTools(client),
   ];
 
   const exposedTools = includeLegacySingularCreateTools()

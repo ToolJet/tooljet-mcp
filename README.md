@@ -129,6 +129,13 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
 
+Builder-oriented platform actions for theme libraries, app lifecycle/navigation, versions/environments, scoped
+permissions, datasource/query management, ToolJet Database, constants, workflows, modules, templates, and custom
+styles are documented in [`docs/platform-api-tools.md`](docs/platform-api-tools.md). These tools use fixed
+action-to-route maps; MCP does not expose an arbitrary authenticated HTTP request. Workspace/instance administration,
+identity, billing, branding/SSO, plugin administration, Git sync, audit, and ToolJet AI administration are not part of
+this expansion.
+
 ## Development
 
 ```bash

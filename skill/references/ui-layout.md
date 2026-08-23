@@ -48,6 +48,65 @@ After the shared title/subtitle frame, give every page a task-specific ordered b
 
 Across pages, keep the same visual language but change the body signature to the job. Compare neighboring page plans before building: if two pages have the same sections in the same order, either differentiate their jobs or merge them.
 
+## Theme-aware styling
+
+Themes are optional. Do not create a custom theme, change the workspace default, or force a theme merely to polish an app. For an existing app, read `get_app_settings({app_id,version_id})` before styling. If it reports a selected theme, treat that theme as the app's visual foundation; when the user asks to select another existing theme, resolve it with `list_app_themes()` and apply only its id with `update_app_settings(...,theme_id)`.
+
+### Theme definition contract
+
+`manage_theme` creates or replaces a complete definition with five groups. Theme definitions store **literal light/dark color values** (normally hex), not `var(--cc-...)` references:
+
+```json
+{
+  "brand": { "colors": {
+    "primary": { "light": "#4368E3", "dark": "#4A6DD9" },
+    "secondary": { "light": "#6A727C", "dark": "#CFD3D8" },
+    "tertiary": { "light": "#1E823B", "dark": "#318344" }
+  }},
+  "text": {
+    "font": "IBM Plex Sans",
+    "colors": {
+      "primary": { "light": "#1B1F24", "dark": "#CFD3D8" },
+      "placeholder": { "light": "#6A727C", "dark": "#858C94" }
+    }
+  },
+  "border": {
+    "radius": { "default": 6, "small": 0, "large": 0 },
+    "colors": {
+      "default": { "light": "#CCD1D5", "dark": "#3C434B" },
+      "weak": { "light": "#E4E7EB", "dark": "#2B3036" }
+    }
+  },
+  "systemStatus": { "colors": {
+    "success": { "light": "#1E823B", "dark": "#318344" },
+    "error": { "light": "#D72D39", "dark": "#D03F43" },
+    "warning": { "light": "#BF4F03", "dark": "#BA5722" }
+  }},
+  "surface": { "colors": {
+    "appBackground": { "light": "#F6F6F6", "dark": "#121518" },
+    "surface1": { "light": "#FFFFFF", "dark": "#1E2226" },
+    "surface2": { "light": "#F6F8FA", "dark": "#2B3036" },
+    "surface3": { "light": "#E4E7EB", "dark": "#3C434B" }
+  }}
+}
+```
+
+Creating a theme does not select it for the app. Create it only when requested, then apply its returned id with `update_app_settings`. Updating a definition replaces the definition, so start from the existing complete definition and change only the intended leaves. Do not set a workspace theme as default unless the user explicitly approves that workspace-wide change.
+
+### Component style tokens
+
+ToolJet turns the selected theme's active light/dark colors into semantic CSS variables. Preserve a component's existing token-backed defaults; when an explicit color style is needed and the role matches, use these exact raw style values:
+
+- brand: `var(--cc-primary-brand)`, `var(--cc-secondary-brand)`, `var(--cc-tertiary-brand)`
+- text/icon: `var(--cc-primary-text)`, `var(--cc-placeholder-text)`, `var(--cc-default-icon)`
+- border: `var(--cc-default-border)`, `var(--cc-weak-border)`
+- status: `var(--cc-success-systemStatus)`, `var(--cc-error-systemStatus)`, `var(--cc-warning-systemStatus)`
+- surfaces: `var(--cc-appBackground-surface)`, `var(--cc-surface1-surface)`, `var(--cc-surface2-surface)`, `var(--cc-surface3-surface)`
+
+Do not invent a `--cc-` name. In an MCP component spec, put a static token directly in the top-level style wrapper—for example `styles.backgroundColor.value = "var(--cc-surface1-surface)"`—not inside `{{...}}`. Use a binding expression only when the style is genuinely conditional.
+
+Tokens are a preference, not a prohibition on literal colors. A deliberate one-off accent, data-series color, illustration color, or contrast correction may use a hex/RGB value when it produces the better result or no semantic token fits. Repeated foundational roles—brand actions, page/surface backgrounds, primary text, standard borders, and success/error/warning states—should remain token-backed when a theme is selected, because hard-coded component colors will not change with the theme or light/dark mode. Verify contrast in both modes whenever a token is placed on a non-token or custom background.
+
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
 ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.
