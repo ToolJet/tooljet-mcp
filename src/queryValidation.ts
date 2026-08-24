@@ -355,6 +355,50 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && (operation === 'update_rows' || operation === 'delete_rows')) {
+    // The FILTER half of the same hazard, and far more dangerous than the column half.
+    // buildPostgrestQuery only emits a clause when BOTH `column` and `operator` are non-empty
+    // (tooljet-db-data-operations.service.ts), silently dropping anything else. If every clause is
+    // dropped the query string is empty — and update_rows then issues an UNFILTERED PATCH that
+    // rewrites EVERY ROW in the table while reporting status:ok. Catch it before it is ever written.
+    const filtersPath = `${operation}.where_filters`;
+    const filters = valueAtPath(options, filtersPath);
+    if (isObject(filters)) {
+      const usable = Object.entries(filters).filter(
+        ([, clause]) =>
+          isObject(clause) &&
+          typeof clause.column === 'string' &&
+          clause.column !== '' &&
+          typeof clause.operator === 'string' &&
+          clause.operator !== ''
+      );
+      if (usable.length === 0) {
+        const example = Object.keys(filters)[0];
+        errors.push({
+          code: 'malformed_where_filters',
+          path: filtersPath,
+          message:
+            `ToolJet DB ${operation} "${filtersPath}" has no usable clause: every entry must be a ` +
+            `{column, operator, value} record (for example {"0": {"column": "id", "operator": "eq", ` +
+            `"value": "{{components.table1.selectedRow.id}}"}}). ToolJet silently drops any clause ` +
+            `missing column or operator` +
+            (operation === 'update_rows'
+              ? ', and an update with no surviving clause updates EVERY ROW in the table.'
+              : '.') +
+            (example ? ` Entry "${example}" is not in that shape.` : ''),
+        });
+      }
+    } else if (filters === undefined && operation === 'update_rows') {
+      errors.push({
+        code: 'malformed_where_filters',
+        path: filtersPath,
+        message:
+          `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and ` +
+          'updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.',
+      });
+    }
+  }
+
   if (kind === 'tooljetdb' && operation === 'list_rows') {
     const orderFilters = valueAtPath(options, 'list_rows.order_filters');
     if (isObject(orderFilters)) {

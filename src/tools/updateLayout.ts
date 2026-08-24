@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponentSlots, lintComponentSpec, lintRenderedGeometry, type LintComponent } from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { resolveRef } from '../refResolution.js';
 
 const rect = z.object({ top: z.number(), left: z.number(), width: z.number(), height: z.number() });
 
@@ -47,12 +48,30 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (!page) return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
         const components = new Map(page.components.map((component) => [component.id, component]));
-        const missing = args.layouts
-          .filter((layout) => !page.components.some((component) => component.id === layout.component_id))
-          .map((layout) => layout.component_id);
-        if (missing.length) {
-          return fail(new Error(`Components not found on page "${args.page_id}": ${missing.join(', ')}.`));
+        // Accept a component NAME as component_id — the same slip that made update_components loop
+        // forever on a false "does not exist". Resolved ids are substituted below so the write is
+        // unaffected. See src/refResolution.ts for why this matters.
+        const layoutWarnings: string[] = [];
+        const resolveErrors: string[] = [];
+        const resolvedIds = new Map<string, string>();
+        for (const layout of args.layouts) {
+          if (resolvedIds.has(layout.component_id)) continue;
+          const resolution = resolveRef(page.components, layout.component_id, 'Component', `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            resolveErrors.push(resolution.error);
+            continue;
+          }
+          resolvedIds.set(layout.component_id, resolution.target.id);
+          if (resolution.warning) layoutWarnings.push(resolution.warning);
         }
+        if (resolveErrors.length) return fail(new Error(resolveErrors.join(' ')));
+        args = {
+          ...args,
+          layouts: args.layouts.map((layout) => ({
+            ...layout,
+            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id,
+          })),
+        };
         const rootSlotWarnings: string[] = [];
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id)!;
@@ -98,6 +117,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         if (slotErrors.length) return fail(new Error(slotErrors.join(' ')));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
         const warnings = [...new Set([
+          ...layoutWarnings,
           ...rootSlotWarnings,
           ...projected
             .filter((component) => component.id && changedIds.has(component.id))

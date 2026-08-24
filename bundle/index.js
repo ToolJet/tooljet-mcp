@@ -3082,7 +3082,7 @@ var require_compile = __commonJS({
       }
     }
     exports.compileSchema = compileSchema;
-    function resolveRef3(root, baseId, ref) {
+    function resolveRef4(root, baseId, ref) {
       var _a3;
       ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, ref);
       const schOrFunc = root.refs[ref];
@@ -3099,7 +3099,7 @@ var require_compile = __commonJS({
         return;
       return root.refs[ref] = inlineOrCompile.call(this, _sch);
     }
-    exports.resolveRef = resolveRef3;
+    exports.resolveRef = resolveRef4;
     function inlineOrCompile(sch) {
       if ((0, resolve_1.inlineRef)(sch.schema, this.opts.inlineRefs))
         return sch.schema;
@@ -38538,6 +38538,27 @@ function validateQueryOptions(kind, options2) {
       }
     }
   }
+  if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
+    const filtersPath = `${operation}.where_filters`;
+    const filters = valueAtPath(options2, filtersPath);
+    if (isObject2(filters)) {
+      const usable = Object.entries(filters).filter(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
+      if (usable.length === 0) {
+        const example = Object.keys(filters)[0];
+        errors.push({
+          code: "malformed_where_filters",
+          path: filtersPath,
+          message: `ToolJet DB ${operation} "${filtersPath}" has no usable clause: every entry must be a {column, operator, value} record (for example {"0": {"column": "id", "operator": "eq", "value": "{{components.table1.selectedRow.id}}"}}). ToolJet silently drops any clause missing column or operator` + (operation === "update_rows" ? ", and an update with no surviving clause updates EVERY ROW in the table." : ".") + (example ? ` Entry "${example}" is not in that shape.` : "")
+        });
+      }
+    } else if (filters === void 0 && operation === "update_rows") {
+      errors.push({
+        code: "malformed_where_filters",
+        path: filtersPath,
+        message: `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.`
+      });
+    }
+  }
   if (kind === "tooljetdb" && operation === "list_rows") {
     const orderFilters = valueAtPath(options2, "list_rows.order_filters");
     if (isObject2(orderFilters)) {
@@ -40547,6 +40568,34 @@ function addComponentBatchesTool(client) {
   };
 }
 
+// dist/refResolution.js
+function resolveRef3(candidates, ref, kind, scope, describe3 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1) {
+    return {
+      ok: true,
+      target: byName[0],
+      warning: `${kind} "${ref}" was matched by name to id "${byName[0].id}". Pass the id (from get_app_summary) to avoid ambiguity.`
+    };
+  }
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe3).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
+
 // dist/tools/updateComponents.js
 var updateSchema2 = external_exports.object({
   component_id: external_exports.string(),
@@ -40584,23 +40633,15 @@ function updateComponentsTool(client) {
         const errors = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
-          let current = components.get(update.component_id);
-          let componentId = update.component_id;
-          if (!current) {
-            const byName = page.components.filter((component) => component.name === update.component_id);
-            if (byName.length === 1) {
-              current = byName[0];
-              componentId = byName[0].id;
-              warnings.push(`Component "${update.component_id}" was matched by name to id "${componentId}". component_id expects the id; pass ids from get_app_summary to avoid ambiguity.`);
-            } else if (byName.length > 1) {
-              errors.push(`Component name "${update.component_id}" is ambiguous on page "${args.page_id}" (${byName.length} components share it). Pass the component id instead: ${byName.map((component) => component.id).join(", ")}.`);
-              continue;
-            } else {
-              const available = page.components.map((component) => `${component.name ?? "(unnamed)"}=${component.id}`).join(", ");
-              errors.push(`No component with id or name "${update.component_id}" on page "${args.page_id}". Do not re-read the page \u2014 it currently holds: ${available || "(no components)"}.`);
-              continue;
-            }
+          const resolution = resolveRef3(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            errors.push(resolution.error);
+            continue;
           }
+          if (resolution.warning)
+            warnings.push(resolution.warning);
+          const current = resolution.target;
+          const componentId = current.id;
           if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
             errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
             continue;
@@ -40799,10 +40840,30 @@ function updateLayoutTool(client) {
         if (!page)
           return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
         const components = new Map(page.components.map((component) => [component.id, component]));
-        const missing = args.layouts.filter((layout) => !page.components.some((component) => component.id === layout.component_id)).map((layout) => layout.component_id);
-        if (missing.length) {
-          return fail(new Error(`Components not found on page "${args.page_id}": ${missing.join(", ")}.`));
+        const layoutWarnings = [];
+        const resolveErrors = [];
+        const resolvedIds = /* @__PURE__ */ new Map();
+        for (const layout of args.layouts) {
+          if (resolvedIds.has(layout.component_id))
+            continue;
+          const resolution = resolveRef3(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            resolveErrors.push(resolution.error);
+            continue;
+          }
+          resolvedIds.set(layout.component_id, resolution.target.id);
+          if (resolution.warning)
+            layoutWarnings.push(resolution.warning);
         }
+        if (resolveErrors.length)
+          return fail(new Error(resolveErrors.join(" ")));
+        args = {
+          ...args,
+          layouts: args.layouts.map((layout) => ({
+            ...layout,
+            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id
+          }))
+        };
         const rootSlotWarnings = [];
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id);
@@ -40843,6 +40904,7 @@ function updateLayoutTool(client) {
           return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
         const warnings = [.../* @__PURE__ */ new Set([
+          ...layoutWarnings,
           ...rootSlotWarnings,
           ...projected.filter((component) => component.id && changedIds.has(component.id)).flatMap((component) => lintComponentSpec(component).warnings),
           ...lintRenderedGeometry(projected)

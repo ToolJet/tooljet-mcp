@@ -279,3 +279,68 @@ describe('tooljetdb write column maps', () => {
     expect(normalizeQueryOptions('tooljetdb', options)).toBe(options);
   });
 });
+
+describe('tooljetdb write filters (mass-update guard)', () => {
+  // Regression: buildPostgrestQuery silently drops any clause missing column/operator. If every
+  // clause is dropped, updateRows issues an UNFILTERED PATCH that rewrites EVERY ROW and returns
+  // status:ok. deleteRows always refused this; update_rows did not.
+  it('rejects a flat where_filters map on update_rows', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: {
+        columns: { 0: { column: 'status', value: 'Approved' } },
+        where_filters: { id: '{{components.table1.selectedRow.id}}' },
+      },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_where_filters' })])
+    );
+    expect(result.errors.find((e) => e.code === 'malformed_where_filters')!.message).toContain('EVERY ROW');
+  });
+
+  it('rejects a clause missing the operator (assuming an eq default)', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: { columns: { 0: { column: 'status', value: 'x' } }, where_filters: { 0: { column: 'id', value: 28 } } },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_where_filters' })])
+    );
+  });
+
+  it('rejects update_rows with where_filters omitted entirely', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: { columns: { 0: { column: 'status', value: 'x' } } },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_where_filters' })])
+    );
+  });
+
+  it('accepts a well-formed {column, operator, value} filter', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: {
+        columns: { 0: { column: 'status', value: 'Approved' } },
+        where_filters: { 0: { column: 'id', operator: 'eq', value: 28 } },
+      },
+    });
+    expect(result.errors.filter((e) => e.code === 'malformed_where_filters')).toEqual([]);
+  });
+
+  it('applies the same guard to delete_rows', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'delete_rows',
+      table_id: 't1',
+      delete_rows: { where_filters: { id: 5 } },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_where_filters' })])
+    );
+  });
+});
