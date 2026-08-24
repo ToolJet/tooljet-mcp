@@ -39,6 +39,22 @@ export interface CreateAppThemeParams {
   isDefault?: boolean;
 }
 
+export type AppPermissionResourceType = 'page' | 'query' | 'component';
+export type AppPermissionAccessType = 'users' | 'groups';
+
+export interface AppPermissionSubjects {
+  users: Array<{ id: string; name?: string; email?: string }>;
+  groups: Array<{ id: string; name?: string; count?: number }>;
+}
+
+export interface SetAppPermissionParams {
+  appId: string;
+  resourceType: AppPermissionResourceType;
+  resourceId: string;
+  accessType: AppPermissionAccessType;
+  subjectIds: string[];
+}
+
 export type InstanceUserStatus = 'active' | 'archived' | 'invited';
 export type WorkspaceUserRole = 'admin' | 'builder' | 'end-user';
 
@@ -466,6 +482,18 @@ export interface ToolJetClient {
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
+  listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
+  getAppPermission(
+    appId: string,
+    resourceType: AppPermissionResourceType,
+    resourceId: string
+  ): Promise<Array<Record<string, unknown>>>;
+  setAppPermission(params: SetAppPermissionParams): Promise<Array<Record<string, unknown>>>;
+  clearAppPermission(
+    appId: string,
+    resourceType: AppPermissionResourceType,
+    resourceId: string
+  ): Promise<void>;
   getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot>;
   listAppThemes(): Promise<AppTheme[]>;
   createAppTheme(params: CreateAppThemeParams): Promise<AppTheme>;
@@ -843,6 +871,88 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
     return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
+  }
+
+  function appPermissionPath(
+    appId: string,
+    resourceType: AppPermissionResourceType,
+    resourceId: string
+  ): string {
+    const segment =
+      resourceType === 'page' ? 'pages' : resourceType === 'query' ? 'queries' : 'components';
+    return `/api/app-permissions/${encodeURIComponent(appId)}/${segment}/${encodeURIComponent(resourceId)}`;
+  }
+
+  async function listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects> {
+    const app = encodeURIComponent(appId);
+    const [usersResponse, groupsResponse] = await Promise.all([
+      auth.authedFetch(`/api/app-permissions/${app}/pages/users`),
+      auth.authedFetch(`/api/app-permissions/${app}/pages/user-groups`),
+    ]);
+    await assertOk(usersResponse, 'listAppPermissionSubjects users');
+    await assertOk(groupsResponse, 'listAppPermissionSubjects groups');
+    const users = await usersResponse.json();
+    const groups = await groupsResponse.json();
+    if (!Array.isArray(users) || !Array.isArray(groups)) {
+      throw new Error('ToolJet listAppPermissionSubjects failed: expected array responses.');
+    }
+    return {
+      users: users.map((user: any) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
+        email: user.email,
+      })),
+      groups: groups.map((group: any) => ({
+        id: group.id,
+        name: group.name,
+        ...(typeof group.count === 'number' ? { count: group.count } : {}),
+      })),
+    };
+  }
+
+  async function getAppPermission(
+    appId: string,
+    resourceType: AppPermissionResourceType,
+    resourceId: string
+  ): Promise<Array<Record<string, unknown>>> {
+    const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId));
+    await assertOk(res, 'getAppPermission');
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error('ToolJet getAppPermission failed: expected an array response.');
+    }
+    return body as Array<Record<string, unknown>>;
+  }
+
+  async function setAppPermission(
+    params: SetAppPermissionParams
+  ): Promise<Array<Record<string, unknown>>> {
+    const path = appPermissionPath(params.appId, params.resourceType, params.resourceId);
+    const existing = await getAppPermission(params.appId, params.resourceType, params.resourceId);
+    const body =
+      params.accessType === 'users'
+        ? { type: 'SINGLE', users: params.subjectIds }
+        : { type: 'GROUP', groups: params.subjectIds };
+    const res = await auth.authedFetch(path, {
+      method: existing.length ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    await assertOk(res, 'setAppPermission');
+    return getAppPermission(params.appId, params.resourceType, params.resourceId);
+  }
+
+  async function clearAppPermission(
+    appId: string,
+    resourceType: AppPermissionResourceType,
+    resourceId: string
+  ): Promise<void> {
+    const existing = await getAppPermission(appId, resourceType, resourceId);
+    if (!existing.length) return;
+    const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId), {
+      method: 'DELETE',
+    });
+    await assertOk(res, 'clearAppPermission');
   }
 
   async function getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot> {
@@ -2027,6 +2137,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     renameApp,
     getApp,
     getAppSummary,
+    listAppPermissionSubjects,
+    getAppPermission,
+    setAppPermission,
+    clearAppPermission,
     getAppSettings,
     listAppThemes,
     createAppTheme,

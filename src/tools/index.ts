@@ -64,6 +64,7 @@ import {
   manageUserAccessTool,
   manageUsersTool,
 } from './userManagement.js';
+import { manageAppPermissionsTool } from './manageAppPermissions.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -90,6 +91,7 @@ export function registerTools(
     listWorkspaceAppsTool(client),
     manageUsersTool(client),
     manageUserAccessTool(client),
+    manageAppPermissionsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),

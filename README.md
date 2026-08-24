@@ -120,6 +120,7 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `list_workspace_apps(workspace_id)` | List the apps and versions in one workspace through ToolJet's external API |
 | `manage_users(...)` | List/get users, create or invite a user, and update profile/status fields; archiving is confirmed |
 | `manage_user_access(...)` | Confirmed workspace-role, membership-status, and existing custom-group assignments; supports full membership replacement when explicitly requested |
+| `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |
