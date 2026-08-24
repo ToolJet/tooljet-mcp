@@ -37542,6 +37542,34 @@ function getComponentTool(client) {
   };
 }
 
+// dist/refResolution.js
+function resolveRef2(candidates, ref, kind, scope, describe3 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1) {
+    return {
+      ok: true,
+      target: byName[0],
+      warning: `${kind} "${ref}" was matched by name to id "${byName[0].id}". Pass the id (from get_app_summary) to avoid ambiguity.`
+    };
+  }
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe3).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
+
 // dist/eventValidation.js
 var ACTION_IDS = /* @__PURE__ */ new Set([
   "run-query",
@@ -37601,10 +37629,15 @@ function validateTableColumnRef(source2, ref) {
 var MUTATION_OPERATIONS = /* @__PURE__ */ new Set([
   "create_row",
   "update_row",
+  "update_rows",
+  "upsert_rows",
+  "delete_row",
   "delete_rows",
   "bulk_insert",
   "bulk_update_pkey",
-  "bulk_upsert_pkey"
+  "bulk_upsert_pkey",
+  "bulk_update_with_primary_key",
+  "bulk_upsert_with_primary_key"
 ]);
 function isMutationQuery(query) {
   const options2 = query.options ?? {};
@@ -37671,9 +37704,19 @@ function validateEvents(summary, events, options2 = {}) {
       return;
     }
     if (actionId === "run-query") {
-      const queryId = event.action.queryId;
+      let queryId = event.action.queryId;
+      if (typeof queryId === "string" && !queries.has(queryId)) {
+        const resolution = resolveRef2(summary.queries, queryId, "Query", "in this app");
+        if (resolution.ok) {
+          if (resolution.warning)
+            warnings.push(`${label}: ${resolution.warning}`);
+          queryId = resolution.target.id;
+          event.action.queryId = queryId;
+        }
+      }
       if (typeof queryId !== "string" || !queries.has(queryId)) {
-        errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
+        const available = summary.queries.map((q) => `${q.name ?? "(unnamed)"}=${q.id}`).join(", ");
+        errors.push(`${label}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
       } else if (event.sourceType === "component" && event.trigger === "onClick") {
         const source2 = components.get(event.sourceId);
         const query = queryById.get(queryId);
@@ -38538,6 +38581,19 @@ function validateQueryOptions(kind, options2) {
       }
     }
   }
+  if (kind !== "tooljetdb" && operation === "create_row" && isObject2(valueAtPath(options2, "create_row"))) {
+    const createRow = valueAtPath(options2, "create_row");
+    const columns = createRow.columns;
+    const usable = isObject2(columns) && Object.values(columns).some((clause) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "");
+    if (!usable) {
+      const misplaced = !isObject2(columns) && Object.values(createRow).some((clause) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "");
+      errors.push({
+        code: "malformed_write_columns",
+        path: "create_row.columns",
+        message: misplaced ? `${kind} create_row expects the column map under "create_row.columns", not directly on "create_row" (that is the ToolJet DB shape). As authored no column is read, and the driver falls back to INSERT ... DEFAULT VALUES \u2014 inserting a BLANK ROW that reports success.` : `${kind} create_row requires "create_row.columns" as {"0": {"column": "<name>", "value": <v>}, \u2026}. With no usable column entry the driver emits INSERT ... DEFAULT VALUES, inserting a BLANK ROW and reporting success.`
+      });
+    }
+  }
   if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
     const filtersPath = `${operation}.where_filters`;
     const filters = valueAtPath(options2, filtersPath);
@@ -39331,7 +39387,7 @@ function lintPlannedApp(spec, existingSummary) {
         queryId: source2.id,
         refreshQueryIds: resolveRefs(lifecycle.refreshQueryRefs, queryRefs, errors, `Lifecycle[${index}] refresh query`),
         clearComponentIds: resolveRefs(lifecycle.clearComponentRefs, componentRefs, errors, `Lifecycle[${index}] clear component`),
-        closeModalId: resolveRef2(lifecycle.closeModalRef, componentRefs, errors, `Lifecycle[${index}] modal`),
+        closeModalId: resolveRef3(lifecycle.closeModalRef, componentRefs, errors, `Lifecycle[${index}] modal`),
         successAlert: lifecycle.successAlert,
         failureAlert: lifecycle.failureAlert,
         successActions: lifecycle.successActions?.map((action, actionIndex) => resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] success action[${actionIndex}]`)),
@@ -39450,7 +39506,7 @@ function resolveRefs(refs2, map2, errors, label) {
     return [value.id];
   });
 }
-function resolveRef2(ref, map2, errors, label) {
+function resolveRef3(ref, map2, errors, label) {
   if (!ref)
     return void 0;
   const value = map2.get(ref);
@@ -40568,34 +40624,6 @@ function addComponentBatchesTool(client) {
   };
 }
 
-// dist/refResolution.js
-function resolveRef3(candidates, ref, kind, scope, describe3 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1) {
-    return {
-      ok: true,
-      target: byName[0],
-      warning: `${kind} "${ref}" was matched by name to id "${byName[0].id}". Pass the id (from get_app_summary) to avoid ambiguity.`
-    };
-  }
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe3).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
-}
-
 // dist/tools/updateComponents.js
 var updateSchema2 = external_exports.object({
   component_id: external_exports.string(),
@@ -40633,7 +40661,7 @@ function updateComponentsTool(client) {
         const errors = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
-          const resolution = resolveRef3(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
+          const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
           if (!resolution.ok) {
             errors.push(resolution.error);
             continue;
@@ -40846,7 +40874,7 @@ function updateLayoutTool(client) {
         for (const layout of args.layouts) {
           if (resolvedIds.has(layout.component_id))
             continue;
-          const resolution = resolveRef3(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
+          const resolution = resolveRef2(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
           if (!resolution.ok) {
             resolveErrors.push(resolution.error);
             continue;

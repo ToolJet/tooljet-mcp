@@ -344,3 +344,44 @@ describe('tooljetdb write filters (mass-update guard)', () => {
     );
   });
 });
+
+describe('SQL create_row blank-row guard', () => {
+  // Regression: the shared SQL builder skips entries without a usable `column` and, if none survive,
+  // emits `INSERT INTO <table> DEFAULT VALUES` — a BLANK ROW inserted with status ok.
+  it('rejects the ToolJet DB shape carried across to a SQL datasource', () => {
+    const result = validateQueryOptions('postgresql', {
+      operation: 'create_row',
+      create_row: { 0: { column: 'title', value: 'x' } }, // belongs under create_row.columns
+    });
+    const err = result.errors.find((e) => e.code === 'malformed_write_columns');
+    expect(err).toBeTruthy();
+    expect(err!.message).toContain('BLANK ROW');
+  });
+
+  it('rejects a flat SQL create_row.columns map', () => {
+    const result = validateQueryOptions('postgresql', {
+      operation: 'create_row',
+      create_row: { columns: { title: 'x' } },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_write_columns' })])
+    );
+  });
+
+  it('accepts the correct SQL shape', () => {
+    const result = validateQueryOptions('postgresql', {
+      operation: 'create_row',
+      create_row: { columns: { 0: { column: 'title', value: 'x' } } },
+    });
+    expect(result.errors.filter((e) => e.code === 'malformed_write_columns')).toEqual([]);
+  });
+
+  it('does not fire on ToolJet DB, which legitimately puts the map at create_row', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'create_row',
+      table_id: 't1',
+      create_row: { 0: { column: 'title', value: 'x' } },
+    });
+    expect(result.errors.filter((e) => e.code === 'malformed_write_columns')).toEqual([]);
+  });
+});

@@ -355,6 +355,40 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind !== 'tooljetdb' && operation === 'create_row' && isObject(valueAtPath(options, 'create_row'))) {
+    // SQL plugins nest the map one level deeper than ToolJet DB: `create_row.columns`, not `create_row`.
+    // The shared builder skips any entry without a usable `column` and, if NOTHING survives, emits
+    // `INSERT INTO <table> DEFAULT VALUES` (plugins/packages/common/lib/queryBuilder.ts) — which
+    // succeeds on any all-nullable table and inserts a BLANK ROW with status ok. Carrying the ToolJet DB
+    // shape across (map placed at create_row) is the natural mistake and produces exactly that.
+    const createRow = valueAtPath(options, 'create_row') as Record<string, unknown>;
+    const columns = createRow.columns;
+    const usable =
+      isObject(columns) &&
+      Object.values(columns).some(
+        (clause) => isObject(clause) && typeof clause.column === 'string' && clause.column !== ''
+      );
+    if (!usable) {
+      const misplaced =
+        !isObject(columns) &&
+        Object.values(createRow).some(
+          (clause) => isObject(clause) && typeof clause.column === 'string' && clause.column !== ''
+        );
+      errors.push({
+        code: 'malformed_write_columns',
+        path: 'create_row.columns',
+        message:
+          misplaced
+            ? `${kind} create_row expects the column map under "create_row.columns", not directly on ` +
+              '"create_row" (that is the ToolJet DB shape). As authored no column is read, and the driver ' +
+              'falls back to INSERT ... DEFAULT VALUES — inserting a BLANK ROW that reports success.'
+            : `${kind} create_row requires "create_row.columns" as {"0": {"column": "<name>", "value": <v>}, …}. ` +
+              'With no usable column entry the driver emits INSERT ... DEFAULT VALUES, inserting a BLANK ROW ' +
+              'and reporting success.',
+      });
+    }
+  }
+
   if (kind === 'tooljetdb' && (operation === 'update_rows' || operation === 'delete_rows')) {
     // The FILTER half of the same hazard, and far more dangerous than the column half.
     // buildPostgrestQuery only emits a clause when BOTH `column` and `operator` are non-empty

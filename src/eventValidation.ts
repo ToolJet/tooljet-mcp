@@ -1,4 +1,5 @@
 import { getComponentSchema } from './catalog.js';
+import { resolveRef } from './refResolution.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 
 export interface EventValidationResult {
@@ -67,8 +68,24 @@ function validateTableColumnRef(
   return undefined;
 }
 
+// GUI write operations, keyed by the operation ids ToolJet actually ships (data/datasource-schemas.json).
+// Names differ per datasource kind, so this is deliberately a UNION: 'update_row' and the '*_pkey' forms
+// are real SQL-plugin ops, while ToolJet DB uses 'update_rows' and the '*_with_primary_key' forms.
+// 'update_rows' was missing, so the single most common write — an Approve/Save button on ToolJet DB —
+// was invisible to every mutation-aware check here, including the double-submit guard.
+// Over-inclusion is safe (an extra advisory warning); omission silently drops the guard.
 const MUTATION_OPERATIONS = new Set([
-  'create_row', 'update_row', 'delete_rows', 'bulk_insert', 'bulk_update_pkey', 'bulk_upsert_pkey',
+  'create_row',
+  'update_row',
+  'update_rows',
+  'upsert_rows',
+  'delete_row',
+  'delete_rows',
+  'bulk_insert',
+  'bulk_update_pkey',
+  'bulk_upsert_pkey',
+  'bulk_update_with_primary_key',
+  'bulk_upsert_with_primary_key',
 ]);
 
 /** A query that writes data (GUI mutation op, or a SQL statement that begins with a write keyword). */
@@ -151,9 +168,27 @@ export function validateEvents(
       return;
     }
     if (actionId === 'run-query') {
-      const queryId = event.action.queryId;
+      let queryId = event.action.queryId;
+      // Accept a query NAME here: it is the handle the model authored and what every binding uses
+      // ({{queries.getUsers.data}}), and the tool's own description offers `queryName` alongside
+      // `queryId`. Matching on id alone and answering "does not exist" is false when the query is
+      // present under its name, and sends the model into a re-read/retry loop. Resolve it instead —
+      // and because add_events fails the WHOLE batch on any error, one such slip otherwise rejects an
+      // app's entire event wiring. See src/refResolution.ts.
+      if (typeof queryId === 'string' && !queries.has(queryId)) {
+        const resolution = resolveRef(summary.queries, queryId, 'Query', 'in this app');
+        if (resolution.ok) {
+          if (resolution.warning) warnings.push(`${label}: ${resolution.warning}`);
+          queryId = resolution.target.id;
+          event.action.queryId = queryId;
+        }
+      }
       if (typeof queryId !== 'string' || !queries.has(queryId)) {
-        errors.push(`${label}: run-query target "${String(queryId)}" does not exist.`);
+        const available = summary.queries.map((q) => `${q.name ?? '(unnamed)'}=${q.id}`).join(', ');
+        errors.push(
+          `${label}: no query with id or name "${String(queryId)}" in this app. ` +
+            `Do not re-read — the app currently has: ${available || '(no queries)'}.`
+        );
       } else if (event.sourceType === 'component' && event.trigger === 'onClick') {
         // Double-submit guard: a button that fires a mutation query on click should disable itself while
         // that query runs, or the user can submit the same create/update several times.
