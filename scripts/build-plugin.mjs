@@ -45,6 +45,7 @@ for (const f of [
   'references/security.md',
   'references/qa.md',
   'references/components.md',
+  'references/themes.md',
   'scripts/browser-audit.js',
 ]) {
   if (!existsSync(resolve(root, 'skills/tooljet-app-builder', f))) {

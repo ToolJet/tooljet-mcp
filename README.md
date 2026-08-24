@@ -129,6 +129,10 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
 
+Workspace theme creation and management are exposed through `manage_theme`; applying a theme to an app remains part
+of `update_app_settings`. The definition structure and token-backed styling guidance are documented in
+[`docs/theme-api-tool.md`](docs/theme-api-tool.md).
+
 ## Development
 
 ```bash

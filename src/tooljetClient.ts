@@ -33,6 +33,12 @@ export interface AppTheme {
   [key: string]: unknown;
 }
 
+export interface CreateAppThemeParams {
+  name: string;
+  definition: Record<string, unknown>;
+  isDefault?: boolean;
+}
+
 export interface AppSettingsSnapshot {
   app_id: string;
   version_id: string;
@@ -384,6 +390,11 @@ export interface ToolJetClient {
   getAppSummary(appId: string): Promise<AppSummary>;
   getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot>;
   listAppThemes(): Promise<AppTheme[]>;
+  createAppTheme(params: CreateAppThemeParams): Promise<AppTheme>;
+  setDefaultAppTheme(themeId: string, isDefault: boolean): Promise<void>;
+  updateAppThemeDefinition(themeId: string, definition: Record<string, unknown>): Promise<void>;
+  renameAppTheme(themeId: string, name: string): Promise<void>;
+  deleteAppTheme(themeId: string): Promise<void>;
   updateAppSettings(params: UpdateAppSettingsParams): Promise<void>;
   getComponent(appId: string, componentId: string): Promise<ComponentSummary & { page_id: string }>;
   createPage(params: CreatePageParams): Promise<CreatePageResult>;
@@ -550,6 +561,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const datasourceManagementUrl = (workspaceSlug: string, datasourceId?: string) =>
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
+
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
@@ -634,6 +646,52 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const body = await res.json();
     if (!Array.isArray(body)) throw new Error('ToolJet listAppThemes failed: expected an array response.');
     return body as AppTheme[];
+  }
+
+  async function createAppTheme(params: CreateAppThemeParams): Promise<AppTheme> {
+    const res = await auth.authedFetch('/api/themes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: params.name,
+        organizationId: await auth.getOrganizationId(),
+        definition: params.definition,
+        isDefault: params.isDefault ?? false,
+      }),
+    });
+    await assertOk(res, 'createAppTheme');
+    return (await res.json()) as AppTheme;
+  }
+
+  async function updateAppTheme(
+    themeId: string,
+    field: 'default' | 'definition' | 'name',
+    body: Record<string, unknown>,
+    operation: string
+  ): Promise<void> {
+    const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}/${field}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    await assertOk(res, operation);
+  }
+
+  async function setDefaultAppTheme(themeId: string, isDefault: boolean): Promise<void> {
+    await updateAppTheme(themeId, 'default', { isDefault }, 'setDefaultAppTheme');
+  }
+
+  async function updateAppThemeDefinition(themeId: string, definition: Record<string, unknown>): Promise<void> {
+    await updateAppTheme(themeId, 'definition', { definition }, 'updateAppThemeDefinition');
+  }
+
+  async function renameAppTheme(themeId: string, name: string): Promise<void> {
+    await updateAppTheme(themeId, 'name', { name }, 'renameAppTheme');
+  }
+
+  async function deleteAppTheme(themeId: string): Promise<void> {
+    const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}`, { method: 'DELETE' });
+    await assertOk(res, 'deleteAppTheme');
   }
 
   async function updateAppSettings(params: UpdateAppSettingsParams): Promise<void> {
@@ -1738,6 +1796,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     getAppSummary,
     getAppSettings,
     listAppThemes,
+    createAppTheme,
+    setDefaultAppTheme,
+    updateAppThemeDefinition,
+    renameAppTheme,
+    deleteAppTheme,
     updateAppSettings,
     getComponent,
     createPage,

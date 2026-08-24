@@ -39,6 +39,7 @@ If an expected source is absent or a query returns a connection failure, explain
 - `references/security.md` — authorization boundaries, current-user variables, permissions, and sensitive/destructive operations.
 - `references/qa.md` — static checks, safe runtime checks, the browser audit, triage, and confirmation.
 - `references/components.md` — selective component palette and exact binding/rendering rules not covered by Table/Form references.
+- `references/themes.md` — workspace theme creation and management, the exact theme definition structure, app assignment, and token-backed component styling.
 
 Tool schemas, catalog responses, and returned warnings are authoritative. Do not preload every reference. Keep inspection results bounded: use `get_app_summary`'s structural default or exact field projections, and request `detail:"full"` only after narrowing the target. Reuse earlier catalog, schema, and summary results instead of repeating the same read.
 
