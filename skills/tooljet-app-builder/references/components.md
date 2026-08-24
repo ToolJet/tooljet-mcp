@@ -22,7 +22,7 @@ Select by the user's information need, not by the easiest component to bind. The
 - **Trusted external content:** `IFrame`. **CustomComponent:** only for an explicit advanced requirement with maintainable code and no suitable governed built-in.
 - **Navigation:** prefer ToolJet pages/sidebar; use `Navigation` only when the request needs a custom navigation surface.
 
-Selection rules: do not default every collection to Table; do not render a single record as a one-row Table; a dashboard normally combines a metric band, only the charts that answer real questions, and an operational detail surface. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.
+Selection rules: do not default every collection to Table; do not render a single record as a one-row Table. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.
 
 ## Built-in components (pick from these first)
 

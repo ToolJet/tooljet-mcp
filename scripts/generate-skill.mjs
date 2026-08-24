@@ -167,20 +167,7 @@ Select by the user's information need, not by the easiest component to bind. The
 - **Trusted external content:** \`IFrame\`. **CustomComponent:** only for an explicit advanced requirement with maintainable code and no suitable governed built-in.
 - **Navigation:** prefer ToolJet pages/sidebar; use \`Navigation\` only when the request needs a custom navigation surface.
 
-Selection rules: do not default every collection to Table; do not render a single record as a one-row Table; a dashboard normally combines a metric band, only the charts that answer real questions, and an operational detail surface. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.`;
-
-const bodyCompositionGuide = `## Page body composition signatures
-
-After the shared title/subtitle frame, give every page a task-specific ordered body. Reusing the same generic stack on every page makes a multi-page app look accidental.
-
-- **Monitor:** status/KPI band → exception signal or trend → prioritized operational detail → one primary response action.
-- **Explore:** compact filters/search → result count/summary → dominant Table/Listview/Chart → drill-down affordance.
-- **Operate:** queue or selected work item → dominant operational surface → one obvious primary action → immediate success/failure feedback.
-- **Inspect:** identity/status header → grouped facts → chronology/related records → contextual secondary actions.
-- **Edit:** short context header → grouped validated fields → visible primary save action → cancel/reset and mutation feedback.
-- **Configure:** section navigation or Tabs → logically grouped settings → scope/permission explanation → save/reset feedback.
-
-Across pages, keep the same visual language but change the body signature to the job. Compare neighboring page plans before building: if two pages have the same sections in the same order, either differentiate their jobs or merge them.`;
+Selection rules: do not default every collection to Table; do not render a single record as a one-row Table. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.`;
 
 const themeGuidance = `## Theme-aware styling
 
@@ -395,8 +382,6 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 The full built-in palette (every \`type\` + purpose) is in **\`references/components.md\`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with \`get_component_catalog({ types:[...] })\` (or use \`type\` for one) and request their exact needed sections — including \`renderingHints\` for \`Text\`/\`Chart\`/\`Statistics\`. Configure precisely; don't guess property names.
 
 ${componentSelectionGuide}
-
-${bodyCompositionGuide}
 
 ${themeGuidance}
 
@@ -828,7 +813,6 @@ const routedSections = {
   uiLayout: [
     '## Component selection — built-in for interactive/data surfaces, HTML where it makes the UI better',
     '## Intent-to-component selection guide',
-    '## Page body composition signatures',
     '## Theme-aware styling',
     '## Canvas & grid mechanics (FACTS — you must respect these to position components)',
     '## Design — decide before you build, then apply the visual defaults',
