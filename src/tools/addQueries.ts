@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, validateQueryOptions } from '../queryValidation.js';
+import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const querySchema = z.object({
@@ -39,7 +39,17 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
           if (!datasource) {
             throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          const validation = validateQueryOptions(datasource.kind, query.options);
+          // Repair a flat {column: value} write map before validating, so an unambiguous authoring
+          // slip is fixed here instead of costing a build turn (the validator still errors on
+          // anything this cannot confidently normalize).
+          const options = normalizeQueryOptions(datasource.kind, query.options);
+          if (options !== query.options) {
+            warnings.push(
+              `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
+                '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
+            );
+          }
+          const validation = validateQueryOptions(datasource.kind, options);
           if (validation.errors.length) {
             throw new Error(issueMessages(validation.errors, `Query "${query.name}"`).join(' '));
           }
@@ -55,7 +65,7 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
             operation: validation.operation,
             schema_found: validation.schemaFound,
           });
-          return { query, kind: datasource.kind };
+          return { query: { ...query, options }, kind: datasource.kind };
         });
         const result = await client.createQueries({
           versionId: args.version_id,

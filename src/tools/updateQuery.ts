@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, validateQueryOptions } from '../queryValidation.js';
+import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 export function updateQueryTool(client: ToolJetClient): ToolDef {
@@ -59,8 +59,18 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
 
         const warnings: string[] = [];
         let validation: ReturnType<typeof validateQueryOptions> | undefined;
+        // See addQueries.ts: repair a flat {column: value} write map before validating. Only possible
+        // when the kind is known — without it the options are passed through unvalidated as before.
+        let options = args.options;
         if (kind) {
-          validation = validateQueryOptions(kind, args.options);
+          options = normalizeQueryOptions(kind, args.options);
+          if (options !== args.options) {
+            warnings.push(
+              `Rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; ` +
+                'the flat {column: value} form sends an empty body and fails at runtime.'
+            );
+          }
+          validation = validateQueryOptions(kind, options);
           if (validation.errors.length) return fail(new Error(issueMessages(validation.errors).join(' ')));
           warnings.push(...issueMessages(validation.warnings));
         } else {
@@ -79,7 +89,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options: args.options,
+            options: options,
             name: args.name,
           });
         } catch (error) {

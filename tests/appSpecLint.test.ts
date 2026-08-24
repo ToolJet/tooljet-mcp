@@ -22,7 +22,7 @@ describe('lint_app_spec', () => {
         { client_ref: 'list', datasource_id: 'tjdb', name: 'list_cases', options: { operation: 'list_rows', table_id: 't1', list_rows: {} } },
         {
           client_ref: 'create', datasource_id: 'tjdb', name: 'create_case',
-          options: { operation: 'create_row', table_id: 't1', create_row: { title: '{{components.caseTitle.value}}' } },
+          options: { operation: 'create_row', table_id: 't1', create_row: { 0: { column: 'title', value: '{{components.caseTitle.value}}' } } },
         },
       ],
       pages: [{

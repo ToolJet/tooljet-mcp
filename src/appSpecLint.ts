@@ -1,7 +1,7 @@
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { validateEvents } from './eventValidation.js';
 import { lintComponents, validateAppStructure } from './lint.js';
-import { issueMessages, validateQueryOptions } from './queryValidation.js';
+import { issueMessages, normalizeQueryOptions, validateQueryOptions } from './queryValidation.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
 import { encodeComponentParent } from './componentParent.js';
@@ -171,10 +171,21 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     if (existingQueryNames.has(query.name)) errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
+    // Repair a flat {column: value} tooljetdb write map before validating, so the phase this lint
+    // hands to apply_app_phase persists the shape ToolJet actually reads. Without this, the plan
+    // lints clean, applies, and then fails only at runtime with PGRST102 when a user clicks.
+    let options = query.options;
     if (!query.kind) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
     } else {
-      const validation = validateQueryOptions(query.kind, query.options);
+      options = normalizeQueryOptions(query.kind, query.options);
+      if (options !== query.options) {
+        warnings.push(
+          `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
+            '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
+        );
+      }
+      const validation = validateQueryOptions(query.kind, options);
       errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
       warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
     }
@@ -183,7 +194,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       name: query.name,
       kind: query.kind,
       data_source_id: query.datasourceId,
-      options: query.options,
+      options,
     };
   });
   const queries = [...existingQueries, ...plannedQueries];

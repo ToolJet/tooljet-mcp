@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateQueryOptions } from '../src/queryValidation.js';
+import { normalizeQueryOptions, validateQueryOptions } from '../src/queryValidation.js';
 
 describe('validateQueryOptions', () => {
   it('accepts the ToolJet OpenAI wrapper shape and returns the operation', () => {
@@ -202,5 +202,80 @@ describe('validateQueryOptions', () => {
       mode: 'sql', query: 'SELECT id, status FROM orders LIMIT 25', runOnPageLoad: true,
     });
     expect(result.errors).toEqual([]);
+  });
+});
+
+describe('tooljetdb write column maps', () => {
+  // Regression: ToolJet reduces create_row / update_rows.columns with
+  // Object.values(cols).reduce((acc, c) => ...c.column...), so a flat {column: value} map reduces to
+  // an EMPTY body. PostgREST then answers PGRST102 "Empty or invalid json" and the write fails only
+  // when a user clicks — after the app has already passed validation.
+  it('rejects a flat update_rows column map that would send an empty body', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: {
+        columns: { status: 'Approved' },
+        where_filters: { 0: { column: 'id', operator: 'eq', value: 28 } },
+      },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_write_columns' })])
+    );
+  });
+
+  it('rejects a flat create_row column map', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'create_row',
+      table_id: 't1',
+      create_row: { full_name: '{{components.nameInput.value}}' },
+    });
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_write_columns' })])
+    );
+  });
+
+  it('accepts the correct {index: {column, value}} shape', () => {
+    const result = validateQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: {
+        columns: { 0: { column: 'status', value: 'Approved' } },
+        where_filters: { 0: { column: 'id', operator: 'eq', value: 28 } },
+      },
+    });
+    expect(result.errors.filter((e) => e.code === 'malformed_write_columns')).toEqual([]);
+  });
+
+  it('normalizes a flat update_rows map into the shape ToolJet reads', () => {
+    const normalized = normalizeQueryOptions('tooljetdb', {
+      operation: 'update_rows',
+      table_id: 't1',
+      update_rows: { columns: { status: 'Approved' }, where_filters: {} },
+    });
+    expect((normalized.update_rows as any).columns).toEqual({ 0: { column: 'status', value: 'Approved' } });
+    // and the normalized result must now pass validation
+    expect(validateQueryOptions('tooljetdb', normalized).errors.filter((e) => e.code === 'malformed_write_columns')).toEqual([]);
+  });
+
+  it('normalizes a flat create_row map and preserves multiple columns in order', () => {
+    const normalized = normalizeQueryOptions('tooljetdb', {
+      operation: 'create_row',
+      table_id: 't1',
+      create_row: { full_name: 'Ada', department: 'Eng' },
+    });
+    expect(normalized.create_row).toEqual({
+      0: { column: 'full_name', value: 'Ada' },
+      1: { column: 'department', value: 'Eng' },
+    });
+  });
+
+  it('leaves an already-correct map untouched (same object identity)', () => {
+    const options = {
+      operation: 'create_row',
+      table_id: 't1',
+      create_row: { 0: { column: 'full_name', value: 'Ada' } },
+    };
+    expect(normalizeQueryOptions('tooljetdb', options)).toBe(options);
   });
 });

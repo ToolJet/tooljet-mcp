@@ -38523,6 +38523,21 @@ function validateQueryOptions(kind, options2) {
       });
     }
   }
+  if (kind === "tooljetdb" && (operation === "create_row" || operation === "update_rows")) {
+    const columnsPath = operation === "create_row" ? "create_row" : "update_rows.columns";
+    const columns = valueAtPath(options2, columnsPath);
+    if (isObject2(columns) && Object.keys(columns).length > 0) {
+      const flat = Object.entries(columns).filter(([, clause]) => !isObject2(clause) || typeof clause.column !== "string" || clause.column === "");
+      if (flat.length > 0) {
+        const example = flat[0][0];
+        errors.push({
+          code: "malformed_write_columns",
+          path: `${columnsPath}.${example}`,
+          message: `ToolJet DB ${operation} "${columnsPath}" must map each entry to a {column, value} record, not a flat {"${example}": <value>} pair. ToolJet reads .column off each entry, so as authored this write sends an empty body and fails at runtime with PGRST102 ("Empty or invalid json") even though the app validates. Use {"0": {"column": "${example}", "value": <value>}, \u2026}.`
+        });
+      }
+    }
+  }
   if (kind === "tooljetdb" && operation === "list_rows") {
     const orderFilters = valueAtPath(options2, "list_rows.order_filters");
     if (isObject2(orderFilters)) {
@@ -38541,6 +38556,40 @@ function validateQueryOptions(kind, options2) {
 }
 function issueMessages(issues, prefix) {
   return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
+}
+function normalizeWriteColumnMap(columns) {
+  if (!isObject2(columns) || Object.keys(columns).length === 0)
+    return null;
+  const entries = Object.entries(columns);
+  if (entries.every(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "")) {
+    return null;
+  }
+  const normalized2 = {};
+  entries.forEach(([key, clause], index) => {
+    if (isObject2(clause) && typeof clause.column === "string" && clause.column !== "") {
+      normalized2[String(index)] = clause;
+      return;
+    }
+    normalized2[String(index)] = { column: key, value: clause };
+  });
+  return normalized2;
+}
+function normalizeQueryOptions(kind, options2) {
+  if (kind !== "tooljetdb" || !isObject2(options2))
+    return options2;
+  const operation = typeof options2.operation === "string" ? options2.operation : "";
+  if (operation === "create_row") {
+    const normalized2 = normalizeWriteColumnMap(options2.create_row);
+    return normalized2 ? { ...options2, create_row: normalized2 } : options2;
+  }
+  if (operation === "update_rows") {
+    const updateRows = options2.update_rows;
+    if (!isObject2(updateRows))
+      return options2;
+    const normalized2 = normalizeWriteColumnMap(updateRows.columns);
+    return normalized2 ? { ...options2, update_rows: { ...updateRows, columns: normalized2 } } : options2;
+  }
+  return options2;
 }
 
 // dist/appValidation.js
@@ -39108,10 +39157,15 @@ function lintPlannedApp(spec, existingSummary) {
       errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
+    let options2 = query.options;
     if (!query.kind) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
     } else {
-      const validation = validateQueryOptions(query.kind, query.options);
+      options2 = normalizeQueryOptions(query.kind, query.options);
+      if (options2 !== query.options) {
+        warnings.push(`Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+      }
+      const validation = validateQueryOptions(query.kind, options2);
       errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
       warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
     }
@@ -39120,7 +39174,7 @@ function lintPlannedApp(spec, existingSummary) {
       name: query.name,
       kind: query.kind,
       data_source_id: query.datasourceId,
-      options: query.options
+      options: options2
     };
   });
   const queries = [...existingQueries, ...plannedQueries];
@@ -40240,10 +40294,14 @@ function addQueryTool(client) {
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const validation = validateQueryOptions(datasource.kind, args.options);
+        const options2 = normalizeQueryOptions(datasource.kind, args.options);
+        const validation = validateQueryOptions(datasource.kind, options2);
         if (validation.errors.length)
           return fail(new Error(issueMessages(validation.errors).join(" ")));
         const warnings = issueMessages(validation.warnings);
+        if (options2 !== args.options) {
+          warnings.push(`Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+        }
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
@@ -40251,7 +40309,7 @@ function addQueryTool(client) {
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options: args.options,
+          options: options2,
           kind: datasource.kind
         });
         return ok({
@@ -40292,7 +40350,11 @@ function addQueriesTool(client) {
           if (!datasource) {
             throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          const validation = validateQueryOptions(datasource.kind, query.options);
+          const options2 = normalizeQueryOptions(datasource.kind, query.options);
+          if (options2 !== query.options) {
+            warnings.push(`Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+          }
+          const validation = validateQueryOptions(datasource.kind, options2);
           if (validation.errors.length) {
             throw new Error(issueMessages(validation.errors, `Query "${query.name}"`).join(" "));
           }
@@ -40306,7 +40368,7 @@ function addQueriesTool(client) {
             operation: validation.operation,
             schema_found: validation.schemaFound
           });
-          return { query, kind: datasource.kind };
+          return { query: { ...query, options: options2 }, kind: datasource.kind };
         });
         const result = await client.createQueries({
           versionId: args.version_id,
@@ -40950,8 +41012,13 @@ function updateQueryTool(client) {
         }
         const warnings = [];
         let validation;
+        let options2 = args.options;
         if (kind) {
-          validation = validateQueryOptions(kind, args.options);
+          options2 = normalizeQueryOptions(kind, args.options);
+          if (options2 !== args.options) {
+            warnings.push(`Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+          }
+          validation = validateQueryOptions(kind, options2);
           if (validation.errors.length)
             return fail(new Error(issueMessages(validation.errors).join(" ")));
           warnings.push(...issueMessages(validation.warnings));
@@ -40970,7 +41037,7 @@ function updateQueryTool(client) {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options: args.options,
+            options: options2,
             name: args.name
           });
         } catch (error51) {

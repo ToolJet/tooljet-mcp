@@ -327,6 +327,34 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && (operation === 'create_row' || operation === 'update_rows')) {
+    // ToolJet reduces these column maps with `Object.values(cols).reduce((acc, c) => ... c.column ...)`
+    // (tooljet-db-data-operations.service.ts createRow/updateRows), so every VALUE must be a
+    // {column, value} record. A flat {columnName: value} map looks correct and passes every other
+    // check, but reduces to an EMPTY body — PostgREST then rejects it with PGRST102
+    // "Empty or invalid json" and the write silently fails at runtime, only when a user clicks.
+    // This is an error, not a warning: the query is guaranteed to be broken as authored.
+    const columnsPath = operation === 'create_row' ? 'create_row' : 'update_rows.columns';
+    const columns = valueAtPath(options, columnsPath);
+    if (isObject(columns) && Object.keys(columns).length > 0) {
+      const flat = Object.entries(columns).filter(
+        ([, clause]) => !isObject(clause) || typeof clause.column !== 'string' || clause.column === ''
+      );
+      if (flat.length > 0) {
+        const example = flat[0][0];
+        errors.push({
+          code: 'malformed_write_columns',
+          path: `${columnsPath}.${example}`,
+          message:
+            `ToolJet DB ${operation} "${columnsPath}" must map each entry to a {column, value} record, not a ` +
+            `flat {"${example}": <value>} pair. ToolJet reads .column off each entry, so as authored this write ` +
+            `sends an empty body and fails at runtime with PGRST102 ("Empty or invalid json") even though the ` +
+            `app validates. Use {"0": {"column": "${example}", "value": <value>}, …}.`,
+        });
+      }
+    }
+  }
+
   if (kind === 'tooljetdb' && operation === 'list_rows') {
     const orderFilters = valueAtPath(options, 'list_rows.order_filters');
     if (isObject(orderFilters)) {
@@ -348,4 +376,49 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
 
 export function issueMessages(issues: QueryValidationIssue[], prefix?: string): string[] {
   return issues.map((issue) => `${prefix ? `${prefix}: ` : ''}${issue.message}`);
+}
+
+/** Rewrite a flat {columnName: value} write map into the {index: {column, value}} shape ToolJet
+ * actually reads (see the malformed_write_columns check above). Models author the flat shape often
+ * enough — across providers — that failing the build on it wastes a turn when the intent is
+ * unambiguous; normalizing here fixes it at authoring time and the validation above stays as the
+ * backstop for anything that reaches the spec another way. Entries already in {column, value} form
+ * are passed through untouched, so a partially-correct map is preserved. */
+function normalizeWriteColumnMap(columns: unknown): Record<string, unknown> | null {
+  if (!isObject(columns) || Object.keys(columns).length === 0) return null;
+  const entries = Object.entries(columns);
+  if (entries.every(([, clause]) => isObject(clause) && typeof clause.column === 'string' && clause.column !== '')) {
+    return null; // already correct — do not rewrite keys
+  }
+  const normalized: Record<string, unknown> = {};
+  entries.forEach(([key, clause], index) => {
+    if (isObject(clause) && typeof clause.column === 'string' && clause.column !== '') {
+      normalized[String(index)] = clause;
+      return;
+    }
+    normalized[String(index)] = { column: key, value: clause };
+  });
+  return normalized;
+}
+
+/** Normalize a tooljetdb create_row / update_rows column map in place-ish (returns a new options
+ * object when something changed, else the original). Call this on every authoring path so a
+ * persisted query is never the silently-broken flat shape. */
+export function normalizeQueryOptions(kind: string, options: Record<string, unknown>): Record<string, unknown> {
+  if (kind !== 'tooljetdb' || !isObject(options)) return options;
+  const operation = typeof options.operation === 'string' ? options.operation : '';
+
+  if (operation === 'create_row') {
+    const normalized = normalizeWriteColumnMap(options.create_row);
+    return normalized ? { ...options, create_row: normalized } : options;
+  }
+
+  if (operation === 'update_rows') {
+    const updateRows = options.update_rows;
+    if (!isObject(updateRows)) return options;
+    const normalized = normalizeWriteColumnMap(updateRows.columns);
+    return normalized ? { ...options, update_rows: { ...updateRows, columns: normalized } } : options;
+  }
+
+  return options;
 }

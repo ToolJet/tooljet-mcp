@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, validateQueryOptions } from '../queryValidation.js';
+import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 export function addQueryTool(client: ToolJetClient): ToolDef {
@@ -32,9 +32,18 @@ export function addQueryTool(client: ToolJetClient): ToolDef {
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const validation = validateQueryOptions(datasource.kind, args.options);
+        // See addQueries.ts: repair a flat {column: value} write map before validating so the
+        // persisted query is never the shape that silently sends an empty body at runtime.
+        const options = normalizeQueryOptions(datasource.kind, args.options);
+        const validation = validateQueryOptions(datasource.kind, options);
         if (validation.errors.length) return fail(new Error(issueMessages(validation.errors).join(' ')));
         const warnings = issueMessages(validation.warnings);
+        if (options !== args.options) {
+          warnings.push(
+            `Rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; ` +
+              'the flat {column: value} form sends an empty body and fails at runtime.'
+          );
+        }
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(
             `Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`
@@ -44,7 +53,7 @@ export function addQueryTool(client: ToolJetClient): ToolDef {
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options: args.options,
+          options: options,
           kind: datasource.kind,
         });
         return ok({

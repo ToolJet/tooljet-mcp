@@ -40,7 +40,7 @@ describe('plan token + apply_app_phase', () => {
       }],
       queries: summaryReads === 1 ? [] : [
         { id: 'list-id', name: 'list_cases', kind: 'tooljetdb', data_source_id: 'tjdb', options: { operation: 'list_rows', table_id: 'table-id', list_rows: {} } },
-        { id: 'create-id', name: 'create_case', kind: 'tooljetdb', data_source_id: 'tjdb', options: { operation: 'create_row', table_id: 'table-id', create_row: { title: '{{components.caseTitle.value}}' } } },
+        { id: 'create-id', name: 'create_case', kind: 'tooljetdb', data_source_id: 'tjdb', options: { operation: 'create_row', table_id: 'table-id', create_row: { 0: { column: 'title', value: '{{components.caseTitle.value}}' } } } },
       ],
       events: persistedEvents.map((event, index) => ({
         id: `event-${index}`,
@@ -97,7 +97,7 @@ describe('plan token + apply_app_phase', () => {
       seed_data: [{ table_name: 'cases', rows: [{ title: 'Broken login' }] }],
       queries: [
         { client_ref: 'list', datasource_id: 'tjdb', table_ref: 'cases', name: 'list_cases', options: { operation: 'list_rows', list_rows: {} } },
-        { client_ref: 'create', datasource_id: 'tjdb', table_ref: 'cases', name: 'create_case', options: { operation: 'create_row', create_row: { title: '{{components.caseTitle.value}}' } } },
+        { client_ref: 'create', datasource_id: 'tjdb', table_ref: 'cases', name: 'create_case', options: { operation: 'create_row', create_row: { 0: { column: 'title', value: '{{components.caseTitle.value}}' } } } },
       ],
       pages: [{
         client_ref: 'home', name: 'Overview', icon: 'IconLayoutDashboard',
