@@ -94,6 +94,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   ) as Record<DefinitionSection, ReturnType<typeof normalizeSection>>;
   const properties = { ...(normalizedSections.properties.value ?? {}) };
   const propertyPatch: Record<string, unknown> = {};
+  const stylePatch: Record<string, unknown> = {};
   const warnings: string[] = [];
   const setProperty = (key: string, value: unknown): void => {
     const current = properties[key];
@@ -110,6 +111,15 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   //      `styles` and silently drops them from `properties`).
   const stylesValue: Record<string, unknown> = normalizedSections.styles.value ?? {};
   let stylesChanged = false;
+  // Write a value under `styles` (ToolJet reads size/colour keys from styles, not properties).
+  const setStyle = (key: string, value: unknown): void => {
+    const current = stylesValue[key];
+    stylesValue[key] = current && typeof current === 'object' && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>), value }
+      : { value };
+    stylePatch[key] = stylesValue[key];
+    normalizedSections.styles.value = stylesValue;
+  };
   for (const key of Object.keys(properties)) {
     const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
     const canonical = aliasTarget ?? key;
@@ -243,10 +253,12 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     const iconVisible =
       typeof iconName === 'string' && iconName.trim() !== '' &&
       propValue(properties, 'iconVisibility') !== false && propValue(properties, 'iconVisibility') !== '{{false}}';
-    const rawSize = propValue(properties, 'primaryValueSize');
+    // primaryValueSize is a STYLES key; also tolerate a model that misplaced it under properties.
+    const rawSize = propValue(stylesValue, 'primaryValueSize') ?? propValue(properties, 'primaryValueSize');
+    const sizeText = typeof rawSize === 'string' ? rawSize.replace(/[{}]/g, '').trim() : rawSize;
     const numericSize =
-      typeof rawSize === 'number' ? rawSize
-      : typeof rawSize === 'string' && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : undefined;
+      typeof sizeText === 'number' ? sizeText
+      : typeof sizeText === 'string' && /^\d+$/.test(sizeText) ? Number(sizeText) : undefined;
     // Currency / fractional hero values are reliably long (grouping commas + ".00"), so they clip even
     // in wider tiles — and the layout width is often assigned AFTER the component is added (a separate
     // update_layout), so a width-only gate silently misses them. Treat a currency-formatted value as
@@ -267,9 +279,9 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       (numericSize === undefined || numericSize > 22) &&
       clipProne
     ) {
-      setProperty('primaryValueSize', 22);
+      setStyle('primaryValueSize', '{{22}}');
       warnings.push(
-        `Statistics "${component.name}": set primaryValueSize to 22 so the ${currencyValue ? 'currency ' : ''}value ` +
+        `Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? 'currency ' : ''}value ` +
           `fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ''} ` +
           '(larger sizes clip or wrap the value).'
       );
@@ -303,7 +315,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   const patch = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).flatMap((section) => {
       const envelopePatch = normalizedSections[section].patch ?? {};
-      const semanticPatch = section === 'properties' ? propertyPatch : {};
+      const semanticPatch = section === 'properties' ? propertyPatch : section === 'styles' ? stylePatch : {};
       const merged = { ...envelopePatch, ...semanticPatch };
       return Object.keys(merged).length ? [[section, merged]] : [];
     })

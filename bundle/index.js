@@ -38797,6 +38797,7 @@ function normalizeComponentSpec(component, options2 = {}) {
   ]));
   const properties = { ...normalizedSections.properties.value ?? {} };
   const propertyPatch = {};
+  const stylePatch = {};
   const warnings = [];
   const setProperty = (key, value) => {
     const current = properties[key];
@@ -38806,6 +38807,12 @@ function normalizeComponentSpec(component, options2 = {}) {
   };
   const stylesValue = normalizedSections.styles.value ?? {};
   let stylesChanged = false;
+  const setStyle = (key, value) => {
+    const current = stylesValue[key];
+    stylesValue[key] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    stylePatch[key] = stylesValue[key];
+    normalizedSections.styles.value = stylesValue;
+  };
   for (const key of Object.keys(properties)) {
     const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
     const canonical = aliasTarget ?? key;
@@ -38895,16 +38902,17 @@ function normalizeComponentSpec(component, options2 = {}) {
     const width = (component.layouts?.desktop ?? component.layout)?.width;
     const iconName = propValue(properties, "icon");
     const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
-    const rawSize = propValue(properties, "primaryValueSize");
-    const numericSize = typeof rawSize === "number" ? rawSize : typeof rawSize === "string" && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : void 0;
+    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
+    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
+    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
     const rawValue = propValue(properties, "primaryValue");
     const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
     const widthKnown = typeof width === "number";
     const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
     const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
     if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
-      setProperty("primaryValueSize", 22);
-      warnings.push(`Statistics "${component.name}": set primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
+      setStyle("primaryValueSize", "{{22}}");
+      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
     }
   }
   if (options2.stripUnknownKeys) {
@@ -38929,7 +38937,7 @@ function normalizeComponentSpec(component, options2 = {}) {
   }
   const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
     const envelopePatch = normalizedSections[section].patch ?? {};
-    const semanticPatch = section === "properties" ? propertyPatch : {};
+    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
     const merged = { ...envelopePatch, ...semanticPatch };
     return Object.keys(merged).length ? [[section, merged]] : [];
   }));
