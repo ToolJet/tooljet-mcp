@@ -171,6 +171,33 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         );
       }
     }
+
+    // A datepicker column with BOTH date selection and time disabled always renders BLANK: the table's
+    // DatePickerRenderer.computeDateString returns '' when (!isDateSelectionEnabled && !isTimeChecked),
+    // so correct data with a matching parseDateFormat still shows nothing. Models set
+    // isDateSelectionEnabled:false thinking it means "read-only"; re-enable date selection so the value
+    // displays. Only touches this exact blank-rendering combination.
+    if (Array.isArray(columns)) {
+      let fixedDateColumn = false;
+      const repairedColumns = columns.map((column) => {
+        if (
+          column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'datepicker' &&
+          (column as Record<string, unknown>).isDateSelectionEnabled === false &&
+          (column as Record<string, unknown>).isTimeChecked !== true
+        ) {
+          fixedDateColumn = true;
+          const entry = column as Record<string, unknown>;
+          warnings.push(
+            `Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection — a ` +
+              'datepicker column with both date selection and time disabled renders blank regardless of the data.'
+          );
+          return { ...entry, isDateSelectionEnabled: true };
+        }
+        return column;
+      });
+      if (fixedDateColumn) setProperty('columns', repairedColumns);
+    }
   }
 
   if (component.type === 'KeyValuePair') {
@@ -208,9 +235,9 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   }
 
   if (component.type === 'Statistics') {
-    // Auto-size the value so a value-only tile with an icon in a narrow card doesn't clip (e.g. a
-    // currency value rendering as "$3"). Deterministic fix — removes a lint iteration; the model can
-    // still widen or drop the icon instead if it prefers a larger value font.
+    // Auto-size the value so a value-only tile with an icon doesn't clip/wrap (e.g. a currency value
+    // rendering as "$3", or "$129,426.32" wrapping to two lines). Deterministic fix — removes a lint
+    // iteration; the model can still widen or drop the icon instead if it prefers a larger value font.
     const width = (component.layouts?.desktop ?? component.layout)?.width;
     const iconName = propValue(properties, 'icon');
     const iconVisible =
@@ -220,17 +247,31 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     const numericSize =
       typeof rawSize === 'number' ? rawSize
       : typeof rawSize === 'string' && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : undefined;
+    // Currency / fractional hero values are reliably long (grouping commas + ".00"), so they clip even
+    // in wider tiles — and the layout width is often assigned AFTER the component is added (a separate
+    // update_layout), so a width-only gate silently misses them. Treat a currency-formatted value as
+    // clip-prone regardless of the (possibly-unknown) width.
+    const rawValue = propValue(properties, 'primaryValue');
+    const currencyValue =
+      typeof rawValue === 'string' &&
+      /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
+    const widthKnown = typeof width === 'number';
+    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
+    // Two clip modes: (a) an icon eats horizontal room, so even a short value clips in a narrow tile;
+    // (b) a currency/fractional value is long enough to wrap on its own — no icon needed — so shrink
+    // unless the tile is known to be wide. Width is often unknown here (assigned by a later
+    // update_layout), so a currency value with unknown width is treated as clip-prone.
+    const clipProne = (iconVisible && narrowTile) || (currencyValue && (narrowTile || !widthKnown));
     if (
       isTruthy(propValue(properties, 'hideSecondary')) &&
-      iconVisible &&
       (numericSize === undefined || numericSize > 22) &&
-      typeof width === 'number' &&
-      width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS
+      clipProne
     ) {
       setProperty('primaryValueSize', 22);
       warnings.push(
-        `Statistics "${component.name}": set primaryValueSize to 22 so the value fits a ${width}-column tile ` +
-          'with an icon (larger sizes clip the value).'
+        `Statistics "${component.name}": set primaryValueSize to 22 so the ${currencyValue ? 'currency ' : ''}value ` +
+          `fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ''} ` +
+          '(larger sizes clip or wrap the value).'
       );
     }
   }

@@ -38850,6 +38850,20 @@ function normalizeComponentSpec(component, options2 = {}) {
         warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
       }
     }
+    if (Array.isArray(columns)) {
+      let fixedDateColumn = false;
+      const repairedColumns = columns.map((column) => {
+        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
+          fixedDateColumn = true;
+          const entry = column;
+          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
+          return { ...entry, isDateSelectionEnabled: true };
+        }
+        return column;
+      });
+      if (fixedDateColumn)
+        setProperty("columns", repairedColumns);
+    }
   }
   if (component.type === "KeyValuePair") {
     const fields = propValue(properties, "fields");
@@ -38883,9 +38897,14 @@ function normalizeComponentSpec(component, options2 = {}) {
     const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
     const rawSize = propValue(properties, "primaryValueSize");
     const numericSize = typeof rawSize === "number" ? rawSize : typeof rawSize === "string" && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : void 0;
-    if (isTruthy(propValue(properties, "hideSecondary")) && iconVisible && (numericSize === void 0 || numericSize > 22) && typeof width === "number" && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS) {
+    const rawValue = propValue(properties, "primaryValue");
+    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
+    const widthKnown = typeof width === "number";
+    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
+    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
+    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
       setProperty("primaryValueSize", 22);
-      warnings.push(`Statistics "${component.name}": set primaryValueSize to 22 so the value fits a ${width}-column tile with an icon (larger sizes clip the value).`);
+      warnings.push(`Statistics "${component.name}": set primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
     }
   }
   if (options2.stripUnknownKeys) {
