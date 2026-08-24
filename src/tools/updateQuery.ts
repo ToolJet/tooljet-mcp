@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { resolveRef } from '../refResolution.js';
 
 export function updateQueryTool(client: ToolJetClient): ToolDef {
   return {
@@ -33,12 +34,21 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
         if (args.datasource_id && !args.app_id) {
           return fail(new Error('Changing datasource_id requires app_id so MCP can validate and roll back safely.'));
         }
+        const resolutionWarnings: string[] = [];
         let currentDatasourceId: string | undefined;
         let kind = args.kind;
         if (args.app_id) {
           const summary = await client.getAppSummary(args.app_id);
-          const query = summary.queries.find((item) => item.id === args.query_id);
-          if (!query) return fail(new Error(`Query "${args.query_id}" was not found in app "${args.app_id}".`));
+          // Accept a query NAME as query_id: the name is the handle the model authored and what every
+          // binding uses ({{queries.createVehicle.data}}). Matching on id alone produced a FALSE
+          // "was not found" for a query that plainly exists — observed live, where the model then tried
+          // to CREATE a duplicate and the next lint answered "App already has a query named X",
+          // flatly contradicting the error it had just been given. See src/refResolution.ts.
+          const resolution = resolveRef(summary.queries, args.query_id, 'Query', `in app "${args.app_id}"`);
+          if (!resolution.ok) return fail(new Error(resolution.error));
+          if (resolution.warning) resolutionWarnings.push(resolution.warning);
+          const query = resolution.target;
+          args = { ...args, query_id: query.id };
           currentDatasourceId = query.data_source_id;
           kind = query.kind ?? kind;
         }
@@ -57,7 +67,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           kind = datasource.kind;
         }
 
-        const warnings: string[] = [];
+        const warnings: string[] = [...resolutionWarnings];
         let validation: ReturnType<typeof validateQueryOptions> | undefined;
         // See addQueries.ts: repair a flat {column: value} write map before validating. Only possible
         // when the kind is known — without it the options are passed through unvalidated as before.

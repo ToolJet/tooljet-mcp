@@ -3,6 +3,7 @@ import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead } from '../queryExecutionSafety.js';
 import { containsComponentBinding, failureRecovery, schemaNameHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { resolveRef } from '../refResolution.js';
 
 /** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query. */
 export function batchSafeRead(query: QuerySummary): { safe: boolean; reason?: string } {
@@ -51,8 +52,24 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
         }
         const saved = await client.getQueries(args.version_id);
         const byId = new Map(saved.map((query) => [query.id, query]));
-        const missing = args.query_ids.filter((queryId) => !byId.has(queryId));
-        if (missing.length) return fail(new Error(`run_queries could not find query ids: ${missing.join(', ')}.`));
+        // Accept query NAMES here too — {{queries.<name>}} is the handle the model works in, so a bare
+        // "could not find query ids" is a false negative that invites a re-read loop. See refResolution.ts.
+        const resolveWarnings: string[] = [];
+        const resolveErrors: string[] = [];
+        args = {
+          ...args,
+          query_ids: args.query_ids.map((queryId) => {
+            if (byId.has(queryId)) return queryId;
+            const resolution = resolveRef(saved, queryId, 'Query', `on version "${args.version_id}"`);
+            if (!resolution.ok) {
+              resolveErrors.push(resolution.error);
+              return queryId;
+            }
+            if (resolution.warning) resolveWarnings.push(resolution.warning);
+            return resolution.target.id;
+          }),
+        };
+        if (resolveErrors.length) return fail(new Error(resolveErrors.join(' ')));
         const unsafe = args.query_ids.flatMap((queryId) => {
           const verdict = batchSafeRead(byId.get(queryId)!);
           return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];

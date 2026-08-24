@@ -41092,13 +41092,18 @@ function updateQueryTool(client) {
         if (args.datasource_id && !args.app_id) {
           return fail(new Error("Changing datasource_id requires app_id so MCP can validate and roll back safely."));
         }
+        const resolutionWarnings = [];
         let currentDatasourceId;
         let kind = args.kind;
         if (args.app_id) {
           const summary = await client.getAppSummary(args.app_id);
-          const query = summary.queries.find((item) => item.id === args.query_id);
-          if (!query)
-            return fail(new Error(`Query "${args.query_id}" was not found in app "${args.app_id}".`));
+          const resolution = resolveRef2(summary.queries, args.query_id, "Query", `in app "${args.app_id}"`);
+          if (!resolution.ok)
+            return fail(new Error(resolution.error));
+          if (resolution.warning)
+            resolutionWarnings.push(resolution.warning);
+          const query = resolution.target;
+          args = { ...args, query_id: query.id };
           currentDatasourceId = query.data_source_id;
           kind = query.kind ?? kind;
         }
@@ -41112,7 +41117,7 @@ function updateQueryTool(client) {
           }
           kind = datasource.kind;
         }
-        const warnings = [];
+        const warnings = [...resolutionWarnings];
         let validation;
         let options2 = args.options;
         if (kind) {
@@ -41183,9 +41188,11 @@ function deleteQueryTool(client) {
     async handler(args) {
       try {
         const before = await client.getAppSummary(args.app_id);
-        const query = before.queries.find((candidate) => candidate.id === args.query_id);
-        if (!query)
-          throw new Error(`delete_query: query ${args.query_id} was not found in app ${args.app_id}.`);
+        const queryResolution = resolveRef2(before.queries, args.query_id, "Query", `in app "${args.app_id}"`);
+        if (!queryResolution.ok)
+          throw new Error(`delete_query: ${queryResolution.error}`);
+        const query = queryResolution.target;
+        args = { ...args, query_id: query.id };
         const references = [];
         if (query.name) {
           for (const component of before.pages.flatMap((page) => page.components)) {
@@ -41474,9 +41481,25 @@ function runQueriesTool(client) {
         }
         const saved = await client.getQueries(args.version_id);
         const byId = new Map(saved.map((query) => [query.id, query]));
-        const missing = args.query_ids.filter((queryId) => !byId.has(queryId));
-        if (missing.length)
-          return fail(new Error(`run_queries could not find query ids: ${missing.join(", ")}.`));
+        const resolveWarnings = [];
+        const resolveErrors = [];
+        args = {
+          ...args,
+          query_ids: args.query_ids.map((queryId) => {
+            if (byId.has(queryId))
+              return queryId;
+            const resolution = resolveRef2(saved, queryId, "Query", `on version "${args.version_id}"`);
+            if (!resolution.ok) {
+              resolveErrors.push(resolution.error);
+              return queryId;
+            }
+            if (resolution.warning)
+              resolveWarnings.push(resolution.warning);
+            return resolution.target.id;
+          })
+        };
+        if (resolveErrors.length)
+          return fail(new Error(resolveErrors.join(" ")));
         const unsafe = args.query_ids.flatMap((queryId) => {
           const verdict = batchSafeRead(byId.get(queryId));
           return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];

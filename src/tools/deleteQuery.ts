@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { containsExactValue, containsNamedBinding } from '../referenceSafety.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { resolveRef } from '../refResolution.js';
 
 export function deleteQueryTool(client: ToolJetClient): ToolDef {
   return {
@@ -19,8 +20,12 @@ export function deleteQueryTool(client: ToolJetClient): ToolDef {
     async handler(args: { app_id: string; query_id: string; version_id: string; confirm: true }) {
       try {
         const before = await client.getAppSummary(args.app_id);
-        const query = before.queries.find((candidate) => candidate.id === args.query_id);
-        if (!query) throw new Error(`delete_query: query ${args.query_id} was not found in app ${args.app_id}.`);
+        // Accept a query NAME as well as an id (see refResolution.ts): an absolute "was not found" for a
+        // query that exists under its name sends the model re-reading instead of correcting.
+        const queryResolution = resolveRef(before.queries, args.query_id, "Query", `in app "${args.app_id}"`);
+        if (!queryResolution.ok) throw new Error(`delete_query: ${queryResolution.error}`);
+        const query = queryResolution.target;
+        args = { ...args, query_id: query.id };
         const references: string[] = [];
         if (query.name) {
           for (const component of before.pages.flatMap((page) => page.components)) {
