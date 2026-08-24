@@ -38777,6 +38777,7 @@ var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
   "serverSideSort",
   "serverSideFilter"
 ]);
+var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
 function isStrippableUnknownKey(type, section, key, knownKeys) {
   if (knownKeys.includes(key))
     return false;
@@ -38882,7 +38883,7 @@ function normalizeComponentSpec(component, options2 = {}) {
     const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
     const rawSize = propValue(properties, "primaryValueSize");
     const numericSize = typeof rawSize === "number" ? rawSize : typeof rawSize === "string" && /^\d+$/.test(rawSize.trim()) ? Number(rawSize) : void 0;
-    if (isTruthy(propValue(properties, "hideSecondary")) && iconVisible && (numericSize === void 0 || numericSize > 22) && typeof width === "number" && width < 18) {
+    if (isTruthy(propValue(properties, "hideSecondary")) && iconVisible && (numericSize === void 0 || numericSize > 22) && typeof width === "number" && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS) {
       setProperty("primaryValueSize", 22);
       warnings.push(`Statistics "${component.name}": set primaryValueSize to 22 so the value fits a ${width}-column tile with an icon (larger sizes clip the value).`);
     }
@@ -38926,7 +38927,75 @@ function normalizeComponentSpec(component, options2 = {}) {
   };
 }
 
+// dist/referenceSafety.js
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function containsExactValue(value, expected) {
+  if (value === expected)
+    return true;
+  if (Array.isArray(value))
+    return value.some((entry) => containsExactValue(entry, expected));
+  if (value && typeof value === "object") {
+    return Object.values(value).some((entry) => containsExactValue(entry, expected));
+  }
+  return false;
+}
+function containsNamedBinding(value, namespace, name) {
+  if (typeof value === "string") {
+    return new RegExp(`\\b${namespace}\\s*\\.\\s*${escapeRegExp(name)}(?:\\b|\\s*\\[)`).test(value);
+  }
+  if (Array.isArray(value))
+    return value.some((entry) => containsNamedBinding(entry, namespace, name));
+  if (value && typeof value === "object") {
+    return Object.values(value).some((entry) => containsNamedBinding(entry, namespace, name));
+  }
+  return false;
+}
+
 // dist/appSpecLint.js
+function lintServerSidePaginationRace(pages, queries) {
+  const errors = [];
+  const queryByName = /* @__PURE__ */ new Map();
+  for (const query of queries)
+    if (query.name)
+      queryByName.set(query.name, query);
+  const propValue2 = (properties, key) => {
+    const entry = properties?.[key];
+    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  };
+  const isTrue = (value) => value === true || typeof value === "string" && value.replace(/\s+/g, "").toLowerCase() === "{{true}}";
+  const runsOnPageLoad = (options2) => {
+    const opts = options2;
+    return !!opts && (opts.runOnPageLoad === true || opts.runOnPageLoad === "{{true}}");
+  };
+  const referencedQueryNames = (dataBinding) => {
+    if (typeof dataBinding !== "string")
+      return [];
+    const names = /* @__PURE__ */ new Set();
+    for (const match of dataBinding.matchAll(/queries\.([A-Za-z_$][\w$]*)/g))
+      names.add(match[1]);
+    return [...names];
+  };
+  for (const page of pages) {
+    for (const component of page.components) {
+      if (component.type !== "Table" || !component.name)
+        continue;
+      const properties = component.properties;
+      if (!isTrue(propValue2(properties, "serverSidePagination")))
+        continue;
+      for (const queryName of referencedQueryNames(propValue2(properties, "data"))) {
+        const query = queryByName.get(queryName);
+        if (!query)
+          continue;
+        if (runsOnPageLoad(query.options) && containsNamedBinding(query.options, "components", component.name)) {
+          errors.push(`Table "${component.name}" uses server-side pagination and its data query "${queryName}" runs on page load while referencing components.${component.name}.* in its SQL. On first load the table is not registered yet, so those bindings resolve to "undefined" and the query fails (e.g. column "undefined" does not exist) \u2014 the table then shows "No data" even though the record count is non-zero. For a bounded result set, prefer client-side pagination: set serverSidePagination:false, bind the table data to the full query, and drop the separate count query. If server-side pagination is genuinely needed, set the data query's runOnPageLoad:false and drive it from the table's onPageChanged/onSearch events so it runs after the table mounts.`);
+        }
+      }
+    }
+  }
+  return errors;
+}
 function lintPlannedApp(spec, existingSummary) {
   const errors = [];
   const warnings = [];
@@ -39094,6 +39163,7 @@ function lintPlannedApp(spec, existingSummary) {
   });
   if (pages.length)
     checked.push("page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs");
+  errors.push(...lintServerSidePaginationRace(pages, queries));
   const eventSpecs = [];
   (spec.events ?? []).forEach((event, index) => {
     const source2 = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
@@ -40024,32 +40094,6 @@ function updatePagesTool(client) {
       }
     }
   };
-}
-
-// dist/referenceSafety.js
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-function containsExactValue(value, expected) {
-  if (value === expected)
-    return true;
-  if (Array.isArray(value))
-    return value.some((entry) => containsExactValue(entry, expected));
-  if (value && typeof value === "object") {
-    return Object.values(value).some((entry) => containsExactValue(entry, expected));
-  }
-  return false;
-}
-function containsNamedBinding(value, namespace, name) {
-  if (typeof value === "string") {
-    return new RegExp(`\\b${namespace}\\s*\\.\\s*${escapeRegExp(name)}(?:\\b|\\s*\\[)`).test(value);
-  }
-  if (Array.isArray(value))
-    return value.some((entry) => containsNamedBinding(entry, namespace, name));
-  if (value && typeof value === "object") {
-    return Object.values(value).some((entry) => containsNamedBinding(entry, namespace, name));
-  }
-  return false;
 }
 
 // dist/tools/deletePage.js

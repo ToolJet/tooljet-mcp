@@ -57,6 +57,11 @@ const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
   'serverSideFilter',
 ]);
 
+// A value-only Statistics tile with an icon clips its number below this width. Grouped/currency
+// values ("$129,426.00") clip even around 19–20 columns, so the safe floor sits above half the
+// 43-column canvas rather than at the old 18 (a width-19 currency tile was rendering clipped).
+const STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
+
 /** True unknown keys ToolJet silently ignores — not a catalog key, a misplaced style key, a known
  *  alias, or a close typo (those are left for the linter to rename/error, never silently stripped). */
 function isStrippableUnknownKey(
@@ -220,7 +225,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       iconVisible &&
       (numericSize === undefined || numericSize > 22) &&
       typeof width === 'number' &&
-      width < 18
+      width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS
     ) {
       setProperty('primaryValueSize', 22);
       warnings.push(

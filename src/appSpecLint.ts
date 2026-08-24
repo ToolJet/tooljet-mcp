@@ -6,6 +6,7 @@ import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js'
 import { validateTableBatch } from './tableValidation.js';
 import { encodeComponentParent } from './componentParent.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
+import { containsNamedBinding } from './referenceSafety.js';
 import type {
   AppSummary,
   ComponentSpec,
@@ -69,6 +70,63 @@ export interface AppSpecLintResult {
 }
 
 /** Validate a complete logical app plan without performing any writes. */
+/** A server-side-paginated Table whose data query BOTH runs on page load AND self-references the
+ *  table's own runtime state (components.<table>.pageIndex/searchText/...) is a load-order race: at
+ *  first load the table is not registered yet, so those bindings resolve to "undefined" and the query
+ *  fails (e.g. Postgres `column "undefined" does not exist`). The table then renders "No data" even
+ *  though the record count is non-zero — a silently broken app. Caught statically so the model fixes it
+ *  before writing. Legitimate server-side pagination drives the data query from the table's
+ *  onPageChanged/onSearch events (runOnPageLoad:false), so it only fires on the racy on-load pattern. */
+function lintServerSidePaginationRace(
+  pages: AppSummary['pages'],
+  queries: Array<{ name?: string; options?: unknown }>
+): string[] {
+  const errors: string[] = [];
+  const queryByName = new Map<string, { name?: string; options?: unknown }>();
+  for (const query of queries) if (query.name) queryByName.set(query.name, query);
+
+  const propValue = (properties: Record<string, unknown> | undefined, key: string): unknown => {
+    const entry = properties?.[key] as { value?: unknown } | undefined;
+    return entry && typeof entry === 'object' && 'value' in entry ? entry.value : entry;
+  };
+  const isTrue = (value: unknown): boolean =>
+    value === true || (typeof value === 'string' && value.replace(/\s+/g, '').toLowerCase() === '{{true}}');
+  const runsOnPageLoad = (options: unknown): boolean => {
+    const opts = options as Record<string, unknown> | undefined;
+    return !!opts && (opts.runOnPageLoad === true || opts.runOnPageLoad === '{{true}}');
+  };
+  const referencedQueryNames = (dataBinding: unknown): string[] => {
+    if (typeof dataBinding !== 'string') return [];
+    const names = new Set<string>();
+    for (const match of dataBinding.matchAll(/queries\.([A-Za-z_$][\w$]*)/g)) names.add(match[1]);
+    return [...names];
+  };
+
+  for (const page of pages) {
+    for (const component of page.components) {
+      if (component.type !== 'Table' || !component.name) continue;
+      const properties = (component as { properties?: Record<string, unknown> }).properties;
+      if (!isTrue(propValue(properties, 'serverSidePagination'))) continue;
+      for (const queryName of referencedQueryNames(propValue(properties, 'data'))) {
+        const query = queryByName.get(queryName);
+        if (!query) continue;
+        if (runsOnPageLoad(query.options) && containsNamedBinding(query.options, 'components', component.name)) {
+          errors.push(
+            `Table "${component.name}" uses server-side pagination and its data query "${queryName}" runs on page load ` +
+              `while referencing components.${component.name}.* in its SQL. On first load the table is not registered yet, ` +
+              `so those bindings resolve to "undefined" and the query fails (e.g. column "undefined" does not exist) — the ` +
+              `table then shows "No data" even though the record count is non-zero. For a bounded result set, prefer ` +
+              `client-side pagination: set serverSidePagination:false, bind the table data to the full query, and drop the ` +
+              `separate count query. If server-side pagination is genuinely needed, set the data query's runOnPageLoad:false ` +
+              `and drive it from the table's onPageChanged/onSearch events so it runs after the table mounts.`
+          );
+        }
+      }
+    }
+  }
+  return errors;
+}
+
 export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary): AppSpecLintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -237,6 +295,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     if (!existingPage) pages.push(pageSummary);
   });
   if (pages.length) checked.push('page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs');
+  errors.push(...lintServerSidePaginationRace(pages, queries));
 
   const eventSpecs: EventSpec[] = [];
   (spec.events ?? []).forEach((event, index) => {
