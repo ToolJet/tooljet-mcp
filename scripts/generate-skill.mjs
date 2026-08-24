@@ -900,6 +900,7 @@ const qa = makeReference(
   'Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.',
   routedSections.qa
 );
+const platformApis = readFileSync(resolve(root, 'docs/platform-api-tools.md'), 'utf8');
 const generalComponentRules = componentRuleSections
   .filter((section) => !['Table', 'Form'].includes(section.publishedName))
   .map((section) => section.markdown)
@@ -947,6 +948,7 @@ If an expected source is absent or a query returns a connection failure, explain
 - \`references/security.md\` — authorization boundaries, current-user variables, permissions, and sensitive/destructive operations.
 - \`references/qa.md\` — static checks, safe runtime checks, the browser audit, triage, and confirmation.
 - \`references/components.md\` — selective component palette and exact binding/rendering rules not covered by Table/Form references.
+- \`references/platform-apis.md\` — themes, app lifecycle/navigation, versions/environments, datasource/query/TJDB/constants, workflows/modules, and app permissions. Read it before using a grouped \`manage_*\` tool.
 
 Tool schemas, catalog responses, and returned warnings are authoritative. Do not preload every reference. Keep inspection results bounded: use \`get_app_summary\`'s structural default or exact field projections, and request \`detail:"full"\` only after narrowing the target. Reuse earlier catalog, schema, and summary results instead of repeating the same read.
 
@@ -969,6 +971,7 @@ const references = {
   'security.md': security,
   'qa.md': qa,
   'components.md': components,
+  'platform-apis.md': platformApis,
 };
 
 const hostSkillRoots = [
