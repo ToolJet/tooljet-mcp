@@ -57,6 +57,7 @@ import {
   type RuntimeFreshnessMonitor,
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
+import { manageThemeTool } from './manageTheme.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -125,6 +126,7 @@ export function registerTools(
     listEventsTool(client),
     updateEventsTool(client),
     deleteEventTool(client),
+    manageThemeTool(client),
   ];
 
   const exposedTools = includeLegacySingularCreateTools()

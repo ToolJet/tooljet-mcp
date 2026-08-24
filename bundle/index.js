@@ -35010,6 +35010,41 @@ function createClient(auth, config2) {
       throw new Error("ToolJet listAppThemes failed: expected an array response.");
     return body;
   }
+  async function createAppTheme(params) {
+    const res = await auth.authedFetch("/api/themes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: params.name,
+        organizationId: await auth.getOrganizationId(),
+        definition: params.definition,
+        isDefault: params.isDefault ?? false
+      })
+    });
+    await assertOk(res, "createAppTheme");
+    return await res.json();
+  }
+  async function updateAppTheme(themeId, field, body, operation) {
+    const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}/${field}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    await assertOk(res, operation);
+  }
+  async function setDefaultAppTheme(themeId, isDefault) {
+    await updateAppTheme(themeId, "default", { isDefault }, "setDefaultAppTheme");
+  }
+  async function updateAppThemeDefinition(themeId, definition) {
+    await updateAppTheme(themeId, "definition", { definition }, "updateAppThemeDefinition");
+  }
+  async function renameAppTheme(themeId, name) {
+    await updateAppTheme(themeId, "name", { name }, "renameAppTheme");
+  }
+  async function deleteAppTheme(themeId) {
+    const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}`, { method: "DELETE" });
+    await assertOk(res, "deleteAppTheme");
+  }
   async function updateAppSettings(params) {
     const body = {
       ...params.globalSettings ? { globalSettings: params.globalSettings } : {},
@@ -35840,6 +35875,11 @@ function createClient(auth, config2) {
     getAppSummary,
     getAppSettings,
     listAppThemes,
+    createAppTheme,
+    setDefaultAppTheme,
+    updateAppThemeDefinition,
+    renameAppTheme,
+    deleteAppTheme,
     updateAppSettings,
     getComponent,
     createPage,
@@ -41497,6 +41537,122 @@ function getRuntimeInfoTool(runtime) {
   };
 }
 
+// dist/tools/manageTheme.js
+var colorPair = external_exports.object({
+  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
+  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
+}).strict();
+var themeDefinition = external_exports.object({
+  brand: external_exports.object({
+    colors: external_exports.object({
+      primary: colorPair,
+      secondary: colorPair.optional(),
+      tertiary: colorPair.optional()
+    }).strict()
+  }).strict(),
+  text: external_exports.object({
+    font: external_exports.string().trim().min(1).max(200),
+    colors: external_exports.object({
+      primary: colorPair,
+      placeholder: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  border: external_exports.object({
+    radius: external_exports.object({
+      default: external_exports.number().nonnegative(),
+      small: external_exports.number().nonnegative(),
+      large: external_exports.number().nonnegative()
+    }).strict(),
+    colors: external_exports.object({
+      default: colorPair,
+      weak: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  systemStatus: external_exports.object({
+    colors: external_exports.object({
+      success: colorPair,
+      error: colorPair.optional(),
+      warning: colorPair.optional()
+    }).strict()
+  }).strict(),
+  surface: external_exports.object({
+    colors: external_exports.object({
+      appBackground: colorPair,
+      surface1: colorPair,
+      surface2: colorPair,
+      surface3: colorPair
+    }).strict()
+  }).strict()
+}).strict();
+function requireValue(value, label) {
+  if (value === void 0)
+    throw new Error(`manage_theme requires ${label} for this action.`);
+  return value;
+}
+async function readTheme(client, themeId) {
+  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
+  if (!theme)
+    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
+  return theme;
+}
+function manageThemeTool(client) {
+  return {
+    name: "manage_theme",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval.",
+    inputSchema: {
+      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
+      theme_id: external_exports.string().uuid().optional(),
+      name: external_exports.string().trim().min(1).max(100).optional(),
+      definition: themeDefinition.optional(),
+      is_default: external_exports.boolean().optional(),
+      confirm: external_exports.boolean().optional()
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list") {
+          return ok({ themes: await client.listAppThemes() });
+        }
+        if (args.action === "create") {
+          const name = requireValue(args.name, "name");
+          if (name.length < 5)
+            throw new Error("Theme name must contain at least 5 characters.");
+          if (name === "ToolJet")
+            throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          const created = await client.createAppTheme({
+            name,
+            definition: requireValue(args.definition, "definition"),
+            isDefault: args.is_default ?? false
+          });
+          return ok({ theme: created });
+        }
+        const themeId = requireValue(args.theme_id, "theme_id");
+        await readTheme(client, themeId);
+        if (args.action === "set_default") {
+          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.action === "update_definition") {
+          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.action === "rename") {
+          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.confirm !== true) {
+          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
+        }
+        await client.deleteAppTheme(themeId);
+        return ok({ deleted: true, theme_id: themeId });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -41558,7 +41714,8 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     addQueryLifecyclesTool(client),
     listEventsTool(client),
     updateEventsTool(client),
-    deleteEventTool(client)
+    deleteEventTool(client),
+    manageThemeTool(client)
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   for (const tool of exposedTools) {
