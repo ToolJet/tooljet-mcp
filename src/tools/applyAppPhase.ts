@@ -3,7 +3,7 @@ import type { AppPlanInput } from '../appPlanSchema.js';
 import { consumeAppPlan } from '../appPlanStore.js';
 import { validatePersistedAppSummary } from '../appValidation.js';
 import { prepareComponentBatch } from '../componentBatch.js';
-import { validateEvents } from '../eventValidation.js';
+import { deduplicateEventSpecs, persistedEventSpecs, validateEvents } from '../eventValidation.js';
 import { expandQueryLifecycles } from '../queryLifecycle.js';
 import { completedPartialWrites } from '../tooljetClient.js';
 import type {
@@ -42,7 +42,7 @@ function resolveAction(
   if (targetRef === undefined) return action;
   if (typeof targetRef !== 'string') throw new Error('Event action target_ref must be a string.');
   const actionId = String(action.actionId);
-  const target = actionId === 'run-query'
+  const target = ['run-query', 'reset-query', 'abort-query'].includes(actionId)
     ? queries.get(targetRef)
     : actionId === 'switch-page'
       ? pages.get(targetRef)
@@ -51,7 +51,13 @@ function resolveAction(
         ? components.get(targetRef)
         : undefined;
   if (!target) throw new Error(`Action "${actionId}" has unknown or unsupported target_ref "${targetRef}".`);
-  if (actionId === 'run-query') return { ...action, queryId: target.id, queryName: target.name };
+  if (['run-query', 'reset-query', 'abort-query'].includes(actionId)) {
+    return {
+      ...action,
+      queryId: target.id,
+      ...(actionId === 'run-query' ? { queryName: target.name } : {}),
+    };
+  }
   if (actionId === 'switch-page') return { ...action, pageId: target.id };
   if (actionId === 'show-modal' || actionId === 'close-modal') return { ...action, modal: target.id };
   if (actionId === 'control-component' || actionId === 'scroll-component-into-view') {
@@ -389,10 +395,18 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         }));
         const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
         warnings.push(...expanded.warnings);
-        const allEvents = [...ordinaryEvents, ...expanded.events];
+        const requestedEvents = [...ordinaryEvents, ...expanded.events];
+        const deduplicatedEvents = deduplicateEventSpecs(
+          requestedEvents,
+          persistedEventSpecs(summaryBeforeEvents)
+        );
+        const allEvents = deduplicatedEvents.events;
         const eventValidation = validateEvents(summaryBeforeEvents, allEvents);
         if (eventValidation.errors.length) throw new Error(eventValidation.errors.join(' '));
         warnings.push(...eventValidation.warnings);
+        if (deduplicatedEvents.skipped) {
+          warnings.push(`Skipped ${deduplicatedEvents.skipped} exact duplicate event handler(s).`);
+        }
         if (allEvents.length) {
           await client.createEvents({
             appId: args.app_id,

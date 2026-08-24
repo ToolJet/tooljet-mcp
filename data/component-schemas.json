@@ -274,6 +274,30 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": false
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onTagAdded",
@@ -486,6 +510,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -704,6 +740,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onRecordingStart",
@@ -811,6 +859,12 @@
         "label": "List of labels",
         "valueType": "array",
         "default": "{{['Tree', 'Car', 'Stree light']}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -830,6 +884,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -1042,6 +1122,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -1095,42 +1187,6 @@
       {
         "handle": "setLoading",
         "displayName": "Set loading",
-        "params": [
-          {
-            "handle": "loading",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "disable",
-        "displayName": "Disable(deprecated)",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "visibility",
-        "displayName": "Visibility(deprecated)",
-        "params": [
-          {
-            "handle": "visible",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "loading",
-        "displayName": "Loading(deprecated)",
         "params": [
           {
             "handle": "loading",
@@ -1265,6 +1321,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -1346,6 +1428,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "collapseWhenHidden",
@@ -1580,6 +1668,30 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -1768,6 +1880,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onCalendarEventSelect",
@@ -1896,6 +2034,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onRecordingStart",
@@ -1972,6 +2122,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -2355,6 +2511,30 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -2608,6 +2788,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -2817,6 +3023,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -3125,18 +3357,34 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
         "label": "On change"
-      },
-      {
-        "id": "onCheck",
-        "label": "On check (Deprecated)"
-      },
-      {
-        "id": "onUnCheck",
-        "label": "On uncheck (Deprecated)"
       }
     ],
     "actions": [
@@ -3187,16 +3435,6 @@
             "displayName": "Value",
             "defaultValue": "{{false}}",
             "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "setChecked",
-        "displayName": "Set checked (Deprecated)",
-        "params": [
-          {
-            "handle": "status",
-            "displayName": "status"
           }
         ]
       }
@@ -3382,6 +3620,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [],
     "actions": [
       {
@@ -3511,6 +3761,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [],
@@ -3716,6 +3992,30 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -3930,6 +4230,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [],
     "actions": [
       {
@@ -4014,7 +4326,10 @@
           "verticalAlignment": "center"
         }
       }
-    ]
+    ],
+    "renderingHints": {
+      "staticContentFit": "Current ToolJet chrome is 20px before an optional header. For static height, use max(body child top + rendered height) + 20px; a shown header adds headerHeight + 11px. Enable dynamicHeight for variable content."
+    }
   },
   "CurrencyInput": {
     "type": "CurrencyInput",
@@ -4025,6 +4340,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -4211,6 +4532,45 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minValue",
+        "label": "Min value",
+        "default": ""
+      },
+      {
+        "key": "maxValue",
+        "label": "Max value",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -4379,6 +4739,25 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
     "events": [],
     "actions": [],
     "exposedVariables": [
@@ -4465,6 +4844,39 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -4683,6 +5095,45 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "minDate",
+        "label": "Min Date",
+        "default": ""
+      },
+      {
+        "key": "maxDate",
+        "label": "Max Date",
+        "default": ""
+      },
+      {
+        "key": "disabledDates",
+        "label": "Disabled dates",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      },
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -5040,6 +5491,45 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "minDate",
+        "label": "Min Date",
+        "default": ""
+      },
+      {
+        "key": "maxDate",
+        "label": "Max Date",
+        "default": ""
+      },
+      {
+        "key": "disabledDates",
+        "label": "Disabled dates",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      },
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -5431,6 +5921,55 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "minDate",
+        "label": "Min Date",
+        "default": ""
+      },
+      {
+        "key": "maxDate",
+        "label": "Max Date",
+        "default": ""
+      },
+      {
+        "key": "minTime",
+        "label": "Min Time",
+        "default": ""
+      },
+      {
+        "key": "maxTime",
+        "label": "Max Time",
+        "default": ""
+      },
+      {
+        "key": "disabledDates",
+        "label": "Disabled dates",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      },
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -5737,6 +6276,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [],
     "actions": [],
     "exposedVariables": []
@@ -5833,6 +6384,39 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -6193,6 +6777,30 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -6313,6 +6921,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -6491,6 +7105,45 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minLength",
+        "label": "Min length",
+        "default": ""
+      },
+      {
+        "key": "maxLength",
+        "label": "Max length",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -6791,6 +7444,56 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "enableValidation",
+        "label": "Make this field mandatory",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "fileType",
+        "label": "Accepted file types",
+        "valueType": "string",
+        "default": "*/*"
+      },
+      {
+        "key": "minSize",
+        "label": "Min size (bytes)",
+        "valueType": "union",
+        "default": "{{0}}"
+      },
+      {
+        "key": "maxSize",
+        "label": "Max size (bytes)",
+        "valueType": "union",
+        "default": "{{1048576}}"
+      },
+      {
+        "key": "minFileCount",
+        "label": "Min file count",
+        "valueType": "union",
+        "default": "{{1}}"
+      },
+      {
+        "key": "maxFileCount",
+        "label": "Max file count",
+        "valueType": "union",
+        "default": "{{2}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onFileSelected",
@@ -7088,6 +7791,56 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "enableValidation",
+        "label": "Mark as mandatory",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "fileType",
+        "label": "File Type",
+        "valueType": "string",
+        "default": "*/*"
+      },
+      {
+        "key": "minSize",
+        "label": "Min size (Bytes)",
+        "valueType": "union",
+        "default": "{{50}}"
+      },
+      {
+        "key": "maxSize",
+        "label": "Max size (Bytes)",
+        "valueType": "union",
+        "default": "{{51200000}}"
+      },
+      {
+        "key": "minFileCount",
+        "label": "Min files",
+        "valueType": "union",
+        "default": "{{0}}"
+      },
+      {
+        "key": "maxFileCount",
+        "label": "Max files",
+        "valueType": "union",
+        "default": "{{2}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onFileSelected",
@@ -7252,6 +8005,12 @@
         "default": ","
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Show loading state",
         "valueType": "boolean",
@@ -7262,6 +8021,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -7319,6 +8084,56 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "enableValidation",
+        "label": "Make this field mandatory",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "fileType",
+        "label": "Accept file types",
+        "valueType": "string",
+        "default": "image/*"
+      },
+      {
+        "key": "minSize",
+        "label": "Min size limit (Bytes)",
+        "valueType": "union",
+        "default": "{{50}}"
+      },
+      {
+        "key": "maxSize",
+        "label": "Max size limit (Bytes)",
+        "valueType": "union",
+        "default": "{{51200000}}"
+      },
+      {
+        "key": "minFileCount",
+        "label": "Min file count",
+        "valueType": "union",
+        "default": "{{0}}"
+      },
+      {
+        "key": "maxFileCount",
+        "label": "Max file count",
+        "valueType": "union",
+        "default": "{{2}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -7573,6 +8388,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [],
     "actions": [
       {
@@ -7801,6 +8628,25 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onSubmit",
@@ -7938,6 +8784,9 @@
         }
       }
     ],
+    "renderingHints": {
+      "staticContentFit": "Standalone-child Form body needs max(child top + rendered height) + 20px. A shown header adds headerHeight + 10px; a shown footer adds footerHeight + 14px."
+    },
     "authoringHints": {
       "jsonSchemaFields": {
         "supportedTypes": [
@@ -8047,6 +8896,25 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
       }
     ],
     "events": [],
@@ -8186,6 +9054,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -8268,6 +9148,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
@@ -8301,6 +9187,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [],
@@ -8437,6 +9335,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "collapseWhenHidden",
         "label": "Collapse when hidden",
         "valueType": "boolean",
@@ -8540,6 +9444,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -8712,6 +9628,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [],
@@ -8919,6 +9847,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [],
     "actions": [
       {
@@ -9088,6 +10028,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -9110,6 +10056,25 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -9314,6 +10279,12 @@
         "key": "enableAddCard",
         "label": "Enable Add Card",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -9349,6 +10320,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -9747,6 +10744,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onFieldClick",
@@ -9891,6 +10900,18 @@
         "default": "{{false}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "tooltipFormat",
         "label": "Tooltip",
         "default": "plainText",
@@ -9971,6 +10992,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -10197,11 +11230,19 @@
         "default": ""
       }
     ],
-    "events": [
+    "others": [
       {
-        "id": "onRowClicked",
-        "label": "Row clicked (Deprecated)"
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
       },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "events": [
       {
         "id": "onRecordClicked",
         "label": "Record clicked"
@@ -10350,6 +11391,12 @@
         "label": "Search for places",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -10369,6 +11416,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -10408,10 +11481,6 @@
     "exposedVariables": [
       {
         "name": "center",
-        "default": {}
-      },
-      {
-        "name": "selectedMarker",
         "default": {}
       }
     ]
@@ -10538,6 +11607,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -10799,6 +11894,25 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onOpen",
@@ -10992,6 +12106,9 @@
         "defaultValue": "body",
         "rule": "Put the modal title Text in header, fields/content in body, and native action buttons in footer. Do not leave showHeader enabled with an empty header and add a duplicate title row to the body.",
         "parentRule": "Set parent_ref for a same-batch modal or parent for an existing modal; coordinates are relative to the selected slot canvas."
+      },
+      "reachability": {
+        "rule": "Every modal needs at least one reachable launcher. Use show-modal with the modal id, or control-component with componentSpecificActionHandle=\"open\". A modal with no opener is incomplete."
       }
     }
   },
@@ -11036,6 +12153,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [],
@@ -11089,6 +12232,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [],
@@ -11162,6 +12331,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -11517,6 +12712,30 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": false
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -11601,6 +12820,21 @@
       {
         "name": "searchText",
         "default": ""
+      },
+      {
+        "name": "values",
+        "default": []
+      },
+      {
+        "name": "selectedOptions",
+        "default": []
+      },
+      {
+        "name": "options",
+        "default": []
+      },
+      {
+        "name": "label"
       }
     ],
     "renderingHints": {
@@ -11629,6 +12863,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -11849,6 +13089,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -11937,6 +13203,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -12143,6 +13415,45 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minValue",
+        "label": "Min value",
+        "default": ""
+      },
+      {
+        "key": "maxValue",
+        "label": "Max value",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -12314,6 +13625,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onPageChange",
@@ -12401,6 +13724,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -12581,6 +13910,45 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": false
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minLength",
+        "label": "Min length",
+        "default": ""
+      },
+      {
+        "key": "maxLength",
+        "label": "Max length",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -12715,6 +14083,12 @@
         "label": "Show download button",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -12742,6 +14116,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [],
     "actions": [],
     "exposedVariables": []
@@ -12755,6 +14155,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -12923,6 +14329,45 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minLength",
+        "label": "Min length",
+        "default": ""
+      },
+      {
+        "key": "maxLength",
+        "label": "Max length",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -13302,6 +14747,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -13504,6 +14961,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [],
     "actions": [
       {
@@ -13585,6 +15054,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{true}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onDetect",
@@ -13641,6 +15136,12 @@
           "column",
           "wrap"
         ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -13832,6 +15333,36 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "customRule",
+        "label": "Custom validation"
+      },
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onSelectionChange",
@@ -13900,6 +15431,33 @@
       {
         "name": "label",
         "default": "Select"
+      },
+      {
+        "name": "value"
+      },
+      {
+        "name": "options",
+        "default": []
+      },
+      {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isDisabled",
+        "default": false
       }
     ]
   },
@@ -13970,6 +15528,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -14055,6 +15639,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": true
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": false
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -14259,6 +15869,25 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": true
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": false
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -14373,6 +16002,12 @@
         "default": "{{[{\"label\":\"Card1\",\"value\":\"1\", \"format\": \"plain\"},{\"label\":\"Card2\",\"value\":\"2\", \"format\": \"plain\"},{\"label\":\"Card3\",\"value\":\"3\", \"format\": \"plain\"}]}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -14383,6 +16018,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -14448,6 +16089,25 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -14572,6 +16232,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [],
     "actions": [
       {
@@ -14665,6 +16351,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [],
@@ -14845,6 +16557,14 @@
         ]
       },
       {
+        "key": "visibility",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "default": "{{false}}"
+      },
+      {
         "key": "direction",
         "default": "left"
       },
@@ -14860,6 +16580,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -15048,6 +16780,18 @@
         "default": "{{true}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "tooltipFormat",
         "label": "Tooltip",
         "default": "plainText",
@@ -15163,6 +16907,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [],
@@ -15420,6 +17176,32 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -15520,6 +17302,12 @@
         "label": "Svg  data",
         "valueType": "string",
         "default": "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" stroke-width=\"2\" stroke=\"currentColor\" fill=\"none\" stroke-lin…"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -15539,6 +17327,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [],
@@ -15919,6 +17733,11 @@
       {
         "key": "actions",
         "default": []
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
       }
     ],
     "styles": [
@@ -16049,6 +17868,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop ",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -16393,6 +18224,40 @@
       }
     },
     "authoringHints": {
+      "columnTypes": {
+        "active": [
+          "string",
+          "number",
+          "text",
+          "datepicker",
+          "select",
+          "newMultiSelect",
+          "tagsV2",
+          "boolean",
+          "image",
+          "link",
+          "json",
+          "markdown",
+          "html",
+          "rating",
+          "button"
+        ],
+        "deprecatedReplacements": {
+          "default": "string",
+          "badge": "newMultiSelect",
+          "dropdown": "select",
+          "badges": "newMultiSelect",
+          "tags": "tagsV2",
+          "radio": "select",
+          "multiselect": "newMultiSelect",
+          "toggle": "select"
+        },
+        "exactCaseRule": "Use exact lowercase/camel-case runtime ids: datepicker, select, newMultiSelect, and tagsV2."
+      },
+      "dynamicColumns": {
+        "rule": "columnData is evaluated once while ToolJet constructs the column model; rowData and cellValue do not exist there. Put per-cell transformations, editability, visibility, colors, and dynamicOptions on static columns instead.",
+        "conditionalStyleRule": "When textColor, cellBackgroundColor, isEditable, columnVisibility, linkTarget, or jsonIndentation is a {{ }} expression, include that exact property name in the column fxActiveFields array."
+      },
       "serverSideDataFlow": {
         "exposedVariables": {
           "pageIndex": "1-based number",
@@ -16763,6 +18628,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onTabSwitch",
@@ -16895,7 +18772,10 @@
         "name": "isLoading",
         "default": false
       }
-    ]
+    ],
+    "renderingHints": {
+      "staticContentFit": "Size against the deepest child across every pane. Current pane chrome is 32px plus the 50px tab strip (82px total); hideTabs removes the 50px strip."
+    }
   },
   "Tags": {
     "type": "Tags",
@@ -16928,6 +18808,12 @@
         ]
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -16938,6 +18824,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -17082,6 +18974,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [],
@@ -17342,6 +19246,18 @@
         "default": ""
       }
     ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onClick",
@@ -17417,7 +19333,8 @@
         "24px at 1.5 line-height": "50px authored height",
         "32px at 1.5 line-height": "60px authored height"
       },
-      "note": "The canvas wrapper and Text border consume 6px. A 24px Text at the default 1.5 line-height needs 42px, so the default 40px component clips glyphs/descenders. Use 50px, or dynamicHeight for wrapping content."
+      "wrappedContentEstimate": "For static content, preserve each h1-h6/p/div/li/br block and estimate about four characters per canvas-width column. Multi-block or wrapped Text needs the full line count plus one line of safety; enable dynamicHeight when content is variable.",
+      "note": "The canvas wrapper and Text border consume 6px. A 24px Text at the default 1.5 line-height needs 42px, so the default 40px component clips glyphs/descenders. Multi-line content can overflow into the next component; size it from the wrapped line count or use dynamicHeight."
     }
   },
   "TextArea": {
@@ -17429,6 +19346,12 @@
       "height": 100
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -17609,6 +19532,45 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minLength",
+        "label": "Min length",
+        "default": ""
+      },
+      {
+        "key": "maxLength",
+        "label": "Max length",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -17650,30 +19612,6 @@
       {
         "handle": "setBlur",
         "displayName": "Set blur"
-      },
-      {
-        "handle": "disable",
-        "displayName": "Disable(deprecated)",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "visibility",
-        "displayName": "Visibility(deprecated)",
-        "params": [
-          {
-            "handle": "visibility",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
       },
       {
         "handle": "setVisibility",
@@ -17747,6 +19685,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -17933,6 +19877,45 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "regex",
+        "label": "Regex",
+        "default": ""
+      },
+      {
+        "key": "minLength",
+        "label": "Min length",
+        "default": ""
+      },
+      {
+        "key": "maxLength",
+        "label": "Max length",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -17974,30 +19957,6 @@
       {
         "handle": "setBlur",
         "displayName": "Set blur"
-      },
-      {
-        "handle": "disable",
-        "displayName": "Disable(deprecated)",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "visibility",
-        "displayName": "Visibility(deprecated)",
-        "params": [
-          {
-            "handle": "visibility",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
       },
       {
         "handle": "setVisibility",
@@ -18084,9 +20043,19 @@
         "label": "Hide date",
         "valueType": "boolean",
         "default": "{{false}}"
-      }
-    ],
-    "styles": [
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "visibility",
         "label": "Visibility",
@@ -18094,9 +20063,45 @@
         "default": "{{true}}"
       },
       {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [],
@@ -18309,6 +20314,40 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "minTime",
+        "label": "Min Time",
+        "default": ""
+      },
+      {
+        "key": "maxTime",
+        "label": "Max Time",
+        "default": ""
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": ""
+      },
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onSelect",
@@ -18452,6 +20491,12 @@
           "countUp",
           "countDown"
         ]
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -18471,6 +20516,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -18554,6 +20625,32 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
+    "general": [
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string"
+      }
+    ],
+    "generalStyles": [
+      {
+        "key": "boxShadow",
+        "label": "Box Shadow",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [
@@ -18697,6 +20794,30 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -19136,6 +21257,42 @@
         "default": ""
       }
     ],
+    "validation": [
+      {
+        "key": "mandatory",
+        "label": "Make this field mandatory",
+        "default": "{{false}}"
+      },
+      {
+        "key": "minSelection",
+        "label": "Minimum selection",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "maxSelection",
+        "label": "Maximum selection",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "customRule",
+        "label": "Custom validation",
+        "default": null
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
+      }
+    ],
     "events": [
       {
         "id": "onChange",
@@ -19320,6 +21477,18 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      }
+    ],
+    "others": [
+      {
+        "key": "showOnDesktop",
+        "label": "Show on desktop",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showOnMobile",
+        "label": "Show on mobile",
+        "default": "{{false}}"
       }
     ],
     "events": [],

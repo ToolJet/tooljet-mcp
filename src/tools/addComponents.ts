@@ -11,7 +11,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'Prefer this over repeated add_component when building an app — it is one request. Returns ' +
       '[{ component_id, name }]. Note: the batch is atomic — if one component is invalid (e.g. missing ' +
       'name), the whole call fails; fix that component and retry. ' +
-      'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
+      'Property/style/validation/general/general_styles/other leaves may be supplied as concise raw values or canonical ' +
       '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in each component’s top-level `styles` object, NOT under `properties` — ToolJet silently ignores ' +
@@ -19,7 +19,9 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children ' +
       'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
       'coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child ' +
-      '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
+      '`slot_name` to `header`, `body`, or `footer`; body is the default. For a Tabs parent, set `tab_id` ' +
+      'to the tab\'s persisted string id (not its title); this works with same-batch `parent_ref`. ' +
+      'A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
       'those defaults (use Html for wrapped multi-line card content).',
     inputSchema: {

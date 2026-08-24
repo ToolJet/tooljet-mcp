@@ -1,6 +1,28 @@
 # Component contracts and specialized rendering
 
-Read this selectively for exact component binding rules or the built-in palette. Prefer batched, section-filtered `get_component_catalog` calls for the types actually used. Use per-type `requests` when those types need different sections.
+Read this selectively for semantic component selection, exact binding rules, or the built-in palette. Prefer batched, section-filtered `get_component_catalog` calls for the types actually used.
+
+## Intent-to-component selection guide
+
+Select by the user's information need, not by the easiest component to bind. The live `get_component_catalog` palette and typed contracts remain authoritative.
+
+- **Headline measure or KPI:** `Statistics`. Bind one scalar aggregate, not a result array.
+- **Trend, distribution, share, ranking, or target comparison:** `Chart`. Shape the data explicitly and keep labels readable.
+- **Dense comparison, sorting, filtering, row selection, inline/bulk operations:** `Table`.
+- **Rich compact browsing of repeated records:** `Listview`; use `mode:"grid"` for a card grid. Do not invent a GridView type.
+- **Single-record facts:** `KeyValuePair` when native editing/changeSet behavior matters; projected `Html` for a polished read-only card.
+- **Chronology:** `Timeline`. **Ordered process:** `Steps`. **User-controlled ordering:** `ReorderableList`.
+- **Workflow board:** `Kanban`. **Calendar/schedule:** `Calendar`. Use them only when those interaction models are actually requested.
+- **Status labels:** `Tags`. **Linear completion:** `ProgressBar`. **Compact gauge:** `CircularProgressBar`.
+- **Large structured payload:** `JSONExplorer`; use `JSONEditor` only when the user must edit it.
+- **Layout/grouping:** `Container`, `FlexContainer`, `Tabs`, `Accordion`, `Form`, and `ModalV2` according to their real semantics—not as decorative wrappers.
+- **Text entry:** `TextInput`, `TextArea`, `RichTextEditor`, `NumberInput`, `CurrencyInput`, `PasswordInput`, `EmailInput`, `PhoneInput`, `CodeEditor`, or `JSONEditor` according to the value being collected.
+- **Selection:** `DropdownV2` for one compact choice; `MultiselectV2` for several; `RadioButtonV2` for a few visible exclusive choices; `Checkbox` for one independent boolean; `ToggleSwitchV2` for an immediate on/off setting. Use `TreeSelect`/`Cascader` only for real hierarchy.
+- **Date/time/range:** `DatePickerV2`, `DatetimePickerV2`, `TimePicker`, or `DaterangePicker`. **Files:** `FilePicker`. **Actions:** `Button`, `Icon`, `Link`, or `ButtonGroupV2`.
+- **Trusted external content:** `IFrame`. **CustomComponent:** only for an explicit advanced requirement with maintainable code and no suitable governed built-in.
+- **Navigation:** prefer ToolJet pages/sidebar; use `Navigation` only when the request needs a custom navigation surface.
+
+Selection rules: do not default every collection to Table; do not render a single record as a one-row Table. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.
 
 ## Built-in components (pick from these first)
 
@@ -46,8 +68,6 @@ Read this selectively for exact component binding rules or the built-in palette.
 | `Listview` | Listview — List multiple items |
 | `Map` | Map — Display map locations |
 | `ModalV2` | Modal — Show pop-up windows |
-| `ModuleContainer` | ModuleContainer — Module Container |
-| `ModuleViewer` | ModuleViewer — Module |
 | `MultiselectV2` | Multiselect — Multiple item selector |
 | `Navigation` | Navigation — Create custom navigation menus |
 | `NumberInput` | NumberInput — Numeric input field |
@@ -108,7 +128,7 @@ TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: 
 Bind cardData from query array shaped as [{id, title, columnId}]; bind columnData from query array shaped as [{id, title}]. lastCardMovement exposes {cardId, sourceColumn, destinationColumn} — use in update queries triggered by onCardMoved event to persist reordering.
 
 ### KeyValuePair
-Bind data property to a query object for display/edit: `{{queries.queryName.data[0]}}`. changeSet exposes only the modified key-value pairs — use in update queries rather than the full data object. An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection. For date/timestamp values, use `fieldType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source instead of displaying a raw ISO string. The current renderer does not apply a visible inset for `styles.padding`; do not rely on it for card padding. For a native side-aligned panel, set `styles.autoLabelWidth.value="{{true}}"`—the persisted `false` + `labelWidth:33` defaults waste one third of a wide panel. Size a static panel near `50 * fieldCount - 12` pixels instead of stretching it. For a polished read-only details card that needs reliable padding and responsive columns, prefer one `Html` component with explicitly projected bindings and root CSS padding/box-sizing; keep KeyValuePair when native field editing/changeSet behavior is needed.
+Bind data property to a query object for display/edit: `{{queries.queryName.data[0]}}`. changeSet exposes only the modified key-value pairs — use in update queries rather than the full data object. An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection. For date/timestamp values, use `fieldType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source instead of displaying a raw ISO string.
 
 ### Listview
 Bind data property to a query array: `{{queries.queryName.data}}`. Child components inside the list access the current row via the list's data binding context.
@@ -117,7 +137,7 @@ Bind data property to a query array: `{{queries.queryName.data}}`. Child compone
 show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
 
 ### MultiselectV2
-Only `.searchText` is exposed — there is no `.values` or `.selected` variable on MultiselectV2.
+Read selected values from `.values`, selected `{label, value, caption}` records from `.selectedOptions`, available option records from `.options`, and the live filter text from `.searchText`. Use total bindings such as `{{components.multiName.values ?? []}}`; do not invent a `.selected` accessor.
 
 ### NumberInput
 Use debounce: 300 on onChange events that trigger queries. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
@@ -126,7 +146,7 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 currentPageIndex is 1-based (starts at 1, not 0). Wire to Table: add a control-component event that calls setPage with value=`{{components.paginationName.currentPageIndex}}`. Bind numberOfPages to the total record count from a COUNT query.
 
 ### RadioButtonV2
-Exposed variable is `.label` — there is NO `.value` on RadioButtonV2. Use `{{components.radioName.label}}` to read the selected option.
+Read the selected option value from `.value` and its display text from `.label`. Use `.value` for filters and mutations; use `.label` only when the user-facing caption is needed.
 
 ### Statistics
 primaryValue must be a scalar — bind `queries.name.data[0].fieldName` from an aggregate query, never the full array. secondarySignDisplay accepted values: 'positive', 'negative', 'none' — never a boolean. icon is MANDATORY — always set it; never leave empty. primaryPrefixText / primarySuffixText are static strings only — do not bind expressions here. Statistics is display-only — its exposed variables are read-back values, not filter inputs.
@@ -139,10 +159,6 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 
 ### TextInput
 Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
-
-## Map marker selection
-
-Map exposes both `center` and `selectedMarker`. After `onMarkerClick`, `{{components.mapName.selectedMarker}}` is the complete clicked marker object from `defaultMarkers`; include every downstream field you need (for example `vehicle_id`, `driver_name`, `latitude`, `longitude`, and status) in each marker object, then bind a details modal or panel to `selectedMarker.<field>`. Fetch the live Map `events` and `exposedVariables` contract before authoring this flow. A common chain is marker click → show-modal; if the chain also navigates, keep navigation last.
 
 ## File generation formats
 

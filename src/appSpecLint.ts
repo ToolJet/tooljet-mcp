@@ -266,7 +266,8 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
         );
         parent = component.parent;
       }
-      if (parent) parent = encodeComponentParent(parent, component.slotName);
+      const parentId = parent;
+      if (parent) parent = encodeComponentParent(parent, component.slotName, component.tabId);
       return {
         id,
         name: component.name,
@@ -279,6 +280,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
           : undefined),
         parent,
         ...(component.slotName && component.slotName !== 'body' ? { slot_name: component.slotName } : {}),
+        ...(component.tabId !== undefined ? { parent_id: parentId, tab_id: component.tabId } : {}),
       };
     });
     const pageSummary = existingPage ?? {
@@ -445,7 +447,7 @@ function resolveAction(
   }
   const actionId = action.actionId;
   const target =
-    actionId === 'run-query'
+    ['run-query', 'reset-query', 'abort-query'].includes(String(actionId))
       ? queries.get(targetRef)
       : actionId === 'switch-page'
         ? pages.get(targetRef)
@@ -456,7 +458,13 @@ function resolveAction(
     errors.push(`${label} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
-  if (actionId === 'run-query') return { ...action, queryId: target.id, queryName: target.name };
+  if (['run-query', 'reset-query', 'abort-query'].includes(String(actionId))) {
+    return {
+      ...action,
+      queryId: target.id,
+      ...(actionId === 'run-query' ? { queryName: target.name } : {}),
+    };
+  }
   if (actionId === 'switch-page') return { ...action, pageId: target.id };
   if (actionId === 'show-modal' || actionId === 'close-modal') return { ...action, modal: target.id };
   if (actionId === 'control-component' || actionId === 'scroll-component-into-view') {

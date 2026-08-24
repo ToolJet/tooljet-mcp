@@ -9,5 +9,9 @@
     "RadioButton": "RadioButtonV2",
     "RangeSlider": "RangeSliderV2",
     "ToggleSwitch": "ToggleSwitchV2"
+  },
+  "authoringExclusions": {
+    "ModuleContainer": "ToolJet creates this internal root only for module-type apps; do not add it to a normal app page.",
+    "ModuleViewer": "Module instances require the module lifecycle/API and are not authored as a standalone normal-app component."
   }
 }

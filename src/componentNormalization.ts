@@ -8,12 +8,14 @@ export interface ComponentNormalization<T extends ComponentSpec = ComponentSpec>
     properties?: Record<string, unknown>;
     styles?: Record<string, unknown>;
     validation?: Record<string, unknown>;
+    general?: Record<string, unknown>;
+    generalStyles?: Record<string, unknown>;
     others?: Record<string, unknown>;
   };
   warnings: string[];
 }
 
-type DefinitionSection = 'properties' | 'styles' | 'validation' | 'others';
+type DefinitionSection = 'properties' | 'styles' | 'validation' | 'general' | 'generalStyles' | 'others';
 
 function normalizeSection(
   section: Record<string, unknown> | undefined
@@ -87,7 +89,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   options: { stripUnknownKeys?: boolean } = {}
 ): ComponentNormalization<T> {
   const normalizedSections = Object.fromEntries(
-    (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).map((section) => [
+    (['properties', 'styles', 'validation', 'general', 'generalStyles', 'others'] as DefinitionSection[]).map((section) => [
       section,
       normalizeSection(component[section]),
     ])
@@ -313,7 +315,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   }
 
   const patch = Object.fromEntries(
-    (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).flatMap((section) => {
+    (['properties', 'styles', 'validation', 'general', 'generalStyles', 'others'] as DefinitionSection[]).flatMap((section) => {
       const envelopePatch = normalizedSections[section].patch ?? {};
       const semanticPatch = section === 'properties' ? propertyPatch : section === 'styles' ? stylePatch : {};
       const merged = { ...envelopePatch, ...semanticPatch };
@@ -327,6 +329,8 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       properties,
       ...(normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {}),
       ...(normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {}),
+      ...(normalizedSections.general.value ? { general: normalizedSections.general.value } : {}),
+      ...(normalizedSections.generalStyles.value ? { generalStyles: normalizedSections.generalStyles.value } : {}),
       ...(normalizedSections.others.value ? { others: normalizedSections.others.value } : {}),
     } as T,
     patch,

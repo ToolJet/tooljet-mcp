@@ -18,6 +18,7 @@ import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
+import { getEventActionCatalogTool } from './getEventActionCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
 import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
@@ -57,6 +58,9 @@ import {
   type RuntimeFreshnessMonitor,
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
+import { platformCoreTools } from './platformCore.js';
+import { platformDataTools } from './platformData.js';
+import { platformWorkflowOpsTools } from './platformWorkflowOps.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -98,6 +102,7 @@ export function registerTools(
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),
+    getEventActionCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),
     getComponentTool(client),
@@ -125,6 +130,9 @@ export function registerTools(
     listEventsTool(client),
     updateEventsTool(client),
     deleteEventTool(client),
+    ...platformCoreTools(client),
+    ...platformDataTools(client),
+    ...platformWorkflowOpsTools(client),
   ];
 
   const exposedTools = includeLegacySingularCreateTools()

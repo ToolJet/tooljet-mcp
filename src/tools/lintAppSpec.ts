@@ -134,6 +134,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
               parentRef: component.parent_ref,
               parent: component.parent,
               slotName: component.slot_name,
+              tabId: component.tab_id,
             })),
           })),
           events: args.events?.map((event) => ({

@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { validateEvents } from '../eventValidation.js';
+import { deduplicateEventSpecs, persistedEventSpecs, validateEvents } from '../eventValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const eventSchema = z
   .object({
     source_id: z.string().optional(),
-    source_type: z.enum(['component', 'data_query', 'page', 'table_column', 'table_action']).optional(),
+    source_type: z.enum(['component', 'data_query', 'page', 'table_column']).optional(),
     /** Backward-compatible shorthand for source_type=component. */
     component_id: z.string().optional(),
     ref: z.string().min(1).optional(),
@@ -24,18 +24,18 @@ const eventSchema = z
     message: 'component_id can only be used with source_type=component; use source_id for query/page events.',
   })
   .refine(
-    (event) => !['table_column', 'table_action'].includes(event.source_type ?? '') || !!event.ref,
+    (event) => event.source_type !== 'table_column' || !!event.ref,
     {
-      message: 'table_column/table_action events require ref; Button columns use `<column key or name>::<button id>`.',
+      message: 'table_column events require ref; Button columns use `<column key or name>::<button id>`.',
     }
   )
-  .refine((event) => !event.ref || ['table_column', 'table_action'].includes(event.source_type ?? ''), {
-    message: 'ref is only valid with source_type=table_column or the deprecated table_action.',
+  .refine((event) => !event.ref || event.source_type === 'table_column', {
+    message: 'ref is only valid with source_type=table_column.',
   });
 
 type EventInput = {
   source_id?: string;
-  source_type?: 'component' | 'data_query' | 'page' | 'table_column' | 'table_action';
+  source_type?: 'component' | 'data_query' | 'page' | 'table_column';
   component_id?: string;
   ref?: string;
   trigger: string;
@@ -51,9 +51,9 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
       "{ source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. " +
       "trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). " +
       "For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. " +
-      "The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. " +
+      "Deprecated table_action events are inspection-only and cannot be created; use a Table columnType='button' with source_type='table_column'. " +
       "Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. " +
-      "action is { actionId, ...params } — use these EXACT ids (an invalid actionId silently does nothing):\n" +
+      "action is { actionId, ...params } — fetch unfamiliar or less common contracts from get_event_action_catalog; an invalid actionId silently does nothing:\n" +
       "  • run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n" +
       "  • switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n" +
       "  • show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n" +
@@ -61,7 +61,7 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
       "  • set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n" +
       "  • control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n" +
       "  • reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n" +
-      "  • other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\n" +
+      "  • other valid ids include reset-query, abort-query, unset-page-variable, unset-all-page-variables, unset-all-custom-variables, toggle-app-mode, unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, and logout. Fetch their exact contract instead of guessing. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\n" +
       "For reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. " +
       "For master→detail, order handlers as set-custom-variable → optional run-query → switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. " +
       'Create all of an app\'s events in one call. MCP validates source existence, component-specific triggers, ' +
@@ -86,15 +86,35 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
           action: event.action,
           name: event.name,
         }));
-        const validation = validateEvents(summary, events);
+        const deduplicated = deduplicateEventSpecs(events, persistedEventSpecs(summary));
+        const validation = validateEvents(summary, deduplicated.events);
         if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
+        if (!deduplicated.events.length) {
+          return ok({
+            created: 0,
+            skipped_duplicates: deduplicated.skipped,
+            warnings: [
+              ...validation.warnings,
+              `Skipped ${deduplicated.skipped} exact duplicate event handler(s); no write was needed.`,
+            ],
+          });
+        }
         const result = await client.createEvents({
           appId: args.app_id,
           versionId: args.version_id,
-          events,
+          events: deduplicated.events,
           existingEvents: summary.events,
         });
-        return ok({ ...result, warnings: validation.warnings });
+        return ok({
+          ...result,
+          ...(deduplicated.skipped ? { skipped_duplicates: deduplicated.skipped } : {}),
+          warnings: [
+            ...validation.warnings,
+            ...(deduplicated.skipped
+              ? [`Skipped ${deduplicated.skipped} exact duplicate event handler(s).`]
+              : []),
+          ],
+        });
       } catch (err) {
         return fail(err);
       }

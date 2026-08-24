@@ -1,13 +1,22 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ComponentSchema } from '../catalog.js';
-import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from '../catalog.js';
+import {
+  getCatalog,
+  getComponentAuthoringExclusion,
+  getComponentSchema,
+  getLegacyComponentReplacement,
+} from '../catalog.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const CATALOG_SECTIONS = [
   'overview',
   'properties',
   'styles',
+  'validation',
+  'others',
+  'general',
+  'generalStyles',
   'events',
   'actions',
   'exposedVariables',
@@ -95,6 +104,18 @@ function selectSchema(schema: ComponentSchema, args: CatalogArgs): Record<string
   if (sections.has('styles')) {
     result.styles = selectEntries(schema.styles, args.style_keys, detail);
   }
+  if (sections.has('validation')) {
+    result.validation = selectEntries(schema.validation ?? [], undefined, detail);
+  }
+  if (sections.has('others')) {
+    result.others = selectEntries(schema.others ?? [], undefined, detail);
+  }
+  if (sections.has('general')) {
+    result.general = selectEntries(schema.general ?? [], undefined, detail);
+  }
+  if (sections.has('generalStyles')) {
+    result.generalStyles = selectEntries(schema.generalStyles ?? [], undefined, detail);
+  }
   if (sections.has('events') && schema.events !== undefined) result.events = schema.events;
   if (sections.has('actions') && schema.actions !== undefined) result.actions = schema.actions;
   if (sections.has('exposedVariables') && schema.exposedVariables !== undefined) {
@@ -125,6 +146,11 @@ function legacyNotice(type: string): Record<string, unknown> {
     : {};
 }
 
+function authoringNotice(type: string): Record<string, unknown> {
+  const reason = getComponentAuthoringExclusion(type);
+  return reason ? { authoring_excluded: true, authoring_exclusion_note: reason } : {};
+}
+
 export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
   return {
     name: 'get_component_catalog',
@@ -132,14 +158,15 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
       'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one ' +
       'component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" ' +
       'and the overview/properties/events/actions sections; compact ' +
-      'property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when ' +
+      'definition-section lists omit labels and defaults. Use detail:"full" or exact *_keys filters only when ' +
       'those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. ' +
       'Use requests when different types need different sections/keys in one call; top-level ' +
       'detail/sections/keys apply as defaults to every requested type, and the type/types/requests ' +
       'selectors may be combined. ' +
       'sections selects only overview, ' +
-      'properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; ' +
-      'property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. ' +
+      'properties, styles, validation, others, general, generalStyles, events, actions, exposedVariables, ' +
+      'defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow the two largest arrays. ' +
+      'general includes universal fields such as tooltip; generalStyles includes boxShadow. A batch returns {components,unknown_types}. ' +
       'GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". ' +
       'authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar ' +
       'contracts once and reuse them; never guess property/event/action ids.',
@@ -182,6 +209,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
           return ok({
             ...selectSchema(schema, args),
             ...legacyNotice(schema.type),
+            ...authoringNotice(schema.type),
             ...(resolved.alias ? { alias: resolved.alias } : {}),
           });
         }
@@ -205,7 +233,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
 
         const components: Record<string, unknown>[] = [];
         const unknownTypes: string[] = [];
-        const seenResolved = new Set<string>();
+        const componentIndexByType = new Map<string, number>();
         const seenUnknown = new Set<string>();
         for (const request of ordered) {
           if (!request.type) continue;
@@ -219,12 +247,23 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
             continue;
           }
           // Dedupe by resolved type so redundant selectors/aliases don't yield duplicate schemas.
-          if (seenResolved.has(resolved.type)) continue;
-          seenResolved.add(resolved.type);
+          const existingIndex = componentIndexByType.get(resolved.type);
+          if (existingIndex !== undefined) {
+            if (resolved.alias) {
+              const existing = components[existingIndex]!;
+              const requestedAliases = new Set((existing.requested_aliases as string[] | undefined) ?? []);
+              requestedAliases.add(request.type);
+              existing.requested_aliases = [...requestedAliases];
+            }
+            continue;
+          }
+          componentIndexByType.set(resolved.type, components.length);
           components.push({
             ...selectSchema(schema, request),
             ...legacyNotice(schema.type),
+            ...authoringNotice(schema.type),
             ...(resolved.alias ? { alias: resolved.alias } : {}),
+            ...(resolved.alias ? { requested_aliases: [request.type] } : {}),
           });
         }
         return ok({ components, unknown_types: unknownTypes });

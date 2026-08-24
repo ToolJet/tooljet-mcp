@@ -13,6 +13,87 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 
 The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` (or use `type` for one) and request their exact needed sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
 
+## Intent-to-component selection guide
+
+Select by the user's information need, not by the easiest component to bind. The live `get_component_catalog` palette and typed contracts remain authoritative.
+
+- **Headline measure or KPI:** `Statistics`. Bind one scalar aggregate, not a result array.
+- **Trend, distribution, share, ranking, or target comparison:** `Chart`. Shape the data explicitly and keep labels readable.
+- **Dense comparison, sorting, filtering, row selection, inline/bulk operations:** `Table`.
+- **Rich compact browsing of repeated records:** `Listview`; use `mode:"grid"` for a card grid. Do not invent a GridView type.
+- **Single-record facts:** `KeyValuePair` when native editing/changeSet behavior matters; projected `Html` for a polished read-only card.
+- **Chronology:** `Timeline`. **Ordered process:** `Steps`. **User-controlled ordering:** `ReorderableList`.
+- **Workflow board:** `Kanban`. **Calendar/schedule:** `Calendar`. Use them only when those interaction models are actually requested.
+- **Status labels:** `Tags`. **Linear completion:** `ProgressBar`. **Compact gauge:** `CircularProgressBar`.
+- **Large structured payload:** `JSONExplorer`; use `JSONEditor` only when the user must edit it.
+- **Layout/grouping:** `Container`, `FlexContainer`, `Tabs`, `Accordion`, `Form`, and `ModalV2` according to their real semantics—not as decorative wrappers.
+- **Text entry:** `TextInput`, `TextArea`, `RichTextEditor`, `NumberInput`, `CurrencyInput`, `PasswordInput`, `EmailInput`, `PhoneInput`, `CodeEditor`, or `JSONEditor` according to the value being collected.
+- **Selection:** `DropdownV2` for one compact choice; `MultiselectV2` for several; `RadioButtonV2` for a few visible exclusive choices; `Checkbox` for one independent boolean; `ToggleSwitchV2` for an immediate on/off setting. Use `TreeSelect`/`Cascader` only for real hierarchy.
+- **Date/time/range:** `DatePickerV2`, `DatetimePickerV2`, `TimePicker`, or `DaterangePicker`. **Files:** `FilePicker`. **Actions:** `Button`, `Icon`, `Link`, or `ButtonGroupV2`.
+- **Trusted external content:** `IFrame`. **CustomComponent:** only for an explicit advanced requirement with maintainable code and no suitable governed built-in.
+- **Navigation:** prefer ToolJet pages/sidebar; use `Navigation` only when the request needs a custom navigation surface.
+
+Selection rules: do not default every collection to Table; do not render a single record as a one-row Table. Deprecated/legacy component types are inspection/repair only, and module-internal types are not normal page components.
+
+## Theme-aware styling
+
+Themes are optional. Do not create a custom theme, change the workspace default, or force a theme merely to polish an app. For an existing app, read `get_app_settings({app_id,version_id})` before styling. If it reports a selected theme, treat that theme as the app's visual foundation; when the user asks to select another existing theme, resolve it with `list_app_themes()` and apply only its id with `update_app_settings(...,theme_id)`.
+
+### Theme definition contract
+
+`manage_theme` creates or replaces a complete definition with five groups. Theme definitions store **literal light/dark color values** (normally hex), not `var(--cc-...)` references:
+
+```json
+{
+  "brand": { "colors": {
+    "primary": { "light": "#4368E3", "dark": "#4A6DD9" },
+    "secondary": { "light": "#6A727C", "dark": "#CFD3D8" },
+    "tertiary": { "light": "#1E823B", "dark": "#318344" }
+  }},
+  "text": {
+    "font": "IBM Plex Sans",
+    "colors": {
+      "primary": { "light": "#1B1F24", "dark": "#CFD3D8" },
+      "placeholder": { "light": "#6A727C", "dark": "#858C94" }
+    }
+  },
+  "border": {
+    "radius": { "default": 6, "small": 0, "large": 0 },
+    "colors": {
+      "default": { "light": "#CCD1D5", "dark": "#3C434B" },
+      "weak": { "light": "#E4E7EB", "dark": "#2B3036" }
+    }
+  },
+  "systemStatus": { "colors": {
+    "success": { "light": "#1E823B", "dark": "#318344" },
+    "error": { "light": "#D72D39", "dark": "#D03F43" },
+    "warning": { "light": "#BF4F03", "dark": "#BA5722" }
+  }},
+  "surface": { "colors": {
+    "appBackground": { "light": "#F6F6F6", "dark": "#121518" },
+    "surface1": { "light": "#FFFFFF", "dark": "#1E2226" },
+    "surface2": { "light": "#F6F8FA", "dark": "#2B3036" },
+    "surface3": { "light": "#E4E7EB", "dark": "#3C434B" }
+  }}
+}
+```
+
+Creating a theme does not select it for the app. Create it only when requested, then apply its returned id with `update_app_settings`. Updating a definition replaces the definition, so start from the existing complete definition and change only the intended leaves. Do not set a workspace theme as default unless the user explicitly approves that workspace-wide change.
+
+### Component style tokens
+
+ToolJet turns the selected theme's active light/dark colors into semantic CSS variables. Preserve a component's existing token-backed defaults; when an explicit color style is needed and the role matches, use these exact raw style values:
+
+- brand: `var(--cc-primary-brand)`, `var(--cc-secondary-brand)`, `var(--cc-tertiary-brand)`
+- text/icon: `var(--cc-primary-text)`, `var(--cc-placeholder-text)`, `var(--cc-default-icon)`
+- border: `var(--cc-default-border)`, `var(--cc-weak-border)`
+- status: `var(--cc-success-systemStatus)`, `var(--cc-error-systemStatus)`, `var(--cc-warning-systemStatus)`
+- surfaces: `var(--cc-appBackground-surface)`, `var(--cc-surface1-surface)`, `var(--cc-surface2-surface)`, `var(--cc-surface3-surface)`
+
+Do not invent a `--cc-` name. In an MCP component spec, put a static token directly in the top-level style wrapper—for example `styles.backgroundColor.value = "var(--cc-surface1-surface)"`—not inside `{{...}}`. Use a binding expression only when the style is genuinely conditional.
+
+Tokens are a preference, not a prohibition on literal colors. A deliberate one-off accent, data-series color, illustration color, or contrast correction may use a hex/RGB value when it produces the better result or no semantic token fits. Repeated foundational roles—brand actions, page/surface backgrounds, primary text, standard borders, and success/error/warning states—should remain token-backed when a theme is selected, because hard-coded component colors will not change with the theme or light/dark mode. Verify contrast in both modes whenever a token is placed on a non-token or custom background.
+
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
 ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.
@@ -21,7 +102,9 @@ ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — t
 - `top` and `height` are in **pixels**, snapped to a **10px** vertical grid. A data table is commonly ~300–500px tall.
 - For one rectangle applied to both resolutions, use flat `layout:{top,left,width,height}`. For distinct resolution-specific placement, use `layouts:{desktop:{top,left,width,height},mobile:{top,left,width,height}}`. Do not put `desktop`/`mobile` inside `layout`; an invalid member rejects the entire atomic `add_components` batch.
 - **Stack using rendered height:** `B.top = A.top + A.renderedHeight + gap` (gap ~10–20px). Most widgets—including Text, Button, Html, Chart, Table, and Statistics—render at the authored `height`. ToolJet's top-aligned labelled form-input widgets render at **`height + 20px`**. Standard single-line inputs use their catalog default **40px** authored height, occupy about **60px** with the top label/validation footprint, and need a **70px** top-to-top row step with a 10px gap. Raising the authored height does not absorb the increment or enlarge the value text.
-- A static-height **Text still needs enough internal room for its line box**: minimum single-line height is `ceil(textSize * lineHeight + 6px)`, then round up to the 10px grid. The default line-height is 1.5, so 24px text needs 50px authored height and 32px text needs 60px. The outer widget can be the authored height while its glyphs are clipped inside.
+- **Check sibling overlap on both axes.** Two same-parent rectangles collide only when their horizontal ranges and rendered vertical ranges both intersect. Side-by-side controls need distinct `left` ranges; a +20px top offset aligns an unlabeled Button with top-labelled inputs but does not make two controls with the same `left` side-by-side.
+- A static-height **Text still needs enough internal room for every wrapped line**: minimum single-line height is `ceil(textSize * lineHeight + 6px)`, then round up to the 10px grid. Preserve h1–h6/p/div/li/br block boundaries and estimate roughly four characters per canvas-width column. Multi-block or wrapped text needs its full line count plus one line of safety; use `dynamicHeight` when content is variable. The outer widget can retain its authored height while text clips or visibly overflows into the next component.
+- **Content-fit nested canvases.** For static short/modest content, size to the deepest rendered child: Container base chrome = 20px (a shown header adds `headerHeight + 11`); standalone-child Form = 20px (shown header adds `headerHeight + 10`, footer adds `footerHeight + 14`); Tabs = 82px with its tab strip or 32px when `hideTabs` is true. Compute `max(child.top + child.renderedHeight) + chrome` across every pane/child—not array order. Use intentional fixed scrolling only for genuinely long content, and give side-by-side containers the larger fit height so their bottoms align.
 - The full canvas is 43 columns; how you use that space is a design choice (see Design defaults below) — don't reflexively span edge-to-edge.
 
 ## Design — decide before you build, then apply the visual defaults
@@ -55,6 +138,7 @@ Then hold to these:
 - **Chart widths** (defaults, not hard limits): a compact few-category pie/donut ≈ **13–15 columns**; a categorical bar with longer labels ≈ **20–24 columns**; at most **two** normal analytical charts in one ~39-column content row unless labels are short and readability is verified.
 - **Statistics sizing:** a value-only tile with `hideSecondary:true` needs at least **12 columns** and ≈ **110–120px** height (at most three per content row), but **12–17 columns is safe only for a short one- or two-word label**; longer labels can wrap vertically and hide the value, so shorten them or use at least 18 columns. A tile with visible secondary content needs at least **18 columns** and ≈ **130–150px** height (normally two per row).
 - **Table columns:** when presentation matters, set an **explicit, complete `columns` array** in the order you want and project the Table's `data` expression to new objects containing only visible and behavior-needed keys (for example, `queries.q.data.map(r => ({id:r.id,name:r.name,status:r.status}))`). An identity map (`.map(r => r)`) or object spread (`({...r})`) is **not** a safe projection: undeclared datasource fields can still leak. With `autogenerateColumns` enabled, ToolJet appends undeclared datasource fields after your explicit columns, which commonly exposes technical IDs and internal notes. For a behavior-only key such as `id`, keep it in `data` but declare its column with `columnVisibility:false`; this preserves it for `selectedRow`/actions and prevents autogeneration from showing it. Do not casually disable autogeneration: some ToolJet Table versions crash while generating column transformations when it is false. Do **not** rely on the property order of a transformed query object to reorder existing columns — it won't. Natural header casing is fine: **`headerCasing: "none"` is a valid value**.
+- **Table dynamic/conditional columns:** `columnData` is evaluated once before a row exists, so it must not reference `rowData` or `cellValue`. Put per-cell transformation/editability/visibility/color on static `columns`. Any dynamic `textColor`, `cellBackgroundColor`, `isEditable`, `columnVisibility`, `linkTarget`, or `jsonIndentation` also needs the matching name in `fxActiveFields`. Current types include `datepicker`, `select`, `newMultiSelect`, and `tagsV2`; do not author deprecated `dropdown`, `multiselect`, `tags`, `badge(s)`, `radio`, `toggle`, or `default` column types.
 - **Table row actions:** use a `columnType: "button"` column in the complete `columns` array; do not use deprecated `properties.actions`. Read `get_component_catalog({type:"Table",sections:["authoringHints"]})` for the exact column/button defaults. Wire each button with `source_type:"table_column"`, `trigger:"onClick"`, and `ref:"<column key or name>::<button id>"`. Button property expressions can use `rowData`/`cellValue`; event actions should read `components.<table>.selectedRow` (ToolJet sets it before the handler runs).
 - **Operational viewport:** on an **Operate** page with a bounded Table/Listview, avoid adding a page-level scrollbar on top of the pane's own vertical scrolling. Keep the single primary action inside the initial desktop viewport (as a safe authored-canvas default, its bottom should be around **720px or less**) by shortening the header/pane or moving the action above/beside the pane. Long forms and detail pages may deliberately scroll; browser-verify that choice instead of applying this threshold blindly.
 

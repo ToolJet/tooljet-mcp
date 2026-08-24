@@ -14,6 +14,14 @@ export interface LintResult {
   warnings: string[];
 }
 
+export interface LintComponentSpecOptions {
+  /** Which suggested property/style typo keys should block a write. Defaults to all for new specs. */
+  strictSuggestedKeys?: 'all' | 'none' | {
+    property?: ReadonlySet<string>;
+    style?: ReadonlySet<string>;
+  };
+}
+
 /** Style-ish keys ToolJet's renderer reads from `definition.styles`, NOT `properties` — placing them
  *  under `properties` is silently dropped. Single source of truth (also used by the client DTO builder). */
 export const STYLE_KEYS_IN_PROPERTIES = new Set([
@@ -121,6 +129,21 @@ const TABLE_FOOTER_HEIGHT_PX = 56;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
+/** Current options in ToolJet's Table ColumnManager/PropertiesTabElements.jsx. */
+const ACTIVE_TABLE_COLUMN_TYPES = new Set([
+  'string', 'number', 'text', 'datepicker', 'select', 'newMultiSelect', 'tagsV2', 'boolean',
+  'image', 'link', 'json', 'markdown', 'html', 'rating', 'button',
+]);
+const DEPRECATED_TABLE_COLUMN_REPLACEMENTS: Record<string, string> = {
+  default: 'string',
+  badge: 'newMultiSelect',
+  dropdown: 'select',
+  badges: 'newMultiSelect',
+  tags: 'tagsV2',
+  radio: 'select',
+  multiselect: 'newMultiSelect',
+  toggle: 'select',
+};
 const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
 /** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
  * primary action above this authored-canvas boundary when it follows an independently scrolling
@@ -141,12 +164,21 @@ export interface LintComponent {
   type?: string;
   properties?: Record<string, unknown>;
   styles?: Record<string, unknown>;
+  validation?: Record<string, unknown>;
+  general?: Record<string, unknown>;
+  generalStyles?: Record<string, unknown>;
+  others?: Record<string, unknown>;
   layout?: Rect;
   layouts?: { desktop?: Rect; mobile?: Rect };
   clientRef?: string;
   parentRef?: string;
   parent?: string;
+  /** Unsuffixed persisted parent id when parent includes a native slot/Tabs suffix. */
+  parentId?: string;
+  parent_id?: string;
   slotName?: ComponentSlotName;
+  tabId?: string;
+  tab_id?: string;
 }
 
 /** Read a property whose value is wrapped as `{ value: X }` (ToolJet's shape), or a bare value. */
@@ -381,6 +413,36 @@ function isDynamicBinding(value: unknown): boolean {
   return typeof value === 'string' && value.includes('{{');
 }
 
+function hasNestedToolJetBinding(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasNestedToolJetBinding);
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(hasNestedToolJetBinding);
+  }
+  if (typeof value !== 'string') return false;
+  let depth = 0;
+  for (let index = 0; index < value.length - 1; index += 1) {
+    const pair = value.slice(index, index + 2);
+    if (pair === '{{') {
+      depth += 1;
+      if (depth > 1) return true;
+      index += 1;
+    } else if (pair === '}}' && depth > 0) {
+      depth -= 1;
+      index += 1;
+    }
+  }
+  return false;
+}
+
+function containsRowScopedTableValue(value: unknown): boolean {
+  if (typeof value === 'string') return /\b(?:rowData|cellValue)\b/.test(value);
+  if (Array.isArray(value)) return value.some(containsRowScopedTableValue);
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(containsRowScopedTableValue);
+  }
+  return false;
+}
+
 function nestedMapInValue(value: unknown): boolean {
   if (typeof value === 'string') return value.includes('{{') && hasNestedMapCall(value);
   if (Array.isArray(value)) return value.some(nestedMapInValue);
@@ -497,7 +559,10 @@ export function renderedHeight(component: LintComponent, rect?: Rect): number {
 
 /** Text renders inside 4px of canvas-wrapper padding plus its own 1px top/bottom border. A single
  * line therefore needs fontSize * lineHeight + 6 authored pixels or descenders are clipped. */
-export function minimumTextHeight(component: LintComponent): number | undefined {
+export function minimumTextHeight(
+  component: LintComponent,
+  effectiveCanvasWidth?: number
+): number | undefined {
   if (component.type !== 'Text') return undefined;
   const dynamicHeight = propVal(component.properties, 'dynamicHeight');
   if (isTruthyBinding(dynamicHeight)) return undefined;
@@ -508,13 +573,61 @@ export function minimumTextHeight(component: LintComponent): number | undefined 
   const textSize = textSizeValue === undefined ? 14 : optionalStaticNumber(textSizeValue);
   const lineHeight = lineHeightValue === undefined ? 1.5 : optionalStaticNumber(lineHeightValue);
   if (textSize === undefined || lineHeight === undefined) return undefined;
-  return Math.ceil(textSize * lineHeight + 6);
+  const oneLine = Math.ceil(textSize * lineHeight + 6);
+  const text = propVal(component.properties, 'text');
+  const width = effectiveCanvasWidth ?? (component.layouts?.desktop ?? component.layout)?.width;
+  if (typeof text !== 'string' || text.includes('{{') || typeof width !== 'number' || width <= 0) return oneLine;
+
+  // PR #121's clipping fix used the practical ToolJet approximation of roughly four characters per
+  // canvas column. Preserve block boundaries because <h*>/<p>/<div>/<br> each force a rendered line.
+  const plainBlocks = text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(?:h[1-6]|p|div|li|blockquote|pre)>/gi, '\n')
+    .replace(/<li(?:\s[^>]*)?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, 'x')
+    .split(/\n+/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  if (!plainBlocks.length) return oneLine;
+  const charsPerLine = Math.max(8, Math.floor(width * 4));
+  const lines = plainBlocks.reduce(
+    (total, block) => total + Math.max(1, Math.ceil(block.length / charsPerLine)),
+    0
+  );
+  if (lines <= 1) return oneLine;
+  const lineBox = textSize * lineHeight;
+  return Math.ceil(lines * lineBox + lineBox);
 }
 
 export function lintTextGeometry(components: LintComponent[]): string[] {
   const warnings: string[] = [];
+  const componentsById = new Map(
+    components.flatMap((component) => {
+      const key = componentKey(component);
+      return key ? [[key, component] as const] : [];
+    })
+  );
+  const effectiveWidth = (component: LintComponent, visited = new Set<string>()): number | undefined => {
+    const ownWidth = (component.layouts?.desktop ?? component.layout)?.width;
+    if (typeof ownWidth !== 'number') return undefined;
+    const placement = parentPlacement(component);
+    if (!placement || visited.has(placement.parentId)) return ownWidth;
+    const parent = componentsById.get(placement.parentId);
+    if (!parent) return ownWidth;
+    if (parent.type === 'Modal' || parent.type === 'ModalV2') {
+      // A Modal's authored layout is its launcher button, not the portal canvas. Bootstrap's
+      // sm/lg/xl/fullscreen widths are approximately 10/27/38/43 ToolJet canvas columns.
+      const size = catalogValue(parent.type, parent.properties, 'size');
+      const modalColumns = size === 'sm' ? 10 : size === 'xl' ? 38 : size === 'fullscreen' ? 43 : 27;
+      return ownWidth * modalColumns / 43;
+    }
+    visited.add(placement.parentId);
+    const parentWidth = effectiveWidth(parent, visited);
+    return parentWidth === undefined ? ownWidth : ownWidth * parentWidth / 43;
+  };
   for (const component of components) {
-    const minimum = minimumTextHeight(component);
+    const minimum = minimumTextHeight(component, effectiveWidth(component));
     if (minimum === undefined) continue;
     const desktop = component.layouts?.desktop ?? component.layout;
     const mobile = component.layouts?.mobile ?? component.layout;
@@ -524,11 +637,22 @@ export function lintTextGeometry(components: LintComponent[]): string[] {
     const undersized = layouts.filter(([, rect]) => typeof rect.height === 'number' && rect.height < minimum);
     if (!undersized.length) continue;
     const recommended = Math.ceil(minimum / 10) * 10;
+    const textSizeValue = propVal(component.styles, 'textSize');
+    const lineHeightValue = propVal(component.styles, 'lineHeight');
+    const textSize = textSizeValue === undefined ? 14 : optionalStaticNumber(textSizeValue);
+    const lineHeight = lineHeightValue === undefined ? 1.5 : optionalStaticNumber(lineHeightValue);
+    const singleLineMinimum = textSize !== undefined && lineHeight !== undefined
+      ? Math.ceil(textSize * lineHeight + 6)
+      : minimum;
+    const requirement = minimum > singleLineMinimum
+      ? `the estimated wrapped content needs at least ${minimum}px`
+      : `a single line needs at least ${minimum}px`;
     warnings.push(
-      `Text "${component.name ?? component.id ?? 'Text'}" is too short for its static font/line height: ` +
+      `Text "${component.name ?? component.id ?? 'Text'}" is too short for its static content/font/line height: ` +
         `${undersized.map(([resolution, rect]) => `${resolution} height ${rect.height}px`).join(', ')}; ` +
-        `a single line needs at least ${minimum}px (use ${recommended}px on ToolJet's 10px grid), otherwise ` +
-        `bold glyphs and descenders are clipped. Enable dynamicHeight for intentionally wrapping content.`
+        `${requirement} (use ${recommended}px on ToolJet's 10px grid), otherwise wrapped lines can overflow ` +
+        `into the next component and glyph descenders are clipped. Enable dynamicHeight ` +
+        'for intentionally variable wrapping content.'
     );
   }
   return warnings;
@@ -541,18 +665,31 @@ function componentKey(component: LintComponent): string | undefined {
 function parentPlacement(component: LintComponent): {
   parentId: string;
   slotName: ComponentSlotName;
+  tabId?: string;
 } | undefined {
   if (component.parentRef) {
-    return { parentId: component.parentRef, slotName: component.slotName ?? 'body' };
+    const tabId = component.tabId ?? component.tab_id;
+    return {
+      parentId: component.parentRef,
+      slotName: component.slotName ?? 'body',
+      ...(tabId !== undefined ? { tabId } : {}),
+    };
   }
   if (!component.parent) return undefined;
   const decoded = decodeComponentParent(component.parent);
-  return { parentId: decoded.parentId, slotName: component.slotName ?? decoded.slotName };
+  const tabId = component.tabId ?? component.tab_id ?? decoded.tabId;
+  return {
+    parentId: component.parentId ?? component.parent_id ?? decoded.parentId,
+    slotName: component.slotName ?? decoded.slotName,
+    ...(tabId !== undefined ? { tabId } : {}),
+  };
 }
 
 function placementKey(component: LintComponent): string {
   const placement = parentPlacement(component);
-  return placement ? `${placement.parentId}::${placement.slotName}` : '__page__';
+  return placement
+    ? `${placement.parentId}::${placement.tabId !== undefined ? `tab:${placement.tabId}` : placement.slotName}`
+    : '__page__';
 }
 
 /** Validate named slot placement when the parent is available in the same component set. */
@@ -567,9 +704,43 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : 'body';
     const slotName = component.slotName ?? (persistedSlot === 'body' ? undefined : persistedSlot);
-    if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
+    const tabId = component.tabId ?? component.tab_id;
+    if (tabId !== undefined) {
+      if (component.slotName !== undefined) {
+        errors.push(
+          `Component "${component.name ?? component.id ?? component.type}" uses both tab_id and slot_name; choose one parent region.`
+        );
+      }
+      if (parent && parent.type !== 'Tabs') {
+        errors.push(
+          `Component "${component.name ?? component.id ?? component.type}" uses tab_id:"${tabId}" with ` +
+            `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; tab_id is supported only by Tabs.`
+        );
+      }
+      if (parent?.type === 'Tabs') {
+        const tabs = isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))
+          ? propVal(parent.properties, 'tabs')
+          : propVal(parent.properties, 'tabItems');
+        if (Array.isArray(tabs)) {
+          const validIds = tabs.flatMap((tab, index) => {
+            const id = recordValue(tab)?.id;
+            // ToolJet's Tabs runtime uses the array index when id is absent/falsy.
+            return [String(typeof id === 'string' || typeof id === 'number' ? id || index : index)];
+          });
+          if (validIds.length && !validIds.includes(tabId)) {
+            errors.push(
+              `Component "${component.name ?? component.id ?? component.type}" targets unknown tab_id ` +
+                `"${tabId}" on Tabs "${parent.name ?? parent.id}"; valid ids: ${validIds.join(', ')}. ` +
+                'Use the tab id, not its title.'
+            );
+          }
+        }
+      }
+      continue;
+    }
+    if (!slotName) continue;
     if (parent && !SLOT_PARENT_TYPES.has(parent.type ?? '')) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
@@ -740,7 +911,10 @@ export function lintDesktopCanvasCoverage(components: LintComponent[]): string[]
 }
 
 /** Lint a single component spec (pre-write). */
-export function lintComponentSpec(spec: LintComponent): LintResult {
+export function lintComponentSpec(
+  spec: LintComponent,
+  options: LintComponentSpecOptions = {}
+): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const props = spec.properties ?? {};
@@ -753,6 +927,12 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
     }
+  }
+  const tabId = spec.tabId ?? spec.tab_id;
+  if (tabId !== undefined) {
+    if (!tabId.trim()) errors.push(`Component "${label}": tab_id must be a non-empty string.`);
+    if (!spec.parentRef && !spec.parent) errors.push(`Component "${label}": tab_id requires parent_ref or parent.`);
+    if (spec.slotName !== undefined) errors.push(`Component "${label}": use tab_id or slot_name, not both.`);
   }
 
   // ERROR: style keys under `properties` are silently dropped by ToolJet.
@@ -793,6 +973,10 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   for (const [sectionName, authored, entries] of [
     ['property', spec.properties, componentSchema?.properties],
     ['style', spec.styles, componentSchema?.styles],
+    ['validation', spec.validation, componentSchema?.validation],
+    ['general', spec.general, componentSchema?.general],
+    ['general style', spec.generalStyles, componentSchema?.generalStyles],
+    ['other', spec.others, componentSchema?.others],
   ] as const) {
     if (!authored || !entries) continue;
     const knownKeys = entries.map((entry) => entry.key);
@@ -806,13 +990,20 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           : undefined;
       const suggestion = alias ?? nearestCatalogKey(key, knownKeys);
       if (suggestion) {
-        // A known alias or a close typo is almost certainly a mistake that ToolJet silently drops. Make it
-        // a hard error with the exact fix, so it's corrected in one turn instead of being ignored into a
-        // false "verification_ok" (the submitted property never actually applied).
-        errors.push(
-          `Component "${label}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is ` +
-            `silently ignored — use "${suggestion}" instead.`
-        );
+        const message =
+          `Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet silently ` +
+          `ignores it. Use "${suggestion}" instead.`;
+        warnings.push(message);
+        // Known property/style aliases and near-typos are guaranteed no-ops in ToolJet. Keep a warning
+        // for backward-compatible diagnostics, but block the write so verification cannot pass with a
+        // silently ignored visual or behavioral setting. Newer definition sections remain advisory.
+        if (sectionName === 'property' || sectionName === 'style') {
+          const strict = options.strictSuggestedKeys ?? 'all';
+          const shouldBlock = strict === 'all' || (
+            strict !== 'none' && Boolean(strict[sectionName]?.has(key))
+          );
+          if (shouldBlock) errors.push(message);
+        }
       } else {
         warnings.push(
           `Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ` +
@@ -832,6 +1023,21 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         );
       }
     }
+  }
+
+  if (hasNestedToolJetBinding({
+    properties: spec.properties,
+    styles: spec.styles,
+    validation: spec.validation,
+    general: spec.general,
+    generalStyles: spec.generalStyles,
+    others: spec.others,
+  })) {
+    errors.push(
+      `Component "${label}": a value nests one {{ }} binding inside another. ToolJet can persist the inner ` +
+        'expression as literal text or evaluate the whole value incorrectly. Use one outer binding and plain ' +
+        'JavaScript inside it; never write {{ ... {{...}} ... }}.'
+    );
   }
 
   // Chart: the native title defaults to a non-empty string that clips at common dashboard sizes.
@@ -1115,6 +1321,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const data = propVal(props, 'data');
     const selector = propVal(props, 'dataSourceSelector');
     const autogen = propVal(props, 'autogenerateColumns');
+    const useDynamicColumn = propVal(props, 'useDynamicColumn');
+    const columnData = propVal(props, 'columnData');
     const columns = propVal(props, 'columns');
     const hasColumns = Array.isArray(columns);
     const projectedDataKeys = projectedTableDataKeys(data);
@@ -1135,6 +1343,14 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         `Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ` +
           'ToolJet can silently evaluate this binding as no data. Use an expression body such as ' +
           'map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.'
+      );
+    }
+    if (isTruthyBinding(useDynamicColumn) && containsRowScopedTableValue(columnData)) {
+      errors.push(
+        `Table "${label}": dynamic columnData references rowData/cellValue, but ToolJet evaluates columnData ` +
+          'once while constructing the column model, before any row exists. Move per-cell transformations, ' +
+          'visibility, editability, and colors onto the matching static column entries, or make columnData depend ' +
+          'only on query/component state.'
       );
     }
     if (
@@ -1226,6 +1442,38 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           warnings.push(
             `Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid — use "none" (as typed) or "uppercase".`
           );
+        }
+        if (c && typeof c.columnType === 'string') {
+          const replacement = DEPRECATED_TABLE_COLUMN_REPLACEMENTS[c.columnType];
+          if (replacement) {
+            warnings.push(
+              `Table "${label}" column[${i}]: columnType:"${c.columnType}" is deprecated in the current ` +
+                `ToolJet editor; use columnType:"${replacement}" for new authoring.`
+            );
+          } else if (!ACTIVE_TABLE_COLUMN_TYPES.has(c.columnType)) {
+            warnings.push(
+              `Table "${label}" column[${i}]: unknown columnType:"${c.columnType}"; use a type from the ` +
+                'current Table authoringHints instead of guessing.'
+            );
+          }
+        }
+        if (c) {
+          const fxActiveFields = Array.isArray(c.fxActiveFields)
+            ? new Set(c.fxActiveFields.filter((field): field is string => typeof field === 'string'))
+            : new Set<string>();
+          if (!isTruthyBinding(c.fxActive)) {
+            for (const field of [
+              'cellBackgroundColor', 'textColor', 'isEditable', 'columnVisibility', 'linkTarget', 'jsonIndentation',
+            ]) {
+              if (isDynamicBinding(c[field]) && !fxActiveFields.has(field)) {
+                warnings.push(
+                  `Table "${label}" column[${i}] "${String(c.key ?? c.name ?? i)}": dynamic ${field} is missing ` +
+                    `"${field}" in fxActiveFields. ToolJet's inspector/runtime can treat it as a literal/static value; ` +
+                    'add the matching fxActiveFields entry.'
+                );
+              }
+            }
+          }
         }
         if (
           c?.columnType === 'string' &&
@@ -1551,11 +1799,95 @@ export function lintModalChildren(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Static nested canvases reserve real renderer chrome. Size short content to fit instead of
+ * creating the small clipping/scrollbar regressions fixed in ToolJet Agent PR #121. */
+export function lintContainerSizing(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const refs = new Map(
+    components.flatMap((component) => {
+      const key = componentKey(component);
+      return key ? [[key, component] as const] : [];
+    })
+  );
+  const childrenByParent = new Map<string, LintComponent[]>();
+  for (const child of components) {
+    const placement = parentPlacement(child);
+    if (!placement) continue;
+    childrenByParent.set(placement.parentId, [...(childrenByParent.get(placement.parentId) ?? []), child]);
+  }
+
+  for (const [parentId, children] of childrenByParent) {
+    const parent = refs.get(parentId);
+    if (!parent || !['Container', 'Form', 'Tabs'].includes(parent.type ?? '')) continue;
+    if (isTruthyBinding(propVal(parent.properties, 'dynamicHeight'))) continue;
+    const parentRect = parent.layouts?.desktop ?? parent.layout;
+    if (typeof parentRect?.height !== 'number') continue;
+    const bodyChildren = children.filter((child) => parentPlacement(child)?.slotName === 'body');
+    if (!bodyChildren.length) continue;
+    const deepest = bodyChildren.flatMap((child) => {
+      const rect = child.layouts?.desktop ?? child.layout;
+      return rect ? [{ child, bottom: (rect.top ?? 0) + renderedHeight(child, rect) }] : [];
+    }).sort((left, right) => right.bottom - left.bottom)[0];
+    if (!deepest) continue;
+
+    // Mirrors current ToolJet dynamicHeightReflow.js: Container = 20px base chrome (+ header),
+    // Form = 20px body gutter (+ shown header/footer), Tabs = 32px pane chrome + 50px tab strip.
+    let chrome = 20;
+    if (parent.type === 'Container' && isTruthyBinding(propVal(parent.properties, 'showHeader'))) {
+      chrome += staticNumber(propVal(parent.properties, 'headerHeight'), 40) + 11;
+    } else if (parent.type === 'Form') {
+      if (isTruthyBinding(propVal(parent.properties, 'showHeader'))) {
+        chrome += staticNumber(propVal(parent.properties, 'headerHeight'), 60) + 10;
+      }
+      if (isTruthyBinding(propVal(parent.properties, 'showFooter'))) {
+        chrome += staticNumber(propVal(parent.properties, 'footerHeight'), 60) + 14;
+      }
+    } else if (parent.type === 'Tabs') {
+      chrome = 32 + (isTruthyBinding(propVal(parent.properties, 'hideTabs')) ? 0 : 50);
+    }
+    const requiredHeight = deepest.bottom + chrome;
+    if (parentRect.height < requiredHeight) {
+      const scope = parent.type === 'Tabs'
+        ? ` across its panes${parentPlacement(deepest.child)?.tabId !== undefined ? ` (deepest tab ${parentPlacement(deepest.child)!.tabId})` : ''}`
+        : '';
+      warnings.push(
+        `${parent.type} "${parent.name ?? parent.id ?? parent.type}" is ${parentRect.height}px tall but needs at least ` +
+          `${requiredHeight}px to fit child "${deepest.child.name ?? deepest.child.id ?? deepest.child.type}"${scope} ` +
+          `(rendered bottom ${deepest.bottom}px + ${chrome}px renderer chrome). Short/modest content will clip or ` +
+          'show a spurious scrollbar; increase the parent height or enable dynamicHeight. A fixed scroll region is ' +
+          'appropriate only for intentionally long content.'
+      );
+    }
+  }
+
+  const containerLike = components.filter((component) => ['Container', 'Form', 'Tabs'].includes(component.type ?? ''));
+  for (let leftIndex = 0; leftIndex < containerLike.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < containerLike.length; rightIndex += 1) {
+      const left = containerLike[leftIndex]!;
+      const right = containerLike[rightIndex]!;
+      if (placementKey(left) !== placementKey(right)) continue;
+      const a = left.layouts?.desktop ?? left.layout;
+      const b = right.layouts?.desktop ?? right.layout;
+      if (!a || !b || Math.abs((a.top ?? 0) - (b.top ?? 0)) > 10) continue;
+      const horizontallySeparate = (a.left ?? 0) + (a.width ?? 0) <= (b.left ?? 0) ||
+        (b.left ?? 0) + (b.width ?? 0) <= (a.left ?? 0);
+      if (!horizontallySeparate || Math.abs((a.height ?? 0) - (b.height ?? 0)) <= 10) continue;
+      warnings.push(
+        `Side-by-side ${left.type} "${left.name ?? left.id}" and ${right.type} "${right.name ?? right.id}" ` +
+          `start on the same row but have mismatched heights (${a.height ?? 0}px vs ${b.height ?? 0}px). ` +
+          'Use the larger content-fit height for both unless the asymmetry is deliberate and browser-verified.'
+      );
+    }
+  }
+  return warnings;
+}
+
 /** Geometry-only checks for a complete page after creates, property edits, or layout edits. */
 export function lintRenderedGeometry(components: LintComponent[]): string[] {
   return [
     ...detectOverlaps(components),
     ...lintModalChildren(components),
+    ...lintContainerSizing(components),
     ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
@@ -1748,6 +2080,36 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // A modal without any reachable opener exists in the app tree but can never be used. Accept both
+  // current ToolJet action surfaces: the global show-modal action and Modal/ModalV2's open handle.
+  const openedModalIds = new Set<string>();
+  for (const event of summary.events) {
+    const action = recordValue(event.event);
+    const targetId = (value: unknown): string | undefined => {
+      if (typeof value === 'string') return value;
+      const id = recordValue(value)?.id;
+      return typeof id === 'string' ? id : undefined;
+    };
+    if (action?.actionId === 'show-modal') {
+      const modalId = targetId(action.modal);
+      if (modalId) openedModalIds.add(modalId);
+    }
+    if (
+      action?.actionId === 'control-component' &&
+      action.componentSpecificActionHandle === 'open'
+    ) {
+      const componentId = targetId(action.componentId);
+      if (componentId) openedModalIds.add(componentId);
+    }
+  }
+  for (const modal of allComponents.filter((component) => ['Modal', 'ModalV2'].includes(component.type ?? ''))) {
+    if (openedModalIds.has(modal.id)) continue;
+    warnings.push(
+      `Modal "${modal.name ?? modal.id}" has no show-modal event or control-component open action, so users cannot reach it. ` +
+        'Add at least one launcher and ensure the launcher source/target ids resolve.'
+    );
+  }
+
   // Bindings to non-existent queries/components + re-run per-component render lints.
   for (const c of allComponents) {
     const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
@@ -1769,7 +2131,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       styles: c.styles,
       layouts: c.layouts as LintComponent['layouts'],
       parent: c.parent,
-    });
+    }, { strictSuggestedKeys: 'none' });
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }

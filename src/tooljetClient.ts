@@ -101,6 +101,8 @@ export interface CreateComponentParams {
   properties: Record<string, unknown>;
   styles?: Record<string, unknown>;
   validation?: Record<string, unknown>;
+  general?: Record<string, unknown>;
+  generalStyles?: Record<string, unknown>;
   others?: Record<string, unknown>;
   layout?: ComponentLayout;
   layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
@@ -119,6 +121,10 @@ export interface ComponentSpec {
    *  renderer from `definition.styles` — putting these under `properties` is silently ignored. */
   styles?: Record<string, unknown>;
   validation?: Record<string, unknown>;
+  /** Universal/general inspector values such as tooltip. */
+  general?: Record<string, unknown>;
+  /** Universal visual values stored separately from component-native styles. */
+  generalStyles?: Record<string, unknown>;
   /** e.g. `{ showOnMobile: {...}, showOnDesktop: {...} }`. */
   others?: Record<string, unknown>;
   /** Convenience: one rectangle applied to both resolutions. */
@@ -133,6 +139,8 @@ export interface ComponentSpec {
   parent?: string;
   /** Logical parent slot. ToolJet stores header/footer as suffixed parent ids; the client translates it. */
   slotName?: ComponentSlotName;
+  /** Target tab id when the parent is Tabs. ToolJet stores this as a suffixed parent id. */
+  tabId?: string;
 }
 
 
@@ -339,10 +347,17 @@ export interface ComponentSummary {
   /** Bound property values, e.g. { text: { value: 'Hello' } }. */
   properties?: Record<string, unknown>;
   styles?: Record<string, unknown>;
+  validation?: Record<string, unknown>;
+  general?: Record<string, unknown>;
+  generalStyles?: Record<string, unknown>;
   others?: Record<string, unknown>;
   parent?: string;
+  /** Unsuffixed parent component id when ToolJet persisted a native slot or Tabs pane suffix. */
+  parent_id?: string;
   /** Present for persisted header/footer children. Body children use the plain parent id. */
   slot_name?: ComponentSlotName;
+  /** Present for children placed inside a Tabs pane. */
+  tab_id?: string;
 }
 
 /** Compact projection of a whole app — what an authoring agent needs, without the ~10× schema bloat
@@ -376,6 +391,9 @@ export interface QuerySummary {
 }
 
 export interface ToolJetClient {
+  /** Internal transport for domain-oriented platform tools. MCP never exposes an arbitrary HTTP tool. */
+  apiRequest(params: PlatformApiRequest): Promise<unknown>;
+  getActiveWorkspaceId(): Promise<string>;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   createApp(name: string): Promise<CreateAppResult>;
@@ -421,6 +439,20 @@ export interface ToolJetClient {
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
 }
 
+export interface PlatformApiRequest {
+  operation: string;
+  path: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  query?: Record<string, string | number | boolean | undefined>;
+  body?: unknown;
+  multipart?: {
+    fieldName: string;
+    filename: string;
+    contentBase64: string;
+    contentType?: string;
+  };
+}
+
 /** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
  *  deep-merged; array values like Table columns / DropdownV2 options are REPLACED) OR name/parent — not
  *  both in one entry (ToolJet applies only one path). */
@@ -431,12 +463,13 @@ export interface UpdateComponentSpec {
     styles?: Record<string, unknown>;
     validation?: Record<string, unknown>;
     general?: Record<string, unknown>;
-    general_styles?: Record<string, unknown>;
+    generalStyles?: Record<string, unknown>;
     others?: Record<string, unknown>;
   };
   name?: string;
   parent?: string;
   slotName?: ComponentSlotName;
+  tabId?: string;
 }
 export interface UpdateComponentsParams {
   appId: string;
@@ -460,6 +493,7 @@ export interface UpdateLayoutsParams {
     mobile?: ComponentLayout;
     parent?: string;
     slotName?: ComponentSlotName;
+    tabId?: string;
   }>;
 }
 export interface UpdateQueryParams {
@@ -550,6 +584,48 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const datasourceManagementUrl = (workspaceSlug: string, datasourceId?: string) =>
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
+
+  async function apiRequest(params: PlatformApiRequest): Promise<unknown> {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(params.query ?? {})) {
+      if (value !== undefined) search.set(key, String(value));
+    }
+    const path = `${params.path}${search.size ? `${params.path.includes('?') ? '&' : '?'}${search}` : ''}`;
+    const headers = new Headers();
+    let body: BodyInit | undefined;
+    if (params.multipart) {
+      const bytes = Buffer.from(params.multipart.contentBase64, 'base64');
+      const form = new FormData();
+      form.append(
+        params.multipart.fieldName,
+        new Blob([bytes], { type: params.multipart.contentType ?? 'application/octet-stream' }),
+        params.multipart.filename
+      );
+      body = form;
+    } else if (params.body !== undefined) {
+      headers.set('Content-Type', 'application/json');
+      body = JSON.stringify(params.body);
+    }
+    const res = await auth.authedFetch(path, {
+      method: params.method ?? 'GET',
+      ...(params.body !== undefined && !params.multipart ? { headers } : {}),
+      ...(body !== undefined ? { body } : {}),
+    });
+    await assertOk(res, params.operation);
+    if (res.status === 204) return { success: true };
+    const text = await res.text();
+    if (!text) return { success: true };
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  async function getActiveWorkspaceId(): Promise<string> {
+    return auth.getOrganizationId();
+  }
+
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
@@ -560,11 +636,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // { component: { name, component: <type>, definition: { properties, styles, others } }, layouts }.
   // `component.definition` holds the ACTUAL bound values; `component.properties`/`styles` is the full
   // widget schema (the bulk). Project to values-only.
-  function projectComponent(id: string, entry: any): ComponentSummary {
+  function projectComponent(id: string, entry: any, tabsParentIds?: Iterable<string>): ComponentSummary {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
     const persistedParent = typeof c.parent === 'string' ? c.parent : undefined;
-    const decodedParent = persistedParent ? decodeComponentParent(persistedParent) : undefined;
+    const decodedParent = persistedParent ? decodeComponentParent(persistedParent, tabsParentIds) : undefined;
     return {
       id,
       name: c.name,
@@ -572,25 +648,38 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
+      validation: def.validation,
+      general: def.general,
+      generalStyles: def.generalStyles,
       others: def.others,
       ...(persistedParent ? { parent: persistedParent } : {}),
+      ...(decodedParent && decodedParent.parentId !== persistedParent
+        ? { parent_id: decodedParent.parentId }
+        : {}),
       ...(decodedParent && decodedParent.slotName !== 'body' ? { slot_name: decodedParent.slotName } : {}),
+      ...(decodedParent?.tabId !== undefined ? { tab_id: decodedParent.tabId } : {}),
     };
   }
 
   async function getAppSummary(appId: string): Promise<AppSummary> {
     const full = await getApp(appId);
-    const pages = (full.pages ?? []).map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      handle: p.handle,
-      icon: p.icon,
-      hidden: p.hidden?.value === true,
-      ...(typeof p.index === 'number' ? { index: p.index } : {}),
-      ...(typeof p.isPageGroup === 'boolean' ? { is_page_group: p.isPageGroup } : {}),
-      ...(typeof p.pageGroupId === 'string' ? { page_group_id: p.pageGroupId } : {}),
-      components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
-    }));
+    const pages = (full.pages ?? []).map((p: any) => {
+      const componentEntries = Object.entries(p.components ?? {}) as Array<[string, any]>;
+      const tabsParentIds = componentEntries
+        .filter(([, entry]) => entry?.component?.component === 'Tabs')
+        .map(([id]) => id);
+      return {
+        id: p.id,
+        name: p.name,
+        handle: p.handle,
+        icon: p.icon,
+        hidden: p.hidden?.value === true,
+        ...(typeof p.index === 'number' ? { index: p.index } : {}),
+        ...(typeof p.isPageGroup === 'boolean' ? { is_page_group: p.isPageGroup } : {}),
+        ...(typeof p.pageGroupId === 'string' ? { page_group_id: p.pageGroupId } : {}),
+        components: componentEntries.map(([id, entry]) => projectComponent(id, entry, tabsParentIds)),
+      };
+    });
     const queries = (full.data_queries ?? []).map((q: any) => ({
       id: q.id,
       name: q.name,
@@ -665,7 +754,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const full = await getApp(appId);
     for (const p of full.pages ?? []) {
       const entry = (p.components ?? {})[componentId];
-      if (entry) return { ...projectComponent(componentId, entry), page_id: p.id };
+      if (entry) {
+        const tabsParentIds = (Object.entries(p.components ?? {}) as Array<[string, any]>)
+          .filter(([, candidate]) => candidate?.component?.component === 'Tabs')
+          .map(([id]) => id);
+        return { ...projectComponent(componentId, entry, tabsParentIds), page_id: p.id };
+      }
     }
     throw new Error(
       `ToolJet getComponent failed: component ${componentId} not found in app ${appId}`
@@ -1264,7 +1358,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         body: JSON.stringify(row),
       });
       if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
-      const body = await res.clone().text().catch(() => '');
+      // Native fetch responses support clone(). Some injected transports only implement text().
+      // Real network responses still take the clone path, preserving the body for assertOk below.
+      const readable = typeof res.clone === 'function' ? res.clone() : res;
+      const body = await readable.text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
       await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
     }
@@ -1392,6 +1489,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       properties: spec.properties,
       styles: spec.styles ?? {},
       validation: spec.validation ?? {},
+      general: spec.general ?? {},
+      generalStyles: spec.generalStyles ?? {},
       others: spec.others ?? {},
     };
     // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...} returns 422
@@ -1431,10 +1530,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           `createComponents "${e.spec.name}": parentRef "${e.spec.parentRef}" does not match a clientRef in this batch.`
         );
       }
-      if (e.spec.slotName && !resolvedParent) {
-        throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
+      if ((e.spec.slotName || e.spec.tabId !== undefined) && !resolvedParent) {
+        throw new Error(`createComponents "${e.spec.name}": slotName/tabId requires parent or parentRef.`);
       }
-      if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, e.spec.tabId);
       diff[e.id] = dto;
     }
 
@@ -1459,6 +1558,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           properties: params.properties,
           styles: params.styles,
           validation: params.validation,
+          general: params.general,
+          generalStyles: params.generalStyles,
           others: params.others,
           layout: params.layout,
           layouts: params.layouts,
@@ -1476,15 +1577,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const diff: Record<string, unknown> = {};
     for (const u of params.updates) {
       const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
-      const hasRaw = u.name !== undefined || u.parent !== undefined || u.slotName !== undefined;
+      const hasRaw = u.name !== undefined || u.parent !== undefined || u.slotName !== undefined || u.tabId !== undefined;
       if (hasDef && hasRaw) {
         throw new Error(
-          `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent/slotName ` +
+          `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent/slotName/tabId ` +
             `in one entry — ToolJet applies only one path. Split into two update calls.`
         );
       }
-      if (u.slotName !== undefined && u.parent === undefined) {
-        throw new Error(`updateComponents "${u.componentId}": slotName requires parent.`);
+      if ((u.slotName !== undefined || u.tabId !== undefined) && u.parent === undefined) {
+        throw new Error(`updateComponents "${u.componentId}": slotName/tabId requires parent.`);
       }
       if (hasDef) {
         diff[u.componentId] = { component: { definition: u.definition } };
@@ -1492,7 +1593,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         diff[u.componentId] = {
           component: {
             ...(u.name !== undefined ? { name: u.name } : {}),
-            ...(u.parent !== undefined ? { parent: encodeComponentParent(u.parent, u.slotName) } : {}),
+            ...(u.parent !== undefined ? { parent: encodeComponentParent(u.parent, u.slotName, u.tabId) } : {}),
           },
         };
       }
@@ -1537,10 +1638,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           ...(l.mobile ? { mobile: l.mobile } : {}),
         },
       };
-      if (l.slotName !== undefined && l.parent === undefined) {
-        throw new Error(`updateLayouts "${l.componentId}": slotName requires parent.`);
+      if ((l.slotName !== undefined || l.tabId !== undefined) && l.parent === undefined) {
+        throw new Error(`updateLayouts "${l.componentId}": slotName/tabId requires parent.`);
       }
-      if (l.parent !== undefined) entry.component = { parent: encodeComponentParent(l.parent, l.slotName) };
+      if (l.parent !== undefined) entry.component = { parent: encodeComponentParent(l.parent, l.slotName, l.tabId) };
       diff[l.componentId] = entry;
     }
     const res = await auth.authedFetch(
@@ -1730,6 +1831,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    apiRequest,
+    getActiveWorkspaceId,
     listWorkspaces,
     useWorkspace,
     createApp,

@@ -45,7 +45,7 @@ export const plannedPageSchema = z.object({
 });
 export const plannedEventSchema = z.object({
   source_ref: z.string(),
-  source_type: z.enum(['component', 'data_query', 'page', 'table_column', 'table_action']),
+  source_type: z.enum(['component', 'data_query', 'page', 'table_column']),
   ref: z.string().optional(),
   trigger: z.string(),
   action: z.record(z.string(), z.any()),
