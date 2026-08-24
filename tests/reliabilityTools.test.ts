@@ -111,6 +111,49 @@ describe('ToolJet DB maintenance tools', () => {
 });
 
 describe('update_components validation', () => {
+  // Regression: models pass the component NAME as component_id (it is the handle they authored and
+  // what bindings use). Looking up by id only and answering "does not exist" made the model re-read
+  // the page, see the component, and retry forever — >1M tokens on one observed build.
+  it('resolves component_id given as a name and writes the real id', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{
+          id: '29b45ce9-uuid', name: 'expenses_table', type: 'Text',
+          properties: { text: { value: 'Old' } }, styles: {},
+        }] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'expenses_table', definition: { properties: { text: 'New' } } }],
+    });
+    expect(result.isError).not.toBe(true);
+    expect(client.updateComponents).toHaveBeenCalledWith(expect.objectContaining({
+      updates: [expect.objectContaining({ componentId: '29b45ce9-uuid' })],
+    }));
+  });
+
+  it('lists what the page actually holds when nothing matches, instead of a bare "does not exist"', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{ id: 'c1', name: 'realOne', type: 'Text', properties: {}, styles: {} }] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'ghost', definition: { properties: { text: 'x' } } }],
+    });
+    const body = result.content[0]!.text;
+    expect(body).toContain('realOne=c1');
+    expect(client.updateComponents).not.toHaveBeenCalled();
+  });
+
   it('canonicalizes concise raw definition leaves before an update', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

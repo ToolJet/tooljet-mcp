@@ -40584,10 +40584,22 @@ function updateComponentsTool(client) {
         const errors = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
-          const current = components.get(update.component_id);
+          let current = components.get(update.component_id);
+          let componentId = update.component_id;
           if (!current) {
-            errors.push(`Component "${update.component_id}" does not exist on page "${args.page_id}".`);
-            continue;
+            const byName = page.components.filter((component) => component.name === update.component_id);
+            if (byName.length === 1) {
+              current = byName[0];
+              componentId = byName[0].id;
+              warnings.push(`Component "${update.component_id}" was matched by name to id "${componentId}". component_id expects the id; pass ids from get_app_summary to avoid ambiguity.`);
+            } else if (byName.length > 1) {
+              errors.push(`Component name "${update.component_id}" is ambiguous on page "${args.page_id}" (${byName.length} components share it). Pass the component id instead: ${byName.map((component) => component.id).join(", ")}.`);
+              continue;
+            } else {
+              const available = page.components.map((component) => `${component.name ?? "(unnamed)"}=${component.id}`).join(", ");
+              errors.push(`No component with id or name "${update.component_id}" on page "${args.page_id}". Do not re-read the page \u2014 it currently holds: ${available || "(no components)"}.`);
+              continue;
+            }
           }
           if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
             errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
@@ -40645,7 +40657,7 @@ function updateComponentsTool(client) {
             }
           }
           resolvedUpdates.push({
-            componentId: update.component_id,
+            componentId,
             definition: normalizedDefinition,
             name: update.name,
             parent,
