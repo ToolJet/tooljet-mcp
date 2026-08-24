@@ -24,6 +24,9 @@ TOOLJET_URL=http://localhost:3000        # backend API origin
 TOOLJET_APP_URL=http://localhost:8082    # frontend origin (for app links)
 TOOLJET_EMAIL=you@example.com
 TOOLJET_PASSWORD=your-password
+# Optional; required only for instance-wide user/workspace management tools.
+# Must match EXTERNAL_API_ACCESS_TOKEN on a ToolJet server with ENABLE_EXTERNAL_API=true.
+TOOLJET_EXTERNAL_API_ACCESS_TOKEN=your-external-api-token
 ```
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
@@ -42,6 +45,7 @@ TOOLJET_URL = "http://localhost:3000"
 TOOLJET_APP_URL = "http://localhost:8082"
 TOOLJET_EMAIL = "you@example.com"
 TOOLJET_PASSWORD = "your-password"
+TOOLJET_EXTERNAL_API_ACCESS_TOKEN = "your-external-api-token" # optional; user/workspace management tools only
 ```
 
 Then install the skill so Codex knows how to drive the tools: copy the complete `skill/` directory into your Codex skills directory (or use `npm run sync:skill`). Its compact entry point progressively loads focused references for tables, forms, events, datasources, security, and QA.
@@ -85,6 +89,8 @@ For local development you can also install from a path: `/plugin install path:/U
 ```bash
 export TOOLJET_EMAIL="you@example.com"
 export TOOLJET_PASSWORD="your-password"
+# optional; required only for the instance-wide user/workspace management tools
+export TOOLJET_EXTERNAL_API_ACCESS_TOKEN="your-external-api-token"
 # optional, if not localhost:
 export TOOLJET_URL="https://your-instance.tooljet.com"
 export TOOLJET_APP_URL="https://your-instance.tooljet.com"
@@ -110,6 +116,10 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | Tool | Purpose |
 |---|---|
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace; results include its manual datasource-settings URL |
+| `list_instance_workspaces()` | List every workspace and its assignable custom groups through ToolJet's external API |
+| `list_workspace_apps(workspace_id)` | List the apps and versions in one workspace through ToolJet's external API |
+| `manage_users(...)` | List/get users, create or invite a user, and update profile/status fields; archiving is confirmed |
+| `manage_user_access(...)` | Confirmed workspace-role, membership-status, and existing custom-group assignments; supports full membership replacement when explicitly requested |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |

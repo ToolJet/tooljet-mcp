@@ -3,6 +3,8 @@ export interface Config {
   appUrl: string;
   email: string;
   password: string;
+  /** Instance-wide ToolJet external API token used only by user/workspace management tools. */
+  externalApiAccessToken?: string;
   /** Optional: pin the active workspace at startup (for multi-workspace users). id wins over slug. */
   workspaceId?: string;
   workspaceSlug?: string;
@@ -18,6 +20,10 @@ export function loadConfig(): Config {
     appUrl: process.env.TOOLJET_APP_URL ?? 'http://localhost:8082',
     email,
     password,
+    externalApiAccessToken:
+      process.env.TOOLJET_EXTERNAL_API_ACCESS_TOKEN ??
+      process.env.TOOLJET_ACCESS_TOKEN ??
+      process.env.EXTERNAL_API_ACCESS_TOKEN,
     workspaceId: process.env.TOOLJET_WORKSPACE_ID,
     workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG,
   };

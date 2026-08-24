@@ -39,6 +39,66 @@ export interface CreateAppThemeParams {
   isDefault?: boolean;
 }
 
+export type InstanceUserStatus = 'active' | 'archived' | 'invited';
+export type WorkspaceUserRole = 'admin' | 'builder' | 'end-user';
+
+export interface UserGroupRef {
+  id?: string;
+  name?: string;
+}
+
+export interface UserWorkspaceRef {
+  id?: string;
+  name?: string;
+  role?: WorkspaceUserRole;
+  status?: InstanceUserStatus;
+  groups?: UserGroupRef[];
+}
+
+export interface InstanceUser {
+  id: string;
+  name?: string;
+  email?: string;
+  status?: InstanceUserStatus;
+  workspaces?: Array<Record<string, unknown>>;
+  userGroups?: Array<Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
+export interface InstanceWorkspace {
+  id: string;
+  name: string;
+  status?: string;
+  groups: Array<{ id: string; name: string; type?: string }>;
+  [key: string]: unknown;
+}
+
+export interface WorkspaceApp {
+  id: string;
+  name?: string;
+  slug?: string;
+  organizationId?: string;
+  versions?: Array<{ id: string; name?: string }>;
+  [key: string]: unknown;
+}
+
+export interface CreateInstanceUserParams {
+  name: string;
+  email: string;
+  password?: string;
+  status?: InstanceUserStatus;
+  defaultWorkspaceId?: string;
+  workspaces: UserWorkspaceRef[];
+}
+
+export interface UpdateInstanceUserParams {
+  name?: string;
+  email?: string;
+  password?: string;
+  status?: InstanceUserStatus;
+  defaultWorkspaceId?: string;
+}
+
 export interface AppSettingsSnapshot {
   app_id: string;
   version_id: string;
@@ -384,6 +444,24 @@ export interface QuerySummary {
 export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
+  listInstanceWorkspaces(): Promise<InstanceWorkspace[]>;
+  listWorkspaceApps(workspaceId: string): Promise<WorkspaceApp[]>;
+  listInstanceUsers(params?: { groupNames?: string[]; statuses?: InstanceUserStatus[] }): Promise<InstanceUser[]>;
+  getInstanceUser(userIdOrEmail: string): Promise<InstanceUser>;
+  createInstanceUser(params: CreateInstanceUserParams): Promise<InstanceUser>;
+  updateInstanceUser(userId: string, params: UpdateInstanceUserParams): Promise<void>;
+  updateInstanceUserRole(params: {
+    workspaceId: string;
+    userId: string;
+    role: WorkspaceUserRole;
+  }): Promise<void>;
+  updateInstanceUserWorkspace(params: {
+    userId: string;
+    workspaceId: string;
+    status?: InstanceUserStatus;
+    groups?: UserGroupRef[];
+  }): Promise<void>;
+  replaceInstanceUserWorkspaces(userId: string, workspaces: UserWorkspaceRef[]): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
@@ -561,6 +639,152 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const datasourceManagementUrl = (workspaceSlug: string, datasourceId?: string) =>
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
+
+  async function externalApiRequest(
+    path: string,
+    operation: string,
+    init?: RequestInit
+  ): Promise<Response> {
+    const res = await auth.externalApiFetch(path, init);
+    if (!res.ok) {
+      const detail = await res.text();
+      const hint =
+        res.status === 401 || res.status === 403
+          ? ' Check the external API token and whether this ToolJet plan allows the requested operation.'
+          : res.status === 404
+            ? ' Check that ENABLE_EXTERNAL_API=true on the ToolJet instance.'
+            : '';
+      throw new Error(`ToolJet ${operation} failed (${res.status}): ${detail}${hint}`);
+    }
+    return res;
+  }
+
+  async function listInstanceWorkspaces(): Promise<InstanceWorkspace[]> {
+    const res = await externalApiRequest('/api/ext/workspaces', 'listInstanceWorkspaces');
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error('ToolJet listInstanceWorkspaces failed: expected an array response.');
+    }
+    return body as InstanceWorkspace[];
+  }
+
+  async function listWorkspaceApps(workspaceId: string): Promise<WorkspaceApp[]> {
+    const res = await externalApiRequest(
+      `/api/ext/workspace/${encodeURIComponent(workspaceId)}/apps`,
+      'listWorkspaceApps'
+    );
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error('ToolJet listWorkspaceApps failed: expected an array response.');
+    }
+    return body as WorkspaceApp[];
+  }
+
+  async function listInstanceUsers(
+    params: { groupNames?: string[]; statuses?: InstanceUserStatus[] } = {}
+  ): Promise<InstanceUser[]> {
+    const query = new URLSearchParams();
+    if (params.groupNames?.length) query.set('group_names', params.groupNames.join(','));
+    if (params.statuses?.length) query.set('status', params.statuses.join(','));
+    const suffix = query.size ? `?${query.toString()}` : '';
+    const res = await externalApiRequest(`/api/ext/users${suffix}`, 'listInstanceUsers');
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error('ToolJet listInstanceUsers failed: expected an array response.');
+    }
+    return body as InstanceUser[];
+  }
+
+  async function getInstanceUser(userIdOrEmail: string): Promise<InstanceUser> {
+    const res = await externalApiRequest(
+      `/api/ext/user/${encodeURIComponent(userIdOrEmail)}`,
+      'getInstanceUser'
+    );
+    const body = await res.json();
+    if (!body || Array.isArray(body) || typeof body !== 'object' || typeof body.id !== 'string') {
+      throw new Error(`ToolJet getInstanceUser failed: user "${userIdOrEmail}" was not found.`);
+    }
+    return body as InstanceUser;
+  }
+
+  async function createInstanceUser(params: CreateInstanceUserParams): Promise<InstanceUser> {
+    const res = await externalApiRequest('/api/ext/users', 'createInstanceUser', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: params.name,
+        email: params.email,
+        ...(params.password !== undefined ? { password: params.password } : {}),
+        status: params.status ?? 'invited',
+        ...(params.defaultWorkspaceId ? { defaultOrganizationId: params.defaultWorkspaceId } : {}),
+        workspaces: params.workspaces,
+      }),
+    });
+    const body = await res.json();
+    if (body && !Array.isArray(body) && typeof body === 'object' && typeof body.id === 'string') {
+      return body as InstanceUser;
+    }
+    return getInstanceUser(params.email);
+  }
+
+  async function updateInstanceUser(userId: string, params: UpdateInstanceUserParams): Promise<void> {
+    await externalApiRequest(`/api/ext/user/${encodeURIComponent(userId)}`, 'updateInstanceUser', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ...(params.name !== undefined ? { name: params.name } : {}),
+        ...(params.email !== undefined ? { email: params.email } : {}),
+        ...(params.password !== undefined ? { password: params.password } : {}),
+        ...(params.status !== undefined ? { status: params.status } : {}),
+        ...(params.defaultWorkspaceId !== undefined
+          ? { defaultOrganizationId: params.defaultWorkspaceId }
+          : {}),
+      }),
+    });
+  }
+
+  async function updateInstanceUserRole(params: {
+    workspaceId: string;
+    userId: string;
+    role: WorkspaceUserRole;
+  }): Promise<void> {
+    await externalApiRequest(
+      `/api/ext/update-user-role/workspace/${encodeURIComponent(params.workspaceId)}`,
+      'updateInstanceUserRole',
+      {
+        method: 'PUT',
+        body: JSON.stringify({ userId: params.userId, newRole: params.role }),
+      }
+    );
+  }
+
+  async function updateInstanceUserWorkspace(params: {
+    userId: string;
+    workspaceId: string;
+    status?: InstanceUserStatus;
+    groups?: UserGroupRef[];
+  }): Promise<void> {
+    await externalApiRequest(
+      `/api/ext/user/${encodeURIComponent(params.userId)}/workspace/${encodeURIComponent(params.workspaceId)}`,
+      'updateInstanceUserWorkspace',
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          ...(params.status !== undefined ? { status: params.status } : {}),
+          ...(params.groups !== undefined ? { groups: params.groups } : {}),
+        }),
+      }
+    );
+  }
+
+  async function replaceInstanceUserWorkspaces(
+    userId: string,
+    workspaces: UserWorkspaceRef[]
+  ): Promise<void> {
+    await externalApiRequest(
+      `/api/ext/user/${encodeURIComponent(userId)}/workspaces`,
+      'replaceInstanceUserWorkspaces',
+      { method: 'PUT', body: JSON.stringify(workspaces) }
+    );
+  }
 
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
@@ -1790,6 +2014,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   return {
     listWorkspaces,
     useWorkspace,
+    listInstanceWorkspaces,
+    listWorkspaceApps,
+    listInstanceUsers,
+    getInstanceUser,
+    createInstanceUser,
+    updateInstanceUser,
+    updateInstanceUserRole,
+    updateInstanceUserWorkspace,
+    replaceInstanceUserWorkspaces,
     createApp,
     renameApp,
     getApp,

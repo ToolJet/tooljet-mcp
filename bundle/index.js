@@ -33169,6 +33169,7 @@ function loadConfig() {
     appUrl: process.env.TOOLJET_APP_URL ?? "http://localhost:8082",
     email: email3,
     password,
+    externalApiAccessToken: process.env.TOOLJET_EXTERNAL_API_ACCESS_TOKEN ?? process.env.TOOLJET_ACCESS_TOKEN ?? process.env.EXTERNAL_API_ACCESS_TOKEN,
     workspaceId: process.env.TOOLJET_WORKSPACE_ID,
     workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG
   };
@@ -33339,6 +33340,20 @@ function createAuth(config2, fetchImpl = fetch) {
     }
     return res;
   }
+  async function externalApiFetch(path, init) {
+    const accessToken = config2.externalApiAccessToken;
+    if (!accessToken) {
+      throw new Error("ToolJet external API access is not configured. Set TOOLJET_EXTERNAL_API_ACCESS_TOKEN to the same value configured as EXTERNAL_API_ACCESS_TOKEN on the ToolJet instance.");
+    }
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Basic ${accessToken}`);
+    if (!headers.has("Content-Type") && init?.body !== void 0) {
+      headers.set("Content-Type", "application/json");
+    }
+    const response = await fetchImpl(`${config2.apiUrl}${path}`, { ...init, headers });
+    recordHttpResponse(response);
+    return response;
+  }
   async function getOrganizationId() {
     if (!workspaceId)
       await login();
@@ -33363,7 +33378,14 @@ function createAuth(config2, fetchImpl = fetch) {
       await login();
     return switchTo(id);
   }
-  return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
+  return {
+    authedFetch,
+    externalApiFetch,
+    getOrganizationId,
+    getOrganizationSlug,
+    listWorkspaces,
+    switchWorkspace
+  };
 }
 
 // dist/tooljetClient.js
@@ -34936,6 +34958,101 @@ function tableForeignKeyDto(foreignKey) {
 function createClient(auth, config2) {
   let developmentEnvironmentIdPromise;
   const datasourceManagementUrl = (workspaceSlug, datasourceId) => `${config2.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
+  async function externalApiRequest(path, operation, init) {
+    const res = await auth.externalApiFetch(path, init);
+    if (!res.ok) {
+      const detail = await res.text();
+      const hint = res.status === 401 || res.status === 403 ? " Check the external API token and whether this ToolJet plan allows the requested operation." : res.status === 404 ? " Check that ENABLE_EXTERNAL_API=true on the ToolJet instance." : "";
+      throw new Error(`ToolJet ${operation} failed (${res.status}): ${detail}${hint}`);
+    }
+    return res;
+  }
+  async function listInstanceWorkspaces() {
+    const res = await externalApiRequest("/api/ext/workspaces", "listInstanceWorkspaces");
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error("ToolJet listInstanceWorkspaces failed: expected an array response.");
+    }
+    return body;
+  }
+  async function listWorkspaceApps(workspaceId) {
+    const res = await externalApiRequest(`/api/ext/workspace/${encodeURIComponent(workspaceId)}/apps`, "listWorkspaceApps");
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error("ToolJet listWorkspaceApps failed: expected an array response.");
+    }
+    return body;
+  }
+  async function listInstanceUsers(params = {}) {
+    const query = new URLSearchParams();
+    if (params.groupNames?.length)
+      query.set("group_names", params.groupNames.join(","));
+    if (params.statuses?.length)
+      query.set("status", params.statuses.join(","));
+    const suffix = query.size ? `?${query.toString()}` : "";
+    const res = await externalApiRequest(`/api/ext/users${suffix}`, "listInstanceUsers");
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error("ToolJet listInstanceUsers failed: expected an array response.");
+    }
+    return body;
+  }
+  async function getInstanceUser(userIdOrEmail) {
+    const res = await externalApiRequest(`/api/ext/user/${encodeURIComponent(userIdOrEmail)}`, "getInstanceUser");
+    const body = await res.json();
+    if (!body || Array.isArray(body) || typeof body !== "object" || typeof body.id !== "string") {
+      throw new Error(`ToolJet getInstanceUser failed: user "${userIdOrEmail}" was not found.`);
+    }
+    return body;
+  }
+  async function createInstanceUser(params) {
+    const res = await externalApiRequest("/api/ext/users", "createInstanceUser", {
+      method: "POST",
+      body: JSON.stringify({
+        name: params.name,
+        email: params.email,
+        ...params.password !== void 0 ? { password: params.password } : {},
+        status: params.status ?? "invited",
+        ...params.defaultWorkspaceId ? { defaultOrganizationId: params.defaultWorkspaceId } : {},
+        workspaces: params.workspaces
+      })
+    });
+    const body = await res.json();
+    if (body && !Array.isArray(body) && typeof body === "object" && typeof body.id === "string") {
+      return body;
+    }
+    return getInstanceUser(params.email);
+  }
+  async function updateInstanceUser(userId, params) {
+    await externalApiRequest(`/api/ext/user/${encodeURIComponent(userId)}`, "updateInstanceUser", {
+      method: "PATCH",
+      body: JSON.stringify({
+        ...params.name !== void 0 ? { name: params.name } : {},
+        ...params.email !== void 0 ? { email: params.email } : {},
+        ...params.password !== void 0 ? { password: params.password } : {},
+        ...params.status !== void 0 ? { status: params.status } : {},
+        ...params.defaultWorkspaceId !== void 0 ? { defaultOrganizationId: params.defaultWorkspaceId } : {}
+      })
+    });
+  }
+  async function updateInstanceUserRole(params) {
+    await externalApiRequest(`/api/ext/update-user-role/workspace/${encodeURIComponent(params.workspaceId)}`, "updateInstanceUserRole", {
+      method: "PUT",
+      body: JSON.stringify({ userId: params.userId, newRole: params.role })
+    });
+  }
+  async function updateInstanceUserWorkspace(params) {
+    await externalApiRequest(`/api/ext/user/${encodeURIComponent(params.userId)}/workspace/${encodeURIComponent(params.workspaceId)}`, "updateInstanceUserWorkspace", {
+      method: "PATCH",
+      body: JSON.stringify({
+        ...params.status !== void 0 ? { status: params.status } : {},
+        ...params.groups !== void 0 ? { groups: params.groups } : {}
+      })
+    });
+  }
+  async function replaceInstanceUserWorkspaces(userId, workspaces) {
+    await externalApiRequest(`/api/ext/user/${encodeURIComponent(userId)}/workspaces`, "replaceInstanceUserWorkspaces", { method: "PUT", body: JSON.stringify(workspaces) });
+  }
   async function getApp(appId) {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, "getApp");
@@ -35869,6 +35986,15 @@ function createClient(auth, config2) {
   return {
     listWorkspaces,
     useWorkspace,
+    listInstanceWorkspaces,
+    listWorkspaceApps,
+    listInstanceUsers,
+    getInstanceUser,
+    createInstanceUser,
+    updateInstanceUser,
+    updateInstanceUserRole,
+    updateInstanceUserWorkspace,
+    replaceInstanceUserWorkspaces,
     createApp,
     renameApp,
     getApp,
@@ -41653,6 +41779,177 @@ function manageThemeTool(client) {
   };
 }
 
+// dist/tools/userManagement.js
+var userStatus = external_exports.enum(["active", "archived", "invited"]);
+var userRole = external_exports.enum(["admin", "builder", "end-user"]);
+var groupRef = external_exports.object({
+  id: external_exports.string().uuid().optional(),
+  name: external_exports.string().trim().min(1).max(100).optional()
+}).strict().refine((group) => group.id !== void 0 || group.name !== void 0, {
+  message: "Each group requires either id or name."
+});
+var workspaceRef = external_exports.object({
+  id: external_exports.string().uuid().optional(),
+  name: external_exports.string().trim().min(1).max(100).optional(),
+  role: userRole.optional(),
+  status: userStatus.optional(),
+  groups: external_exports.array(groupRef).max(100).optional()
+}).strict().refine((workspace) => workspace.id !== void 0 || workspace.name !== void 0, {
+  message: "Each workspace requires either id or name."
+});
+function requireValue2(value, label) {
+  if (value === void 0)
+    throw new Error(`${label} is required for this action.`);
+  return value;
+}
+function requireUuid(value, label) {
+  const parsed = external_exports.string().uuid().safeParse(value);
+  if (!parsed.success)
+    throw new Error(`${label} must be a UUID for this action.`);
+  return parsed.data;
+}
+function listInstanceWorkspacesTool(client) {
+  return {
+    name: "list_instance_workspaces",
+    description: "List every workspace visible to ToolJet's instance-wide external API, including the existing custom groups that can be assigned to users. This is different from list_workspaces, which lists only the signed-in app-builder user's workspaces. Requires TOOLJET_EXTERNAL_API_ACCESS_TOKEN.",
+    inputSchema: {},
+    async handler() {
+      try {
+        return ok({ workspaces: await client.listInstanceWorkspaces() });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function listWorkspaceAppsTool(client) {
+  return {
+    name: "list_workspace_apps",
+    description: "List app ids, names, slugs, and versions for one workspace through ToolJet's external API. Use list_instance_workspaces first instead of guessing a workspace id.",
+    inputSchema: {
+      workspace_id: external_exports.string().uuid()
+    },
+    async handler(args) {
+      try {
+        return ok({ apps: await client.listWorkspaceApps(args.workspace_id) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function manageUsersTool(client) {
+  return {
+    name: "manage_users",
+    description: "List, get, create/invite, or update ToolJet instance users through the public external API. Create defaults to invited and never invents a password. Update changes only supplied fields; archiving requires confirm:true after exact-target approval. Passwords are write-only and are never returned.",
+    inputSchema: {
+      action: external_exports.enum(["list", "get", "create", "update"]),
+      user_id: external_exports.string().trim().min(1).optional().describe("User UUID; get also accepts an exact email."),
+      group_names: external_exports.array(external_exports.string().trim().min(1).max(100)).max(50).optional(),
+      statuses: external_exports.array(userStatus).max(3).optional(),
+      name: external_exports.string().trim().min(1).max(100).optional(),
+      email: external_exports.string().email().optional(),
+      password: external_exports.string().min(5).max(100).optional().describe("Write-only; provide only when explicitly requested."),
+      status: userStatus.optional(),
+      default_workspace_id: external_exports.string().uuid().optional(),
+      workspaces: external_exports.array(workspaceRef).min(1).max(100).optional(),
+      confirm: external_exports.boolean().optional()
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list") {
+          return ok({
+            users: await client.listInstanceUsers({
+              groupNames: args.group_names,
+              statuses: args.statuses
+            })
+          });
+        }
+        if (args.action === "get") {
+          return ok({ user: await client.getInstanceUser(requireValue2(args.user_id, "user_id")) });
+        }
+        if (args.action === "create") {
+          const created = await client.createInstanceUser({
+            name: requireValue2(args.name, "name"),
+            email: requireValue2(args.email, "email"),
+            ...args.password !== void 0 ? { password: args.password } : {},
+            status: args.status ?? "invited",
+            ...args.default_workspace_id ? { defaultWorkspaceId: args.default_workspace_id } : {},
+            workspaces: requireValue2(args.workspaces, "workspaces")
+          });
+          return ok({ user: created });
+        }
+        const userId = requireUuid(requireValue2(args.user_id, "user_id"), "user_id");
+        const current = await client.getInstanceUser(userId);
+        const update = {
+          ...args.name !== void 0 ? { name: args.name } : {},
+          ...args.email !== void 0 ? { email: args.email } : {},
+          ...args.password !== void 0 ? { password: args.password } : {},
+          ...args.status !== void 0 ? { status: args.status } : {},
+          ...args.default_workspace_id !== void 0 ? { defaultWorkspaceId: args.default_workspace_id } : {}
+        };
+        if (!Object.keys(update).length) {
+          throw new Error("manage_users update requires at least one changed field.");
+        }
+        if (args.status === "archived" && args.confirm !== true) {
+          throw new Error(`Archiving user "${current.email ?? current.name ?? userId}" requires confirm:true after exact-target approval.`);
+        }
+        await client.updateInstanceUser(userId, update);
+        return ok({ user: await client.getInstanceUser(userId) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function manageUserAccessTool(client) {
+  return {
+    name: "manage_user_access",
+    description: "Change one ToolJet user's workspace role, status, or existing custom-group membership, or replace the user's complete workspace set. All actions require confirm:true after exact user/workspace approval. update_workspace replaces that workspace's complete custom-group list when groups is supplied; replace_workspaces removes every omitted membership. This tool does not create groups or permission policies.",
+    inputSchema: {
+      action: external_exports.enum(["set_role", "update_workspace", "replace_workspaces"]),
+      user_id: external_exports.string().uuid(),
+      workspace_id: external_exports.string().uuid().optional(),
+      role: userRole.optional(),
+      status: userStatus.optional(),
+      groups: external_exports.array(groupRef).max(100).optional(),
+      workspaces: external_exports.array(workspaceRef).max(100).optional(),
+      confirm: external_exports.boolean().optional()
+    },
+    async handler(args) {
+      try {
+        const userId = requireValue2(args.user_id, "user_id");
+        const current = await client.getInstanceUser(userId);
+        if (args.confirm !== true) {
+          throw new Error(`Changing access for user "${current.email ?? current.name ?? userId}" requires confirm:true after exact-target approval.`);
+        }
+        if (args.action === "set_role") {
+          await client.updateInstanceUserRole({
+            userId,
+            workspaceId: requireValue2(args.workspace_id, "workspace_id"),
+            role: requireValue2(args.role, "role")
+          });
+        } else if (args.action === "update_workspace") {
+          if (args.status === void 0 && args.groups === void 0) {
+            throw new Error("update_workspace requires status and/or groups.");
+          }
+          await client.updateInstanceUserWorkspace({
+            userId,
+            workspaceId: requireValue2(args.workspace_id, "workspace_id"),
+            ...args.status !== void 0 ? { status: args.status } : {},
+            ...args.groups !== void 0 ? { groups: args.groups } : {}
+          });
+        } else {
+          await client.replaceInstanceUserWorkspaces(userId, requireValue2(args.workspaces, "workspaces"));
+        }
+        return ok({ user: await client.getInstanceUser(userId) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -41669,6 +41966,10 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
+    listInstanceWorkspacesTool(client),
+    listWorkspaceAppsTool(client),
+    manageUsersTool(client),
+    manageUserAccessTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),

@@ -16,7 +16,8 @@
         "TOOLJET_URL": "${TOOLJET_URL:-http://localhost:3000}",
         "TOOLJET_APP_URL": "${TOOLJET_APP_URL:-http://localhost:8082}",
         "TOOLJET_EMAIL": "${TOOLJET_EMAIL}",
-        "TOOLJET_PASSWORD": "${TOOLJET_PASSWORD}"
+        "TOOLJET_PASSWORD": "${TOOLJET_PASSWORD}",
+        "TOOLJET_EXTERNAL_API_ACCESS_TOKEN": "${TOOLJET_EXTERNAL_API_ACCESS_TOKEN}"
       }
     }
   }

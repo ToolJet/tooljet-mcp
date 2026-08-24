@@ -16,6 +16,8 @@ export interface Workspace {
 
 export interface Auth {
   authedFetch(path: string, init?: RequestInit): Promise<Response>;
+  /** Call ToolJet's instance-wide /api/ext surface with its separately configured Basic token. */
+  externalApiFetch(path: string, init?: RequestInit): Promise<Response>;
   getOrganizationId(): Promise<string>;
   getOrganizationSlug(): Promise<string>;
   /** The workspaces this user belongs to (id, name, slug, is_default, is_current). */
@@ -175,6 +177,25 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return res;
   }
 
+  async function externalApiFetch(path: string, init?: RequestInit): Promise<Response> {
+    const accessToken = config.externalApiAccessToken;
+    if (!accessToken) {
+      throw new Error(
+        'ToolJet external API access is not configured. Set TOOLJET_EXTERNAL_API_ACCESS_TOKEN to the ' +
+          'same value configured as EXTERNAL_API_ACCESS_TOKEN on the ToolJet instance.'
+      );
+    }
+
+    const headers = new Headers(init?.headers);
+    headers.set('Authorization', `Basic ${accessToken}`);
+    if (!headers.has('Content-Type') && init?.body !== undefined) {
+      headers.set('Content-Type', 'application/json');
+    }
+    const response = await fetchImpl(`${config.apiUrl}${path}`, { ...init, headers });
+    recordHttpResponse(response);
+    return response;
+  }
+
   async function getOrganizationId(): Promise<string> {
     if (!workspaceId) await login();
     if (!workspaceId) throw new Error('ToolJet getOrganizationId failed: no organization id available after login');
@@ -197,5 +218,12 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return switchTo(id);
   }
 
-  return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
+  return {
+    authedFetch,
+    externalApiFetch,
+    getOrganizationId,
+    getOrganizationSlug,
+    listWorkspaces,
+    switchWorkspace,
+  };
 }
