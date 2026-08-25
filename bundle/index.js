@@ -38408,18 +38408,19 @@ function tableStateWarnings(options2) {
 }
 function unquotedSqlBindingIssues(sql) {
   const issues = [];
-  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b)\s*(?!')\{\{/gi;
+  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b|,|\()\s*(?!')\{\{/gi;
   const seen = /* @__PURE__ */ new Set();
   let match;
   while ((match = risky.exec(sql)) !== null) {
-    const operator = match[1].toUpperCase();
+    const raw = match[1].toUpperCase();
+    const operator = raw === "," || raw === "(" ? "a function argument" : raw;
     if (seen.has(operator))
       continue;
     seen.add(operator);
     issues.push({
       code: "unquoted_sql_binding",
       path: "query",
-      message: `SQL compares with an unquoted binding (\`${operator} {{...}}\`). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes \`${operator}\` with nothing after it and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Quote it ('{{...}}') so the empty case is a valid comparison against '', or drive the filter through a parameterised query option.`
+      message: `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes nothing at that position and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Quote it ('{{...}}') so the empty case is a valid comparison against '', or drive the filter through a parameterised query option.`
     });
   }
   return issues;
@@ -39167,6 +39168,45 @@ function containsNamedBinding(value, namespace, name) {
 }
 
 // dist/appSpecLint.js
+function lintChartNumericBindings(pages, queries) {
+  const warnings = [];
+  const sqlByName = /* @__PURE__ */ new Map();
+  for (const query of queries) {
+    const sql = query.options?.query;
+    if (query.name && typeof sql === "string")
+      sqlByName.set(query.name, sql);
+  }
+  if (!sqlByName.size)
+    return warnings;
+  for (const page of pages) {
+    for (const component of page.components) {
+      if (component.type !== "Chart")
+        continue;
+      const properties = component.properties;
+      const entry = properties?.data;
+      const binding = typeof entry?.value === "string" ? entry.value : typeof entry === "string" ? entry : "";
+      if (!binding.includes("{{"))
+        continue;
+      const yMatch = binding.match(/y\s*:\s*(?:\w+\.)?([A-Za-z_]\w*)/);
+      const queryMatch = binding.match(/queries\.([A-Za-z_$][\w$]*)/);
+      if (!yMatch || !queryMatch)
+        continue;
+      const column = yMatch[1];
+      const sql = sqlByName.get(queryMatch[1]);
+      if (!sql)
+        continue;
+      const aggregate = new RegExp(`\\b(count|sum|avg|min|max)\\s*\\([^)]*\\)\\s+as\\s+${column}\\b`, "i").test(sql);
+      if (!aggregate)
+        continue;
+      const cast = new RegExp(`(cast\\s*\\(|::\\s*(float|numeric|decimal|int|bigint|double))`, "i").test(sql);
+      const coerced = /Number\s*\(|parseFloat\s*\(|parseInt\s*\(|\+\s*r\./.test(binding);
+      if (cast || coerced)
+        continue;
+      warnings.push(`Chart "${component.name ?? component.id}" plots y from "${column}", an uncast SQL aggregate in query "${queryMatch[1]}". Many drivers return numeric aggregates as STRINGS (BigQuery INT64 from COUNT(*) especially), and a Chart given string y values renders blank with no error. Cast in SQL (CAST(... AS FLOAT64) / ::float) or coerce in the binding (y: Number(r.${column})).`);
+    }
+  }
+  return warnings;
+}
 function lintServerSidePaginationRace(pages, queries) {
   const errors = [];
   const queryByName = /* @__PURE__ */ new Map();
@@ -39382,6 +39422,7 @@ function lintPlannedApp(spec, existingSummary) {
   if (pages.length)
     checked.push("page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs");
   errors.push(...lintServerSidePaginationRace(pages, queries));
+  warnings.push(...lintChartNumericBindings(pages, queries));
   const eventSpecs = [];
   (spec.events ?? []).forEach((event, index) => {
     const source2 = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);

@@ -663,6 +663,17 @@ SQL driver output is type-dependent: values without a registered parser (commonl
 
 For safe discovery, use plugin selectors first: list schemas/tables, then batch known-table column lookups. Plugin selectors commonly stop at column names and do not expose keys, foreign keys, indexes, or views. When those relationships matter, call \`prepare_sql_discovery_queries\` for the exact connected datasource and requested purposes; review its \`unsupported\` list, add the returned specs in one \`add_queries\` batch, and run only the selected reads. Preview/distinct queries require explicit columns and are capped at 100 rows. Count first, recommend server-side pagination above 1,000 rows, and obtain separate billable-read approval for BigQuery/Snowflake/Redshift before execution.
 
+### Billable warehouses (BigQuery, Snowflake, Redshift)
+
+Every read is metered against the customer's cloud bill, so treat query COUNT as a budget, not just latency.
+
+- Discover with metadata, not data. \`inspect_datasource_schema\` and \`get_datasource_query_schema\` scan no bytes; a \`run_query\` does. Get the columns from the schema and write the SQL from it.
+- Do NOT verify every query by running it. Verifying a dashboard query-by-query is the single largest source of spend on these sources — one build issued 11 billable reads purely to check its own work. Run at most one representative read; rely on the schema and the linter for the rest, and say in the handoff that the others were not executed.
+- Never self-approve \`user_confirmed_billable_read\`. It exists so a human accepts the cost. Ask, and if you cannot ask, leave the query unrun and say so.
+- Cast numeric aggregates in SQL. BigQuery \`COUNT(*)\` is INT64 and arrives as a STRING; a Chart given string y values renders BLANK with no error, while a Statistics tile fed the same column looks fine — so the bug hides in plain sight. Write \`CAST(COUNT(*) AS FLOAT64) AS cnt\`, or coerce in the binding with \`y: Number(r.cnt)\`.
+- BigQuery dialect: backtick-qualify tables (\`\\\`dataset.table\\\`\`), and prefer \`COUNTIF()\`, \`FORMAT_DATE()\`, \`SAFE_CAST()\`, \`SAFE_DIVIDE()\`. There is no \`::\` cast.
+- Bound every query: explicit columns, a \`LIMIT\`, and aggregation pushed into SQL. A partition/cluster column in the WHERE clause cuts scanned bytes far more than a LIMIT does.
+
 ## Charts — how to make them render reliably (READ THIS before adding a Chart)
 
 The \`Chart\` component fails in a specific, common way: **ToolJet's chart-property evaluator silently returns EMPTY for complex expressions** — inline IIFEs, dynamic field-name detection, big reduces written inside the \`{{ }}\` binding. The chart then draws its axes/containers but receives **no data traces** (looks empty/broken). Avoid it:

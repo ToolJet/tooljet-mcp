@@ -77,6 +77,59 @@ export interface AppSpecLintResult {
  *  though the record count is non-zero — a silently broken app. Caught statically so the model fixes it
  *  before writing. Legitimate server-side pagination drives the data query from the table's
  *  onPageChanged/onSearch events (runOnPageLoad:false), so it only fires on the racy on-load pattern. */
+/** A Chart needs NUMERIC y values. SQL drivers hand back many numeric types as STRINGS — BigQuery
+ * INT64 from `COUNT(*)` is the common one — so `y: r.cnt` becomes "1248" and the chart renders a
+ * blank plot with no error anywhere. The query succeeded, validation passed, and a Statistics tile
+ * fed by the same column looks fine (it just prints the string), which is exactly how this hides:
+ * observed live on a BigQuery telemetry dashboard where the KPIs were right and all four charts were
+ * empty. Casting in SQL (CAST(COUNT(*) AS FLOAT64), COUNT(*)::float) is the fix the skill already
+ * asks for; this makes it enforced rather than advisory. */
+function lintChartNumericBindings(
+  pages: AppSummary['pages'],
+  queries: Array<{ name?: string; options?: unknown }>
+): string[] {
+  const warnings: string[] = [];
+  const sqlByName = new Map<string, string>();
+  for (const query of queries) {
+    const sql = (query.options as { query?: unknown } | undefined)?.query;
+    if (query.name && typeof sql === 'string') sqlByName.set(query.name, sql);
+  }
+  if (!sqlByName.size) return warnings;
+
+  for (const page of pages) {
+    for (const component of page.components) {
+      if (component.type !== 'Chart') continue;
+      const properties = (component as { properties?: Record<string, unknown> }).properties;
+      const entry = properties?.data as { value?: unknown } | undefined;
+      const binding = typeof entry?.value === 'string' ? entry.value : typeof entry === 'string' ? entry : '';
+      if (!binding.includes('{{')) continue;
+      // y: r.<column> — the value the chart must plot numerically.
+      const yMatch = binding.match(/y\s*:\s*(?:\w+\.)?([A-Za-z_]\w*)/);
+      const queryMatch = binding.match(/queries\.([A-Za-z_$][\w$]*)/);
+      if (!yMatch || !queryMatch) continue;
+      const column = yMatch[1];
+      const sql = sqlByName.get(queryMatch[1]);
+      if (!sql) continue;
+      // Is that column produced by an aggregate, and is it cast anywhere?
+      const aggregate = new RegExp(
+        `\\b(count|sum|avg|min|max)\\s*\\([^)]*\\)\\s+as\\s+${column}\\b`,
+        'i'
+      ).test(sql);
+      if (!aggregate) continue;
+      const cast = new RegExp(`(cast\\s*\\(|::\\s*(float|numeric|decimal|int|bigint|double))`, 'i').test(sql);
+      const coerced = /Number\s*\(|parseFloat\s*\(|parseInt\s*\(|\+\s*r\./.test(binding);
+      if (cast || coerced) continue;
+      warnings.push(
+        `Chart "${component.name ?? component.id}" plots y from "${column}", an uncast SQL aggregate in ` +
+          `query "${queryMatch[1]}". Many drivers return numeric aggregates as STRINGS (BigQuery INT64 ` +
+          `from COUNT(*) especially), and a Chart given string y values renders blank with no error. ` +
+          `Cast in SQL (CAST(... AS FLOAT64) / ::float) or coerce in the binding (y: Number(r.${column})).`
+      );
+    }
+  }
+  return warnings;
+}
+
 function lintServerSidePaginationRace(
   pages: AppSummary['pages'],
   queries: Array<{ name?: string; options?: unknown }>
@@ -307,6 +360,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   });
   if (pages.length) checked.push('page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs');
   errors.push(...lintServerSidePaginationRace(pages, queries));
+  warnings.push(...lintChartNumericBindings(pages, queries));
 
   const eventSpecs: EventSpec[] = [];
   (spec.events ?? []).forEach((event, index) => {

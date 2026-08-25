@@ -156,21 +156,25 @@ function tableStateWarnings(options: Record<string, unknown>): QueryValidationIs
  * nothing — so the surrounding OR-guard then works as intended. */
 function unquotedSqlBindingIssues(sql: string): QueryValidationIssue[] {
   const issues: QueryValidationIssue[] = [];
-  // A binding used as the right-hand side of a comparison/LIKE with no adjacent quote.
-  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b)\s*(?!')\{\{/gi;
+  // A binding with no adjacent quote, either as the right-hand side of a comparison/LIKE or as a
+  // function argument. The argument case is just as fatal — `CONCAT('%', {{search}}, '%')` becomes
+  // `CONCAT('%', , '%')` when the component is empty — and it is what a search filter usually looks
+  // like, so matching only comparison operators misses the most common form.
+  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b|,|\()\s*(?!')\{\{/gi;
   const seen = new Set<string>();
   let match: RegExpExecArray | null;
   while ((match = risky.exec(sql)) !== null) {
-    const operator = match[1].toUpperCase();
+    const raw = match[1].toUpperCase();
+    const operator = raw === ',' || raw === '(' ? 'a function argument' : raw;
     if (seen.has(operator)) continue;
     seen.add(operator);
     issues.push({
       code: 'unquoted_sql_binding',
       path: 'query',
       message:
-        `SQL compares with an unquoted binding (\`${operator} {{...}}\`). ToolJet splices bindings in as ` +
+        `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as ` +
         'raw text, so when that component is empty — its state on page load — the statement becomes ' +
-        `\`${operator}\` with nothing after it and fails with a SQL syntax error; the table then shows ` +
+        `nothing at that position and fails with a SQL syntax error; the table then shows ` +
         '"No data" and the page looks broken on first open. Quote it (\'{{...}}\') so the empty case is ' +
         "a valid comparison against '', or drive the filter through a parameterised query option.",
     });
