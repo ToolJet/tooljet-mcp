@@ -33157,19 +33157,52 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // dist/config.js
-function loadConfig() {
+var SESSION_TOKEN_HEADER = "x-tooljet-session";
+var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
+var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
+function readHeader(headers, name) {
+  const raw = headers[name] ?? headers[name.toLowerCase()];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : void 0;
+}
+function identityFromHeaders(headers) {
+  const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
+  const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  if (!sessionToken && !workspaceId)
+    return void 0;
+  if (!sessionToken) {
+    throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
+  }
+  if (!workspaceId) {
+    throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
+  }
+  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER) };
+}
+function loadConfig(identity) {
+  const apiUrl = process.env.TOOLJET_URL ?? "http://localhost:3000";
+  const appUrl = process.env.TOOLJET_APP_URL ?? "http://localhost:8082";
+  if (identity) {
+    return {
+      apiUrl,
+      appUrl,
+      sessionToken: identity.sessionToken,
+      workspaceId: identity.workspaceId,
+      workspaceSlug: identity.workspaceSlug
+    };
+  }
   const pat = process.env.TOOLJET_PAT;
   const sessionToken = process.env.TOOLJET_SESSION_TOKEN;
   const workspaceId = process.env.TOOLJET_WORKSPACE_ID;
   if (!pat && !sessionToken) {
-    throw new Error("TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT.");
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
   }
   if (sessionToken && !workspaceId) {
     throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
   }
   return {
-    apiUrl: process.env.TOOLJET_URL ?? "http://localhost:3000",
-    appUrl: process.env.TOOLJET_APP_URL ?? "http://localhost:8082",
+    apiUrl,
+    appUrl,
     pat,
     sessionToken,
     workspaceId,
@@ -41989,8 +42022,8 @@ function registerTools(server, client, runtime = runtimeFreshness) {
 }
 
 // dist/server.js
-function buildServer() {
-  const config2 = loadConfig();
+function buildServer(identity) {
+  const config2 = loadConfig(identity);
   const auth = createAuth(config2);
   const client = createClient(auth, config2);
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
@@ -42017,12 +42050,25 @@ async function serveHttp() {
   if (!sharedToken) {
     throw new Error("MCP_SHARED_TOKEN is required when MCP_TRANSPORT=http (this port is reachable off-box)");
   }
+  const requireUserSession = /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN);
   const httpServer = createServer((req, res) => {
     if (!checkBearerToken(req.headers.authorization, sharedToken)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end("Unauthorized");
       return;
     }
-    const server = buildServer();
+    let identity;
+    try {
+      identity = identityFromHeaders(req.headers);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid identity headers";
+      res.writeHead(400, { "Content-Type": "text/plain" }).end(message);
+      return;
+    }
+    if (!identity && requireUserSession) {
+      res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on behalf of a signed-in user: send the ${SESSION_TOKEN_HEADER} header (with x-tooljet-workspace-id). Refusing rather than using a shared identity.`);
+      return;
+    }
+    const server = buildServer(identity);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0 });
     res.on("close", () => {
       transport.close();

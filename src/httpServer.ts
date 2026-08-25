@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer } from './server.js';
+import { identityFromHeaders, type RequestIdentity } from './config.js';
 
 const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
 
@@ -13,8 +14,9 @@ interface Session {
 }
 
 export interface HttpMcpServerOptions {
-  /** Creates one isolated MCP server instance for each Streamable HTTP session. */
-  serverFactory?: () => McpServer;
+  /** Creates one isolated MCP server instance for each Streamable HTTP session. Receives the acting
+   *  user parsed from the initialize request's headers, when the caller sent one. */
+  serverFactory?: (identity?: RequestIdentity) => McpServer;
   /** Maximum accepted JSON request size. Defaults to 1 MiB. */
   maxBodyBytes?: number;
 }
@@ -93,7 +95,19 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
       return;
     }
 
-    const mcpServer = serverFactory();
+    /* Identity is bound at initialize and belongs to the session from then on: one MCP session is
+       one build for one user, and later requests carry only the session id. NOTE this transport has
+       no bearer gate of its own (src/http.ts binds it to loopback) — do not expose it off-box
+       without one, or any local caller could name a user. */
+    let identity: RequestIdentity | undefined;
+    try {
+      identity = identityFromHeaders(req.headers);
+    } catch (error) {
+      writeError(res, 400, error instanceof Error ? error.message : 'Invalid identity headers');
+      return;
+    }
+
+    const mcpServer = serverFactory(identity);
     let transport: StreamableHTTPServerTransport;
 
     transport = new StreamableHTTPServerTransport({
