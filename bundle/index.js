@@ -34019,6 +34019,26 @@ function lintOperationalViewport(components) {
   }
   return warnings;
 }
+function lintCanvasSideGutter(components) {
+  const MIN_LEFT = 2;
+  const MAX_RIGHT = 41;
+  const EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "Drawer"]);
+  const roots = components.filter((component) => !parentPlacement(component) && !EXEMPT.has(component.type ?? ""));
+  if (roots.length < 3)
+    return [];
+  const offenders = roots.filter((component) => {
+    const rect2 = component.layouts?.desktop ?? component.layout;
+    if (!rect2 || typeof rect2.left !== "number" || typeof rect2.width !== "number")
+      return false;
+    return rect2.left < MIN_LEFT || rect2.left + rect2.width > MAX_RIGHT;
+  });
+  if (!offenders.length)
+    return [];
+  const names = offenders.map((component) => component.name ?? component.id).filter(Boolean);
+  return [
+    `Page content has no side gutter: ${names.slice(0, 4).join(", ")}` + (names.length > 4 ? ` and ${names.length - 4} more` : "") + ` reach the edges of ToolJet's 43-column canvas, so the app renders flush against the window. Keep top-level content within columns ${MIN_LEFT}-${MAX_RIGHT} (left >= ${MIN_LEFT}, left + width <= ${MAX_RIGHT}); a full-width row is left:${MIN_LEFT} width:${MAX_RIGHT - MIN_LEFT}. Only go edge-to-edge if the user explicitly asked for a full-bleed layout.`
+  ];
+}
 function lintDesktopCanvasCoverage(components) {
   const roots = components.filter((component) => !parentPlacement(component));
   if (roots.length < 4)
@@ -34536,7 +34556,8 @@ function lintRenderedGeometry(components) {
     ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
-    ...lintDesktopCanvasCoverage(components)
+    ...lintDesktopCanvasCoverage(components),
+    ...lintCanvasSideGutter(components)
   ];
 }
 function lintComponents(components) {

@@ -721,6 +721,45 @@ export function lintOperationalViewport(components: LintComponent[]): string[] {
 }
 
 /** Catch an accidentally half-width desktop composition while allowing deliberate narrow forms/details. */
+/** The complement of lintDesktopCanvasCoverage: content that runs to the canvas EDGES.
+ *
+ * references/ui-layout.md already asks for a side gutter ("top-level content ≈ columns 2-41,
+ * full-bleed only if asked"), but nothing enforced it and models systematically ignored it —
+ * observed shipping tables at left:0 width:43 (zero gutter) and, more often, left:1 width:41, which
+ * is ~2% of the canvas and reads as flush against the window. Guidance alone has not been enough.
+ *
+ * Reported per page rather than per component so a wide layout produces one actionable line instead
+ * of one per widget, and it names the exact target columns so the fix needs no guesswork. */
+export function lintCanvasSideGutter(components: LintComponent[]): string[] {
+  const MIN_LEFT = 2;
+  const MAX_RIGHT = 41;
+  // Modals/drawers carry a trigger-ish desktop rect that is not page content, so a right-edge value
+  // there is not a gutter problem.
+  const EXEMPT = new Set(['Modal', 'ModalV2', 'Drawer']);
+  const roots = components.filter(
+    (component) => !parentPlacement(component) && !EXEMPT.has(component.type ?? '')
+  );
+  // Only judge a PAGE's composition, never a single insertion: add_component lints the one component
+  // it is adding, and a page-level "no side gutter" verdict from that has no context behind it.
+  // Mirrors lintDesktopCanvasCoverage, which guards the same way.
+  if (roots.length < 3) return [];
+  const offenders = roots.filter((component) => {
+    const rect = component.layouts?.desktop ?? component.layout;
+    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') return false;
+    return rect.left < MIN_LEFT || rect.left + rect.width > MAX_RIGHT;
+  });
+  if (!offenders.length) return [];
+  const names = offenders.map((component) => component.name ?? component.id).filter(Boolean);
+  return [
+    `Page content has no side gutter: ${names.slice(0, 4).join(', ')}` +
+      (names.length > 4 ? ` and ${names.length - 4} more` : '') +
+      ` reach the edges of ToolJet's 43-column canvas, so the app renders flush against the window. ` +
+      `Keep top-level content within columns ${MIN_LEFT}-${MAX_RIGHT} (left >= ${MIN_LEFT}, ` +
+      `left + width <= ${MAX_RIGHT}); a full-width row is left:${MIN_LEFT} width:${MAX_RIGHT - MIN_LEFT}. ` +
+      'Only go edge-to-edge if the user explicitly asked for a full-bleed layout.',
+  ];
+}
+
 export function lintDesktopCanvasCoverage(components: LintComponent[]): string[] {
   const roots = components.filter((component) => !parentPlacement(component));
   if (roots.length < 4) return [];
@@ -1560,6 +1599,7 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
+    ...lintCanvasSideGutter(components),
   ];
 }
 
