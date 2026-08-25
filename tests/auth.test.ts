@@ -109,3 +109,73 @@ describe('createAuth (personal access token)', () => {
     await expect(auth.authedFetch('/api/x')).rejects.toThrow(/returned no authToken/i);
   });
 });
+
+/* The in-product path. ToolJet's backend has already minted a session for the signed-in user, so
+   the credential IS the session: there is nothing to exchange, and the agent's writes land in the
+   audit log under the person who asked for the build. */
+describe('createAuth (backend-minted session)', () => {
+  const sessionConfig: Config = {
+    apiUrl: 'http://localhost:3000',
+    appUrl: 'http://localhost:8082',
+    sessionToken: 'SESSION_JWT',
+    workspaceId: 'org-9',
+    workspaceSlug: 'acme',
+  };
+
+  let fetchImpl: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    fetchImpl = vi.fn();
+  });
+
+  it('uses the supplied session directly, making no exchange request', async () => {
+    fetchImpl.mockResolvedValueOnce(mockResponse({ json: { ok: true } }));
+
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    await auth.authedFetch('/api/some-resource');
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).not.toContain('/personal-access-tokens/session');
+    const headers = (init as RequestInit).headers as Headers;
+    expect(headers.get('Cookie')).toBe('tj_auth_token=SESSION_JWT');
+    expect(headers.get('tj-workspace-id')).toBe('org-9');
+  });
+
+  /* The PAT path answers a 401 by re-exchanging. There is nothing to re-exchange here, so retrying
+     would just replay the same dead token — once against the retry, and forever if login() were
+     ever called again. Fail with something a user can act on instead. */
+  it('reports an expired session instead of retrying a credential it cannot renew', async () => {
+    fetchImpl.mockResolvedValue(mockResponse({ status: 401, text: 'Unauthorized' }));
+
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(/no longer valid.*start a new build/is);
+    // The 401 handler clears the token and re-enters login(), which refuses — so the retry request
+    // is never sent. One call total, not two, and not a loop.
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  /* Listing workspaces needs the Organization module, which the PAT bundles exclude — and a minted
+     session carries the same isPATLogin claim, so it is equally barred. Synthesise rather than 403. */
+  it('reports the one reachable workspace without calling the organizations API', async () => {
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    const workspaces = await auth.listWorkspaces();
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(workspaces).toHaveLength(1);
+    expect(workspaces[0]).toMatchObject({ id: 'org-9', slug: 'acme', is_current: true });
+  });
+
+  it('falls back to the workspace id when no slug was supplied', async () => {
+    const auth = createAuth(
+      { ...sessionConfig, workspaceSlug: undefined },
+      fetchImpl as unknown as typeof fetch
+    );
+    await expect(auth.getOrganizationSlug()).resolves.toBe('org-9');
+  });
+
+  it('refuses another workspace, and does not tell an in-product caller to set TOOLJET_PAT', async () => {
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    await expect(auth.switchWorkspace('org-other')).rejects.toThrow(/start a build from the workspace/i);
+    await expect(auth.switchWorkspace('org-other')).rejects.not.toThrow(/TOOLJET_PAT/);
+  });
+});

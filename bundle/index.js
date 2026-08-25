@@ -33159,13 +33159,21 @@ var EMPTY_COMPLETION_RESULT = {
 // dist/config.js
 function loadConfig() {
   const pat = process.env.TOOLJET_PAT;
-  if (!pat) {
-    throw new Error("TOOLJET_PAT is required. Create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on.");
+  const sessionToken = process.env.TOOLJET_SESSION_TOKEN;
+  const workspaceId = process.env.TOOLJET_WORKSPACE_ID;
+  if (!pat && !sessionToken) {
+    throw new Error("TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT.");
+  }
+  if (sessionToken && !workspaceId) {
+    throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
   }
   return {
     apiUrl: process.env.TOOLJET_URL ?? "http://localhost:3000",
     appUrl: process.env.TOOLJET_APP_URL ?? "http://localhost:8082",
-    pat
+    pat,
+    sessionToken,
+    workspaceId,
+    workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG
   };
 }
 
@@ -33223,11 +33231,22 @@ async function withToolTelemetry(tool, handler) {
 // dist/auth.js
 function createAuth(config2, fetchImpl = fetch) {
   let token;
+  let suppliedSessionUsed = false;
   let workspaceId;
   let workspaceSlug;
   let workspaceName;
   const datasourceManagementUrl = (slug2, datasourceId) => `${config2.appUrl}/${encodeURIComponent(slug2)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
   async function login() {
+    if (config2.sessionToken) {
+      if (suppliedSessionUsed) {
+        throw new Error("The ToolJet session for this build is no longer valid (expired, or its token was revoked). It is minted per build and cannot be renewed from here \u2014 start a new build.");
+      }
+      suppliedSessionUsed = true;
+      token = config2.sessionToken;
+      workspaceId = config2.workspaceId;
+      workspaceSlug = config2.workspaceSlug ?? config2.workspaceId;
+      return;
+    }
     const res = await fetchImpl(`${config2.apiUrl}/api/personal-access-tokens/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${config2.pat}` }
@@ -33257,9 +33276,9 @@ function createAuth(config2, fetchImpl = fetch) {
     return response;
   }
   async function fetchWorkspaceList() {
-    if (config2.pat) {
+    if (config2.pat || config2.sessionToken) {
       if (!workspaceId)
-        throw new Error("PAT session did not resolve a workspace.");
+        throw new Error("This session did not resolve a workspace.");
       return [
         {
           id: workspaceId,
@@ -33325,7 +33344,7 @@ function createAuth(config2, fetchImpl = fetch) {
       await login();
     const current = (await fetchWorkspaceList())[0];
     if (id !== current.id) {
-      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) by its personal access token, and cannot switch to ${id}. Issue a token in the target workspace and set TOOLJET_PAT to it.`);
+      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id}. ` + (config2.sessionToken ? "Its session was minted for that workspace; start a build from the workspace you want to act on." : "Issue a personal access token in the target workspace and set TOOLJET_PAT to it."));
     }
     return current;
   }

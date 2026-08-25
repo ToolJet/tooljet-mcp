@@ -26,6 +26,10 @@ export interface Auth {
 
 export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
   let token: string | undefined;
+  /* Set once the caller-supplied session has been installed. login() is re-entered by the 401
+     retry path with `token` already cleared, so this — not `token` — is what tells us a supplied
+     session has already been tried and failed. */
+  let suppliedSessionUsed = false;
   let workspaceId: string | undefined;
   let workspaceSlug: string | undefined;
   let workspaceName: string | undefined;
@@ -45,6 +49,23 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
    * A PAT session is pinned to the token's own workspace ("this session can reach no other"), which
    * is why switchWorkspace refuses under PAT auth instead of failing obscurely later. */
   async function login(): Promise<void> {
+    /* In-product path: ToolJet's backend already minted a session for the signed-in user, so there
+       is nothing to exchange — the credential IS the session. */
+    if (config.sessionToken) {
+      if (suppliedSessionUsed) {
+        throw new Error(
+          'The ToolJet session for this build is no longer valid (expired, or its token was revoked). ' +
+            'It is minted per build and cannot be renewed from here — start a new build.'
+        );
+      }
+      suppliedSessionUsed = true;
+      token = config.sessionToken;
+      workspaceId = config.workspaceId;
+      // Slug is cosmetic (datasource URLs); the id is a usable stand-in when it was not supplied.
+      workspaceSlug = config.workspaceSlug ?? config.workspaceId;
+      return;
+    }
+
     const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
@@ -91,11 +112,12 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
 
   async function fetchWorkspaceList(): Promise<Workspace[]> {
     // PAT scopes deliberately exclude the Organization module ("Workspace tokens are limited to:
-    // apps, data"), so /api/organizations 403s. That is not a degraded mode worth reporting: a PAT
-    // session is pinned to its own workspace anyway, so the honest answer is the one workspace this
-    // token can actually reach, synthesised from the session exchange rather than fetched.
-    if (config.pat) {
-      if (!workspaceId) throw new Error('PAT session did not resolve a workspace.');
+    // apps, data"), so /api/organizations 403s. Both scoped credentials — an exchanged PAT and a
+    // backend-minted session — carry the same isPATLogin claim and the same pinning, so neither can
+    // list workspaces. That is not a degraded mode worth reporting: the honest answer is the one
+    // workspace this session can actually reach.
+    if (config.pat || config.sessionToken) {
+      if (!workspaceId) throw new Error('This session did not resolve a workspace.');
       return [
         {
           id: workspaceId,
@@ -163,8 +185,10 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     const current = (await fetchWorkspaceList())[0]!;
     if (id !== current.id) {
       throw new Error(
-        `This server is scoped to workspace "${current.slug}" (${current.id}) by its personal access ` +
-          `token, and cannot switch to ${id}. Issue a token in the target workspace and set TOOLJET_PAT to it.`
+        `This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id}. ` +
+          (config.sessionToken
+            ? 'Its session was minted for that workspace; start a build from the workspace you want to act on.'
+            : 'Issue a personal access token in the target workspace and set TOOLJET_PAT to it.')
       );
     }
     return current;
