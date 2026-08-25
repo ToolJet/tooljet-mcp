@@ -38406,9 +38406,29 @@ function tableStateWarnings(options2) {
   }
   return warnings;
 }
+function unquotedSqlBindingIssues(sql) {
+  const issues = [];
+  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b)\s*(?!')\{\{/gi;
+  const seen = /* @__PURE__ */ new Set();
+  let match;
+  while ((match = risky.exec(sql)) !== null) {
+    const operator = match[1].toUpperCase();
+    if (seen.has(operator))
+      continue;
+    seen.add(operator);
+    issues.push({
+      code: "unquoted_sql_binding",
+      path: "query",
+      message: `SQL compares with an unquoted binding (\`${operator} {{...}}\`). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes \`${operator}\` with nothing after it and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Quote it ('{{...}}') so the empty case is a valid comparison against '', or drive the filter through a parameterised query option.`
+    });
+  }
+  return issues;
+}
 function validateQueryOptions(kind, options2) {
   const errors = [];
   const warnings = tableStateWarnings(options2);
+  if (typeof options2.query === "string")
+    errors.push(...unquotedSqlBindingIssues(options2.query));
   const readAssessment = assessQueryRead({ id: "<planned-query>", kind, options: options2 });
   if (readAssessment.selectStar) {
     warnings.push({

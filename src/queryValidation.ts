@@ -142,9 +142,46 @@ function tableStateWarnings(options: Record<string, unknown>): QueryValidationIs
   return warnings;
 }
 
+/** ToolJet splices `{{...}}` into SQL as RAW TEXT, not as a bound parameter. So a comparison written
+ * as `col = {{components.filter.value}}` becomes `col = ` the moment that component is empty — a hard
+ * SQL syntax error, not an empty result. Empty is the DEFAULT state of a filter on page load, so the
+ * table renders "No data" and the page looks broken from the very first paint.
+ *
+ * Observed live: a generated analytics app wrote the plausible null-safe idiom
+ *   WHERE (region = {{components.regionFilter.value}} OR {{!components.regionFilter.value}})
+ * which the server executed as `WHERE (region =  OR true)` → `syntax error at or near`. Static
+ * validation passed; only the user ever saw it.
+ *
+ * Quoting the binding ('{{...}}') makes the empty case `col = ''` — valid SQL that simply matches
+ * nothing — so the surrounding OR-guard then works as intended. */
+function unquotedSqlBindingIssues(sql: string): QueryValidationIssue[] {
+  const issues: QueryValidationIssue[] = [];
+  // A binding used as the right-hand side of a comparison/LIKE with no adjacent quote.
+  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b)\s*(?!')\{\{/gi;
+  const seen = new Set<string>();
+  let match: RegExpExecArray | null;
+  while ((match = risky.exec(sql)) !== null) {
+    const operator = match[1].toUpperCase();
+    if (seen.has(operator)) continue;
+    seen.add(operator);
+    issues.push({
+      code: 'unquoted_sql_binding',
+      path: 'query',
+      message:
+        `SQL compares with an unquoted binding (\`${operator} {{...}}\`). ToolJet splices bindings in as ` +
+        'raw text, so when that component is empty — its state on page load — the statement becomes ' +
+        `\`${operator}\` with nothing after it and fails with a SQL syntax error; the table then shows ` +
+        '"No data" and the page looks broken on first open. Quote it (\'{{...}}\') so the empty case is ' +
+        "a valid comparison against '', or drive the filter through a parameterised query option.",
+    });
+  }
+  return issues;
+}
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  if (typeof options.query === "string") errors.push(...unquotedSqlBindingIssues(options.query));
   const readAssessment = assessQueryRead({ id: '<planned-query>', kind, options });
   if (readAssessment.selectStar) {
     warnings.push({

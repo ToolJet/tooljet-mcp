@@ -385,3 +385,41 @@ describe('SQL create_row blank-row guard', () => {
     expect(result.errors.filter((e) => e.code === 'malformed_write_columns')).toEqual([]);
   });
 });
+
+describe('unquoted SQL bindings', () => {
+  // Regression: ToolJet splices {{...}} into SQL as raw text. The plausible null-safe idiom
+  // `col = {{components.filter.value}} OR {{!components.filter.value}}` executes as `col =  OR true`
+  // the moment the filter is empty — its state on page load — so the query dies with a SQL syntax
+  // error and the table renders "No data". Found by building a Postgres analytics app end-to-end.
+  it('catches the exact filter query that failed live', () => {
+    const r = validateQueryOptions('postgresql', {
+      query:
+        'SELECT order_id FROM sample_data_orders WHERE (region = {{components.regionFilter.value}} ' +
+        'OR {{!components.regionFilter.value}})',
+    });
+    const e = r.errors.find((x) => x.code === 'unquoted_sql_binding');
+    expect(e).toBeTruthy();
+    expect(e!.message).toContain('raw text');
+  });
+
+  it('accepts the quoted form, where the empty case is a valid comparison', () => {
+    const r = validateQueryOptions('postgresql', {
+      query: "SELECT order_id FROM t WHERE (region = '{{components.regionFilter.value}}' OR '{{components.regionFilter.value}}' = '')",
+    });
+    expect(r.errors.filter((x) => x.code === 'unquoted_sql_binding')).toEqual([]);
+  });
+
+  it('does not fire on binding-free aggregation SQL', () => {
+    const r = validateQueryOptions('postgresql', {
+      query: 'SELECT category, SUM(sales) FROM t GROUP BY category ORDER BY 2 DESC LIMIT 50',
+    });
+    expect(r.errors.filter((x) => x.code === 'unquoted_sql_binding')).toEqual([]);
+  });
+
+  it('catches an unquoted ILIKE binding too', () => {
+    const r = validateQueryOptions('postgresql', {
+      query: 'SELECT a FROM t WHERE name ILIKE {{components.searchInput.value}}',
+    });
+    expect(r.errors.some((x) => x.code === 'unquoted_sql_binding')).toBe(true);
+  });
+});
