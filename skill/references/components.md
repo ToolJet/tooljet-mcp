@@ -1,6 +1,6 @@
 # Component contracts and specialized rendering
 
-Read this selectively for exact component binding rules or the built-in palette. Prefer batched, section-filtered `get_component_catalog` calls for the types actually used. Use per-type `requests` when those types need different sections.
+Read this selectively for exact component binding rules or the built-in palette. Prefer batched, section-filtered `get_component_catalog` calls for the types actually used.
 
 ## Built-in components (pick from these first)
 
@@ -108,7 +108,7 @@ TWO mutually exclusive modes — NEVER set both options and schema: (1) STATIC: 
 Bind cardData from query array shaped as [{id, title, columnId}]; bind columnData from query array shaped as [{id, title}]. lastCardMovement exposes {cardId, sourceColumn, destinationColumn} — use in update queries triggered by onCardMoved event to persist reordering.
 
 ### KeyValuePair
-Bind data property to a query object for display/edit: `{{queries.queryName.data[0]}}`. changeSet exposes only the modified key-value pairs — use in update queries rather than the full data object. An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection. For date/timestamp values, use `fieldType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source instead of displaying a raw ISO string. The current renderer does not apply a visible inset for `styles.padding`; do not rely on it for card padding. For a native side-aligned panel, set `styles.autoLabelWidth.value="{{true}}"`—the persisted `false` + `labelWidth:33` defaults waste one third of a wide panel. Size a static panel near `50 * fieldCount - 12` pixels instead of stretching it. For a polished read-only details card that needs reliable padding and responsive columns, prefer one `Html` component with explicitly projected bindings and root CSS padding/box-sizing; keep KeyValuePair when native field editing/changeSet behavior is needed.
+Bind data property to a query object for display/edit: `{{queries.queryName.data[0]}}`. changeSet exposes only the modified key-value pairs — use in update queries rather than the full data object. An explicit `fields` array does not suppress undeclared keys from `data`: project the binding to a new object containing only the intended field keys. Object spreads are not a safe projection. For date/timestamp values, use `fieldType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source instead of displaying a raw ISO string.
 
 ### Listview
 Bind data property to a query array: `{{queries.queryName.data}}`. Child components inside the list access the current row via the list's data binding context.
@@ -139,10 +139,6 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 
 ### TextInput
 Use debounce: 300 on onChange events that trigger queries — prevents excessive query calls while typing. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
-
-## Map marker selection
-
-Map exposes both `center` and `selectedMarker`. After `onMarkerClick`, `{{components.mapName.selectedMarker}}` is the complete clicked marker object from `defaultMarkers`; include every downstream field you need (for example `vehicle_id`, `driver_name`, `latitude`, `longitude`, and status) in each marker object, then bind a details modal or panel to `selectedMarker.<field>`. Fetch the live Map `events` and `exposedVariables` contract before authoring this flow. A common chain is marker click → show-modal; if the chain also navigates, keep navigation last.
 
 ## File generation formats
 

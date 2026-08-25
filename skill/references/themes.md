@@ -66,4 +66,3 @@ Pass these as raw style values, for example
 token names. Literal hex or RGB values remain appropriate for deliberate one-off accents, chart series, or contrast
 corrections when no semantic token fits. Repeated foundational colors should remain token-backed so theme and
 light/dark changes continue to propagate.
-
