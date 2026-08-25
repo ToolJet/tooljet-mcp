@@ -53,6 +53,81 @@ function containsBinding(value: unknown): boolean {
   return !!record(value) && Object.values(record(value)!).some(containsBinding);
 }
 
+/* ServiceNow's Table API, split by effect.
+
+   Without this, every ServiceNow query fell through to "no proven read classifier" and was refused
+   before execution, so a connected ServiceNow instance could not be used to build anything: the
+   agent could not run a single query to check its own work, and gave up with an empty app. Measured
+   on a real build against a live ServiceNow datasource.
+
+   Reads are proven but never directSafe, for the same reason REST GET is not: they cross into a
+   remote system, where they consume quota and can return data the user did not expect to expose. */
+const SERVICENOW_ROW_READS = new Set(['list_records']);
+const SERVICENOW_SINGLE_READS = new Set(['get_record', 'aggregate']);
+const SERVICENOW_METADATA_READS = new Set([
+  'list_tables',
+  'get_table_schema',
+  'get_field_choices',
+  'list_workflows',
+  'list_flows',
+]);
+
+function assessServiceNow(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const identity = { datasourceKind: 'servicenow', ...(datasourceId ? { datasourceId } : {}) };
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+  const table = typeof options.table === 'string' ? options.table.trim() : '';
+  const source = table
+    ? ({ kind: 'remote_endpoint', value: `servicenow:${table}` } as QueryReadAssessment['source'])
+    : undefined;
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity,
+  });
+
+  if (!operation) return refuse('ServiceNow query has no operation.');
+
+  // create/update/delete change records; invoke_workflow and trigger_flow start work inside
+  // ServiceNow. None of them may be run to "see what happens".
+  if (!SERVICENOW_ROW_READS.has(operation) && !SERVICENOW_SINGLE_READS.has(operation)
+      && !SERVICENOW_METADATA_READS.has(operation)) {
+    return refuse(`ServiceNow operation ${operation} is not a read; it can change ServiceNow state.`);
+  }
+
+  const remote = {
+    provenRead: true as const, directSafe: false as const, selectStar: false as const,
+    requiresCountPreflight: false as const, requiresRemoteReadConfirmation: true as const,
+    ...(source ? { source } : {}), ...identity,
+  };
+
+  if (SERVICENOW_SINGLE_READS.has(operation)) {
+    // get_record returns one record; aggregate returns one computed row.
+    return { ...remote, countOnly: operation === 'aggregate', maxRows: 1,
+      reason: `ServiceNow ${operation} reads remote data and consumes API quota.` };
+  }
+
+  if (SERVICENOW_METADATA_READS.has(operation)) {
+    return { ...remote, countOnly: false,
+      reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.` };
+  }
+
+  // list_records: bounded only by sysparm_limit, which the plugin passes through as a string.
+  const maxRows = staticPositiveInteger(options.sysparm_limit);
+  if (maxRows === undefined) {
+    return {
+      ...remote, countOnly: false, requiresCountPreflight: true,
+      reason: 'ServiceNow list_records has no static sysparm_limit, so its result size cannot be bounded.',
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...remote, countOnly: false, requiresCountPreflight: true, maxRows,
+      reason: `ServiceNow list_records can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+    };
+  }
+  return { ...remote, countOnly: false, maxRows, simpleSourceRead: true,
+    reason: 'ServiceNow list_records reads remote data and consumes API quota.' };
+}
+
 function assessRestGet(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
   const identity = { datasourceKind: 'restapi', ...(datasourceId ? { datasourceId } : {}) };
   const method = typeof options.method === 'string' ? options.method.toLowerCase() : undefined;
@@ -286,6 +361,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
 
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
+
+  if (kind === 'servicenow') return assessServiceNow(options, datasourceId);
 
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);

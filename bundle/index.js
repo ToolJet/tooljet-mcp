@@ -37962,6 +37962,84 @@ function containsBinding(value) {
     return value.some(containsBinding);
   return !!record2(value) && Object.values(record2(value)).some(containsBinding);
 }
+var SERVICENOW_ROW_READS = /* @__PURE__ */ new Set(["list_records"]);
+var SERVICENOW_SINGLE_READS = /* @__PURE__ */ new Set(["get_record", "aggregate"]);
+var SERVICENOW_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_tables",
+  "get_table_schema",
+  "get_field_choices",
+  "list_workflows",
+  "list_flows"
+]);
+function assessServiceNow(options2, datasourceId) {
+  const identity = { datasourceKind: "servicenow", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const table = typeof options2.table === "string" ? options2.table.trim() : "";
+  const source2 = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("ServiceNow query has no operation.");
+  if (!SERVICENOW_ROW_READS.has(operation) && !SERVICENOW_SINGLE_READS.has(operation) && !SERVICENOW_METADATA_READS.has(operation)) {
+    return refuse(`ServiceNow operation ${operation} is not a read; it can change ServiceNow state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...source2 ? { source: source2 } : {},
+    ...identity
+  };
+  if (SERVICENOW_SINGLE_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: operation === "aggregate",
+      maxRows: 1,
+      reason: `ServiceNow ${operation} reads remote data and consumes API quota.`
+    };
+  }
+  if (SERVICENOW_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.`
+    };
+  }
+  const maxRows = staticPositiveInteger(options2.sysparm_limit);
+  if (maxRows === void 0) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      reason: "ServiceNow list_records has no static sysparm_limit, so its result size cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `ServiceNow list_records can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return {
+    ...remote,
+    countOnly: false,
+    maxRows,
+    simpleSourceRead: true,
+    reason: "ServiceNow list_records reads remote data and consumes API quota."
+  };
+}
 function assessRestGet(options2, datasourceId) {
   const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
   const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
@@ -38279,6 +38357,8 @@ function assessQueryRead(query) {
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
   if (kind === "restapi")
     return assessRestGet(options2, datasourceId);
+  if (kind === "servicenow")
+    return assessServiceNow(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
