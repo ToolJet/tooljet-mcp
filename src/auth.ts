@@ -34,11 +34,6 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     `${config.appUrl}/${encodeURIComponent(slug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
 
-  function captureCookie(res: Response): void {
-    const cookie = res.headers.getSetCookie().find((c) => c.startsWith(COOKIE_PREFIX));
-    if (cookie) token = cookie.slice(COOKIE_PREFIX.length).split(';')[0];
-  }
-
   /** Exchange a personal access token for a session.
    *
    * The server mints a normal session from the PAT (POST /api/personal-access-tokens/session,
@@ -49,7 +44,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
    *
    * A PAT session is pinned to the token's own workspace ("this session can reach no other"), which
    * is why switchWorkspace refuses under PAT auth instead of failing obscurely later. */
-  async function loginWithPat(): Promise<void> {
+  async function login(): Promise<void> {
     const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
@@ -62,7 +57,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
         res.status === 401
           ? ' — TOOLJET_PAT was rejected: check it is not expired or revoked, and that it was copied whole.'
           : res.status === 404
-            ? ' — this instance has no personal-access-token endpoint (it predates PAT support, or TOOLJET_URL is wrong). Use TOOLJET_EMAIL/TOOLJET_PASSWORD instead.'
+            ? ' — this instance has no personal-access-token endpoint: it predates PAT support, or TOOLJET_URL is not the API origin. Upgrade the instance, or point TOOLJET_URL at one that has tokens.'
             : '';
       throw new Error(`ToolJet PAT session exchange failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ''}`);
     }
@@ -81,61 +76,6 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     workspaceSlug = body.organizationSlug ?? undefined;
     workspaceName = body.organizationName ?? undefined;
 
-    if (config.workspaceId || config.workspaceSlug) {
-      // Not an error: the token already determines the workspace, so a configured pin is simply
-      // inert. Say so rather than letting the caller assume it took effect.
-      console.error(
-        `[tooljet-mcp] TOOLJET_WORKSPACE_ID/SLUG ignored under PAT auth — this token is scoped to ` +
-          `workspace ${workspaceSlug ?? workspaceId}. Issue the token in the workspace you want.`
-      );
-    }
-  }
-
-  async function loginWithPassword(): Promise<void> {
-    const res = await fetchImpl(`${config.apiUrl}/api/authenticate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: config.email, password: config.password }),
-    });
-    recordHttpResponse(res);
-
-    // Surface the REAL cause — a 401 (bad creds / SSO-only), a 404 (wrong URL), etc. all otherwise
-    // collapse into the generic "no cookie" message below, which is misleading.
-    if (!res.ok) {
-      const detail = (await res.text().catch(() => '')).slice(0, 500);
-      const hint =
-        res.status === 401
-          ? ' — TOOLJET_EMAIL / TOOLJET_PASSWORD were rejected by this instance (or this workspace requires SSO, not form login). Prefer TOOLJET_PAT, which works on SSO-only instances.'
-          : res.status === 404
-            ? ' — check TOOLJET_URL is the API origin with no path, e.g. https://your-instance.tooljet.com.'
-            : '';
-      throw new Error(`ToolJet login failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ''}`);
-    }
-
-    captureCookie(res);
-    if (!token) {
-      throw new Error(
-        `ToolJet login returned HTTP ${res.status} but no tj_auth_token cookie — the instance authenticated ` +
-          `without setting the session cookie (e.g. a redirect, a non-form login mode, or a secure/cross-origin cookie the client can't read).`
-      );
-    }
-
-    const body = (await res.json()) as {
-      current_organization_id?: string;
-      current_organization_slug?: string;
-      current_organization_name?: string;
-    };
-    workspaceId = body.current_organization_id;
-    workspaceSlug = body.current_organization_slug;
-    workspaceName = body.current_organization_name;
-
-    // Optional startup pin: if a specific workspace is configured, switch into it now.
-    await applyConfiguredWorkspace();
-  }
-
-  async function login(): Promise<void> {
-    if (config.pat) return loginWithPat();
-    return loginWithPassword();
   }
 
   // Low-level authed fetch that assumes a token already exists (no re-login) — used by the
@@ -182,57 +122,6 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     }));
   }
 
-  async function switchTo(targetId: string): Promise<Workspace> {
-    const res = await rawFetch(`/api/switch/${targetId}`);
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(
-        `ToolJet switchWorkspace failed (${res.status}) for workspace ${targetId}: ${msg}` +
-          (res.status === 401 ? " — the user may not have access to that workspace." : '')
-      );
-    }
-    captureCookie(res); // switch re-issues an org-scoped tj_auth_token
-    const body = (await res.json().catch(() => ({}))) as {
-      current_organization_id?: string;
-      current_organization_slug?: string;
-      current_organization_name?: string;
-    };
-    workspaceId = body.current_organization_id ?? targetId;
-    workspaceSlug = body.current_organization_slug ?? workspaceSlug;
-    workspaceName = body.current_organization_name ?? workspaceName;
-    // If the switch payload didn't carry slug/name, backfill from the list.
-    if (!body.current_organization_slug || !body.current_organization_name) {
-      const found = (await fetchWorkspaceList()).find((w) => w.id === workspaceId);
-      if (found) {
-        workspaceSlug = found.slug;
-        workspaceName = found.name;
-      }
-    }
-    return {
-      id: workspaceId!,
-      name: workspaceName ?? '',
-      slug: workspaceSlug ?? '',
-      datasources_url: datasourceManagementUrl(workspaceSlug ?? ''),
-      is_current: true,
-    };
-  }
-
-  async function applyConfiguredWorkspace(): Promise<void> {
-    let targetId = config.workspaceId;
-    if (!targetId && config.workspaceSlug) {
-      const match = (await fetchWorkspaceList()).find((w) => w.slug === config.workspaceSlug);
-      if (!match) {
-        throw new Error(
-          `ToolJet: configured TOOLJET_WORKSPACE_SLUG "${config.workspaceSlug}" is not one of this user's workspaces.`
-        );
-      }
-      targetId = match.id;
-    }
-    if (targetId && targetId !== workspaceId) {
-      await switchTo(targetId);
-    }
-  }
-
   async function doFetch(path: string, init?: RequestInit): Promise<Response> {
     return rawFetch(path, init);
   }
@@ -266,19 +155,19 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return fetchWorkspaceList();
   }
 
+  /** A PAT session is minted for the token's own workspace and can reach no other, so there is no
+   *  switch to perform. Selecting the current workspace succeeds (callers may confirm it); anything
+   *  else states the constraint rather than failing later as an opaque 401. */
   async function switchWorkspace(id: string): Promise<Workspace> {
     if (!token) await login();
-    // A PAT session is minted for the token's own workspace and "can reach no other" — the server
-    // will not re-issue it against a different org. Refusing here turns what would otherwise be a
-    // confusing downstream 401/empty-result into a statement of the actual constraint.
-    if (config.pat && id !== workspaceId) {
+    const current = (await fetchWorkspaceList())[0]!;
+    if (id !== current.id) {
       throw new Error(
-        `Cannot switch workspace under PAT auth: this token is scoped to workspace ` +
-          `${workspaceSlug ?? workspaceId}. Issue a personal access token in the target workspace ` +
-          `and set TOOLJET_PAT to it, or use TOOLJET_EMAIL/TOOLJET_PASSWORD for multi-workspace access.`
+        `This server is scoped to workspace "${current.slug}" (${current.id}) by its personal access ` +
+          `token, and cannot switch to ${id}. Issue a token in the target workspace and set TOOLJET_PAT to it.`
       );
     }
-    return switchTo(id);
+    return current;
   }
 
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };

@@ -2,18 +2,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { loadConfig } from '../src/config.js';
 
 describe('loadConfig', () => {
-  beforeEach(() => { for (const k of ['TOOLJET_URL','TOOLJET_APP_URL','TOOLJET_EMAIL','TOOLJET_PASSWORD']) delete process.env[k]; });
+  beforeEach(() => { for (const k of ['TOOLJET_URL','TOOLJET_APP_URL','TOOLJET_PAT']) delete process.env[k]; });
 
-  it('applies defaults for URLs and reads creds', () => {
-    process.env.TOOLJET_EMAIL = 'a@b.com';
-    process.env.TOOLJET_PASSWORD = 'pw';
+  it('applies defaults for URLs and reads the token', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_test';
     const c = loadConfig();
     expect(c.apiUrl).toBe('http://localhost:3000');
     expect(c.appUrl).toBe('http://localhost:8082');
-    expect(c.email).toBe('a@b.com');
+    expect(c.pat).toBe('tj_pat_test');
   });
 
-  it('throws when creds missing', () => {
-    expect(() => loadConfig()).toThrow(/TOOLJET_EMAIL/);
+  it('throws when TOOLJET_PAT is missing', () => {
+    expect(() => loadConfig()).toThrow(/TOOLJET_PAT/);
   });
 });

@@ -8,7 +8,7 @@ export function listWorkspacesTool(client: ToolJetClient): ToolDef {
       'List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, ' +
       'is_current }]. datasources_url opens ToolJet connection management for user-assisted setup/repair. ' +
       'A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ' +
-      'ACTIVE one. If there is more than one, confirm which to use (then use_workspace) BEFORE creating ' +
+      'ACTIVE one. This server is token-scoped to a single workspace, so exactly one is returned and there ' +
       'anything. `is_current` marks the active workspace.',
     inputSchema: {},
     async handler() {

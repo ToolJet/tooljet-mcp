@@ -33159,19 +33159,13 @@ var EMPTY_COMPLETION_RESULT = {
 // dist/config.js
 function loadConfig() {
   const pat = process.env.TOOLJET_PAT;
-  const email3 = process.env.TOOLJET_EMAIL;
-  const password = process.env.TOOLJET_PASSWORD;
-  if (!pat && !(email3 && password)) {
-    throw new Error("Set TOOLJET_PAT (a personal access token, preferred), or TOOLJET_EMAIL + TOOLJET_PASSWORD. Create a token in ToolJet under Settings \u2192 Access tokens.");
+  if (!pat) {
+    throw new Error("TOOLJET_PAT is required. Create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on.");
   }
   return {
     apiUrl: process.env.TOOLJET_URL ?? "http://localhost:3000",
     appUrl: process.env.TOOLJET_APP_URL ?? "http://localhost:8082",
-    pat,
-    email: email3,
-    password,
-    workspaceId: process.env.TOOLJET_WORKSPACE_ID,
-    workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG
+    pat
   };
 }
 
@@ -33227,19 +33221,13 @@ async function withToolTelemetry(tool, handler) {
 }
 
 // dist/auth.js
-var COOKIE_PREFIX = "tj_auth_token=";
 function createAuth(config2, fetchImpl = fetch) {
   let token;
   let workspaceId;
   let workspaceSlug;
   let workspaceName;
   const datasourceManagementUrl = (slug2, datasourceId) => `${config2.appUrl}/${encodeURIComponent(slug2)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
-  function captureCookie(res) {
-    const cookie = res.headers.getSetCookie().find((c) => c.startsWith(COOKIE_PREFIX));
-    if (cookie)
-      token = cookie.slice(COOKIE_PREFIX.length).split(";")[0];
-  }
-  async function loginWithPat() {
+  async function login() {
     const res = await fetchImpl(`${config2.apiUrl}/api/personal-access-tokens/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${config2.pat}` }
@@ -33247,7 +33235,7 @@ function createAuth(config2, fetchImpl = fetch) {
     recordHttpResponse(res);
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 500);
-      const hint = res.status === 401 ? " \u2014 TOOLJET_PAT was rejected: check it is not expired or revoked, and that it was copied whole." : res.status === 404 ? " \u2014 this instance has no personal-access-token endpoint (it predates PAT support, or TOOLJET_URL is wrong). Use TOOLJET_EMAIL/TOOLJET_PASSWORD instead." : "";
+      const hint = res.status === 401 ? " \u2014 TOOLJET_PAT was rejected: check it is not expired or revoked, and that it was copied whole." : res.status === 404 ? " \u2014 this instance has no personal-access-token endpoint: it predates PAT support, or TOOLJET_URL is not the API origin. Upgrade the instance, or point TOOLJET_URL at one that has tokens." : "";
       throw new Error(`ToolJet PAT session exchange failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ""}`);
     }
     const body = await res.json();
@@ -33258,36 +33246,6 @@ function createAuth(config2, fetchImpl = fetch) {
     workspaceId = body.organizationId;
     workspaceSlug = body.organizationSlug ?? void 0;
     workspaceName = body.organizationName ?? void 0;
-    if (config2.workspaceId || config2.workspaceSlug) {
-      console.error(`[tooljet-mcp] TOOLJET_WORKSPACE_ID/SLUG ignored under PAT auth \u2014 this token is scoped to workspace ${workspaceSlug ?? workspaceId}. Issue the token in the workspace you want.`);
-    }
-  }
-  async function loginWithPassword() {
-    const res = await fetchImpl(`${config2.apiUrl}/api/authenticate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: config2.email, password: config2.password })
-    });
-    recordHttpResponse(res);
-    if (!res.ok) {
-      const detail = (await res.text().catch(() => "")).slice(0, 500);
-      const hint = res.status === 401 ? " \u2014 TOOLJET_EMAIL / TOOLJET_PASSWORD were rejected by this instance (or this workspace requires SSO, not form login). Prefer TOOLJET_PAT, which works on SSO-only instances." : res.status === 404 ? " \u2014 check TOOLJET_URL is the API origin with no path, e.g. https://your-instance.tooljet.com." : "";
-      throw new Error(`ToolJet login failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ""}`);
-    }
-    captureCookie(res);
-    if (!token) {
-      throw new Error(`ToolJet login returned HTTP ${res.status} but no tj_auth_token cookie \u2014 the instance authenticated without setting the session cookie (e.g. a redirect, a non-form login mode, or a secure/cross-origin cookie the client can't read).`);
-    }
-    const body = await res.json();
-    workspaceId = body.current_organization_id;
-    workspaceSlug = body.current_organization_slug;
-    workspaceName = body.current_organization_name;
-    await applyConfiguredWorkspace();
-  }
-  async function login() {
-    if (config2.pat)
-      return loginWithPat();
-    return loginWithPassword();
   }
   async function rawFetch(path, init) {
     const headers = new Headers(init?.headers);
@@ -33327,45 +33285,6 @@ function createAuth(config2, fetchImpl = fetch) {
       is_current: o.id === workspaceId
     }));
   }
-  async function switchTo(targetId) {
-    const res = await rawFetch(`/api/switch/${targetId}`);
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(`ToolJet switchWorkspace failed (${res.status}) for workspace ${targetId}: ${msg}` + (res.status === 401 ? " \u2014 the user may not have access to that workspace." : ""));
-    }
-    captureCookie(res);
-    const body = await res.json().catch(() => ({}));
-    workspaceId = body.current_organization_id ?? targetId;
-    workspaceSlug = body.current_organization_slug ?? workspaceSlug;
-    workspaceName = body.current_organization_name ?? workspaceName;
-    if (!body.current_organization_slug || !body.current_organization_name) {
-      const found = (await fetchWorkspaceList()).find((w) => w.id === workspaceId);
-      if (found) {
-        workspaceSlug = found.slug;
-        workspaceName = found.name;
-      }
-    }
-    return {
-      id: workspaceId,
-      name: workspaceName ?? "",
-      slug: workspaceSlug ?? "",
-      datasources_url: datasourceManagementUrl(workspaceSlug ?? ""),
-      is_current: true
-    };
-  }
-  async function applyConfiguredWorkspace() {
-    let targetId = config2.workspaceId;
-    if (!targetId && config2.workspaceSlug) {
-      const match = (await fetchWorkspaceList()).find((w) => w.slug === config2.workspaceSlug);
-      if (!match) {
-        throw new Error(`ToolJet: configured TOOLJET_WORKSPACE_SLUG "${config2.workspaceSlug}" is not one of this user's workspaces.`);
-      }
-      targetId = match.id;
-    }
-    if (targetId && targetId !== workspaceId) {
-      await switchTo(targetId);
-    }
-  }
   async function doFetch(path, init) {
     return rawFetch(path, init);
   }
@@ -33404,10 +33323,11 @@ function createAuth(config2, fetchImpl = fetch) {
   async function switchWorkspace(id) {
     if (!token)
       await login();
-    if (config2.pat && id !== workspaceId) {
-      throw new Error(`Cannot switch workspace under PAT auth: this token is scoped to workspace ${workspaceSlug ?? workspaceId}. Issue a personal access token in the target workspace and set TOOLJET_PAT to it, or use TOOLJET_EMAIL/TOOLJET_PASSWORD for multi-workspace access.`);
+    const current = (await fetchWorkspaceList())[0];
+    if (id !== current.id) {
+      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) by its personal access token, and cannot switch to ${id}. Issue a token in the target workspace and set TOOLJET_PAT to it.`);
     }
-    return switchTo(id);
+    return current;
   }
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
 }
@@ -35977,7 +35897,7 @@ function fail(err) {
 function listWorkspacesTool(client) {
   return {
     name: "list_workspaces",
-    description: "List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, is_current }]. datasources_url opens ToolJet connection management for user-assisted setup/repair. A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ACTIVE one. If there is more than one, confirm which to use (then use_workspace) BEFORE creating anything. `is_current` marks the active workspace.",
+    description: "List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, is_current }]. datasources_url opens ToolJet connection management for user-assisted setup/repair. A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ACTIVE one. This server is token-scoped to a single workspace, so exactly one is returned and there anything. `is_current` marks the active workspace.",
     inputSchema: {},
     async handler() {
       try {
@@ -35993,7 +35913,7 @@ function listWorkspacesTool(client) {
 function useWorkspaceTool(client) {
   return {
     name: "use_workspace",
-    description: "Switch the ACTIVE workspace (organization) for all subsequent calls \u2014 apps/tables/datasources you create afterwards go into this workspace. Pass a workspace id from list_workspaces. Returns the now-active { id, name, slug, datasources_url }. Errors if the user has no access to that workspace. Do this at setup when the user is in more than one workspace, and any time they ask to switch.",
+    description: "Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its personal access token and cannot switch: passing that workspace id returns it, and any other id errors naming the one in use. Everything is created in that workspace, so there is nothing to select at setup \u2014 call list_workspaces if you need its id, name, slug or datasources_url.",
     inputSchema: {
       workspace_id: external_exports.string()
     },

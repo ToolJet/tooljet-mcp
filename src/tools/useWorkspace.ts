@@ -6,10 +6,10 @@ export function useWorkspaceTool(client: ToolJetClient): ToolDef {
   return {
     name: 'use_workspace',
     description:
-      'Switch the ACTIVE workspace (organization) for all subsequent calls — apps/tables/datasources you ' +
-      'create afterwards go into this workspace. Pass a workspace id from list_workspaces. Returns the now-' +
-      'active { id, name, slug, datasources_url }. Errors if the user has no access to that workspace. Do this at setup when ' +
-      'the user is in more than one workspace, and any time they ask to switch.',
+      'Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its ' +
+      'personal access token and cannot switch: passing that workspace id returns it, and any other id ' +
+      'errors naming the one in use. Everything is created in that workspace, so there is nothing to ' +
+      'select at setup — call list_workspaces if you need its id, name, slug or datasources_url.',
     inputSchema: {
       workspace_id: z.string(),
     },

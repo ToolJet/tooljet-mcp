@@ -5,307 +5,107 @@ import type { Config } from '../src/config.js';
 const config: Config = {
   apiUrl: 'http://localhost:3000',
   appUrl: 'http://localhost:8082',
-  email: 'a@b.com',
-  password: 'pw',
+  pat: 'tj_pat_test',
 };
 
-function mockResponse(opts: {
-  status?: number;
-  ok?: boolean;
-  setCookie?: string[];
-  json?: unknown;
-  text?: string;
-}) {
+function mockResponse(opts: { status?: number; ok?: boolean; json?: unknown; text?: string }) {
   const status = opts.status ?? 200;
   return {
     status,
     ok: opts.ok ?? (status >= 200 && status < 300),
-    headers: {
-      get: (_name: string) => null,
-      getSetCookie: () => opts.setCookie ?? [],
-    },
+    headers: { get: () => null, getSetCookie: () => [] },
     json: async () => opts.json ?? {},
     text: async () => opts.text ?? '',
   } as unknown as Response;
 }
 
-function loginResponse(org = 'org1', token = 'TOKEN') {
+/** The PAT exchange returns the session JWT in the BODY (isPatLogin) and sets no cookie. */
+function sessionResponse(org = 'org1', token = 'TOKEN') {
   return mockResponse({
     status: 201,
-    setCookie: [`tj_auth_token=${token}; Path=/; HttpOnly`],
-    json: { current_organization_id: org },
+    json: { authToken: token, organizationId: org, organizationSlug: 'acme', organizationName: 'Acme' },
   });
 }
 
-describe('createAuth', () => {
+describe('createAuth (personal access token)', () => {
   let fetchImpl: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     fetchImpl = vi.fn();
   });
 
-  it('logs in first, then sends Cookie + tj-workspace-id header on the actual request', async () => {
+  it('exchanges the PAT for a session, then sends the JWT as the session cookie', async () => {
     fetchImpl
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
-      .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } }));
+      .mockResolvedValueOnce(sessionResponse('org1', 'TOKEN'))
+      .mockResolvedValueOnce(mockResponse({ json: { ok: true } }));
 
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
     const res = await auth.authedFetch('/api/some-resource');
-
     expect(res.status).toBe(200);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
 
-    const [loginUrl] = fetchImpl.mock.calls[0];
-    expect(loginUrl).toContain('/api/authenticate');
+    const [exchangeUrl, exchangeInit] = fetchImpl.mock.calls[0];
+    expect(exchangeUrl).toContain('/api/personal-access-tokens/session');
+    expect((exchangeInit as RequestInit).method).toBe('POST');
+    expect((exchangeInit as any).headers.Authorization).toBe('Bearer tj_pat_test');
 
-    const [actualUrl, actualInit] = fetchImpl.mock.calls[1];
-    expect(actualUrl).toBe('http://localhost:3000/api/some-resource');
-    const headers = new Headers(actualInit.headers);
+    const headers = (fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers;
     expect(headers.get('Cookie')).toBe('tj_auth_token=TOKEN');
     expect(headers.get('tj-workspace-id')).toBe('org1');
   });
 
-  it('captures the cookie via getSetCookie() and the org id from the JSON body', async () => {
+  it('re-exchanges exactly once on a 401 and retries', async () => {
     fetchImpl
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
-      .mockResolvedValueOnce(mockResponse({ status: 200 }));
+      .mockResolvedValueOnce(sessionResponse())
+      .mockResolvedValueOnce(mockResponse({ status: 401, text: 'expired' }))
+      .mockResolvedValueOnce(sessionResponse())
+      .mockResolvedValueOnce(mockResponse({ json: { ok: true } }));
 
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    await auth.authedFetch('/api/some-resource');
-
-    const [, actualInit] = fetchImpl.mock.calls[1];
-    const headers = new Headers(actualInit.headers);
-    expect(headers.get('Cookie')).toBe('tj_auth_token=TOKEN');
-    expect(headers.get('tj-workspace-id')).toBe('org1');
+    expect((await auth.authedFetch('/api/x')).status).toBe(200);
+    const exchanges = fetchImpl.mock.calls.filter((c) => String(c[0]).includes('personal-access-tokens/session'));
+    expect(exchanges).toHaveLength(2);
   });
 
-  it('on a 401 from the actual request, re-logs in exactly once and retries', async () => {
-    fetchImpl
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN')) // initial login
-      .mockResolvedValueOnce(mockResponse({ status: 401, text: 'unauthorized' })) // first attempt -> 401
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN2')) // re-login
-      .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } })); // retry succeeds
-
+  it('resolves the workspace from the exchange, without calling /api/organizations', async () => {
+    // PAT scopes exclude the Organization module, so that endpoint 403s — the workspace must come
+    // from the exchange payload instead.
+    fetchImpl.mockResolvedValue(sessionResponse('org-7'));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    const res = await auth.authedFetch('/api/some-resource');
+    expect(await auth.getOrganizationId()).toBe('org-7');
+    expect(await auth.getOrganizationSlug()).toBe('acme');
 
-    expect(res.status).toBe(200);
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
-
-    expect(fetchImpl.mock.calls[0][0]).toContain('/api/authenticate');
-    expect(fetchImpl.mock.calls[2][0]).toContain('/api/authenticate');
-
-    const [, retryInit] = fetchImpl.mock.calls[3];
-    const headers = new Headers(retryInit.headers);
-    expect(headers.get('Cookie')).toBe('tj_auth_token=TOKEN2');
+    const list = await auth.listWorkspaces();
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ id: 'org-7', slug: 'acme', is_current: true });
+    expect(fetchImpl.mock.calls.some((c) => String(c[0]).includes('/api/organizations'))).toBe(false);
   });
 
-  it('throws when a second consecutive 401 occurs after the retry', async () => {
-    fetchImpl
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN')) // initial login
-      .mockResolvedValueOnce(mockResponse({ status: 401, text: 'first unauthorized' })) // first attempt -> 401
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN2')) // re-login
-      .mockResolvedValueOnce(mockResponse({ status: 401, text: 'second unauthorized' })); // retry -> 401 again
-
+  it('accepts selecting the workspace the token is scoped to', async () => {
+    fetchImpl.mockResolvedValue(sessionResponse('org-7'));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-
-    await expect(auth.authedFetch('/api/some-resource')).rejects.toThrow(
-      /ToolJet auth failed: second unauthorized/
-    );
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    await expect(auth.switchWorkspace('org-7')).resolves.toMatchObject({ id: 'org-7' });
   });
 
-  it('getOrganizationId logs in if needed and returns the captured org id', async () => {
-    fetchImpl.mockResolvedValueOnce(loginResponse('org1', 'TOKEN'));
-
+  it('refuses another workspace, naming the one it is scoped to', async () => {
+    fetchImpl.mockResolvedValue(sessionResponse('org-7'));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    const orgId = await auth.getOrganizationId();
-
-    expect(orgId).toBe('org1');
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(fetchImpl.mock.calls[0][0]).toContain('/api/authenticate');
+    await expect(auth.switchWorkspace('org-other')).rejects.toThrow(/scoped to workspace "acme"/i);
   });
 
-  it('getOrganizationId reuses the org id from a prior login without logging in again', async () => {
-    fetchImpl
-      .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
-      .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } }));
-
+  it('explains a rejected or expired token', async () => {
+    fetchImpl.mockResolvedValue(mockResponse({ status: 401, text: 'Invalid personal access token' }));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    await auth.authedFetch('/api/some-resource');
-    const orgId = await auth.getOrganizationId();
-
-    expect(orgId).toBe('org1');
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(/expired or revoked/i);
   });
 
-  it('surfaces a 401 (with a credentials/SSO hint) instead of the generic no-cookie error', async () => {
-    fetchImpl.mockResolvedValueOnce(mockResponse({ status: 401, text: 'Invalid credentials' }));
+  it('explains an instance with no PAT endpoint rather than a bare 404', async () => {
+    fetchImpl.mockResolvedValue(mockResponse({ status: 404, text: 'Not Found' }));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    await expect(auth.authedFetch('/api/x')).rejects.toThrow(
-      /login failed \(HTTP 401\).*rejected by this instance.*Response: Invalid credentials/
-    );
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(/no personal-access-token endpoint/i);
   });
 
-  it('surfaces a 404 with a URL hint', async () => {
-    fetchImpl.mockResolvedValueOnce(mockResponse({ status: 404, text: 'Not Found' }));
+  it('fails clearly when the exchange returns no token', async () => {
+    fetchImpl.mockResolvedValue(mockResponse({ status: 201, json: { organizationId: 'org1' } }));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    await expect(auth.authedFetch('/api/x')).rejects.toThrow(/login failed \(HTTP 404\).*TOOLJET_URL is the API origin/);
-  });
-
-  it('distinguishes "authenticated but no cookie" (200 without Set-Cookie)', async () => {
-    fetchImpl.mockResolvedValueOnce(mockResponse({ status: 200, json: {} })); // ok, but no setCookie
-    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-    await expect(auth.authedFetch('/api/x')).rejects.toThrow(
-      /HTTP 200 but no tj_auth_token cookie/
-    );
-  });
-
-  describe('workspaces', () => {
-    const orgList = {
-      organizations: [
-        { id: 'org1', name: 'Acme', slug: 'acme', is_default: true },
-        { id: 'org2', name: 'Beta', slug: 'beta', is_default: false },
-      ],
-    };
-
-    it('listWorkspaces maps the org list and marks the current one', async () => {
-      fetchImpl
-        .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: orgList }));
-
-      const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-      const ws = await auth.listWorkspaces();
-
-      expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/organizations?status=active');
-      expect(ws).toEqual([
-        {
-          id: 'org1', name: 'Acme', slug: 'acme',
-          datasources_url: 'http://localhost:8082/acme/data-sources',
-          is_default: true, is_current: true,
-        },
-        {
-          id: 'org2', name: 'Beta', slug: 'beta',
-          datasources_url: 'http://localhost:8082/beta/data-sources',
-          is_default: false, is_current: false,
-        },
-      ]);
-    });
-
-    it('switchWorkspace hits /api/switch/:id, re-captures the cookie, and later calls use the new workspace', async () => {
-      fetchImpl
-        .mockResolvedValueOnce(loginResponse('org1', 'TOKEN'))
-        .mockResolvedValueOnce(
-          mockResponse({
-            status: 200,
-            setCookie: ['tj_auth_token=TOKEN2; Path=/; HttpOnly'],
-            json: { current_organization_id: 'org2', current_organization_slug: 'beta', current_organization_name: 'Beta' },
-          })
-        )
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } }));
-
-      const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
-      const active = await auth.switchWorkspace('org2');
-      expect(active).toEqual({
-        id: 'org2', name: 'Beta', slug: 'beta',
-        datasources_url: 'http://localhost:8082/beta/data-sources',
-        is_current: true,
-      });
-      expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/switch/org2');
-
-      await auth.authedFetch('/api/apps');
-      const [, init] = fetchImpl.mock.calls[2];
-      const headers = new Headers(init.headers);
-      expect(headers.get('Cookie')).toBe('tj_auth_token=TOKEN2');
-      expect(headers.get('tj-workspace-id')).toBe('org2');
-    });
-
-    it('pins the configured workspace (TOOLJET_WORKSPACE_ID) at login', async () => {
-      fetchImpl
-        .mockResolvedValueOnce(loginResponse('org1', 'TOKEN')) // authenticate → default org1
-        .mockResolvedValueOnce(
-          mockResponse({
-            status: 200,
-            setCookie: ['tj_auth_token=TOKEN2; Path=/; HttpOnly'],
-            json: { current_organization_id: 'org2', current_organization_slug: 'beta', current_organization_name: 'Beta' },
-          })
-        ) // switch → org2
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { ok: true } })); // actual request
-
-      const auth = createAuth({ ...config, workspaceId: 'org2' }, fetchImpl as unknown as typeof fetch);
-      await auth.authedFetch('/api/apps');
-
-      expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:3000/api/switch/org2');
-      const [, init] = fetchImpl.mock.calls[2];
-      expect(new Headers(init.headers).get('tj-workspace-id')).toBe('org2');
-    });
-  });
-});
-
-describe('personal access token auth', () => {
-  const patConfig: Config = {
-    apiUrl: 'http://localhost:3000',
-    appUrl: 'http://localhost:8082',
-    pat: 'pat_abc123',
-  };
-
-  it('exchanges the PAT for a session and reads the token from the BODY, not Set-Cookie', async () => {
-    // isPatLogin returns the JWT in the response body and sets no cookie, so a captureCookie-style
-    // implementation would silently end up with no token at all.
-    const fetchImpl = vi.fn(async (url: string) => {
-      if (String(url).endsWith('/api/personal-access-tokens/session')) {
-        return mockResponse({
-          json: {
-            authToken: 'jwt-from-body',
-            organizationId: 'org-1',
-            organizationSlug: 'acme',
-            organizationName: 'Acme',
-          },
-        });
-      }
-      return mockResponse({ json: {} });
-    }) as unknown as typeof fetch;
-
-    const auth = createAuth(patConfig, fetchImpl);
-    await auth.authedFetch('/api/apps');
-
-    const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls;
-    const exchange = calls.find((c) => String(c[0]).endsWith('/api/personal-access-tokens/session'));
-    expect(exchange).toBeTruthy();
-    expect((exchange![1] as RequestInit).method).toBe('POST');
-    expect((exchange![1] as any).headers.Authorization).toBe('Bearer pat_abc123');
-
-    // the session JWT must be presented as the normal session cookie on subsequent calls
-    const apiCall = calls.find((c) => String(c[0]).endsWith('/api/apps'));
-    const headers = (apiCall![1] as RequestInit).headers as Headers;
-    expect(headers.get('Cookie')).toBe('tj_auth_token=jwt-from-body');
-    expect(await auth.getOrganizationId()).toBe('org-1');
-  });
-
-  it('refuses to switch workspace under PAT auth instead of failing obscurely', async () => {
-    const fetchImpl = vi.fn(async () =>
-      mockResponse({ json: { authToken: 't', organizationId: 'org-1', organizationSlug: 'acme' } })
-    ) as unknown as typeof fetch;
-    const auth = createAuth(patConfig, fetchImpl);
-    await expect(auth.switchWorkspace('org-2')).rejects.toThrow(/scoped to workspace/i);
-  });
-
-  it('explains a rejected token rather than reporting a generic failure', async () => {
-    const fetchImpl = vi.fn(async () =>
-      mockResponse({ status: 401, text: 'Invalid personal access token' })
-    ) as unknown as typeof fetch;
-    const auth = createAuth(patConfig, fetchImpl);
-    await expect(auth.authedFetch('/api/apps')).rejects.toThrow(/expired or revoked/i);
-  });
-
-  it('still uses form login when no PAT is configured', async () => {
-    const fetchImpl = vi.fn(async () =>
-      mockResponse({ setCookie: ['tj_auth_token=cookie-jwt; Path=/'], json: { current_organization_id: 'org-9' } })
-    ) as unknown as typeof fetch;
-    const auth = createAuth(config, fetchImpl);
-    await auth.authedFetch('/api/apps');
-    const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls;
-    expect(calls.some((c) => String(c[0]).endsWith('/api/authenticate'))).toBe(true);
-    expect(calls.some((c) => String(c[0]).includes('personal-access-tokens'))).toBe(false);
+    await expect(auth.authedFetch('/api/x')).rejects.toThrow(/returned no authToken/i);
   });
 });

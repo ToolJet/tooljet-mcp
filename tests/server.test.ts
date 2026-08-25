@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 
 beforeAll(() => {
-  process.env.TOOLJET_EMAIL = 'x@y.com';
-  process.env.TOOLJET_PASSWORD = 'pw';
+  process.env.TOOLJET_PAT = 'tj_pat_test';
 });
 
 afterEach(() => {
