@@ -12,10 +12,49 @@ export interface PersistedAppValidation {
   warnings: string[];
 }
 
+/* Scratch artifacts an agent leaves behind.
+
+   Agents create throwaway queries and components to test a hypothesis mid-build, then move on
+   without removing them. Observed shipping to users: a `debug_warranty` query duplicating the real
+   one, a `diag_hire_range` probe, and a Text component literally named `hiddenRepairMarker` sitting
+   on a dashboard.
+
+   Matched on a naming convention rather than on similarity, deliberately: a name is what the agent
+   itself chose to signal "this is temporary", and guessing from content would flag real work. The
+   pattern is anchored to the start of the name (or a camelCase boundary) so a legitimate
+   "debugging_guide" page or a "prototypes" table is not caught. */
+const SCRATCH_NAME = /^(debug|diag|diagnostic|probe|tmp|temp|scratch|dummy|sample_test|testonly)[_-]|^hidden[A-Z]|[_-](probe|scratch)$/i;
+
+function scratchArtifactWarnings(summary: AppSummary): string[] {
+  const warnings: string[] = [];
+  for (const query of summary.queries ?? []) {
+    const name = typeof query.name === 'string' ? query.name : '';
+    if (name && SCRATCH_NAME.test(name)) {
+      warnings.push(
+        `Query "${name}" looks like a leftover diagnostic, not part of the app. Delete it before ` +
+          `finishing, or rename it if it is genuinely part of what the user asked for.`
+      );
+    }
+  }
+  for (const page of summary.pages ?? []) {
+    for (const component of page.components ?? []) {
+      const name = typeof component.name === 'string' ? component.name : '';
+      if (name && SCRATCH_NAME.test(name)) {
+        warnings.push(
+          `Component "${name}" on page "${page.name}" looks like a leftover scratch component. ` +
+            `Delete it before finishing, or rename it if it is genuinely part of the app.`
+        );
+      }
+    }
+  }
+  return warnings;
+}
+
 export function validatePersistedAppSummary(summary: AppSummary): PersistedAppValidation {
   const structural = validateAppStructure(summary);
   const errors = [...structural.errors];
   const warnings = [...structural.warnings];
+  warnings.push(...scratchArtifactWarnings(summary));
   const eventValidation = validateEvents(summary, persistedEventSpecs(summary), { includePersistedChains: false });
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
@@ -37,6 +76,7 @@ export function validatePersistedAppSummary(summary: AppSummary): PersistedAppVa
       'component render traps',
       'event source/trigger compatibility',
       'saved datasource option contracts',
+      'leftover diagnostic queries and scratch components',
     ],
     not_checked: [
       'query execution or external API success',
