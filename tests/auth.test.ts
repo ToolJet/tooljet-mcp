@@ -241,3 +241,71 @@ describe('createAuth', () => {
     });
   });
 });
+
+describe('personal access token auth', () => {
+  const patConfig: Config = {
+    apiUrl: 'http://localhost:3000',
+    appUrl: 'http://localhost:8082',
+    pat: 'pat_abc123',
+  };
+
+  it('exchanges the PAT for a session and reads the token from the BODY, not Set-Cookie', async () => {
+    // isPatLogin returns the JWT in the response body and sets no cookie, so a captureCookie-style
+    // implementation would silently end up with no token at all.
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (String(url).endsWith('/api/personal-access-tokens/session')) {
+        return mockResponse({
+          json: {
+            authToken: 'jwt-from-body',
+            organizationId: 'org-1',
+            organizationSlug: 'acme',
+            organizationName: 'Acme',
+          },
+        });
+      }
+      return mockResponse({ json: {} });
+    }) as unknown as typeof fetch;
+
+    const auth = createAuth(patConfig, fetchImpl);
+    await auth.authedFetch('/api/apps');
+
+    const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    const exchange = calls.find((c) => String(c[0]).endsWith('/api/personal-access-tokens/session'));
+    expect(exchange).toBeTruthy();
+    expect((exchange![1] as RequestInit).method).toBe('POST');
+    expect((exchange![1] as any).headers.Authorization).toBe('Bearer pat_abc123');
+
+    // the session JWT must be presented as the normal session cookie on subsequent calls
+    const apiCall = calls.find((c) => String(c[0]).endsWith('/api/apps'));
+    const headers = (apiCall![1] as RequestInit).headers as Headers;
+    expect(headers.get('Cookie')).toBe('tj_auth_token=jwt-from-body');
+    expect(await auth.getOrganizationId()).toBe('org-1');
+  });
+
+  it('refuses to switch workspace under PAT auth instead of failing obscurely', async () => {
+    const fetchImpl = vi.fn(async () =>
+      mockResponse({ json: { authToken: 't', organizationId: 'org-1', organizationSlug: 'acme' } })
+    ) as unknown as typeof fetch;
+    const auth = createAuth(patConfig, fetchImpl);
+    await expect(auth.switchWorkspace('org-2')).rejects.toThrow(/scoped to workspace/i);
+  });
+
+  it('explains a rejected token rather than reporting a generic failure', async () => {
+    const fetchImpl = vi.fn(async () =>
+      mockResponse({ status: 401, text: 'Invalid personal access token' })
+    ) as unknown as typeof fetch;
+    const auth = createAuth(patConfig, fetchImpl);
+    await expect(auth.authedFetch('/api/apps')).rejects.toThrow(/expired or revoked/i);
+  });
+
+  it('still uses form login when no PAT is configured', async () => {
+    const fetchImpl = vi.fn(async () =>
+      mockResponse({ setCookie: ['tj_auth_token=cookie-jwt; Path=/'], json: { current_organization_id: 'org-9' } })
+    ) as unknown as typeof fetch;
+    const auth = createAuth(config, fetchImpl);
+    await auth.authedFetch('/api/apps');
+    const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls.some((c) => String(c[0]).endsWith('/api/authenticate'))).toBe(true);
+    expect(calls.some((c) => String(c[0]).includes('personal-access-tokens'))).toBe(false);
+  });
+});

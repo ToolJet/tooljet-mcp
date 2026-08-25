@@ -33158,15 +33158,16 @@ var EMPTY_COMPLETION_RESULT = {
 
 // dist/config.js
 function loadConfig() {
+  const pat = process.env.TOOLJET_PAT;
   const email3 = process.env.TOOLJET_EMAIL;
   const password = process.env.TOOLJET_PASSWORD;
-  if (!email3)
-    throw new Error("TOOLJET_EMAIL is required");
-  if (!password)
-    throw new Error("TOOLJET_PASSWORD is required");
+  if (!pat && !(email3 && password)) {
+    throw new Error("Set TOOLJET_PAT (a personal access token, preferred), or TOOLJET_EMAIL + TOOLJET_PASSWORD. Create a token in ToolJet under Settings \u2192 Access tokens.");
+  }
   return {
     apiUrl: process.env.TOOLJET_URL ?? "http://localhost:3000",
     appUrl: process.env.TOOLJET_APP_URL ?? "http://localhost:8082",
+    pat,
     email: email3,
     password,
     workspaceId: process.env.TOOLJET_WORKSPACE_ID,
@@ -33238,7 +33239,30 @@ function createAuth(config2, fetchImpl = fetch) {
     if (cookie)
       token = cookie.slice(COOKIE_PREFIX.length).split(";")[0];
   }
-  async function login() {
+  async function loginWithPat() {
+    const res = await fetchImpl(`${config2.apiUrl}/api/personal-access-tokens/session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${config2.pat}` }
+    });
+    recordHttpResponse(res);
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 500);
+      const hint = res.status === 401 ? " \u2014 TOOLJET_PAT was rejected: check it is not expired or revoked, and that it was copied whole." : res.status === 404 ? " \u2014 this instance has no personal-access-token endpoint (it predates PAT support, or TOOLJET_URL is wrong). Use TOOLJET_EMAIL/TOOLJET_PASSWORD instead." : "";
+      throw new Error(`ToolJet PAT session exchange failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ""}`);
+    }
+    const body = await res.json();
+    if (!body.authToken) {
+      throw new Error("ToolJet PAT session exchange succeeded but returned no authToken.");
+    }
+    token = body.authToken;
+    workspaceId = body.organizationId;
+    workspaceSlug = body.organizationSlug ?? void 0;
+    workspaceName = body.organizationName ?? void 0;
+    if (config2.workspaceId || config2.workspaceSlug) {
+      console.error(`[tooljet-mcp] TOOLJET_WORKSPACE_ID/SLUG ignored under PAT auth \u2014 this token is scoped to workspace ${workspaceSlug ?? workspaceId}. Issue the token in the workspace you want.`);
+    }
+  }
+  async function loginWithPassword() {
     const res = await fetchImpl(`${config2.apiUrl}/api/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -33247,7 +33271,7 @@ function createAuth(config2, fetchImpl = fetch) {
     recordHttpResponse(res);
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 500);
-      const hint = res.status === 401 ? " \u2014 TOOLJET_EMAIL / TOOLJET_PASSWORD were rejected by this instance (or this workspace requires SSO, not form login)." : res.status === 404 ? " \u2014 check TOOLJET_URL is the API origin with no path, e.g. https://your-instance.tooljet.com." : "";
+      const hint = res.status === 401 ? " \u2014 TOOLJET_EMAIL / TOOLJET_PASSWORD were rejected by this instance (or this workspace requires SSO, not form login). Prefer TOOLJET_PAT, which works on SSO-only instances." : res.status === 404 ? " \u2014 check TOOLJET_URL is the API origin with no path, e.g. https://your-instance.tooljet.com." : "";
       throw new Error(`ToolJet login failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ""}`);
     }
     captureCookie(res);
@@ -33260,6 +33284,11 @@ function createAuth(config2, fetchImpl = fetch) {
     workspaceName = body.current_organization_name;
     await applyConfiguredWorkspace();
   }
+  async function login() {
+    if (config2.pat)
+      return loginWithPat();
+    return loginWithPassword();
+  }
   async function rawFetch(path, init) {
     const headers = new Headers(init?.headers);
     headers.set("Cookie", `tj_auth_token=${token}`);
@@ -33270,6 +33299,20 @@ function createAuth(config2, fetchImpl = fetch) {
     return response;
   }
   async function fetchWorkspaceList() {
+    if (config2.pat) {
+      if (!workspaceId)
+        throw new Error("PAT session did not resolve a workspace.");
+      return [
+        {
+          id: workspaceId,
+          name: workspaceName ?? workspaceSlug ?? workspaceId,
+          slug: workspaceSlug ?? workspaceId,
+          datasources_url: datasourceManagementUrl(workspaceSlug ?? workspaceId),
+          is_current: true,
+          is_default: true
+        }
+      ];
+    }
     const res = await rawFetch("/api/organizations?status=active");
     if (!res.ok) {
       throw new Error(`ToolJet listWorkspaces failed (${res.status}): ${await res.text()}`);
@@ -33361,6 +33404,9 @@ function createAuth(config2, fetchImpl = fetch) {
   async function switchWorkspace(id) {
     if (!token)
       await login();
+    if (config2.pat && id !== workspaceId) {
+      throw new Error(`Cannot switch workspace under PAT auth: this token is scoped to workspace ${workspaceSlug ?? workspaceId}. Issue a personal access token in the target workspace and set TOOLJET_PAT to it, or use TOOLJET_EMAIL/TOOLJET_PASSWORD for multi-workspace access.`);
+    }
     return switchTo(id);
   }
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
