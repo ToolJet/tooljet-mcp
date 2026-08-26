@@ -9,29 +9,33 @@ Base API: `http://localhost:3000/api`. Frontend (for user-facing app URLs): `htt
 ## 0. Auth model (verified live) — IMPORTANT: more than a cookie
 
 Two things are required on **every authenticated request**:
-1. The **`tj_auth_token`** session cookie (HttpOnly, SameSite=Strict), obtained from login.
+1. The **`tj_auth_token`** session cookie (HttpOnly, SameSite=Strict).
 2. The **`tj-workspace-id: <organization_id>`** header.
 
 Confirmed: cookie alone → `401`; cookie + `tj-workspace-id` → request proceeds (create app returned `201`).
 Optional header: `x-branch-id` (git-sync branch) — omit for slice 1.
 
-### Login
+The cookie is obtained one of two ways — never a raw email/password login:
+
+### PAT session exchange (standalone / this server's default)
 ```
-POST /api/authenticate
-Body: { "email": "...", "password": "..." }
-→ 201; Set-Cookie: tj_auth_token=<jwt>; HttpOnly; SameSite=Strict; Path=/
-Response body (relevant fields):
-{
-  "id": "<user-uuid>",
-  "email": "...",
-  "organization_id": "6bb2a05c-132c-41d3-b87f-74d49abd1ed8",
-  "current_organization_id": "6bb2a05c-132c-41d3-b87f-74d49abd1ed8",
-  "current_organization_slug": "tooljets-workspace",
-  "admin": true, "super_admin": true,
-  ...
-}
+POST /api/personal-access-tokens/session
+Headers: Authorization: Bearer <pat>
+→ 200 { "authToken": "<jwt>", "organizationId": "...", "organizationSlug": "...", "organizationName": "..." }
 ```
-**auth.ts recipe:** POST authenticate → capture `tj_auth_token` from Set-Cookie (**use `headers.getSetCookie()` in Node/undici**, not `headers.get`), store `current_organization_id`. On every call attach `Cookie: tj_auth_token=<t>` **and** `tj-workspace-id: <current_organization_id>`. On 401, re-login once and retry.
+`authToken` is presented as the `tj_auth_token` cookie on every subsequent call (there is no Set-Cookie
+here — read it from the body). A PAT session is pinned to the token's own workspace and can reach no
+other; `/api/organizations` (workspace listing/switching) 403s under it.
+
+### Backend-minted session (in-product path)
+ToolJet's own backend mints a session for the signed-in user and hands it over directly — nothing to
+exchange, the credential already **is** the session. Short-lived by design; a 401 means the build
+outlived it and needs a fresh one, not a retry.
+
+**auth.ts recipe:** resolve a `tj_auth_token` via one of the two paths above, store the resolved
+`organizationId`. On every call attach `Cookie: tj_auth_token=<t>` **and**
+`tj-workspace-id: <organizationId>`. On 401 under the PAT path, re-exchange once and retry; under the
+minted-session path, fail — there is nothing to re-exchange it into.
 
 ---
 

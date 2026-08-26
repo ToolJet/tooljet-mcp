@@ -48,7 +48,7 @@ Postgres (components / layouts / pages / data_queries tables)
 - **Config:** environment variables —
   - `TOOLJET_URL` — backend API origin, default `http://localhost:3000` (all authenticated HTTP calls go here).
   - `TOOLJET_APP_URL` — frontend origin, default `http://localhost:8082` (used **only** to build user-facing `app_url` links).
-  - `TOOLJET_EMAIL`, `TOOLJET_PASSWORD`.
+  - `TOOLJET_PAT` — personal access token, exchanged for a session on first use (or `TOOLJET_SESSION_TOKEN` + `TOOLJET_WORKSPACE_ID` for a session handed over directly, in-product). Superseded the original email/password login below.
   - **URL-derivation rule:** `create_app` builds `app_url` as `${TOOLJET_APP_URL}/apps/<app_id>` — never from `TOOLJET_URL`. The two origins are distinct (API vs frontend) and must not be conflated.
 
 ### 4.1 Module boundaries
@@ -65,8 +65,15 @@ Each tool is independently testable: given a mock `tooljetClient`, assert it for
 
 ## 5. Authentication
 
-- On first tool call (lazy), the server does `POST {TOOLJET_URL}/api/authenticate` with `{ email, password }` and captures the `tj_auth_token` httpOnly session cookie plus the organization/workspace context from the response body.
-- The cookie is attached to every subsequent request. On a `401`, the server re-authenticates once and retries the call; a second failure surfaces an error to Codex.
+> Historical note: this section originally described a `{ email, password }` login. That path is gone —
+> see `docs/contracts.md` §0 for the current PAT-exchange / backend-minted-session model.
+
+- On first tool call (lazy), the server resolves a session — either exchanging `TOOLJET_PAT` via
+  `POST /api/personal-access-tokens/session`, or using a `TOOLJET_SESSION_TOKEN` handed over directly —
+  and captures the `tj_auth_token` httpOnly session cookie plus the organization/workspace context.
+- The cookie is attached to every subsequent request. On a `401`, the PAT path re-exchanges once and
+  retries the call; a minted session cannot be renewed and fails outright. A second failure surfaces an
+  error to Codex.
 - **CSRF:** ToolJet's CSRF origin check is active only when custom domains are enabled (verified in `server/src/main.ts`); on localhost it is inactive, so cookie-based programmatic calls succeed.
 - Governance is inherited: the server can do exactly what the configured user is permitted to do — no more.
 
