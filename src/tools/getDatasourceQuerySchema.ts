@@ -39,8 +39,12 @@ async function resolveKind(
     }
     return pending;
   };
+  // Models routinely send both, and the two never actually conflict: datasource_id identifies one
+  // saved datasource, kind merely restates its type. Erroring cost a full turn on five of five
+  // measured OpenAI builds. Prefer the specific selector and drop the redundant one, matching how
+  // inspect_datasource_schema already coalesces a top-level method with a `requests` batch.
   if (request.kind && request.datasource_id) {
-    throw new Error('Pass either `kind` or `datasource_id`, not both.');
+    request = { ...request, kind: undefined };
   }
   if (!request.kind && !request.datasource_id) {
     // The frequent model mistake: version_id/operation/sections but no selector. Turn the error into

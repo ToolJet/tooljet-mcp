@@ -36811,7 +36811,7 @@ async function resolveKind(client, request, fallbackVersionId, datasourceCache =
     return pending;
   };
   if (request.kind && request.datasource_id) {
-    throw new Error("Pass either `kind` or `datasource_id`, not both.");
+    request = { ...request, kind: void 0 };
   }
   if (!request.kind && !request.datasource_id) {
     let hint = "";
