@@ -22,6 +22,8 @@ Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector
 
 ToolJet Table data bindings can silently become `No data` when a `.map()` callback uses a statement body such as `map(row => { const value = ...; return {...}; })`. Use the expression-body form `map(row => ({...}))`, or pre-shape multi-statement logic in the datasource/RunJS query. This is narrower than the Html nested-map limitation: supported Table lookup joins inside an expression-body map remain valid.
 
+Valid `columnType` values are exactly: `string`, `number`, `text`, `datepicker`, `select`, `newMultiSelect`, `tagsV2`, `boolean`, `image`, `link`, `json`, `markdown`, `html`, `rating`, `button`. ToolJet still accepts eight older values but flags them as deprecated in the inspector, and some render an EMPTY cell so the table looks broken: use `string` not `default`, `newMultiSelect` not `badge`/`badges`/`multiselect`, `tagsV2` not `tags`, and `select` not `dropdown`/`radio`/`toggle`. `lint_app_spec` fails on the deprecated values.
+
 When a schema or bounded sample identifies a date/timestamp, do not leave its explicit column as `columnType:"string"` unless the user asked for the raw timestamp. Use `columnType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source; enable time only when it carries useful information.
 
 ## Table row-action Button columns
