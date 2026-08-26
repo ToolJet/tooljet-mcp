@@ -4,15 +4,15 @@ An MCP server that lets a coding agent (Codex, Claude Code, …) build and maint
 
 ## Prerequisites
 
-- A running local ToolJet (backend on `:3000`, frontend on `:8082`, Postgres, PostgREST).
-- ToolJet admin credentials.
-- Node 22 (`nvm use default`).
-- A seeded `tickets` ToolJet-DB table for the demo — see `scripts/seed-tickets.md` (already seeded on this machine).
+- A ToolJet instance with personal access token support.
+- A personal access token for the target ToolJet workspace.
+- Node.js 20 or newer.
 
 ## Setup
 
 ```bash
-cd ~/Claude/Projects/tooljet-mcp
+git clone https://github.com/ToolJet/tooljet-mcp.git
+cd tooljet-mcp
 cp .env.example .env        # then edit .env with your creds
 npm install
 npm run build               # compiles to dist/
@@ -27,7 +27,35 @@ TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the tar
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
 
-## Register with Codex
+## Install as a Codex plugin
+
+This repo is a self-contained **Codex plugin** that registers the bundled MCP server and the
+`tooljet-app-builder` skill together. The Codex manifest is `.codex-plugin/plugin.json`, and
+`.mcp.json` launches `bundle/index.js` without requiring an install or build on the user's side.
+
+No public listing is needed: `.agents/plugins/marketplace.json` makes the repo its own marketplace.
+
+```bash
+codex plugin marketplace add ToolJet/tooljet-mcp --ref main
+codex plugin add tooljet-app-builder@tooljet
+```
+
+On Codex desktop, run the marketplace command, restart the app, open Plugins, select the ToolJet
+source and install **ToolJet App Builder**. In Codex CLI you can also install it from `/plugins`.
+
+Before launching Codex, provide the same credentials used by the standalone MCP server:
+
+```bash
+export TOOLJET_PAT="tj_pat_..."
+# optional, if not localhost:
+export TOOLJET_URL="https://your-instance.tooljet.com"
+export TOOLJET_APP_URL="https://your-instance.tooljet.com"
+```
+
+The plugin passes these environment variables to the MCP process; it does not store or change the
+credential. Node 20 or newer must be available to Codex.
+
+### Manual Codex registration
 
 Codex reads MCP servers from `~/.codex/config.toml`. Add:
 
