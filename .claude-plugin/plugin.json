@@ -6,8 +6,8 @@
   "author": {
     "name": "ToolJet"
   },
-  "homepage": "https://github.com/ToolJet/mcp-v2",
-  "repository": "https://github.com/ToolJet/mcp-v2",
+  "homepage": "https://github.com/ToolJet/tooljet-mcp",
+  "repository": "https://github.com/ToolJet/tooljet-mcp",
   "license": "ISC",
   "keywords": [
     "tooljet",

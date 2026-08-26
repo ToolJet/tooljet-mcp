@@ -1,5 +1,5 @@
 # Adds tooljet-mcp to an already-running ToolJet stack (see docs/setup/docker on
-# docs.tooljet.com). Run from the mcp-v2 checkout, joined to ToolJet's own compose
+# docs.tooljet.com). Run from the tooljet-mcp checkout, joined to ToolJet's own compose
 # network so it can reach the app by service name instead of a host IP/port:
 #
 #   docker compose -f docker-compose.mcp.yml up -d --build

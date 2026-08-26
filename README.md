@@ -70,11 +70,11 @@ This repo is also a **self-contained Claude Code plugin** — installing it regi
 
 **Install (no marketplace needed):**
 ```
-/plugin install github:ToolJet/mcp-v2
+/plugin install github:ToolJet/tooljet-mcp
 ```
 Or via the marketplace, which lets you get updates:
 ```
-/plugin marketplace add ToolJet/mcp-v2
+/plugin marketplace add ToolJet/tooljet-mcp
 /plugin install tooljet-app-builder@tooljet
 ```
 For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.

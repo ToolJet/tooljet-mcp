@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run on the VM, inside the mcp-v2 checkout, whenever the repo has new commits to pick up:
+# Run on the VM, inside the tooljet-mcp checkout, whenever the repo has new commits to pick up:
 #   ./scripts/update-mcp.sh
 # ponytail: a manual pull-and-rebuild. Wire this to a systemd timer or a post-push
 # webhook later if hands-off updates turn out to matter; until then, this is the button.

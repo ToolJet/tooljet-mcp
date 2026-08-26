@@ -43,5 +43,13 @@
     "data",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ToolJet/tooljet-mcp.git"
+  },
+  "homepage": "https://github.com/ToolJet/tooljet-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/ToolJet/tooljet-mcp/issues"
+  }
 }
