@@ -4,3 +4,7 @@ dist
 
 # macOS Finder metadata
 .DS_Store
+
+# Planning/design working notes — kept locally, not part of the published package.
+docs/plans/
+docs/specs/
