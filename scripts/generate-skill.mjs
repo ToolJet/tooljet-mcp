@@ -5,17 +5,36 @@
 // Usage: node scripts/generate-skill.mjs
 //   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
 //        TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, copyFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const TJAI = process.env.TJAI_ROOT || resolve(root, '..', 'tooljet-agent');
-// The generated skill is derived from ToolJet's own source (widget catalog, canvas constants),
-// so a checkout must be reachable. Default to a sibling checkout; TOOLJET_ROOT overrides.
-const TOOLJET = process.env.TOOLJET_ROOT || resolve(root, '..', 'ToolJet');
+/* Both checkouts are read at generate time, and their directory names vary by machine (the agent repo
+   is cloned as tooljet-agent or TJ-AI; ToolJet is sometimes nested one level down). Probe the known
+   layouts and fail with the env var to set, rather than a raw ENOENT stack a hundred lines deep: an
+   unrunnable generator means the packaged skill silently drifts from its source, which is exactly how
+   the browser-audit script went stale. */
+function locate(envVar, label, candidates, marker) {
+  const fromEnv = process.env[envVar];
+  if (fromEnv) return resolve(fromEnv);
+  const found = candidates.map((c) => resolve(root, ...c)).find((dir) => existsSync(resolve(dir, marker)));
+  if (found) return found;
+  throw new Error(
+    `generate-skill: could not find the ${label} checkout (looked for ${marker} in ` +
+      `${candidates.map((c) => resolve(root, ...c)).join(', ')}). Set ${envVar} to its path.`
+  );
+}
+
+const TJAI = locate('TJAI_ROOT', 'agent', [['..', 'tooljet-agent'], ['..', 'TJ-AI']], 'src/tooljet_agent');
+const TOOLJET = locate(
+  'TOOLJET_ROOT',
+  'ToolJet',
+  [['..', 'ToolJet', 'ToolJet'], ['..', 'ToolJet']],
+  'frontend/src/AppBuilder'
+);
 const { legacyReplacements: LEGACY_REPLACEMENTS } = JSON.parse(
   readFileSync(resolve(root, 'data/component-compatibility.json'), 'utf8')
 );
@@ -191,7 +210,7 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`run_queries({ query_ids, version_id })\` executes up to ten **proven bounded read-only** ToolJet DB/SQL reads concurrently after preflighting the whole batch. Use it when two or more independent safe reads need real response shapes; it refuses \`SELECT *\`, unbounded reads, mutations, RunJS, paid/remote APIs, and unknown kinds before executing anything. Use singular \`run_query\` for the count-first flow.
 - \`add_components({ app_id, version_id, page_id, components: [...] })\` → \`{ components: [{ component_id, name }], warnings }\`. **Place ALL of a page's components in one call.** For a modal/container plus children, assign the parent a unique \`client_ref\` and each child the matching \`parent_ref\`; MCP resolves real IDs atomically and lints overlaps within the correct parent. Use child \`slot_name:"header" | "body" | "footer"\` for ModalV2/Form/Container native regions (body is the default). A Kanban with no explicit child gets its catalog card children automatically; an explicit child targeting its \`client_ref\` suppresses those defaults.
 - \`add_component_batches({ app_id, version_id, pages:[{page_id,components}] })\` → preflight and create complete batches for **2–20 independent pages concurrently**. Prefer it over serial \`add_components\` calls once all target page ids and bindings exist. Each page is atomic; ToolJet has no cross-page transaction, so an upstream partial failure reports completed/failed pages for in-place repair.
-- Both return a **\`warnings\`** array of non-blocking lint hints — an undersized Text heading, a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. (Style keys under \`properties\` are a hard error, not a warning.)
+- Both return a **\`warnings\`** array of non-blocking lint hints — an undersized Text heading, a Chart left with its clipping default title, a Table bound without \`dataSourceSelector:"rawJson"\`, overlapping components, an invalid \`headerCasing\`, etc. **Read them and fix**; they don't block the write. Known style keys accidentally placed under \`properties\` are moved to \`styles\` automatically and reported as a warning.
 - \`add_events({ app_id, version_id, events: [...] })\` → wire component behavior plus query/page lifecycle events. Each event uses \`source_id\`, \`source_type: "component" | "data_query" | "page" | "table_column"\`, \`trigger\`, and \`action\` (\`component_id\` remains shorthand for components). Table Button-column events also require \`ref: "<column key or name>::<button id>"\`.
 - \`add_query_lifecycles({ app_id, version_id, lifecycles:[...] })\` → expand many mutation success/failure flows into ordinary validated events in one write: refresh queries, clear standalone inputs, close a modal, show alerts, and optional extra actions. It is datasource-neutral; use \`add_events\` when custom action ordering is required.
 - \`lint_app_spec({ app_id?, version_id?, app_name?, tables?, seed_data?, queries?, pages?, events?, lifecycles? })\` → dry-run one exact phase before writes. Put the requested product title in \`app_name\`; the apply step renames the created app and reuses/renames its sole empty Home page for the first planned page instead of adding a duplicate. Pass \`app_id\` for every repair or continuation phase so persisted page/component/query refs are validated and can be targeted without redeclaring or recreating them. Give new planned objects stable \`client_ref\` values; events use \`source_ref\`, targeted actions use \`target_ref\`, and ToolJet DB queries may use \`table_ref\` instead of a not-yet-created table id. Treat this as an **awaited preflight barrier**: call it by itself, inspect its result, fix every error and review warnings. A clean result includes a one-time 30-minute \`plan_token\`; never run this linter in parallel with a mutating call.
@@ -777,7 +796,7 @@ const uiLayout = makeReference(
 const tableRule = componentRuleSections.find((section) => section.publishedName === 'Table')?.markdown ?? '';
 const tables = `# Tables\n\nRead this whenever a phase contains a Table: binding, row actions, sizing, or server-side pagination.\n\n${routedSections.tables
   .map((heading) => extractSection(fullSkill, heading))
-  .join('\n\n')}\n\n## Exact Table binding rule\n\n${tableRule}\n\nToolJet Table data bindings can silently become \`No data\` when a \`.map()\` callback uses a statement body such as \`map(row => { const value = ...; return {...}; })\`. Use the expression-body form \`map(row => ({...}))\`, or pre-shape multi-statement logic in the datasource/RunJS query. This is narrower than the Html nested-map limitation: supported Table lookup joins inside an expression-body map remain valid.\n\nWhen a schema or bounded sample identifies a date/timestamp, do not leave its explicit column as \`columnType:"string"\` unless the user asked for the raw timestamp. Use \`columnType:"datepicker"\` with explicit Moment-style \`dateFormat\` and \`parseDateFormat\` matching the source; enable time only when it carries useful information.\n\n${extractSection(reference, '## Table row-action Button columns')}\n`;
+  .join('\n\n')}\n\n## Exact Table binding rule\n\n${tableRule}\n\nToolJet Table data bindings can silently become \`No data\` when a \`.map()\` callback uses a statement body such as \`map(row => { const value = ...; return {...}; })\`. Use the expression-body form \`map(row => ({...}))\`, or pre-shape multi-statement logic in the datasource/RunJS query. This is narrower than the Html nested-map limitation: supported Table lookup joins inside an expression-body map remain valid.\n\nValid \`columnType\` values are exactly: \`string\`, \`number\`, \`text\`, \`datepicker\`, \`select\`, \`newMultiSelect\`, \`tagsV2\`, \`boolean\`, \`image\`, \`link\`, \`json\`, \`markdown\`, \`html\`, \`rating\`, \`button\`. ToolJet still accepts eight older values but flags them as deprecated in the inspector, and some render an EMPTY cell so the table looks broken: use \`string\` not \`default\`, \`newMultiSelect\` not \`badge\`/\`badges\`/\`multiselect\`, \`tagsV2\` not \`tags\`, and \`select\` not \`dropdown\`/\`radio\`/\`toggle\`. \`lint_app_spec\` fails on the deprecated values.\n\nWhen a schema or bounded sample identifies a date/timestamp, do not leave its explicit column as \`columnType:"string"\` unless the user asked for the raw timestamp. Use \`columnType:"datepicker"\` with explicit Moment-style \`dateFormat\` and \`parseDateFormat\` matching the source; enable time only when it carries useful information.\n\n${extractSection(reference, '## Table row-action Button columns')}\n`;
 
 const formRule = componentRuleSections.find((section) => section.publishedName === 'Form')?.markdown ?? '';
 const forms = `# Forms and modals\n\nRead this only when the phase contains generated or standalone forms, validation, uploads, or modal layout.\n\n${routedSections.forms

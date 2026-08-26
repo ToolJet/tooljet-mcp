@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkBearerToken } from '../src/httpAuth.js';
+import { bearerValue, checkBearerToken } from '../src/httpAuth.js';
 
 describe('checkBearerToken', () => {
   it('accepts the exact configured token', () => {
@@ -26,3 +26,17 @@ describe('checkBearerToken', () => {
     expect(checkBearerToken('Bearer secret-token-extra', 'secret-token')).toBe(false);
   });
 });
+
+describe('bearerValue', () => {
+  it('extracts the token from a well-formed header', () => {
+    expect(bearerValue('Bearer tj_pat_abc')).toBe('tj_pat_abc');
+  });
+
+  it('returns undefined when absent or not a bearer, so a malformed header never becomes a credential', () => {
+    expect(bearerValue(undefined)).toBeUndefined();
+    expect(bearerValue('Basic abc')).toBeUndefined();
+    expect(bearerValue('Bearer')).toBeUndefined();
+    expect(bearerValue('Bearer ')).toBeUndefined();
+  });
+});
+

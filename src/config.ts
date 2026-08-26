@@ -28,14 +28,26 @@ export interface Config {
  * caller, the session authorises the work.
  */
 export interface RequestIdentity {
-  sessionToken: string;
-  workspaceId: string;
+  sessionToken?: string;
+  workspaceId?: string;
   workspaceSlug?: string;
+  /** A ToolJet PAT belonging to the caller, sent per request rather than living in this process's
+   *  environment. This is how a coding agent talks to an HTTP server it runs itself: the token is
+   *  the agent's own, so the server holds no credential and every write is attributed to the token's
+   *  owner. Mutually exclusive with `sessionToken` — see identityFromHeaders. */
+  pat?: string;
 }
 
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
 export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
+export const PAT_HEADER = 'x-tooljet-pat';
+
+/** An environment variable, or undefined when unset OR blank. */
+function env(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
 
 type HeaderBag = Record<string, string | string[] | undefined>;
 
@@ -54,9 +66,32 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
  * correct but is attributed to the wrong user, which is the single failure this whole mechanism
  * exists to prevent. Failing the request is recoverable; mis-attributing it is not.
  */
-export function identityFromHeaders(headers: HeaderBag): RequestIdentity | undefined {
+export function identityFromHeaders(
+  headers: HeaderBag,
+  { allowPat = true }: { allowPat?: boolean } = {}
+): RequestIdentity | undefined {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const pat = readHeader(headers, PAT_HEADER);
+
+  if (pat) {
+    /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
+       for and expires with the build. A shared server must accept only the latter, so refuse the
+       header rather than ignoring it: accepting one would satisfy a "signed-in user required" check
+       with the wrong person, and silently acting as someone else is the failure this whole mechanism
+       exists to prevent. */
+    if (!allowPat) {
+      throw new Error(
+        `${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: ` +
+          `send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`
+      );
+    }
+    // Two credentials that may name two different people is precisely the mis-attribution this
+    // mechanism exists to prevent, so refuse rather than silently prefer one.
+    if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
+    // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
+    return { pat };
+  }
 
   if (!sessionToken && !workspaceId) return undefined;
   if (!sessionToken) {
@@ -76,10 +111,13 @@ export function identityFromHeaders(headers: HeaderBag): RequestIdentity | undef
  * shared server can never fall back to its own credential midway through acting as a user.
  */
 export function loadConfig(identity?: RequestIdentity): Config {
-  const apiUrl = process.env.TOOLJET_URL ?? 'http://localhost:3000';
-  const appUrl = process.env.TOOLJET_APP_URL ?? 'http://localhost:8082';
+  // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
+  // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
+  const apiUrl = env('TOOLJET_URL') ?? 'http://localhost:3000';
+  const appUrl = env('TOOLJET_APP_URL') ?? 'http://localhost:8082';
 
   if (identity) {
+    if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
       apiUrl,
       appUrl,
@@ -89,9 +127,9 @@ export function loadConfig(identity?: RequestIdentity): Config {
     };
   }
 
-  const pat = process.env.TOOLJET_PAT;
-  const sessionToken = process.env.TOOLJET_SESSION_TOKEN;
-  const workspaceId = process.env.TOOLJET_WORKSPACE_ID;
+  const pat = env('TOOLJET_PAT');
+  const sessionToken = env('TOOLJET_SESSION_TOKEN');
+  const workspaceId = env('TOOLJET_WORKSPACE_ID');
 
   if (!pat && !sessionToken) {
     throw new Error(
@@ -113,6 +151,6 @@ export function loadConfig(identity?: RequestIdentity): Config {
     pat,
     sessionToken,
     workspaceId,
-    workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG,
+    workspaceSlug: env('TOOLJET_WORKSPACE_SLUG'),
   };
 }

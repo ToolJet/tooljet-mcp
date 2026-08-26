@@ -4,7 +4,7 @@ import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
-  it('blocks unknown component types and warns on unknown catalog keys with spelling suggestions', () => {
+  it('blocks unknown component types and typo keys with spelling suggestions', () => {
     const unknownType = lintComponentSpec({ name: 'progress', type: 'CircularProgressbar', properties: {} });
     expect(unknownType.errors.join(' ')).toMatch(/unknown component type "CircularProgressbar".*CircularProgressBar/i);
 
@@ -14,8 +14,8 @@ describe('lintComponentSpec', () => {
       properties: { rowsPerPgae: { value: 25 } },
       styles: { cellSze: { value: 'regular' } },
     });
-    expect(misspelled.warnings.join(' ')).toMatch(/unknown property key "rowsPerPgae".*rowsPerPage/i);
-    expect(misspelled.warnings.join(' ')).toMatch(/unknown style key "cellSze".*cellSize/i);
+    expect(misspelled.errors.join(' ')).toMatch(/"rowsPerPgae".*not a valid property key.*"rowsPerPage"/i);
+    expect(misspelled.errors.join(' ')).toMatch(/"cellSze".*not a valid style key.*"cellSize"/i);
   });
 
   it('warns on legacy component creation without blocking existing-app repair', () => {
@@ -393,6 +393,49 @@ describe('lintComponentSpec', () => {
     });
     expect(r.warnings.join(' ')).toMatch(/headerCasing "capitalize" is invalid — use "none" .* or "uppercase"/);
     expect(r.warnings.join(' ')).toMatch(/column\[1\]: missing `name`/);
+  });
+
+  it('errors on deprecated Table column types and names the replacement', () => {
+    const r = lintComponentSpec({
+      name: 'deptSummary',
+      type: 'Table',
+      properties: {
+        data: { value: '{{queries.q.data}}' },
+        dataSourceSelector: { value: 'rawJson' },
+        columns: {
+          value: [
+            { id: 'a', name: 'Department', key: 'department', columnType: 'badge' },
+            { id: 'b', name: 'Tags', key: 'tags', columnType: 'tags' },
+            { id: 'c', name: 'Status', key: 'status', columnType: 'dropdown' },
+            { id: 'd', name: 'Legacy', key: 'legacy', columnType: 'default' },
+          ],
+        },
+      },
+    });
+    const errors = r.errors.join(' ');
+    expect(errors).toMatch(/columnType:"badge".*columnType:"newMultiSelect"/);
+    expect(errors).toMatch(/columnType:"tags".*columnType:"tagsV2"/);
+    expect(errors).toMatch(/columnType:"dropdown".*columnType:"select"/);
+    expect(errors).toMatch(/columnType:"default".*columnType:"string"/);
+  });
+
+  it('leaves supported column types alone', () => {
+    const r = lintComponentSpec({
+      name: 'ok',
+      type: 'Table',
+      properties: {
+        data: { value: '{{queries.q.data}}' },
+        dataSourceSelector: { value: 'rawJson' },
+        columns: {
+          value: [
+            { id: 'a', name: 'Dept', key: 'department', columnType: 'newMultiSelect' },
+            { id: 'b', name: 'Count', key: 'headcount', columnType: 'number' },
+            { id: 'c', name: 'Office', key: 'office', columnType: 'string' },
+          ],
+        },
+      },
+    });
+    expect(r.errors.join(' ')).not.toMatch(/deprecated columnType/);
   });
 
   it('errors when Table column keys are duplicated because ToolJet keeps only the last one', () => {

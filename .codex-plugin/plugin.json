@@ -1,0 +1,18 @@
+{
+  "name": "tooljet-app-builder",
+  "version": "0.2.0",
+  "description": "Build ToolJet apps end-to-end through governed MCP tools plus an app-builder skill (component binding rules, canvas mechanics, per-datasource query schemas).",
+  "author": {
+    "name": "ToolJet"
+  },
+  "homepage": "https://github.com/ToolJet/tooljet-mcp",
+  "repository": "https://github.com/ToolJet/tooljet-mcp",
+  "license": "ISC",
+  "keywords": [
+    "tooljet",
+    "low-code",
+    "app-builder",
+    "internal-tools",
+    "mcp"
+  ]
+}

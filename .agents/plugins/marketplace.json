@@ -1,0 +1,21 @@
+{
+  "name": "tooljet",
+  "interface": {
+    "displayName": "ToolJet"
+  },
+  "plugins": [
+    {
+      "name": "tooljet-app-builder",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity",
+      "description": "Build ToolJet apps end-to-end via governed MCP tools and an app-builder skill."
+    }
+  ]
+}

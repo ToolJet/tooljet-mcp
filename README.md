@@ -4,15 +4,15 @@ An MCP server that lets a coding agent (Codex, Claude Code, …) build and maint
 
 ## Prerequisites
 
-- A running local ToolJet (backend on `:3000`, frontend on `:8082`, Postgres, PostgREST).
-- ToolJet admin credentials.
-- Node 22 (`nvm use default`).
-- A seeded `tickets` ToolJet-DB table for the demo — see `scripts/seed-tickets.md` (already seeded on this machine).
+- A ToolJet instance with personal access token support.
+- A personal access token for the target ToolJet workspace.
+- Node.js 20 or newer.
 
 ## Setup
 
 ```bash
-cd ~/Claude/Projects/tooljet-mcp
+git clone https://github.com/ToolJet/tooljet-mcp.git
+cd tooljet-mcp
 cp .env.example .env        # then edit .env with your creds
 npm install
 npm run build               # compiles to dist/
@@ -27,7 +27,35 @@ TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the tar
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
 
-## Register with Codex
+## Install as a Codex plugin
+
+This repo is a self-contained **Codex plugin** that registers the bundled MCP server and the
+`tooljet-app-builder` skill together. The Codex manifest is `.codex-plugin/plugin.json`, and
+`.mcp.json` launches `bundle/index.js` without requiring an install or build on the user's side.
+
+No public listing is needed: `.agents/plugins/marketplace.json` makes the repo its own marketplace.
+
+```bash
+codex plugin marketplace add ToolJet/tooljet-mcp --ref main
+codex plugin add tooljet-app-builder@tooljet
+```
+
+On Codex desktop, run the marketplace command, restart the app, open Plugins, select the ToolJet
+source and install **ToolJet App Builder**. In Codex CLI you can also install it from `/plugins`.
+
+Before launching Codex, provide the same credentials used by the standalone MCP server:
+
+```bash
+export TOOLJET_PAT="tj_pat_..."
+# optional, if not localhost:
+export TOOLJET_URL="https://your-instance.tooljet.com"
+export TOOLJET_APP_URL="https://your-instance.tooljet.com"
+```
+
+The plugin passes these environment variables to the MCP process; it does not store or change the
+credential. Node 20 or newer must be available to Codex.
+
+### Manual Codex registration
 
 Codex reads MCP servers from `~/.codex/config.toml`. Add:
 
@@ -48,21 +76,46 @@ Restart Codex; it should expose the ToolJet tools, including `create_app`, `list
 
 ## Run over Streamable HTTP
 
-The same MCP server can also run as a stateful Streamable HTTP service. It uses the same ToolJet environment variables and authentication flow as stdio; only the MCP transport changes.
+Two HTTP shapes, for two different jobs. Both authenticate the same way stdio does; what changes is
+where the credential comes from.
+
+**Direct mode** is you running the server and your own agent connecting to it. The shipped bundle
+does this, so it needs nothing beyond Node:
 
 ```bash
-npm run build
-npm run start:http
+MCP_TRANSPORT=http PORT=8787 TOOLJET_URL=http://localhost:3000 TOOLJET_PAT=tj_pat_... \
+  node bundle/index.js
 ```
 
-The defaults are:
+It binds `127.0.0.1` (override with `MCP_HTTP_HOST`) and serves `http://127.0.0.1:8787/mcp`. The
+credential may come from either side:
 
-- MCP endpoint: `http://127.0.0.1:3001/mcp`
-- Health endpoint: `http://127.0.0.1:3001/health`
+- `TOOLJET_PAT` in the server's environment, or
+- per request from the client, as `Authorization: Bearer <pat>` or `x-tooljet-pat: <pat>`
 
-Set `TOOLJET_MCP_HTTP_HOST` and `TOOLJET_MCP_HTTP_PORT` (or `PORT`) to change the listener. For a container or remote agent deployment, bind to `0.0.0.0` and put authentication/TLS at the service boundary before exposing the endpoint publicly.
+A per-request token replaces the process one outright rather than merging with it, so one server can
+serve several people without any of them inheriting another's identity.
 
-Each Streamable HTTP session gets its own MCP server instance, while all ToolJet API authentication remains exactly the same as the stdio mode.
+**Gateway mode** is one shared server fronting an instance, called only by ToolJet's AI shim. Set
+`MCP_SHARED_TOKEN`: the server then binds `0.0.0.0`, requires that token as `Authorization: Bearer`,
+and takes the acting user from `x-tooljet-session` plus `x-tooljet-workspace-id`. It rejects
+`x-tooljet-pat` outright: a PAT names its owner and lives for weeks, so honouring one here would
+attribute a build to a token holder rather than to the person who asked for it.
+
+There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET_MCP_HTTP_HOST` /
+`TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
+per-request credentials and, like direct mode, has no bearer gate of its own.
+
+## Install as a Copilot / VS Code agent plugin
+
+`plugin.json` and `mcp.json` at the repo root follow the [Agent Plugins 1.0](https://agent-plugins.org)
+format, which VS Code, Copilot CLI and the Copilot app share. Install with **Chat: Install Plugin
+From Source** (or the Plugins tab of the Agent Customizations editor) and give it this repo's URL.
+
+Skills are discovered from `skills/`, so the same `skills/tooljet-app-builder` that Claude Code loads
+is picked up here with no second copy. Set `TOOLJET_URL`, `TOOLJET_APP_URL` and `TOOLJET_PAT` in the
+environment the editor launches from; unset or blank values fall back to the server's own defaults,
+and a missing token is reported at handshake rather than killing the server.
 
 ## Install as a Claude Code plugin
 

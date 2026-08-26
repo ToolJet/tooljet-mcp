@@ -103,3 +103,79 @@ describe('per-request identity', () => {
     expect(() => loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' })).not.toThrow();
   });
 });
+
+describe('per-request PAT identity', () => {
+  it('reads a caller-supplied PAT from its own header', () => {
+    expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).toEqual({ pat: 'tj_pat_caller' });
+  });
+
+  it('needs no workspace header, because a PAT is pinned to the workspace it was issued in', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).not.toThrow();
+  });
+
+  it('refuses a PAT and a session together rather than picking one', () => {
+    expect(() =>
+      identityFromHeaders({
+        'x-tooljet-pat': 'tj_pat_caller',
+        'x-tooljet-session': 'SESSION',
+        'x-tooljet-workspace-id': 'org-1',
+      })
+    ).toThrow(/not both/i);
+  });
+
+  it('makes the caller PAT the whole credential, never merging the process token', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_process';
+    const c = loadConfig({ pat: 'tj_pat_caller' });
+    expect(c.pat).toBe('tj_pat_caller');
+    expect(c.sessionToken).toBeUndefined();
+  });
+});
+
+describe('gateway servers refuse a PAT as identity', () => {
+  it('rejects the PAT header outright when PATs are not allowed', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_anyones' }, { allowPat: false })).toThrow(
+      /not accepted by this server/i
+    );
+  });
+
+  it('rejects it even alongside a valid session, so it can never be the credential that wins', () => {
+    expect(() =>
+      identityFromHeaders(
+        { 'x-tooljet-pat': 'tj_pat_anyones', 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' },
+        { allowPat: false }
+      )
+    ).toThrow(/not accepted by this server/i);
+  });
+
+  it('still accepts a session, which is the only identity a shared server may act on', () => {
+    expect(
+      identityFromHeaders({ 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' }, { allowPat: false })
+    ).toEqual({ sessionToken: 'S', workspaceId: 'org-1', workspaceSlug: undefined });
+  });
+
+  it('defaults to allowing a PAT, so the direct path is unaffected', () => {
+    expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_mine' })).toEqual({ pat: 'tj_pat_mine' });
+  });
+});
+
+describe('blank environment variables count as unset', () => {
+  beforeEach(() => {
+    for (const k of ['TOOLJET_URL', 'TOOLJET_APP_URL', 'TOOLJET_PAT', 'TOOLJET_SESSION_TOKEN', 'TOOLJET_WORKSPACE_ID'])
+      delete process.env[k];
+  });
+
+  it('falls back to defaults when a plugin host substitutes an unset var as an empty string', () => {
+    process.env.TOOLJET_URL = '';
+    process.env.TOOLJET_APP_URL = '';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    const c = loadConfig();
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
+  });
+
+  it('treats a whitespace-only credential as missing rather than authenticating with it', () => {
+    process.env.TOOLJET_PAT = '   ';
+    expect(() => loadConfig()).toThrow(/TOOLJET_PAT is required/);
+  });
+});
+
