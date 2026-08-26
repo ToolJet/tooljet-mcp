@@ -15,27 +15,14 @@ Two things are required on **every authenticated request**:
 Confirmed: cookie alone → `401`; cookie + `tj-workspace-id` → request proceeds (create app returned `201`).
 Optional header: `x-branch-id` (git-sync branch) — omit for slice 1.
 
-The cookie is obtained one of two ways — never a raw email/password login:
-
-### PAT session exchange (standalone / this server's default)
+Cookie comes from one of two paths — no raw email/password login anymore:
 ```
-POST /api/personal-access-tokens/session
-Headers: Authorization: Bearer <pat>
-→ 200 { "authToken": "<jwt>", "organizationId": "...", "organizationSlug": "...", "organizationName": "..." }
+POST /api/personal-access-tokens/session   Headers: Authorization: Bearer <pat>
+→ 200 { "authToken", "organizationId", "organizationSlug", "organizationName" }   (body, not Set-Cookie)
 ```
-`authToken` is presented as the `tj_auth_token` cookie on every subsequent call (there is no Set-Cookie
-here — read it from the body). A PAT session is pinned to the token's own workspace and can reach no
-other; `/api/organizations` (workspace listing/switching) 403s under it.
+Or: a session minted by ToolJet's own backend and handed over directly (in-product path) — nothing to exchange.
 
-### Backend-minted session (in-product path)
-ToolJet's own backend mints a session for the signed-in user and hands it over directly — nothing to
-exchange, the credential already **is** the session. Short-lived by design; a 401 means the build
-outlived it and needs a fresh one, not a retry.
-
-**auth.ts recipe:** resolve a `tj_auth_token` via one of the two paths above, store the resolved
-`organizationId`. On every call attach `Cookie: tj_auth_token=<t>` **and**
-`tj-workspace-id: <organizationId>`. On 401 under the PAT path, re-exchange once and retry; under the
-minted-session path, fail — there is nothing to re-exchange it into.
+**auth.ts recipe:** resolve `tj_auth_token` via either path, store `organizationId`. Attach `Cookie: tj_auth_token=<t>` + `tj-workspace-id: <organizationId>` on every call. On 401: PAT path re-exchanges once and retries; minted session just fails (nothing to renew it into).
 
 ---
 
