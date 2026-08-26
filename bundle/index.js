@@ -38539,16 +38539,30 @@ function unquotedSqlBindingIssues(sql) {
     issues.push({
       code: "unquoted_sql_binding",
       path: "query",
-      message: `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes nothing at that position and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Quote it ('{{...}}') so the empty case is a valid comparison against '', or drive the filter through a parameterised query option.`
+      message: `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes nothing at that position and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Pass it as a parameter instead: put \`:name\` in the statement and the binding in query_params, e.g. \`WHERE priority = :priority\` with query_params [["priority", "{{components.priorityFilter.value}}"]]. That fixes the empty case and the escaping together. Quoting it ('{{...}}') only fixes the empty case and leaves the value spliced into the statement as text.`
     });
   }
   return issues;
 }
+function interpolatedSqlBindingIssues(sql) {
+  const quoted = /'\s*\{\{[^}]*\}\}\s*'/g;
+  if (!quoted.test(sql))
+    return [];
+  return [
+    {
+      code: "interpolated_sql_binding",
+      path: "query",
+      message: 'SQL pastes a binding into the statement as quoted text (\'{{...}}\'). The quotes are the only escaping, so a value containing a quote rewrites the statement. Pass it as a parameter instead: `:name` in the query and the binding in query_params, e.g. `WHERE priority = :priority` with query_params [["priority", "{{components.priorityFilter.value}}"]]. Safe today if the value comes from a fixed dropdown, but the query does not change when someone later binds it to a text input.'
+    }
+  ];
+}
 function validateQueryOptions(kind, options2) {
   const errors = [];
   const warnings = tableStateWarnings(options2);
-  if (typeof options2.query === "string")
+  if (typeof options2.query === "string") {
     errors.push(...unquotedSqlBindingIssues(options2.query));
+    warnings.push(...interpolatedSqlBindingIssues(options2.query));
+  }
   const readAssessment = assessQueryRead({ id: "<planned-query>", kind, options: options2 });
   if (readAssessment.selectStar) {
     warnings.push({

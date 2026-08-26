@@ -175,17 +175,50 @@ function unquotedSqlBindingIssues(sql: string): QueryValidationIssue[] {
         `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as ` +
         'raw text, so when that component is empty — its state on page load — the statement becomes ' +
         `nothing at that position and fails with a SQL syntax error; the table then shows ` +
-        '"No data" and the page looks broken on first open. Quote it (\'{{...}}\') so the empty case is ' +
-        "a valid comparison against '', or drive the filter through a parameterised query option.",
+        '"No data" and the page looks broken on first open. Pass it as a parameter instead: put ' +
+        '`:name` in the statement and the binding in query_params, e.g. `WHERE priority = :priority` ' +
+        'with query_params [["priority", "{{components.priorityFilter.value}}"]]. That fixes the empty ' +
+        'case and the escaping together. Quoting it (\'{{...}}\') only fixes the empty case and leaves ' +
+        'the value spliced into the statement as text.',
     });
   }
   return issues;
 }
 
+/* A component value pasted into the statement inside quotes.
+
+   Escaped only by the two quotes in the text, so a value containing a quote changes the statement.
+   Measured against a real table: with `P1' OR '1'='1`, the spliced query returned all 15,000 rows
+   with the filter bypassed, while the same query parameterised returned 0.
+
+   A warning rather than an error: a dropdown with fixed options is safe in practice, and blocking
+   every such query would stall builds over a risk that depends on what is bound. The danger is that
+   the query stays exactly as written when someone later points it at a text input. */
+function interpolatedSqlBindingIssues(sql: string): QueryValidationIssue[] {
+  const quoted = /'\s*\{\{[^}]*\}\}\s*'/g;
+  if (!quoted.test(sql)) return [];
+  return [
+    {
+      code: 'interpolated_sql_binding',
+      path: 'query',
+      message:
+        "SQL pastes a binding into the statement as quoted text ('{{...}}'). The quotes are the only " +
+        'escaping, so a value containing a quote rewrites the statement. Pass it as a parameter ' +
+        'instead: `:name` in the query and the binding in query_params, e.g. ' +
+        '`WHERE priority = :priority` with query_params [["priority", "{{components.priorityFilter.value}}"]]. ' +
+        'Safe today if the value comes from a fixed dropdown, but the query does not change when ' +
+        'someone later binds it to a text input.',
+    },
+  ];
+}
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
-  if (typeof options.query === "string") errors.push(...unquotedSqlBindingIssues(options.query));
+  if (typeof options.query === "string") {
+    errors.push(...unquotedSqlBindingIssues(options.query));
+    warnings.push(...interpolatedSqlBindingIssues(options.query));
+  }
   const readAssessment = assessQueryRead({ id: '<planned-query>', kind, options });
   if (readAssessment.selectStar) {
     warnings.push({
