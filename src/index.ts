@@ -46,7 +46,8 @@ async function serveHttp(): Promise<void> {
 
     let identity: RequestIdentity | undefined;
     try {
-      identity = identityFromHeaders(req.headers);
+      // Gateway mode serves every user, so only a ToolJet-minted session may name the actor.
+      identity = identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid identity headers';
       res.writeHead(400, { 'Content-Type': 'text/plain' }).end(message);

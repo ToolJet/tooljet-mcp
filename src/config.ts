@@ -60,12 +60,26 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
  * correct but is attributed to the wrong user, which is the single failure this whole mechanism
  * exists to prevent. Failing the request is recoverable; mis-attributing it is not.
  */
-export function identityFromHeaders(headers: HeaderBag): RequestIdentity | undefined {
+export function identityFromHeaders(
+  headers: HeaderBag,
+  { allowPat = true }: { allowPat?: boolean } = {}
+): RequestIdentity | undefined {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
 
   if (pat) {
+    /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
+       for and expires with the build. A shared server must accept only the latter, so refuse the
+       header rather than ignoring it: accepting one would satisfy a "signed-in user required" check
+       with the wrong person, and silently acting as someone else is the failure this whole mechanism
+       exists to prevent. */
+    if (!allowPat) {
+      throw new Error(
+        `${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: ` +
+          `send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`
+      );
+    }
     // Two credentials that may name two different people is precisely the mis-attribution this
     // mechanism exists to prevent, so refuse rather than silently prefer one.
     if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);

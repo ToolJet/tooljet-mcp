@@ -131,3 +131,30 @@ describe('per-request PAT identity', () => {
   });
 });
 
+describe('gateway servers refuse a PAT as identity', () => {
+  it('rejects the PAT header outright when PATs are not allowed', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_anyones' }, { allowPat: false })).toThrow(
+      /not accepted by this server/i
+    );
+  });
+
+  it('rejects it even alongside a valid session, so it can never be the credential that wins', () => {
+    expect(() =>
+      identityFromHeaders(
+        { 'x-tooljet-pat': 'tj_pat_anyones', 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' },
+        { allowPat: false }
+      )
+    ).toThrow(/not accepted by this server/i);
+  });
+
+  it('still accepts a session, which is the only identity a shared server may act on', () => {
+    expect(
+      identityFromHeaders({ 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' }, { allowPat: false })
+    ).toEqual({ sessionToken: 'S', workspaceId: 'org-1', workspaceSlug: undefined });
+  });
+
+  it('defaults to allowing a PAT, so the direct path is unaffected', () => {
+    expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_mine' })).toEqual({ pat: 'tj_pat_mine' });
+  });
+});
+

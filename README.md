@@ -70,8 +70,9 @@ serve several people without any of them inheriting another's identity.
 
 **Gateway mode** is one shared server fronting an instance, called only by ToolJet's AI shim. Set
 `MCP_SHARED_TOKEN`: the server then binds `0.0.0.0`, requires that token as `Authorization: Bearer`,
-and takes the acting user from `x-tooljet-session` plus `x-tooljet-workspace-id`. A PAT header cannot
-get past the bearer gate, so no client can promote itself onto this path.
+and takes the acting user from `x-tooljet-session` plus `x-tooljet-workspace-id`. It rejects
+`x-tooljet-pat` outright: a PAT names its owner and lives for weeks, so honouring one here would
+attribute a build to a token holder rather than to the person who asked for it.
 
 There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET_MCP_HTTP_HOST` /
 `TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same

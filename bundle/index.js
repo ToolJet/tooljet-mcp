@@ -33167,11 +33167,14 @@ function readHeader(headers, name) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : void 0;
 }
-function identityFromHeaders(headers) {
+function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   if (pat) {
+    if (!allowPat) {
+      throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
+    }
     if (sessionToken)
       throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
     return { pat };
@@ -42194,7 +42197,7 @@ async function serveHttp() {
     }
     let identity;
     try {
-      identity = identityFromHeaders(req.headers);
+      identity = identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Invalid identity headers";
       res.writeHead(400, { "Content-Type": "text/plain" }).end(message);
