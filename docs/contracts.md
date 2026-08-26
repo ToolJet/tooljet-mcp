@@ -9,29 +9,20 @@ Base API: `http://localhost:3000/api`. Frontend (for user-facing app URLs): `htt
 ## 0. Auth model (verified live) — IMPORTANT: more than a cookie
 
 Two things are required on **every authenticated request**:
-1. The **`tj_auth_token`** session cookie (HttpOnly, SameSite=Strict), obtained from login.
+1. The **`tj_auth_token`** session cookie (HttpOnly, SameSite=Strict).
 2. The **`tj-workspace-id: <organization_id>`** header.
 
 Confirmed: cookie alone → `401`; cookie + `tj-workspace-id` → request proceeds (create app returned `201`).
 Optional header: `x-branch-id` (git-sync branch) — omit for slice 1.
 
-### Login
+Cookie comes from one of two paths — no raw email/password login anymore:
 ```
-POST /api/authenticate
-Body: { "email": "...", "password": "..." }
-→ 201; Set-Cookie: tj_auth_token=<jwt>; HttpOnly; SameSite=Strict; Path=/
-Response body (relevant fields):
-{
-  "id": "<user-uuid>",
-  "email": "...",
-  "organization_id": "6bb2a05c-132c-41d3-b87f-74d49abd1ed8",
-  "current_organization_id": "6bb2a05c-132c-41d3-b87f-74d49abd1ed8",
-  "current_organization_slug": "tooljets-workspace",
-  "admin": true, "super_admin": true,
-  ...
-}
+POST /api/personal-access-tokens/session   Headers: Authorization: Bearer <pat>
+→ 200 { "authToken", "organizationId", "organizationSlug", "organizationName" }   (body, not Set-Cookie)
 ```
-**auth.ts recipe:** POST authenticate → capture `tj_auth_token` from Set-Cookie (**use `headers.getSetCookie()` in Node/undici**, not `headers.get`), store `current_organization_id`. On every call attach `Cookie: tj_auth_token=<t>` **and** `tj-workspace-id: <current_organization_id>`. On 401, re-login once and retry.
+Or: a session minted by ToolJet's own backend and handed over directly (in-product path) — nothing to exchange.
+
+**auth.ts recipe:** resolve `tj_auth_token` via either path, store `organizationId`. Attach `Cookie: tj_auth_token=<t>` + `tj-workspace-id: <organizationId>` on every call. On 401: PAT path re-exchanges once and retries; minted session just fails (nothing to renew it into).
 
 ---
 
