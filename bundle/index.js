@@ -33160,6 +33160,7 @@ var EMPTY_COMPLETION_RESULT = {
 var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
+var PAT_HEADER = "x-tooljet-pat";
 function readHeader(headers, name) {
   const raw = headers[name] ?? headers[name.toLowerCase()];
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -33169,6 +33170,12 @@ function readHeader(headers, name) {
 function identityFromHeaders(headers) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const pat = readHeader(headers, PAT_HEADER);
+  if (pat) {
+    if (sessionToken)
+      throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
+    return { pat };
+  }
   if (!sessionToken && !workspaceId)
     return void 0;
   if (!sessionToken) {
@@ -33183,6 +33190,8 @@ function loadConfig(identity) {
   const apiUrl = process.env.TOOLJET_URL ?? "http://localhost:3000";
   const appUrl = process.env.TOOLJET_APP_URL ?? "http://localhost:8082";
   if (identity) {
+    if (identity.pat)
+      return { apiUrl, appUrl, pat: identity.pat };
     return {
       apiUrl,
       appUrl,
@@ -42145,6 +42154,14 @@ function buildServer(identity) {
   registerTools(server, client);
   return server;
 }
+function buildUnconfiguredServer(reason) {
+  const message = `tooljet-mcp cannot reach ToolJet: ${reason}`;
+  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION }, { instructions: `${message}
+
+Fix the configuration and restart this server; no tools will work until then.` });
+  server.registerTool("tooljet_status", { description: "Why this ToolJet MCP server is not configured, and how to fix it.", inputSchema: {} }, async () => ({ content: [{ type: "text", text: message }], isError: true }));
+  return server;
+}
 
 // dist/httpAuth.js
 import { timingSafeEqual } from "node:crypto";
@@ -42156,18 +42173,22 @@ function checkBearerToken(authHeader, expectedToken) {
     return false;
   return timingSafeEqual(Buffer.from(token), Buffer.from(expectedToken));
 }
+function bearerValue(authHeader) {
+  if (!authHeader)
+    return void 0;
+  const [scheme, token] = authHeader.split(" ");
+  return scheme === "Bearer" && token ? token : void 0;
+}
 
 // dist/index.js
 async function serveHttp() {
   const port = Number(process.env.PORT ?? 8787);
-  const host = "0.0.0.0";
   const sharedToken = process.env.MCP_SHARED_TOKEN;
-  if (!sharedToken) {
-    throw new Error("MCP_SHARED_TOKEN is required when MCP_TRANSPORT=http (this port is reachable off-box)");
-  }
-  const requireUserSession = /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN);
+  const gatewayMode = Boolean(sharedToken);
+  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
+  const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
   const httpServer = createServer((req, res) => {
-    if (!checkBearerToken(req.headers.authorization, sharedToken)) {
+    if (gatewayMode && !checkBearerToken(req.headers.authorization, sharedToken)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end("Unauthorized");
       return;
     }
@@ -42179,8 +42200,17 @@ async function serveHttp() {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(message);
       return;
     }
+    if (!gatewayMode && !identity) {
+      const bearer = bearerValue(req.headers.authorization);
+      if (bearer)
+        identity = { pat: bearer };
+    }
     if (!identity && requireUserSession) {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on behalf of a signed-in user: send the ${SESSION_TOKEN_HEADER} header (with x-tooljet-workspace-id). Refusing rather than using a shared identity.`);
+      return;
+    }
+    if (!gatewayMode && !identity && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
+      res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ToolJet under Settings \u2192 Access tokens.`);
       return;
     }
     const server = buildServer(identity);
@@ -42200,14 +42230,22 @@ async function serveHttp() {
     httpServer.once("error", reject);
     httpServer.listen(port, host, resolve3);
   });
-  console.error(`tooljet-mcp: listening on http://${host}:${port}`);
+  console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
 async function main() {
   if (process.env.MCP_TRANSPORT === "http") {
     await serveHttp();
     return;
   }
-  await buildServer().connect(new StdioServerTransport());
+  let server;
+  try {
+    server = buildServer();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error(`tooljet-mcp: ${reason}`);
+    server = buildUnconfiguredServer(reason);
+  }
+  await server.connect(new StdioServerTransport());
 }
 main().catch((err) => {
   console.error(err);

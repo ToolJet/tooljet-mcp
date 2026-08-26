@@ -28,14 +28,20 @@ export interface Config {
  * caller, the session authorises the work.
  */
 export interface RequestIdentity {
-  sessionToken: string;
-  workspaceId: string;
+  sessionToken?: string;
+  workspaceId?: string;
   workspaceSlug?: string;
+  /** A ToolJet PAT belonging to the caller, sent per request rather than living in this process's
+   *  environment. This is how a coding agent talks to an HTTP server it runs itself: the token is
+   *  the agent's own, so the server holds no credential and every write is attributed to the token's
+   *  owner. Mutually exclusive with `sessionToken` — see identityFromHeaders. */
+  pat?: string;
 }
 
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
 export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
+export const PAT_HEADER = 'x-tooljet-pat';
 
 type HeaderBag = Record<string, string | string[] | undefined>;
 
@@ -57,6 +63,15 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
 export function identityFromHeaders(headers: HeaderBag): RequestIdentity | undefined {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const pat = readHeader(headers, PAT_HEADER);
+
+  if (pat) {
+    // Two credentials that may name two different people is precisely the mis-attribution this
+    // mechanism exists to prevent, so refuse rather than silently prefer one.
+    if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
+    // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
+    return { pat };
+  }
 
   if (!sessionToken && !workspaceId) return undefined;
   if (!sessionToken) {
@@ -80,6 +95,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const appUrl = process.env.TOOLJET_APP_URL ?? 'http://localhost:8082';
 
   if (identity) {
+    if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
       apiUrl,
       appUrl,

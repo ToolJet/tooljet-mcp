@@ -103,3 +103,31 @@ describe('per-request identity', () => {
     expect(() => loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' })).not.toThrow();
   });
 });
+
+describe('per-request PAT identity', () => {
+  it('reads a caller-supplied PAT from its own header', () => {
+    expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).toEqual({ pat: 'tj_pat_caller' });
+  });
+
+  it('needs no workspace header, because a PAT is pinned to the workspace it was issued in', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).not.toThrow();
+  });
+
+  it('refuses a PAT and a session together rather than picking one', () => {
+    expect(() =>
+      identityFromHeaders({
+        'x-tooljet-pat': 'tj_pat_caller',
+        'x-tooljet-session': 'SESSION',
+        'x-tooljet-workspace-id': 'org-1',
+      })
+    ).toThrow(/not both/i);
+  });
+
+  it('makes the caller PAT the whole credential, never merging the process token', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_process';
+    const c = loadConfig({ pat: 'tj_pat_caller' });
+    expect(c.pat).toBe('tj_pat_caller');
+    expect(c.sessionToken).toBeUndefined();
+  });
+});
+

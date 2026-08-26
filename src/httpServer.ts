@@ -5,6 +5,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer } from './server.js';
 import { identityFromHeaders, type RequestIdentity } from './config.js';
+import { bearerValue } from './httpAuth.js';
 
 const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
 
@@ -105,6 +106,14 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     } catch (error) {
       writeError(res, 400, error instanceof Error ? error.message : 'Invalid identity headers');
       return;
+    }
+
+    // Same fallback as the bundle's direct HTTP mode: a client that cannot set arbitrary headers can
+    // still send its PAT as a bearer. Kept identical so the two HTTP entry points do not disagree
+    // about what authenticates a request.
+    if (!identity) {
+      const bearer = bearerValue(req.headers.authorization);
+      if (bearer) identity = { pat: bearer };
     }
 
     const mcpServer = serverFactory(identity);

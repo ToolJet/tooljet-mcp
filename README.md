@@ -48,21 +48,34 @@ Restart Codex; it should expose the ToolJet tools, including `create_app`, `list
 
 ## Run over Streamable HTTP
 
-The same MCP server can also run as a stateful Streamable HTTP service. It uses the same ToolJet environment variables and authentication flow as stdio; only the MCP transport changes.
+Two HTTP shapes, for two different jobs. Both authenticate the same way stdio does; what changes is
+where the credential comes from.
+
+**Direct mode** is you running the server and your own agent connecting to it. The shipped bundle
+does this, so it needs nothing beyond Node:
 
 ```bash
-npm run build
-npm run start:http
+MCP_TRANSPORT=http PORT=8787 TOOLJET_URL=http://localhost:3000 TOOLJET_PAT=tj_pat_... \
+  node bundle/index.js
 ```
 
-The defaults are:
+It binds `127.0.0.1` (override with `MCP_HTTP_HOST`) and serves `http://127.0.0.1:8787/mcp`. The
+credential may come from either side:
 
-- MCP endpoint: `http://127.0.0.1:3001/mcp`
-- Health endpoint: `http://127.0.0.1:3001/health`
+- `TOOLJET_PAT` in the server's environment, or
+- per request from the client, as `Authorization: Bearer <pat>` or `x-tooljet-pat: <pat>`
 
-Set `TOOLJET_MCP_HTTP_HOST` and `TOOLJET_MCP_HTTP_PORT` (or `PORT`) to change the listener. For a container or remote agent deployment, bind to `0.0.0.0` and put authentication/TLS at the service boundary before exposing the endpoint publicly.
+A per-request token replaces the process one outright rather than merging with it, so one server can
+serve several people without any of them inheriting another's identity.
 
-Each Streamable HTTP session gets its own MCP server instance, while all ToolJet API authentication remains exactly the same as the stdio mode.
+**Gateway mode** is one shared server fronting an instance, called only by ToolJet's AI shim. Set
+`MCP_SHARED_TOKEN`: the server then binds `0.0.0.0`, requires that token as `Authorization: Bearer`,
+and takes the acting user from `x-tooljet-session` plus `x-tooljet-workspace-id`. A PAT header cannot
+get past the bearer gate, so no client can promote itself onto this path.
+
+There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET_MCP_HTTP_HOST` /
+`TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
+per-request credentials and, like direct mode, has no bearer gate of its own.
 
 ## Install as a Claude Code plugin
 

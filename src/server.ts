@@ -23,3 +23,26 @@ export function buildServer(identity?: RequestIdentity): McpServer {
 
   return server;
 }
+
+/**
+ * A server that completes the MCP handshake but can do no work, carrying the reason.
+ *
+ * Exiting the process on a config error instead means the client never gets a channel to report
+ * on: it sees a bare transport failure (-32603) while the actual reason — always actionable, e.g.
+ * "set TOOLJET_PAT" — reaches nothing but this process's stderr. That turns a thirty-second fix
+ * into an outage nobody can diagnose from where they are standing. Handshaking and then refusing
+ * loudly puts the reason in front of the person who can act on it.
+ */
+export function buildUnconfiguredServer(reason: string): McpServer {
+  const message = `tooljet-mcp cannot reach ToolJet: ${reason}`;
+  const server = new McpServer(
+    { name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION },
+    { instructions: `${message}\n\nFix the configuration and restart this server; no tools will work until then.` }
+  );
+  server.registerTool(
+    'tooljet_status',
+    { description: 'Why this ToolJet MCP server is not configured, and how to fix it.', inputSchema: {} },
+    async () => ({ content: [{ type: 'text' as const, text: message }], isError: true })
+  );
+  return server;
+}
