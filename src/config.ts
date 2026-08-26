@@ -43,6 +43,12 @@ export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
 export const PAT_HEADER = 'x-tooljet-pat';
 
+/** An environment variable, or undefined when unset OR blank. */
+function env(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
+
 type HeaderBag = Record<string, string | string[] | undefined>;
 
 function readHeader(headers: HeaderBag, name: string): string | undefined {
@@ -105,8 +111,10 @@ export function identityFromHeaders(
  * shared server can never fall back to its own credential midway through acting as a user.
  */
 export function loadConfig(identity?: RequestIdentity): Config {
-  const apiUrl = process.env.TOOLJET_URL ?? 'http://localhost:3000';
-  const appUrl = process.env.TOOLJET_APP_URL ?? 'http://localhost:8082';
+  // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
+  // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
+  const apiUrl = env('TOOLJET_URL') ?? 'http://localhost:3000';
+  const appUrl = env('TOOLJET_APP_URL') ?? 'http://localhost:8082';
 
   if (identity) {
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
@@ -119,9 +127,9 @@ export function loadConfig(identity?: RequestIdentity): Config {
     };
   }
 
-  const pat = process.env.TOOLJET_PAT;
-  const sessionToken = process.env.TOOLJET_SESSION_TOKEN;
-  const workspaceId = process.env.TOOLJET_WORKSPACE_ID;
+  const pat = env('TOOLJET_PAT');
+  const sessionToken = env('TOOLJET_SESSION_TOKEN');
+  const workspaceId = env('TOOLJET_WORKSPACE_ID');
 
   if (!pat && !sessionToken) {
     throw new Error(
@@ -143,6 +151,6 @@ export function loadConfig(identity?: RequestIdentity): Config {
     pat,
     sessionToken,
     workspaceId,
-    workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG,
+    workspaceSlug: env('TOOLJET_WORKSPACE_SLUG'),
   };
 }

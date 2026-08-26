@@ -78,6 +78,17 @@ There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET
 `TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
 per-request credentials and, like direct mode, has no bearer gate of its own.
 
+## Install as a Copilot / VS Code agent plugin
+
+`plugin.json` and `mcp.json` at the repo root follow the [Agent Plugins 1.0](https://agent-plugins.org)
+format, which VS Code, Copilot CLI and the Copilot app share. Install with **Chat: Install Plugin
+From Source** (or the Plugins tab of the Agent Customizations editor) and give it this repo's URL.
+
+Skills are discovered from `skills/`, so the same `skills/tooljet-app-builder` that Claude Code loads
+is picked up here with no second copy. Set `TOOLJET_URL`, `TOOLJET_APP_URL` and `TOOLJET_PAT` in the
+environment the editor launches from; unset or blank values fall back to the server's own defaults,
+and a missing token is reported at handshake rather than killing the server.
+
 ## Install as a Claude Code plugin
 
 This repo is also a **self-contained Claude Code plugin** — installing it registers the MCP server *and* the `tooljet-app-builder` skill together. No `npm install`/build on the user's side: a single-file bundle (`bundle/index.js`) plus the runtime catalogs in `data/` are committed.

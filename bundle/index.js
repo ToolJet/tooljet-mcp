@@ -2977,20 +2977,20 @@ var require_compile = __commonJS({
     var util_1 = require_util();
     var validate_1 = require_validate();
     var SchemaEnv = class {
-      constructor(env) {
+      constructor(env2) {
         var _a3;
         this.refs = {};
         this.dynamicAnchors = {};
         let schema;
-        if (typeof env.schema == "object")
-          schema = env.schema;
-        this.schema = env.schema;
-        this.schemaId = env.schemaId;
-        this.root = env.root || this;
-        this.baseId = (_a3 = env.baseId) !== null && _a3 !== void 0 ? _a3 : (0, resolve_1.normalizeId)(schema === null || schema === void 0 ? void 0 : schema[env.schemaId || "$id"]);
-        this.schemaPath = env.schemaPath;
-        this.localRefs = env.localRefs;
-        this.meta = env.meta;
+        if (typeof env2.schema == "object")
+          schema = env2.schema;
+        this.schema = env2.schema;
+        this.schemaId = env2.schemaId;
+        this.root = env2.root || this;
+        this.baseId = (_a3 = env2.baseId) !== null && _a3 !== void 0 ? _a3 : (0, resolve_1.normalizeId)(schema === null || schema === void 0 ? void 0 : schema[env2.schemaId || "$id"]);
+        this.schemaPath = env2.schemaPath;
+        this.localRefs = env2.localRefs;
+        this.meta = env2.meta;
         this.$async = schema === null || schema === void 0 ? void 0 : schema.$async;
         this.refs = {};
       }
@@ -3174,15 +3174,15 @@ var require_compile = __commonJS({
           baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
         }
       }
-      let env;
+      let env2;
       if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
         const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-        env = resolveSchema.call(this, root, $ref);
+        env2 = resolveSchema.call(this, root, $ref);
       }
       const { schemaId } = this.opts;
-      env = env || new SchemaEnv({ schema, schemaId, root, baseId });
-      if (env.schema !== env.root.schema)
-        return env;
+      env2 = env2 || new SchemaEnv({ schema, schemaId, root, baseId });
+      if (env2.schema !== env2.root.schema)
+        return env2;
       return void 0;
     }
   }
@@ -4696,8 +4696,8 @@ var require_ref = __commonJS({
       schemaType: "string",
       code(cxt) {
         const { gen, schema: $ref, it } = cxt;
-        const { baseId, schemaEnv: env, validateName, opts, self } = it;
-        const { root } = env;
+        const { baseId, schemaEnv: env2, validateName, opts, self } = it;
+        const { root } = env2;
         if (($ref === "#" || $ref === "#/") && baseId === root.baseId)
           return callRootRef();
         const schOrEnv = compile_1.resolveRef.call(self, root, baseId, $ref);
@@ -4707,8 +4707,8 @@ var require_ref = __commonJS({
           return callValidate(schOrEnv);
         return inlineRefSchema(schOrEnv);
         function callRootRef() {
-          if (env === root)
-            return callRef(cxt, validateName, env, env.$async);
+          if (env2 === root)
+            return callRef(cxt, validateName, env2, env2.$async);
           const rootName = gen.scopeValue("root", { ref: root });
           return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root, root.$async);
         }
@@ -4738,14 +4738,14 @@ var require_ref = __commonJS({
     exports.getValidate = getValidate;
     function callRef(cxt, v, sch, $async) {
       const { gen, it } = cxt;
-      const { allErrors, schemaEnv: env, opts } = it;
+      const { allErrors, schemaEnv: env2, opts } = it;
       const passCxt = opts.passContext ? names_1.default.this : codegen_1.nil;
       if ($async)
         callAsyncRef();
       else
         callSyncRef();
       function callAsyncRef() {
-        if (!env.$async)
+        if (!env2.$async)
           throw new Error("async schema referenced by sync schema");
         const valid = gen.let("valid");
         gen.try(() => {
@@ -24283,15 +24283,15 @@ var CONNECTION_SYMBOL_KEY = /* @__PURE__ */ Symbol("CONNECTION_SYMBOL_KEY");
 var WAIT_FOR_WEBSOCKET_SYMBOL = /* @__PURE__ */ Symbol("WAIT_FOR_WEBSOCKET_SYMBOL");
 var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   if (c.req.header("upgrade")?.toLowerCase() !== "websocket") return;
-  const env = c.env;
-  const waitForWebSocket = env[WAIT_FOR_WEBSOCKET_SYMBOL];
-  if (!waitForWebSocket || !env.incoming) return new Response(null, { status: 500 });
+  const env2 = c.env;
+  const waitForWebSocket = env2[WAIT_FOR_WEBSOCKET_SYMBOL];
+  if (!waitForWebSocket || !env2.incoming) return new Response(null, { status: 500 });
   const connectionSymbol = generateConnectionSymbol();
-  env[CONNECTION_SYMBOL_KEY] = connectionSymbol;
+  env2[CONNECTION_SYMBOL_KEY] = connectionSymbol;
   (async () => {
     let ws;
     try {
-      ws = await waitForWebSocket(env.incoming, connectionSymbol);
+      ws = await waitForWebSocket(env2.incoming, connectionSymbol);
     } catch {
       return;
     }
@@ -33161,6 +33161,10 @@ var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
 var PAT_HEADER = "x-tooljet-pat";
+function env(name) {
+  const value = process.env[name]?.trim();
+  return value ? value : void 0;
+}
 function readHeader(headers, name) {
   const raw = headers[name] ?? headers[name.toLowerCase()];
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -33190,8 +33194,8 @@ function identityFromHeaders(headers, { allowPat = true } = {}) {
   return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER) };
 }
 function loadConfig(identity) {
-  const apiUrl = process.env.TOOLJET_URL ?? "http://localhost:3000";
-  const appUrl = process.env.TOOLJET_APP_URL ?? "http://localhost:8082";
+  const apiUrl = env("TOOLJET_URL") ?? "http://localhost:3000";
+  const appUrl = env("TOOLJET_APP_URL") ?? "http://localhost:8082";
   if (identity) {
     if (identity.pat)
       return { apiUrl, appUrl, pat: identity.pat };
@@ -33203,9 +33207,9 @@ function loadConfig(identity) {
       workspaceSlug: identity.workspaceSlug
     };
   }
-  const pat = process.env.TOOLJET_PAT;
-  const sessionToken = process.env.TOOLJET_SESSION_TOKEN;
-  const workspaceId = process.env.TOOLJET_WORKSPACE_ID;
+  const pat = env("TOOLJET_PAT");
+  const sessionToken = env("TOOLJET_SESSION_TOKEN");
+  const workspaceId = env("TOOLJET_WORKSPACE_ID");
   if (!pat && !sessionToken) {
     throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
   }
@@ -33218,7 +33222,7 @@ function loadConfig(identity) {
     pat,
     sessionToken,
     workspaceId,
-    workspaceSlug: process.env.TOOLJET_WORKSPACE_SLUG
+    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG")
   };
 }
 

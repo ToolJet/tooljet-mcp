@@ -158,3 +158,24 @@ describe('gateway servers refuse a PAT as identity', () => {
   });
 });
 
+describe('blank environment variables count as unset', () => {
+  beforeEach(() => {
+    for (const k of ['TOOLJET_URL', 'TOOLJET_APP_URL', 'TOOLJET_PAT', 'TOOLJET_SESSION_TOKEN', 'TOOLJET_WORKSPACE_ID'])
+      delete process.env[k];
+  });
+
+  it('falls back to defaults when a plugin host substitutes an unset var as an empty string', () => {
+    process.env.TOOLJET_URL = '';
+    process.env.TOOLJET_APP_URL = '';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    const c = loadConfig();
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
+  });
+
+  it('treats a whitespace-only credential as missing rather than authenticating with it', () => {
+    process.env.TOOLJET_PAT = '   ';
+    expect(() => loadConfig()).toThrow(/TOOLJET_PAT is required/);
+  });
+});
+
