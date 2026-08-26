@@ -14,7 +14,7 @@
 The repo owner requires **explicit approval before any `git commit` or `git push`**. Every "Commit" step below means: `git add` the listed files, show the diff/summary, and **PAUSE for the owner's OK before running `git commit`**. `git init` (local, no commit) is fine without asking.
 
 ### Repo note
-This is a **standalone repo** at `~/Claude/Projects/tooljet-mcp/` (not a worktree of ToolJet). Prerequisite: the local ToolJet stack is running (backend :3000, frontend :8082, Postgres, PostgREST) and admin creds are known.
+This is a **standalone repo** (not a worktree of ToolJet). For the original local slice, the ToolJet stack runs with backend :3000, frontend :8082, Postgres, and PostgREST.
 
 ---
 
@@ -48,7 +48,7 @@ Tools all follow **one pattern** (zod input → `tooljetClient` method → `{ co
 - [ ] **Step 1: Init repo + Node project**
 
 ```bash
-cd ~/Claude/Projects/tooljet-mcp
+cd /path/to/tooljet-mcp
 git init
 npm init -y
 ```
@@ -98,7 +98,7 @@ dist
 ```
 TOOLJET_URL=http://localhost:3000
 TOOLJET_APP_URL=http://localhost:8082
-TOOLJET_EMAIL=navaneeth@tooljet.com
+TOOLJET_EMAIL=developer@example.com
 TOOLJET_PASSWORD=change-me
 ```
 

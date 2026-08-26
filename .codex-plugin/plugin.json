@@ -14,5 +14,23 @@
     "app-builder",
     "internal-tools",
     "mcp"
-  ]
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "ToolJet App Builder",
+    "shortDescription": "Build governed ToolJet apps with AI.",
+    "longDescription": "Create and maintain ToolJet apps through governed MCP tools, exact component and datasource contracts, and a focused app-building skill.",
+    "developerName": "ToolJet",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Build an inventory management app in ToolJet.",
+      "Create a dashboard from my connected datasource.",
+      "Update this ToolJet app and verify the result."
+    ]
+  }
 }

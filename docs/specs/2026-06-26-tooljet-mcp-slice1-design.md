@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-26
 **Status:** Approved design (brainstorming), pending spec review
-**Author:** navaneeth + Claude
+**Author:** ToolJet
 
 ## 1. Summary
 
@@ -44,7 +44,7 @@ Postgres (components / layouts / pages / data_queries tables)
 
 - **Language/runtime:** Node 22 + TypeScript. Official `@modelcontextprotocol/sdk`. **stdio** transport (Codex spawns the process locally).
 - **Role:** a thin **governed proxy**. Each MCP tool maps to one (or a small fixed sequence of) authenticated ToolJet HTTP call(s). The server holds no app state beyond the session and a small in-memory cache of the component catalog.
-- **Repo location:** `~/Claude/Projects/tooljet-mcp/` — its own git repo, separate from ToolJet and from the working conversations.
+- **Repo location:** a standalone `tooljet-mcp` repository, separate from the ToolJet monorepo.
 - **Config:** environment variables —
   - `TOOLJET_URL` — backend API origin, default `http://localhost:3000` (all authenticated HTTP calls go here).
   - `TOOLJET_APP_URL` — frontend origin, default `http://localhost:8082` (used **only** to build user-facing `app_url` links).
