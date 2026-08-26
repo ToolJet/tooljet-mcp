@@ -22,8 +22,7 @@ npm run build               # compiles to dist/
 ```
 TOOLJET_URL=http://localhost:3000        # backend API origin
 TOOLJET_APP_URL=http://localhost:8082    # frontend origin (for app links)
-TOOLJET_EMAIL=you@example.com
-TOOLJET_PASSWORD=your-password
+TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the target workspace
 ```
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
@@ -35,13 +34,12 @@ Codex reads MCP servers from `~/.codex/config.toml`. Add:
 ```toml
 [mcp_servers.tooljet]
 command = "node"
-args = ["/Users/navaneeth/Claude/Projects/tooljet-mcp/dist/index.js"]
+args = ["/absolute/path/to/tooljet-mcp/bundle/index.js"]
 
 [mcp_servers.tooljet.env]
 TOOLJET_URL = "http://localhost:3000"
 TOOLJET_APP_URL = "http://localhost:8082"
-TOOLJET_EMAIL = "you@example.com"
-TOOLJET_PASSWORD = "your-password"
+TOOLJET_PAT = "tj_pat_..."
 ```
 
 Then install the skill so Codex knows how to drive the tools: copy the complete `skill/` directory into your Codex skills directory (or use `npm run sync:skill`). Its compact entry point progressively loads focused references for tables, forms, events, datasources, security, and QA.
@@ -79,12 +77,11 @@ Or via the marketplace, which lets you get updates:
 /plugin marketplace add ToolJet/mcp-v2
 /plugin install tooljet-app-builder@tooljet
 ```
-For local development you can also install from a path: `/plugin install path:/Users/you/Claude/Projects/tooljet-mcp`.
+For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.
 
 **Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (the `TOOLJET_URL`/`TOOLJET_APP_URL` default to localhost). Before launching Claude Code:
 ```bash
-export TOOLJET_EMAIL="you@example.com"
-export TOOLJET_PASSWORD="your-password"
+export TOOLJET_PAT="tj_pat_..."
 # optional, if not localhost:
 export TOOLJET_URL="https://your-instance.tooljet.com"
 export TOOLJET_APP_URL="https://your-instance.tooljet.com"

@@ -11,7 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { buildDatasourceCoverage } from './datasource-coverage.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const TOOLJET = process.env.TOOLJET_ROOT || resolve(homedir(), 'Claude/Projects/ToolJet/ToolJet');
+// The generated skill is derived from ToolJet's own source (widget catalog, canvas constants),
+// so a checkout must be reachable. Default to a sibling checkout; TOOLJET_ROOT overrides.
+const TOOLJET = process.env.TOOLJET_ROOT || resolve(root, '..', 'ToolJet');
 const pluginCollections = [
   { name: 'core', dir: resolve(TOOLJET, 'plugins/packages') },
   { name: 'marketplace', dir: resolve(TOOLJET, 'marketplace/plugins') },
