@@ -46,6 +46,22 @@ describe('plugin manifests agree across ecosystems', () => {
     expect(existsSync(resolve(root, 'skills/tooljet-app-builder/SKILL.md'))).toBe(true);
   });
 
+  it('declares the Codex discovery paths and required interface metadata', () => {
+    expect(CODEX_PLUGIN).toMatchObject({
+      skills: './skills/',
+      mcpServers: './.mcp.json',
+      interface: {
+        displayName: 'ToolJet App Builder',
+        shortDescription: expect.any(String),
+        longDescription: expect.any(String),
+        developerName: 'ToolJet',
+        category: 'Productivity',
+        capabilities: expect.arrayContaining(['Interactive', 'Write']),
+        defaultPrompt: expect.any(Array),
+      },
+    });
+  });
+
   it('requires the fields each marketplace format demands', () => {
     expect(CODEX_MARKET.interface?.displayName).toBeTruthy();
     for (const p of CODEX_MARKET.plugins) {

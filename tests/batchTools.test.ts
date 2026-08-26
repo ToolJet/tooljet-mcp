@@ -59,8 +59,12 @@ describe('batch authoring tools', () => {
     expect(textOf(result).pages.map((page: { page_id: string }) => page.page_id)).toEqual(['home', 'orders']);
   });
 
-  it('rejects all page batches before writes when one page fails lint', async () => {
-    const client = { createComponents: vi.fn() } as unknown as ToolJetClient;
+  it('normalizes misplaced style keys across page batches before writing', async () => {
+    const client = {
+      createComponents: vi.fn()
+        .mockResolvedValueOnce([{ component_id: 'c1', name: 'title' }])
+        .mockResolvedValueOnce([{ component_id: 'c2', name: 'bad' }]),
+    } as unknown as ToolJetClient;
     const result = await addComponentBatchesTool(client).handler({
       app_id: 'app1',
       version_id: 'v1',
@@ -70,9 +74,12 @@ describe('batch authoring tools', () => {
       ],
     });
 
-    expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/Page orders.*style keys.*properties/i);
-    expect(client.createComponents).not.toHaveBeenCalled();
+    expect(result.isError).toBeUndefined();
+    expect(client.createComponents).toHaveBeenCalledTimes(2);
+    const ordersInput = (client.createComponents as ReturnType<typeof vi.fn>).mock.calls[1]![0];
+    expect(ordersInput.components[0].properties).not.toHaveProperty('textColor');
+    expect(ordersInput.components[0].styles).toMatchObject({ textColor: { value: '#111827' } });
+    expect(textOf(result).warnings.join(' ')).toMatch(/Page orders.*moved style key "textColor".*styles\.textColor/i);
   });
 
   it('creates a dependency-validated table batch through one client call', async () => {

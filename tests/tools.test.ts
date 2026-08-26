@@ -379,7 +379,7 @@ describe('run_queries tool', () => {
     client.getDevelopmentEnvironmentId.mockResolvedValue('dev');
     client.runQuery
       .mockResolvedValueOnce({ status: 'ok', data: [{ count: 48 }] })
-      .mockRejectedValueOnce(new Error('upstream timeout'));
+      .mockRejectedValueOnce(new Error('connect ETIMEDOUT'));
 
     const result = await runQueriesTool(client as unknown as ToolJetClient).handler({
       query_ids: ['q1', 'q2'], version_id: 'v1',
@@ -391,7 +391,7 @@ describe('run_queries tool', () => {
     expect(textOf(result)).toEqual({ queries: [
       { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }] },
       {
-        query_id: 'q2', name: 'page', status: 'failed', message: 'upstream timeout',
+        query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
         recovery: {
           action: 'open_datasource_settings',
@@ -1348,8 +1348,9 @@ describe('add_component tool', () => {
     });
   });
 
-  it('BLOCKS (isError) when style keys are under properties', async () => {
+  it('moves style keys out of properties before creating a component', async () => {
     const client = makeClient();
+    client.createComponent.mockResolvedValue({ component_id: 'title-id', name: 'title' });
     const tool = addComponentTool(client as unknown as ToolJetClient);
     const result = await tool.handler({
       app_id: 'app1',
@@ -1360,9 +1361,12 @@ describe('add_component tool', () => {
       properties: { textColor: { value: '#111' } },
       layout: { top: 0, left: 0, width: 10, height: 4 },
     });
-    expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/style keys .* are under `properties`/);
-    expect(client.createComponent).not.toHaveBeenCalled();
+    expect(result.isError).toBeUndefined();
+    expect(client.createComponent).toHaveBeenCalledOnce();
+    const input = client.createComponent.mock.calls[0]![0];
+    expect(input.properties).not.toHaveProperty('textColor');
+    expect(input.styles).toMatchObject({ textColor: { value: '#111' } });
+    expect((textOf(result) as any).warnings.join(' ')).toMatch(/moved style key "textColor".*styles\.textColor/i);
   });
 
   it('returns isError on client failure', async () => {

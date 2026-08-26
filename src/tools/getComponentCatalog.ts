@@ -205,7 +205,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
 
         const components: Record<string, unknown>[] = [];
         const unknownTypes: string[] = [];
-        const seenResolved = new Set<string>();
+        const componentByResolvedType = new Map<string, Record<string, unknown>>();
         const seenUnknown = new Set<string>();
         for (const request of ordered) {
           if (!request.type) continue;
@@ -218,14 +218,28 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
             }
             continue;
           }
-          // Dedupe by resolved type so redundant selectors/aliases don't yield duplicate schemas.
-          if (seenResolved.has(resolved.type)) continue;
-          seenResolved.add(resolved.type);
-          components.push({
+          // Dedupe by resolved type so redundant selectors/aliases don't yield duplicate schemas,
+          // but retain every alias the caller used so the response still explains the resolution.
+          const existing = componentByResolvedType.get(resolved.type);
+          if (existing) {
+            if (resolved.alias) {
+              const requestedAliases = Array.isArray(existing.requested_aliases)
+                ? existing.requested_aliases as string[]
+                : [];
+              if (!requestedAliases.includes(request.type)) {
+                existing.requested_aliases = [...requestedAliases, request.type];
+              }
+            }
+            continue;
+          }
+          const component = {
             ...selectSchema(schema, request),
             ...legacyNotice(schema.type),
             ...(resolved.alias ? { alias: resolved.alias } : {}),
-          });
+            ...(resolved.alias ? { requested_aliases: [request.type] } : {}),
+          };
+          components.push(component);
+          componentByResolvedType.set(resolved.type, component);
         }
         return ok({ components, unknown_types: unknownTypes });
       } catch (err) {

@@ -20,6 +20,7 @@ function mockResponse(opts: { status?: number; json?: unknown; text?: string }) 
     ok: status >= 200 && status < 300,
     json: async () => opts.json ?? {},
     text: async () => opts.text ?? '',
+    clone: () => mockResponse(opts),
   } as unknown as Response;
 }
 
