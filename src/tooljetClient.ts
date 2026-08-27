@@ -310,6 +310,33 @@ export interface InvokeDatasourceMethodParams {
   args?: Record<string, unknown>;
 }
 
+/** A saved datasource's stored connection configuration, as ToolJet holds it for one environment.
+ *
+ *  `options` values carry `credential_id` references for secrets rather than plaintext — ToolJet
+ *  dereferences them server-side. Nothing here is ever shown to the model. */
+export interface DatasourceConnectionDetails {
+  kind: string;
+  /** Present only for marketplace plugins; core datasources have none and must omit it. */
+  pluginId?: string;
+  options: Record<string, unknown>;
+}
+
+export interface TestDatasourceConnectionParams {
+  dataSourceId: string;
+  kind: string;
+  pluginId?: string;
+  options: Record<string, unknown>;
+  environmentId?: string;
+}
+
+/** ToolJet's own test-connection verdict. `status` is 'ok' or 'failed'; a plugin that does not
+ *  implement testConnection also arrives here as 'failed', which the tool separates out. */
+export interface ConnectionTestResult {
+  status: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
 export type EventSourceType = 'component' | 'data_query' | 'page' | 'table_column' | 'table_action';
 
 /** One event handler: a trigger on a component, query, page, or component sub-element + an action. */
@@ -427,6 +454,8 @@ export interface ToolJetClient {
   getQuery(queryId: string, versionId: string): Promise<QuerySummary>;
   runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
+  getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  testDatasourceConnection(params: TestDatasourceConnectionParams): Promise<ConnectionTestResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
@@ -1725,6 +1754,57 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return (await res.json()) as RunQueryResult;
   }
 
+  /** Read one saved datasource's stored connection configuration for an environment.
+   *
+   *  Deliberately NOT taken from listDatasources: that response passes through ToolJet's
+   *  decamelizeKeys, which rewrites option KEYS as well as envelope fields — `apiKey` becomes
+   *  `api_key` for the 18 kinds whose manifests use camelCase (openai, mssql `instanceName`,
+   *  cosmosdb `endPoint`, …). Posting those back would test a config the plugin cannot read and
+   *  report a healthy source as broken. This route returns the entity unmodified. */
+  async function getDatasourceConnectionDetails(
+    dataSourceId: string,
+    environmentId?: string
+  ): Promise<DatasourceConnectionDetails> {
+    const envId = environmentId ?? (await getDevelopmentEnvironmentId());
+    const res = await auth.authedFetch(
+      `/api/data-sources/${encodeURIComponent(dataSourceId)}/environment/${encodeURIComponent(envId)}`
+    );
+    await assertOk(res, 'getDatasourceConnectionDetails');
+    const body = (await res.json()) as Record<string, any>;
+    const pluginId = body.pluginId ?? body.plugin_id ?? undefined;
+    return {
+      kind: body.kind,
+      ...(pluginId ? { pluginId } : {}),
+      options: (body.options ?? {}) as Record<string, unknown>,
+    };
+  }
+
+  /** Run ToolJet's own connection test for a saved datasource — the same call the datasource
+   *  settings page makes. Options are the stored ones; a caller never supplies its own, so no
+   *  credential passes through this process. */
+  async function testDatasourceConnection(
+    params: TestDatasourceConnectionParams
+  ): Promise<ConnectionTestResult> {
+    const environmentId = params.environmentId ?? (await getDevelopmentEnvironmentId());
+    const res = await auth.authedFetch(
+      `/api/data-sources/${encodeURIComponent(params.dataSourceId)}/test-connection`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: params.kind,
+          options: params.options,
+          environment_id: environmentId,
+          // ToolJet validates plugin_id as a UUID; core datasources have none, so it must be
+          // omitted rather than sent as null.
+          ...(params.pluginId ? { plugin_id: params.pluginId } : {}),
+        }),
+      }
+    );
+    await assertOk(res, 'testDatasourceConnection');
+    return (await res.json()) as ConnectionTestResult;
+  }
+
   async function listEvents(params: {
     appId: string;
     versionId: string;
@@ -1833,6 +1913,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     getQuery,
     runQuery,
     invokeDatasourceMethod,
+    getDatasourceConnectionDetails,
+    testDatasourceConnection,
     listEvents,
     updateEvents,
     deleteEvent,

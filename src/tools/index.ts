@@ -20,6 +20,7 @@ import { insertRowsBatchTool } from './insertRowsBatch.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
 import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
+import { testDatasourceConnectionTool } from './testDatasourceConnection.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
 import { generateFormSchemaTool } from './generateFormSchema.js';
 import { getAppTool } from './getApp.js';
@@ -96,6 +97,7 @@ export function registerTools(
     insertRowsBatchTool(client),
     getDatasourceQuerySchemaTool(client),
     inspectDatasourceSchemaTool(client),
+    testDatasourceConnectionTool(client),
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),

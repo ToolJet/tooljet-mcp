@@ -812,7 +812,14 @@ const datasourceRepair = `## Missing or broken datasource recovery
 
 \`list_workspaces\` returns \`datasources_url\`; \`list_datasources\` returns a direct \`settings_url\` for each source; failed query runs may return \`recovery:{action:"open_datasource_settings",url,instruction}\`.
 
-When the expected datasource is absent or a connection-backed query fails, explain the failure and ask the user to repair it. If the host has a built-in browser, open the most specific returned URL there; otherwise send the clickable link. Navigation is the only automated action: never enter credentials, authorize OAuth, test the connection, or save settings for the user. Wait for the user to confirm the repair, then refresh \`list_datasources\` and retry at most one explicitly selected safe read. If it still fails, report the error instead of looping.`;
+When the expected datasource is absent or a connection-backed query fails, explain the failure and ask the user to repair it. If the host has a built-in browser, open the most specific returned URL there; otherwise send the clickable link. Navigation is the only automated action: never enter credentials, authorize OAuth, or save settings for the user. Wait for the user to confirm the repair, then refresh \`list_datasources\` and retry at most one explicitly selected safe read. If it still fails, report the error instead of looping.
+
+\`test_datasource_connection({version_id, datasource_id})\` runs ToolJet's own connection check against the source's STORED credentials — you neither supply nor see them, and it is the one connection action you may take yourself. Use it to tell a broken connection apart from a wrong query before rewriting SQL, and read the \`status\` precisely:
+
+- \`ok\` — the connection works; a failing query is the query's fault.
+- \`failed\` — genuinely broken; hand over the returned \`recovery.url\` and stop.
+- \`unsupported\` — this datasource kind publishes no connection test (REST API, GraphQL, and most OAuth/HTTP integrations). It says NOTHING about the connection: never report it as a fault. Verify with one bounded read instead.
+- \`not_permitted\` — this ToolJet user may not test connections. Also not a fault; say so and move on.`;
 const restApiGuidance = `## REST API queries
 
 For \`kind:"restapi"\`, fetch the contract for the intended HTTP method, but do not persist an \`operation\` option: REST queries are selected by \`method\`. \`headers\`, \`url_params\`, \`cookies\`, and structured \`body\` are arrays of two-item \`[key, value]\` tuples. For a raw body use \`body_toggle:true\` with \`raw_body\`; \`json_body\` is a legacy fallback for existing queries.
