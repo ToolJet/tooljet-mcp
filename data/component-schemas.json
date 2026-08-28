@@ -811,6 +811,12 @@
         "label": "List of labels",
         "valueType": "array",
         "default": "{{['Tree', 'Car', 'Stree light']}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -1346,6 +1352,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "collapseWhenHidden",
@@ -1972,6 +1984,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -4025,6 +4043,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -6314,6 +6338,12 @@
     },
     "properties": [
       {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -7252,6 +7282,12 @@
         "default": ","
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Show loading state",
         "valueType": "boolean",
@@ -7262,6 +7298,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -8268,6 +8310,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
@@ -8435,6 +8483,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "collapseWhenHidden",
@@ -9088,6 +9142,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -9314,6 +9374,12 @@
         "key": "enableAddCard",
         "label": "Enable Add Card",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -9891,6 +9957,18 @@
         "default": "{{false}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "tooltipFormat",
         "label": "Tooltip",
         "default": "plainText",
@@ -10350,6 +10428,12 @@
         "label": "Search for places",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -10408,10 +10492,6 @@
     "exposedVariables": [
       {
         "name": "center",
-        "default": {}
-      },
-      {
-        "name": "selectedMarker",
         "default": {}
       }
     ]
@@ -11631,6 +11711,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
@@ -11937,6 +12023,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -12402,6 +12494,12 @@
     },
     "properties": [
       {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -12715,6 +12813,12 @@
         "label": "Show download button",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -12755,6 +12859,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -13643,6 +13753,12 @@
         ]
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -14373,6 +14489,12 @@
         "default": "{{[{\"label\":\"Card1\",\"value\":\"1\", \"format\": \"plain\"},{\"label\":\"Card2\",\"value\":\"2\", \"format\": \"plain\"},{\"label\":\"Card3\",\"value\":\"3\", \"format\": \"plain\"}]}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -14383,6 +14505,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -14845,6 +14973,14 @@
         ]
       },
       {
+        "key": "visibility",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "default": "{{false}}"
+      },
+      {
         "key": "direction",
         "default": "left"
       },
@@ -15046,6 +15182,18 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "tooltipFormat",
@@ -15520,6 +15668,12 @@
         "label": "Svg  data",
         "valueType": "string",
         "default": "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" stroke-width=\"2\" stroke=\"currentColor\" fill=\"none\" stroke-lin…"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -16928,6 +17082,12 @@
         ]
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -16938,6 +17098,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -17430,6 +17596,12 @@
     },
     "properties": [
       {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -17747,6 +17919,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -18084,14 +18262,48 @@
         "label": "Hide date",
         "valueType": "boolean",
         "default": "{{false}}"
-      }
-    ],
-    "styles": [
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "visibility",
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "cssClass",
@@ -18452,6 +18664,12 @@
           "countUp",
           "countDown"
         ]
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
