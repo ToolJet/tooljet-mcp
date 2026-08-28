@@ -33516,6 +33516,7 @@ var PROPERTY_KEY_ALIASES = {
   weight: "fontWeight",
   align: "textAlign"
 };
+var VALID_HEADER_CASING = /* @__PURE__ */ new Set(["none", "uppercase"]);
 var DEPRECATED_TABLE_COLUMN_TYPES = {
   default: "string",
   badge: "newMultiSelect",
@@ -33526,7 +33527,6 @@ var DEPRECATED_TABLE_COLUMN_TYPES = {
   toggle: "select",
   multiselect: "newMultiSelect"
 };
-var VALID_HEADER_CASING = /* @__PURE__ */ new Set(["none", "uppercase"]);
 var FORM_INPUT_TYPES = /* @__PURE__ */ new Set([
   "TextInput",
   "NumberInput",
@@ -35898,6 +35898,35 @@ function createClient(auth, config2) {
     await assertOk(res, "invokeDatasourceMethod");
     return await res.json();
   }
+  async function getDatasourceConnectionDetails(dataSourceId, environmentId) {
+    const envId = environmentId ?? await getDevelopmentEnvironmentId();
+    const res = await auth.authedFetch(`/api/data-sources/${encodeURIComponent(dataSourceId)}/environment/${encodeURIComponent(envId)}`);
+    await assertOk(res, "getDatasourceConnectionDetails");
+    const body = await res.json();
+    const pluginId = body.pluginId ?? body.plugin_id ?? void 0;
+    return {
+      kind: body.kind,
+      ...pluginId ? { pluginId } : {},
+      options: body.options ?? {}
+    };
+  }
+  async function testDatasourceConnection(params) {
+    const environmentId = params.environmentId ?? await getDevelopmentEnvironmentId();
+    const res = await auth.authedFetch(`/api/data-sources/${encodeURIComponent(params.dataSourceId)}/test-connection`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: params.kind,
+        options: params.options,
+        environment_id: environmentId,
+        // ToolJet validates plugin_id as a UUID; core datasources have none, so it must be
+        // omitted rather than sent as null.
+        ...params.pluginId ? { plugin_id: params.pluginId } : {}
+      })
+    });
+    await assertOk(res, "testDatasourceConnection");
+    return await res.json();
+  }
   async function listEvents(params) {
     const qs = params.sourceId ? `?sourceId=${encodeURIComponent(params.sourceId)}` : "";
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/events${qs}`);
@@ -35981,6 +36010,8 @@ function createClient(auth, config2) {
     getQuery,
     runQuery,
     invokeDatasourceMethod,
+    getDatasourceConnectionDetails,
+    testDatasourceConnection,
     listEvents,
     updateEvents,
     deleteEvent
@@ -37019,6 +37050,81 @@ function inspectDatasourceSchemaTool(client) {
         const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
         return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
       } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+
+// dist/tools/testDatasourceConnection.js
+var NOT_IMPLEMENTED = /testconnection method not implemented/i;
+function isForbidden(message) {
+  return /\(403\)/.test(message) || /forbidden/i.test(message);
+}
+function isNotFound(message) {
+  return /\(404\)/.test(message);
+}
+function testDatasourceConnectionTool(client) {
+  return {
+    name: "test_datasource_connection",
+    description: "Run ToolJet's own connection test for one ALREADY-CONNECTED datasource \u2014 the same check the datasource settings page performs. Uses the datasource's stored credentials; you never supply, see, or need them. Use it to distinguish a broken connection from a wrong query when a run fails, or to confirm a source before building on it. Returns supported:false for datasource kinds whose plugin does not implement a connection test (REST API, GraphQL, and most OAuth/HTTP integrations) \u2014 that is not a fault and says nothing about the connection. On a real failure, hand the returned settings_url to the user for repair; never enter credentials or save settings for them.",
+    inputSchema: {
+      version_id: external_exports.string().min(1),
+      datasource_id: external_exports.string().min(1)
+    },
+    async handler(args) {
+      try {
+        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
+        if (!datasource) {
+          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
+        }
+        const header = {
+          datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind },
+          settings_url: datasource.settings_url
+        };
+        const details = await client.getDatasourceConnectionDetails(args.datasource_id);
+        const result = await client.testDatasourceConnection({
+          dataSourceId: datasource.id,
+          kind: details.kind || datasource.kind,
+          ...details.pluginId ? { pluginId: details.pluginId } : {},
+          options: details.options
+        });
+        const message = typeof result.message === "string" ? result.message : void 0;
+        if (message && NOT_IMPLEMENTED.test(message)) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: `Datasource kind "${datasource.kind}" does not implement a connection test. This is not a failure and carries no information about the connection: verify it with a bounded read instead.`
+          });
+        }
+        if (result.status === "ok") {
+          return ok({ ...header, supported: true, status: "ok" });
+        }
+        return ok({
+          ...header,
+          supported: true,
+          status: "failed",
+          ...message ? { message: message.trim() } : {},
+          recovery: {
+            action: "open_datasource_settings",
+            url: datasource.settings_url,
+            instruction: "Ask the user to repair this connection in ToolJet. Never enter credentials, authorize OAuth, or save settings on their behalf."
+          }
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (isForbidden(message)) {
+          return ok({
+            datasource: { id: args.datasource_id },
+            supported: true,
+            status: "not_permitted",
+            message: "This ToolJet user is not permitted to test datasource connections (the ability is granted to admins, datasource create/delete holders, and users with editable/viewable datasource access). The connection itself was not tested."
+          });
+        }
+        if (isNotFound(message)) {
+          return fail(new Error(`ToolJet has no test-connection endpoint or no datasource "${args.datasource_id}" for this environment (${message}).`));
+        }
         return fail(err);
       }
     }
@@ -42132,6 +42238,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     insertRowsBatchTool(client),
     getDatasourceQuerySchemaTool(client),
     inspectDatasourceSchemaTool(client),
+    testDatasourceConnectionTool(client),
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
     getComponentCatalogTool(client),

@@ -364,7 +364,12 @@ describe('generated skill — workspaces', () => {
     expect(skill).toMatch(/datasources_url.*settings_url.*recovery\.url/is);
     expect(skill).toMatch(/Open it in the built-in browser when available/i);
     expect(datasources).toMatch(/Navigation is the only automated action/i);
-    expect(datasources).toMatch(/never enter credentials, authorize OAuth, test the connection, or save settings/i);
+    expect(datasources).toMatch(/never enter credentials, authorize OAuth, or save settings/i);
+    // Testing a connection is no longer in the forbidden list: it became a governed read-only tool
+    // that never handles a credential. The rest of the handoff rule is unchanged.
+    expect(datasources).toMatch(/test_datasource_connection.*STORED credentials/is);
+    expect(datasources).toMatch(/unsupported.*says NOTHING about the connection/is);
+    expect(datasources).toMatch(/not_permitted.*not a fault/is);
     expect(datasources).toMatch(/Wait for the user to confirm.*retry at most one.*safe read/is);
     expect(workflows).toMatch(/list_workspaces\(\).*datasources_url/is);
     expect(workflows).toMatch(/list_datasources\(version_id\).*settings_url/is);
