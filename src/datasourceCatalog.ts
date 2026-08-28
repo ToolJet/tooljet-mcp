@@ -13,6 +13,9 @@ export interface DatasourceQuerySchema {
   properties: Record<string, unknown>;
   contracts: Record<string, DatasourceOperationContract>;
   introspectionMethods?: string[];
+  /** Whether the ToolJet plugin implements testConnection. Undefined means unknown (stale catalog),
+   *  which callers must treat as "test it and find out" rather than as false. */
+  supportsTestConnection?: boolean;
   sources?: Array<{ collection: string; package: string }>;
   paginationStrategies?: string[];
 }
@@ -132,6 +135,9 @@ export function selectDatasourceQuerySchema(
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
+      ...(typeof schema.supportsTestConnection === 'boolean'
+        ? { supports_test_connection: schema.supportsTestConnection }
+        : {}),
     });
     if (!options.operation) {
       result.operation_summaries = Object.values(schema.contracts).map(operationSummary);

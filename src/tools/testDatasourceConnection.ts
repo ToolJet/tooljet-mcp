@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 
 /**
  * Four outcomes hide behind ToolJet's two-field verdict, and conflating them produces confident
@@ -10,6 +11,15 @@ import { ok, fail, type ToolDef } from './types.js';
  * normal `{status:'failed'}`. Reported as-is, that reads as "your working Stripe source is down".
  */
 const NOT_IMPLEMENTED = /testconnection method not implemented/i;
+
+/** Identical whether the catalog pre-empted the call or ToolJet answered it, so the model cannot
+ *  tell the two paths apart and cannot come to depend on the difference. */
+function unsupportedMessage(kind: string): string {
+  return (
+    `Datasource kind "${kind}" does not implement a connection test. This is not a ` +
+    'failure and carries no information about the connection: verify it with a bounded read instead.'
+  );
+}
 
 /** Permission, not health: TEST_CONNECTION is granted to admins, datasource create/delete holders,
  *  all-editable/all-viewable, and per-datasource configurable grants — but NOT to a bare builder. */
@@ -51,6 +61,18 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
           settings_url: datasource.settings_url,
         };
 
+        // The catalog knows which plugins implement testConnection, so an unsupported kind costs no
+        // HTTP calls. Only an explicit false short-circuits: an undefined flag means a stale or
+        // partial catalog, which must degrade to asking ToolJet rather than to a wrong answer.
+        if (getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection === false) {
+          return ok({
+            ...header,
+            supported: false,
+            status: 'unsupported',
+            message: unsupportedMessage(datasource.kind),
+          });
+        }
+
         const details = await client.getDatasourceConnectionDetails(args.datasource_id);
         const result = await client.testDatasourceConnection({
           dataSourceId: datasource.id,
@@ -65,9 +87,7 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
             ...header,
             supported: false,
             status: 'unsupported',
-            message:
-              `Datasource kind "${datasource.kind}" does not implement a connection test. This is not a ` +
-              'failure and carries no information about the connection: verify it with a bounded read instead.',
+            message: unsupportedMessage(datasource.kind),
           });
         }
 

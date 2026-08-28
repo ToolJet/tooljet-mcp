@@ -266,10 +266,31 @@ function oneVariant(operation, fields, required = [], when = {}) {
   };
 }
 
+// `testConnection` is optional on a plugin and is declared nowhere in manifest.json or
+// operations.json — it is a method on the QueryService class in lib/index.ts. Harvesting it
+// statically replaces an English-message regex in test_datasource_connection, which would
+// otherwise report every healthy REST/OAuth source as broken if ToolJet reworded its
+// NotImplementedException. Every plugin class `implements QueryService` (none `extends` a base),
+// so a source scan of the entry file is sufficient; revisit if a plugin ever inherits it.
+const TEST_CONNECTION_METHOD = /(?:^|\s)(?:async\s+)?testConnection\s*\(/m;
+
+function harvestSupportsTestConnection(libDir) {
+  const entry = resolve(libDir, 'index.ts');
+  if (!existsSync(entry)) return false;
+  return TEST_CONNECTION_METHOD.test(readFileSync(entry, 'utf8'));
+}
+
 const schemas = {};
 let pluginDefinitions = 0;
 for (const collection of pluginCollections) {
-  if (!existsSync(collection.dir)) continue;
+  // Skipping a missing collection silently would overwrite the committed catalog with a partial
+  // one that still looks like a successful run. Fail instead.
+  if (!existsSync(collection.dir)) {
+    throw new Error(
+      `ToolJet ${collection.name} plugins not found at ${collection.dir}. ` +
+      'Set TOOLJET_ROOT to a ToolJet checkout before regenerating the catalog.'
+    );
+  }
   for (const packageName of readdirSync(collection.dir)) {
     const libDir = resolve(collection.dir, packageName, 'lib');
     const manifestPath = resolve(libDir, 'manifest.json');
@@ -304,6 +325,7 @@ for (const collection of pluginCollections) {
       contracts,
       properties,
       introspectionMethods: introspectionMethods(properties),
+      supportsTestConnection: harvestSupportsTestConnection(libDir),
       sources: [sourceEntry],
     };
   }
@@ -434,19 +456,20 @@ const staticSchemas = {
     defaults: { method: 'get', url: '', url_params: [], headers: [], cookies: [], body: [], raw_body: null, json_body: null, body_toggle: false, retry_network_errors: null },
     operations: Object.keys(restContracts), contracts: restContracts,
     properties: Object.fromEntries(commonRestFields.map((item) => [item.path, item])),
-    paginationStrategies: ['offset', 'page', 'cursor/token'], introspectionMethods: [], sources: [{ collection: 'static', package: 'restapi' }],
+    paginationStrategies: ['offset', 'page', 'cursor/token'], introspectionMethods: [], supportsTestConnection: false,
+    sources: [{ collection: 'static', package: 'restapi' }],
   },
   runjs: {
     kind: 'runjs', name: 'Run JavaScript', type: 'static', defaults: { code: '', parameters: [] }, operations: [],
     contracts: { default: oneVariant('default', [field('code', 'string'), field('parameters', 'array')], ['code']) },
     properties: { code: { type: 'string', description: 'JavaScript body. Return the query result.' }, parameters: { type: 'array' } },
-    introspectionMethods: [], sources: [{ collection: 'static', package: 'runjs' }],
+    introspectionMethods: [], supportsTestConnection: false, sources: [{ collection: 'static', package: 'runjs' }],
   },
   runpy: {
     kind: 'runpy', name: 'Run Python', type: 'static', defaults: { code: '' }, operations: [],
     contracts: { default: oneVariant('default', [field('code', 'string')], ['code']) },
     properties: { code: { type: 'string', description: 'Python body. Return the query result.' } },
-    introspectionMethods: [], sources: [{ collection: 'static', package: 'runpy' }],
+    introspectionMethods: [], supportsTestConnection: false, sources: [{ collection: 'static', package: 'runpy' }],
   },
   tooljetdb: {
     kind: 'tooljetdb', name: 'ToolJet Database', type: 'database',
@@ -460,7 +483,7 @@ const staticSchemas = {
       delete_rows: { type: 'object', fields: { where_filters: { type: 'record' }, limit: { type: 'number|binding' }, order_column: { type: 'string' } } },
       join_table: { type: 'object' }, bulk_update_with_primary_key: { type: 'object' }, bulk_upsert_with_primary_key: { type: 'object' }, sql_execution: { type: 'object' },
     },
-    introspectionMethods: [], sources: [{ collection: 'static', package: 'tooljetdb' }],
+    introspectionMethods: [], supportsTestConnection: false, sources: [{ collection: 'static', package: 'tooljetdb' }],
   },
 };
 
@@ -471,6 +494,26 @@ for (const [kind, schema] of Object.entries(staticSchemas)) {
 
 for (const schema of Object.values(schemas)) {
   schema.contracts = finalizeResponses(schema.kind, schema.type, schema.contracts);
+}
+
+// A regex that matched nothing would mark every kind unsupported and still look like a clean run,
+// so the harvest checks its own result before anything is written. The expected split is 67 supported
+// / 25 not, every HTTP-passthrough and OAuth kind falling on the unsupported side.
+const testConnectionSupported = Object.values(schemas).filter((schema) => schema.supportsTestConnection).length;
+const testConnectionFlagged = Object.values(schemas).filter(
+  (schema) => typeof schema.supportsTestConnection === 'boolean'
+).length;
+if (testConnectionFlagged !== Object.keys(schemas).length) {
+  throw new Error(
+    `supportsTestConnection missing on ${Object.keys(schemas).length - testConnectionFlagged} kinds; ` +
+    'every kind must carry the flag.'
+  );
+}
+if (testConnectionSupported < 50) {
+  throw new Error(
+    `Only ${testConnectionSupported} kinds report testConnection; the source scan almost certainly failed. ` +
+    'Expected ~67. Check that plugin entry files are still lib/index.ts.'
+  );
 }
 
 const sorted = sortedObject(schemas);
@@ -485,4 +528,8 @@ console.log(
 console.log(
   `Response coverage: ${coverage.response_contracts.known}/${coverage.contract_count} known; ` +
   `${coverage.response_contracts.runtime_dependent} runtime-dependent; ${coverage.response_contracts.unknown} unknown.`
+);
+console.log(
+  `Connection tests: ${testConnectionSupported}/${Object.keys(sorted).length} kinds implement testConnection; ` +
+  `${Object.keys(sorted).length - testConnectionSupported} do not.`
 );

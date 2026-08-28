@@ -16,10 +16,18 @@ export function buildDatasourceCoverage(schemas) {
   const responses = { known: 0, runtime_dependent: 0, unknown: 0, missing: 0 };
   let contractCount = 0;
   let namedOperationKinds = 0;
+  let testConnectionFlagKinds = 0;
+  let testConnectionSupportedKinds = 0;
 
   for (const [kind, schema] of Object.entries(schemas).sort(([left], [right]) => left.localeCompare(right))) {
     if ((schema.operations || []).length > 0) namedOperationKinds += 1;
     else defaultOnlyKinds.push(kind);
+
+    // Counted as a floor, not a target: a regenerate that drops the flag leaves every kind
+    // undefined, which test_datasource_connection treats as "unknown, call and find out" — the
+    // feature would silently vanish with nothing failing.
+    if (typeof schema.supportsTestConnection === 'boolean') testConnectionFlagKinds += 1;
+    if (schema.supportsTestConnection === true) testConnectionSupportedKinds += 1;
 
     const contracts = Object.values(schema.contracts || {});
     if (!contracts.length) kindsWithoutContracts.push(kind);
@@ -65,6 +73,8 @@ export function buildDatasourceCoverage(schemas) {
     unknown_response_contracts_by_kind: sortedObject(unknownByKind),
     opaque_endpoint_kinds: [...opaqueEndpointKinds].sort(),
     kinds_without_contracts: kindsWithoutContracts,
+    kinds_with_test_connection_flag: testConnectionFlagKinds,
+    kinds_supporting_test_connection: testConnectionSupportedKinds,
   };
 }
 
@@ -77,6 +87,8 @@ function metrics(coverage) {
     missing_response_contracts: coverage.response_contracts.missing,
     kinds_without_contracts: coverage.kinds_without_contracts.length,
     opaque_endpoint_kinds: coverage.opaque_endpoint_kinds.length,
+    kinds_with_test_connection_flag: coverage.kinds_with_test_connection_flag,
+    kinds_supporting_test_connection: coverage.kinds_supporting_test_connection,
   };
 }
 

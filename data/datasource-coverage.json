@@ -154,5 +154,7 @@
     "ups",
     "xero"
   ],
-  "kinds_without_contracts": []
+  "kinds_without_contracts": [],
+  "kinds_with_test_connection_flag": 94,
+  "kinds_supporting_test_connection": 66
 }

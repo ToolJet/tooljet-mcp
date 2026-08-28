@@ -818,7 +818,7 @@ When the expected datasource is absent or a connection-backed query fails, expla
 
 - \`ok\` — the connection works; a failing query is the query's fault.
 - \`failed\` — genuinely broken. Say WHY in your own words, quoting the datasource's own message (expired trial, suspended warehouse, refused connection, bad credentials), hand over the returned \`recovery.url\`, and stop building on it. Never restate an external outage as a limitation of yours — "I cannot run queries here" hides a problem the user can fix in two minutes. If you build anyway because they asked you to, repeat the cause and the link in your final handoff.
-- \`unsupported\` — this datasource kind publishes no connection test (REST API, GraphQL, and most OAuth/HTTP integrations). It says NOTHING about the connection: never report it as a fault. Verify with one bounded read instead.
+- \`unsupported\` — this datasource kind publishes no connection test (REST API, GraphQL, and most OAuth/HTTP integrations). It says NOTHING about the connection: never report it as a fault. Verify with one bounded read instead. Which kinds these are is known ahead of the call: \`get_datasource_query_schema\` reports \`supports_test_connection\`, so you can skip the test rather than spend it.
 - \`not_permitted\` — this ToolJet user may not test connections. Also not a fault; say so and move on.`;
 const restApiGuidance = `## REST API queries
 

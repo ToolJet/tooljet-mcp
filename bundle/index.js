@@ -36821,7 +36821,8 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       type: schema.type,
       description: schema.description,
       defaults: schema.defaults,
-      operations: schema.operations
+      operations: schema.operations,
+      ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
     });
     if (!options2.operation) {
       result.operation_summaries = Object.values(schema.contracts).map(operationSummary);
@@ -37058,6 +37059,9 @@ function inspectDatasourceSchemaTool(client) {
 
 // dist/tools/testDatasourceConnection.js
 var NOT_IMPLEMENTED = /testconnection method not implemented/i;
+function unsupportedMessage(kind) {
+  return `Datasource kind "${kind}" does not implement a connection test. This is not a failure and carries no information about the connection: verify it with a bounded read instead.`;
+}
 function isForbidden(message) {
   return /\(403\)/.test(message) || /forbidden/i.test(message);
 }
@@ -37082,6 +37086,14 @@ function testDatasourceConnectionTool(client) {
           datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind },
           settings_url: datasource.settings_url
         };
+        if (getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection === false) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: unsupportedMessage(datasource.kind)
+          });
+        }
         const details = await client.getDatasourceConnectionDetails(args.datasource_id);
         const result = await client.testDatasourceConnection({
           dataSourceId: datasource.id,
@@ -37095,7 +37107,7 @@ function testDatasourceConnectionTool(client) {
             ...header,
             supported: false,
             status: "unsupported",
-            message: `Datasource kind "${datasource.kind}" does not implement a connection test. This is not a failure and carries no information about the connection: verify it with a bounded read instead.`
+            message: unsupportedMessage(datasource.kind)
           });
         }
         if (result.status === "ok") {
