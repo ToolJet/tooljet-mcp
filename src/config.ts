@@ -36,12 +36,18 @@ export interface RequestIdentity {
    *  the agent's own, so the server holds no credential and every write is attributed to the token's
    *  owner. Mutually exclusive with `sessionToken` — see identityFromHeaders. */
   pat?: string;
+  /** The calling ToolJet instance's own API origin, sent per request. One shared MCP server (staging,
+   *  cloud) can act on behalf of many different ToolJet backends — self-hosted and cloud alike — so
+   *  the target can't be this process's own fixed TOOLJET_URL. Wins over that static value when
+   *  present — see loadConfig. */
+  apiUrl?: string;
 }
 
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
 export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
 export const PAT_HEADER = 'x-tooljet-pat';
+export const BASE_URL_HEADER = 'x-tooljet-url';
 
 /** An environment variable, or undefined when unset OR blank. */
 function env(name: string): string | undefined {
@@ -73,6 +79,7 @@ export function identityFromHeaders(
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
+  const apiUrl = readHeader(headers, BASE_URL_HEADER);
 
   if (pat) {
     /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
@@ -90,10 +97,10 @@ export function identityFromHeaders(
     // mechanism exists to prevent, so refuse rather than silently prefer one.
     if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
     // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
-    return { pat };
+    return { pat, apiUrl };
   }
 
-  if (!sessionToken && !workspaceId) return undefined;
+  if (!sessionToken && !workspaceId) return apiUrl ? { apiUrl } : undefined;
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
   }
@@ -101,7 +108,7 @@ export function identityFromHeaders(
     throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
   }
 
-  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER) };
+  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
 }
 
 /**
@@ -113,10 +120,26 @@ export function identityFromHeaders(
 export function loadConfig(identity?: RequestIdentity): Config {
   // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
   // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
-  const apiUrl = env('TOOLJET_URL') ?? 'http://localhost:3000';
+  const staticApiUrl = env('TOOLJET_URL') ?? 'http://localhost:3000';
   const appUrl = env('TOOLJET_APP_URL') ?? 'http://localhost:8082';
 
   if (identity) {
+    // The request's own apiUrl wins when present — same precedence as the session/PAT identity
+    // above it. One shared server must be able to act on many different ToolJet backends; the
+    // static TOOLJET_URL is only ever a fallback for it, never the source of truth.
+    const apiUrl = identity.apiUrl ?? staticApiUrl;
+
+    // MCP_REQUIRE_REQUEST_URL mirrors MCP_REQUIRE_USER_SESSION: a deployment that also has
+    // TOOLJET_URL set would otherwise silently fall back to it the moment the caller forgot the
+    // header, and every build would still succeed — just written into the wrong backend. Refuse
+    // instead of guessing.
+    if (!identity.apiUrl && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '')) {
+      throw new Error(
+        `This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} ` +
+          'header. Refusing rather than falling back to a fixed TOOLJET_URL.'
+      );
+    }
+
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
       apiUrl,
@@ -126,6 +149,8 @@ export function loadConfig(identity?: RequestIdentity): Config {
       workspaceSlug: identity.workspaceSlug,
     };
   }
+
+  const apiUrl = staticApiUrl;
 
   const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');
