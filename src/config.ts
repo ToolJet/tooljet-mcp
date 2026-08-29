@@ -65,6 +65,34 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
 }
 
 /**
+ * Validate the request-supplied target origin, or throw.
+ *
+ * Gets the caller's session/PAT attached and sent straight to it (auth.ts), so this closes the
+ * parse+scheme gap (garbage input, http downgrade) — not a host allowlist, still trusts any https host.
+ */
+function validateApiUrl(raw: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`${BASE_URL_HEADER} must use https.`);
+  }
+  if (
+    (parsed.pathname !== '' && parsed.pathname !== '/') ||
+    parsed.search ||
+    parsed.hash ||
+    parsed.username ||
+    parsed.password
+  ) {
+    throw new Error(`${BASE_URL_HEADER} must be a bare origin (scheme + host only, no path/query/credentials).`);
+  }
+  return parsed.origin;
+}
+
+/**
  * Extract the acting user from request headers, or undefined when the caller sent none.
  *
  * A session WITHOUT a workspace throws rather than returning undefined. Returning undefined would
@@ -79,7 +107,8 @@ export function identityFromHeaders(
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
-  const apiUrl = readHeader(headers, BASE_URL_HEADER);
+  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
+  const apiUrl = rawApiUrl ? validateApiUrl(rawApiUrl) : undefined;
 
   if (pat) {
     /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
