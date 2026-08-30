@@ -118,7 +118,7 @@ function findConfig(ast) {
 }
 
 /** Read a source-exported literal so authoring contracts stay synchronized with ToolJet itself. */
-function readNamedLiteral(file, variableName) {
+function readNamedLiteral(file, variableName, { optional = false } = {}) {
   const ast = parse(readFileSync(file, 'utf8'), { sourceType: 'module', plugins: ['jsx'] });
   let value;
   const visit = (node) => {
@@ -137,13 +137,15 @@ function readNamedLiteral(file, variableName) {
     }
   };
   visit(ast.program);
-  if (value === undefined) throw new Error(`Could not extract literal ${variableName} from ${file}`);
+  if (value === undefined && !optional) throw new Error(`Could not extract literal ${variableName} from ${file}`);
   return value;
 }
 
 const componentTypesFile = resolve(TOOLJET, 'frontend/src/AppBuilder/WidgetManager/componentTypes.js');
 const universalProps = readNamedLiteral(componentTypesFile, 'universalProps');
-const legacyUniversalProps = readNamedLiteral(componentTypesFile, 'legacyUniversalProps');
+// ToolJet briefly split the universal props in two (revamped vs. legacy components) and has since
+// re-merged them, so the legacy half is optional.
+const legacyUniversalProps = readNamedLiteral(componentTypesFile, 'legacyUniversalProps', { optional: true }) ?? {};
 const GLOBAL_STYLES = { ...(legacyUniversalProps.styles ?? {}), ...(universalProps.styles ?? {}) };
 const GLOBAL_STYLE_DEFAULTS = {
   ...(legacyUniversalProps.definition?.styles ?? {}),
