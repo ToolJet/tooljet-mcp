@@ -35057,6 +35057,66 @@ function createClient(auth, config2) {
     }));
     return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
   }
+  function appPermissionPath(appId, resourceType, resourceId) {
+    const segment = resourceType === "page" ? "pages" : resourceType === "query" ? "queries" : "components";
+    return `/api/app-permissions/${encodeURIComponent(appId)}/${segment}/${encodeURIComponent(resourceId)}`;
+  }
+  async function listAppPermissionSubjects(appId) {
+    const app = encodeURIComponent(appId);
+    const [usersResponse, groupsResponse] = await Promise.all([
+      auth.authedFetch(`/api/app-permissions/${app}/pages/users`),
+      auth.authedFetch(`/api/app-permissions/${app}/pages/user-groups`)
+    ]);
+    await assertOk(usersResponse, "listAppPermissionSubjects users");
+    await assertOk(groupsResponse, "listAppPermissionSubjects groups");
+    const users = await usersResponse.json();
+    const groups = await groupsResponse.json();
+    if (!Array.isArray(users) || !Array.isArray(groups)) {
+      throw new Error("ToolJet listAppPermissionSubjects failed: expected array responses.");
+    }
+    return {
+      users: users.map((user) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
+        email: user.email
+      })),
+      groups: groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        ...typeof group.count === "number" ? { count: group.count } : {}
+      }))
+    };
+  }
+  async function getAppPermission(appId, resourceType, resourceId) {
+    const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId));
+    await assertOk(res, "getAppPermission");
+    const body = await res.json();
+    if (!Array.isArray(body)) {
+      throw new Error("ToolJet getAppPermission failed: expected an array response.");
+    }
+    return body;
+  }
+  async function setAppPermission(params) {
+    const path = appPermissionPath(params.appId, params.resourceType, params.resourceId);
+    const existing = await getAppPermission(params.appId, params.resourceType, params.resourceId);
+    const body = params.accessType === "users" ? { type: "SINGLE", users: params.subjectIds } : { type: "GROUP", groups: params.subjectIds };
+    const res = await auth.authedFetch(path, {
+      method: existing.length ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    await assertOk(res, "setAppPermission");
+    return getAppPermission(params.appId, params.resourceType, params.resourceId);
+  }
+  async function clearAppPermission(appId, resourceType, resourceId) {
+    const existing = await getAppPermission(appId, resourceType, resourceId);
+    if (!existing.length)
+      return;
+    const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId), {
+      method: "DELETE"
+    });
+    await assertOk(res, "clearAppPermission");
+  }
   async function getAppSettings(appId, versionId) {
     const app = await getApp(appId);
     const editingVersion = app.editing_version ?? app.editingVersion;
@@ -35971,6 +36031,10 @@ function createClient(auth, config2) {
     renameApp,
     getApp,
     getAppSummary,
+    listAppPermissionSubjects,
+    getAppPermission,
+    setAppPermission,
+    clearAppPermission,
     getAppSettings,
     listAppThemes,
     createAppTheme,
@@ -42218,6 +42282,120 @@ function manageThemeTool(client) {
   };
 }
 
+// dist/tools/manageAppPermissions.js
+function requireValue2(value, label) {
+  if (value === void 0)
+    throw new Error(`${label} is required for this action.`);
+  return value;
+}
+function findResource(summary, resourceType, resourceId) {
+  if (resourceType === "page") {
+    const page = summary.pages.find((candidate) => candidate.id === resourceId);
+    if (page)
+      return { type: resourceType, id: page.id, name: page.name };
+  } else if (resourceType === "query") {
+    const query = summary.queries.find((candidate) => candidate.id === resourceId);
+    if (query)
+      return { type: resourceType, id: query.id, name: query.name };
+  } else {
+    for (const page of summary.pages) {
+      const component = page.components.find((candidate) => candidate.id === resourceId);
+      if (component) {
+        return {
+          type: resourceType,
+          id: component.id,
+          name: component.name,
+          component_type: component.type,
+          page_id: page.id,
+          page_name: page.name
+        };
+      }
+    }
+  }
+  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
+}
+function normalizePermission(permissions) {
+  const permission = permissions[0];
+  if (!permission)
+    return { access: "all", permission_id: null };
+  if (permission.type === "SINGLE") {
+    return {
+      access: "users",
+      permission_id: permission.id,
+      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
+        email: user.email
+      }))
+    };
+  }
+  if (permission.type === "GROUP") {
+    return {
+      access: "groups",
+      permission_id: permission.id,
+      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
+    };
+  }
+  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
+}
+function manageAppPermissionsTool(client) {
+  return {
+    name: "manage_app_permissions",
+    description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
+    inputSchema: {
+      action: external_exports.enum(["list_subjects", "get", "set", "clear"]),
+      app_id: external_exports.string().uuid(),
+      resource_type: external_exports.enum(["page", "query", "component"]).optional(),
+      resource_id: external_exports.string().uuid().optional(),
+      access_type: external_exports.enum(["users", "groups"]).optional(),
+      user_ids: external_exports.array(external_exports.string().uuid()).min(1).max(100).optional(),
+      group_ids: external_exports.array(external_exports.string().uuid()).min(1).max(100).optional(),
+      confirm: external_exports.boolean().optional()
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list_subjects") {
+          return ok({ app_id: args.app_id, ...await client.listAppPermissionSubjects(args.app_id) });
+        }
+        const resourceType = requireValue2(args.resource_type, "resource_type");
+        const resourceId = requireValue2(args.resource_id, "resource_id");
+        const summary = await client.getAppSummary(args.app_id);
+        const resource = findResource(summary, resourceType, resourceId);
+        if (args.action === "get") {
+          const permissions2 = await client.getAppPermission(args.app_id, resourceType, resourceId);
+          return ok({ app_id: args.app_id, resource, ...normalizePermission(permissions2) });
+        }
+        if (args.confirm !== true) {
+          throw new Error(`${args.action} permission for ${resourceType} "${resource.name ?? resource.id}" requires confirm:true after explicit approval of the exact access rule.`);
+        }
+        if (args.action === "clear") {
+          await client.clearAppPermission(args.app_id, resourceType, resourceId);
+          return ok({ app_id: args.app_id, resource, access: "all", permission_id: null });
+        }
+        const accessType = requireValue2(args.access_type, "access_type");
+        const subjectIds = accessType === "users" ? args.user_ids : args.group_ids;
+        requireValue2(subjectIds, accessType === "users" ? "user_ids" : "group_ids");
+        if (accessType === "users" && args.group_ids !== void 0) {
+          throw new Error("group_ids must be omitted when access_type is users.");
+        }
+        if (accessType === "groups" && args.user_ids !== void 0) {
+          throw new Error("user_ids must be omitted when access_type is groups.");
+        }
+        const permissions = await client.setAppPermission({
+          appId: args.app_id,
+          resourceType,
+          resourceId,
+          accessType,
+          subjectIds: [...new Set(subjectIds)]
+        });
+        return ok({ app_id: args.app_id, resource, ...normalizePermission(permissions) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -42234,6 +42412,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
+    manageAppPermissionsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
