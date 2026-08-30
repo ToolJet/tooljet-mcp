@@ -6,6 +6,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import {
+  allowedApiOrigins,
+  ALLOWED_API_ORIGINS_VAR,
   BASE_URL_HEADER,
   identityFromHeaders,
   PAT_HEADER,
@@ -16,6 +18,15 @@ import {
 async function serveHttp(): Promise<void> {
   const port = Number(process.env.PORT ?? 8787);
   const sharedToken = process.env.MCP_SHARED_TOKEN;
+
+  // Fail at startup, not on the first request that happens to hit a bad entry: a misconfigured
+  // MCP_ALLOWED_API_ORIGINS should surface where an operator is looking, right after they set it.
+  try {
+    allowedApiOrigins();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
+  }
 
   /* Two deployment shapes, told apart by whether a shared token is configured.
 

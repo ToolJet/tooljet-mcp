@@ -236,6 +236,38 @@ describe('per-request target origin (x-tooljet-url)', () => {
     });
   });
 
+  /* A raw string comparison would never match here: the request's origin is always in the form
+     new URL(...).origin produces (lowercased, default port stripped, no trailing slash), so an
+     allowlist entry written any other way has to be normalized the same way or it can never match —
+     denying real traffic while looking, next to the error, like it should have worked. */
+  it('normalizes an allowlist entry with different casing to the same origin', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://Tj.Example.com';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  it('normalizes an allowlist entry with a trailing slash', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com/';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  it('normalizes an allowlist entry carrying the default https port', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com:443';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has an unparseable value', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com, not a url';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+      /not a valid URL: "not a url"/
+    );
+  });
+
   it('wins over a configured static TOOLJET_URL', () => {
     process.env.TOOLJET_URL = 'https://static.example.com';
     const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1', apiUrl: 'https://request.example.com' });

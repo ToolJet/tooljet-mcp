@@ -57,13 +57,29 @@ function env(name: string): string | undefined {
   return value ? value : undefined;
 }
 
-function allowedApiOrigins(): string[] {
+/**
+ * MCP_ALLOWED_API_ORIGINS, normalized to the same form `new URL(...).origin` produces for a request's
+ * x-tooljet-url — lowercased, default port stripped, no trailing slash. Comparing raw config strings
+ * against a normalized origin means "https://Foo.com" or "https://foo.com:443" in the env var would
+ * never match a request that is, in every way that matters, the same host — denying real traffic while
+ * looking, to whoever reads the config next to the error, like it should have matched. Throws rather
+ * than silently keeping an entry nothing can ever match: a misconfigured allowlist should fail loudly
+ * where an operator is looking (startup), not blend into "not in the allowlist" for the first caller.
+ */
+export function allowedApiOrigins(): string[] {
   const raw = env(ALLOWED_API_ORIGINS_VAR);
   if (!raw) return [];
   return raw
     .split(',')
     .map((entry) => entry.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((entry) => {
+      try {
+        return new URL(entry).origin;
+      } catch {
+        throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
+      }
+    });
 }
 
 type HeaderBag = Record<string, string | string[] | undefined>;
