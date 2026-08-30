@@ -48,11 +48,22 @@ export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
 export const PAT_HEADER = 'x-tooljet-pat';
 export const BASE_URL_HEADER = 'x-tooljet-url';
+/** Comma-separated https origins this server will accept as a request-named target. */
+export const ALLOWED_API_ORIGINS_VAR = 'MCP_ALLOWED_API_ORIGINS';
 
 /** An environment variable, or undefined when unset OR blank. */
 function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
+}
+
+function allowedApiOrigins(): string[] {
+  const raw = env(ALLOWED_API_ORIGINS_VAR);
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 type HeaderBag = Record<string, string | string[] | undefined>;
@@ -67,13 +78,16 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
 /**
  * Validate the request-supplied target origin, or throw.
  *
- * Gets the caller's session/PAT attached and sent straight to it (auth.ts), so this closes the
- * parse+scheme gap (garbage input, http downgrade) — not a host allowlist, still trusts any https host.
+ * Gets the caller's session/PAT attached and sent straight to it (auth.ts) — a bearer-grade
+ * credential, not just traffic. https alone does not make a host trustworthy: an attacker's own
+ * domain has a valid cert too. So beyond parse+scheme (garbage input, http downgrade), the origin
+ * must also appear in MCP_ALLOWED_API_ORIGINS. Unset means empty, not "allow anything" — a shared
+ * deployment must opt in to which backends it will ever write into.
  *
  * A path prefix is allowed (not just a bare origin): ToolJet supports SUB_PATH hosting, so a
  * self-hosted customer reverse-proxied at e.g. https://tj.example.com/tooljet is a legitimate target,
- * not a malformed one. Query, hash, and credentials are still rejected — nothing downstream needs
- * them, and each one would name a place the caller has no ordinary reason to send this URL to.
+ * not a malformed one. The allowlist matches on origin only — the path is the operator's own
+ * reverse-proxy detail, not the trust boundary. Query, hash, and credentials are rejected outright.
  */
 function validateApiUrl(raw: string): string {
   let parsed: URL;
@@ -87,6 +101,12 @@ function validateApiUrl(raw: string): string {
   }
   if (parsed.search || parsed.hash || parsed.username || parsed.password) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
+  }
+  if (!allowedApiOrigins().includes(parsed.origin)) {
+    throw new Error(
+      `${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR}. Add it to that ` +
+        'comma-separated list to let this server write into that backend.'
+    );
   }
   // A trailing slash is cosmetic; normalize it away so "https://x.com/tooljet" and
   // "https://x.com/tooljet/" resolve to the same target instead of being treated as different ones.

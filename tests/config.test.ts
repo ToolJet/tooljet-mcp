@@ -164,39 +164,46 @@ describe('gateway servers refuse a PAT as identity', () => {
 describe('per-request target origin (x-tooljet-url)', () => {
   beforeEach(() => {
     delete process.env.TOOLJET_URL;
+    delete process.env.MCP_ALLOWED_API_ORIGINS;
   });
 
-  it('accepts a bare https origin', () => {
+  it('accepts an allowlisted bare https origin', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
       apiUrl: 'https://tj.example.com',
     });
   });
 
   /* ToolJet supports SUB_PATH hosting, so a self-hosted customer reverse-proxied under a path
-     prefix is a legitimate target, not a malformed one. */
+     prefix is a legitimate target, not a malformed one. The allowlist names the host, not the path. */
   it('accepts a path prefix, for SUB_PATH-hosted self-hosted instances', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet' })).toEqual({
       apiUrl: 'https://tj.example.com/tooljet',
     });
   });
 
   it('normalizes away a trailing slash rather than treating it as a different target', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet/' })).toEqual({
       apiUrl: 'https://tj.example.com/tooljet',
     });
   });
 
   it('rejects plain http, which would send the session cookie or PAT in plaintext', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     expect(() => identityFromHeaders({ 'x-tooljet-url': 'http://tj.example.com' })).toThrow(/must use https/);
   });
 
   it('rejects a query string', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/?x=1' })).toThrow(
       /query, hash, or credentials/
     );
   });
 
   it('rejects embedded credentials', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://user:pass@tj.example.com' })).toThrow(
       /query, hash, or credentials/
     );
@@ -204,6 +211,29 @@ describe('per-request target origin (x-tooljet-url)', () => {
 
   it('rejects a value that does not parse as an absolute URL', () => {
     expect(() => identityFromHeaders({ 'x-tooljet-url': 'not a url' })).toThrow(/valid absolute URL/);
+  });
+
+  /* https alone does not make a host trustworthy — an attacker's own domain has a valid cert too.
+     Sending the session cookie or PAT there regardless of the allowlist is the exact exfiltration
+     path this check exists to close. */
+  it('rejects an origin not in MCP_ALLOWED_API_ORIGINS, even a well-formed https one', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://evil.example' })).toThrow(
+      /not in MCP_ALLOWED_API_ORIGINS/
+    );
+  });
+
+  it('rejects every https origin when the allowlist is unset — unset means empty, not "allow anything"', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+      /not in MCP_ALLOWED_API_ORIGINS/
+    );
+  });
+
+  it('accepts any origin named in a multi-entry, whitespace-tolerant allowlist', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = ' https://a.example.com , https://b.example.com ';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://b.example.com' })).toEqual({
+      apiUrl: 'https://b.example.com',
+    });
   });
 
   it('wins over a configured static TOOLJET_URL', () => {
