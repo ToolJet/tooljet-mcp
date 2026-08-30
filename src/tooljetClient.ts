@@ -1772,10 +1772,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await assertOk(res, 'getDatasourceConnectionDetails');
     const body = (await res.json()) as Record<string, any>;
     const pluginId = body.pluginId ?? body.plugin_id ?? undefined;
+    // Mask credential-shaped values so raw secrets never flow into MCP tool output / logs.
+    const rawOptions = (body.options ?? {}) as Record<string, unknown>;
+    const options = Object.fromEntries(
+      Object.entries(rawOptions).map(([k, v]) => [k, /password|secret|token|key|credential/i.test(k) ? '[REDACTED]' : v])
+    );
     return {
       kind: body.kind,
       ...(pluginId ? { pluginId } : {}),
-      options: (body.options ?? {}) as Record<string, unknown>,
+      options,
     };
   }
 
