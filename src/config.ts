@@ -69,6 +69,11 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
  *
  * Gets the caller's session/PAT attached and sent straight to it (auth.ts), so this closes the
  * parse+scheme gap (garbage input, http downgrade) — not a host allowlist, still trusts any https host.
+ *
+ * A path prefix is allowed (not just a bare origin): ToolJet supports SUB_PATH hosting, so a
+ * self-hosted customer reverse-proxied at e.g. https://tj.example.com/tooljet is a legitimate target,
+ * not a malformed one. Query, hash, and credentials are still rejected — nothing downstream needs
+ * them, and each one would name a place the caller has no ordinary reason to send this URL to.
  */
 function validateApiUrl(raw: string): string {
   let parsed: URL;
@@ -80,16 +85,13 @@ function validateApiUrl(raw: string): string {
   if (parsed.protocol !== 'https:') {
     throw new Error(`${BASE_URL_HEADER} must use https.`);
   }
-  if (
-    (parsed.pathname !== '' && parsed.pathname !== '/') ||
-    parsed.search ||
-    parsed.hash ||
-    parsed.username ||
-    parsed.password
-  ) {
-    throw new Error(`${BASE_URL_HEADER} must be a bare origin (scheme + host only, no path/query/credentials).`);
+  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
+    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
-  return parsed.origin;
+  // A trailing slash is cosmetic; normalize it away so "https://x.com/tooljet" and
+  // "https://x.com/tooljet/" resolve to the same target instead of being treated as different ones.
+  const path = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, '');
+  return parsed.origin + path;
 }
 
 /**
@@ -156,18 +158,12 @@ export function loadConfig(identity?: RequestIdentity): Config {
     // The request's own apiUrl wins when present — same precedence as the session/PAT identity
     // above it. One shared server must be able to act on many different ToolJet backends; the
     // static TOOLJET_URL is only ever a fallback for it, never the source of truth.
+    //
+    // MCP_REQUIRE_REQUEST_URL is enforced in index.ts, not here: this function can't tell a genuine
+    // stdio call (identity omitted, one operator, static URL is correct) apart from an HTTP request
+    // that simply sent no headers (identity also arrives as undefined) — only the HTTP layer that
+    // built `identity` from a real request knows which case it is.
     const apiUrl = identity.apiUrl ?? staticApiUrl;
-
-    // MCP_REQUIRE_REQUEST_URL mirrors MCP_REQUIRE_USER_SESSION: a deployment that also has
-    // TOOLJET_URL set would otherwise silently fall back to it the moment the caller forgot the
-    // header, and every build would still succeed — just written into the wrong backend. Refuse
-    // instead of guessing.
-    if (!identity.apiUrl && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '')) {
-      throw new Error(
-        `This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} ` +
-          'header. Refusing rather than falling back to a fixed TOOLJET_URL.'
-      );
-    }
 
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {

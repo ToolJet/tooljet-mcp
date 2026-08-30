@@ -5,7 +5,13 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
-import { identityFromHeaders, PAT_HEADER, SESSION_TOKEN_HEADER, type RequestIdentity } from './config.js';
+import {
+  BASE_URL_HEADER,
+  identityFromHeaders,
+  PAT_HEADER,
+  SESSION_TOKEN_HEADER,
+  type RequestIdentity,
+} from './config.js';
 
 async function serveHttp(): Promise<void> {
   const port = Number(process.env.PORT ?? 8787);
@@ -35,6 +41,11 @@ async function serveHttp(): Promise<void> {
     (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? '') ||
       !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
 
+  /* Same idea, for the target backend rather than the acting user: gateway mode can serve many
+     different ToolJet backends, so a deployment can demand every request name its own via
+     x-tooljet-url rather than silently writing into this process's static TOOLJET_URL. */
+  const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '');
+
   const httpServer = createServer((req, res) => {
     // The bearer token authenticates the CALLER (that it is the trusted AI shim). The identity
     // headers below say which user it is acting for. Checked first: an unauthenticated caller must
@@ -62,7 +73,13 @@ async function serveHttp(): Promise<void> {
       if (bearer) identity = { pat: bearer };
     }
 
-    if (!identity && requireUserSession) {
+    // Whether this request actually named an acting user — NOT whether `identity` is merely
+    // truthy. A request that sent only x-tooljet-url (no session, no PAT) produces a truthy
+    // `identity` too, and treating that as "a user was named" would let it walk straight past the
+    // check below with nobody actually signed in.
+    const hasUserCredential = Boolean(identity?.pat || identity?.sessionToken);
+
+    if (!hasUserCredential && requireUserSession) {
       res
         .writeHead(400, { 'Content-Type': 'text/plain' })
         .end(
@@ -72,9 +89,19 @@ async function serveHttp(): Promise<void> {
       return;
     }
 
+    if (!identity?.apiUrl && requireRequestUrl) {
+      res
+        .writeHead(400, { 'Content-Type': 'text/plain' })
+        .end(
+          `This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} ` +
+            'header. Refusing rather than falling back to a fixed TOOLJET_URL.'
+        );
+      return;
+    }
+
     // Direct mode with nothing to act as: no PAT on the request and none in the environment. Say so
     // in the response rather than letting buildServer throw into a bare 500.
-    if (!gatewayMode && !identity && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
+    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
       res
         .writeHead(401, { 'Content-Type': 'text/plain' })
         .end(

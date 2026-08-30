@@ -158,6 +158,67 @@ describe('gateway servers refuse a PAT as identity', () => {
   });
 });
 
+/* One shared MCP server can act on many different ToolJet backends, so the request itself may name
+   its target. That header gets the caller's session/PAT attached and sent straight to it (auth.ts),
+   so it needs real validation, not just a truthy string. */
+describe('per-request target origin (x-tooljet-url)', () => {
+  beforeEach(() => {
+    delete process.env.TOOLJET_URL;
+  });
+
+  it('accepts a bare https origin', () => {
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  /* ToolJet supports SUB_PATH hosting, so a self-hosted customer reverse-proxied under a path
+     prefix is a legitimate target, not a malformed one. */
+  it('accepts a path prefix, for SUB_PATH-hosted self-hosted instances', () => {
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet' })).toEqual({
+      apiUrl: 'https://tj.example.com/tooljet',
+    });
+  });
+
+  it('normalizes away a trailing slash rather than treating it as a different target', () => {
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet/' })).toEqual({
+      apiUrl: 'https://tj.example.com/tooljet',
+    });
+  });
+
+  it('rejects plain http, which would send the session cookie or PAT in plaintext', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'http://tj.example.com' })).toThrow(/must use https/);
+  });
+
+  it('rejects a query string', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/?x=1' })).toThrow(
+      /query, hash, or credentials/
+    );
+  });
+
+  it('rejects embedded credentials', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://user:pass@tj.example.com' })).toThrow(
+      /query, hash, or credentials/
+    );
+  });
+
+  it('rejects a value that does not parse as an absolute URL', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'not a url' })).toThrow(/valid absolute URL/);
+  });
+
+  it('wins over a configured static TOOLJET_URL', () => {
+    process.env.TOOLJET_URL = 'https://static.example.com';
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1', apiUrl: 'https://request.example.com' });
+    expect(c.apiUrl).toBe('https://request.example.com');
+  });
+
+  it('falls back to the static TOOLJET_URL when the request named none', () => {
+    process.env.TOOLJET_URL = 'https://static.example.com';
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
+    expect(c.apiUrl).toBe('https://static.example.com');
+  });
+});
+
 describe('blank environment variables count as unset', () => {
   beforeEach(() => {
     for (const k of ['TOOLJET_URL', 'TOOLJET_APP_URL', 'TOOLJET_PAT', 'TOOLJET_SESSION_TOKEN', 'TOOLJET_WORKSPACE_ID'])
