@@ -44,6 +44,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -686,6 +687,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -851,6 +853,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -2206,6 +2209,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -2761,6 +2765,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -5649,6 +5654,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -5781,6 +5787,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -7050,6 +7057,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -7308,6 +7316,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -7405,6 +7414,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -7485,6 +7495,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -7967,6 +7978,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -8383,6 +8395,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -8960,6 +8973,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -10794,6 +10808,7 @@
       "listDatasets",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -10961,6 +10976,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -11009,6 +11025,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -11902,6 +11919,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -12388,6 +12406,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -13082,6 +13101,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -13707,6 +13727,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -14776,6 +14797,7 @@
       "listColumns",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -15514,6 +15536,7 @@
     "introspectionMethods": [
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -15562,6 +15585,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -16603,6 +16627,7 @@
       "cluster_health": {}
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -16941,6 +16966,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -17003,6 +17029,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -17698,6 +17725,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -18221,6 +18249,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -19484,6 +19513,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -19931,6 +19961,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -19979,6 +20010,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -20027,6 +20059,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -20686,6 +20719,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -22262,6 +22296,7 @@
       "getSheets",
       "getSpreadsheets"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -22351,6 +22386,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -22383,6 +22419,7 @@
     },
     "properties": {},
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -22415,6 +22452,7 @@
     },
     "properties": {},
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -23242,6 +23280,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -23326,6 +23365,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -23530,6 +23570,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -23625,6 +23666,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -24416,6 +24458,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -24464,6 +24507,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -26157,6 +26201,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -26302,6 +26347,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -27430,6 +27476,7 @@
       "listColumns",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -27485,6 +27532,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -28051,6 +28099,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -28347,6 +28396,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -30491,6 +30541,7 @@
     "introspectionMethods": [
       "listCollections"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -31934,6 +31985,7 @@
       "listSchemas",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -33207,6 +33259,7 @@
       "listColumns",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -33374,6 +33427,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -33900,6 +33954,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -36070,6 +36125,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -37967,6 +38023,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -37999,6 +38056,7 @@
     },
     "properties": {},
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -39315,6 +39373,7 @@
       "listSchemas",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -40092,6 +40151,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -40208,6 +40268,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -40748,6 +40809,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -41401,6 +41463,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -42820,6 +42883,7 @@
       "listSchemas",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -42868,6 +42932,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -43146,6 +43211,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -43635,6 +43701,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -43683,6 +43750,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -43734,6 +43802,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -44620,6 +44689,7 @@
       "cursor/token"
     ],
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "static",
@@ -45763,6 +45833,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -45818,6 +45889,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "static",
@@ -45865,6 +45937,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "static",
@@ -46594,6 +46667,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -46927,6 +47001,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -47007,6 +47082,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -47185,6 +47261,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -48538,6 +48615,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -49454,6 +49532,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -49649,6 +49728,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -49837,6 +49917,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -51150,6 +51231,7 @@
       "listColumns",
       "listTables"
     ],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -51316,6 +51398,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -51364,6 +51447,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -52073,6 +52157,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -52304,6 +52389,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -52862,6 +52948,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "static",
@@ -52962,6 +53049,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",
@@ -53455,6 +53543,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -53511,6 +53600,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -54549,6 +54639,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "marketplace",
@@ -57285,6 +57376,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": true,
     "sources": [
       {
         "collection": "core",
@@ -57365,6 +57457,7 @@
     "introspectionMethods": [
       "getTenants"
     ],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "marketplace",
@@ -57789,6 +57882,7 @@
       }
     },
     "introspectionMethods": [],
+    "supportsTestConnection": false,
     "sources": [
       {
         "collection": "core",

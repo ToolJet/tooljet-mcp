@@ -89,6 +89,36 @@ describe('test_datasource_connection tool', () => {
     expect(textOf(result)).toMatchObject({ status: 'not_permitted' });
   });
 
+  it('short-circuits a kind the catalog knows has no connection test', async () => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockResolvedValue([
+        { id: 'api1', name: 'REST', kind: 'restapi', settings_url: 'http://tj/ws/data-sources/api1' },
+      ]),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'api1' })
+    );
+    expect(parsed).toMatchObject({ supported: false, status: 'unsupported' });
+    expect(parsed.message).toMatch(/does not implement a connection test/);
+    // The whole point of the flag: no HTTP round-trip to learn "not applicable".
+    expect(client.getDatasourceConnectionDetails).not.toHaveBeenCalled();
+    expect(client.testDatasourceConnection).not.toHaveBeenCalled();
+  });
+
+  it('still tests a kind the catalog does not know, rather than assuming', async () => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockResolvedValue([
+        { id: 'x1', name: 'Unlisted', kind: 'not-in-the-catalog', settings_url: 'http://tj/ws/data-sources/x1' },
+      ]),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'x1' })
+    );
+    // An undefined flag is a stale catalog, not a claim that the plugin lacks the method.
+    expect(client.testDatasourceConnection).toHaveBeenCalled();
+    expect(parsed.status).toBe('ok');
+  });
+
   it('rejects a datasource that is not on this version', async () => {
     const client = clientWith();
     const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'nope' });
