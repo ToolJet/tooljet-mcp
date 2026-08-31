@@ -33174,11 +33174,16 @@ function allowedApiOrigins() {
   if (!raw)
     return [];
   return raw.split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
+    let parsed;
     try {
-      return new URL(entry).origin;
+      parsed = new URL(entry);
     } catch {
       throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
     }
+    if (parsed.protocol !== "https:") {
+      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https \u2014 it could never match a request.`);
+    }
+    return parsed.origin;
   });
 }
 function readHeader(headers, name) {

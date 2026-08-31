@@ -335,6 +335,17 @@ describe('per-request target origin (x-tooljet-url)', () => {
     );
   });
 
+  /* A request's own origin must already be https before it ever reaches the allowlist check
+     (validateApiUrl), so a non-https allowlist entry — a typo'd "http://" — could never match
+     anything. Silently keeping it would leave the operator with a dead entry and no signal it's
+     wrong, the same shape of failure as the un-normalized entries this file already guards against. */
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has a non-https entry', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'http://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+      /"http:\/\/tj\.example\.com" must use https/
+    );
+  });
+
   it('wins over a configured static TOOLJET_URL', () => {
     process.env.TOOLJET_URL = 'https://static.example.com';
     const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1', apiUrl: 'https://request.example.com' });

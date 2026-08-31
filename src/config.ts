@@ -77,11 +77,19 @@ export function allowedApiOrigins(): string[] {
     .map((entry) => entry.trim())
     .filter(Boolean)
     .map((entry) => {
+      let parsed: URL;
       try {
-        return new URL(entry).origin;
+        parsed = new URL(entry);
       } catch {
         throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
       }
+      // A request's origin is required to be https (validateApiUrl) before it ever reaches this
+      // allowlist, so a non-https entry here — a typo, e.g. "http://" — could never match anything.
+      // Silently keeping it would leave the operator with a dead entry and no signal it's wrong.
+      if (parsed.protocol !== 'https:') {
+        throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https — it could never match a request.`);
+      }
+      return parsed.origin;
     });
 }
 
