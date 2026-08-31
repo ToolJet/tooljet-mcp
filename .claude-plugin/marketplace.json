@@ -5,7 +5,7 @@
     "name": "ToolJet",
     "url": "https://github.com/ToolJet"
   },
-  "description": "Official ToolJet plugins, published by the ToolJet team.",
+  "description": "Official ToolJet plugin.",
   "plugins": [
     {
       "name": "tooljet-app-builder",
