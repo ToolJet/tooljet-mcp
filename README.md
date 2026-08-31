@@ -162,7 +162,8 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace; results include its manual datasource-settings URL |
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
 | `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |
-| `manage_workspace_users(...)` | List/invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
+| `list_workspace_users(...)` | List/search workspace users with pagination and status filtering through PAT auth |
+| `manage_workspace_users(...)` | Invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |

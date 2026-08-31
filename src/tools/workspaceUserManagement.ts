@@ -24,12 +24,35 @@ export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
   };
 }
 
+export function listWorkspaceUsersTool(client: ToolJetClient): ToolDef {
+  return {
+    name: 'list_workspace_users',
+    description:
+      'List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.',
+    inputSchema: {
+      page: z.number().int().positive().optional(),
+      search_text: z.string().trim().max(100).optional(),
+      filter_status: userStatus.optional(),
+    },
+    async handler(args: { page?: number; search_text?: string; filter_status?: WorkspaceUserStatus }) {
+      try {
+        return ok(
+          await client.listWorkspaceUsers({
+            page: args.page,
+            searchText: args.search_text,
+            status: args.filter_status,
+          })
+        );
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  };
+}
+
 type ManageWorkspaceUsersArgs = {
-  action: 'list' | 'invite' | 'update' | 'archive' | 'unarchive';
+  action: 'invite' | 'update' | 'archive' | 'unarchive';
   organization_user_id?: string;
-  page?: number;
-  search_text?: string;
-  filter_status?: WorkspaceUserStatus;
   email?: string;
   first_name?: string;
   last_name?: string;
@@ -48,15 +71,12 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_workspace_users',
     description:
-      'List or manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and ' +
-      'unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot ' +
+      'Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive ' +
+      'require confirm:true. Updates can change names/role and add existing custom groups; they cannot ' +
       'remove groups, change passwords, manage other workspaces, or bypass the PAT owner\'s ToolJet permissions.',
     inputSchema: {
-      action: z.enum(['list', 'invite', 'update', 'archive', 'unarchive']),
+      action: z.enum(['invite', 'update', 'archive', 'unarchive']),
       organization_user_id: z.string().uuid().optional(),
-      page: z.number().int().positive().optional(),
-      search_text: z.string().trim().max(100).optional(),
-      filter_status: userStatus.optional(),
       email: z.string().email().optional(),
       first_name: z.string().trim().max(99).optional(),
       last_name: z.string().trim().max(99).optional(),
@@ -67,16 +87,6 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: ManageWorkspaceUsersArgs) {
       try {
-        if (args.action === 'list') {
-          return ok(
-            await client.listWorkspaceUsers({
-              page: args.page,
-              searchText: args.search_text,
-              status: args.filter_status,
-            })
-          );
-        }
-
         if (args.confirm !== true) {
           throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
         }
