@@ -7021,6 +7021,7 @@ var require_dist = __commonJS({
 
 // dist/index.js
 import { createServer } from "node:http";
+import { pathToFileURL } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -42441,7 +42442,7 @@ async function main() {
   }
   await server.connect(new StdioServerTransport());
 }
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);
