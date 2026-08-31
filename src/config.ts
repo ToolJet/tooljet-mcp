@@ -194,10 +194,9 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const staticApiUrl = explicitApiUrl ?? 'http://localhost:3000';
   // TOOLJET_APP_URL is the old name — "app" read as "one ToolJet app" more often than "the ToolJet
   // deployment", which is what this actually is. TOOLJET_DEPLOYMENT_URL is preferred; the old name
-  // keeps working so nobody's existing config breaks. Falls back to TOOLJET_URL (only when that was
-  // actually set, not its own localhost default) rather than requiring a second URL for the common
-  // case where the same origin serves both — a self-hosted instance behind one reverse proxy.
-  const appUrl = env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL') ?? explicitApiUrl ?? 'http://localhost:8082';
+  // keeps working so nobody's existing config breaks. An explicit value here always wins — it is a
+  // deliberate override, not a guess — falling through only when the operator hasn't set one.
+  const explicitAppUrl = env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL');
 
   if (identity) {
     // The request's own apiUrl wins when present — same precedence as the session/PAT identity
@@ -209,6 +208,11 @@ export function loadConfig(identity?: RequestIdentity): Config {
     // that simply sent no headers (identity also arrives as undefined) — only the HTTP layer that
     // built `identity` from a real request knows which case it is.
     const apiUrl = identity.apiUrl ?? staticApiUrl;
+    // appUrl must follow the SAME per-request target apiUrl just resolved above, not the server's own
+    // static config: a shared server acting for many different ToolJet backends has no single static
+    // app URL that could ever be right for all of them. Most self-hosted instances serve the API and
+    // the UI from the same origin, so the request's own apiUrl is the right default here too.
+    const appUrl = explicitAppUrl ?? identity.apiUrl ?? staticApiUrl;
 
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
@@ -221,6 +225,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   }
 
   const apiUrl = staticApiUrl;
+  const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
   const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');

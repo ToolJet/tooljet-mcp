@@ -33231,20 +33231,22 @@ function identityFromHeaders(headers, { allowPat = true } = {}) {
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
   const staticApiUrl = explicitApiUrl ?? "http://localhost:3000";
-  const appUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL") ?? explicitApiUrl ?? "http://localhost:8082";
+  const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
+    const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? staticApiUrl;
     if (identity.pat)
-      return { apiUrl: apiUrl2, appUrl, pat: identity.pat };
+      return { apiUrl: apiUrl2, appUrl: appUrl2, pat: identity.pat };
     return {
       apiUrl: apiUrl2,
-      appUrl,
+      appUrl: appUrl2,
       sessionToken: identity.sessionToken,
       workspaceId: identity.workspaceId,
       workspaceSlug: identity.workspaceSlug
     };
   }
   const apiUrl = staticApiUrl;
+  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
   const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
   const workspaceId = env("TOOLJET_WORKSPACE_ID");

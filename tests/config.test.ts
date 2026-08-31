@@ -89,6 +89,29 @@ describe('appUrl defaults to the deployment origin', () => {
     process.env.TOOLJET_PAT = 'tj_pat_test';
     expect(loadConfig().appUrl).toBe('https://new.example.com');
   });
+
+  /* A shared server acting for many different ToolJet backends has no single static app URL that
+     could ever be right for all of them — its own TOOLJET_URL is just wherever ITS operator's config
+     happens to point, unrelated to whoever the request is actually acting for. */
+  it('follows the per-request apiUrl, not the server\'s own static TOOLJET_URL', () => {
+    process.env.TOOLJET_URL = 'https://operators-own-instance.example.com';
+    const c = loadConfig({
+      sessionToken: 'SESSION',
+      workspaceId: 'org-1',
+      apiUrl: 'https://caller.example.com',
+    });
+    expect(c.appUrl).toBe('https://caller.example.com');
+  });
+
+  it('still lets an explicit TOOLJET_DEPLOYMENT_URL override the per-request apiUrl', () => {
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://deliberately-different.example.com';
+    const c = loadConfig({
+      sessionToken: 'SESSION',
+      workspaceId: 'org-1',
+      apiUrl: 'https://caller.example.com',
+    });
+    expect(c.appUrl).toBe('https://deliberately-different.example.com');
+  });
 });
 
 /* Staging and cloud run one shared MCP for every user, so identity arrives per request instead of
