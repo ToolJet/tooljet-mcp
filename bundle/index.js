@@ -33161,9 +33161,23 @@ var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
 var PAT_HEADER = "x-tooljet-pat";
+var BASE_URL_HEADER = "x-tooljet-url";
+var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
 function env(name) {
   const value = process.env[name]?.trim();
   return value ? value : void 0;
+}
+function allowedApiOrigins() {
+  const raw = env(ALLOWED_API_ORIGINS_VAR);
+  if (!raw)
+    return [];
+  return raw.split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
+    try {
+      return new URL(entry).origin;
+    } catch {
+      throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
+    }
+  });
 }
 function readHeader(headers, name) {
   const raw = headers[name] ?? headers[name.toLowerCase()];
@@ -33171,42 +33185,65 @@ function readHeader(headers, name) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : void 0;
 }
+function validateApiUrl(raw) {
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error(`${BASE_URL_HEADER} must use https.`);
+  }
+  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
+    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
+  }
+  if (!allowedApiOrigins().includes(parsed.origin)) {
+    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR}. Add it to that comma-separated list to let this server write into that backend.`);
+  }
+  const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
+  return parsed.origin + path;
+}
 function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
+  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
+  const apiUrl = rawApiUrl ? validateApiUrl(rawApiUrl) : void 0;
   if (pat) {
     if (!allowPat) {
       throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
     }
     if (sessionToken)
       throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat };
+    return { pat, apiUrl };
   }
   if (!sessionToken && !workspaceId)
-    return void 0;
+    return apiUrl ? { apiUrl } : void 0;
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
   }
   if (!workspaceId) {
     throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
   }
-  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER) };
+  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
 }
 function loadConfig(identity) {
-  const apiUrl = env("TOOLJET_URL") ?? "http://localhost:3000";
+  const staticApiUrl = env("TOOLJET_URL") ?? "http://localhost:3000";
   const appUrl = env("TOOLJET_APP_URL") ?? "http://localhost:8082";
   if (identity) {
+    const apiUrl2 = identity.apiUrl ?? staticApiUrl;
     if (identity.pat)
-      return { apiUrl, appUrl, pat: identity.pat };
+      return { apiUrl: apiUrl2, appUrl, pat: identity.pat };
     return {
-      apiUrl,
+      apiUrl: apiUrl2,
       appUrl,
       sessionToken: identity.sessionToken,
       workspaceId: identity.workspaceId,
       workspaceSlug: identity.workspaceSlug
     };
   }
+  const apiUrl = staticApiUrl;
   const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
@@ -42322,9 +42359,16 @@ function bearerValue(authHeader) {
 async function serveHttp() {
   const port = Number(process.env.PORT ?? 8787);
   const sharedToken = process.env.MCP_SHARED_TOKEN;
+  try {
+    allowedApiOrigins();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
+  }
   const gatewayMode = Boolean(sharedToken);
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+  const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
   const httpServer = createServer((req, res) => {
     if (gatewayMode && !checkBearerToken(req.headers.authorization, sharedToken)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end("Unauthorized");
@@ -42343,11 +42387,16 @@ async function serveHttp() {
       if (bearer)
         identity = { pat: bearer };
     }
-    if (!identity && requireUserSession) {
+    const hasUserCredential = Boolean(identity?.pat || identity?.sessionToken);
+    if (!hasUserCredential && requireUserSession) {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on behalf of a signed-in user: send the ${SESSION_TOKEN_HEADER} header (with x-tooljet-workspace-id). Refusing rather than using a shared identity.`);
       return;
     }
-    if (!gatewayMode && !identity && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
+    if (!identity?.apiUrl && requireRequestUrl) {
+      res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} header. Refusing rather than falling back to a fixed TOOLJET_URL.`);
+      return;
+    }
+    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ToolJet under Settings \u2192 Access tokens.`);
       return;
     }
