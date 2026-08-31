@@ -220,7 +220,12 @@ export function loadConfig(identity?: RequestIdentity): Config {
     // static config: a shared server acting for many different ToolJet backends has no single static
     // app URL that could ever be right for all of them. Most self-hosted instances serve the API and
     // the UI from the same origin, so the request's own apiUrl is the right default here too.
-    const appUrl = explicitAppUrl ?? identity.apiUrl ?? staticApiUrl;
+    //
+    // Falls through to explicitApiUrl, NOT staticApiUrl: staticApiUrl silently includes apiUrl's own
+    // internal localhost:3000 default, which would make an unconfigured deployment's appUrl land on
+    // the API's dev port instead of the UI's (localhost:8082) — the exact default the no-identity
+    // branch below already gets right. Only a genuinely-set TOOLJET_URL should stand in for appUrl.
+    const appUrl = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {

@@ -33241,7 +33241,7 @@ function loadConfig(identity) {
   const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
-    const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? staticApiUrl;
+    const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
     if (identity.pat)
       return { apiUrl: apiUrl2, appUrl: appUrl2, pat: identity.pat };
     return {

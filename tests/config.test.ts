@@ -112,6 +112,16 @@ describe('appUrl defaults to the deployment origin', () => {
     });
     expect(c.appUrl).toBe('https://deliberately-different.example.com');
   });
+
+  /* Local dev with an identity but no request-named apiUrl and nothing configured: appUrl must land
+     on the UI's own dev default (8082), the same as the no-identity/stdio branch below — not on
+     apiUrl's internal 3000 default, which the identity branch would silently inherit via staticApiUrl
+     if it fell through to that instead of explicitApiUrl. */
+  it('falls back to localhost:8082, not apiUrl\'s own 3000 default, when nothing at all is configured', () => {
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
+  });
 });
 
 /* Staging and cloud run one shared MCP for every user, so identity arrives per request instead of
