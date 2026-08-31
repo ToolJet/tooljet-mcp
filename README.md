@@ -185,16 +185,7 @@ of `update_app_settings`. The definition structure and token-backed styling guid
 
 ## Privacy Policy
 
-`tooljet-mcp` runs on your own machine or infrastructure and talks to exactly one host: the ToolJet
-instance you configure. ToolJet Solutions, Inc. operates no endpoint that this connector contacts and
-receives no data from it — there is no analytics, no crash reporting, and no update ping. Your
-personal access token is held in memory, sent only to your instance, and never logged or persisted.
-
-Note that anything you ask this connector to read is returned to your AI assistant and becomes
-subject to that vendor's privacy policy.
-
-Full policy: [PRIVACY.md](PRIVACY.md). ToolJet's company-wide policy:
-[tooljet.com/privacy](https://www.tooljet.com/privacy).
+This connector is covered by ToolJet's privacy policy: [tooljet.com/privacy](https://tooljet.com/privacy).
 
 ## Development
 
