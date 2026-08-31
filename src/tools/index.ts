@@ -59,6 +59,7 @@ import {
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
 import { manageThemeTool } from './manageTheme.js';
+import { manageAppPermissionsTool } from './manageAppPermissions.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -81,6 +82,7 @@ export function registerTools(
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
+    manageAppPermissionsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
