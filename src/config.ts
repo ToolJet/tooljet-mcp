@@ -1,5 +1,8 @@
 export interface Config {
   apiUrl: string;
+  /** Where a human opens ToolJet in a browser — used only to build user-facing links (a datasource's
+   *  settings page, an app's editor/viewer URL). Most self-hosted instances serve the API and the UI
+   *  from the same origin, so this defaults to `apiUrl` rather than requiring a second setting. */
   appUrl: string;
   /** Personal access token. Scoped, revocable, and works on SSO-only instances. The token also
    *  determines the workspace: a PAT session is pinned to the workspace the token was issued in and
@@ -187,8 +190,14 @@ export function identityFromHeaders(
 export function loadConfig(identity?: RequestIdentity): Config {
   // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
   // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
-  const staticApiUrl = env('TOOLJET_URL') ?? 'http://localhost:3000';
-  const appUrl = env('TOOLJET_APP_URL') ?? 'http://localhost:8082';
+  const explicitApiUrl = env('TOOLJET_URL');
+  const staticApiUrl = explicitApiUrl ?? 'http://localhost:3000';
+  // TOOLJET_APP_URL is the old name — "app" read as "one ToolJet app" more often than "the ToolJet
+  // deployment", which is what this actually is. TOOLJET_DEPLOYMENT_URL is preferred; the old name
+  // keeps working so nobody's existing config breaks. Falls back to TOOLJET_URL (only when that was
+  // actually set, not its own localhost default) rather than requiring a second URL for the common
+  // case where the same origin serves both — a self-hosted instance behind one reverse proxy.
+  const appUrl = env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL') ?? explicitApiUrl ?? 'http://localhost:8082';
 
   if (identity) {
     // The request's own apiUrl wins when present — same precedence as the session/PAT identity

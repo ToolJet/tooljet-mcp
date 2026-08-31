@@ -6,6 +6,7 @@ describe('loadConfig', () => {
     for (const k of [
       'TOOLJET_URL',
       'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
       'TOOLJET_PAT',
       'TOOLJET_SESSION_TOKEN',
       'TOOLJET_WORKSPACE_ID',
@@ -44,6 +45,49 @@ describe('loadConfig', () => {
   it('refuses a session with no workspace rather than guessing one', () => {
     process.env.TOOLJET_SESSION_TOKEN = 'SESSION';
     expect(() => loadConfig()).toThrow(/TOOLJET_WORKSPACE_ID is required/);
+  });
+});
+
+/* Most self-hosted instances serve the API and the UI from the same origin, so requiring a second
+   URL for something used only to build a few cosmetic links is friction most deployments don't need. */
+describe('appUrl defaults to the deployment origin', () => {
+  beforeEach(() => {
+    for (const k of [
+      'TOOLJET_URL',
+      'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
+      'TOOLJET_PAT',
+      'TOOLJET_SESSION_TOKEN',
+      'TOOLJET_WORKSPACE_ID',
+    ])
+      delete process.env[k];
+  });
+
+  it('falls back to TOOLJET_URL when neither app-URL variable is set', () => {
+    process.env.TOOLJET_URL = 'https://tj.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('https://tj.example.com');
+  });
+
+  it('still defaults to localhost:8082 when TOOLJET_URL itself is unset', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('http://localhost:8082');
+  });
+
+  /* TOOLJET_APP_URL is the old name, kept working so nobody's existing config breaks. */
+  it('prefers an explicit TOOLJET_APP_URL over the TOOLJET_URL fallback', () => {
+    process.env.TOOLJET_URL = 'https://tj.example.com';
+    process.env.TOOLJET_APP_URL = 'https://app.tj.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('https://app.tj.example.com');
+  });
+
+  it('prefers TOOLJET_DEPLOYMENT_URL, the new name, over both TOOLJET_APP_URL and TOOLJET_URL', () => {
+    process.env.TOOLJET_URL = 'https://tj.example.com';
+    process.env.TOOLJET_APP_URL = 'https://old.example.com';
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://new.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('https://new.example.com');
   });
 });
 
@@ -283,7 +327,14 @@ describe('per-request target origin (x-tooljet-url)', () => {
 
 describe('blank environment variables count as unset', () => {
   beforeEach(() => {
-    for (const k of ['TOOLJET_URL', 'TOOLJET_APP_URL', 'TOOLJET_PAT', 'TOOLJET_SESSION_TOKEN', 'TOOLJET_WORKSPACE_ID'])
+    for (const k of [
+      'TOOLJET_URL',
+      'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
+      'TOOLJET_PAT',
+      'TOOLJET_SESSION_TOKEN',
+      'TOOLJET_WORKSPACE_ID',
+    ])
       delete process.env[k];
   });
 

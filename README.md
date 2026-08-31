@@ -20,9 +20,10 @@ npm run build               # compiles to dist/
 
 `.env`:
 ```
-TOOLJET_URL=http://localhost:3000        # backend API origin
-TOOLJET_APP_URL=http://localhost:8082    # frontend origin (for app links)
+TOOLJET_URL=http://localhost:3000        # your ToolJet deployment
 TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the target workspace
+# Only needed if the UI is served from a different origin than TOOLJET_URL (defaults to it otherwise):
+# TOOLJET_DEPLOYMENT_URL=http://localhost:8082
 ```
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
@@ -49,7 +50,8 @@ Before launching Codex, provide the same credentials used by the standalone MCP 
 export TOOLJET_PAT="tj_pat_..."
 # optional, if not localhost:
 export TOOLJET_URL="https://your-instance.tooljet.com"
-export TOOLJET_APP_URL="https://your-instance.tooljet.com"
+# only needed if the UI is served from a different origin than TOOLJET_URL:
+# export TOOLJET_DEPLOYMENT_URL="https://app.your-instance.tooljet.com"
 ```
 
 The plugin passes these environment variables to the MCP process; it does not store or change the
@@ -66,8 +68,9 @@ args = ["/absolute/path/to/tooljet-mcp/bundle/index.js"]
 
 [mcp_servers.tooljet.env]
 TOOLJET_URL = "http://localhost:3000"
-TOOLJET_APP_URL = "http://localhost:8082"
 TOOLJET_PAT = "tj_pat_..."
+# only if the UI is served from a different origin than TOOLJET_URL:
+# TOOLJET_DEPLOYMENT_URL = "http://localhost:8082"
 ```
 
 Then install the skill so Codex knows how to drive the tools: copy the complete `skill/` directory into your Codex skills directory (or use `npm run sync:skill`). Its compact entry point progressively loads focused references for tables, forms, events, datasources, security, and QA.
@@ -113,9 +116,10 @@ format, which VS Code, Copilot CLI and the Copilot app share. Install with **Cha
 From Source** (or the Plugins tab of the Agent Customizations editor) and give it this repo's URL.
 
 Skills are discovered from `skills/`, so the same `skills/tooljet-app-builder` that Claude Code loads
-is picked up here with no second copy. Set `TOOLJET_URL`, `TOOLJET_APP_URL` and `TOOLJET_PAT` in the
-environment the editor launches from; unset or blank values fall back to the server's own defaults,
-and a missing token is reported at handshake rather than killing the server.
+is picked up here with no second copy. Set `TOOLJET_URL` and `TOOLJET_PAT` in the environment the
+editor launches from (`TOOLJET_DEPLOYMENT_URL` too, only if the UI is on a different origin than
+`TOOLJET_URL`); unset or blank values fall back to the server's own defaults, and a missing token is
+reported at handshake rather than killing the server.
 
 ## Install as a Claude Code plugin
 
@@ -132,12 +136,13 @@ Or via the marketplace, which lets you get updates:
 ```
 For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.
 
-**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (the `TOOLJET_URL`/`TOOLJET_APP_URL` default to localhost). Before launching Claude Code:
+**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_URL` defaults to localhost; `TOOLJET_DEPLOYMENT_URL` defaults to `TOOLJET_URL`). Before launching Claude Code:
 ```bash
 export TOOLJET_PAT="tj_pat_..."
 # optional, if not localhost:
 export TOOLJET_URL="https://your-instance.tooljet.com"
-export TOOLJET_APP_URL="https://your-instance.tooljet.com"
+# only needed if the UI is served from a different origin than TOOLJET_URL:
+# export TOOLJET_DEPLOYMENT_URL="https://app.your-instance.tooljet.com"
 ```
 If either credential is missing, the server exits during startup with a clear required-variable error. Set both and restart.
 

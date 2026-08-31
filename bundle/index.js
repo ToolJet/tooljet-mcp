@@ -33229,8 +33229,9 @@ function identityFromHeaders(headers, { allowPat = true } = {}) {
   return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
 }
 function loadConfig(identity) {
-  const staticApiUrl = env("TOOLJET_URL") ?? "http://localhost:3000";
-  const appUrl = env("TOOLJET_APP_URL") ?? "http://localhost:8082";
+  const explicitApiUrl = env("TOOLJET_URL");
+  const staticApiUrl = explicitApiUrl ?? "http://localhost:3000";
+  const appUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL") ?? explicitApiUrl ?? "http://localhost:8082";
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
     if (identity.pat)

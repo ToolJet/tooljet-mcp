@@ -7,7 +7,7 @@
       ],
       "env": {
         "TOOLJET_URL": "${TOOLJET_URL}",
-        "TOOLJET_APP_URL": "${TOOLJET_APP_URL}",
+        "TOOLJET_DEPLOYMENT_URL": "${TOOLJET_DEPLOYMENT_URL}",
         "TOOLJET_PAT": "${TOOLJET_PAT}"
       }
     }
