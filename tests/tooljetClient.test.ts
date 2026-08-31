@@ -1496,4 +1496,38 @@ describe('createClient', () => {
       expect(themes).toEqual([{ id: 'theme1', name: 'ToolJet', definition: {} }]);
     });
   });
+
+  describe('workspace users', () => {
+    it('lists the PAT workspace users with the requested filters', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+        status: 200,
+        json: { users: [], meta: { total_pages: 1, total_count: 0, current_page: 3 } },
+      }));
+
+      await createClient(auth, config).listWorkspaceUsers({ page: 3, searchText: 'sam', status: 'active' });
+
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/organization-users?page=3&searchText=sam&status=active');
+    });
+
+    it('updates and archives the exact organization-user id', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ status: 201 }));
+      const client = createClient(auth, config);
+
+      await client.updateWorkspaceUser('org-user-1', { role: 'builder', addGroupIds: ['group-1'] });
+      await client.setWorkspaceUserArchived('org-user-1', true);
+
+      expect(auth.authedFetch).toHaveBeenNthCalledWith(1, '/api/organization-users/org-user-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'builder', addGroups: ['group-1'] }),
+      });
+      expect(auth.authedFetch).toHaveBeenNthCalledWith(2, '/api/organization-users/org-user-1/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+    });
+  });
 });

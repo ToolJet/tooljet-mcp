@@ -55,6 +55,43 @@ export interface SetAppPermissionParams {
   subjectIds: string[];
 }
 
+export type WorkspaceUserStatus = 'active' | 'archived' | 'invited';
+export type WorkspaceUserRole = 'admin' | 'builder' | 'end-user';
+
+export interface WorkspaceUser {
+  id: string;
+  user_id?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string;
+  role?: WorkspaceUserRole;
+  status?: WorkspaceUserStatus;
+  groups?: Array<{ id: string; name: string }>;
+  [key: string]: unknown;
+}
+
+export interface WorkspaceUsersPage {
+  meta: { total_pages: number; total_count: number; current_page: number };
+  users: WorkspaceUser[];
+}
+
+export interface InviteWorkspaceUserParams {
+  email: string;
+  role: WorkspaceUserRole;
+  firstName?: string;
+  lastName?: string;
+  groupIds?: string[];
+}
+
+export interface UpdateWorkspaceUserParams {
+  firstName?: string;
+  lastName?: string;
+  role?: WorkspaceUserRole;
+  addGroupIds?: string[];
+  userMetadata?: Record<string, unknown>;
+}
+
 export interface AppSettingsSnapshot {
   app_id: string;
   version_id: string;
@@ -427,6 +464,15 @@ export interface QuerySummary {
 export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
+  listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
+  listWorkspaceUsers(params?: {
+    page?: number;
+    searchText?: string;
+    status?: WorkspaceUserStatus;
+  }): Promise<WorkspaceUsersPage>;
+  inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
+  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
+  setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
@@ -618,6 +664,73 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const datasourceManagementUrl = (workspaceSlug: string, datasourceId?: string) =>
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
+
+  async function listWorkspaceApps(
+    params: { page?: number; searchText?: string } = {}
+  ): Promise<Record<string, unknown>> {
+    const query = new URLSearchParams({ page: String(params.page ?? 1), type: 'front-end' });
+    if (params.searchText) query.set('searchKey', params.searchText);
+    const res = await auth.authedFetch(`/api/apps?${query}`);
+    await assertOk(res, 'listWorkspaceApps');
+    return (await res.json()) as Record<string, unknown>;
+  }
+
+  async function listWorkspaceUsers(
+    params: { page?: number; searchText?: string; status?: WorkspaceUserStatus } = {}
+  ): Promise<WorkspaceUsersPage> {
+    const query = new URLSearchParams({ page: String(params.page ?? 1) });
+    if (params.searchText) query.set('searchText', params.searchText);
+    if (params.status) query.set('status', params.status);
+    const res = await auth.authedFetch(`/api/organization-users?${query}`);
+    await assertOk(res, 'listWorkspaceUsers');
+    return (await res.json()) as WorkspaceUsersPage;
+  }
+
+  async function inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void> {
+    const res = await auth.authedFetch('/api/organization-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: params.email,
+        role: params.role,
+        ...(params.firstName !== undefined ? { firstName: params.firstName } : {}),
+        ...(params.lastName !== undefined ? { lastName: params.lastName } : {}),
+        ...(params.groupIds !== undefined ? { groups: params.groupIds } : {}),
+      }),
+    });
+    await assertOk(res, 'inviteWorkspaceUser');
+  }
+
+  async function updateWorkspaceUser(
+    organizationUserId: string,
+    params: UpdateWorkspaceUserParams
+  ): Promise<void> {
+    const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...(params.firstName !== undefined ? { firstName: params.firstName } : {}),
+        ...(params.lastName !== undefined ? { lastName: params.lastName } : {}),
+        ...(params.role !== undefined ? { role: params.role } : {}),
+        addGroups: params.addGroupIds ?? [],
+        ...(params.userMetadata !== undefined ? { userMetadata: params.userMetadata } : {}),
+      }),
+    });
+    await assertOk(res, 'updateWorkspaceUser');
+  }
+
+  async function setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void> {
+    const action = archived ? 'archive' : 'unarchive';
+    const res = await auth.authedFetch(
+      `/api/organization-users/${encodeURIComponent(organizationUserId)}/${action}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      }
+    );
+    await assertOk(res, `${action}WorkspaceUser`);
+  }
 
   async function getApp(appId: string): Promise<any> {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
@@ -1980,6 +2093,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   return {
     listWorkspaces,
     useWorkspace,
+    listWorkspaceApps,
+    listWorkspaceUsers,
+    inviteWorkspaceUser,
+    updateWorkspaceUser,
+    setWorkspaceUserArchived,
     createApp,
     renameApp,
     getApp,

@@ -6448,8 +6448,8 @@ var require_discriminator = __commonJS({
           if (!tagRequired)
             throw new Error(`discriminator: "${tagName}" must be required`);
           return oneOfMapping;
-          function hasRequired({ required: required2 }) {
-            return Array.isArray(required2) && required2.includes(tagName);
+          function hasRequired({ required: required3 }) {
+            return Array.isArray(required3) && required3.includes(tagName);
           }
           function addMappings(sch, i) {
             if (sch.const) {
@@ -30230,7 +30230,7 @@ function parseObjectDef(def, refs2) {
     type: "object",
     properties: {}
   };
-  const required2 = [];
+  const required3 = [];
   const shape = def.shape();
   for (const propName in shape) {
     let propDef = shape[propName];
@@ -30257,11 +30257,11 @@ function parseObjectDef(def, refs2) {
     }
     result.properties[propName] = parsedDef;
     if (!propOptional) {
-      required2.push(propName);
+      required3.push(propName);
     }
   }
-  if (required2.length) {
-    result.required = required2;
+  if (required3.length) {
+    result.required = required3;
   }
   const additionalProperties = decideAdditionalProperties(def, refs2);
   if (additionalProperties !== void 0) {
@@ -35052,6 +35052,61 @@ function tableForeignKeyDto(foreignKey) {
 function createClient(auth, config2) {
   let developmentEnvironmentIdPromise;
   const datasourceManagementUrl = (workspaceSlug, datasourceId) => `${config2.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
+  async function listWorkspaceApps(params = {}) {
+    const query = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
+    if (params.searchText)
+      query.set("searchKey", params.searchText);
+    const res = await auth.authedFetch(`/api/apps?${query}`);
+    await assertOk(res, "listWorkspaceApps");
+    return await res.json();
+  }
+  async function listWorkspaceUsers(params = {}) {
+    const query = new URLSearchParams({ page: String(params.page ?? 1) });
+    if (params.searchText)
+      query.set("searchText", params.searchText);
+    if (params.status)
+      query.set("status", params.status);
+    const res = await auth.authedFetch(`/api/organization-users?${query}`);
+    await assertOk(res, "listWorkspaceUsers");
+    return await res.json();
+  }
+  async function inviteWorkspaceUser(params) {
+    const res = await auth.authedFetch("/api/organization-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: params.email,
+        role: params.role,
+        ...params.firstName !== void 0 ? { firstName: params.firstName } : {},
+        ...params.lastName !== void 0 ? { lastName: params.lastName } : {},
+        ...params.groupIds !== void 0 ? { groups: params.groupIds } : {}
+      })
+    });
+    await assertOk(res, "inviteWorkspaceUser");
+  }
+  async function updateWorkspaceUser(organizationUserId, params) {
+    const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...params.firstName !== void 0 ? { firstName: params.firstName } : {},
+        ...params.lastName !== void 0 ? { lastName: params.lastName } : {},
+        ...params.role !== void 0 ? { role: params.role } : {},
+        addGroups: params.addGroupIds ?? [],
+        ...params.userMetadata !== void 0 ? { userMetadata: params.userMetadata } : {}
+      })
+    });
+    await assertOk(res, "updateWorkspaceUser");
+  }
+  async function setWorkspaceUserArchived(organizationUserId, archived) {
+    const action = archived ? "archive" : "unarchive";
+    const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}/${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+    await assertOk(res, `${action}WorkspaceUser`);
+  }
   async function getApp(appId) {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, "getApp");
@@ -36074,6 +36129,11 @@ function createClient(auth, config2) {
   return {
     listWorkspaces,
     useWorkspace,
+    listWorkspaceApps,
+    listWorkspaceUsers,
+    inviteWorkspaceUser,
+    updateWorkspaceUser,
+    setWorkspaceUserArchived,
     createApp,
     renameApp,
     getApp,
@@ -36901,9 +36961,9 @@ function getDatasourceQuerySchema(kind) {
 }
 function operationSummary(contract) {
   const selectors = {};
-  const required2 = /* @__PURE__ */ new Set();
+  const required3 = /* @__PURE__ */ new Set();
   for (const variant of contract.variants) {
-    variant.required.forEach((path) => required2.add(path));
+    variant.required.forEach((path) => required3.add(path));
     for (const [key, values] of Object.entries(variant.when)) {
       const collected = selectors[key] ?? /* @__PURE__ */ new Set();
       values.forEach((value) => collected.add(value));
@@ -36913,7 +36973,7 @@ function operationSummary(contract) {
   return {
     operation: contract.operation,
     selectors: Object.fromEntries(Object.entries(selectors).map(([key, values]) => [key, [...values].sort()])),
-    required: [...required2].sort(),
+    required: [...required3].sort(),
     variants: contract.variants.length,
     ...contract.response ? { response_type: contract.response.type } : {},
     ...contract.response ? { response_status: contract.response.status } : {}
@@ -38075,7 +38135,7 @@ function validateEvents(summary, events, options2 = {}) {
               errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
             }
             const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
-            const missing = requiredHandles.filter((required2) => !supplied.has(required2));
+            const missing = requiredHandles.filter((required3) => !supplied.has(required3));
             if (missing.length) {
               errors.push(`${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
             }
@@ -38947,8 +39007,8 @@ function validateQueryOptions(kind, options2) {
       }
     }
   }
-  const required2 = intersection2(matching.map((variant) => variant.required));
-  for (const path of required2) {
+  const required3 = intersection2(matching.map((variant) => variant.required));
+  for (const path of required3) {
     const value = valueAtPath(options2, path);
     if (value === void 0 || value === null || value === "") {
       errors.push({
@@ -42443,6 +42503,106 @@ function manageAppPermissionsTool(client) {
   };
 }
 
+// dist/tools/workspaceUserManagement.js
+var userRole = external_exports.enum(["admin", "builder", "end-user"]);
+var userStatus = external_exports.enum(["active", "archived", "invited"]);
+function listWorkspaceAppsTool(client) {
+  return {
+    name: "list_workspace_apps",
+    description: "List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.",
+    inputSchema: {
+      page: external_exports.number().int().positive().optional(),
+      search_text: external_exports.string().trim().max(100).optional()
+    },
+    async handler(args) {
+      try {
+        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text }));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function listWorkspaceUsersTool(client) {
+  return {
+    name: "list_workspace_users",
+    description: "List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.",
+    inputSchema: {
+      page: external_exports.number().int().positive().optional(),
+      search_text: external_exports.string().trim().max(100).optional(),
+      filter_status: userStatus.optional()
+    },
+    async handler(args) {
+      try {
+        return ok(await client.listWorkspaceUsers({
+          page: args.page,
+          searchText: args.search_text,
+          status: args.filter_status
+        }));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function required2(value, label) {
+  if (!value)
+    throw new Error(`${label} is required for this action.`);
+  return value;
+}
+function manageWorkspaceUsersTool(client) {
+  return {
+    name: "manage_workspace_users",
+    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups, change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
+    inputSchema: {
+      action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
+      organization_user_id: external_exports.string().uuid().optional(),
+      email: external_exports.string().email().optional(),
+      first_name: external_exports.string().trim().max(99).optional(),
+      last_name: external_exports.string().trim().max(99).optional(),
+      role: userRole.optional(),
+      group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
+      user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+      confirm: external_exports.boolean().optional()
+    },
+    async handler(args) {
+      try {
+        if (args.confirm !== true) {
+          throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
+        }
+        if (args.action === "invite") {
+          await client.inviteWorkspaceUser({
+            email: required2(args.email, "email"),
+            role: args.role ?? "end-user",
+            firstName: args.first_name,
+            lastName: args.last_name,
+            groupIds: args.group_ids
+          });
+          return ok({ invited: true, email: args.email });
+        }
+        const organizationUserId = required2(args.organization_user_id, "organization_user_id");
+        if (args.action === "archive" || args.action === "unarchive") {
+          await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
+          return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
+        }
+        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && args.group_ids === void 0 && args.user_metadata === void 0) {
+          throw new Error("update requires at least one changed field.");
+        }
+        await client.updateWorkspaceUser(organizationUserId, {
+          firstName: args.first_name,
+          lastName: args.last_name,
+          role: args.role,
+          addGroupIds: args.group_ids,
+          userMetadata: args.user_metadata
+        });
+        return ok({ organization_user_id: organizationUserId, updated: true });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -42460,6 +42620,9 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
+    listWorkspaceAppsTool(client),
+    listWorkspaceUsersTool(client),
+    manageWorkspaceUsersTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
