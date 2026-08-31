@@ -1,5 +1,8 @@
 export interface Config {
   apiUrl: string;
+  /** Where a human opens ToolJet in a browser — used only to build user-facing links (a datasource's
+   *  settings page, an app's editor/viewer URL). Most self-hosted instances serve the API and the UI
+   *  from the same origin, so this defaults to `apiUrl` rather than requiring a second setting. */
   appUrl: string;
   /** Personal access token. Scoped, revocable, and works on SSO-only instances. The token also
    *  determines the workspace: a PAT session is pinned to the workspace the token was issued in and
@@ -36,17 +39,58 @@ export interface RequestIdentity {
    *  the agent's own, so the server holds no credential and every write is attributed to the token's
    *  owner. Mutually exclusive with `sessionToken` — see identityFromHeaders. */
   pat?: string;
+  /** The calling ToolJet instance's own API origin, sent per request. One shared MCP server (staging,
+   *  cloud) can act on behalf of many different ToolJet backends — self-hosted and cloud alike — so
+   *  the target can't be this process's own fixed TOOLJET_URL. Wins over that static value when
+   *  present — see loadConfig. */
+  apiUrl?: string;
 }
 
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
 export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
 export const PAT_HEADER = 'x-tooljet-pat';
+export const BASE_URL_HEADER = 'x-tooljet-url';
+/** Comma-separated https origins this server will accept as a request-named target. */
+export const ALLOWED_API_ORIGINS_VAR = 'MCP_ALLOWED_API_ORIGINS';
 
 /** An environment variable, or undefined when unset OR blank. */
 function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
+}
+
+/**
+ * MCP_ALLOWED_API_ORIGINS, normalized to the same form `new URL(...).origin` produces for a request's
+ * x-tooljet-url — lowercased, default port stripped, no trailing slash. Comparing raw config strings
+ * against a normalized origin means "https://Foo.com" or "https://foo.com:443" in the env var would
+ * never match a request that is, in every way that matters, the same host — denying real traffic while
+ * looking, to whoever reads the config next to the error, like it should have matched. Throws rather
+ * than silently keeping an entry nothing can ever match: a misconfigured allowlist should fail loudly
+ * where an operator is looking (startup), not blend into "not in the allowlist" for the first caller.
+ */
+export function allowedApiOrigins(): string[] {
+  const raw = env(ALLOWED_API_ORIGINS_VAR);
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      let parsed: URL;
+      try {
+        parsed = new URL(entry);
+      } catch {
+        throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
+      }
+      // A request's origin is required to be https (validateApiUrl) before it ever reaches this
+      // allowlist, so a non-https entry here — a typo, e.g. "http://" — could never match anything.
+      // Silently keeping it would leave the operator with a dead entry and no signal it's wrong.
+      if (parsed.protocol !== 'https:') {
+        throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https — it could never match a request.`);
+      }
+      return parsed.origin;
+    });
 }
 
 type HeaderBag = Record<string, string | string[] | undefined>;
@@ -56,6 +100,45 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+/**
+ * Validate the request-supplied target origin, or throw.
+ *
+ * Gets the caller's session/PAT attached and sent straight to it (auth.ts) — a bearer-grade
+ * credential, not just traffic. https alone does not make a host trustworthy: an attacker's own
+ * domain has a valid cert too. So beyond parse+scheme (garbage input, http downgrade), the origin
+ * must also appear in MCP_ALLOWED_API_ORIGINS. Unset means empty, not "allow anything" — a shared
+ * deployment must opt in to which backends it will ever write into.
+ *
+ * A path prefix is allowed (not just a bare origin): ToolJet supports SUB_PATH hosting, so a
+ * self-hosted customer reverse-proxied at e.g. https://tj.example.com/tooljet is a legitimate target,
+ * not a malformed one. The allowlist matches on origin only — the path is the operator's own
+ * reverse-proxy detail, not the trust boundary. Query, hash, and credentials are rejected outright.
+ */
+function validateApiUrl(raw: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`${BASE_URL_HEADER} must use https.`);
+  }
+  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
+    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
+  }
+  if (!allowedApiOrigins().includes(parsed.origin)) {
+    throw new Error(
+      `${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR}. Add it to that ` +
+        'comma-separated list to let this server write into that backend.'
+    );
+  }
+  // A trailing slash is cosmetic; normalize it away so "https://x.com/tooljet" and
+  // "https://x.com/tooljet/" resolve to the same target instead of being treated as different ones.
+  const path = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, '');
+  return parsed.origin + path;
 }
 
 /**
@@ -73,6 +156,8 @@ export function identityFromHeaders(
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
+  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
+  const apiUrl = rawApiUrl ? validateApiUrl(rawApiUrl) : undefined;
 
   if (pat) {
     /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
@@ -90,10 +175,10 @@ export function identityFromHeaders(
     // mechanism exists to prevent, so refuse rather than silently prefer one.
     if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
     // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
-    return { pat };
+    return { pat, apiUrl };
   }
 
-  if (!sessionToken && !workspaceId) return undefined;
+  if (!sessionToken && !workspaceId) return apiUrl ? { apiUrl } : undefined;
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
   }
@@ -101,7 +186,7 @@ export function identityFromHeaders(
     throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
   }
 
-  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER) };
+  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
 }
 
 /**
@@ -113,10 +198,35 @@ export function identityFromHeaders(
 export function loadConfig(identity?: RequestIdentity): Config {
   // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
   // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
-  const apiUrl = env('TOOLJET_URL') ?? 'http://localhost:3000';
-  const appUrl = env('TOOLJET_APP_URL') ?? 'http://localhost:8082';
+  const explicitApiUrl = env('TOOLJET_URL');
+  const staticApiUrl = explicitApiUrl ?? 'http://localhost:3000';
+  // TOOLJET_APP_URL is the old name — "app" read as "one ToolJet app" more often than "the ToolJet
+  // deployment", which is what this actually is. TOOLJET_DEPLOYMENT_URL is preferred; the old name
+  // keeps working so nobody's existing config breaks. An explicit value here always wins — it is a
+  // deliberate override, not a guess — falling through only when the operator hasn't set one.
+  const explicitAppUrl = env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL');
 
   if (identity) {
+    // The request's own apiUrl wins when present — same precedence as the session/PAT identity
+    // above it. One shared server must be able to act on many different ToolJet backends; the
+    // static TOOLJET_URL is only ever a fallback for it, never the source of truth.
+    //
+    // MCP_REQUIRE_REQUEST_URL is enforced in index.ts, not here: this function can't tell a genuine
+    // stdio call (identity omitted, one operator, static URL is correct) apart from an HTTP request
+    // that simply sent no headers (identity also arrives as undefined) — only the HTTP layer that
+    // built `identity` from a real request knows which case it is.
+    const apiUrl = identity.apiUrl ?? staticApiUrl;
+    // appUrl must follow the SAME per-request target apiUrl just resolved above, not the server's own
+    // static config: a shared server acting for many different ToolJet backends has no single static
+    // app URL that could ever be right for all of them. Most self-hosted instances serve the API and
+    // the UI from the same origin, so the request's own apiUrl is the right default here too.
+    //
+    // Falls through to explicitApiUrl, NOT staticApiUrl: staticApiUrl silently includes apiUrl's own
+    // internal localhost:3000 default, which would make an unconfigured deployment's appUrl land on
+    // the API's dev port instead of the UI's (localhost:8082) — the exact default the no-identity
+    // branch below already gets right. Only a genuinely-set TOOLJET_URL should stand in for appUrl.
+    const appUrl = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
+
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
       apiUrl,
@@ -126,6 +236,9 @@ export function loadConfig(identity?: RequestIdentity): Config {
       workspaceSlug: identity.workspaceSlug,
     };
   }
+
+  const apiUrl = staticApiUrl;
+  const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
   const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');

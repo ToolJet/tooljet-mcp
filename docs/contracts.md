@@ -78,7 +78,7 @@ Headers: Cookie + tj-workspace-id
   "editing_version": { "id": "9656402d-..." },        // ← version_id to author on
   "pages": [ { "id": "6478536b-...", "name": "Home", "index": 1 } ] }  // ← home_page_id = the 'Home' page
 ```
-**`create_app` flow:** POST /apps → get `app_id`; GET /apps/:app_id → `version_id = editing_version.id`, `home_page_id = pages.find(name=='Home').id`. It returns `editor_url = ${TOOLJET_APP_URL}/${workspaceSlug}/apps/${appSlug}`, `viewer_url = ${TOOLJET_APP_URL}/applications/${appId}/${homeHandle}?env=development&version=${editingVersionName}`, and the backward-compatible `app_url` editor alias.
+**`create_app` flow:** POST /apps → get `app_id`; GET /apps/:app_id → `version_id = editing_version.id`, `home_page_id = pages.find(name=='Home').id`. It returns `editor_url = ${appUrl}/${workspaceSlug}/apps/${appSlug}`, `viewer_url = ${appUrl}/applications/${appId}/${homeHandle}?env=development&version=${editingVersionName}`, and the backward-compatible `app_url` editor alias.
 
 ---
 

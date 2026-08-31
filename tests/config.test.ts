@@ -6,6 +6,7 @@ describe('loadConfig', () => {
     for (const k of [
       'TOOLJET_URL',
       'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
       'TOOLJET_PAT',
       'TOOLJET_SESSION_TOKEN',
       'TOOLJET_WORKSPACE_ID',
@@ -44,6 +45,82 @@ describe('loadConfig', () => {
   it('refuses a session with no workspace rather than guessing one', () => {
     process.env.TOOLJET_SESSION_TOKEN = 'SESSION';
     expect(() => loadConfig()).toThrow(/TOOLJET_WORKSPACE_ID is required/);
+  });
+});
+
+/* Most self-hosted instances serve the API and the UI from the same origin, so requiring a second
+   URL for something used only to build a few cosmetic links is friction most deployments don't need. */
+describe('appUrl defaults to the deployment origin', () => {
+  beforeEach(() => {
+    for (const k of [
+      'TOOLJET_URL',
+      'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
+      'TOOLJET_PAT',
+      'TOOLJET_SESSION_TOKEN',
+      'TOOLJET_WORKSPACE_ID',
+    ])
+      delete process.env[k];
+  });
+
+  it('falls back to TOOLJET_URL when neither app-URL variable is set', () => {
+    process.env.TOOLJET_URL = 'https://tj.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('https://tj.example.com');
+  });
+
+  it('still defaults to localhost:8082 when TOOLJET_URL itself is unset', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('http://localhost:8082');
+  });
+
+  /* TOOLJET_APP_URL is the old name, kept working so nobody's existing config breaks. */
+  it('prefers an explicit TOOLJET_APP_URL over the TOOLJET_URL fallback', () => {
+    process.env.TOOLJET_URL = 'https://tj.example.com';
+    process.env.TOOLJET_APP_URL = 'https://app.tj.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('https://app.tj.example.com');
+  });
+
+  it('prefers TOOLJET_DEPLOYMENT_URL, the new name, over both TOOLJET_APP_URL and TOOLJET_URL', () => {
+    process.env.TOOLJET_URL = 'https://tj.example.com';
+    process.env.TOOLJET_APP_URL = 'https://old.example.com';
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://new.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().appUrl).toBe('https://new.example.com');
+  });
+
+  /* A shared server acting for many different ToolJet backends has no single static app URL that
+     could ever be right for all of them — its own TOOLJET_URL is just wherever ITS operator's config
+     happens to point, unrelated to whoever the request is actually acting for. */
+  it('follows the per-request apiUrl, not the server\'s own static TOOLJET_URL', () => {
+    process.env.TOOLJET_URL = 'https://operators-own-instance.example.com';
+    const c = loadConfig({
+      sessionToken: 'SESSION',
+      workspaceId: 'org-1',
+      apiUrl: 'https://caller.example.com',
+    });
+    expect(c.appUrl).toBe('https://caller.example.com');
+  });
+
+  it('still lets an explicit TOOLJET_DEPLOYMENT_URL override the per-request apiUrl', () => {
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://deliberately-different.example.com';
+    const c = loadConfig({
+      sessionToken: 'SESSION',
+      workspaceId: 'org-1',
+      apiUrl: 'https://caller.example.com',
+    });
+    expect(c.appUrl).toBe('https://deliberately-different.example.com');
+  });
+
+  /* Local dev with an identity but no request-named apiUrl and nothing configured: appUrl must land
+     on the UI's own dev default (8082), the same as the no-identity/stdio branch below — not on
+     apiUrl's internal 3000 default, which the identity branch would silently inherit via staticApiUrl
+     if it fell through to that instead of explicitApiUrl. */
+  it('falls back to localhost:8082, not apiUrl\'s own 3000 default, when nothing at all is configured', () => {
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
   });
 });
 
@@ -158,9 +235,150 @@ describe('gateway servers refuse a PAT as identity', () => {
   });
 });
 
+/* One shared MCP server can act on many different ToolJet backends, so the request itself may name
+   its target. That header gets the caller's session/PAT attached and sent straight to it (auth.ts),
+   so it needs real validation, not just a truthy string. */
+describe('per-request target origin (x-tooljet-url)', () => {
+  beforeEach(() => {
+    delete process.env.TOOLJET_URL;
+    delete process.env.MCP_ALLOWED_API_ORIGINS;
+  });
+
+  it('accepts an allowlisted bare https origin', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  /* ToolJet supports SUB_PATH hosting, so a self-hosted customer reverse-proxied under a path
+     prefix is a legitimate target, not a malformed one. The allowlist names the host, not the path. */
+  it('accepts a path prefix, for SUB_PATH-hosted self-hosted instances', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet' })).toEqual({
+      apiUrl: 'https://tj.example.com/tooljet',
+    });
+  });
+
+  it('normalizes away a trailing slash rather than treating it as a different target', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet/' })).toEqual({
+      apiUrl: 'https://tj.example.com/tooljet',
+    });
+  });
+
+  it('rejects plain http, which would send the session cookie or PAT in plaintext', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'http://tj.example.com' })).toThrow(/must use https/);
+  });
+
+  it('rejects a query string', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/?x=1' })).toThrow(
+      /query, hash, or credentials/
+    );
+  });
+
+  it('rejects embedded credentials', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://user:pass@tj.example.com' })).toThrow(
+      /query, hash, or credentials/
+    );
+  });
+
+  it('rejects a value that does not parse as an absolute URL', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'not a url' })).toThrow(/valid absolute URL/);
+  });
+
+  /* https alone does not make a host trustworthy — an attacker's own domain has a valid cert too.
+     Sending the session cookie or PAT there regardless of the allowlist is the exact exfiltration
+     path this check exists to close. */
+  it('rejects an origin not in MCP_ALLOWED_API_ORIGINS, even a well-formed https one', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://evil.example' })).toThrow(
+      /not in MCP_ALLOWED_API_ORIGINS/
+    );
+  });
+
+  it('rejects every https origin when the allowlist is unset — unset means empty, not "allow anything"', () => {
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+      /not in MCP_ALLOWED_API_ORIGINS/
+    );
+  });
+
+  it('accepts any origin named in a multi-entry, whitespace-tolerant allowlist', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = ' https://a.example.com , https://b.example.com ';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://b.example.com' })).toEqual({
+      apiUrl: 'https://b.example.com',
+    });
+  });
+
+  /* A raw string comparison would never match here: the request's origin is always in the form
+     new URL(...).origin produces (lowercased, default port stripped, no trailing slash), so an
+     allowlist entry written any other way has to be normalized the same way or it can never match —
+     denying real traffic while looking, next to the error, like it should have worked. */
+  it('normalizes an allowlist entry with different casing to the same origin', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://Tj.Example.com';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  it('normalizes an allowlist entry with a trailing slash', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com/';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  it('normalizes an allowlist entry carrying the default https port', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com:443';
+    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+      apiUrl: 'https://tj.example.com',
+    });
+  });
+
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has an unparseable value', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com, not a url';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+      /not a valid URL: "not a url"/
+    );
+  });
+
+  /* A request's own origin must already be https before it ever reaches the allowlist check
+     (validateApiUrl), so a non-https allowlist entry — a typo'd "http://" — could never match
+     anything. Silently keeping it would leave the operator with a dead entry and no signal it's
+     wrong, the same shape of failure as the un-normalized entries this file already guards against. */
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has a non-https entry', () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'http://tj.example.com';
+    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+      /"http:\/\/tj\.example\.com" must use https/
+    );
+  });
+
+  it('wins over a configured static TOOLJET_URL', () => {
+    process.env.TOOLJET_URL = 'https://static.example.com';
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1', apiUrl: 'https://request.example.com' });
+    expect(c.apiUrl).toBe('https://request.example.com');
+  });
+
+  it('falls back to the static TOOLJET_URL when the request named none', () => {
+    process.env.TOOLJET_URL = 'https://static.example.com';
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
+    expect(c.apiUrl).toBe('https://static.example.com');
+  });
+});
+
 describe('blank environment variables count as unset', () => {
   beforeEach(() => {
-    for (const k of ['TOOLJET_URL', 'TOOLJET_APP_URL', 'TOOLJET_PAT', 'TOOLJET_SESSION_TOKEN', 'TOOLJET_WORKSPACE_ID'])
+    for (const k of [
+      'TOOLJET_URL',
+      'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
+      'TOOLJET_PAT',
+      'TOOLJET_SESSION_TOKEN',
+      'TOOLJET_WORKSPACE_ID',
+    ])
       delete process.env[k];
   });
 

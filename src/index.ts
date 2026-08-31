@@ -1,14 +1,35 @@
 #!/usr/bin/env node
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
-import { identityFromHeaders, PAT_HEADER, SESSION_TOKEN_HEADER, type RequestIdentity } from './config.js';
+import {
+  allowedApiOrigins,
+  ALLOWED_API_ORIGINS_VAR,
+  BASE_URL_HEADER,
+  identityFromHeaders,
+  PAT_HEADER,
+  SESSION_TOKEN_HEADER,
+  type RequestIdentity,
+} from './config.js';
 
-async function serveHttp(): Promise<void> {
-  const port = Number(process.env.PORT ?? 8787);
+export interface GatewayHttpServer {
+  server: Server;
+  /** Whether this instance came up in gateway mode (MCP_SHARED_TOKEN set) or direct mode. */
+  gatewayMode: boolean;
+}
+
+/**
+ * Build the gateway/direct-mode HTTP server (all request-handling logic), without binding a port.
+ * Split out from serveHttp so tests can start it on an ephemeral port and exercise the real gates —
+ * bearer auth, the user-session requirement, the request-URL requirement — with real HTTP requests,
+ * the same way httpServer.ts's createHttpMcpServer is tested.
+ */
+export function createGatewayHttpServer(): GatewayHttpServer {
   const sharedToken = process.env.MCP_SHARED_TOKEN;
 
   /* Two deployment shapes, told apart by whether a shared token is configured.
@@ -22,7 +43,6 @@ async function serveHttp(): Promise<void> {
      both the proof and the identity, and ToolJet validates it on every call. Binds loopback by
      default precisely because that token now travels over the wire. */
   const gatewayMode = Boolean(sharedToken);
-  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   /* Gateway mode serves EVERY user, so the acting user must arrive per request. Require it
      explicitly when asked: a deployment that also has a PAT configured would otherwise fall back to
@@ -34,6 +54,11 @@ async function serveHttp(): Promise<void> {
     gatewayMode &&
     (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? '') ||
       !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+
+  /* Same idea, for the target backend rather than the acting user: gateway mode can serve many
+     different ToolJet backends, so a deployment can demand every request name its own via
+     x-tooljet-url rather than silently writing into this process's static TOOLJET_URL. */
+  const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '');
 
   const httpServer = createServer((req, res) => {
     // The bearer token authenticates the CALLER (that it is the trusted AI shim). The identity
@@ -62,7 +87,13 @@ async function serveHttp(): Promise<void> {
       if (bearer) identity = { pat: bearer };
     }
 
-    if (!identity && requireUserSession) {
+    // Whether this request actually named an acting user — NOT whether `identity` is merely
+    // truthy. A request that sent only x-tooljet-url (no session, no PAT) produces a truthy
+    // `identity` too, and treating that as "a user was named" would let it walk straight past the
+    // check below with nobody actually signed in.
+    const hasUserCredential = Boolean(identity?.pat || identity?.sessionToken);
+
+    if (!hasUserCredential && requireUserSession) {
       res
         .writeHead(400, { 'Content-Type': 'text/plain' })
         .end(
@@ -72,9 +103,19 @@ async function serveHttp(): Promise<void> {
       return;
     }
 
+    if (!identity?.apiUrl && requireRequestUrl) {
+      res
+        .writeHead(400, { 'Content-Type': 'text/plain' })
+        .end(
+          `This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} ` +
+            'header. Refusing rather than falling back to a fixed TOOLJET_URL.'
+        );
+      return;
+    }
+
     // Direct mode with nothing to act as: no PAT on the request and none in the environment. Say so
     // in the response rather than letting buildServer throw into a bare 500.
-    if (!gatewayMode && !identity && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
+    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
       res
         .writeHead(401, { 'Content-Type': 'text/plain' })
         .end(
@@ -107,6 +148,24 @@ async function serveHttp(): Promise<void> {
       });
   });
 
+  return { server: httpServer, gatewayMode };
+}
+
+async function serveHttp(): Promise<void> {
+  const port = Number(process.env.PORT ?? 8787);
+
+  // Fail at startup, not on the first request that happens to hit a bad entry: a misconfigured
+  // MCP_ALLOWED_API_ORIGINS should surface where an operator is looking, right after they set it.
+  try {
+    allowedApiOrigins();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
+  }
+
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
+
   await new Promise<void>((resolve, reject) => {
     httpServer.once('error', reject);
     httpServer.listen(port, host, resolve);
@@ -136,7 +195,27 @@ async function main(): Promise<void> {
   await server.connect(new StdioServerTransport());
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+/**
+ * Whether this module is the actual CLI entrypoint, not merely imported (tests import
+ * createGatewayHttpServer, which would otherwise fire main() as a side effect). A raw string compare
+ * against import.meta.url breaks on a path with a space (different escaping) or a symlinked launch
+ * dir (import.meta.url resolves through it, argv[1] doesn't) — realpathSync on both sides avoids both.
+ */
+function isEntrypoint(): boolean {
+  const invoked = process.argv[1];
+  if (!invoked) return false;
+  try {
+    return realpathSync(invoked) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    // argv[1] doesn't resolve to a real file (invoked via -e, a REPL, or something unusual) — not
+    // "run me directly" in the sense this guard cares about.
+    return false;
+  }
+}
+
+if (isEntrypoint()) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
