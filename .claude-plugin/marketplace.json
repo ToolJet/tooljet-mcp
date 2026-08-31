@@ -10,7 +10,7 @@
     {
       "name": "tooljet-app-builder",
       "source": "./",
-      "description": "Build ToolJet applications end to end, with governed tools that validate every change before it reaches your app.",
+      "description": "Build ToolJet apps end-to-end via governed MCP tools and an app-builder skill.",
       "version": "0.2.0",
       "author": {
         "name": "ToolJet"
