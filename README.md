@@ -187,17 +187,10 @@ of `update_app_settings`. The definition structure and token-backed styling guid
 
 `tooljet-mcp` runs on your own machine or infrastructure and talks to exactly one host: the ToolJet
 instance you configure. ToolJet Solutions, Inc. operates no endpoint that this connector contacts and
-receives no data from it — there is no analytics, no crash reporting, and no update ping.
-
-The server is stateless. It writes nothing to disk unless you set `TOOLJET_TELEMETRY_PATH`, which
-appends metrics only — tool name, duration, request and byte counts, error flag — and never
-arguments, results, or credentials. Your personal access token is held in memory, sent only to your
-instance, and never logged or persisted.
+receives no data from it — there is no analytics, no crash reporting, and no update ping. Your personal access token is held in memory, sent only to your instance, and never logged or persisted.
 
 Note that anything you ask this connector to read is returned to your AI assistant and becomes
-subject to that vendor's privacy policy. `run_query` and `run_queries` can reach production data
-through any connected datasource, which is why they are annotated non-read-only and gated behind
-explicit approval for large or billable reads.
+subject to that vendor's privacy policy.
 
 Full policy: [PRIVACY.md](PRIVACY.md). ToolJet's company-wide policy:
 [tooljet.com/privacy](https://www.tooljet.com/privacy).
