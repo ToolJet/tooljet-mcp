@@ -42359,17 +42359,9 @@ function bearerValue(authHeader) {
 }
 
 // dist/index.js
-async function serveHttp() {
-  const port = Number(process.env.PORT ?? 8787);
+function createGatewayHttpServer() {
   const sharedToken = process.env.MCP_SHARED_TOKEN;
-  try {
-    allowedApiOrigins();
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
-  }
   const gatewayMode = Boolean(sharedToken);
-  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
   const httpServer = createServer((req, res) => {
@@ -42416,6 +42408,18 @@ async function serveHttp() {
       }
     });
   });
+  return { server: httpServer, gatewayMode };
+}
+async function serveHttp() {
+  const port = Number(process.env.PORT ?? 8787);
+  try {
+    allowedApiOrigins();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
+  }
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   await new Promise((resolve3, reject) => {
     httpServer.once("error", reject);
     httpServer.listen(port, host, resolve3);
@@ -42437,7 +42441,12 @@ async function main() {
   }
   await server.connect(new StdioServerTransport());
 }
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+export {
+  createGatewayHttpServer
+};

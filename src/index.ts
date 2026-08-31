@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -15,18 +15,20 @@ import {
   type RequestIdentity,
 } from './config.js';
 
-async function serveHttp(): Promise<void> {
-  const port = Number(process.env.PORT ?? 8787);
-  const sharedToken = process.env.MCP_SHARED_TOKEN;
+export interface GatewayHttpServer {
+  server: Server;
+  /** Whether this instance came up in gateway mode (MCP_SHARED_TOKEN set) or direct mode. */
+  gatewayMode: boolean;
+}
 
-  // Fail at startup, not on the first request that happens to hit a bad entry: a misconfigured
-  // MCP_ALLOWED_API_ORIGINS should surface where an operator is looking, right after they set it.
-  try {
-    allowedApiOrigins();
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
-  }
+/**
+ * Build the gateway/direct-mode HTTP server (all request-handling logic), without binding a port.
+ * Split out from serveHttp so tests can start it on an ephemeral port and exercise the real gates —
+ * bearer auth, the user-session requirement, the request-URL requirement — with real HTTP requests,
+ * the same way httpServer.ts's createHttpMcpServer is tested.
+ */
+export function createGatewayHttpServer(): GatewayHttpServer {
+  const sharedToken = process.env.MCP_SHARED_TOKEN;
 
   /* Two deployment shapes, told apart by whether a shared token is configured.
 
@@ -39,7 +41,6 @@ async function serveHttp(): Promise<void> {
      both the proof and the identity, and ToolJet validates it on every call. Binds loopback by
      default precisely because that token now travels over the wire. */
   const gatewayMode = Boolean(sharedToken);
-  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   /* Gateway mode serves EVERY user, so the acting user must arrive per request. Require it
      explicitly when asked: a deployment that also has a PAT configured would otherwise fall back to
@@ -145,6 +146,24 @@ async function serveHttp(): Promise<void> {
       });
   });
 
+  return { server: httpServer, gatewayMode };
+}
+
+async function serveHttp(): Promise<void> {
+  const port = Number(process.env.PORT ?? 8787);
+
+  // Fail at startup, not on the first request that happens to hit a bad entry: a misconfigured
+  // MCP_ALLOWED_API_ORIGINS should surface where an operator is looking, right after they set it.
+  try {
+    allowedApiOrigins();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
+  }
+
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
+
   await new Promise<void>((resolve, reject) => {
     httpServer.once('error', reject);
     httpServer.listen(port, host, resolve);
@@ -174,7 +193,13 @@ async function main(): Promise<void> {
   await server.connect(new StdioServerTransport());
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Only run as the actual CLI entrypoint (`node bundle/index.js` or similar) — NOT on import.
+// createGatewayHttpServer is exported for tests to spin up a real server on an ephemeral port; without
+// this guard, importing it for that export would also fire main() as a side effect, which in stdio
+// mode tries to connect a real StdioServerTransport (reading process.stdin) inside the test process.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
