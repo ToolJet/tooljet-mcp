@@ -5,6 +5,7 @@
     "name": "ToolJet",
     "url": "https://github.com/ToolJet"
   },
+  "description": "Official ToolJet plugins, published by the ToolJet team.",
   "plugins": [
     {
       "name": "tooljet-app-builder",
@@ -22,6 +23,5 @@
         "mcp"
       ]
     }
-  ],
-  "description": "ToolJet's official plugins for building and maintaining internal tools \u2014 governed MCP tools over your own ToolJet instance, plus the app-builder skill that knows how to drive them."
+  ]
 }
