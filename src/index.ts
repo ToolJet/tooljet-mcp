@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { createServer, type Server } from 'node:http';
-import { pathToFileURL } from 'node:url';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -194,18 +195,25 @@ async function main(): Promise<void> {
   await server.connect(new StdioServerTransport());
 }
 
-// Only run as the actual CLI entrypoint (`node bundle/index.js` or similar) — NOT on import.
-// createGatewayHttpServer is exported for tests to spin up a real server on an ephemeral port; without
-// this guard, importing it for that export would also fire main() as a side effect, which in stdio
-// mode tries to connect a real StdioServerTransport (reading process.stdin) inside the test process.
-//
-// A plain `file://${process.argv[1]}` string compare is NOT equivalent to import.meta.url: the latter
-// percent-encodes spaces/`#`/`?`/non-ASCII and always uses forward slashes, while argv[1] is the raw
-// OS path — so a space in the path (a macOS account name, a "Program Files"-style directory) or
-// Windows entirely (backslashes, a bare drive letter) would never match, silently skipping main()
-// with no error, no output, exit 0. pathToFileURL applies the exact same escaping Node used to build
-// import.meta.url, so the comparison holds on both platforms.
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+/**
+ * Whether this module is the actual CLI entrypoint, not merely imported (tests import
+ * createGatewayHttpServer, which would otherwise fire main() as a side effect). A raw string compare
+ * against import.meta.url breaks on a path with a space (different escaping) or a symlinked launch
+ * dir (import.meta.url resolves through it, argv[1] doesn't) — realpathSync on both sides avoids both.
+ */
+function isEntrypoint(): boolean {
+  const invoked = process.argv[1];
+  if (!invoked) return false;
+  try {
+    return realpathSync(invoked) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    // argv[1] doesn't resolve to a real file (invoked via -e, a REPL, or something unusual) — not
+    // "run me directly" in the sense this guard cares about.
+    return false;
+  }
+}
+
+if (isEntrypoint()) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);

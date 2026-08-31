@@ -7021,7 +7021,8 @@ var require_dist = __commonJS({
 
 // dist/index.js
 import { createServer } from "node:http";
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -42442,7 +42443,17 @@ async function main() {
   }
   await server.connect(new StdioServerTransport());
 }
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+function isEntrypoint() {
+  const invoked = process.argv[1];
+  if (!invoked)
+    return false;
+  try {
+    return realpathSync(invoked) === realpathSync(fileURLToPath4(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+if (isEntrypoint()) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);
