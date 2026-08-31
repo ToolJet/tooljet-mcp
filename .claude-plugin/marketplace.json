@@ -10,7 +10,7 @@
     {
       "name": "tooljet-app-builder",
       "source": "./",
-      "description": "Build and maintain ToolJet apps end-to-end: governed MCP tools for apps, pages, components, datasource queries and ToolJet DB, plus an app-builder skill carrying the component binding rules, canvas mechanics and per-datasource query contracts.",
+      "description": "Build ToolJet applications end to end, with governed tools that validate every change before it reaches your app.",
       "version": "0.2.0",
       "author": {
         "name": "ToolJet"
