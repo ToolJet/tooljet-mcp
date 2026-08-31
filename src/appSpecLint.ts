@@ -288,7 +288,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
     if (!plannedPage.icon.trim()) errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
 
-    const normalized = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+    const normalized = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true, applyVisualDefaults: true }));
     warnings.push(...normalized.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
     warnings.push(...expansion.warnings);
