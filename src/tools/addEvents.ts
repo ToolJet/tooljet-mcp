@@ -46,6 +46,12 @@ type EventInput = {
 export function addEventsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_events',
+    title: 'Add Events',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses ' +
       "{ source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. " +

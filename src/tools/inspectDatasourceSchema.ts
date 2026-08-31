@@ -37,6 +37,12 @@ function invokeArgs(request: SchemaRequest): Record<string, unknown> {
 export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'inspect_datasource_schema',
+    title: 'Inspect Datasource Schema',
+    // Invokes only plugin-advertised read-only metadata methods.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, ' +
       'listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. ' +

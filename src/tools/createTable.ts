@@ -25,6 +25,12 @@ const foreignKeySchema = z.object({
 export function createTableTool(client: ToolJetClient): ToolDef {
   return {
     name: 'create_table',
+    title: 'Create Table',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Create a ToolJet-DB table. Give table_name and columns (name, type, optional primaryKey/notNull/unique/defaultValue/configurations). ' +
       'Optional foreign_keys supports single or composite relationships with columns, referencedTable, referencedColumns, onDelete, and onUpdate. ' +

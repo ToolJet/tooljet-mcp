@@ -32,6 +32,12 @@ const updateSchema = z.object({
 export function updateComponentsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'update_components',
+    title: 'Update Components',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves ' +
       'under `definition` (properties/styles/validation/others) — ToolJet deep-merges, so untouched ' +

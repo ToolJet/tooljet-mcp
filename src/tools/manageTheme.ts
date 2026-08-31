@@ -75,6 +75,13 @@ async function readTheme(client: ToolJetClient, themeId: string): Promise<AppThe
 export function manageThemeTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_theme',
+    title: 'Manage Workspace Theme',
+    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Manage workspace theme objects through ToolJet\'s typed theme API. Actions: list, create, set_default, ' +
       'update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens ' +

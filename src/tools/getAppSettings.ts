@@ -6,6 +6,11 @@ import { fail, ok, type ToolDef } from './types.js';
 export function getAppSettingsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_app_settings',
+    title: 'Get App Settings',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Read the current editing version\'s compact app-wide visual settings: canvas background/width/mode, ' +
       'selected theme, header/logo/title, and navigation visibility/layout. Use before update_app_settings; ' +

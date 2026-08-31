@@ -11,6 +11,12 @@ const pageBatchSchema = z.object({
 export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_component_batches',
+    title: 'Add Component Batches',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Place complete component batches on 2–20 pages concurrently. MCP normalizes and lints every page before any write, ' +
       'then sends one atomic ToolJet component request per page in parallel. Use add_components for one page. Cross-page ' +

@@ -6,6 +6,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function deletePageTool(client: ToolJetClient): ToolDef {
   return {
     name: 'delete_page',
+    title: 'Delete Page',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user ' +
       'approval for the named page, then pass confirm:true. The tool refuses pages still targeted by events outside that page, ' +

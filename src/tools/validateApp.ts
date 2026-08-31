@@ -6,6 +6,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function validateAppTool(client: ToolJetClient): ToolDef {
   return {
     name: 'validate_app',
+    title: 'Validate App',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. ' +
       'Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: ' +

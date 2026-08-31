@@ -6,6 +6,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function generateFormSchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'generate_form_schema',
+    title: 'Generate Form Schema',
+    // Reads a table’s schema and returns a property block; places nothing.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table only when every selected field maps to textinput, number, emailinput, password, datepicker, or checkbox. Mixed schemas needing dropdown, multiselect, textarea, radio, toggle, starrating, or filepicker are rejected with the standalone-component workaround because FormUtils cannot render them with clean, controllable alignment.',
     inputSchema: {

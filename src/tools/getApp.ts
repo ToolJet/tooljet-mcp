@@ -5,6 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function getAppTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_app',
+    title: 'Get App',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Fetch the FULL raw ToolJet app by id (pages, versions, every component with its complete widget ' +
       'schema). This is large (100KB+ for a real app) — for routine inspection prefer get_app_summary, ' +

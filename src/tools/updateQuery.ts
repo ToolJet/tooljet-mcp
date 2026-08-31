@@ -7,6 +7,12 @@ import { resolveRef } from '../refResolution.js';
 export function updateQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'update_query',
+    title: 'Update Query',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Change an existing query in place. `options` REPLACES the stored options wholesale — send the ' +
       'FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are ' +

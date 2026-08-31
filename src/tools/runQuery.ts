@@ -71,7 +71,8 @@ const CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
 const CONNECTION_MESSAGE =
   /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
 // SQLSTATE / markers that mean a NAME in the query does not exist — recoverable by re-introspecting.
-// 42P01 undefined_table, 42703 undefined_column, 3F000 invalid_schema, 42P02 undefined_parameter, 42704 undefined_object.
+// 42P01 undefined_table, 42703 undefined_column, 3F000 invalid_schema, 42P02 undefined_parameter, 42704
+// undefined_object.
 const SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
 const SCHEMA_NAME_MESSAGE =
   /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
@@ -171,6 +172,13 @@ export async function schemaNameHint(
 export function runQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_query',
+    title: 'Run Query',
+    // Executes whatever the query holds against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Run an already-created query and return its REAL result — the browser-free way to see actual data. ' +
       'Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / ' +

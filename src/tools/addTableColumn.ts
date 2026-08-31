@@ -24,6 +24,12 @@ const foreignKeySchema = z.object({
 export function addTableColumnTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_table_column',
+    title: 'Add Table Column',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Add one column to an existing ToolJet DB table without recreating it. Supports the same type aliases, ' +
       'constraints, default/configuration metadata, and optional foreign-key shape as create_table. Read the ' +

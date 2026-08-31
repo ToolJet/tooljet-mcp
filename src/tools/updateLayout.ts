@@ -10,6 +10,12 @@ const rect = z.object({ top: z.number(), left: z.number(), width: z.number(), he
 export function updateLayoutTool(client: ToolJetClient): ToolDef {
   return {
     name: 'update_layout',
+    title: 'Update Layout',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Move / resize existing components (batch) without touching their properties. `left`/`width` are ' +
       'in grid columns (43 desktop), `top`/`height` in grid rows. Provide desktop and/or mobile per ' +

@@ -75,6 +75,11 @@ async function resolveKind(
 export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_datasource_query_schema',
+    title: 'Get Datasource Query Schema',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent ' +
       'responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the ' +

@@ -12,6 +12,12 @@ const updateSchema = z.object({
 export function updatePagesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'update_pages',
+    title: 'Update Pages',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Update existing page sidebar metadata and/or reorder pages, with one final readback verification. ' +
       'Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the ' +

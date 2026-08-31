@@ -57,6 +57,12 @@ function expectedWarnings(args: Args, snapshot: AppSettingsSnapshot): string[] {
 export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'update_app_settings',
+    title: 'Update App Settings',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Patch app-wide visual settings on the current editing version in one version update, then read them back. ' +
       'Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and ' +

@@ -5,6 +5,13 @@ import { ok, fail, type ToolDef } from './types.js';
 export function insertRowsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'insert_rows',
+    title: 'Insert Rows',
+    // Insert-only: a conflict fails loudly rather than overwriting a row.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by ' +
       'column name. Omit generated serial primary keys so ToolJet uses the table sequence. This is insert-only: ' +

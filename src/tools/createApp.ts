@@ -5,6 +5,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function createAppTool(client: ToolJetClient): ToolDef {
   return {
     name: 'create_app',
+    title: 'Create App',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, ' +
       'home_page_id, editor_url, viewer_url, datasources_url, and app_url (a backward-compatible alias for editor_url).',

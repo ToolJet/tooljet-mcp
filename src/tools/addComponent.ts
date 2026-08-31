@@ -20,6 +20,12 @@ const layoutsSchema = z.object({
 export function addComponentTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_component',
+    title: 'Add Component',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Place a component on an app page. `name` is required. A Table binds data via ' +
       'properties.data.value = "{{queries.<queryName>.data}}". ' +

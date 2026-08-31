@@ -1,16 +1,27 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "tooljet",
-  "owner": { "name": "ToolJet", "url": "https://github.com/ToolJet" },
+  "owner": {
+    "name": "ToolJet",
+    "url": "https://github.com/ToolJet"
+  },
   "plugins": [
     {
       "name": "tooljet-app-builder",
       "source": "./",
-      "description": "Build ToolJet apps end-to-end via governed MCP tools + an app-builder skill.",
+      "description": "Build and maintain ToolJet apps end-to-end: governed MCP tools for apps, pages, components, datasource queries and ToolJet DB, plus an app-builder skill carrying the component binding rules, canvas mechanics and per-datasource query contracts.",
       "version": "0.2.0",
-      "author": { "name": "ToolJet" },
+      "author": {
+        "name": "ToolJet"
+      },
       "category": "productivity",
-      "keywords": ["tooljet", "low-code", "app-builder", "mcp"]
+      "keywords": [
+        "tooljet",
+        "low-code",
+        "app-builder",
+        "mcp"
+      ]
     }
-  ]
+  ],
+  "description": "ToolJet's official plugins for building and maintaining internal tools \u2014 governed MCP tools over your own ToolJet instance, plus the app-builder skill that knows how to drive them."
 }

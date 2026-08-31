@@ -34,6 +34,12 @@ function isNotFound(message: string): boolean {
 export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
   return {
     name: 'test_datasource_connection',
+    title: 'Test Datasource Connection',
+    // Probes reachability; changes nothing on either side.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       "Run ToolJet's own connection test for one ALREADY-CONNECTED datasource — the same check the " +
       'datasource settings page performs. Uses the datasource\'s stored credentials; you never supply, ' +

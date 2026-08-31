@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
 export interface ToolTextContent {
   type: 'text';
@@ -13,7 +14,22 @@ export interface ToolResult {
 
 export interface ToolDef {
   name: string;
+  /**
+   * Human-readable name for the tool, shown in client UIs and in directory listings.
+   *
+   * Required rather than optional: a tool that reaches a client without one is displayed by its
+   * snake_case identifier, and the Claude connector directory rejects the whole server for it.
+   * Making the compiler ask for it is cheaper than remembering to.
+   */
+  title: string;
   description: string;
+  /**
+   * Behavioural hints. Required for the same reason `title` is — but the stakes are higher, because
+   * an omitted `destructiveHint` defaults to *true* under the spec while an omitted `readOnlyHint`
+   * defaults to false. Silence therefore reads as "this tool may destroy things", which is wrong for
+   * most of this server and would train clients to over-confirm the safe majority. Say it explicitly.
+   */
+  annotations: ToolAnnotations;
   inputSchema: z.ZodRawShape;
   handler: (args: any) => Promise<ToolResult>;
 }

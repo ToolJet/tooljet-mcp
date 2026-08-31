@@ -36031,6 +36031,11 @@ function fail(err) {
 function listWorkspacesTool(client) {
   return {
     name: "list_workspaces",
+    title: "List Workspaces",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, is_current }]. datasources_url opens ToolJet connection management for user-assisted setup/repair. A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ACTIVE one. This server is token-scoped to a single workspace, so exactly one is returned and there anything. `is_current` marks the active workspace.",
     inputSchema: {},
     async handler() {
@@ -36047,6 +36052,11 @@ function listWorkspacesTool(client) {
 function useWorkspaceTool(client) {
   return {
     name: "use_workspace",
+    title: "Confirm Active Workspace",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its personal access token and cannot switch: passing that workspace id returns it, and any other id errors naming the one in use. Everything is created in that workspace, so there is nothing to select at setup \u2014 call list_workspaces if you need its id, name, slug or datasources_url.",
     inputSchema: {
       workspace_id: external_exports.string()
@@ -36065,6 +36075,12 @@ function useWorkspaceTool(client) {
 function createAppTool(client) {
   return {
     name: "create_app",
+    title: "Create App",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, and app_url (a backward-compatible alias for editor_url).",
     inputSchema: {
       name: external_exports.string().min(1)
@@ -36145,6 +36161,11 @@ function pageSettingProperties(snapshot2) {
 function getAppSettingsTool(client) {
   return {
     name: "get_app_settings",
+    title: "Get App Settings",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Read the current editing version's compact app-wide visual settings: canvas background/width/mode, selected theme, header/logo/title, and navigation visibility/layout. Use before update_app_settings; this omits theme definitions and other large raw app data.",
     inputSchema: {
       app_id: external_exports.string().min(1),
@@ -36164,6 +36185,11 @@ function getAppSettingsTool(client) {
 function listAppThemesTool(client) {
   return {
     name: "list_app_themes",
+    title: "List App Themes",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List compact workspace themes available for app settings. Disabled themes are returned but cannot be selected by update_app_settings. Theme definitions are intentionally omitted to keep discovery small.",
     inputSchema: {},
     async handler() {
@@ -36231,6 +36257,12 @@ function expectedWarnings(args, snapshot2) {
 function updateAppSettingsTool(client) {
   return {
     name: "update_app_settings",
+    title: "Update App Settings",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. Omitted fields are preserved. Returns warnings for settings ToolJet accepted but ignored (for example a license-gated header setting).",
     inputSchema: {
       app_id: external_exports.string().min(1),
@@ -36313,6 +36345,11 @@ function updateAppSettingsTool(client) {
 function listDatasourcesTool(client) {
   return {
     name: "list_datasources",
+    title: "List Datasources",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user.",
     inputSchema: {
       version_id: external_exports.string()
@@ -36332,6 +36369,11 @@ function listDatasourcesTool(client) {
 function listTablesTool(client) {
   return {
     name: "list_tables",
+    title: "List ToolJet DB Tables",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List the ToolJet-DB tables in the workspace as [{ id, table_name }]. A ToolJet-DB (tooljetdb) query's options require the table's `id` as `table_id` (NOT the table name) \u2014 call this to resolve a table name to its id before add_query.",
     inputSchema: {},
     async handler() {
@@ -36366,6 +36408,12 @@ var foreignKeySchema = external_exports.object({
 function createTableTool(client) {
   return {
     name: "create_table",
+    title: "Create Table",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Create a ToolJet-DB table. Give table_name and columns (name, type, optional primaryKey/notNull/unique/defaultValue/configurations). Optional foreign_keys supports single or composite relationships with columns, referencedTable, referencedColumns, onDelete, and onUpdate. Types accept tjdb values or friendly aliases: string, integer, number, bigint, boolean, timestamp, json, serial. Known ToolJet DB reserved column names are rejected locally with a rename suggestion before any API request. If no column is marked primaryKey, a serial `id` primary key is added automatically. Returns { table_id, table_name }. For a NEW app, confirm the data model with the user before creating tables.",
     inputSchema: {
       table_name: external_exports.string(),
@@ -36411,6 +36459,12 @@ var tableSchema = external_exports.object({
 function createTablesTool(client) {
   return {
     name: "create_tables",
+    title: "Create Tables",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created concurrently. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
     inputSchema: { tables: external_exports.array(tableSchema).min(1).max(50) },
     async handler(args) {
@@ -36452,6 +36506,12 @@ var foreignKeySchema3 = external_exports.object({
 function addTableColumnTool(client) {
   return {
     name: "add_table_column",
+    title: "Add Table Column",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Add one column to an existing ToolJet DB table without recreating it. Supports the same type aliases, constraints, default/configuration metadata, and optional foreign-key shape as create_table. Read the current schema with get_table_schema first. Existing rows must be compatible with non-null/default constraints.",
     inputSchema: {
       table_name: external_exports.string(),
@@ -36476,6 +36536,12 @@ function addTableColumnTool(client) {
 function dropTableColumnTool(client) {
   return {
     name: "drop_table_column",
+    title: "Drop Table Column",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Permanently drop a ToolJet DB column and its stored values. This is destructive. Inspect the schema and query/component bindings first, obtain explicit user approval, then pass confirm:true in that same approved operation.",
     inputSchema: {
       table_name: external_exports.string(),
@@ -36496,6 +36562,12 @@ function dropTableColumnTool(client) {
 function dropTableTool(client) {
   return {
     name: "drop_table",
+    title: "Drop Table",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Permanently drop a ToolJet DB table and all its rows. This is destructive. Inspect dependent queries/components, obtain explicit user approval for the named table, then pass confirm:true in that same approved operation.",
     inputSchema: {
       table_name: external_exports.string(),
@@ -36515,6 +36587,11 @@ function dropTableTool(client) {
 function getTableSchemaTool(client) {
   return {
     name: "get_table_schema",
+    title: "Get Table Schema",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Get a ToolJet-DB table's columns, including primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships. Use before building queries, columns, forms, or filters on an existing table, or to verify a table you just created.",
     inputSchema: { table_name: external_exports.string() },
     async handler(args) {
@@ -36531,6 +36608,13 @@ function getTableSchemaTool(client) {
 function insertRowsTool(client) {
   return {
     name: "insert_rows",
+    title: "Insert Rows",
+    // Insert-only: a conflict fails loudly rather than overwriting a row.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by column name. Omit generated serial primary keys so ToolJet uses the table sequence. This is insert-only: explicit duplicate keys fail instead of updating existing rows. Returns { processed_rows }. Optional: only seed when the user wants sample data.",
     inputSchema: {
       table_name: external_exports.string(),
@@ -36554,6 +36638,13 @@ var seedSchema = external_exports.object({
 function insertRowsBatchTool(client) {
   return {
     name: "insert_rows_batch",
+    title: "Insert Rows (Batch)",
+    // Insert-only: a conflict fails loudly rather than overwriting a row.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
     async handler(args) {
@@ -36659,6 +36750,12 @@ function legacyNotice(type) {
 function getComponentCatalogTool(_client) {
   return {
     name: "get_component_catalog",
+    title: "Get Component Catalog",
+    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    },
     description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
       type: external_exports.string().optional(),
@@ -36910,6 +37007,11 @@ async function resolveKind(client, request, fallbackVersionId, datasourceCache =
 function getDatasourceQuerySchemaTool(client) {
   return {
     name: "get_datasource_query_schema",
+    title: "Get Datasource Query Schema",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts; any top-level fields (kind/datasource_id/version_id/operation/sections) act as defaults for every entry, so mixing top-level and `requests` is fine.",
     inputSchema: {
       kind: external_exports.string().optional(),
@@ -36986,6 +37088,12 @@ function invokeArgs(request) {
 function inspectDatasourceSchemaTool(client) {
   return {
     name: "inspect_datasource_schema",
+    title: "Inspect Datasource Schema",
+    // Invokes only plugin-advertised read-only metadata methods.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
     inputSchema: {
       version_id: external_exports.string(),
@@ -37071,6 +37179,12 @@ function isNotFound(message) {
 function testDatasourceConnectionTool(client) {
   return {
     name: "test_datasource_connection",
+    title: "Test Datasource Connection",
+    // Probes reachability; changes nothing on either side.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Run ToolJet's own connection test for one ALREADY-CONNECTED datasource \u2014 the same check the datasource settings page performs. Uses the datasource's stored credentials; you never supply, see, or need them. Use it to distinguish a broken connection from a wrong query when a run fails, or to confirm a source before building on it. Returns supported:false for datasource kinds whose plugin does not implement a connection test (REST API, GraphQL, and most OAuth/HTTP integrations) \u2014 that is not a fault and says nothing about the connection. On a real failure, hand the returned settings_url to the user for repair; never enter credentials or save settings for them.",
     inputSchema: {
       version_id: external_exports.string().min(1),
@@ -37291,6 +37405,12 @@ var purposes = ["count", "preview", "distinct", "primary_keys", "foreign_keys", 
 function prepareSqlDiscoveryQueriesTool(client) {
   return {
     name: "prepare_sql_discovery_queries",
+    title: "Prepare SQL Discovery Queries",
+    // Returns query specs; deliberately neither creates nor runs them.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Prepare\u2014but do not create or run\u2014read-only SQL query specs for a connected SQL datasource. Produces add_queries-compatible count, explicit-column bounded preview/distinct, and verified metadata queries for primary keys, foreign keys, indexes, and views where the dialect is curated. It never emits SELECT *; preview/distinct limits are hard-capped at 100. Add the returned specs in one add_queries call, then use run_query under its count/large/billable-read safeguards.",
     inputSchema: {
       version_id: external_exports.string().min(1),
@@ -37511,6 +37631,12 @@ function generateFormSchema(columns, options2) {
 function generateFormSchemaTool(client) {
   return {
     name: "generate_form_schema",
+    title: "Generate Form Schema",
+    // Reads a table’s schema and returns a property block; places nothing.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table only when every selected field maps to textinput, number, emailinput, password, datepicker, or checkbox. Mixed schemas needing dropdown, multiselect, textarea, radio, toggle, starrating, or filepicker are rejected with the standalone-component workaround because FormUtils cannot render them with clean, controllable alignment.",
     inputSchema: {
       table_name: external_exports.string(),
@@ -37546,6 +37672,11 @@ function generateFormSchemaTool(client) {
 function getAppTool(client) {
   return {
     name: "get_app",
+    title: "Get App",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Fetch the FULL raw ToolJet app by id (pages, versions, every component with its complete widget schema). This is large (100KB+ for a real app) \u2014 for routine inspection prefer get_app_summary, which returns the same structure with actual values only. Use get_app only when you need raw fields the summary omits.",
     inputSchema: {
       app_id: external_exports.string()
@@ -37665,6 +37796,11 @@ var fieldList = external_exports.array(external_exports.string()).min(1).optiona
 function getAppSummaryTool(client) {
   return {
     name: "get_app_summary",
+    title: "Get App Summary",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
@@ -37723,6 +37859,11 @@ function getAppSummaryTool(client) {
 function getComponentTool(client) {
   return {
     name: "get_component",
+    title: "Get Component",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Fetch ONE placed component by id \u2014 its actual bound values only: { id, name, type, page_id, layouts, properties, styles, others }. Cheaper than get_app_summary when you only need to inspect or diff a single component before update_component.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -39044,6 +39185,11 @@ function validatePersistedAppSummary(summary) {
 function validateAppTool(client) {
   return {
     name: "validate_app",
+    title: "Validate App",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references or invalid persisted contracts you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
     inputSchema: {
       app_id: external_exports.string()
@@ -40074,6 +40220,12 @@ function unique3(values) {
 function lintAppSpecTool(client) {
   return {
     name: "lint_app_spec",
+    title: "Lint App Spec (Dry Run)",
+    // The dry run half of the governed phase: it never mutates ToolJet.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table into options.table_id. Set app_name when the target app should be renamed in the same governed phase. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet.",
     inputSchema: appPlanSchema.shape,
     async handler(args) {
@@ -40288,6 +40440,14 @@ async function waitForCreatedTables(client, tableNames) {
 function applyAppPhaseTool(client) {
   return {
     name: "apply_app_phase",
+    title: "Apply App Phase",
+    // Creates, and amends page metadata or the app name when the approved plan says to. It has no delete or drop
+    // path, so it cannot destroy existing data.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -40575,6 +40735,12 @@ function selectedRefs(targets, refs2) {
 function addPageTool(client) {
   return {
     name: "add_page",
+    title: "Add Page",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: 'Add a page to an app. Returns { page_id, name }; pass that page_id to add_component(s) to place components on it. ToolJet auto-renders a left-sidebar navigation menu across pages, so you get page switching for free. Use multiple pages when it genuinely helps (e.g. list + detail, or separate dashboard/admin views) \u2014 don\'t fragment a simple app across many pages. A relevant `icon` is required (a Tabler icon name, e.g. "IconLayoutDashboard", "IconUsers", "IconChartBar", "IconSettings") so every added page reads clearly in the sidebar. The auto-created Home page already falls back to IconHome2; other pages without an icon fall back to the generic IconFile. Set `hidden: true` for a page that is opened ONLY from another page (e.g. a detail page reached by row-click \u2192 switch-page) \u2014 it stays fully reachable but is removed from the sidebar nav so the menu stays clean.',
     inputSchema: {
       app_id: external_exports.string(),
@@ -40608,6 +40774,12 @@ var pageSchema = external_exports.object({
 function addPagesTool(client) {
   return {
     name: "add_pages",
+    title: "Add Pages",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and sidebar icon/hidden metadata is persisted and verified with one final readback. Every page requires a relevant Tabler icon; set hidden:true for detail pages reached only through navigation. Returns {pages}. ToolJet has no page bulk transaction: a rare partial failure names every persisted page; do not retry the whole batch or auto-delete those pages.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -40640,6 +40812,12 @@ var updateSchema = external_exports.object({
 function updatePagesTool(client) {
   return {
     name: "update_pages",
+    title: "Update Pages",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes. This can restyle and reposition the auto-created Home page.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -40671,6 +40849,12 @@ function updatePagesTool(client) {
 function deletePageTool(client) {
   return {
     name: "delete_page",
+    title: "Delete Page",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user approval for the named page, then pass confirm:true. The tool refuses pages still targeted by events outside that page, because ToolJet does not safely retarget those references. Group-wide deletion is disabled because ToolJet does not return a verifiable child-page deletion set; delete each inspected and approved page separately.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -40730,6 +40914,12 @@ function deletePageTool(client) {
 function addQueryTool(client) {
   return {
     name: "add_query",
+    title: "Add Query",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Create a query on an app version's datasource (ANY datasource \u2014 ToolJet DB, Postgres, RunJS, ServiceNow, \u2026). The query kind is resolved from datasource_id. Options are contract-validated before the write; known-invalid operations/missing required fields block, while unknown keys are returned in `warnings` because ToolJet may silently drop them. Call get_datasource_query_schema with datasource_id + version_id + operation first.",
     inputSchema: {
       version_id: external_exports.string(),
@@ -40784,6 +40974,12 @@ var querySchema = external_exports.object({
 function addQueriesTool(client) {
   return {
     name: "add_queries",
+    title: "Add Queries",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch.",
     inputSchema: {
       version_id: external_exports.string(),
@@ -40851,6 +41047,12 @@ var layoutsSchema = external_exports.object({
 function addComponentTool(client) {
   return {
     name: "add_component",
+    title: "Add Component",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: 'Place a component on an app page. `name` is required. A Table binds data via properties.data.value = "{{queries.<queryName>.data}}". Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in the top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle applied to both resolutions) or `layouts:{desktop,mobile}` for per-resolution placement. Kanban automatically gets its catalog card children; use add_components with client_ref/parent_ref when you need a custom card body such as wrapped Html.',
     inputSchema: {
       app_id: external_exports.string(),
@@ -40921,6 +41123,12 @@ function addComponentTool(client) {
 function addComponentsTool(client) {
   return {
     name: "add_components",
+    title: "Add Components",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content).",
     inputSchema: {
       app_id: external_exports.string(),
@@ -40958,6 +41166,12 @@ var pageBatchSchema = external_exports.object({
 function addComponentBatchesTool(client) {
   return {
     name: "add_component_batches",
+    title: "Add Component Batches",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Place complete component batches on 2\u201320 pages concurrently. MCP normalizes and lints every page before any write, then sends one atomic ToolJet component request per page in parallel. Use add_components for one page. Cross-page creation is not transactional because ToolJet has no multi-page component endpoint; an upstream partial failure names the completed and failed pages so it can be repaired in place.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41015,6 +41229,12 @@ var updateSchema2 = external_exports.object({
 function updateComponentsTool(client) {
   return {
     name: "update_components",
+    title: "Update Components",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41134,6 +41354,12 @@ function updateComponentsTool(client) {
 function deleteComponentsTool(client) {
   return {
     name: "delete_components",
+    title: "Delete Components",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Permanently remove named components from one page. Inspect the targets and obtain explicit approval, then pass confirm:true. The tool refuses surviving child components, component/query bindings, and external events that still reference a target. It verifies every requested id disappeared and never deletes dependencies automatically.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41221,6 +41447,12 @@ var rect = external_exports.object({ top: external_exports.number(), left: exter
 function updateLayoutTool(client) {
   return {
     name: "update_layout",
+    title: "Update Layout",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in grid columns (43 desktop), `top`/`height` in grid rows. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions. `slot_name` alone keeps the current parent.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41354,6 +41586,12 @@ var eventSchema = external_exports.object({
 function addEventsTool(client) {
   return {
     name: "add_events",
+    title: "Add Events",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41406,6 +41644,12 @@ var lifecycleSchema = external_exports.object({
 function addQueryLifecyclesTool(client) {
   return {
     name: "add_query_lifecycles",
+    title: "Add Query Lifecycles",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
     description: "Create standard mutation success/failure behavior for many queries in one call. For each query, declare refresh_query_ids, clear_component_ids, close_modal_id, success_alert, and/or failure_alert; MCP expands them into normal ordered ToolJet events, validates every source/target/action, then performs one bulk event write. Optional success_actions/failure_actions accept ordinary event action objects for uncommon extras; use add_events when custom action ordering is required. This helper is datasource-neutral.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41450,6 +41694,12 @@ function addQueryLifecyclesTool(client) {
 function updateQueryTool(client) {
   return {
     name: "update_query",
+    title: "Update Query",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails.",
     inputSchema: {
       query_id: external_exports.string(),
@@ -41551,6 +41801,12 @@ function updateQueryTool(client) {
 function deleteQueryTool(client) {
   return {
     name: "delete_query",
+    title: "Delete Query",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. The tool refuses component bindings, dependent query bindings, and external events that still reference it, verifies the query disappeared, and never deletes dependencies automatically.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41729,6 +41985,13 @@ async function schemaNameHint(client, query, result) {
 function runQueryTool(client) {
   return {
     name: "run_query",
+    title: "Run Query",
+    // Executes whatever the query holds against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
@@ -41840,6 +42103,13 @@ function batchSafeRead(query) {
 function runQueriesTool(client) {
   return {
     name: "run_queries",
+    title: "Run Queries",
+    // Executes whatever the queries hold against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
     inputSchema: {
       query_ids: external_exports.array(external_exports.string()).min(1).max(10),
@@ -41927,6 +42197,11 @@ function runQueriesTool(client) {
 function listEventsTool(client) {
   return {
     name: "list_events",
+    title: "List Events",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List event handlers for a version, optionally filtered to one source (component/query id). Returns [{ id, name, index, event, sourceId, target }] where `event` is the { eventId(trigger), ref?, actionId, ...params } blob. target may be component, data_query, page, table_column, or legacy table_action. Table Button columns use ref=`<column key or name>::<button id>`. Use the ids with update_events / delete_event to fix or remove wiring without rebuilding.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -41952,6 +42227,12 @@ function listEventsTool(client) {
 function updateEventsTool(client) {
   return {
     name: "update_events",
+    title: "Update Events",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: 'Edit existing event handlers (batch) \u2014 e.g. change an action or its params \u2014 instead of deleting and re-adding. For updateType "update" you MUST include `name` and the full `event` blob ({ eventId, actionId, ...params }) per entry (name becomes null if omitted). For "reorder" only `index` is used. Get event ids from list_events.',
     inputSchema: {
       app_id: external_exports.string(),
@@ -42015,6 +42296,12 @@ function updateEventsTool(client) {
 function deleteEventTool(client) {
   return {
     name: "delete_event",
+    title: "Delete Event",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Delete one event handler by id (from list_events). Use this to remove wiring that points at a deleted component/query, or to drop an action you added by mistake.",
     inputSchema: {
       app_id: external_exports.string(),
@@ -42094,6 +42381,12 @@ function withRuntimeStatus(result, status) {
 function getRuntimeInfoTool(runtime) {
   return {
     name: "get_runtime_info",
+    title: "Get Runtime Info",
+    // Reports this process’s own build identity; touches nothing outside it.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    },
     description: "Return the loaded ToolJet MCP version/build identity and whether its on-disk runtime changed after process start. If restart_required is true, restart or reload the MCP/plugin host before using any other tool.",
     inputSchema: { refresh: external_exports.boolean().optional().describe("Accepted for discoverability; runtime status is always fresh.") },
     async handler() {
@@ -42165,6 +42458,13 @@ async function readTheme(client, themeId) {
 function manageThemeTool(client) {
   return {
     name: "manage_theme",
+    title: "Manage Workspace Theme",
+    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
@@ -42285,7 +42585,12 @@ function registerTools(server, client, runtime = runtimeFreshness) {
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   for (const tool of exposedTools) {
-    server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema }, (args) => withToolTelemetry(tool.name, async () => {
+    server.registerTool(tool.name, {
+      title: tool.title,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+      annotations: tool.annotations
+    }, (args) => withToolTelemetry(tool.name, async () => {
       const status = runtime.status();
       if (status.restart_required && tool.name !== "get_runtime_info") {
         return staleRuntimeResult(status);
@@ -42309,7 +42614,12 @@ function buildUnconfiguredServer(reason) {
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION }, { instructions: `${message}
 
 Fix the configuration and restart this server; no tools will work until then.` });
-  server.registerTool("tooljet_status", { description: "Why this ToolJet MCP server is not configured, and how to fix it.", inputSchema: {} }, async () => ({ content: [{ type: "text", text: message }], isError: true }));
+  server.registerTool("tooljet_status", {
+    title: "ToolJet Connection Status",
+    description: "Why this ToolJet MCP server is not configured, and how to fix it.",
+    inputSchema: {},
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  }, async () => ({ content: [{ type: "text", text: message }], isError: true }));
   return server;
 }
 
