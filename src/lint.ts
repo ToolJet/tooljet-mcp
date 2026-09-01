@@ -1240,7 +1240,14 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < minimumHeight) {
+      const minimumUsableHeight = chromeHeight + rowHeight;
+      if (desktopHeight < minimumUsableHeight) {
+        warnings.push(
+          `Table "${label}": desktop height ${desktopHeight}px cannot show even one data row below its ` +
+            `${toolbarVisible ? 'toolbar, ' : ''}header, and footer; use at least ${minimumUsableHeight}px, ` +
+            'reduce the Table chrome, or enable dynamicHeight. The Table body is effectively unusable.'
+        );
+      } else if (desktopHeight < minimumHeight) {
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
