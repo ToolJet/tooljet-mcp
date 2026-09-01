@@ -47,11 +47,10 @@ source and install **ToolJet App Builder**. In Codex CLI you can also install it
 Before launching Codex, provide the same credentials used by the standalone MCP server:
 
 ```bash
+export TOOLJET_DEPLOYMENT_URL="https://your-instance.tooljet.com"
 export TOOLJET_PAT="tj_pat_..."
-# optional, if not localhost:
-export TOOLJET_URL="https://your-instance.tooljet.com"
-# only needed if the UI is served from a different origin than TOOLJET_URL:
-# export TOOLJET_DEPLOYMENT_URL="https://app.your-instance.tooljet.com"
+# only needed if the API lives on a different origin than TOOLJET_DEPLOYMENT_URL above:
+# export TOOLJET_URL="https://api.your-instance.tooljet.com"
 ```
 
 The plugin passes these environment variables to the MCP process; it does not store or change the
@@ -67,10 +66,10 @@ command = "node"
 args = ["/absolute/path/to/tooljet-mcp/bundle/index.js"]
 
 [mcp_servers.tooljet.env]
-TOOLJET_URL = "http://localhost:3000"
+TOOLJET_DEPLOYMENT_URL = "https://your-instance.tooljet.com"
 TOOLJET_PAT = "tj_pat_..."
-# only if the UI is served from a different origin than TOOLJET_URL:
-# TOOLJET_DEPLOYMENT_URL = "http://localhost:8082"
+# only if the API lives on a different origin than TOOLJET_DEPLOYMENT_URL above:
+# TOOLJET_URL = "https://api.your-instance.tooljet.com"
 ```
 
 Then install the skill so Codex knows how to drive the tools: copy the complete `skill/` directory into your Codex skills directory (or use `npm run sync:skill`). Its compact entry point progressively loads focused references for tables, forms, events, datasources, security, and QA.
@@ -116,10 +115,10 @@ format, which VS Code, Copilot CLI and the Copilot app share. Install with **Cha
 From Source** (or the Plugins tab of the Agent Customizations editor) and give it this repo's URL.
 
 Skills are discovered from `skills/`, so the same `skills/tooljet-app-builder` that Claude Code loads
-is picked up here with no second copy. Set `TOOLJET_URL` and `TOOLJET_PAT` in the environment the
-editor launches from (`TOOLJET_DEPLOYMENT_URL` too, only if the UI is on a different origin than
-`TOOLJET_URL`); unset or blank values fall back to the server's own defaults, and a missing token is
-reported at handshake rather than killing the server.
+is picked up here with no second copy. Set `TOOLJET_DEPLOYMENT_URL` and `TOOLJET_PAT` in the
+environment the editor launches from (`TOOLJET_URL` too, only if the API is on a different origin
+than `TOOLJET_DEPLOYMENT_URL`); unset or blank values fall back to the server's own defaults, and a
+missing token is reported at handshake rather than killing the server.
 
 ## Install as a Claude Code plugin
 
@@ -136,15 +135,14 @@ Or via the marketplace, which lets you get updates:
 ```
 For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.
 
-**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_URL` defaults to localhost; `TOOLJET_DEPLOYMENT_URL` defaults to `TOOLJET_URL`). Before launching Claude Code:
+**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_DEPLOYMENT_URL` defaults to localhost; `TOOLJET_URL` defaults to `TOOLJET_DEPLOYMENT_URL`). Before launching Claude Code:
 ```bash
+export TOOLJET_DEPLOYMENT_URL="https://your-instance.tooljet.com"
 export TOOLJET_PAT="tj_pat_..."
-# optional, if not localhost:
-export TOOLJET_URL="https://your-instance.tooljet.com"
-# only needed if the UI is served from a different origin than TOOLJET_URL:
-# export TOOLJET_DEPLOYMENT_URL="https://app.your-instance.tooljet.com"
+# only needed if the API lives on a different origin than TOOLJET_DEPLOYMENT_URL above:
+# export TOOLJET_URL="https://api.your-instance.tooljet.com"
 ```
-If either credential is missing, the server exits during startup with a clear required-variable error. Set both and restart.
+If `TOOLJET_DEPLOYMENT_URL` and `TOOLJET_PAT` are missing, the server exits during startup with a clear required-variable error. Set them and restart.
 
 **What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
 ```bash
