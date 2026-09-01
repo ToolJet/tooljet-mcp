@@ -22,6 +22,13 @@ export function batchSafeRead(query: QuerySummary): { safe: boolean; reason?: st
 export function runQueriesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_queries',
+    title: 'Run Queries',
+    // Executes whatever the queries hold against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Run 1–10 already-created, proven read-only queries concurrently and return ordered per-query ' +
       'results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or ' +

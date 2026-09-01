@@ -10,6 +10,13 @@ const seedSchema = z.object({
 export function insertRowsBatchTool(client: ToolJetClient): ToolDef {
   return {
     name: 'insert_rows_batch',
+    title: 'Insert Rows (Batch)',
+    // Insert-only: a conflict fails loudly rather than overwriting a row.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before ' +
       'foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. ' +

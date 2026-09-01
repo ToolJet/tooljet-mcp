@@ -38,6 +38,12 @@ type LifecycleInput = z.infer<typeof lifecycleSchema>;
 export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_query_lifecycles',
+    title: 'Add Query Lifecycles',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Create standard mutation success/failure behavior for many queries in one call. For each query, declare refresh_query_ids, ' +
       'clear_component_ids, close_modal_id, success_alert, and/or failure_alert; MCP expands them into normal ordered ToolJet events, ' +

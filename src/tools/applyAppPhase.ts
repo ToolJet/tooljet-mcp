@@ -121,6 +121,14 @@ async function waitForCreatedTables(
 export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
   return {
     name: 'apply_app_phase',
+    title: 'Apply App Phase',
+    // Creates, and amends page metadata or the app name when the approved plan says to. It has no delete or drop
+    // path, so it cannot destroy existing data.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates ' +
       'tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ' +

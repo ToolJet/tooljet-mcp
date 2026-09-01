@@ -6,6 +6,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function updateEventsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'update_events',
+    title: 'Update Events',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Edit existing event handlers (batch) — e.g. change an action or its params — instead of deleting ' +
       'and re-adding. For updateType "update" you MUST include `name` and the full `event` blob ({ eventId, ' +

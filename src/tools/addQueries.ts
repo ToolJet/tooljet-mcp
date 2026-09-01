@@ -13,6 +13,12 @@ const querySchema = z.object({
 export function addQueriesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_queries',
+    title: 'Add Queries',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query " +
       'when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema ' +

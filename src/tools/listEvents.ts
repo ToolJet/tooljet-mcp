@@ -5,6 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function listEventsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'list_events',
+    title: 'List Events',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'List event handlers for a version, optionally filtered to one source (component/query id). ' +
       'Returns [{ id, name, index, event, sourceId, target }] where `event` is the { eventId(trigger), ' +

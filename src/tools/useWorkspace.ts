@@ -5,6 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function useWorkspaceTool(client: ToolJetClient): ToolDef {
   return {
     name: 'use_workspace',
+    title: 'Confirm Active Workspace',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its ' +
       'personal access token and cannot switch: passing that workspace id returns it, and any other id ' +

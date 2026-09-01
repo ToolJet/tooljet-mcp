@@ -5,6 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function listDatasourcesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'list_datasources',
+    title: 'List Datasources',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       "List the workspace-connected datasources available to the current user/environment, including the built-in " +
       "ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear " +

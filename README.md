@@ -192,6 +192,10 @@ Workspace theme creation and management are exposed through `manage_theme`; appl
 of `update_app_settings`. The definition structure and token-backed styling guidance are documented in
 [`docs/theme-api-tool.md`](docs/theme-api-tool.md).
 
+## Privacy Policy
+
+This connector is covered by ToolJet's privacy policy: [tooljet.com/privacy](https://tooljet.com/privacy).
+
 ## Development
 
 ```bash

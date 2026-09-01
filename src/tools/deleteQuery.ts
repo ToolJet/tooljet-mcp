@@ -7,6 +7,12 @@ import { resolveRef } from '../refResolution.js';
 export function deleteQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'delete_query',
+    title: 'Delete Query',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. ' +
       'The tool refuses component bindings, dependent query bindings, and external events that still reference it, verifies ' +

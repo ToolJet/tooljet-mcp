@@ -5,6 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function getTableSchemaTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_table_schema',
+    title: 'Get Table Schema',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       "Get a ToolJet-DB table's columns, including primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships. Use before building queries, " +
       'columns, forms, or filters on an existing table, or to verify a table you just created.',

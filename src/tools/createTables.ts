@@ -31,6 +31,12 @@ type TableInput = z.infer<typeof tableSchema>;
 export function createTablesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'create_tables',
+    title: 'Create Tables',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, ' +
       'foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables ' +

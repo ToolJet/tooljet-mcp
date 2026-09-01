@@ -5,6 +5,11 @@ import { ok, fail, type ToolDef } from './types.js';
 export function getComponentTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_component',
+    title: 'Get Component',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Fetch ONE placed component by id — its actual bound values only: ' +
       '{ id, name, type, page_id, layouts, properties, styles, others }. Cheaper than get_app_summary ' +

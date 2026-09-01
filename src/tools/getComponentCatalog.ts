@@ -128,6 +128,12 @@ function legacyNotice(type: string): Record<string, unknown> {
 export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
   return {
     name: 'get_component_catalog',
+    title: 'Get Component Catalog',
+    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     description:
       'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one ' +
       'component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" ' +

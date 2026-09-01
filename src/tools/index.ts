@@ -148,7 +148,12 @@ export function registerTools(
   for (const tool of exposedTools) {
     server.registerTool(
       tool.name,
-      { description: tool.description, inputSchema: tool.inputSchema },
+      {
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        annotations: tool.annotations,
+      },
       (args: any) => withToolTelemetry(tool.name, async () => {
         const status = runtime.status();
         if (status.restart_required && tool.name !== 'get_runtime_info') {

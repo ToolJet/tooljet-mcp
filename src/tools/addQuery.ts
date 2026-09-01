@@ -6,6 +6,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function addQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_query',
+    title: 'Add Query',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       "Create a query on an app version's datasource (ANY datasource — ToolJet DB, Postgres, RunJS, ServiceNow, …). " +
       'The query kind is resolved from datasource_id. Options are contract-validated before the write; known-invalid ' +

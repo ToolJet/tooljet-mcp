@@ -9,6 +9,12 @@ const purposes = ['count', 'preview', 'distinct', 'primary_keys', 'foreign_keys'
 export function prepareSqlDiscoveryQueriesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'prepare_sql_discovery_queries',
+    title: 'Prepare SQL Discovery Queries',
+    // Returns query specs; deliberately neither creates nor runs them.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Prepare—but do not create or run—read-only SQL query specs for a connected SQL datasource. Produces ' +
       'add_queries-compatible count, explicit-column bounded preview/distinct, and verified metadata queries for ' +

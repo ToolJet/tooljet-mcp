@@ -32,6 +32,11 @@ interface GetAppSummaryArgs {
 export function getAppSummaryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_app_summary',
+    title: 'Get App Summary',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Selective, bounded inspection of an app — use this instead of get_app. By default detail="structure" ' +
       'returns page/component/query/event identity and layout but omits bulky component values, query options, ' +

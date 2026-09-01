@@ -6,6 +6,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function deleteComponentsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'delete_components',
+    title: 'Delete Components',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Permanently remove named components from one page. Inspect the targets and obtain explicit approval, then pass confirm:true. ' +
       'The tool refuses surviving child components, component/query bindings, and external events that still reference a target. ' +

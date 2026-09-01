@@ -6,6 +6,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_components',
+    title: 'Add Components',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Place MANY components on one page in a single call (all share app_id/version_id/page_id). ' +
       'Prefer this over repeated add_component when building an app — it is one request. Returns ' +

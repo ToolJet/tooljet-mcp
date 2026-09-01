@@ -5,6 +5,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function addPageTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_page',
+    title: 'Add Page',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Add a page to an app. Returns { page_id, name }; pass that page_id to add_component(s) to place ' +
       'components on it. ToolJet auto-renders a left-sidebar navigation menu across pages, so you get page switching for ' +

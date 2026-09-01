@@ -5,6 +5,12 @@ import { ok, fail, type ToolDef } from './types.js';
 export function deleteEventTool(client: ToolJetClient): ToolDef {
   return {
     name: 'delete_event',
+    title: 'Delete Event',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Delete one event handler by id (from list_events). Use this to remove wiring that points at a ' +
       'deleted component/query, or to drop an action you added by mistake.',

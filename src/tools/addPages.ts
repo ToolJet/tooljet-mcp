@@ -11,6 +11,12 @@ const pageSchema = z.object({
 export function addPagesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'add_pages',
+    title: 'Add Pages',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       'Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and ' +
       'sidebar icon/hidden metadata is persisted and verified with one final readback. Every page requires a relevant Tabler icon; ' +

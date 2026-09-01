@@ -11,6 +11,12 @@ function unique(values: string[]): string[] {
 export function lintAppSpecTool(client: ToolJetClient): ToolDef {
   return {
     name: 'lint_app_spec',
+    title: 'Lint App Spec (Dry Run)',
+    // The dry run half of the governed phase: it never mutates ToolJet.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
       'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
