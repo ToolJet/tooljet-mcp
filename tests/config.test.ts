@@ -124,6 +124,59 @@ describe('appUrl defaults to the deployment origin', () => {
   });
 });
 
+/* The reverse direction of the block above: most self-hosted instances serve the API and the UI from
+   the same origin, so a deployment that only sets TOOLJET_DEPLOYMENT_URL shouldn't have to also set
+   TOOLJET_URL to the identical value just to get an API origin. */
+describe('apiUrl falls back to the deployment URL', () => {
+  beforeEach(() => {
+    for (const k of [
+      'TOOLJET_URL',
+      'TOOLJET_APP_URL',
+      'TOOLJET_DEPLOYMENT_URL',
+      'TOOLJET_PAT',
+      'TOOLJET_SESSION_TOKEN',
+      'TOOLJET_WORKSPACE_ID',
+    ])
+      delete process.env[k];
+  });
+
+  it('uses TOOLJET_DEPLOYMENT_URL as the API origin when TOOLJET_URL is unset', () => {
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://tj.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().apiUrl).toBe('https://tj.example.com');
+  });
+
+  /* TOOLJET_APP_URL is the old name, kept working so nobody's existing config breaks. */
+  it('also accepts the old TOOLJET_APP_URL name as the API origin fallback', () => {
+    process.env.TOOLJET_APP_URL = 'https://tj.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().apiUrl).toBe('https://tj.example.com');
+  });
+
+  /* An explicit TOOLJET_URL is a deliberate override — e.g. the API and UI genuinely live on
+     different origins — and must keep winning exactly as it did before this fallback existed. */
+  it('still prefers an explicit TOOLJET_URL over TOOLJET_DEPLOYMENT_URL', () => {
+    process.env.TOOLJET_URL = 'https://api.example.com';
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://app.example.com';
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().apiUrl).toBe('https://api.example.com');
+  });
+
+  it('still defaults to localhost:3000 when neither variable is set', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_test';
+    expect(loadConfig().apiUrl).toBe('http://localhost:3000');
+  });
+
+  /* Same fallback, reached through the identity branch this time: an older ToolJet backend that
+     doesn't yet send a per-request apiUrl should still get the deployment URL rather than silently
+     landing on localhost:3000. */
+  it('applies the same fallback for a request with no per-request apiUrl of its own', () => {
+    process.env.TOOLJET_DEPLOYMENT_URL = 'https://tj.example.com';
+    const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
+    expect(c.apiUrl).toBe('https://tj.example.com');
+  });
+});
+
 /* Staging and cloud run one shared MCP for every user, so identity arrives per request instead of
    from the environment. */
 describe('per-request identity', () => {

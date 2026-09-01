@@ -199,12 +199,17 @@ export function loadConfig(identity?: RequestIdentity): Config {
   // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
   // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
   const explicitApiUrl = env('TOOLJET_URL');
-  const staticApiUrl = explicitApiUrl ?? 'http://localhost:3000';
   // TOOLJET_APP_URL is the old name — "app" read as "one ToolJet app" more often than "the ToolJet
   // deployment", which is what this actually is. TOOLJET_DEPLOYMENT_URL is preferred; the old name
   // keeps working so nobody's existing config breaks. An explicit value here always wins — it is a
   // deliberate override, not a guess — falling through only when the operator hasn't set one.
   const explicitAppUrl = env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL');
+  // Most self-hosted deployments serve the API and the UI from the same origin, so TOOLJET_URL and
+  // TOOLJET_DEPLOYMENT_URL/TOOLJET_APP_URL end up set to the identical value — one variable set
+  // twice. Let TOOLJET_DEPLOYMENT_URL/TOOLJET_APP_URL double as the API origin when TOOLJET_URL
+  // itself is unset, so a single-origin deployment only has to configure one of them. An explicit
+  // TOOLJET_URL still always wins when both are set — same override precedence as explicitAppUrl.
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? 'http://localhost:3000';
 
   if (identity) {
     // The request's own apiUrl wins when present — same precedence as the session/PAT identity
