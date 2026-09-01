@@ -8,6 +8,11 @@ const userStatus = z.enum(['active', 'archived', 'invited']);
 export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'list_workspace_apps',
+    title: 'List Workspace Apps',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.',
     inputSchema: {
@@ -27,6 +32,11 @@ export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
 export function listWorkspaceUsersTool(client: ToolJetClient): ToolDef {
   return {
     name: 'list_workspace_users',
+    title: 'List Workspace Users',
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
     description:
       'List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.',
     inputSchema: {
@@ -70,6 +80,14 @@ function required(value: string | undefined, label: string): string {
 export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_workspace_users',
+    title: 'Manage Workspace Users',
+    // invite is additive, but update overwrites a member's role and archive revokes their access to
+    // the workspace, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive ' +
       'require confirm:true. Updates can change names/role and add existing custom groups; they cannot ' +

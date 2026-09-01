@@ -84,6 +84,14 @@ function normalizePermission(permissions: Array<Record<string, unknown>>) {
 export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_app_permissions',
+    title: 'Manage App Permissions',
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
     description:
       'List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or ' +
       'component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have ' +
