@@ -85,7 +85,7 @@ where the credential comes from.
 does this, so it needs nothing beyond Node:
 
 ```bash
-MCP_TRANSPORT=http PORT=8787 TOOLJET_URL=http://localhost:3000 TOOLJET_PAT=tj_pat_... \
+MCP_TRANSPORT=http PORT=8787 TOOLJET_DEPLOYMENT_URL=https://your-instance.tooljet.com TOOLJET_PAT=tj_pat_... \
   node bundle/index.js
 ```
 
