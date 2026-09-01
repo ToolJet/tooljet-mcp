@@ -338,6 +338,33 @@ describe('run_query tool', () => {
     expect(client.runQuery).toHaveBeenCalledOnce();
   });
 
+  it('recognizes a bounded Supabase get_rows query and requests remote-read approval', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'failed-deploys', name: 'getFailedDeploys', kind: 'supabase', data_source_id: 'supa-main',
+      options: { operation: 'get_rows', get_table_name: 'deployments', get_limit: 100 },
+    });
+
+    const refused = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'failed-deploys', version_id: 'v1',
+    });
+    expect(refused.isError).toBe(true);
+    expect(refused.content[0]!.text).toMatch(/remote supabase read.*user_confirmed_remote_read:true/i);
+    expect(refused.content[0]!.text).not.toMatch(/no proven read classifier/i);
+    expect(client.runQuery).not.toHaveBeenCalled();
+
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ status: 'Failed' }] });
+    const approved = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'failed-deploys', version_id: 'v1', user_confirmed_remote_read: true,
+    });
+    expect(textOf(approved)).toMatchObject({
+      status: 'ok',
+      data: [{ status: 'Failed' }],
+      warnings: [expect.stringMatching(/User-confirmed remote supabase read/i)],
+    });
+    expect(client.runQuery).toHaveBeenCalledOnce();
+  });
+
   it('truncates oversized REST data returned to MCP after the approved request completes', async () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({

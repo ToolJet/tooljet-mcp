@@ -78,6 +78,121 @@ describe('test_datasource_connection tool', () => {
     });
   });
 
+  it('does not report Supabase as broken when its relation-scoped probe has no table', async () => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockResolvedValue([
+        { id: 'supa1', name: 'Production Supabase', kind: 'supabase', settings_url: 'http://tj/ws/data-sources/supa1' },
+      ]),
+      getDatasourceConnectionDetails: vi.fn().mockResolvedValue({
+        kind: 'supabase', pluginId: '11111111-1111-1111-1111-111111111111', options: { url: 'stored' },
+      }),
+      testDatasourceConnection: vi.fn().mockResolvedValue({
+        status: 'failed', message: 'Invalid relation name: relation must be a non-empty string',
+      }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'supa1' })
+    );
+    expect(parsed).toMatchObject({
+      status: 'inconclusive',
+      supported: true,
+      datasource: { kind: 'supabase' },
+      verification: { action: 'ask_then_run_bounded_read', requires_user_approval: true },
+    });
+    expect(parsed.message).toMatch(/did not prove.*broken.*small.*bounded read/i);
+    expect(parsed.recovery).toBeUndefined();
+  });
+
+  it.each([
+    ['mongodb', 'Invalid collection name: collection must be a non-empty string'],
+    ['postgresql', 'Table name is required before this test can run'],
+    ['mysql', 'Plugin validation failed for field database_name'],
+    ['snowflake', 'An unexpected plugin error occurred'],
+  ])('treats ambiguous %s plugin failures as inconclusive', async (kind, message) => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockResolvedValue([
+        { id: 'source1', name: 'Requested source', kind, settings_url: 'http://tj/ws/data-sources/source1' },
+      ]),
+      getDatasourceConnectionDetails: vi.fn().mockResolvedValue({ kind, options: {} }),
+      testDatasourceConnection: vi.fn().mockResolvedValue({ status: 'failed', message }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'source1' })
+    );
+    expect(parsed).toMatchObject({
+      status: 'inconclusive',
+      supported: true,
+      datasource: { kind },
+      verification: { requires_user_approval: true },
+    });
+    expect(parsed.message).toContain(message);
+    expect(parsed.recovery).toBeUndefined();
+  });
+
+  it.each([
+    'authentication failed: invalid credentials',
+    'connection timed out while reaching the host',
+    'Your free trial has ended and all of your virtual warehouses have been suspended',
+  ])('keeps explicit connectivity failures actionable: %s', async (message) => {
+    const client = clientWith({
+      testDatasourceConnection: vi.fn().mockResolvedValue({ status: 'failed', message }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(parsed).toMatchObject({ status: 'failed', supported: true, recovery: { action: 'open_datasource_settings' } });
+    expect(parsed.verification).toBeUndefined();
+  });
+
+  it('does not invent a broken connection when the plugin returns no reason', async () => {
+    const client = clientWith({
+      testDatasourceConnection: vi.fn().mockResolvedValue({ status: 'failed' }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(parsed).toMatchObject({ status: 'inconclusive', verification: { requires_user_approval: true } });
+  });
+
+  it('applies the same tri-state rules when the plugin throws instead of returning failed', async () => {
+    const ambiguousClient = clientWith({
+      testDatasourceConnection: vi.fn().mockRejectedValue(new Error('Relation name must be provided')),
+    });
+    const ambiguous = textOf(
+      await testDatasourceConnectionTool(ambiguousClient).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(ambiguous).toMatchObject({ status: 'inconclusive', verification: { requires_user_approval: true } });
+
+    const unreachableClient = clientWith({
+      testDatasourceConnection: vi.fn().mockRejectedValue(new Error('ECONNREFUSED database.internal:5432')),
+    });
+    const unreachable = textOf(
+      await testDatasourceConnectionTool(unreachableClient).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(unreachable).toMatchObject({ status: 'failed', recovery: { action: 'open_datasource_settings' } });
+  });
+
+  it('treats a missing test endpoint as unsupported after the datasource was discovered', async () => {
+    const client = clientWith({
+      testDatasourceConnection: vi.fn().mockRejectedValue(
+        new Error('ToolJet testDatasourceConnection failed (404): Not Found')
+      ),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(parsed).toMatchObject({ status: 'unsupported', supported: false, datasource: { id: 'pg1' } });
+  });
+
+  it('keeps discovery failures as tool errors rather than blaming a datasource', async () => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockRejectedValue(new Error('connection refused by ToolJet API')),
+    });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/connection refused by ToolJet API/);
+  });
+
   it('separates a permission denial from a connection fault', async () => {
     const client = clientWith({
       testDatasourceConnection: vi

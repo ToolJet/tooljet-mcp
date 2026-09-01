@@ -142,6 +142,41 @@ describe('query execution safety', () => {
     })).toMatchObject({ provenRead: false, directSafe: false });
   });
 
+  it('classifies bounded Supabase reads instead of treating the datasource as unknown', () => {
+    expect(assessQueryRead({
+      id: 'supa-rows', kind: 'supabase', data_source_id: 'supa-main',
+      options: { operation: 'get_rows', get_table_name: 'deployments', get_limit: '200' },
+    })).toMatchObject({
+      provenRead: true,
+      directSafe: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      maxRows: 200,
+      source: { kind: 'remote_endpoint', value: 'supabase:deployments' },
+    });
+    expect(assessQueryRead({
+      id: 'supa-count', kind: 'supabase', data_source_id: 'supa-main',
+      options: { operation: 'count_rows', count_table_name: 'deployments', count_filters: [] },
+    })).toMatchObject({
+      provenRead: true, countOnly: true, fullSourceCount: true, maxRows: 1,
+      requiresRemoteReadConfirmation: true,
+    });
+  });
+
+  it('refuses Supabase writes and dynamic or missing relations', () => {
+    for (const operation of ['create_row', 'update_row', 'delete_row']) {
+      expect(assessQueryRead({ id: operation, kind: 'supabase', options: { operation } }))
+        .toMatchObject({ provenRead: false, directSafe: false });
+    }
+    expect(assessQueryRead({
+      id: 'dynamic', kind: 'supabase',
+      options: { operation: 'get_rows', get_table_name: '{{components.table.value}}', get_limit: 10 },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+    expect(assessQueryRead({
+      id: 'missing', kind: 'supabase', options: { operation: 'get_rows', get_limit: 10 },
+    })).toMatchObject({ provenRead: false, directSafe: false });
+  });
+
   it('extracts only an unambiguous one-row numeric count', () => {
     expect(extractRowCount({ status: 'ok', data: [{ total: '2400' }] })).toBe(2400);
     expect(extractRowCount({ status: 'ok', data: [{ total: 20, other: 2 }] })).toBeUndefined();
