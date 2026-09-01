@@ -76,7 +76,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
         layout: args.layout,
         layouts: args.layouts,
       };
-      const normalized = normalizeComponentSpec(requested);
+      const normalized = normalizeComponentSpec(requested, { applyVisualDefaults: true });
       const expanded = materializeRequiredDefaultChildren([normalized.component]);
       const { errors, warnings } = lintComponents(expanded.components);
       if (errors.length) return fail(new Error(errors.join(' ')));

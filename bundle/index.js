@@ -39594,6 +39594,35 @@ var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
   "serverSideFilter"
 ]);
 var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
+var TEXT_DEFAULT_INDENT_PX = 10;
+var TEXT_PROSE_LENGTH_CHARS = 120;
+function staticNumber2(value) {
+  if (typeof value === "number")
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const text = value.replace(/[{}]/g, "").trim();
+  return /^\d+(\.\d+)?$/.test(text) ? Number(text) : void 0;
+}
+function looksLikeProse(text) {
+  if (typeof text !== "string")
+    return false;
+  if (/\n|<br|<\/p>|<p[\s>]|<li[\s>]|<ul[\s>]|<ol[\s>]/i.test(text))
+    return true;
+  return text.length > TEXT_PROSE_LENGTH_CHARS;
+}
+function isSingleLineText(component, properties, styles) {
+  if (isTruthy(propValue(properties, "dynamicHeight")))
+    return false;
+  if (looksLikeProse(propValue(properties, "text")))
+    return false;
+  const height = (component.layouts?.desktop ?? component.layout)?.height;
+  if (typeof height !== "number")
+    return true;
+  const textSize = staticNumber2(propValue(styles, "textSize")) ?? 14;
+  const lineHeight = staticNumber2(propValue(styles, "lineHeight")) ?? 1.5;
+  return height < textSize * lineHeight * 2 + 6;
+}
 function isStrippableUnknownKey(type, section, key, knownKeys) {
   if (knownKeys.includes(key))
     return false;
@@ -39712,6 +39741,12 @@ function normalizeComponentSpec(component, options2 = {}) {
         setProperty("fieldDeletionHistory", [...deletionHistory]);
         warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
       }
+    }
+  }
+  if (options2.applyVisualDefaults && component.type === "Text" && stylesValue.textIndent === void 0) {
+    const align = propValue(stylesValue, "textAlign") ?? propValue(properties, "textAlign");
+    if ((align === void 0 || align === "left") && isSingleLineText(component, properties, stylesValue)) {
+      setStyle("textIndent", `{{${TEXT_DEFAULT_INDENT_PX}}}`);
     }
   }
   if (component.type === "Statistics") {
@@ -39981,7 +40016,7 @@ function lintPlannedApp(spec, existingSummary) {
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
     if (!plannedPage.icon.trim())
       errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
-    const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+    const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true, applyVisualDefaults: true }));
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
     warnings.push(...expansion.warnings);
@@ -40251,7 +40286,7 @@ function prepareComponentBatch(inputs) {
     parentRef: parent_ref,
     slotName: slot_name
   }));
-  const normalized2 = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+  const normalized2 = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true, applyVisualDefaults: true }));
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
@@ -41249,7 +41284,7 @@ function addComponentTool(client) {
         layout: args.layout,
         layouts: args.layouts
       };
-      const normalized2 = normalizeComponentSpec(requested);
+      const normalized2 = normalizeComponentSpec(requested, { applyVisualDefaults: true });
       const expanded = materializeRequiredDefaultChildren([normalized2.component]);
       const { errors, warnings } = lintComponents(expanded.components);
       if (errors.length)

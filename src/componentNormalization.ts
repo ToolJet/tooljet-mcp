@@ -62,6 +62,49 @@ const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
 // 43-column canvas rather than at the old 18 (a width-19 currency tile was rendering clipped).
 const STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
 
+// Default left indent for Text components (CSS text-indent, px).
+const TEXT_DEFAULT_INDENT_PX = 10;
+// Beyond this, copy is prose that will wrap in any realistic Text box.
+const TEXT_PROSE_LENGTH_CHARS = 120;
+
+/** Static number behind a value that may be a raw number or a `{{14}}` binding. */
+function staticNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return undefined;
+  const text = value.replace(/[{}]/g, '').trim();
+  return /^\d+(\.\d+)?$/.test(text) ? Number(text) : undefined;
+}
+
+/** Prose markers: an authored newline, or HTML/markdown that renders as multiple blocks or lines. */
+function looksLikeProse(text: unknown): boolean {
+  if (typeof text !== 'string') return false;
+  if (/\n|<br|<\/p>|<p[\s>]|<li[\s>]|<ul[\s>]|<ol[\s>]/i.test(text)) return true;
+  return text.length > TEXT_PROSE_LENGTH_CHARS;
+}
+
+/** True only when a Text can be trusted to render on ONE line, which is the sole case where a CSS
+ *  first-line text-indent reads as a left gutter rather than as misalignment. Three ways to fail:
+ *  dynamic height (the box grows with content, so it is authored to wrap), an authored height with
+ *  room for a second line, or text long/marked-up enough to be prose regardless of the box. Unknown
+ *  height is treated as single-line — labels and headers dominate generated apps, and the length and
+ *  prose checks still catch paragraph copy whose layout arrives in a later update_layout. */
+function isSingleLineText(
+  component: ComponentSpec,
+  properties: Record<string, unknown>,
+  styles: Record<string, unknown>
+): boolean {
+  if (isTruthy(propValue(properties, 'dynamicHeight'))) return false;
+  if (looksLikeProse(propValue(properties, 'text'))) return false;
+
+  const height = (component.layouts?.desktop ?? component.layout)?.height;
+  if (typeof height !== 'number') return true;
+  // Mirrors lint's minimumTextHeight geometry: one line needs fontSize * lineHeight + 6px of
+  // wrapper padding and border, so a box at/over two of those line boxes is authored to wrap.
+  const textSize = staticNumber(propValue(styles, 'textSize')) ?? 14;
+  const lineHeight = staticNumber(propValue(styles, 'lineHeight')) ?? 1.5;
+  return height < textSize * lineHeight * 2 + 6;
+}
+
 /** True unknown keys ToolJet silently ignores — not a catalog key, a misplaced style key, a known
  *  alias, or a close typo (those are left for the linter to rename/error, never silently stripped). */
 function isStrippableUnknownKey(
@@ -81,10 +124,13 @@ function isStrippableUnknownKey(
 /** Apply small persisted-definition compatibility fixes without changing component intent.
  *  With `stripUnknownKeys` (new-component writes only — add_components / planned apply), unknown keys
  *  ToolJet would silently ignore are removed from the saved definition instead of persisted as cruft
- *  (e.g. dynamicHeight, collapseWhenHidden). Legacy in-place update paths do NOT pass this. */
+ *  (e.g. dynamicHeight, collapseWhenHidden). Legacy in-place update paths do NOT pass this.
+ *  With `applyVisualDefaults` (component CREATION paths only), cosmetic defaults that make generated
+ *  apps look designed rather than raw are filled in where the author left the key unset. In-place
+ *  update paths must NOT pass this — a partial update should not restyle an existing component. */
 export function normalizeComponentSpec<T extends ComponentSpec>(
   component: T,
-  options: { stripUnknownKeys?: boolean } = {}
+  options: { stripUnknownKeys?: boolean; applyVisualDefaults?: boolean } = {}
 ): ComponentNormalization<T> {
   const normalizedSections = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).map((section) => [
@@ -241,6 +287,19 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
             'positionally merge catalog demo fields into the explicit fields array.'
         );
       }
+    }
+  }
+
+  // Generated apps are label/sub-header heavy, and a Text sitting flush against its left edge reads
+  // as raw. ToolJet maps styles.textIndent to CSS text-indent (px) — the only numeric left-offset a
+  // Text exposes (styles.padding is default|none, and cssClass is licence-gated), so it is what we
+  // have to work with. But text-indent indents ONLY THE FIRST LINE: on a wrapping paragraph the
+  // remaining lines sit ~10px LEFT of every neighbour, which reads as broken alignment and is worse
+  // than no indent at all. So this only fires where the Text is confidently a single line.
+  if (options.applyVisualDefaults && component.type === 'Text' && stylesValue.textIndent === undefined) {
+    const align = propValue(stylesValue, 'textAlign') ?? propValue(properties, 'textAlign');
+    if ((align === undefined || align === 'left') && isSingleLineText(component, properties, stylesValue)) {
+      setStyle('textIndent', `{{${TEXT_DEFAULT_INDENT_PX}}}`);
     }
   }
 
