@@ -170,3 +170,17 @@ The `Chart` component fails in a specific, common way: **ToolJet's chart-propert
 4. **Only use Plotly-JSON mode** (`plotFromJson: true` + `jsonDescription`) for advanced multi-trace charts. Static descriptions must be valid JSON with a non-empty `data` array. For a dynamic description, keep the expression simple, use explicit field names, wrap the object with `JSON.stringify(...)`, and confirm the browser audit does not report a visible Chart with zero evaluated or rendered traces.
 
 Rule of thumb: **an empty Html can mean rawHtml was too complex.** In particular, a `.map()` nested inside another `.map()` can throw before an `||` fallback runs. Flatten that Html expression or pre-shape the nested data in a query. This is not a blanket ban on nested array lookups in Table data bindings.
+
+## Html component background (rounded corners)
+
+The `Html` wrapper paints an opaque surface behind the injected `rawHtml`. A `border-radius` on the outermost element therefore leaks that fill outside its corners as a light (or dark) square against the parent component/canvas.
+
+Always give `rawHtml` a full-size root that carries the parent's background, and round an inner element:
+
+```html
+<div style="width:100%;height:100%;box-sizing:border-box;background:var(--cc-surface1-surface)">
+  <div style="border-radius:12px;padding:16px;background:#ffffff">…card…</div>
+</div>
+```
+
+Use `var(--cc-surface1-surface)` (or `transparent`) rather than a literal hex on the root — the wrapper's own fill differs between light and dark mode, so a hardcoded colour is wrong in one of them. Never round the outermost element of `rawHtml` directly.

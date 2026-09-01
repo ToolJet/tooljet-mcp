@@ -953,6 +953,10 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     );
   }
 
+  if (spec.type === 'Html') {
+    warnings.push(...lintHtmlRootBackground([{ ...spec, properties: props } as LintComponent]));
+  }
+
   if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
     warnings.push(
       `Component "${label}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array ` +
@@ -1616,6 +1620,28 @@ export function lintModalChildren(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** An Html component's wrapper paints an opaque background behind the injected rawHtml, so a
+ * rounded-corner root leaks that fill outside its corners. Require a background on the root that
+ * matches the parent surface. */
+export function lintHtmlRootBackground(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  for (const component of components.filter((candidate) => candidate.type === 'Html')) {
+    const rawHtml = propVal(component.properties, 'rawHtml');
+    if (typeof rawHtml !== 'string') continue;
+    if (!/\bborder-radius\s*:/i.test(rawHtml)) continue;
+    if (/\bbackground(?:-color)?\s*:/i.test(rawHtml)) continue;
+    warnings.push(
+      `Html "${component.name ?? component.id ?? 'Html'}": rawHtml uses border-radius but sets no ` +
+        'background on its root. The Html wrapper paints an opaque surface behind the content, so the ' +
+        'area outside the rounded corners shows as a light/dark square against the parent. Wrap the ' +
+        'content in a full-size root (width:100%; height:100%; box-sizing:border-box) whose background ' +
+        'matches the parent surface — use var(--cc-surface1-surface) or transparent so it stays correct ' +
+        'in both light and dark mode — and round the inner card instead.'
+    );
+  }
+  return warnings;
+}
+
 /** Geometry-only checks for a complete page after creates, property edits, or layout edits. */
 export function lintRenderedGeometry(components: LintComponent[]): string[] {
   return [
@@ -1623,6 +1649,7 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
     ...lintModalChildren(components),
     ...lintTextGeometry(components),
     ...lintListviewChildren(components),
+    ...lintHtmlRootBackground(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),

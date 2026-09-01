@@ -123,6 +123,32 @@ describe('lintComponentSpec', () => {
     expect(valid.errors).toEqual([]);
   });
 
+  it('warns when rounded Html rawHtml sets no root background', () => {
+    expect(lintComponentSpec({
+      name: 'roundedCard',
+      type: 'Html',
+      properties: { rawHtml: { value: '<div style="border-radius:12px;padding:16px">Hello</div>' } },
+    }).warnings.join(' ')).toMatch(/border-radius.*no .*background.*rounded corners.*var\(--cc-surface1-surface\)/i);
+
+    expect(lintComponentSpec({
+      name: 'roundedCardWithRootBg',
+      type: 'Html',
+      properties: {
+        rawHtml: {
+          value:
+            '<div style="width:100%;height:100%;background:var(--cc-surface1-surface)">' +
+            '<div style="border-radius:12px;padding:16px">Hello</div></div>',
+        },
+      },
+    }).warnings).toEqual([]);
+
+    expect(lintComponentSpec({
+      name: 'squareCard',
+      type: 'Html',
+      properties: { rawHtml: { value: '<div style="padding:16px">Hello</div>' } },
+    }).warnings).toEqual([]);
+  });
+
   it('warns only when Html rawHtml nests map calls and allows supported lookup joins elsewhere', () => {
     const nested =
       '{{(queries.groups.data || []).map(group => group.items.map(item => `<b>${item.name}</b>`).join(""))' +
