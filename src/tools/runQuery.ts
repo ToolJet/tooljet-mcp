@@ -190,8 +190,9 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       `observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. ` +
       'BigQuery, Snowflake, and Redshift reads also require explicit cost approval with ' +
       'user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. ' +
-      'A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive ' +
-      'data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. ' +
+      'Static remote reads (including REST GET and Supabase get_rows/count_rows) require separate approval with ' +
+      'user_confirmed_remote_read:true because they may expose sensitive data or consume quota; remote writes and ' +
+      'binding-dependent requests are always refused. ' +
       'If saved options reference `components.*`, the result ' +
       'includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.',
     inputSchema: {
@@ -229,15 +230,17 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
 
         if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
           return fail(new Error(
-            `run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive ` +
+            `run_query refused remote ${query.kind ?? 'datasource'} read "${query.name ?? query.id}" before execution: ` +
+              'remote reads can expose sensitive ' +
               'data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask ' +
               'explicitly; retry with user_confirmed_remote_read:true only after they approve that request.'
           ));
         }
         if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push(
-            'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.'
-          );
+          warnings.push(assessment.datasourceKind === 'restapi'
+            ? 'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.'
+            : `User-confirmed remote ${query.kind ?? 'datasource'} read: the remote system controls response size and quota. ` +
+              'Inspect returned metadata when available, and add datasource-specific pagination before another run when needed.');
         }
 
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {

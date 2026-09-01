@@ -166,6 +166,67 @@ function assessRestGet(options: Record<string, unknown>, datasourceId?: string):
   };
 }
 
+/** Supabase's API plugin uses operation-specific table/limit fields rather than SQL. Treat its
+ *  row reads like other remote APIs: statically classify them as reads, but require explicit user
+ *  approval before crossing into the remote system. Writes remain fail-closed. */
+function assessSupabase(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const identity = { datasourceKind: 'supabase', ...(datasourceId ? { datasourceId } : {}) };
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity,
+  });
+  if (!operation) return refuse('Supabase query has no operation.');
+
+  if (operation === 'count_rows') {
+    const table = typeof options.count_table_name === 'string' ? options.count_table_name.trim() : '';
+    if (!table || containsBinding(table)) {
+      return refuse('Supabase count_rows requires a non-empty static count_table_name.');
+    }
+    const filters = options.count_filters;
+    const fullSourceCount = filters === undefined || filters === null || filters === '' ||
+      (Array.isArray(filters) && filters.length === 0) ||
+      (!!record(filters) && Object.keys(record(filters)!).length === 0);
+    return {
+      provenRead: true, directSafe: false, countOnly: true, selectStar: false,
+      requiresCountPreflight: false, requiresRemoteReadConfirmation: true,
+      fullSourceCount, simpleSourceRead: true,
+      source: { kind: 'remote_endpoint', value: `supabase:${table.toLowerCase()}` },
+      maxRows: 1,
+      reason: 'Supabase count_rows reads a remote project and may consume API quota.',
+      ...identity,
+    };
+  }
+
+  if (operation !== 'get_rows') {
+    return refuse(`Supabase operation ${operation} is not a read; it can change Supabase data.`);
+  }
+  const table = typeof options.get_table_name === 'string' ? options.get_table_name.trim() : '';
+  if (!table || containsBinding(table)) {
+    return refuse('Supabase get_rows requires a non-empty static get_table_name.');
+  }
+  const maxRows = staticPositiveInteger(options.get_limit);
+  const remote = {
+    provenRead: true as const, directSafe: false as const, countOnly: false as const,
+    selectStar: false as const, requiresRemoteReadConfirmation: true as const,
+    simpleSourceRead: true as const,
+    source: { kind: 'remote_endpoint' as const, value: `supabase:${table.toLowerCase()}` },
+    ...identity,
+  };
+  if (maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...remote, requiresCountPreflight: false, maxRows,
+      reason: 'Supabase get_rows reads a remote project and may consume API quota.',
+    };
+  }
+  return {
+    ...remote, requiresCountPreflight: true, maxRows,
+    reason: maxRows === undefined
+      ? 'Supabase get_rows has no static get_limit.'
+      : `Supabase get_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+  };
+}
+
 function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
 }
@@ -363,6 +424,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
 
   if (kind === 'servicenow') return assessServiceNow(options, datasourceId);
+
+  if (kind === 'supabase') return assessSupabase(options, datasourceId);
 
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);
