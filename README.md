@@ -25,6 +25,10 @@ TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the tar
 # Only needed if the UI is served from a different origin than TOOLJET_URL (defaults to it otherwise):
 # TOOLJET_DEPLOYMENT_URL=http://localhost:8082
 ```
+The fallback runs both directions: most self-hosted instances serve the API and the UI from one
+origin, so a single-origin deployment can set just `TOOLJET_DEPLOYMENT_URL` instead — it doubles as
+`TOOLJET_URL` too. The split above is what local dev against a running ToolJet checkout actually
+needs (backend on `:3000`, frontend dev server on `:8082`), which is why it's shown as the default here.
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
 
@@ -136,7 +140,7 @@ Or via the marketplace, which lets you get updates:
 ```
 For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.
 
-**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_URL` defaults to localhost; `TOOLJET_DEPLOYMENT_URL` defaults to `TOOLJET_URL`). Before launching Claude Code:
+**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_URL` and `TOOLJET_DEPLOYMENT_URL` each fall back to the other when unset, and default to localhost if neither is set — set whichever one matches your deployment, or both if the API and UI live on different origins). Before launching Claude Code:
 ```bash
 export TOOLJET_PAT="tj_pat_..."
 # optional, if not localhost:
