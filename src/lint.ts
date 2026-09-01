@@ -512,6 +512,33 @@ export function renderedHeight(component: LintComponent, rect?: Rect): number {
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
 
+/** Standard single-line form controls keep their catalog-default authored height. Making the
+ *  component taller does not enlarge its value text; with a top-aligned label ToolJet adds a
+ *  separate 20px rendered footprint outside that authored box. Treat the catalog's
+ *  compactFormHeight hint as the source-of-truth marker instead of duplicating a component list. */
+function lintStandardSingleLineInputHeight(component: LintComponent): string[] {
+  const schema = component.type ? getComponentSchema(component.type) : undefined;
+  const defaultHeight = schema?.defaultSize?.height;
+  if (!schema?.renderingHints?.compactFormHeight || defaultHeight === undefined) return [];
+
+  const layouts: Array<[string, Rect]> = [];
+  if (component.layout) layouts.push(['layout', component.layout]);
+  if (component.layouts?.desktop) layouts.push(['desktop', component.layouts.desktop]);
+  if (component.layouts?.mobile) layouts.push(['mobile', component.layouts.mobile]);
+
+  const label = component.name ?? component.type ?? 'component';
+  return layouts.flatMap(([layoutName, layout]) => {
+    const authoredHeight = layout.height;
+    if (authoredHeight === undefined || authoredHeight <= defaultHeight) return [];
+    return [
+      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard ` +
+        `single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ` +
+        `${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored ` +
+        `box, so move the following row down instead of increasing this field's height.`,
+    ];
+  });
+}
+
 /** Text renders inside 4px of canvas-wrapper padding plus its own 1px top/bottom border. A single
  * line therefore needs fontSize * lineHeight + 6 authored pixels or descenders are clipped. */
 export function minimumTextHeight(component: LintComponent): number | undefined {
@@ -1636,6 +1663,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   for (const c of components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
+    errors.push(...lintStandardSingleLineInputHeight(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));

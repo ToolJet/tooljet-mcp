@@ -31,7 +31,7 @@ describe('lint_app_spec', () => {
           {
             client_ref: 'caseTitle', name: 'caseTitle', type: 'TextInput',
             properties: { label: { value: 'Title' } }, styles: { alignment: { value: 'top' } },
-            layout: { top: 20, left: 2, width: 20, height: 60 },
+            layout: { top: 20, left: 2, width: 20, height: 40 },
           },
           {
             client_ref: 'save', name: 'saveCase', type: 'Button', properties: { text: { value: 'Save' } },
@@ -53,6 +53,36 @@ describe('lint_app_spec', () => {
     expect(body.counts).toMatchObject({ tables: 1, seed_rows: 0, pages: 1, components: 2, queries: 2, events: 5, lifecycles: 1 });
     expect(body.plan_token).toEqual(expect.any(String));
     expect(client.listDatasources).toHaveBeenCalledOnce();
+  });
+
+  it('blocks oversized standard single-line fields before issuing a plan token', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([]),
+    } as unknown as ToolJetClient;
+    const result = await lintAppSpecTool(client).handler({
+      pages: [{
+        name: 'Log Bug', icon: 'IconBug',
+        components: [
+          {
+            client_ref: 'title', name: 'bugTitle', type: 'TextInput',
+            properties: { label: 'Title' }, styles: { alignment: 'top' },
+            layout: { top: 100, left: 2, width: 39, height: 90 },
+          },
+          {
+            client_ref: 'module', name: 'bugModule', type: 'DropdownV2',
+            properties: { label: 'Module' }, styles: { alignment: 'top' },
+            layout: { top: 220, left: 2, width: 18, height: 90 },
+          },
+        ],
+      }],
+    });
+
+    const body = textOf(result);
+    expect(body.ok).toBe(false);
+    expect(body.plan_token).toBeUndefined();
+    expect(body.errors.join(' ')).toMatch(/TextInput "bugTitle".*90px.*40px/is);
+    expect(body.errors.join(' ')).toMatch(/DropdownV2 "bugModule".*90px.*40px/is);
   });
 
   it('uses existing app context for repair bindings and event targets', async () => {
