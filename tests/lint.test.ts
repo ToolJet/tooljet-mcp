@@ -689,6 +689,17 @@ describe('lintComponentSpec', () => {
   });
 
   it('warns when a static-height Table cannot show rowsPerPage without inner scrolling', () => {
+    const unusable = lintComponentSpec({
+      name: 'deployments',
+      type: 'Table',
+      properties: { rowsPerPage: { value: '{{10}}' } },
+      styles: { cellSize: { value: 'regular' } },
+      layout: { top: 0, left: 0, width: 30, height: 62 },
+    });
+    expect(unusable.warnings.join(' ')).toMatch(
+      /height 62px.*cannot show even one data row.*at least 200px.*effectively unusable/i
+    );
+
     const compact = lintComponentSpec({
       name: 'orders',
       type: 'Table',
@@ -697,6 +708,7 @@ describe('lintComponentSpec', () => {
       layout: { top: 0, left: 0, width: 30, height: 460 },
     });
     expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 614px/i);
+    expect(compact.warnings.join(' ')).not.toMatch(/cannot show even one data row|effectively unusable/i);
 
     const tall = lintComponentSpec({
       name: 'orders',
