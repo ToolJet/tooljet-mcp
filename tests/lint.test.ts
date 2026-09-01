@@ -1107,6 +1107,31 @@ describe('lintOperationalViewport', () => {
 });
 
 describe('lintComponents (batch)', () => {
+  it.each(['TextInput', 'DropdownV2'])(
+    'blocks an oversized standard single-line %s and explains top-label spacing',
+    (type) => {
+      const result = lintComponents([{
+        name: 'bugTitle',
+        type,
+        styles: { alignment: { value: 'top' } },
+        layout: { top: 100, left: 2, width: 20, height: 90 },
+      }]);
+
+      expect(result.errors.join(' ')).toMatch(
+        /authored height 90px exceeds the standard single-line height 40px.*does not enlarge the value text.*top-aligned label renders 20px outside.*move the following row down/is
+      );
+  });
+
+  it('accepts catalog-default single-line heights and does not restrict multiline TextArea height', () => {
+    const result = lintComponents([
+      { name: 'title', type: 'TextInput', layout: { top: 0, left: 0, width: 20, height: 40 } },
+      { name: 'status', type: 'DropdownV2', layout: { top: 70, left: 0, width: 20, height: 40 } },
+      { name: 'description', type: 'TextArea', layout: { top: 140, left: 0, width: 20, height: 180 } },
+    ]);
+
+    expect(result.errors).toEqual([]);
+  });
+
   it('blocks named slots on component types that do not expose native regions', () => {
     const result = lintComponents([
       { name: 'board', type: 'Kanban', clientRef: 'board' },

@@ -23,7 +23,7 @@ describe('plan token + apply_app_phase', () => {
       {
         id: 'title-id', name: 'caseTitle', type: 'TextInput',
         properties: { label: { value: 'Title' } }, styles: { alignment: { value: 'top' } },
-        layouts: { desktop: { top: 20, left: 2, width: 20, height: 60 } },
+        layouts: { desktop: { top: 20, left: 2, width: 20, height: 40 } },
       },
       {
         id: 'save-id', name: 'saveCase', type: 'Button',
@@ -102,7 +102,7 @@ describe('plan token + apply_app_phase', () => {
       pages: [{
         client_ref: 'home', name: 'Overview', icon: 'IconLayoutDashboard',
         components: [
-          { client_ref: 'title', name: 'caseTitle', type: 'TextInput', properties: { label: 'Title' }, styles: { alignment: 'top' }, layout: { top: 20, left: 2, width: 20, height: 60 } },
+          { client_ref: 'title', name: 'caseTitle', type: 'TextInput', properties: { label: 'Title' }, styles: { alignment: 'top' }, layout: { top: 20, left: 2, width: 20, height: 40 } },
           { client_ref: 'save', name: 'saveCase', type: 'Button', properties: { text: 'Save' }, layout: { top: 120, left: 2, width: 6, height: 40 } },
         ],
       }],
