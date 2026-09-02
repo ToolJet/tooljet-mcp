@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ToolJetClient } from '../tooljetClient.js';
+import { ToolJetHttpError, type ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 
@@ -10,7 +10,7 @@ import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
  * and ToolJet's util.service catches the resulting NotImplementedException and flattens it into a
  * normal `{status:'failed'}`. Reported as-is, that reads as "your working Stripe source is down".
  */
-const NOT_IMPLEMENTED = /testconnection method not implemented/i;
+const CONNECTION_FAILURE_CATEGORIES = new Set(['connection', 'authentication', 'network', 'tls', 'credentials']);
 
 /** Identical whether the catalog pre-empted the call or ToolJet answered it, so the model cannot
  *  tell the two paths apart and cannot come to depend on the difference. */
@@ -23,12 +23,14 @@ function unsupportedMessage(kind: string): string {
 
 /** Permission, not health: TEST_CONNECTION is granted to admins, datasource create/delete holders,
  *  all-editable/all-viewable, and per-datasource configurable grants — but NOT to a bare builder. */
-function isForbidden(message: string): boolean {
-  return /\(403\)/.test(message) || /forbidden/i.test(message);
-}
-
-function isNotFound(message: string): boolean {
-  return /\(404\)/.test(message);
+function inconclusive(header: Record<string, unknown>, detail?: string) {
+  return ok({
+    ...header,
+    supported: true,
+    status: 'inconclusive',
+    message: `The connection test did not prove this datasource is broken${detail ? ` (${detail.trim()})` : ''}.`,
+    verification: { action: 'ask_then_run_bounded_read', requires_user_approval: true },
+  });
 }
 
 export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
@@ -53,6 +55,7 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
       datasource_id: z.string().min(1),
     },
     async handler(args: { version_id: string; datasource_id: string }) {
+      let header: Record<string, unknown> | undefined;
       try {
         const datasource = (await client.listDatasources(args.version_id)).find(
           (candidate) => candidate.id === args.datasource_id
@@ -62,7 +65,7 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
             new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`)
           );
         }
-        const header = {
+        header = {
           datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind },
           settings_url: datasource.settings_url,
         };
@@ -88,18 +91,11 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
         });
 
         const message = typeof result.message === 'string' ? result.message : undefined;
-        if (message && NOT_IMPLEMENTED.test(message)) {
-          return ok({
-            ...header,
-            supported: false,
-            status: 'unsupported',
-            message: unsupportedMessage(datasource.kind),
-          });
-        }
-
         if (result.status === 'ok') {
           return ok({ ...header, supported: true, status: 'ok' });
         }
+        const category = typeof result.category === 'string' ? result.category.toLowerCase() : '';
+        if (!CONNECTION_FAILURE_CATEGORIES.has(category)) return inconclusive(header, message);
         return ok({
           ...header,
           supported: true,
@@ -114,12 +110,12 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
           },
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        if (!header) return fail(err);
         // A permission denial is about the caller, not the datasource. Returned as a normal result
         // so the model reports it accurately instead of announcing a broken source.
-        if (isForbidden(message)) {
+        if (err instanceof ToolJetHttpError && err.status === 403) {
           return ok({
-            datasource: { id: args.datasource_id },
+            ...header,
             supported: true,
             status: 'not_permitted',
             message:
@@ -128,15 +124,15 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
               'The connection itself was not tested.',
           });
         }
-        if (isNotFound(message)) {
-          return fail(
-            new Error(
-              `ToolJet has no test-connection endpoint or no datasource "${args.datasource_id}" for this ` +
-                `environment (${message}).`
-            )
-          );
+        if (err instanceof ToolJetHttpError && err.status === 404) {
+          return ok({
+            ...header,
+            supported: false,
+            status: 'unsupported',
+            message: 'ToolJet has no datasource-level test endpoint. This says nothing about connection health.',
+          });
         }
-        return fail(err);
+        return inconclusive(header, err instanceof Error ? err.message : String(err));
       }
     },
   };

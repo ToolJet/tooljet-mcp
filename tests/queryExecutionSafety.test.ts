@@ -142,6 +142,16 @@ describe('query execution safety', () => {
     })).toMatchObject({ provenRead: false, directSafe: false });
   });
 
+  it('classifies bounded Supabase row reads without treating writes as reads', () => {
+    expect(assessQueryRead({
+      id: 'sb-read', kind: 'supabase', data_source_id: 'sb1',
+      options: { operation: 'get_rows', get_table_name: 'deployments', get_limit: 25 },
+    })).toMatchObject({ provenRead: true, requiresRemoteReadConfirmation: true, maxRows: 25 });
+    expect(assessQueryRead({
+      id: 'sb-write', kind: 'supabase', options: { operation: 'insert_row', insert_table_name: 'deployments' },
+    })).toMatchObject({ provenRead: false });
+  });
+
   it('extracts only an unambiguous one-row numeric count', () => {
     expect(extractRowCount({ status: 'ok', data: [{ total: '2400' }] })).toBe(2400);
     expect(extractRowCount({ status: 'ok', data: [{ total: 20, other: 2 }] })).toBeUndefined();

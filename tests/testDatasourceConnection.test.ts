@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ToolJetClient } from '../src/tooljetClient.js';
+import { ToolJetHttpError, type ToolJetClient } from '../src/tooljetClient.js';
 import { testDatasourceConnectionTool } from '../src/tools/testDatasourceConnection.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
@@ -46,7 +46,7 @@ describe('test_datasource_connection tool', () => {
     );
   });
 
-  it('reports an unsupported kind instead of a broken connection', async () => {
+  it('keeps an unstructured plugin failure inconclusive', async () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
@@ -55,17 +55,16 @@ describe('test_datasource_connection tool', () => {
     const parsed = textOf(
       await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
     );
-    expect(parsed.supported).toBe(false);
-    expect(parsed.status).toBe('unsupported');
-    expect(parsed.message).toMatch(/does not implement a connection test/);
-    expect(parsed.recovery).toBeUndefined();
+    expect(parsed.supported).toBe(true);
+    expect(parsed.status).toBe('inconclusive');
+    expect(parsed.verification).toMatchObject({ requires_user_approval: true });
   });
 
   it('returns a repair handoff on a genuine connection failure', async () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
-        .mockResolvedValue({ status: 'failed', message: 'connection refused\n        ' }),
+        .mockResolvedValue({ status: 'failed', category: 'connection', message: 'connection refused\n        ' }),
     });
     const parsed = textOf(
       await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
@@ -82,7 +81,7 @@ describe('test_datasource_connection tool', () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
-        .mockRejectedValue(new Error('ToolJet testDatasourceConnection failed (403): Forbidden')),
+        .mockRejectedValue(new ToolJetHttpError(403, 'testDatasourceConnection', 'Forbidden')),
     });
     const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
     expect(result.isError).toBeUndefined();

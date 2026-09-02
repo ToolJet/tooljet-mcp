@@ -170,7 +170,7 @@ describe('run_query tool', () => {
       datasource_settings_url: 'http://localhost:8082/acme/data-sources/pg1',
       options: { mode: 'sql', query: 'select id from orders limit 25' },
     });
-    client.runQuery.mockResolvedValue({ status: 'failed', message: 'connection refused' });
+    client.runQuery.mockResolvedValue({ status: 'failed', data: { code: '08006' }, message: 'connection refused' });
 
     const result = await runQueryTool(client as unknown as ToolJetClient).handler({
       query_id: 'q1', version_id: 'v1',
@@ -393,11 +393,6 @@ describe('run_queries tool', () => {
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
-        recovery: {
-          action: 'open_datasource_settings',
-          url: 'http://localhost:8082/acme/data-sources/tjdb',
-          instruction: expect.stringMatching(/user.*in-app browser.*do not enter credentials/is),
-        },
       },
     ] });
   });
