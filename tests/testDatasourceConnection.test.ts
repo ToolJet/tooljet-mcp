@@ -132,16 +132,45 @@ describe('test_datasource_connection tool', () => {
     expect(parsed.verification).toMatchObject({ requires_user_approval: true });
   });
 
-  it('does not mistake connection-detail permissions for a broken or unsupported datasource', async () => {
+  it.each([401, 403, 500])('keeps a %i connection-detail failure as an MCP error', async (status) => {
     const client = clientWith({
       getDatasourceConnectionDetails: vi
         .fn()
-        .mockRejectedValue(new ToolJetHttpError(403, 'getDatasourceConnectionDetails', 'Forbidden')),
+        .mockRejectedValue(new ToolJetHttpError(status, 'getDatasourceConnectionDetails', 'Request failed')),
     });
-    const parsed = textOf(
-      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
-    );
-    expect(parsed.status).toBe('inconclusive');
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain(`failed (${status})`);
+    expect(client.testDatasourceConnection).not.toHaveBeenCalled();
+  });
+
+  it.each([404, 501])('reports a %i from the test endpoint as unsupported', async (status) => {
+    const client = clientWith({
+      testDatasourceConnection: vi
+        .fn()
+        .mockRejectedValue(new ToolJetHttpError(status, 'testDatasourceConnection', 'Unavailable')),
+    });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBeUndefined();
+    expect(textOf(result)).toMatchObject({ status: 'unsupported', supported: false });
+  });
+
+  it.each([401, 408, 429, 500])('keeps a %i test-endpoint failure as an MCP error', async (status) => {
+    const client = clientWith({
+      testDatasourceConnection: vi
+        .fn()
+        .mockRejectedValue(new ToolJetHttpError(status, 'testDatasourceConnection', 'Request failed')),
+    });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain(`failed (${status})`);
+  });
+
+  it('keeps a transport failure as an MCP error', async () => {
+    const client = clientWith({ testDatasourceConnection: vi.fn().mockRejectedValue(new Error('fetch failed')) });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toBe('Error: fetch failed');
   });
 
   it('rejects a datasource that is not on this version', async () => {

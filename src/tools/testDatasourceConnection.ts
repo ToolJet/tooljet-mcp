@@ -132,7 +132,15 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
             message: 'ToolJet has no datasource-level test endpoint. This says nothing about connection health.',
           });
         }
-        return inconclusive(header, err instanceof Error ? err.message : String(err));
+        if (err instanceof ToolJetHttpError && err.method === 'testDatasourceConnection' && err.status === 501) {
+          return ok({
+            ...header,
+            supported: false,
+            status: 'unsupported',
+            message: 'This ToolJet datasource plugin does not implement a connection test.',
+          });
+        }
+        return fail(err);
       }
     },
   };
