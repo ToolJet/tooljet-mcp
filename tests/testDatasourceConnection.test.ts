@@ -60,6 +60,22 @@ describe('test_datasource_connection tool', () => {
     expect(parsed.recovery).toMatchObject({ action: 'open_datasource_settings' });
   });
 
+  it('uses ToolJet structured metadata when a plugin does not implement a connection test', async () => {
+    const client = clientWith({
+      testDatasourceConnection: vi.fn().mockResolvedValue({
+        status: 'failed',
+        category: 'unsupported',
+        supported: false,
+        message: 'opaque server text',
+      }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(parsed).toMatchObject({ status: 'unsupported', supported: false });
+    expect(parsed).not.toHaveProperty('recovery');
+  });
+
   it('returns a repair handoff on a genuine connection failure', async () => {
     const client = clientWith({
       testDatasourceConnection: vi

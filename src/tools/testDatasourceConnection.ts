@@ -90,6 +90,14 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
         });
 
         const message = typeof result.message === 'string' ? result.message : undefined;
+        if (result.category === 'unsupported') {
+          return ok({
+            ...header,
+            supported: false,
+            status: 'unsupported',
+            message: unsupportedMessage(datasource.kind),
+          });
+        }
         if (result.status === 'ok') {
           return ok({ ...header, supported: true, status: 'ok' });
         }

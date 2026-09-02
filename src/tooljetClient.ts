@@ -382,10 +382,12 @@ export interface TestDatasourceConnectionParams {
   environmentId?: string;
 }
 
-/** ToolJet's own test-connection verdict. `status` is 'ok' or 'failed'; a plugin that does not
- *  implement testConnection also arrives here as 'failed', which the tool separates out. */
+/** ToolJet's own test-connection verdict. Unsupported plugins preserve the existing `failed`
+ *  status for compatibility and add a structured `category`. */
 export interface ConnectionTestResult {
   status: string;
+  category?: string;
+  supported?: boolean;
   message?: string;
   [key: string]: unknown;
 }
