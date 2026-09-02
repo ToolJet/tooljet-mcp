@@ -10,8 +10,6 @@ import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
  * and ToolJet's util.service catches the resulting NotImplementedException and flattens it into a
  * normal `{status:'failed'}`. Reported as-is, that reads as "your working Stripe source is down".
  */
-const CONNECTION_FAILURE_CATEGORIES = new Set(['connection', 'authentication', 'network', 'tls', 'credentials']);
-
 /** Identical whether the catalog pre-empted the call or ToolJet answered it, so the model cannot
  *  tell the two paths apart and cannot come to depend on the difference. */
 function unsupportedMessage(kind: string): string {
@@ -73,7 +71,8 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
         // The catalog knows which plugins implement testConnection, so an unsupported kind costs no
         // HTTP calls. Only an explicit false short-circuits: an undefined flag means a stale or
         // partial catalog, which must degrade to asking ToolJet rather than to a wrong answer.
-        if (getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection === false) {
+        const supportsTestConnection = getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection;
+        if (supportsTestConnection === false) {
           return ok({
             ...header,
             supported: false,
@@ -94,8 +93,9 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
         if (result.status === 'ok') {
           return ok({ ...header, supported: true, status: 'ok' });
         }
-        const category = typeof result.category === 'string' ? result.category.toLowerCase() : '';
-        if (!CONNECTION_FAILURE_CATEGORIES.has(category)) return inconclusive(header, message);
+        // ToolJet's endpoint contract is {status,message}; it does not return an error category.
+        // A failed verdict is authoritative only when the catalog says this plugin implements the test.
+        if (supportsTestConnection !== true) return inconclusive(header, message);
         return ok({
           ...header,
           supported: true,
@@ -113,7 +113,7 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
         if (!header) return fail(err);
         // A permission denial is about the caller, not the datasource. Returned as a normal result
         // so the model reports it accurately instead of announcing a broken source.
-        if (err instanceof ToolJetHttpError && err.status === 403) {
+        if (err instanceof ToolJetHttpError && err.method === 'testDatasourceConnection' && err.status === 403) {
           return ok({
             ...header,
             supported: true,
@@ -124,7 +124,7 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
               'The connection itself was not tested.',
           });
         }
-        if (err instanceof ToolJetHttpError && err.status === 404) {
+        if (err instanceof ToolJetHttpError && err.method === 'testDatasourceConnection' && err.status === 404) {
           return ok({
             ...header,
             supported: false,

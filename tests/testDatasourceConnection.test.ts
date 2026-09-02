@@ -46,7 +46,7 @@ describe('test_datasource_connection tool', () => {
     );
   });
 
-  it('keeps an unstructured plugin failure inconclusive', async () => {
+  it('trusts a failed verdict when the catalog confirms the plugin supports the test', async () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
@@ -56,15 +56,15 @@ describe('test_datasource_connection tool', () => {
       await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
     );
     expect(parsed.supported).toBe(true);
-    expect(parsed.status).toBe('inconclusive');
-    expect(parsed.verification).toMatchObject({ requires_user_approval: true });
+    expect(parsed.status).toBe('failed');
+    expect(parsed.recovery).toMatchObject({ action: 'open_datasource_settings' });
   });
 
   it('returns a repair handoff on a genuine connection failure', async () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
-        .mockResolvedValue({ status: 'failed', category: 'connection', message: 'connection refused\n        ' }),
+        .mockResolvedValue({ status: 'failed', message: 'connection refused\n        ' }),
     });
     const parsed = textOf(
       await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
@@ -116,6 +116,32 @@ describe('test_datasource_connection tool', () => {
     // An undefined flag is a stale catalog, not a claim that the plugin lacks the method.
     expect(client.testDatasourceConnection).toHaveBeenCalled();
     expect(parsed.status).toBe('ok');
+  });
+
+  it('keeps a failed result inconclusive when the catalog cannot prove test support', async () => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockResolvedValue([
+        { id: 'x1', name: 'Unlisted', kind: 'not-in-the-catalog', settings_url: 'http://tj/ws/data-sources/x1' },
+      ]),
+      testDatasourceConnection: vi.fn().mockResolvedValue({ status: 'failed', message: 'unknown result' }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'x1' })
+    );
+    expect(parsed.status).toBe('inconclusive');
+    expect(parsed.verification).toMatchObject({ requires_user_approval: true });
+  });
+
+  it('does not mistake connection-detail permissions for a broken or unsupported datasource', async () => {
+    const client = clientWith({
+      getDatasourceConnectionDetails: vi
+        .fn()
+        .mockRejectedValue(new ToolJetHttpError(403, 'getDatasourceConnectionDetails', 'Forbidden')),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(parsed.status).toBe('inconclusive');
   });
 
   it('rejects a datasource that is not on this version', async () => {

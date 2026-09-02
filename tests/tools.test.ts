@@ -228,6 +228,54 @@ describe('run_query tool', () => {
     });
   });
 
+  it('preserves a completed count preflight when the target transport throws', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', name: 'listOrders', kind: 'postgresql', data_source_id: 'pg-main',
+        options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', name: 'countOrders', kind: 'postgresql', data_source_id: 'pg-main',
+        options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
+      });
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ total: 48 }] })
+      .mockRejectedValueOnce(new Error('socket closed'));
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1',
+    });
+
+    expect(textOf(result)).toMatchObject({
+      status: 'failed', message: 'socket closed',
+      preflight: { count_query_id: 'count', row_count: 48, threshold: 1000 },
+    });
+  });
+
+  it('runs an approved Supabase count preflight before an unbounded Supabase read', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', kind: 'supabase', data_source_id: 'sb-main',
+        options: { operation: 'get_rows', get_table_name: 'deployments' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', kind: 'supabase', data_source_id: 'sb-main',
+        options: { operation: 'count_rows', count_table_name: 'deployments', count_filters: [] },
+      });
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ count: 48 }] })
+      .mockResolvedValueOnce({ status: 'ok', data: [{ id: 1 }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1', user_confirmed_remote_read: true,
+    });
+
+    expect(client.runQuery).toHaveBeenCalledTimes(2);
+    expect(textOf(result)).toMatchObject({ status: 'ok', preflight: { row_count: 48 } });
+  });
+
   it('reports the observed large count and requires explicit user confirmation before the target run', async () => {
     const client = makeClient();
     client.getQuery

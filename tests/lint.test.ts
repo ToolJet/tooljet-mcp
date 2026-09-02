@@ -41,7 +41,7 @@ describe('lintComponentSpec', () => {
     expect(r.warnings.join(' ')).toMatch(/native title defaults to a non-empty string that clips/);
   });
 
-  it('blocks a large Text shorter than its line box plus wrapper chrome', () => {
+  it('warns for wrapper chrome shortfall but blocks a clipped line box', () => {
     const title = {
       name: 'pageTitle',
       type: 'Text',
@@ -54,9 +54,13 @@ describe('lintComponentSpec', () => {
       layout: { top: 0, left: 2, width: 30, height: 40 },
     };
     expect(minimumTextHeight(title)).toBe(42);
-    expect(lintComponents([title]).errors.join(' ')).toMatch(
+    expect(lintComponents([title]).errors).toEqual([]);
+    expect(lintComponents([title]).warnings.join(' ')).toMatch(
       /Text "pageTitle" is too short.*height 40px.*at least 42px.*use 50px.*descenders are clipped/i
     );
+
+    expect(lintComponents([{ ...title, layout: { ...title.layout, height: 30 } }]).errors.join(' '))
+      .toMatch(/too short to render one line.*at least 42px/i);
 
     expect(lintComponents([{ ...title, layout: { ...title.layout, height: 50 } }]).warnings).toEqual([]);
     expect(lintComponents([{

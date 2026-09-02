@@ -111,6 +111,27 @@ describe('ToolJet DB maintenance tools', () => {
 });
 
 describe('update_components validation', () => {
+  it('refuses a style update that makes existing Text geometry unusable', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{
+          id: 'title', name: 'title', type: 'Text', properties: {}, styles: {},
+          layouts: { desktop: { top: 0, left: 0, width: 20, height: 40 } },
+        }] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'title', definition: { styles: { textSize: 32, lineHeight: 1.5 } } }],
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/too short to render one line/i);
+    expect(client.updateComponents).not.toHaveBeenCalled();
+  });
+
   // Regression: models pass the component NAME as component_id (it is the handle they authored and
   // what bindings use). Looking up by id only and answering "does not exist" made the model re-read
   // the page, see the component, and retry forever — >1M tokens on one observed build.
@@ -152,6 +173,23 @@ describe('update_components validation', () => {
     const body = result.content[0]!.text;
     expect(body).toContain('realOne=c1');
     expect(client.updateComponents).not.toHaveBeenCalled();
+  });
+
+  it('allows renaming a component that already has unrelated lint errors', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{ id: 'legacy', name: 'oldName', type: '', properties: {} }] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'legacy', name: 'newName' }],
+    });
+    expect(result.isError).not.toBe(true);
+    expect(client.updateComponents).toHaveBeenCalledOnce();
   });
 
   it('canonicalizes concise raw definition leaves before an update', async () => {
@@ -322,11 +360,11 @@ describe('update_components validation', () => {
         pages: [{ id: 'p1', components: [
           {
             id: 'first', name: 'first', type: 'TextInput', properties: { label: { value: 'First' } },
-            styles: { alignment: { value: 'side' } }, layouts: { desktop: { top: 0, left: 0, width: 18, height: 62 } },
+            styles: { alignment: { value: 'side' } }, layouts: { desktop: { top: 0, left: 0, width: 18, height: 40 } },
           },
           {
             id: 'second', name: 'second', type: 'TextInput', properties: { label: { value: 'Second' } },
-            styles: { alignment: { value: 'side' } }, layouts: { desktop: { top: 72, left: 0, width: 18, height: 62 } },
+            styles: { alignment: { value: 'side' } }, layouts: { desktop: { top: 50, left: 0, width: 18, height: 40 } },
           },
         ] }],
         queries: [],
@@ -338,7 +376,7 @@ describe('update_components validation', () => {
       app_id: 'app1', version_id: 'v1', page_id: 'p1',
       updates: [{ component_id: 'first', definition: { styles: { alignment: { value: 'top' } } } }],
     });
-    expect(textOf(result).warnings.join(' ')).toMatch(/renders 82px tall.*authored 62px \+ 20px/);
+    expect(textOf(result).warnings.join(' ')).toMatch(/renders 60px tall.*authored 40px \+ 20px/);
     expect(client.updateComponents).toHaveBeenCalled();
   });
 });
@@ -373,11 +411,11 @@ describe('update_layout geometry warnings', () => {
         pages: [{ id: 'p1', components: [
           {
             id: 'first', name: 'first', type: 'TextInput', properties: { label: { value: 'First' } },
-            styles: { alignment: { value: 'top' } }, layouts: { desktop: { top: 0, left: 0, width: 18, height: 62 } },
+            styles: { alignment: { value: 'top' } }, layouts: { desktop: { top: 0, left: 0, width: 18, height: 40 } },
           },
           {
             id: 'second', name: 'second', type: 'TextInput', properties: { label: { value: 'Second' } },
-            styles: { alignment: { value: 'top' } }, layouts: { desktop: { top: 100, left: 0, width: 18, height: 62 } },
+            styles: { alignment: { value: 'top' } }, layouts: { desktop: { top: 100, left: 0, width: 18, height: 40 } },
           },
         ] }],
         queries: [],
@@ -387,7 +425,7 @@ describe('update_layout geometry warnings', () => {
     } as unknown as ToolJetClient;
     const result = await updateLayoutTool(client).handler({
       app_id: 'app1', version_id: 'v1', page_id: 'p1',
-      layouts: [{ component_id: 'second', desktop: { top: 72, left: 0, width: 18, height: 62 } }],
+      layouts: [{ component_id: 'second', desktop: { top: 50, left: 0, width: 18, height: 40 } }],
     });
     expect(textOf(result).warnings.join(' ')).toMatch(/overlap at rendered desktop size/);
     expect(client.updateLayouts).toHaveBeenCalled();

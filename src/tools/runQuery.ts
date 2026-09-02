@@ -252,7 +252,8 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
           const countCanRun = countAssessment.directSafe ||
-            (countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true);
+            (countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true) ||
+            (countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true);
           if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight ||
               !sameReadSource(assessment, countAssessment)) {
             return fail(new Error(
@@ -294,15 +295,11 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
             environmentId: args.environment_id,
           });
         } catch (error) {
-          const failure = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
-          const recovery = failureRecovery(query, failure);
-          const schemaHint = await schemaNameHint(client, query, failure);
           return ok({
-            ...failure,
+            status: 'failed',
+            message: error instanceof Error ? error.message : String(error),
             ...(preflight ? { preflight } : {}),
             ...(warnings.length ? { warnings } : {}),
-            ...(recovery ? { recovery } : {}),
-            ...(schemaHint ? { schema_hint: schemaHint } : {}),
           });
         }
         const failed = result.status === 'failed';

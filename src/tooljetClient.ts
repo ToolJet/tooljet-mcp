@@ -607,8 +607,13 @@ export interface UpdateEventsParams {
 }
 
 export class ToolJetHttpError extends Error {
-  constructor(public readonly status: number, method: string, detail: string) {
+  constructor(
+    public readonly status: number,
+    public readonly method: string,
+    public readonly detail: string
+  ) {
     super(`ToolJet ${method} failed (${status}): ${detail}`);
+    this.name = 'ToolJetHttpError';
   }
 }
 
