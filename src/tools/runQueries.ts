@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead } from '../queryExecutionSafety.js';
-import { containsComponentBinding, failureRecovery, schemaNameHint } from './runQuery.js';
+import { containsComponentBinding, failureRecovery, failureVerification, schemaNameHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 
@@ -95,6 +95,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const failed = result.status === 'failed';
             const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
+            const verification = failed ? failureVerification(query, result as Record<string, unknown>) : undefined;
             const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
             // include_data:false keeps only the run status (+ row_count), dropping the row payload — the
             // caller just needs to confirm the query executed, and a large data array would bloat/risk the
@@ -112,6 +113,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               ...shaped,
               ...(warnings.length ? { warnings } : {}),
               ...(recovery ? { recovery } : {}),
+              ...(verification ? { verification } : {}),
               ...(schemaHint ? { schema_hint: schemaHint } : {}),
             };
           } catch (error) {

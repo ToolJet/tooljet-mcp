@@ -62,21 +62,37 @@ export function datasourceRecovery(query: {
   };
 }
 
-export type QueryFailureClass = 'connection' | 'schema_name' | 'query';
+export type QueryFailureClass = 'connection' | 'schema_name' | 'query' | 'unknown';
 
 const CONNECTION_SQLSTATE_PREFIXES = ['08', '28', '53', '57P0', '3D000'];
 const SCHEMA_NAME_SQLSTATES = new Set(['42P01', '42703', '3F000', '42P02', '42704']);
+const LEGACY_CONNECTION_CODES = new Set([
+  'ELOGIN', 'ESOCKET', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND',
+  'ER_ACCESS_DENIED_ERROR', 'ER_DBACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR', 'PROTOCOL_CONNECTION_LOST',
+]);
+const LEGACY_SCHEMA_CODES = new Set(['ER_BAD_FIELD_ERROR', 'ER_BAD_TABLE_ERROR', 'ER_NO_SUCH_TABLE']);
 
 /** Classify a failed query result so the caller offers the RIGHT recovery: a connection-repair
  *  handoff only for genuine connection failures, and a re-introspect hint for wrong table/column
  *  names — never the misleading "go fix your datasource" prompt for a plain SQL name error. */
 export function classifyQueryFailure(result: Record<string, unknown> | undefined): QueryFailureClass {
-  if (!result) return 'query';
-  const data = result.data as { code?: unknown } | undefined;
-  const code = data && typeof data === 'object' ? String(data.code ?? '') : '';
-  if (CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) return 'connection';
-  if (SCHEMA_NAME_SQLSTATES.has(code)) return 'schema_name';
-  return 'query';
+  if (!result) return 'unknown';
+  const category = result.category;
+  if (category === 'authentication' || category === 'connection') return 'connection';
+  if (category === 'schema_name') return 'schema_name';
+  if (category === 'unknown') return 'unknown';
+  if (['timeout', 'rate_limit', 'transient', 'query'].includes(String(category))) return 'query';
+  if (typeof category === 'string') return 'unknown';
+
+  // Compatibility with older ToolJet servers: inspect structured driver fields only.
+  const data = result.data as { code?: unknown; sqlState?: unknown; sqlstate?: unknown } | undefined;
+  const codes = data && typeof data === 'object'
+    ? [data.code, data.sqlState, data.sqlstate].map((value) => String(value ?? '').toUpperCase()).filter(Boolean)
+    : [];
+  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) ||
+      codes.some((code) => LEGACY_CONNECTION_CODES.has(code))) return 'connection';
+  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code))) return 'schema_name';
+  return codes.length ? 'query' : 'unknown';
 }
 
 /** Connection-repair handoff ONLY when the failure is actually a connection problem. */
@@ -85,6 +101,21 @@ export function failureRecovery(
   result: Record<string, unknown>
 ): Record<string, unknown> | undefined {
   return classifyQueryFailure(result) === 'connection' ? datasourceRecovery(query) : undefined;
+}
+
+/** Unknown means exactly that: verify the saved datasource instead of guessing or switching it. */
+export function failureVerification(
+  query: { data_source_id?: string },
+  result: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!query.data_source_id || classifyQueryFailure(result) !== 'unknown') return undefined;
+  return {
+    action: 'test_datasource_connection',
+    datasource_id: query.data_source_id,
+    instruction:
+      'Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ' +
+      'ask the user before one bounded read. Never substitute another datasource from an unknown failure.',
+  };
 }
 
 function introspectedNames(result: unknown): string[] {
@@ -304,6 +335,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         }
         const failed = result.status === 'failed';
         const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
+        const verification = failed ? failureVerification(query, result as Record<string, unknown>) : undefined;
         const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
         const output = assessment.requiresRemoteReadConfirmation
           ? truncateRemoteResult(result as Record<string, unknown>)
@@ -314,6 +346,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
           ...(recovery ? { recovery } : {}),
+          ...(verification ? { verification } : {}),
           ...(schemaHint ? { schema_hint: schemaHint } : {}),
         });
       } catch (err) {

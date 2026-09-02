@@ -588,6 +588,16 @@ export interface UpdateQueryParams {
 /** Run/preview result — `status` is 'ok' or 'failed' (HTTP is 200 either way); rows under `data`. */
 export interface RunQueryResult {
   status: string;
+  /** Structured by ToolJet's plugin boundary; never inferred from human-readable error text. */
+  category?:
+    | 'authentication'
+    | 'connection'
+    | 'schema_name'
+    | 'timeout'
+    | 'rate_limit'
+    | 'transient'
+    | 'query'
+    | 'unknown';
   data?: unknown;
   message?: string;
   [k: string]: unknown;

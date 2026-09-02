@@ -186,6 +186,62 @@ describe('run_query tool', () => {
     });
   });
 
+  it.each([
+    ['MySQL', { status: 'failed', category: 'authentication', data: { code: 'ER_ACCESS_DENIED_ERROR', sqlState: '28000' } }],
+    ['MSSQL', { status: 'failed', category: 'connection', data: { code: 'ESOCKET' } }],
+    ['MongoDB', { status: 'failed', category: 'connection', data: { name: 'MongoNetworkError' } }],
+    ['REST', { status: 'failed', category: 'authentication', data: { responseObject: { statusCode: 401 } } }],
+  ])('uses ToolJet structured recovery for %s failures', async (_kind, failure) => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'q1', kind: 'postgresql', data_source_id: 'ds1',
+      datasource_settings_url: 'http://localhost:8082/acme/data-sources/ds1',
+      options: { mode: 'sql', query: 'select id from orders limit 25' },
+    });
+    client.runQuery.mockResolvedValue(failure);
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({ query_id: 'q1', version_id: 'v1' });
+    expect(textOf(result)).toMatchObject({
+      status: 'failed',
+      recovery: { action: 'open_datasource_settings' },
+    });
+  });
+
+  it.each([
+    [{ code: 'ER_ACCESS_DENIED_ERROR', sqlState: '28000' }, 'connection'],
+    [{ code: 'ELOGIN' }, 'connection'],
+    [{ code: 'ER_NO_SUCH_TABLE' }, 'schema_name'],
+  ])('supports older servers using structured driver fields %o', async (data, expected) => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'q1', kind: 'mysql', data_source_id: 'ds1',
+      datasource_settings_url: 'http://localhost:8082/acme/data-sources/ds1',
+      options: { mode: 'sql', query: 'select id from orders limit 25' },
+    });
+    client.runQuery.mockResolvedValue({ status: 'failed', data });
+
+    const parsed = textOf(await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'q1', version_id: 'v1',
+    }));
+    if (expected === 'connection') expect(parsed.recovery).toMatchObject({ action: 'open_datasource_settings' });
+    else expect(parsed.schema_hint).toMatchObject({ kind: 'schema_name_error' });
+  });
+
+  it('requires verification for a structurally unknown failure instead of guessing', async () => {
+    const client = makeClient();
+    client.getQuery.mockResolvedValue({
+      id: 'q1', kind: 'postgresql', data_source_id: 'ds1',
+      options: { mode: 'sql', query: 'select id from orders limit 25' },
+    });
+    client.runQuery.mockResolvedValue({ status: 'failed', category: 'unknown', message: 'opaque failure' });
+
+    const parsed = textOf(await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'q1', version_id: 'v1',
+    }));
+    expect(parsed).not.toHaveProperty('recovery');
+    expect(parsed.verification).toMatchObject({ action: 'test_datasource_connection', datasource_id: 'ds1' });
+  });
+
   it('refuses SELECT star before execution, even when it has a limit', async () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
