@@ -606,9 +606,20 @@ export interface UpdateEventsParams {
   updateType?: 'update' | 'reorder';
 }
 
+export class ToolJetHttpError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly method: string,
+    public readonly detail: string
+  ) {
+    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    this.name = 'ToolJetHttpError';
+  }
+}
+
 async function assertOk(res: Response, method: string): Promise<void> {
   if (!res.ok) {
-    throw new Error(`ToolJet ${method} failed (${res.status}): ${await res.text()}`);
+    throw new ToolJetHttpError(res.status, method, await res.text());
   }
 }
 

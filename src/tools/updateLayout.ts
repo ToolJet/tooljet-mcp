@@ -1,6 +1,15 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintComponentSlots, lintComponentSpec, lintRenderedGeometry, type LintComponent } from '../lint.js';
+import {
+  introducedLintFindings,
+  lintComponentSlots,
+  lintComponentSpec,
+  lintRenderedGeometry,
+  lintStandardSingleLineInputHeight,
+  lintTextGeometry,
+  lintUnusableTextGeometry,
+  type LintComponent,
+} from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
@@ -119,15 +128,28 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
             slotName: change.slot_name,
           } as LintComponent;
         });
-        const slotErrors = lintComponentSlots(projected);
-        if (slotErrors.length) return fail(new Error(slotErrors.join(' ')));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
+        const introducedForChanged = (
+          lint: (components: LintComponent[]) => string[]
+        ) => changed.flatMap((component) =>
+          introducedLintFindings(lint([components.get(component.id!) as LintComponent]), lint([component]))
+        );
+        const errors = [
+          ...introducedLintFindings(
+            lintComponentSlots(page.components as LintComponent[]),
+            lintComponentSlots(projected)
+          ),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
+          ...introducedForChanged(lintUnusableTextGeometry),
+        ];
+        if (errors.length) return fail(new Error(errors.join(' ')));
         const warnings = [...new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
-          ...projected
-            .filter((component) => component.id && changedIds.has(component.id))
-            .flatMap((component) => lintComponentSpec(component).warnings),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
+          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
+          ...introducedForChanged(lintTextGeometry),
           ...lintRenderedGeometry(projected),
         ])];
         const result = await client.updateLayouts({

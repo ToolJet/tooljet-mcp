@@ -166,6 +166,30 @@ function assessRestGet(options: Record<string, unknown>, datasourceId?: string):
   };
 }
 
+function assessSupabase(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const table = operation === 'count_rows' ? options.count_table_name : options.get_table_name;
+  const identity = { datasourceKind: 'supabase', ...(datasourceId ? { datasourceId } : {}) };
+  if (!['get_rows', 'count_rows'].includes(operation) || typeof table !== 'string' || !table.trim() || containsBinding(table)) {
+    return { provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, reason: 'Supabase operation is not a static row read.', ...identity };
+  }
+  const source = { kind: 'remote_endpoint' as const, value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === 'count_rows') {
+    const countFilters = options.count_filters;
+    const fullSourceCount = countFilters == null ||
+      (Array.isArray(countFilters) && countFilters.length === 0) ||
+      (!!record(countFilters) && Object.keys(record(countFilters)!).length === 0);
+    return { provenRead: true, directSafe: false, countOnly: true, selectStar: false,
+      requiresCountPreflight: false, requiresRemoteReadConfirmation: true, fullSourceCount,
+      simpleSourceRead: true, maxRows: 1, source, ...identity };
+  }
+  const maxRows = staticPositiveInteger(options.get_limit);
+  return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
+    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity };
+}
+
 function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
 }
@@ -363,6 +387,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
 
   if (kind === 'servicenow') return assessServiceNow(options, datasourceId);
+
+  if (kind === 'supabase') return assessSupabase(options, datasourceId);
 
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);

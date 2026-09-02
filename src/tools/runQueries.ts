@@ -116,15 +116,11 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             };
           } catch (error) {
             const failure = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
-            const recovery = failureRecovery(query, failure);
-            const schemaHint = await schemaNameHint(client, query, failure);
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
               ...failure,
               ...(warnings.length ? { warnings } : {}),
-              ...(recovery ? { recovery } : {}),
-              ...(schemaHint ? { schema_hint: schemaHint } : {}),
             };
           }
         }));

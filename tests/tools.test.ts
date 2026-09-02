@@ -170,7 +170,7 @@ describe('run_query tool', () => {
       datasource_settings_url: 'http://localhost:8082/acme/data-sources/pg1',
       options: { mode: 'sql', query: 'select id from orders limit 25' },
     });
-    client.runQuery.mockResolvedValue({ status: 'failed', message: 'connection refused' });
+    client.runQuery.mockResolvedValue({ status: 'failed', data: { code: '08006' }, message: 'connection refused' });
 
     const result = await runQueryTool(client as unknown as ToolJetClient).handler({
       query_id: 'q1', version_id: 'v1',
@@ -226,6 +226,54 @@ describe('run_query tool', () => {
       status: 'ok',
       preflight: { count_query_id: 'count', row_count: 48, threshold: 1000 },
     });
+  });
+
+  it('preserves a completed count preflight when the target transport throws', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', name: 'listOrders', kind: 'postgresql', data_source_id: 'pg-main',
+        options: { mode: 'sql', query: 'SELECT id, status FROM orders' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', name: 'countOrders', kind: 'postgresql', data_source_id: 'pg-main',
+        options: { mode: 'sql', query: 'SELECT COUNT(*) AS total FROM orders' },
+      });
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ total: 48 }] })
+      .mockRejectedValueOnce(new Error('socket closed'));
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1',
+    });
+
+    expect(textOf(result)).toMatchObject({
+      status: 'failed', message: 'socket closed',
+      preflight: { count_query_id: 'count', row_count: 48, threshold: 1000 },
+    });
+  });
+
+  it('runs an approved Supabase count preflight before an unbounded Supabase read', async () => {
+    const client = makeClient();
+    client.getQuery
+      .mockResolvedValueOnce({
+        id: 'rows', kind: 'supabase', data_source_id: 'sb-main',
+        options: { operation: 'get_rows', get_table_name: 'deployments' },
+      })
+      .mockResolvedValueOnce({
+        id: 'count', kind: 'supabase', data_source_id: 'sb-main',
+        options: { operation: 'count_rows', count_table_name: 'deployments', count_filters: [] },
+      });
+    client.runQuery
+      .mockResolvedValueOnce({ status: 'ok', data: [{ count: 48 }] })
+      .mockResolvedValueOnce({ status: 'ok', data: [{ id: 1 }] });
+
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: 'rows', count_query_id: 'count', version_id: 'v1', user_confirmed_remote_read: true,
+    });
+
+    expect(client.runQuery).toHaveBeenCalledTimes(2);
+    expect(textOf(result)).toMatchObject({ status: 'ok', preflight: { row_count: 48 } });
   });
 
   it('reports the observed large count and requires explicit user confirmation before the target run', async () => {
@@ -393,11 +441,6 @@ describe('run_queries tool', () => {
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
-        recovery: {
-          action: 'open_datasource_settings',
-          url: 'http://localhost:8082/acme/data-sources/tjdb',
-          instruction: expect.stringMatching(/user.*in-app browser.*do not enter credentials/is),
-        },
       },
     ] });
   });
@@ -1301,7 +1344,7 @@ describe('add_component tool', () => {
       name: 't',
       type: 'Table',
       properties: { data: { value: '{{queries.q.data}}' } },
-      layout: { top: 0, left: 0, width: 10, height: 5 },
+      layout: { top: 0, left: 0, width: 10, height: 300 },
     });
     expect(client.createComponent).toHaveBeenCalled(); // not blocked
     const out = textOf(result) as { component_id: string; warnings: string[] };
@@ -1359,7 +1402,7 @@ describe('add_component tool', () => {
       name: 'title',
       type: 'Text',
       properties: { textColor: { value: '#111' } },
-      layout: { top: 0, left: 0, width: 10, height: 4 },
+      layout: { top: 0, left: 0, width: 10, height: 30 },
     });
     expect(result.isError).toBeUndefined();
     expect(client.createComponent).toHaveBeenCalledOnce();
