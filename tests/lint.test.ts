@@ -41,7 +41,7 @@ describe('lintComponentSpec', () => {
     expect(r.warnings.join(' ')).toMatch(/native title defaults to a non-empty string that clips/);
   });
 
-  it('warns when a large Text is shorter than its line box plus wrapper chrome', () => {
+  it('blocks a large Text shorter than its line box plus wrapper chrome', () => {
     const title = {
       name: 'pageTitle',
       type: 'Text',
@@ -54,7 +54,7 @@ describe('lintComponentSpec', () => {
       layout: { top: 0, left: 2, width: 30, height: 40 },
     };
     expect(minimumTextHeight(title)).toBe(42);
-    expect(lintComponents([title]).warnings.join(' ')).toMatch(
+    expect(lintComponents([title]).errors.join(' ')).toMatch(
       /Text "pageTitle" is too short.*height 40px.*at least 42px.*use 50px.*descenders are clipped/i
     );
 
@@ -689,6 +689,12 @@ describe('lintComponentSpec', () => {
   });
 
   it('warns when a static-height Table cannot show rowsPerPage without inner scrolling', () => {
+    const unusable = lintComponentSpec({
+      name: 'orders', type: 'Table', properties: { rowsPerPage: { value: '{{10}}' } },
+      layout: { top: 0, left: 0, width: 30, height: 60 },
+    });
+    expect(unusable.errors.join(' ')).toMatch(/cannot show even one data row/i);
+
     const compact = lintComponentSpec({
       name: 'orders',
       type: 'Table',
@@ -1143,7 +1149,7 @@ describe('lintComponents (batch)', () => {
   it('aggregates per-component results and overlaps', () => {
     const { errors, warnings } = lintComponents([
       { name: 'chart', type: 'Chart', properties: {}, layout: { top: 0, left: 0, width: 10, height: 10 } },
-      { name: 'over', type: 'Text', properties: {}, layout: { top: 5, left: 5, width: 10, height: 10 } },
+      { name: 'over', type: 'Text', properties: {}, layout: { top: 5, left: 5, width: 10, height: 30 } },
     ]);
     expect(errors).toEqual([]);
     expect(warnings.join(' ')).toMatch(/native title/);

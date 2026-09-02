@@ -851,7 +851,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean) as Rect[];
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      warnings.push(`Component "${label}": layout has non-positive size (${r.width}×${r.height}) — it may be invisible.`);
+      errors.push(`Component "${label}": layout has non-positive size (${r.width}×${r.height}) — it may be invisible.`);
     }
   }
 
@@ -1240,7 +1240,9 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < minimumHeight) {
+      if (desktopHeight < chromeHeight + rowHeight) {
+        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row.`);
+      } else if (desktopHeight < minimumHeight) {
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
@@ -1648,7 +1650,6 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
   return [
     ...detectOverlaps(components),
     ...lintModalChildren(components),
-    ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
@@ -1667,6 +1668,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
@@ -1938,6 +1940,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   for (const p of summary.pages) {
+    errors.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }

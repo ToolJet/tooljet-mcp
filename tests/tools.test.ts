@@ -1296,7 +1296,7 @@ describe('add_component tool', () => {
       name: 't',
       type: 'Table',
       properties: { data: { value: '{{queries.q.data}}' } },
-      layout: { top: 0, left: 0, width: 10, height: 5 },
+      layout: { top: 0, left: 0, width: 10, height: 300 },
     });
     expect(client.createComponent).toHaveBeenCalled(); // not blocked
     const out = textOf(result) as { component_id: string; warnings: string[] };
@@ -1354,7 +1354,7 @@ describe('add_component tool', () => {
       name: 'title',
       type: 'Text',
       properties: { textColor: { value: '#111' } },
-      layout: { top: 0, left: 0, width: 10, height: 4 },
+      layout: { top: 0, left: 0, width: 10, height: 30 },
     });
     expect(result.isError).toBeUndefined();
     expect(client.createComponent).toHaveBeenCalledOnce();
