@@ -66,8 +66,11 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
     description:
       'Patch app-wide visual settings on the current editing version in one version update, then read them back. ' +
       'Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and ' +
-      'navigation visibility/layout. Omitted fields are preserved. Every requested field is read back; the tool ' +
-      'returns an error instead of success if any field did not persist.',
+      'navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation ' +
+      'menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. ' +
+      'To hide only one non-Home page from that menu, use update_pages.hidden. ' +
+      'Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of ' +
+      'success if any field did not persist.',
     inputSchema: {
       app_id: z.string().min(1),
       version_id: z.string().min(1),
@@ -78,10 +81,15 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
       }).optional(),
       app_mode: z.enum(['auto', 'light', 'dark']).optional(),
       theme_id: z.string().uuid().optional(),
-      hide_header: z.boolean().optional(),
+      hide_header: z.boolean().optional().describe(
+        'Hide or show the app header/banner. This is separate from the generated page-navigation menu.'
+      ),
       hide_logo: z.boolean().optional(),
       header_title: z.string().trim().min(1).max(32).optional(),
-      navigation_hidden: z.boolean().optional(),
+      navigation_hidden: z.boolean().optional().describe(
+        'Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. ' +
+        'To hide only one non-Home page from the menu, use update_pages.hidden.'
+      ),
       navigation_position: z.enum(['side', 'top']).optional(),
       navigation_style: z.enum(['texticon', 'text', 'icon']).optional(),
       navigation_collapsible: z.boolean().optional(),

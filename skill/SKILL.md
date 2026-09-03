@@ -49,4 +49,5 @@ Tool schemas, catalog responses, and returned warnings are authoritative. Do not
 - Never run mutations, AI, email, OAuth, or other side effects merely to validate a build.
 - Seed writes are insert-only; omit generated serial keys. A duplicate-key failure is never permission to update existing rows.
 - Page/query/component/table/column deletion requires exact-target approval plus `confirm:true`. Visibility is not authorization.
+- Keep app chrome controls distinct: `hide_header` hides the app header/banner; `navigation_position` places the separate generated navigation menu on the side or top; `navigation_hidden` hides that whole menu in either position; and `update_pages.hidden` hides only one non-Home page. Home cannot be hidden.
 - Batch/phase writes can partially persist. Read reported completed resources and repair in place; never auto-delete or replay the whole batch blindly.

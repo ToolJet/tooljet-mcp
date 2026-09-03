@@ -26,6 +26,15 @@ const before: AppSettingsSnapshot = {
 };
 
 describe('app settings tools', () => {
+  it('distinguishes the app header, whole navigation menu, and individual page visibility', () => {
+    const tool = updateAppSettingsTool({} as ToolJetClient);
+    expect(tool.description).toMatch(/hide_header controls the app header\/banner/i);
+    expect(tool.description).toMatch(/navigation menu.*side or top.*navigation_hidden hides.*entire menu/i);
+    expect(tool.description).toMatch(/one non-Home page.*update_pages\.hidden/i);
+    expect(tool.inputSchema.hide_header.description).toMatch(/separate from.*page-navigation menu/i);
+    expect(tool.inputSchema.navigation_hidden.description).toMatch(/entire.*page-navigation menu.*side or top/i);
+  });
+
   it('projects compact settings without returning the full theme definition', async () => {
     const client = { getAppSettings: vi.fn().mockResolvedValue(before) } as unknown as ToolJetClient;
     const result = await getAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId });

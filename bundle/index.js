@@ -33237,8 +33237,8 @@ function identityFromHeaders(headers, { allowPat = true } = {}) {
 }
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
-  const staticApiUrl = explicitApiUrl ?? "http://localhost:3000";
   const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
     const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
@@ -33949,6 +33949,28 @@ function renderedHeight(component, rect2) {
   const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label === void 0 || (typeof label === "string" ? label.trim().length > 0 : Boolean(label));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
+function lintStandardSingleLineInputHeight(component) {
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const defaultHeight = schema?.defaultSize?.height;
+  if (!schema?.renderingHints?.compactFormHeight || defaultHeight === void 0)
+    return [];
+  const layouts = [];
+  if (component.layout)
+    layouts.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    layouts.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    layouts.push(["mobile", component.layouts.mobile]);
+  const label = component.name ?? component.type ?? "component";
+  return layouts.flatMap(([layoutName, layout]) => {
+    const authoredHeight = layout.height;
+    if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
+      return [];
+    return [
+      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+    ];
+  });
+}
 function minimumTextHeight(component) {
   if (component.type !== "Text")
     return void 0;
@@ -33964,6 +33986,32 @@ function minimumTextHeight(component) {
   if (textSize === void 0 || lineHeight === void 0)
     return void 0;
   return Math.ceil(textSize * lineHeight + 6);
+}
+function minimumTextContentHeight(component) {
+  const minimum = minimumTextHeight(component);
+  return minimum === void 0 ? void 0 : minimum - 6;
+}
+function lintUnusableTextGeometry(components) {
+  const errors = [];
+  for (const component of components) {
+    const minimum = minimumTextContentHeight(component);
+    if (minimum === void 0)
+      continue;
+    const layouts = [
+      [component.layouts?.desktop ? "desktop" : "layout", component.layouts?.desktop ?? component.layout],
+      ["mobile", component.layouts?.mobile]
+    ];
+    const undersized = layouts.filter((entry) => !!entry[1] && typeof entry[1].height === "number" && entry[1].height < minimum);
+    if (undersized.length) {
+      const recommended = minimumTextHeight(component);
+      errors.push(`Text "${component.name ?? component.id ?? "Text"}" is too short to render one line: ${undersized.map(([resolution, layout]) => `${resolution} height ${layout.height}px`).join(", ")}; use at least ${recommended}px or enable dynamicHeight.`);
+    }
+  }
+  return errors;
+}
+function introducedLintFindings(before, after) {
+  const existing = new Set(before);
+  return after.filter((finding) => !existing.has(finding));
 }
 function lintTextGeometry(components) {
   const warnings = [];
@@ -34201,7 +34249,7 @@ function lintComponentSpec(spec) {
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      warnings.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
@@ -34415,7 +34463,9 @@ function lintComponentSpec(spec) {
       const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < minimumHeight) {
+      if (desktopHeight < chromeHeight + rowHeight) {
+        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+      } else if (desktopHeight < minimumHeight) {
         warnings.push(`Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
     }
@@ -34682,7 +34732,6 @@ function lintRenderedGeometry(components) {
   return [
     ...detectOverlaps(components),
     ...lintModalChildren(components),
-    ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
@@ -34695,9 +34744,12 @@ function lintComponents(components) {
   for (const c of components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
+    errors.push(...lintStandardSingleLineInputHeight(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintUnusableTextGeometry(components));
+  warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
@@ -34893,6 +34945,8 @@ function validateAppStructure(summary) {
     }
   }
   for (const p of summary.pages) {
+    errors.push(...lintUnusableTextGeometry(p.components));
+    warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
@@ -34981,6 +35035,25 @@ function tableCreationLevels(tables) {
   return levels;
 }
 
+// dist/bindings.js
+function staticBooleanBinding(value) {
+  return { value: `{{${value}}}`, fxActive: false };
+}
+function booleanBindingValue(value) {
+  if (typeof value === "boolean")
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = /^\{\{\s*(true|false)\s*\}\}$/.exec(value);
+  return match ? match[1] === "true" : void 0;
+}
+function isCanonicalStaticBooleanBinding(value, expected) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return false;
+  const binding = value;
+  return binding.value === `{{${expected}}}` && binding.fxActive === false;
+}
+
 // dist/tooljetClient.js
 var PartialWriteError = class extends Error {
   completed;
@@ -35001,9 +35074,29 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+var ToolJetHttpError = class extends Error {
+  status;
+  method;
+  detail;
+  constructor(status, method, detail) {
+    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    this.status = status;
+    this.method = method;
+    this.detail = detail;
+    this.name = "ToolJetHttpError";
+  }
+};
+function isPageHidden(page) {
+  return booleanBindingValue(page?.hidden?.value) === true;
+}
+function pageHiddenNeedsUpdate(page, expected) {
+  if (page?.hidden === void 0 || page?.hidden === null)
+    return expected;
+  return booleanBindingValue(page.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page.hidden, expected);
+}
 async function assertOk(res, method) {
   if (!res.ok) {
-    throw new Error(`ToolJet ${method} failed (${res.status}): ${await res.text()}`);
+    throw new ToolJetHttpError(res.status, method, await res.text());
   }
 }
 var TYPE_ALIASES = {
@@ -35136,7 +35229,7 @@ function createClient(auth, config2) {
       name: p.name,
       handle: p.handle,
       icon: p.icon,
-      hidden: p.hidden?.value === true,
+      hidden: isPageHidden(p),
       ...typeof p.index === "number" ? { index: p.index } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
@@ -35399,7 +35492,7 @@ function createClient(auth, config2) {
     const failures = createSettled.flatMap((result, index) => result.status === "rejected" ? [`${entries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
     const metadataTasks = createdEntries.flatMap((page) => [
       ...page.icon ? [{ page, field: "icon", promise: persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`) }] : [],
-      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", { value: true }, `createPages "${page.name}" hidden update`) }] : []
+      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", staticBooleanBinding(true), `createPages "${page.name}" hidden update`) }] : []
     ]);
     const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
     failures.push(...metadataSettled.flatMap((result, index) => result.status === "rejected" ? [`${metadataTasks[index].page.name} ${metadataTasks[index].field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []));
@@ -35413,7 +35506,7 @@ function createClient(auth, config2) {
           if (entry.icon && page?.icon !== entry.icon) {
             failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
           }
-          if (entry.hidden && page?.hidden?.value !== true) {
+          if (entry.hidden && !isPageHidden(page)) {
             failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
           }
         }
@@ -35426,7 +35519,7 @@ function createClient(auth, config2) {
       name: page.name,
       index: page.index,
       ...persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon } : {},
-      ...persistedById.get(page.id)?.hidden?.value === true ? { hidden: true } : {}
+      ...isPageHidden(persistedById.get(page.id)) ? { hidden: true } : {}
     }));
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
@@ -35457,6 +35550,8 @@ function createClient(auth, config2) {
     const app = await getApp(params.appId);
     const pages = app.pages ?? [];
     const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const editingVersion = app.editing_version ?? app.editingVersion ?? {};
+    const homePageId = String(editingVersion.home_page_id ?? editingVersion.homePageId ?? app.home_page_id ?? app.homePageId ?? "");
     const seenUpdateIds = /* @__PURE__ */ new Set();
     for (const update of updates) {
       if (!pagesById.has(update.pageId)) {
@@ -35474,6 +35569,10 @@ function createClient(auth, config2) {
       }
       if (update.icon !== void 0 && !update.icon.trim()) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty icon.`);
+      }
+      const current = pagesById.get(update.pageId);
+      if (update.hidden === true && (update.pageId === homePageId || !homePageId && current?.handle === "home")) {
+        throw new Error("ToolJet updatePages failed: the Home page cannot be hidden from navigation.");
       }
     }
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
@@ -35504,8 +35603,8 @@ function createClient(auth, config2) {
       if (update.icon !== void 0 && update.icon !== current.icon) {
         fieldUpdates.push({ pageId: update.pageId, field: "icon", value: update.icon });
       }
-      if (update.hidden !== void 0 && update.hidden !== (current.hidden?.value === true)) {
-        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: { value: update.hidden } });
+      if (update.hidden !== void 0 && pageHiddenNeedsUpdate(current, update.hidden)) {
+        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: staticBooleanBinding(update.hidden) });
       }
     }
     await Promise.all(fieldUpdates.map(async ({ pageId, field, value }) => {
@@ -35536,7 +35635,7 @@ function createClient(auth, config2) {
       if (update.icon !== void 0 && page?.icon !== update.icon) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
       }
-      if (update.hidden !== void 0 && page?.hidden?.value === true !== update.hidden) {
+      if (update.hidden !== void 0 && isPageHidden(page) !== update.hidden) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
       }
     }
@@ -35555,7 +35654,7 @@ function createClient(auth, config2) {
         name: page.name,
         handle: page.handle,
         icon: page.icon,
-        hidden: page.hidden?.value === true,
+        hidden: isPageHidden(page),
         ...typeof page.index === "number" ? { index: page.index } : {}
       }))
     };
@@ -36272,13 +36371,7 @@ function asRecord(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 function bindingBoolean(value) {
-  if (typeof value === "boolean")
-    return value;
-  if (value === "{{true}}")
-    return true;
-  if (value === "{{false}}")
-    return false;
-  return value;
+  return booleanBindingValue(value) ?? value;
 }
 function compactTheme(theme) {
   if (!theme)
@@ -36293,9 +36386,7 @@ function compactTheme(theme) {
 }
 function projectAppSettings(snapshot2) {
   const global2 = snapshot2.global_settings ?? {};
-  const page = snapshot2.page_settings ?? {};
-  const definition = asRecord(page.definition);
-  const properties = asRecord(definition.properties);
+  const properties = pageSettingProperties(snapshot2);
   const disableMenu = asRecord(properties.disableMenu);
   const theme = asRecord(global2.theme);
   return {
@@ -36325,7 +36416,7 @@ function projectAppSettings(snapshot2) {
   };
 }
 function pageSettingProperties(snapshot2) {
-  return asRecord(asRecord(snapshot2.page_settings.definition).properties);
+  return asRecord(asRecord(snapshot2.page_settings).properties);
 }
 
 // dist/tools/getAppSettings.js
@@ -36387,13 +36478,13 @@ var SETTING_KEYS = [
   "navigation_style",
   "navigation_collapsible"
 ];
-function expectedWarnings(args, snapshot2) {
+function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
-  const warnings = [];
+  const mismatches = [];
   const expectEqual = (label, actual, expected) => {
     if (actual !== expected)
-      warnings.push(`${label} was accepted by the API but did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)}).`);
+      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -36423,7 +36514,7 @@ function expectedWarnings(args, snapshot2) {
     expectEqual("navigation_style", page.style, args.navigation_style);
   if (args.navigation_collapsible !== void 0)
     expectEqual("navigation_collapsible", page.collapsable, args.navigation_collapsible);
-  return warnings;
+  return mismatches;
 }
 function updateAppSettingsTool(client) {
   return {
@@ -36434,7 +36525,7 @@ function updateAppSettingsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. Omitted fields are preserved. Returns warnings for settings ToolJet accepted but ignored (for example a license-gated header setting).",
+    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
     inputSchema: {
       app_id: external_exports.string().min(1),
       version_id: external_exports.string().min(1),
@@ -36445,10 +36536,10 @@ function updateAppSettingsTool(client) {
       }).optional(),
       app_mode: external_exports.enum(["auto", "light", "dark"]).optional(),
       theme_id: external_exports.string().uuid().optional(),
-      hide_header: external_exports.boolean().optional(),
+      hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
       hide_logo: external_exports.boolean().optional(),
       header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional(),
+      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional()
@@ -36497,13 +36588,17 @@ function updateAppSettingsTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           ...Object.keys(globalSettings).length ? { globalSettings } : {},
-          ...Object.keys(properties).length ? { pageSettings: { definition: { properties } } } : {}
+          ...Object.keys(properties).length ? { pageSettings: { properties } } : {}
         });
         const persisted = await client.getAppSettings(args.app_id, args.version_id);
+        const mismatches = persistenceMismatches(args, persisted);
+        if (mismatches.length) {
+          throw new Error(`update_app_settings partially failed readback: ${mismatches.join("; ")}. Other requested fields may already have persisted; inspect get_app_settings before retrying.`);
+        }
         return ok({
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
-          warnings: expectedWarnings(args, persisted)
+          warnings: []
         });
       } catch (error51) {
         return fail(error51);
@@ -37337,15 +37432,17 @@ function inspectDatasourceSchemaTool(client) {
 }
 
 // dist/tools/testDatasourceConnection.js
-var NOT_IMPLEMENTED = /testconnection method not implemented/i;
 function unsupportedMessage(kind) {
   return `Datasource kind "${kind}" does not implement a connection test. This is not a failure and carries no information about the connection: verify it with a bounded read instead.`;
 }
-function isForbidden(message) {
-  return /\(403\)/.test(message) || /forbidden/i.test(message);
-}
-function isNotFound(message) {
-  return /\(404\)/.test(message);
+function inconclusive(header, detail) {
+  return ok({
+    ...header,
+    supported: true,
+    status: "inconclusive",
+    message: `The connection test did not prove this datasource is broken${detail ? ` (${detail.trim()})` : ""}.`,
+    verification: { action: "ask_then_run_bounded_read", requires_user_approval: true }
+  });
 }
 function testDatasourceConnectionTool(client) {
   return {
@@ -37362,16 +37459,18 @@ function testDatasourceConnectionTool(client) {
       datasource_id: external_exports.string().min(1)
     },
     async handler(args) {
+      let header;
       try {
         const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const header = {
+        header = {
           datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind },
           settings_url: datasource.settings_url
         };
-        if (getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection === false) {
+        const supportsTestConnection = getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection;
+        if (supportsTestConnection === false) {
           return ok({
             ...header,
             supported: false,
@@ -37387,7 +37486,7 @@ function testDatasourceConnectionTool(client) {
           options: details.options
         });
         const message = typeof result.message === "string" ? result.message : void 0;
-        if (message && NOT_IMPLEMENTED.test(message)) {
+        if (result.category === "unsupported") {
           return ok({
             ...header,
             supported: false,
@@ -37398,6 +37497,8 @@ function testDatasourceConnectionTool(client) {
         if (result.status === "ok") {
           return ok({ ...header, supported: true, status: "ok" });
         }
+        if (supportsTestConnection !== true)
+          return inconclusive(header, message);
         return ok({
           ...header,
           supported: true,
@@ -37410,17 +37511,31 @@ function testDatasourceConnectionTool(client) {
           }
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (isForbidden(message)) {
+        if (!header)
+          return fail(err);
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 403) {
           return ok({
-            datasource: { id: args.datasource_id },
+            ...header,
             supported: true,
             status: "not_permitted",
             message: "This ToolJet user is not permitted to test datasource connections (the ability is granted to admins, datasource create/delete holders, and users with editable/viewable datasource access). The connection itself was not tested."
           });
         }
-        if (isNotFound(message)) {
-          return fail(new Error(`ToolJet has no test-connection endpoint or no datasource "${args.datasource_id}" for this environment (${message}).`));
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 404) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: "ToolJet has no datasource-level test endpoint. This says nothing about connection health."
+          });
+        }
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 501) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: "This ToolJet datasource plugin does not implement a connection test."
+          });
         }
         return fail(err);
       }
@@ -38560,6 +38675,53 @@ function assessRestGet(options2, datasourceId) {
     ...identity
   };
 }
+function assessSupabase(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options2.count_table_name : options2.get_table_name;
+  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
+  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Supabase operation is not a static row read.",
+      ...identity
+    };
+  }
+  const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === "count_rows") {
+    const countFilters = options2.count_filters;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record2(countFilters) && Object.keys(record2(countFilters)).length === 0;
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  const maxRows = staticPositiveInteger(options2.get_limit);
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD,
+    requiresRemoteReadConfirmation: true,
+    simpleSourceRead: true,
+    source: source2,
+    maxRows,
+    ...identity
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -38829,6 +38991,8 @@ function assessQueryRead(query) {
     return assessRestGet(options2, datasourceId);
   if (kind === "servicenow")
     return assessServiceNow(options2, datasourceId);
+  if (kind === "supabase")
+    return assessSupabase(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -40978,7 +41142,7 @@ var updateSchema = external_exports.object({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
-  hidden: external_exports.boolean().optional()
+  hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
 });
 function updatePagesTool(client) {
   return {
@@ -40989,7 +41153,7 @@ function updatePagesTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes. This can restyle and reposition the auto-created Home page.",
+    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle one non-Home page in the menu. The Home page can be renamed, restyled, and reordered, but cannot be hidden. To hide or show the entire generated navigation menu, use update_app_settings.navigation_hidden instead. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -41419,10 +41583,11 @@ function updateComponentsTool(client) {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (!page)
           return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
         const projected = new Map(page.components.map((component) => [component.id, component]));
         const warnings = [];
         const errors = [];
+        const changedComponents = [];
+        let placementChanged = false;
         const resolvedUpdates = [];
         for (const update of args.updates) {
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
@@ -41473,8 +41638,11 @@ function updateComponentsTool(client) {
             layouts: next.layouts,
             parent: next.parent
           });
-          const normalizedNext = normalized2.component;
+          const normalizedNext = { ...normalized2.component, id: current.id };
           projected.set(current.id, normalizedNext);
+          if (update.definition)
+            changedComponents.push({ before: current, after: normalizedNext });
+          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
           warnings.push(...normalized2.warnings);
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized2.patch).length) {
@@ -41498,15 +41666,21 @@ function updateComponentsTool(client) {
           });
           if (!update.definition)
             continue;
-          const lint = lintComponentSpec(normalizedNext);
-          errors.push(...lint.errors);
-          warnings.push(...lint.warnings);
+          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
+          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
         }
-        errors.push(...lintComponentSlots([...projected.values()]));
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length)
           return fail(new Error(errors.join(" ")));
-        warnings.push(...lintRenderedGeometry([...projected.values()]));
-        warnings.push(...lintKanbanInteractions([...projected.values()]));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,
@@ -41703,14 +41877,22 @@ function updateLayoutTool(client) {
             slotName: change.slot_name
           };
         });
-        const slotErrors = lintComponentSlots(projected);
-        if (slotErrors.length)
-          return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
+        const introducedForChanged = (lint) => changed.flatMap((component) => introducedLintFindings(lint([components.get(component.id)]), lint([component])));
+        const errors = [
+          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
+          ...introducedForChanged(lintUnusableTextGeometry)
+        ];
+        if (errors.length)
+          return fail(new Error(errors.join(" ")));
         const warnings = [.../* @__PURE__ */ new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
-          ...projected.filter((component) => component.id && changedIds.has(component.id)).flatMap((component) => lintComponentSpec(component).warnings),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
+          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
+          ...introducedForChanged(lintTextGeometry),
           ...lintRenderedGeometry(projected)
         ])];
         const result = await client.updateLayouts({
@@ -42087,24 +42269,54 @@ function datasourceRecovery(query) {
     instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
   };
 }
-var CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
-var CONNECTION_MESSAGE = /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
-var SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
-var SCHEMA_NAME_MESSAGE = /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
+var CONNECTION_SQLSTATE_PREFIXES = ["08", "28", "53", "57P0", "3D000"];
+var SCHEMA_NAME_SQLSTATES = /* @__PURE__ */ new Set(["42P01", "42703", "3F000", "42P02", "42704"]);
+var LEGACY_CONNECTION_CODES = /* @__PURE__ */ new Set([
+  "ELOGIN",
+  "ESOCKET",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ER_ACCESS_DENIED_ERROR",
+  "ER_DBACCESS_DENIED_ERROR",
+  "ER_BAD_DB_ERROR",
+  "PROTOCOL_CONNECTION_LOST"
+]);
+var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR", "ER_NO_SUCH_TABLE"]);
 function classifyQueryFailure(result) {
   if (!result)
-    return "query";
-  const data = result.data;
-  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
-  const text = `${result.description ?? ""} ${result.message ?? ""}`;
-  if (code && CONNECTION_SQLSTATE.test(code) || CONNECTION_MESSAGE.test(text))
+    return "unknown";
+  const category = result.category;
+  if (category === "authentication" || category === "connection")
     return "connection";
-  if (code && SCHEMA_NAME_SQLSTATE.test(code) || SCHEMA_NAME_MESSAGE.test(text))
+  if (category === "schema_name")
     return "schema_name";
-  return "query";
+  if (category === "unknown")
+    return "unknown";
+  if (["timeout", "rate_limit", "transient", "query"].includes(String(category)))
+    return "query";
+  if (typeof category === "string")
+    return "unknown";
+  const data = result.data;
+  const codes = data && typeof data === "object" ? [data.code, data.sqlState, data.sqlstate].map((value) => String(value ?? "").toUpperCase()).filter(Boolean) : [];
+  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) || codes.some((code) => LEGACY_CONNECTION_CODES.has(code)))
+    return "connection";
+  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code)))
+    return "schema_name";
+  return codes.length ? "query" : "unknown";
 }
 function failureRecovery(query, result) {
   return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
+}
+function failureVerification(query, result) {
+  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
+    return void 0;
+  return {
+    action: "test_datasource_connection",
+    datasource_id: query.data_source_id,
+    instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
+  };
 }
 function introspectedNames(result) {
   const data = result?.data;
@@ -42163,7 +42375,7 @@ function runQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42185,10 +42397,10 @@ function runQueryTool(client) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
         }
         if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
         }
         if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push("User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.");
+          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -42203,7 +42415,7 @@ function runQueryTool(client) {
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
-          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true;
+          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true || countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true;
           if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
             return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
           }
@@ -42232,19 +42444,16 @@ function runQueryTool(client) {
             environmentId: args.environment_id
           });
         } catch (error51) {
-          const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-          const recovery2 = failureRecovery(query, failure);
-          const schemaHint2 = await schemaNameHint(client, query, failure);
           return ok({
-            ...failure,
+            status: "failed",
+            message: error51 instanceof Error ? error51.message : String(error51),
             ...preflight ? { preflight } : {},
-            ...warnings.length ? { warnings } : {},
-            ...recovery2 ? { recovery: recovery2 } : {},
-            ...schemaHint2 ? { schema_hint: schemaHint2 } : {}
+            ...warnings.length ? { warnings } : {}
           });
         }
         const failed = result.status === "failed";
         const recovery = failed ? failureRecovery(query, result) : void 0;
+        const verification = failed ? failureVerification(query, result) : void 0;
         const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
         const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
         if (output.warning)
@@ -42254,6 +42463,7 @@ function runQueryTool(client) {
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {},
+          ...verification ? { verification } : {},
           ...schemaHint ? { schema_hint: schemaHint } : {}
         });
       } catch (err) {
@@ -42329,6 +42539,7 @@ function runQueriesTool(client) {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const failed = result.status === "failed";
             const recovery = failed ? failureRecovery(query, result) : void 0;
+            const verification = failed ? failureVerification(query, result) : void 0;
             const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
             const shaped = args.include_data === false ? (() => {
               const { data, ...rest } = result;
@@ -42340,19 +42551,16 @@ function runQueriesTool(client) {
               ...shaped,
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {},
+              ...verification ? { verification } : {},
               ...schemaHint ? { schema_hint: schemaHint } : {}
             };
           } catch (error51) {
             const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-            const recovery = failureRecovery(query, failure);
-            const schemaHint = await schemaNameHint(client, query, failure);
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
               ...failure,
-              ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {},
-              ...schemaHint ? { schema_hint: schemaHint } : {}
+              ...warnings.length ? { warnings } : {}
             };
           }
         }));
@@ -42748,6 +42956,14 @@ function normalizePermission(permissions) {
 function manageAppPermissionsTool(client) {
   return {
     name: "manage_app_permissions",
+    title: "Manage App Permissions",
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
     inputSchema: {
       action: external_exports.enum(["list_subjects", "get", "set", "clear"]),
@@ -42809,6 +43025,11 @@ var userStatus = external_exports.enum(["active", "archived", "invited"]);
 function listWorkspaceAppsTool(client) {
   return {
     name: "list_workspace_apps",
+    title: "List Workspace Apps",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
@@ -42826,6 +43047,11 @@ function listWorkspaceAppsTool(client) {
 function listWorkspaceUsersTool(client) {
   return {
     name: "list_workspace_users",
+    title: "List Workspace Users",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
@@ -42853,6 +43079,14 @@ function required2(value, label) {
 function manageWorkspaceUsersTool(client) {
   return {
     name: "manage_workspace_users",
+    title: "Manage Workspace Users",
+    // invite is additive, but update overwrites a member's role and archive revokes their access to
+    // the workspace, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups, change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
     inputSchema: {
       action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
