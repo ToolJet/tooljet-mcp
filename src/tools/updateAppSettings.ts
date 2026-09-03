@@ -24,12 +24,12 @@ const SETTING_KEYS: Array<keyof Omit<Args, 'app_id' | 'version_id'>> = [
   'header_title', 'navigation_hidden', 'navigation_position', 'navigation_style', 'navigation_collapsible',
 ];
 
-function expectedWarnings(args: Args, snapshot: AppSettingsSnapshot): string[] {
+function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): string[] {
   const global = snapshot.global_settings;
   const page = pageSettingProperties(snapshot);
-  const warnings: string[] = [];
+  const mismatches: string[] = [];
   const expectEqual = (label: string, actual: unknown, expected: unknown) => {
-    if (actual !== expected) warnings.push(`${label} was accepted by the API but did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)}).`);
+    if (actual !== expected) mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== undefined) expectEqual('canvas_background_color', global.canvasBackgroundColor, args.canvas_background_color);
   if (args.canvas_max_width !== undefined) {
@@ -51,7 +51,7 @@ function expectedWarnings(args: Args, snapshot: AppSettingsSnapshot): string[] {
   if (args.navigation_position !== undefined) expectEqual('navigation_position', page.position, args.navigation_position);
   if (args.navigation_style !== undefined) expectEqual('navigation_style', page.style, args.navigation_style);
   if (args.navigation_collapsible !== undefined) expectEqual('navigation_collapsible', page.collapsable, args.navigation_collapsible);
-  return warnings;
+  return mismatches;
 }
 
 export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
@@ -66,8 +66,8 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
     description:
       'Patch app-wide visual settings on the current editing version in one version update, then read them back. ' +
       'Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and ' +
-      'navigation visibility/layout. Omitted fields are preserved. Returns warnings for settings ToolJet accepted ' +
-      'but ignored (for example a license-gated header setting).',
+      'navigation visibility/layout. Omitted fields are preserved. Every requested field is read back; the tool ' +
+      'returns an error instead of success if any field did not persist.',
     inputSchema: {
       app_id: z.string().min(1),
       version_id: z.string().min(1),
@@ -135,13 +135,20 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
           appId: args.app_id,
           versionId: args.version_id,
           ...(Object.keys(globalSettings).length ? { globalSettings } : {}),
-          ...(Object.keys(properties).length ? { pageSettings: { definition: { properties } } } : {}),
+          ...(Object.keys(properties).length ? { pageSettings: { properties } } : {}),
         });
         const persisted = await client.getAppSettings(args.app_id, args.version_id);
+        const mismatches = persistenceMismatches(args, persisted);
+        if (mismatches.length) {
+          throw new Error(
+            `update_app_settings partially failed readback: ${mismatches.join('; ')}. ` +
+            'Other requested fields may already have persisted; inspect get_app_settings before retrying.'
+          );
+        }
         return ok({
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
-          warnings: expectedWarnings(args, persisted),
+          warnings: [],
         });
       } catch (error) {
         return fail(error);

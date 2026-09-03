@@ -26,9 +26,7 @@ export function compactTheme(theme: AppTheme | Record<string, unknown> | undefin
 
 export function projectAppSettings(snapshot: AppSettingsSnapshot): Record<string, unknown> {
   const global = snapshot.global_settings ?? {};
-  const page = snapshot.page_settings ?? {};
-  const definition = asRecord(page.definition);
-  const properties = asRecord(definition.properties);
+  const properties = pageSettingProperties(snapshot);
   const disableMenu = asRecord(properties.disableMenu);
   const theme = asRecord(global.theme);
   return {
@@ -61,5 +59,5 @@ export function projectAppSettings(snapshot: AppSettingsSnapshot): Record<string
 }
 
 export function pageSettingProperties(snapshot: AppSettingsSnapshot): Record<string, unknown> {
-  return asRecord(asRecord(snapshot.page_settings.definition).properties);
+  return asRecord(asRecord(snapshot.page_settings).properties);
 }

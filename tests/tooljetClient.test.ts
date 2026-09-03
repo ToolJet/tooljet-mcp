@@ -1452,7 +1452,7 @@ describe('createClient', () => {
         editing_version: {
           id: 'ver1',
           global_settings: { appMode: 'dark' },
-          page_settings: { definition: { properties: { hideHeader: true } } },
+          page_settings: { properties: { hideHeader: true } },
           show_viewer_navigation: true,
         },
       } }));
@@ -1460,7 +1460,7 @@ describe('createClient', () => {
       await expect(client.getAppSettings('app1', 'ver1')).resolves.toEqual({
         app_id: 'app1', version_id: 'ver1',
         global_settings: { appMode: 'dark' },
-        page_settings: { definition: { properties: { hideHeader: true } } },
+        page_settings: { properties: { hideHeader: true } },
         show_viewer_navigation: true,
       });
 
@@ -1476,14 +1476,14 @@ describe('createClient', () => {
       await client.updateAppSettings({
         appId: 'app1', versionId: 'ver1',
         globalSettings: { appMode: 'auto' },
-        pageSettings: { definition: { properties: { hideHeader: true } } },
+        pageSettings: { properties: { hideHeader: true } },
       });
       const [path, init] = auth.authedFetch.mock.calls[0];
       expect(path).toBe('/api/v2/apps/app1/versions/ver1');
       expect(init.method).toBe('PUT');
       expect(JSON.parse(init.body)).toEqual({
         globalSettings: { appMode: 'auto' },
-        pageSettings: { definition: { properties: { hideHeader: true } } },
+        pageSettings: { properties: { hideHeader: true } },
       });
     });
 
