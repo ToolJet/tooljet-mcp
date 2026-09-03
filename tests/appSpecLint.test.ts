@@ -208,7 +208,7 @@ describe('lint_app_spec', () => {
     expect(body.errors.join(' ')).toMatch(/unknown.*target_ref/i);
     expect(body.errors.join(' ')).toMatch(/trigger "onChange" is not valid for Button/i);
     expect(body.warnings.join(' ')).toMatch(/order_filters|Unknown option key/i);
-    expect(body.warnings.join(' ')).toMatch(/too short.*single line needs/i);
+    expect(body.errors.join(' ')).toMatch(/too short to render one line.*at least 54px/i);
   });
 
   it('requires at least one spec section', async () => {

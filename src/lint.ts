@@ -516,7 +516,7 @@ export function renderedHeight(component: LintComponent, rect?: Rect): number {
  *  component taller does not enlarge its value text; with a top-aligned label ToolJet adds a
  *  separate 20px rendered footprint outside that authored box. Treat the catalog's
  *  compactFormHeight hint as the source-of-truth marker instead of duplicating a component list. */
-function lintStandardSingleLineInputHeight(component: LintComponent): string[] {
+export function lintStandardSingleLineInputHeight(component: LintComponent): string[] {
   const schema = component.type ? getComponentSchema(component.type) : undefined;
   const defaultHeight = schema?.defaultSize?.height;
   if (!schema?.renderingHints?.compactFormHeight || defaultHeight === undefined) return [];
@@ -553,6 +553,41 @@ export function minimumTextHeight(component: LintComponent): number | undefined 
   const lineHeight = lineHeightValue === undefined ? 1.5 : optionalStaticNumber(lineHeightValue);
   if (textSize === undefined || lineHeight === undefined) return undefined;
   return Math.ceil(textSize * lineHeight + 6);
+}
+
+/** Height below the rendered line box itself is unusable; wrapper chrome is handled as a warning. */
+function minimumTextContentHeight(component: LintComponent): number | undefined {
+  const minimum = minimumTextHeight(component);
+  return minimum === undefined ? undefined : minimum - 6;
+}
+
+export function lintUnusableTextGeometry(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const component of components) {
+    const minimum = minimumTextContentHeight(component);
+    if (minimum === undefined) continue;
+    const layouts: Array<[string, Rect | undefined]> = [
+      [component.layouts?.desktop ? 'desktop' : 'layout', component.layouts?.desktop ?? component.layout],
+      ['mobile', component.layouts?.mobile],
+    ];
+    const undersized = layouts.filter((entry): entry is [string, Rect] =>
+      !!entry[1] && typeof entry[1].height === 'number' && entry[1].height < minimum
+    );
+    if (undersized.length) {
+      const recommended = minimumTextHeight(component)!;
+      errors.push(
+        `Text "${component.name ?? component.id ?? 'Text'}" is too short to render one line: ` +
+          `${undersized.map(([resolution, layout]) => `${resolution} height ${layout.height}px`).join(', ')}; ` +
+          `use at least ${recommended}px or enable dynamicHeight.`
+      );
+    }
+  }
+  return errors;
+}
+
+export function introducedLintFindings(before: string[], after: string[]): string[] {
+  const existing = new Set(before);
+  return after.filter((finding) => !existing.has(finding));
 }
 
 export function lintTextGeometry(components: LintComponent[]): string[] {
@@ -851,7 +886,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean) as Rect[];
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      warnings.push(`Component "${label}": layout has non-positive size (${r.width}×${r.height}) — it may be invisible.`);
+      errors.push(`Component "${label}": layout has non-positive size (${r.width}×${r.height}) — it may be invisible.`);
     }
   }
 
@@ -1240,7 +1275,12 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < minimumHeight) {
+      if (desktopHeight < chromeHeight + rowHeight) {
+        errors.push(
+          `Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; ` +
+            `use at least ${chromeHeight + rowHeight}px.`
+        );
+      } else if (desktopHeight < minimumHeight) {
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
@@ -1648,7 +1688,6 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
   return [
     ...detectOverlaps(components),
     ...lintModalChildren(components),
-    ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
@@ -1667,6 +1706,8 @@ export function lintComponents(components: LintComponent[]): LintResult {
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintUnusableTextGeometry(components));
+  warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
@@ -1938,6 +1979,8 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   for (const p of summary.pages) {
+    errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
+    warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }

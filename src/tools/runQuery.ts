@@ -62,32 +62,37 @@ export function datasourceRecovery(query: {
   };
 }
 
-export type QueryFailureClass = 'connection' | 'schema_name' | 'query';
+export type QueryFailureClass = 'connection' | 'schema_name' | 'query' | 'unknown';
 
-// SQLSTATE prefixes / message markers that mean the *connection* is broken (agent cannot fix by
-// editing SQL — the user must repair the datasource). Postgres classes: 08 connection_exception,
-// 28 invalid_authorization, 53 insufficient_resources, 57P0x admin/cannot-connect, 3D000 invalid_catalog.
-const CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
-const CONNECTION_MESSAGE =
-  /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
-// SQLSTATE / markers that mean a NAME in the query does not exist — recoverable by re-introspecting.
-// 42P01 undefined_table, 42703 undefined_column, 3F000 invalid_schema, 42P02 undefined_parameter, 42704
-// undefined_object.
-const SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
-const SCHEMA_NAME_MESSAGE =
-  /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
+const CONNECTION_SQLSTATE_PREFIXES = ['08', '28', '53', '57P0', '3D000'];
+const SCHEMA_NAME_SQLSTATES = new Set(['42P01', '42703', '3F000', '42P02', '42704']);
+const LEGACY_CONNECTION_CODES = new Set([
+  'ELOGIN', 'ESOCKET', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND',
+  'ER_ACCESS_DENIED_ERROR', 'ER_DBACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR', 'PROTOCOL_CONNECTION_LOST',
+]);
+const LEGACY_SCHEMA_CODES = new Set(['ER_BAD_FIELD_ERROR', 'ER_BAD_TABLE_ERROR', 'ER_NO_SUCH_TABLE']);
 
 /** Classify a failed query result so the caller offers the RIGHT recovery: a connection-repair
  *  handoff only for genuine connection failures, and a re-introspect hint for wrong table/column
  *  names — never the misleading "go fix your datasource" prompt for a plain SQL name error. */
 export function classifyQueryFailure(result: Record<string, unknown> | undefined): QueryFailureClass {
-  if (!result) return 'query';
-  const data = result.data as { code?: unknown } | undefined;
-  const code = data && typeof data === 'object' ? String(data.code ?? '') : '';
-  const text = `${result.description ?? ''} ${result.message ?? ''}`;
-  if ((code && CONNECTION_SQLSTATE.test(code)) || CONNECTION_MESSAGE.test(text)) return 'connection';
-  if ((code && SCHEMA_NAME_SQLSTATE.test(code)) || SCHEMA_NAME_MESSAGE.test(text)) return 'schema_name';
-  return 'query';
+  if (!result) return 'unknown';
+  const category = result.category;
+  if (category === 'authentication' || category === 'connection') return 'connection';
+  if (category === 'schema_name') return 'schema_name';
+  if (category === 'unknown') return 'unknown';
+  if (['timeout', 'rate_limit', 'transient', 'query'].includes(String(category))) return 'query';
+  if (typeof category === 'string') return 'unknown';
+
+  // Compatibility with older ToolJet servers: inspect structured driver fields only.
+  const data = result.data as { code?: unknown; sqlState?: unknown; sqlstate?: unknown } | undefined;
+  const codes = data && typeof data === 'object'
+    ? [data.code, data.sqlState, data.sqlstate].map((value) => String(value ?? '').toUpperCase()).filter(Boolean)
+    : [];
+  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) ||
+      codes.some((code) => LEGACY_CONNECTION_CODES.has(code))) return 'connection';
+  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code))) return 'schema_name';
+  return codes.length ? 'query' : 'unknown';
 }
 
 /** Connection-repair handoff ONLY when the failure is actually a connection problem. */
@@ -96,6 +101,21 @@ export function failureRecovery(
   result: Record<string, unknown>
 ): Record<string, unknown> | undefined {
   return classifyQueryFailure(result) === 'connection' ? datasourceRecovery(query) : undefined;
+}
+
+/** Unknown means exactly that: verify the saved datasource instead of guessing or switching it. */
+export function failureVerification(
+  query: { data_source_id?: string },
+  result: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!query.data_source_id || classifyQueryFailure(result) !== 'unknown') return undefined;
+  return {
+    action: 'test_datasource_connection',
+    datasource_id: query.data_source_id,
+    instruction:
+      'Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ' +
+      'ask the user before one bounded read. Never substitute another datasource from an unknown failure.',
+  };
 }
 
 function introspectedNames(result: unknown): string[] {
@@ -190,8 +210,8 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       `observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. ` +
       'BigQuery, Snowflake, and Redshift reads also require explicit cost approval with ' +
       'user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. ' +
-      'A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive ' +
-      'data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. ' +
+      'A static remote read (including REST GET and Supabase rows) requires separate approval with ' +
+      'user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. ' +
       'If saved options reference `components.*`, the result ' +
       'includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.',
     inputSchema: {
@@ -229,15 +249,15 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
 
         if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
           return fail(new Error(
-            `run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive ` +
+            `run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive ` +
               'data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask ' +
               'explicitly; retry with user_confirmed_remote_read:true only after they approve that request.'
           ));
         }
         if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push(
-            'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.'
-          );
+          warnings.push(assessment.datasourceKind === 'restapi'
+            ? 'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.'
+            : 'User-confirmed remote read: the datasource controls response size and quota.');
         }
 
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
@@ -263,7 +283,8 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
           const countCanRun = countAssessment.directSafe ||
-            (countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true);
+            (countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true) ||
+            (countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true);
           if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight ||
               !sameReadSource(assessment, countAssessment)) {
             return fail(new Error(
@@ -305,19 +326,16 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
             environmentId: args.environment_id,
           });
         } catch (error) {
-          const failure = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
-          const recovery = failureRecovery(query, failure);
-          const schemaHint = await schemaNameHint(client, query, failure);
           return ok({
-            ...failure,
+            status: 'failed',
+            message: error instanceof Error ? error.message : String(error),
             ...(preflight ? { preflight } : {}),
             ...(warnings.length ? { warnings } : {}),
-            ...(recovery ? { recovery } : {}),
-            ...(schemaHint ? { schema_hint: schemaHint } : {}),
           });
         }
         const failed = result.status === 'failed';
         const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
+        const verification = failed ? failureVerification(query, result as Record<string, unknown>) : undefined;
         const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
         const output = assessment.requiresRemoteReadConfirmation
           ? truncateRemoteResult(result as Record<string, unknown>)
@@ -328,6 +346,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
           ...(recovery ? { recovery } : {}),
+          ...(verification ? { verification } : {}),
           ...(schemaHint ? { schema_hint: schemaHint } : {}),
         });
       } catch (err) {

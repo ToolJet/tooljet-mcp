@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ToolJetClient } from '../src/tooljetClient.js';
+import { ToolJetHttpError, type ToolJetClient } from '../src/tooljetClient.js';
 import { testDatasourceConnectionTool } from '../src/tools/testDatasourceConnection.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
@@ -46,7 +46,7 @@ describe('test_datasource_connection tool', () => {
     );
   });
 
-  it('reports an unsupported kind instead of a broken connection', async () => {
+  it('trusts a failed verdict when the catalog confirms the plugin supports the test', async () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
@@ -55,10 +55,25 @@ describe('test_datasource_connection tool', () => {
     const parsed = textOf(
       await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
     );
-    expect(parsed.supported).toBe(false);
-    expect(parsed.status).toBe('unsupported');
-    expect(parsed.message).toMatch(/does not implement a connection test/);
-    expect(parsed.recovery).toBeUndefined();
+    expect(parsed.supported).toBe(true);
+    expect(parsed.status).toBe('failed');
+    expect(parsed.recovery).toMatchObject({ action: 'open_datasource_settings' });
+  });
+
+  it('uses ToolJet structured metadata when a plugin does not implement a connection test', async () => {
+    const client = clientWith({
+      testDatasourceConnection: vi.fn().mockResolvedValue({
+        status: 'failed',
+        category: 'unsupported',
+        supported: false,
+        message: 'opaque server text',
+      }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' })
+    );
+    expect(parsed).toMatchObject({ status: 'unsupported', supported: false });
+    expect(parsed).not.toHaveProperty('recovery');
   });
 
   it('returns a repair handoff on a genuine connection failure', async () => {
@@ -82,7 +97,7 @@ describe('test_datasource_connection tool', () => {
     const client = clientWith({
       testDatasourceConnection: vi
         .fn()
-        .mockRejectedValue(new Error('ToolJet testDatasourceConnection failed (403): Forbidden')),
+        .mockRejectedValue(new ToolJetHttpError(403, 'testDatasourceConnection', 'Forbidden')),
     });
     const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
     expect(result.isError).toBeUndefined();
@@ -117,6 +132,61 @@ describe('test_datasource_connection tool', () => {
     // An undefined flag is a stale catalog, not a claim that the plugin lacks the method.
     expect(client.testDatasourceConnection).toHaveBeenCalled();
     expect(parsed.status).toBe('ok');
+  });
+
+  it('keeps a failed result inconclusive when the catalog cannot prove test support', async () => {
+    const client = clientWith({
+      listDatasources: vi.fn().mockResolvedValue([
+        { id: 'x1', name: 'Unlisted', kind: 'not-in-the-catalog', settings_url: 'http://tj/ws/data-sources/x1' },
+      ]),
+      testDatasourceConnection: vi.fn().mockResolvedValue({ status: 'failed', message: 'unknown result' }),
+    });
+    const parsed = textOf(
+      await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'x1' })
+    );
+    expect(parsed.status).toBe('inconclusive');
+    expect(parsed.verification).toMatchObject({ requires_user_approval: true });
+  });
+
+  it.each([401, 403, 500])('keeps a %i connection-detail failure as an MCP error', async (status) => {
+    const client = clientWith({
+      getDatasourceConnectionDetails: vi
+        .fn()
+        .mockRejectedValue(new ToolJetHttpError(status, 'getDatasourceConnectionDetails', 'Request failed')),
+    });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain(`failed (${status})`);
+    expect(client.testDatasourceConnection).not.toHaveBeenCalled();
+  });
+
+  it.each([404, 501])('reports a %i from the test endpoint as unsupported', async (status) => {
+    const client = clientWith({
+      testDatasourceConnection: vi
+        .fn()
+        .mockRejectedValue(new ToolJetHttpError(status, 'testDatasourceConnection', 'Unavailable')),
+    });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBeUndefined();
+    expect(textOf(result)).toMatchObject({ status: 'unsupported', supported: false });
+  });
+
+  it.each([401, 408, 429, 500])('keeps a %i test-endpoint failure as an MCP error', async (status) => {
+    const client = clientWith({
+      testDatasourceConnection: vi
+        .fn()
+        .mockRejectedValue(new ToolJetHttpError(status, 'testDatasourceConnection', 'Request failed')),
+    });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain(`failed (${status})`);
+  });
+
+  it('keeps a transport failure as an MCP error', async () => {
+    const client = clientWith({ testDatasourceConnection: vi.fn().mockRejectedValue(new Error('fetch failed')) });
+    const result = await testDatasourceConnectionTool(client).handler({ version_id: 'v1', datasource_id: 'pg1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toBe('Error: fetch failed');
   });
 
   it('rejects a datasource that is not on this version', async () => {

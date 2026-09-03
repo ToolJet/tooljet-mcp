@@ -382,10 +382,12 @@ export interface TestDatasourceConnectionParams {
   environmentId?: string;
 }
 
-/** ToolJet's own test-connection verdict. `status` is 'ok' or 'failed'; a plugin that does not
- *  implement testConnection also arrives here as 'failed', which the tool separates out. */
+/** ToolJet's own test-connection verdict. Unsupported plugins preserve the existing `failed`
+ *  status for compatibility and add a structured `category`. */
 export interface ConnectionTestResult {
   status: string;
+  category?: string;
+  supported?: boolean;
   message?: string;
   [key: string]: unknown;
 }
@@ -586,6 +588,16 @@ export interface UpdateQueryParams {
 /** Run/preview result — `status` is 'ok' or 'failed' (HTTP is 200 either way); rows under `data`. */
 export interface RunQueryResult {
   status: string;
+  /** Structured by ToolJet's plugin boundary; never inferred from human-readable error text. */
+  category?:
+    | 'authentication'
+    | 'connection'
+    | 'schema_name'
+    | 'timeout'
+    | 'rate_limit'
+    | 'transient'
+    | 'query'
+    | 'unknown';
   data?: unknown;
   message?: string;
   [k: string]: unknown;
@@ -606,9 +618,20 @@ export interface UpdateEventsParams {
   updateType?: 'update' | 'reorder';
 }
 
+export class ToolJetHttpError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly method: string,
+    public readonly detail: string
+  ) {
+    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    this.name = 'ToolJetHttpError';
+  }
+}
+
 async function assertOk(res: Response, method: string): Promise<void> {
   if (!res.ok) {
-    throw new Error(`ToolJet ${method} failed (${res.status}): ${await res.text()}`);
+    throw new ToolJetHttpError(res.status, method, await res.text());
   }
 }
 

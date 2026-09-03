@@ -4,7 +4,7 @@ Read this when selecting, connecting, introspecting, or authoring datasource que
 
 ## Missing or broken datasource recovery
 
-`list_workspaces` returns `datasources_url`; `list_datasources` returns a direct `settings_url` for each source; failed query runs may return `recovery:{action:"open_datasource_settings",url,instruction}`.
+`list_workspaces` returns `datasources_url`; `list_datasources` returns a direct `settings_url` for each source. Failed query runs carry a structured `category`: connection/authentication failures may return `recovery:{action:"open_datasource_settings",url,instruction}`; an `unknown` failure returns `verification:{action:"test_datasource_connection",datasource_id,instruction}`. Follow those fields instead of inferring from error text, and never substitute another datasource.
 
 When the expected datasource is absent or a connection-backed query fails, explain the failure and ask the user to repair it. If the host has a built-in browser, open the most specific returned URL there; otherwise send the clickable link. Navigation is the only automated action: never enter credentials, authorize OAuth, or save settings for the user. Wait for the user to confirm the repair, then refresh `list_datasources` and retry at most one explicitly selected safe read. If it still fails, report the error instead of looping.
 
@@ -14,6 +14,7 @@ When the expected datasource is absent or a connection-backed query fails, expla
 - `failed` — genuinely broken. Say WHY in your own words, quoting the datasource's own message (expired trial, suspended warehouse, refused connection, bad credentials), hand over the returned `recovery.url`, and stop building on it. Never restate an external outage as a limitation of yours — "I cannot run queries here" hides a problem the user can fix in two minutes. If you build anyway because they asked you to, repeat the cause and the link in your final handoff.
 - `unsupported` — this datasource kind publishes no connection test (REST API, GraphQL, and most OAuth/HTTP integrations). It says NOTHING about the connection: never report it as a fault. Verify with one bounded read instead. Which kinds these are is known ahead of the call: `get_datasource_query_schema` reports `supports_test_connection`, so you can skip the test rather than spend it.
 - `not_permitted` — this ToolJet user may not test connections. Also not a fault; say so and move on.
+- `inconclusive` — ToolJet could not prove health or failure. Ask before running the returned bounded-read verification; do not substitute another datasource.
 
 ### Large-data read safety
 

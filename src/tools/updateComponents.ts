@@ -1,10 +1,14 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import {
+  introducedLintFindings,
   lintComponentSlots,
   lintComponentSpec,
   lintKanbanInteractions,
   lintRenderedGeometry,
+  lintStandardSingleLineInputHeight,
+  lintTextGeometry,
+  lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
@@ -68,10 +72,11 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const summary = await client.getAppSummary(args.app_id);
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (!page) return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
         const projected = new Map(page.components.map((component) => [component.id, component as LintComponent]));
         const warnings: string[] = [];
         const errors: string[] = [];
+        const changedComponents: Array<{ before: LintComponent; after: LintComponent }> = [];
+        let placementChanged = false;
         const resolvedUpdates: Array<{
           componentId: string;
           definition?: Record<string, unknown>;
@@ -147,8 +152,10 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             layouts: next.layouts,
             parent: next.parent,
           });
-          const normalizedNext = normalized.component as LintComponent;
+          const normalizedNext = { ...normalized.component, id: current.id } as LintComponent;
           projected.set(current.id, normalizedNext);
+          if (update.definition) changedComponents.push({ before: current as LintComponent, after: normalizedNext });
+          placementChanged ||= update.parent !== undefined || update.slot_name !== undefined;
           warnings.push(...normalized.warnings);
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized.patch).length) {
@@ -170,14 +177,32 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             slotName: update.slot_name,
           });
           if (!update.definition) continue;
-          const lint = lintComponentSpec(normalizedNext);
-          errors.push(...lint.errors);
-          warnings.push(...lint.warnings);
+          errors.push(...introducedLintFindings(
+            lintComponentSpec(current as LintComponent).errors,
+            lintComponentSpec(normalizedNext).errors
+          ));
+          warnings.push(...introducedLintFindings(
+            lintComponentSpec(current as LintComponent).warnings,
+            lintComponentSpec(normalizedNext).warnings
+          ));
         }
-        errors.push(...lintComponentSlots([...projected.values()]));
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint: (components: LintComponent[]) => string[]) =>
+          changedComponents.flatMap(({ before, after }) =>
+            introducedLintFindings(lint([before]), lint([after]))
+          );
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(
+            lintComponentSlots(page.components as LintComponent[]),
+            lintComponentSlots(allComponents)
+          ));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length) return fail(new Error(errors.join(' ')));
-        warnings.push(...lintRenderedGeometry([...projected.values()]));
-        warnings.push(...lintKanbanInteractions([...projected.values()]));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,

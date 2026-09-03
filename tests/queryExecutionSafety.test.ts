@@ -79,6 +79,10 @@ describe('query execution safety', () => {
       id: 'filtered', kind: 'postgresql', data_source_id: 'pg-main',
       options: { query: 'SELECT COUNT(*) FROM orders WHERE id = -1' },
     });
+    const dynamic = assessQueryRead({
+      id: 'dynamic', kind: 'supabase', data_source_id: 'sb1',
+      options: { operation: 'count_rows', count_table_name: 'deployments', count_filters: '{{variables.filters}}' },
+    });
     const otherDatasource = assessQueryRead({
       id: 'other', kind: 'postgresql', data_source_id: 'pg-replica',
       options: { query: 'SELECT COUNT(*) FROM orders' },
@@ -94,6 +98,8 @@ describe('query execution safety', () => {
 
     expect(filtered.fullSourceCount).toBe(false);
     expect(sameReadSource(target, filtered)).toBe(false);
+    expect(dynamic.fullSourceCount).toBe(false);
+    expect(sameReadSource(target, dynamic)).toBe(false);
     expect(sameReadSource(target, otherDatasource)).toBe(false);
     expect(sameReadSource(joinedTarget, fullCount)).toBe(false);
   });
@@ -140,6 +146,39 @@ describe('query execution safety', () => {
     expect(assessQueryRead({
       id: 'rest-dynamic', kind: 'restapi', options: { method: 'get', url: '/repos/{{components.repo.value}}' },
     })).toMatchObject({ provenRead: false, directSafe: false });
+  });
+
+  it('classifies bounded Supabase row reads without treating writes as reads', () => {
+    expect(assessQueryRead({
+      id: 'sb-read', kind: 'supabase', data_source_id: 'sb1',
+      options: { operation: 'get_rows', get_table_name: 'deployments', get_limit: 25 },
+    })).toMatchObject({ provenRead: true, requiresRemoteReadConfirmation: true, maxRows: 25 });
+    expect(assessQueryRead({
+      id: 'sb-write', kind: 'supabase', options: { operation: 'insert_row', insert_table_name: 'deployments' },
+    })).toMatchObject({ provenRead: false });
+    expect(assessQueryRead({
+      id: 'sb-dynamic', kind: 'supabase',
+      options: { operation: 'get_rows', get_table_name: '{{components.table.value}}', get_limit: 25 },
+    })).toMatchObject({ provenRead: false });
+  });
+
+  it('accepts only unfiltered Supabase counts as a full-source preflight', () => {
+    const target = assessQueryRead({
+      id: 'target', kind: 'supabase', data_source_id: 'sb1',
+      options: { operation: 'get_rows', get_table_name: 'deployments' },
+    });
+    const full = assessQueryRead({
+      id: 'count', kind: 'supabase', data_source_id: 'sb1',
+      options: { operation: 'count_rows', count_table_name: 'deployments', count_filters: [] },
+    });
+    const filtered = assessQueryRead({
+      id: 'filtered', kind: 'supabase', data_source_id: 'sb1',
+      options: { operation: 'count_rows', count_table_name: 'deployments', count_filters: [{ key: 'status' }] },
+    });
+    expect(full.fullSourceCount).toBe(true);
+    expect(sameReadSource(target, full)).toBe(true);
+    expect(filtered.fullSourceCount).toBe(false);
+    expect(sameReadSource(target, filtered)).toBe(false);
   });
 
   it('extracts only an unambiguous one-row numeric count', () => {
