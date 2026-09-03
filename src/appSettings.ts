@@ -1,4 +1,5 @@
 import type { AppSettingsSnapshot, AppTheme } from './tooljetClient.js';
+import { booleanBindingValue } from './bindings.js';
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -7,10 +8,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function bindingBoolean(value: unknown): boolean | unknown {
-  if (typeof value === 'boolean') return value;
-  if (value === '{{true}}') return true;
-  if (value === '{{false}}') return false;
-  return value;
+  return booleanBindingValue(value) ?? value;
 }
 
 export function compactTheme(theme: AppTheme | Record<string, unknown> | undefined): Record<string, unknown> | null {

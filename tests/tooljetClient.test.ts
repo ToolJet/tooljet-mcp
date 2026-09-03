@@ -165,7 +165,7 @@ describe('createClient', () => {
         name: 'Home',
         handle: 'home',
         icon: 'IconLayoutDashboard',
-        hidden: { value: true },
+        hidden: { value: '{{true}}', fxActive: false },
         index: 1,
         components: {
           'c-1': {
@@ -813,6 +813,31 @@ describe('createClient', () => {
       expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Customers', index: 2, icon: 'IconUsers' });
     });
 
+    it('persists hidden pages with ToolJet\'s canonical Boolean binding', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home', index: 1 }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: {} }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { pages: [
+            { id: 'home', name: 'Home', index: 1 },
+            { id: 'component-uuid-1', name: 'Details', hidden: { value: '{{true}}', fxActive: false }, index: 2 },
+          ] },
+        }));
+
+      const client = createClient(auth, config);
+      const result = await client.createPage({
+        appId: 'app1', versionId: 'ver1', name: 'Details', hidden: true,
+      });
+
+      expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual({
+        pageId: 'component-uuid-1',
+        diff: { hidden: { value: '{{true}}', fxActive: false } },
+      });
+      expect(result).toEqual({ page_id: 'component-uuid-1', name: 'Details', index: 2, hidden: true });
+    });
+
     it('reports exactly which pages persisted when one request in a batch fails', async () => {
       auth.authedFetch
         .mockResolvedValueOnce(mockResponse({ status: 200, json: { pages: [{ id: 'home', name: 'Home', index: 1 }] } }))
@@ -903,6 +928,94 @@ describe('createClient', () => {
         order: ['cases'],
       })).rejects.toThrow(/every current page id exactly once/i);
       expect(auth.authedFetch).toHaveBeenCalledOnce();
+    });
+
+    it('rejects hiding the Home page before writing', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+        status: 200,
+        json: {
+          editing_version: { home_page_id: 'home' },
+          pages: [{ id: 'home', name: 'Play', handle: 'home', hidden: { value: '{{false}}', fxActive: false } }],
+        },
+      }));
+      const client = createClient(auth, config);
+
+      await expect(client.updatePages({
+        appId: 'app1', versionId: 'ver1', updates: [{ pageId: 'home', hidden: true }],
+      })).rejects.toThrow(/Home page cannot be hidden/i);
+      expect(auth.authedFetch).toHaveBeenCalledOnce();
+    });
+
+    it('allows a non-Home page to be hidden with the canonical binding', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: {
+            editing_version: { home_page_id: 'home' },
+            pages: [
+              { id: 'home', name: 'Home', handle: 'home' },
+              { id: 'details', name: 'Details', handle: 'details', hidden: { value: '{{false}}', fxActive: false } },
+            ],
+          },
+        }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { pages: [
+            { id: 'home', name: 'Home', handle: 'home' },
+            { id: 'details', name: 'Details', handle: 'details', hidden: { value: '{{true}}', fxActive: false } },
+          ] },
+        }));
+      const client = createClient(auth, config);
+
+      const result = await client.updatePages({
+        appId: 'app1', versionId: 'ver1', updates: [{ pageId: 'details', hidden: true }],
+      });
+
+      expect(JSON.parse(auth.authedFetch.mock.calls[1][1].body)).toEqual({
+        pageId: 'details',
+        diff: { hidden: { value: '{{true}}', fxActive: false } },
+      });
+      expect(result.pages.find((page) => page.page_id === 'details')?.hidden).toBe(true);
+    });
+
+    it('rewrites a raw Boolean hidden value to ToolJet\'s canonical binding', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: {
+            editing_version: { home_page_id: 'home' },
+            pages: [
+              { id: 'home', name: 'Home', handle: 'home' },
+              { id: 'details', name: 'Details', handle: 'details', hidden: { value: false } },
+            ],
+          },
+        }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }))
+        .mockResolvedValueOnce(mockResponse({
+          status: 200,
+          json: { pages: [
+            { id: 'home', name: 'Home', handle: 'home' },
+            { id: 'details', name: 'Details', handle: 'details', hidden: { value: '{{false}}', fxActive: false } },
+          ] },
+        }));
+      const client = createClient(auth, config);
+
+      const result = await client.updatePages({
+        appId: 'app1', versionId: 'ver1', updates: [{ pageId: 'details', hidden: false }],
+      });
+
+      expect(JSON.parse(auth.authedFetch.mock.calls[1][1].body)).toEqual({
+        pageId: 'details',
+        diff: { hidden: { value: '{{false}}', fxActive: false } },
+      });
+      expect(result).toMatchObject({
+        updated_fields: 1,
+        pages: [
+          { page_id: 'home', hidden: false },
+          { page_id: 'details', hidden: false },
+        ],
+      });
     });
   });
 
