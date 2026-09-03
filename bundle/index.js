@@ -3088,7 +3088,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve3.call(this, root, ref);
+      let _sch = resolve4.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3115,7 +3115,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve3(root, ref) {
+    function resolve4(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3746,7 +3746,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve3(baseURI, relativeURI, options2) {
+    function resolve4(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -4030,7 +4030,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve3,
+      resolve: resolve4,
       resolveComponent,
       equal,
       serialize,
@@ -7022,7 +7022,7 @@ var require_dist = __commonJS({
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -23167,12 +23167,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve3) => {
+    return new Promise((resolve4) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve3();
+        resolve4();
       } else {
-        this._stdout.once("drain", resolve3);
+        this._stdout.once("drain", resolve4);
       }
     });
   }
@@ -23600,7 +23600,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve3, reject) => {
+  const promise2 = new Promise((resolve4, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -23618,7 +23618,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error51 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve3(recovered);
+          resolve4(recovered);
         }
       });
       return true;
@@ -23630,7 +23630,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve3(buffer);
+        resolve4(buffer);
       });
     };
     const onError = (error51) => {
@@ -24155,7 +24155,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve3) => setTimeout(resolve3));
+            await new Promise((resolve4) => setTimeout(resolve4));
             maxReadCount = 3;
             continue;
           }
@@ -24835,9 +24835,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve3) => {
+        return new Promise((resolve4) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve3,
+            resolveJson: resolve4,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -31138,7 +31138,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -31155,7 +31155,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -31233,7 +31233,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve3(parseResult.data);
+            resolve4(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -31494,12 +31494,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve3, interval);
+      const timeoutId = setTimeout(resolve4, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -32590,7 +32590,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -33237,8 +33237,8 @@ function identityFromHeaders(headers, { allowPat = true } = {}) {
 }
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
-  const staticApiUrl = explicitApiUrl ?? "http://localhost:3000";
   const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
     const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
@@ -33949,6 +33949,28 @@ function renderedHeight(component, rect2) {
   const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label === void 0 || (typeof label === "string" ? label.trim().length > 0 : Boolean(label));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
+function lintStandardSingleLineInputHeight(component) {
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const defaultHeight = schema?.defaultSize?.height;
+  if (!schema?.renderingHints?.compactFormHeight || defaultHeight === void 0)
+    return [];
+  const layouts = [];
+  if (component.layout)
+    layouts.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    layouts.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    layouts.push(["mobile", component.layouts.mobile]);
+  const label = component.name ?? component.type ?? "component";
+  return layouts.flatMap(([layoutName, layout]) => {
+    const authoredHeight = layout.height;
+    if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
+      return [];
+    return [
+      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+    ];
+  });
+}
 function minimumTextHeight(component) {
   if (component.type !== "Text")
     return void 0;
@@ -33964,6 +33986,32 @@ function minimumTextHeight(component) {
   if (textSize === void 0 || lineHeight === void 0)
     return void 0;
   return Math.ceil(textSize * lineHeight + 6);
+}
+function minimumTextContentHeight(component) {
+  const minimum = minimumTextHeight(component);
+  return minimum === void 0 ? void 0 : minimum - 6;
+}
+function lintUnusableTextGeometry(components) {
+  const errors = [];
+  for (const component of components) {
+    const minimum = minimumTextContentHeight(component);
+    if (minimum === void 0)
+      continue;
+    const layouts = [
+      [component.layouts?.desktop ? "desktop" : "layout", component.layouts?.desktop ?? component.layout],
+      ["mobile", component.layouts?.mobile]
+    ];
+    const undersized = layouts.filter((entry) => !!entry[1] && typeof entry[1].height === "number" && entry[1].height < minimum);
+    if (undersized.length) {
+      const recommended = minimumTextHeight(component);
+      errors.push(`Text "${component.name ?? component.id ?? "Text"}" is too short to render one line: ${undersized.map(([resolution, layout]) => `${resolution} height ${layout.height}px`).join(", ")}; use at least ${recommended}px or enable dynamicHeight.`);
+    }
+  }
+  return errors;
+}
+function introducedLintFindings(before, after) {
+  const existing = new Set(before);
+  return after.filter((finding) => !existing.has(finding));
 }
 function lintTextGeometry(components) {
   const warnings = [];
@@ -34201,7 +34249,7 @@ function lintComponentSpec(spec) {
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      warnings.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
@@ -34415,7 +34463,9 @@ function lintComponentSpec(spec) {
       const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < minimumHeight) {
+      if (desktopHeight < chromeHeight + rowHeight) {
+        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+      } else if (desktopHeight < minimumHeight) {
         warnings.push(`Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
     }
@@ -34682,7 +34732,6 @@ function lintRenderedGeometry(components) {
   return [
     ...detectOverlaps(components),
     ...lintModalChildren(components),
-    ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
@@ -34695,9 +34744,12 @@ function lintComponents(components) {
   for (const c of components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
+    errors.push(...lintStandardSingleLineInputHeight(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintUnusableTextGeometry(components));
+  warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
@@ -34893,6 +34945,8 @@ function validateAppStructure(summary) {
     }
   }
   for (const p of summary.pages) {
+    errors.push(...lintUnusableTextGeometry(p.components));
+    warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
@@ -35001,9 +35055,21 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+var ToolJetHttpError = class extends Error {
+  status;
+  method;
+  detail;
+  constructor(status, method, detail) {
+    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    this.status = status;
+    this.method = method;
+    this.detail = detail;
+    this.name = "ToolJetHttpError";
+  }
+};
 async function assertOk(res, method) {
   if (!res.ok) {
-    throw new Error(`ToolJet ${method} failed (${res.status}): ${await res.text()}`);
+    throw new ToolJetHttpError(res.status, method, await res.text());
   }
 }
 var TYPE_ALIASES = {
@@ -35758,7 +35824,7 @@ function createClient(auth, config2) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve3) => setTimeout(resolve3, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
     }
   }
   async function insertRows(params) {
@@ -36243,6 +36309,45 @@ function useWorkspaceTool(client) {
 }
 
 // dist/tools/createApp.js
+import { existsSync, readFileSync as readFileSync2 } from "node:fs";
+import { dirname as dirname3, resolve as resolve2 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+var here = dirname3(fileURLToPath2(import.meta.url));
+var standardThemeCandidates = [
+  resolve2(here, "../../data/default-theme.json"),
+  resolve2(here, "../data/default-theme.json")
+];
+var standardThemeCache;
+function loadStandardTheme() {
+  if (!standardThemeCache) {
+    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
+    if (!path) {
+      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
+    }
+    standardThemeCache = JSON.parse(readFileSync2(path, "utf8"));
+  }
+  return standardThemeCache;
+}
+var derivedThemeSchema = external_exports.object({
+  name: external_exports.string().trim().min(1).max(100),
+  definition: external_exports.record(external_exports.string(), external_exports.any())
+});
+async function resolveTheme(client, choice) {
+  const themes = await client.listAppThemes();
+  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
+  if (wanted) {
+    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
+    if (existing)
+      return existing;
+    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
+  }
+  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
+  if (!named)
+    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
+  if (named.isDisabled)
+    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
+  return named;
+}
 function createAppTool(client) {
   return {
     name: "create_app",
@@ -36252,13 +36357,34 @@ function createAppTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, and app_url (a backward-compatible alias for editor_url).",
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Decide the theme before calling: when the request names a brand, an industry or a customer type, derive a theme (see references/themes.md) and pass theme:{name, definition}; it is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
     inputSchema: {
-      name: external_exports.string().min(1)
+      name: external_exports.string().min(1),
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional()
     },
     async handler(args) {
       try {
-        const result = await client.createApp(args.name);
+        const created = await client.createApp(args.name);
+        const choice = args.theme ?? "standard";
+        const result = { ...created, theme: { mode: "workspace_default" } };
+        if (choice === "workspace_default")
+          return ok(result);
+        const label = typeof choice === "object" ? choice.name : choice;
+        try {
+          const theme = await resolveTheme(client, choice);
+          await client.updateAppSettings({
+            appId: created.app_id,
+            versionId: created.version_id,
+            globalSettings: { theme }
+          });
+          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
+          result.theme = { mode, id: theme.id, name: theme.name };
+        } catch (themeErr) {
+          result.theme = {
+            mode: "workspace_default",
+            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+          };
+        }
         return ok(result);
       } catch (err) {
         return fail(err);
@@ -37023,9 +37149,9 @@ function getComponentCatalogTool(_client) {
 }
 
 // dist/datasourceCatalog.js
-import { readFileSync as readFileSync2 } from "node:fs";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { dirname as dirname3, resolve as resolve2 } from "node:path";
+import { readFileSync as readFileSync3 } from "node:fs";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { dirname as dirname4, resolve as resolve3 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
@@ -37043,11 +37169,11 @@ var COMMON_QUERY_OPTION_FIELDS = {
   disableQuery: { path: "disableQuery", type: "boolean|binding" },
   disabledMessage: { path: "disabledMessage", type: "string|binding" }
 };
-var dataPath2 = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/datasource-schemas.json");
+var dataPath2 = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/datasource-schemas.json");
 var cache2 = null;
 function load2() {
   if (!cache2)
-    cache2 = JSON.parse(readFileSync2(dataPath2, "utf8"));
+    cache2 = JSON.parse(readFileSync3(dataPath2, "utf8"));
   return cache2;
 }
 function getDatasourceCatalog() {
@@ -37337,15 +37463,17 @@ function inspectDatasourceSchemaTool(client) {
 }
 
 // dist/tools/testDatasourceConnection.js
-var NOT_IMPLEMENTED = /testconnection method not implemented/i;
 function unsupportedMessage(kind) {
   return `Datasource kind "${kind}" does not implement a connection test. This is not a failure and carries no information about the connection: verify it with a bounded read instead.`;
 }
-function isForbidden(message) {
-  return /\(403\)/.test(message) || /forbidden/i.test(message);
-}
-function isNotFound(message) {
-  return /\(404\)/.test(message);
+function inconclusive(header, detail) {
+  return ok({
+    ...header,
+    supported: true,
+    status: "inconclusive",
+    message: `The connection test did not prove this datasource is broken${detail ? ` (${detail.trim()})` : ""}.`,
+    verification: { action: "ask_then_run_bounded_read", requires_user_approval: true }
+  });
 }
 function testDatasourceConnectionTool(client) {
   return {
@@ -37362,16 +37490,18 @@ function testDatasourceConnectionTool(client) {
       datasource_id: external_exports.string().min(1)
     },
     async handler(args) {
+      let header;
       try {
         const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const header = {
+        header = {
           datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind },
           settings_url: datasource.settings_url
         };
-        if (getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection === false) {
+        const supportsTestConnection = getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection;
+        if (supportsTestConnection === false) {
           return ok({
             ...header,
             supported: false,
@@ -37387,7 +37517,7 @@ function testDatasourceConnectionTool(client) {
           options: details.options
         });
         const message = typeof result.message === "string" ? result.message : void 0;
-        if (message && NOT_IMPLEMENTED.test(message)) {
+        if (result.category === "unsupported") {
           return ok({
             ...header,
             supported: false,
@@ -37398,6 +37528,8 @@ function testDatasourceConnectionTool(client) {
         if (result.status === "ok") {
           return ok({ ...header, supported: true, status: "ok" });
         }
+        if (supportsTestConnection !== true)
+          return inconclusive(header, message);
         return ok({
           ...header,
           supported: true,
@@ -37410,17 +37542,31 @@ function testDatasourceConnectionTool(client) {
           }
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (isForbidden(message)) {
+        if (!header)
+          return fail(err);
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 403) {
           return ok({
-            datasource: { id: args.datasource_id },
+            ...header,
             supported: true,
             status: "not_permitted",
             message: "This ToolJet user is not permitted to test datasource connections (the ability is granted to admins, datasource create/delete holders, and users with editable/viewable datasource access). The connection itself was not tested."
           });
         }
-        if (isNotFound(message)) {
-          return fail(new Error(`ToolJet has no test-connection endpoint or no datasource "${args.datasource_id}" for this environment (${message}).`));
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 404) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: "ToolJet has no datasource-level test endpoint. This says nothing about connection health."
+          });
+        }
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 501) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: "This ToolJet datasource plugin does not implement a connection test."
+          });
         }
         return fail(err);
       }
@@ -38560,6 +38706,53 @@ function assessRestGet(options2, datasourceId) {
     ...identity
   };
 }
+function assessSupabase(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options2.count_table_name : options2.get_table_name;
+  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
+  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Supabase operation is not a static row read.",
+      ...identity
+    };
+  }
+  const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === "count_rows") {
+    const countFilters = options2.count_filters;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record2(countFilters) && Object.keys(record2(countFilters)).length === 0;
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  const maxRows = staticPositiveInteger(options2.get_limit);
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD,
+    requiresRemoteReadConfirmation: true,
+    simpleSourceRead: true,
+    source: source2,
+    maxRows,
+    ...identity
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -38829,6 +39022,8 @@ function assessQueryRead(query) {
     return assessRestGet(options2, datasourceId);
   if (kind === "servicenow")
     return assessServiceNow(options2, datasourceId);
+  if (kind === "supabase")
+    return assessSupabase(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -40602,7 +40797,7 @@ async function waitForCreatedTables(client, tableNames) {
         const delay = TABLE_READY_DELAYS_MS[attempt];
         if (delay === void 0)
           break;
-        await new Promise((resolve3) => setTimeout(resolve3, delay));
+        await new Promise((resolve4) => setTimeout(resolve4, delay));
       }
     }
     throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
@@ -41419,10 +41614,11 @@ function updateComponentsTool(client) {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (!page)
           return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
         const projected = new Map(page.components.map((component) => [component.id, component]));
         const warnings = [];
         const errors = [];
+        const changedComponents = [];
+        let placementChanged = false;
         const resolvedUpdates = [];
         for (const update of args.updates) {
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
@@ -41473,8 +41669,11 @@ function updateComponentsTool(client) {
             layouts: next.layouts,
             parent: next.parent
           });
-          const normalizedNext = normalized2.component;
+          const normalizedNext = { ...normalized2.component, id: current.id };
           projected.set(current.id, normalizedNext);
+          if (update.definition)
+            changedComponents.push({ before: current, after: normalizedNext });
+          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
           warnings.push(...normalized2.warnings);
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized2.patch).length) {
@@ -41498,15 +41697,21 @@ function updateComponentsTool(client) {
           });
           if (!update.definition)
             continue;
-          const lint = lintComponentSpec(normalizedNext);
-          errors.push(...lint.errors);
-          warnings.push(...lint.warnings);
+          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
+          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
         }
-        errors.push(...lintComponentSlots([...projected.values()]));
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length)
           return fail(new Error(errors.join(" ")));
-        warnings.push(...lintRenderedGeometry([...projected.values()]));
-        warnings.push(...lintKanbanInteractions([...projected.values()]));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,
@@ -41703,14 +41908,22 @@ function updateLayoutTool(client) {
             slotName: change.slot_name
           };
         });
-        const slotErrors = lintComponentSlots(projected);
-        if (slotErrors.length)
-          return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
+        const introducedForChanged = (lint) => changed.flatMap((component) => introducedLintFindings(lint([components.get(component.id)]), lint([component])));
+        const errors = [
+          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
+          ...introducedForChanged(lintUnusableTextGeometry)
+        ];
+        if (errors.length)
+          return fail(new Error(errors.join(" ")));
         const warnings = [.../* @__PURE__ */ new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
-          ...projected.filter((component) => component.id && changedIds.has(component.id)).flatMap((component) => lintComponentSpec(component).warnings),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
+          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
+          ...introducedForChanged(lintTextGeometry),
           ...lintRenderedGeometry(projected)
         ])];
         const result = await client.updateLayouts({
@@ -42087,24 +42300,54 @@ function datasourceRecovery(query) {
     instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
   };
 }
-var CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
-var CONNECTION_MESSAGE = /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
-var SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
-var SCHEMA_NAME_MESSAGE = /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
+var CONNECTION_SQLSTATE_PREFIXES = ["08", "28", "53", "57P0", "3D000"];
+var SCHEMA_NAME_SQLSTATES = /* @__PURE__ */ new Set(["42P01", "42703", "3F000", "42P02", "42704"]);
+var LEGACY_CONNECTION_CODES = /* @__PURE__ */ new Set([
+  "ELOGIN",
+  "ESOCKET",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ER_ACCESS_DENIED_ERROR",
+  "ER_DBACCESS_DENIED_ERROR",
+  "ER_BAD_DB_ERROR",
+  "PROTOCOL_CONNECTION_LOST"
+]);
+var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR", "ER_NO_SUCH_TABLE"]);
 function classifyQueryFailure(result) {
   if (!result)
-    return "query";
-  const data = result.data;
-  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
-  const text = `${result.description ?? ""} ${result.message ?? ""}`;
-  if (code && CONNECTION_SQLSTATE.test(code) || CONNECTION_MESSAGE.test(text))
+    return "unknown";
+  const category = result.category;
+  if (category === "authentication" || category === "connection")
     return "connection";
-  if (code && SCHEMA_NAME_SQLSTATE.test(code) || SCHEMA_NAME_MESSAGE.test(text))
+  if (category === "schema_name")
     return "schema_name";
-  return "query";
+  if (category === "unknown")
+    return "unknown";
+  if (["timeout", "rate_limit", "transient", "query"].includes(String(category)))
+    return "query";
+  if (typeof category === "string")
+    return "unknown";
+  const data = result.data;
+  const codes = data && typeof data === "object" ? [data.code, data.sqlState, data.sqlstate].map((value) => String(value ?? "").toUpperCase()).filter(Boolean) : [];
+  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) || codes.some((code) => LEGACY_CONNECTION_CODES.has(code)))
+    return "connection";
+  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code)))
+    return "schema_name";
+  return codes.length ? "query" : "unknown";
 }
 function failureRecovery(query, result) {
   return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
+}
+function failureVerification(query, result) {
+  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
+    return void 0;
+  return {
+    action: "test_datasource_connection",
+    datasource_id: query.data_source_id,
+    instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
+  };
 }
 function introspectedNames(result) {
   const data = result?.data;
@@ -42163,7 +42406,7 @@ function runQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42185,10 +42428,10 @@ function runQueryTool(client) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
         }
         if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
         }
         if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push("User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.");
+          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -42203,7 +42446,7 @@ function runQueryTool(client) {
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
-          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true;
+          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true || countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true;
           if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
             return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
           }
@@ -42232,19 +42475,16 @@ function runQueryTool(client) {
             environmentId: args.environment_id
           });
         } catch (error51) {
-          const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-          const recovery2 = failureRecovery(query, failure);
-          const schemaHint2 = await schemaNameHint(client, query, failure);
           return ok({
-            ...failure,
+            status: "failed",
+            message: error51 instanceof Error ? error51.message : String(error51),
             ...preflight ? { preflight } : {},
-            ...warnings.length ? { warnings } : {},
-            ...recovery2 ? { recovery: recovery2 } : {},
-            ...schemaHint2 ? { schema_hint: schemaHint2 } : {}
+            ...warnings.length ? { warnings } : {}
           });
         }
         const failed = result.status === "failed";
         const recovery = failed ? failureRecovery(query, result) : void 0;
+        const verification = failed ? failureVerification(query, result) : void 0;
         const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
         const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
         if (output.warning)
@@ -42254,6 +42494,7 @@ function runQueryTool(client) {
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {},
+          ...verification ? { verification } : {},
           ...schemaHint ? { schema_hint: schemaHint } : {}
         });
       } catch (err) {
@@ -42329,6 +42570,7 @@ function runQueriesTool(client) {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const failed = result.status === "failed";
             const recovery = failed ? failureRecovery(query, result) : void 0;
+            const verification = failed ? failureVerification(query, result) : void 0;
             const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
             const shaped = args.include_data === false ? (() => {
               const { data, ...rest } = result;
@@ -42340,19 +42582,16 @@ function runQueriesTool(client) {
               ...shaped,
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {},
+              ...verification ? { verification } : {},
               ...schemaHint ? { schema_hint: schemaHint } : {}
             };
           } catch (error51) {
             const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-            const recovery = failureRecovery(query, failure);
-            const schemaHint = await schemaNameHint(client, query, failure);
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
               ...failure,
-              ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {},
-              ...schemaHint ? { schema_hint: schemaHint } : {}
+              ...warnings.length ? { warnings } : {}
             };
           }
         }));
@@ -42497,7 +42736,7 @@ function deleteEventTool(client) {
 // dist/runtimeFreshness.js
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.2.0";
 function snapshot(path) {
   try {
@@ -42516,7 +42755,7 @@ var RuntimeFreshnessMonitor = class {
   artifactPath;
   loaded;
   startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  constructor(artifactPath = fileURLToPath3(import.meta.url)) {
+  constructor(artifactPath = fileURLToPath4(import.meta.url)) {
     this.artifactPath = artifactPath;
     this.loaded = snapshot(artifactPath);
   }
@@ -42748,6 +42987,14 @@ function normalizePermission(permissions) {
 function manageAppPermissionsTool(client) {
   return {
     name: "manage_app_permissions",
+    title: "Manage App Permissions",
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
     inputSchema: {
       action: external_exports.enum(["list_subjects", "get", "set", "clear"]),
@@ -42809,6 +43056,11 @@ var userStatus = external_exports.enum(["active", "archived", "invited"]);
 function listWorkspaceAppsTool(client) {
   return {
     name: "list_workspace_apps",
+    title: "List Workspace Apps",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
@@ -42826,6 +43078,11 @@ function listWorkspaceAppsTool(client) {
 function listWorkspaceUsersTool(client) {
   return {
     name: "list_workspace_users",
+    title: "List Workspace Users",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
@@ -42853,6 +43110,14 @@ function required2(value, label) {
 function manageWorkspaceUsersTool(client) {
   return {
     name: "manage_workspace_users",
+    title: "Manage Workspace Users",
+    // invite is additive, but update overwrites a member's role and archive revokes their access to
+    // the workspace, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups, change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
     inputSchema: {
       action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
@@ -43091,9 +43356,9 @@ async function serveHttp() {
   }
   const { server: httpServer, gatewayMode } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
-  await new Promise((resolve3, reject) => {
+  await new Promise((resolve4, reject) => {
     httpServer.once("error", reject);
-    httpServer.listen(port, host, resolve3);
+    httpServer.listen(port, host, resolve4);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
@@ -43117,7 +43382,7 @@ function isEntrypoint() {
   if (!invoked)
     return false;
   try {
-    return realpathSync(invoked) === realpathSync(fileURLToPath4(import.meta.url));
+    return realpathSync(invoked) === realpathSync(fileURLToPath5(import.meta.url));
   } catch {
     return false;
   }
