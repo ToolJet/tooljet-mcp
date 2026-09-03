@@ -44,6 +44,7 @@ describe('app settings tools', () => {
       navigation: { hidden: false, position: 'side', style: 'texticon', collapsible: true },
     });
     expect(result.content[0]!.text).not.toContain('definition');
+    expect(result.content[0]!.text).not.toContain('show_viewer_navigation');
   });
 
   it('lists compact themes and preserves disabled status', async () => {

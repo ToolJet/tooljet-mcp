@@ -1559,27 +1559,40 @@ describe('createClient', () => {
   });
 
   describe('app settings', () => {
-    it('reads the current editing version settings and rejects a mismatched version', async () => {
+    it('reads settings from the native version endpoint without the app endpoint snake-case corruption', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {
         id: 'app1',
         editing_version: {
           id: 'ver1',
-          global_settings: { appMode: 'dark' },
-          page_settings: { properties: { hideHeader: true } },
-          show_viewer_navigation: true,
+          globalSettings: { appMode: 'dark' },
+          pageSettings: {
+            properties: {
+              hideHeader: true,
+              disableMenu: { value: '{{true}}', fxActive: false },
+            },
+          },
+          showViewerNavigation: true,
         },
       } }));
       const client = createClient(auth, config);
       await expect(client.getAppSettings('app1', 'ver1')).resolves.toEqual({
         app_id: 'app1', version_id: 'ver1',
         global_settings: { appMode: 'dark' },
-        page_settings: { properties: { hideHeader: true } },
-        show_viewer_navigation: true,
+        page_settings: {
+          properties: {
+            hideHeader: true,
+            disableMenu: { value: '{{true}}', fxActive: false },
+          },
+        },
       });
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/v2/apps/app1/versions/ver1');
+    });
 
+    it('rejects a response for a different editing version', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {
         id: 'app1', editing_version: { id: 'ver2' },
       } }));
+      const client = createClient(auth, config);
       await expect(client.getAppSettings('app1', 'ver1')).rejects.toThrow(/not the current editing version/i);
     });
 

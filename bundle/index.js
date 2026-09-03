@@ -35313,7 +35313,9 @@ function createClient(auth, config2) {
     await assertOk(res, "clearAppPermission");
   }
   async function getAppSettings(appId, versionId) {
-    const app = await getApp(appId);
+    const res = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`);
+    await assertOk(res, "getAppSettings");
+    const app = await res.json();
     const editingVersion = app.editing_version ?? app.editingVersion;
     if (!editingVersion || editingVersion.id !== versionId) {
       throw new Error(`ToolJet getAppSettings failed: version "${versionId}" is not the current editing version for app "${appId}".`);
@@ -35322,8 +35324,7 @@ function createClient(auth, config2) {
       app_id: appId,
       version_id: versionId,
       global_settings: editingVersion.global_settings ?? editingVersion.globalSettings ?? {},
-      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {},
-      ...typeof (editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation) === "boolean" ? { show_viewer_navigation: editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation } : {}
+      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {}
     };
   }
   async function listAppThemes() {
@@ -36411,8 +36412,7 @@ function projectAppSettings(snapshot2) {
       position: properties.position,
       style: properties.style,
       collapsible: properties.collapsable
-    },
-    ...snapshot2.show_viewer_navigation !== void 0 ? { show_viewer_navigation: snapshot2.show_viewer_navigation } : {}
+    }
   };
 }
 function pageSettingProperties(snapshot2) {

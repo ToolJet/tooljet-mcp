@@ -50,9 +50,6 @@ export function projectAppSettings(snapshot: AppSettingsSnapshot): Record<string
       style: properties.style,
       collapsible: properties.collapsable,
     },
-    ...(snapshot.show_viewer_navigation !== undefined
-      ? { show_viewer_navigation: snapshot.show_viewer_navigation }
-      : {}),
   };
 }
 

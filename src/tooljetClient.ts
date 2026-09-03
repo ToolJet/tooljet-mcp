@@ -98,7 +98,6 @@ export interface AppSettingsSnapshot {
   version_id: string;
   global_settings: Record<string, unknown>;
   page_settings: Record<string, unknown>;
-  show_viewer_navigation?: boolean;
 }
 
 export interface UpdateAppSettingsParams {
@@ -908,7 +907,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot> {
-    const app = await getApp(appId);
+    // GET /api/apps/:id deep-snake-cases free-form settings keys (for example disableMenu becomes
+    // disable_menu), which makes a successful settings write look absent during readback. The native
+    // version endpoint preserves the page/global settings blobs in the camelCase shape ToolJet's
+    // settings editor and update endpoint use.
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`
+    );
+    await assertOk(res, 'getAppSettings');
+    const app = await res.json();
     const editingVersion = app.editing_version ?? app.editingVersion;
     if (!editingVersion || editingVersion.id !== versionId) {
       throw new Error(
@@ -920,9 +927,6 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       version_id: versionId,
       global_settings: editingVersion.global_settings ?? editingVersion.globalSettings ?? {},
       page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {},
-      ...(typeof (editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation) === 'boolean'
-        ? { show_viewer_navigation: editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation }
-        : {}),
     };
   }
 
