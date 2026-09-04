@@ -43,7 +43,9 @@ const COMPONENT_FIELDS = [
 const QUERY_FIELDS = ['id', 'name', 'kind', 'data_source_id', 'options'] as const;
 const EVENT_FIELDS = ['id', 'name', 'sourceId', 'target', 'event'] as const;
 
-const STRUCTURE_COMPONENT_FIELDS = ['id', 'name', 'type', 'layouts', 'parent'];
+// Desktop geometry only: the mobile copy duplicates it for every component and the updatedAt stamps are
+// noise, and together they pushed a 19-component page past the checkpoint budget of an agent host.
+const STRUCTURE_COMPONENT_FIELDS = ['id', 'name', 'type', 'layouts.desktop', 'parent'];
 const STRUCTURE_QUERY_FIELDS = ['id', 'name', 'kind', 'data_source_id'];
 const STRUCTURE_EVENT_FIELDS = ['id', 'name', 'sourceId', 'target'];
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
@@ -101,6 +103,14 @@ function pickPaths(source: Record<string, unknown>, paths: string[]): Record<str
   return result;
 }
 
+function stripLayoutTimestamps(component: Record<string, unknown>): void {
+  const layouts = component.layouts;
+  if (!layouts || typeof layouts !== 'object') return;
+  for (const rect of Object.values(layouts as Record<string, unknown>)) {
+    if (rect && typeof rect === 'object') delete (rect as Record<string, unknown>).updatedAt;
+  }
+}
+
 function matches(value: unknown, accepted?: string[]): boolean {
   return !accepted?.length || (typeof value === 'string' && accepted.includes(value));
 }
@@ -151,9 +161,11 @@ export function selectAppSummary(
                 matches(component.name, selection.componentNames) &&
                 matches(component.type, selection.componentTypes)
             )
-            .map((component) =>
-              pickPaths(component as unknown as Record<string, unknown>, componentFields)
-            );
+            .map((component) => {
+              const picked = pickPaths(component as unknown as Record<string, unknown>, componentFields);
+              if (detail === 'structure' && !selection.componentFields) stripLayoutTimestamps(picked);
+              return picked;
+            });
         }
         return selectedPage;
       });

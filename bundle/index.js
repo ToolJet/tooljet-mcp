@@ -38024,7 +38024,7 @@ var COMPONENT_FIELDS = [
 ];
 var QUERY_FIELDS = ["id", "name", "kind", "data_source_id", "options"];
 var EVENT_FIELDS = ["id", "name", "sourceId", "target", "event"];
-var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts", "parent"];
+var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts.desktop", "parent"];
 var STRUCTURE_QUERY_FIELDS = ["id", "name", "kind", "data_source_id"];
 var STRUCTURE_EVENT_FIELDS = ["id", "name", "sourceId", "target"];
 var UNSAFE_PATH_SEGMENTS = /* @__PURE__ */ new Set(["__proto__", "prototype", "constructor"]);
@@ -38072,6 +38072,15 @@ function pickPaths(source2, paths) {
   }
   return result;
 }
+function stripLayoutTimestamps(component) {
+  const layouts = component.layouts;
+  if (!layouts || typeof layouts !== "object")
+    return;
+  for (const rect2 of Object.values(layouts)) {
+    if (rect2 && typeof rect2 === "object")
+      delete rect2.updatedAt;
+  }
+}
 function matches(value, accepted) {
   return !accepted?.length || typeof value === "string" && accepted.includes(value);
 }
@@ -38093,7 +38102,12 @@ function selectAppSummary(summary, selection = {}) {
     result.pages = summary.pages.filter((page) => matches(page.id, selection.pageIds) && matches(page.name, selection.pageNames) && matches(page.handle, selection.pageHandles)).map((page) => {
       const selectedPage = pickPaths(page, pageFields);
       if (selection.includeComponents !== false) {
-        selectedPage.components = page.components.filter((component) => matches(component.id, selection.componentIds) && matches(component.name, selection.componentNames) && matches(component.type, selection.componentTypes)).map((component) => pickPaths(component, componentFields));
+        selectedPage.components = page.components.filter((component) => matches(component.id, selection.componentIds) && matches(component.name, selection.componentNames) && matches(component.type, selection.componentTypes)).map((component) => {
+          const picked = pickPaths(component, componentFields);
+          if (detail === "structure" && !selection.componentFields)
+            stripLayoutTimestamps(picked);
+          return picked;
+        });
       }
       return selectedPage;
     });
@@ -40078,6 +40092,49 @@ function normalizeComponentSpec(component, options2 = {}) {
   };
 }
 
+// dist/layoutNormalization.js
+function normalizePlannedLayouts(component) {
+  const warnings = [];
+  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const targets = [];
+  if (component.layout)
+    targets.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    targets.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    targets.push(["mobile", component.layouts.mobile]);
+  if (!targets.length)
+    return { component, warnings };
+  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
+  const fixed = /* @__PURE__ */ new Map();
+  for (const [name, rect2] of targets) {
+    if (typeof rect2.height !== "number")
+      continue;
+    if (textMinimum !== void 0 && rect2.height < textMinimum) {
+      fixed.set(name, { ...rect2, height: textMinimum });
+      warnings.push(`${label}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
+    } else if (compactHeight !== void 0 && rect2.height > compactHeight) {
+      fixed.set(name, { ...rect2, height: compactHeight });
+      warnings.push(`${label}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+    }
+  }
+  if (!fixed.size)
+    return { component, warnings };
+  const next = { ...component };
+  if (fixed.has("layout"))
+    next.layout = fixed.get("layout");
+  if (fixed.has("desktop") || fixed.has("mobile")) {
+    next.layouts = {
+      ...component.layouts,
+      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
+      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
+    };
+  }
+  return { component: next, warnings };
+}
+
 // dist/referenceSafety.js
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -40289,7 +40346,11 @@ function lintPlannedApp(spec, existingSummary) {
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
     if (!plannedPage.icon.trim())
       errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
-    const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+    const normalized2 = (plannedPage.components ?? []).map((component) => {
+      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+      const geometry = normalizePlannedLayouts(definition.component);
+      return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+    });
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
     warnings.push(...expansion.warnings);
@@ -40713,6 +40774,7 @@ function lintAppSpecTool(client) {
           return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
         }
         const preflightErrors = [];
+        const preflightWarnings = [];
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -40744,9 +40806,14 @@ function lintAppSpecTool(client) {
                 }
                 return indexes;
               }, []);
-              if (missingRows.length) {
-                preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              if (!missingRows.length)
+                continue;
+              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && missingRows.length === seed.rows.length) {
+                column.type = "serial";
+                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
+                continue;
               }
+              preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
             }
           }
         }
@@ -40829,7 +40896,8 @@ function lintAppSpecTool(client) {
         const result = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
-          errors: unique3([...preflightErrors, ...lint.errors])
+          errors: unique3([...preflightErrors, ...lint.errors]),
+          warnings: unique3([...preflightWarnings, ...lint.warnings])
         };
         return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
       } catch (error51) {
