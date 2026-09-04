@@ -3,6 +3,7 @@ import { COMPONENT_SLOT_NAMES } from './componentParent.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { lintComponents } from './lint.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
+import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
 
 const layoutSchema = z.object({
@@ -52,7 +53,13 @@ export function prepareComponentBatch(inputs: ComponentInput[]): PreparedCompone
     parentRef: parent_ref,
     slotName: slot_name,
   }));
-  const normalized = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+  // Same geometry fixes as lint_app_spec: a plan that linted clean must apply clean, so the stored plan
+  // gets the identical height normalisation here (an earlier split let lint pass and apply reject).
+  const normalized = requested.map((component) => {
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const geometry = normalizePlannedLayouts(definition.component);
+    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+  });
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) =>

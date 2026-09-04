@@ -152,7 +152,7 @@ Nested `Text` clips to a single line. For multi-line title/description content, 
 
 ## Charts — how to make them render reliably (READ THIS before adding a Chart)
 
-The `Chart` component fails in a specific, common way: **ToolJet's chart-property evaluator silently returns EMPTY for complex expressions** — inline IIFEs, dynamic field-name detection, big reduces written inside the `{{ }}` binding. The chart then draws its axes/containers but receives **no data traces** (looks empty/broken). Avoid it:
+The `Chart` component fails in a specific, common way, and the cause is not complexity: **ToolJet ends a `{{ }}` binding at the first `}}` it finds**, so any expression that contains two adjacent closing braces before its end (a nested object literal such as `marker:{color:'#0E7490'}}`, a Plotly `layout` block, an IIFE whose last statement closes an object) is cut off, evaluates to nothing, and the chart draws axes with **no data traces**. The same trap blanks a Table whose `data` projection ends in `}})`, and any other bound property. Rule: **inside a binding, never let two `}` touch; write `} }`** (a space between them is valid JavaScript). The MCP inserts that space for you in component properties, but write it correctly anyway. Then:
 
 1. **Use the simple mode** (the default — keep `plotFromJson` false / don't set it). Set two properties:
    - `type`: `"bar"` | `"line"` | `"pie"`

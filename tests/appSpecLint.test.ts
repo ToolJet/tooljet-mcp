@@ -55,6 +55,35 @@ describe('lint_app_spec', () => {
     expect(client.listDatasources).toHaveBeenCalledOnce();
   });
 
+  it('turns an unseeded integer primary key into a serial key instead of failing the plan', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([]),
+    } as unknown as ToolJetClient;
+    const tables = [{
+      table_name: 'flights',
+      columns: [{ name: 'id', type: 'integer', primaryKey: true }, { name: 'flight_no', type: 'string', notNull: true }],
+    }];
+    const result = await lintAppSpecTool(client).handler({
+      tables,
+      seed_data: [{ table_name: 'flights', rows: [{ flight_no: 'AI101' }, { flight_no: 'AI131' }] }],
+    });
+    const body = textOf(result);
+    expect(body.ok).toBe(true);
+    expect(body.plan_token).toEqual(expect.any(String));
+    expect(body.errors.join(' ')).not.toMatch(/omits required non-generated column/);
+    expect(body.warnings.join(' ')).toMatch(/primary key "id".*created as "serial"/i);
+    expect(tables[0]!.columns[0]!.type).toBe('serial'); // the stored plan creates it generated
+
+    // A required column that some rows do supply is still a real omission.
+    const partial = textOf(await lintAppSpecTool(client).handler({
+      tables: [{ table_name: 'crews', columns: [{ name: 'id', type: 'integer', primaryKey: true }] }],
+      seed_data: [{ table_name: 'crews', rows: [{ id: 1 }, {}] }],
+    }));
+    expect(partial.ok).toBe(false);
+    expect(partial.errors.join(' ')).toMatch(/omits required non-generated column "id" in row\(s\) 2/);
+  });
+
   it('blocks oversized standard single-line fields before issuing a plan token', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([]),
@@ -79,10 +108,13 @@ describe('lint_app_spec', () => {
     });
 
     const body = textOf(result);
-    expect(body.ok).toBe(false);
-    expect(body.plan_token).toBeUndefined();
-    expect(body.errors.join(' ')).toMatch(/TextInput "bugTitle".*90px.*40px/is);
-    expect(body.errors.join(' ')).toMatch(/DropdownV2 "bugModule".*90px.*40px/is);
+    // Oversized single-line fields used to fail the plan; the height is deterministic, so lint now
+    // lowers it and says so, and the plan proceeds.
+    expect(body.ok).toBe(true);
+    expect(body.plan_token).toBeDefined();
+    expect(body.errors.join(' ')).not.toMatch(/exceeds the standard single-line height/i);
+    expect(body.warnings.join(' ')).toMatch(/TextInput "bugTitle": lowered layout height 90px to the standard single-line 40px/i);
+    expect(body.warnings.join(' ')).toMatch(/DropdownV2 "bugModule": lowered layout height 90px to the standard single-line 40px/i);
   });
 
   it('uses existing app context for repair bindings and event targets', async () => {
@@ -208,7 +240,8 @@ describe('lint_app_spec', () => {
     expect(body.errors.join(' ')).toMatch(/unknown.*target_ref/i);
     expect(body.errors.join(' ')).toMatch(/trigger "onChange" is not valid for Button/i);
     expect(body.warnings.join(' ')).toMatch(/order_filters|Unknown option key/i);
-    expect(body.errors.join(' ')).toMatch(/too short to render one line.*at least 54px/i);
+    expect(body.errors.join(' ')).not.toMatch(/too short to render one line/i);
+    expect(body.warnings.join(' ')).toMatch(/Text "title": raised layout height 40px to 54px/i);
   });
 
   it('requires at least one spec section', async () => {

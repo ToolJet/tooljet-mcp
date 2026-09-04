@@ -636,7 +636,7 @@ async function assertOk(res: Response, method: string): Promise<void> {
 }
 
 // Friendly aliases → tjdb data types, so callers can say "string"/"number"/"bool".
-const TYPE_ALIASES: Record<string, string> = {
+export const TYPE_ALIASES: Record<string, string> = {
   string: 'character varying',
   text: 'character varying',
   varchar: 'character varying',
@@ -656,7 +656,11 @@ const TYPE_ALIASES: Record<string, string> = {
   jsonb: 'jsonb',
   serial: 'serial',
 };
-const normalizeType = (t: string): string => TYPE_ALIASES[t.trim().toLowerCase()] ?? t;
+export const normalizeType = (t: string): string => TYPE_ALIASES[t.trim().toLowerCase()] ?? t.trim().toLowerCase();
+/** The data types ToolJet DB's create-table API accepts (server `TJDB` enum); anything else is a 400. */
+export const TOOLJET_DB_DATA_TYPES = new Set([
+  'character varying', 'integer', 'bigint', 'serial', 'double precision', 'boolean', 'timestamp with time zone', 'jsonb',
+]);
 
 function tableColumnDto(column: TableColumn): Record<string, unknown> {
   return {
