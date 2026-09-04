@@ -40620,7 +40620,11 @@ function prepareComponentBatch(inputs) {
     parentRef: parent_ref,
     slotName: slot_name
   }));
-  const normalized2 = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+  const normalized2 = requested.map((component) => {
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const geometry = normalizePlannedLayouts(definition.component);
+    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+  });
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
@@ -41638,8 +41642,11 @@ function addComponentTool(client) {
         layouts: args.layouts
       };
       const normalized2 = normalizeComponentSpec(requested);
-      const expanded = materializeRequiredDefaultChildren([normalized2.component]);
-      const { errors, warnings } = lintComponents(expanded.components);
+      const geometry = normalizePlannedLayouts(normalized2.component);
+      const expanded = materializeRequiredDefaultChildren([geometry.component]);
+      const lintResult = lintComponents(expanded.components);
+      const errors = lintResult.errors;
+      const warnings = [...geometry.warnings, ...lintResult.warnings];
       if (errors.length)
         return fail(new Error(errors.join(" ")));
       try {
