@@ -70,6 +70,11 @@ Theming is part of building an app from scratch, and of nothing else.
   create, change or apply a theme, do not touch app settings, and style what you add to match what is already
   there. The app's current theme is the user's decision, not yours.
 
+**Licence gate.** Custom themes are a licensed feature. When `manage_theme` create returns `licensed: false`
+(the instance answered HTTP 451), the app stays on the workspace default theme: do not retry under another name
+or guess a theme id, build on the default, and repeat the result's `user_message` to the user in the closing
+handoff so they know their plan does not include custom themes and that upgrading enables them.
+
 ## Derive a theme from the request (do this before `create_app`)
 
 The user does not have to ask for a theme. If the request says who the app is for, the customer has an expectation
