@@ -71,9 +71,7 @@ export function createGatewayHttpServer(): GatewayHttpServer {
 
     let identity: RequestIdentity | undefined;
     try {
-      // Gateway mode serves every user, so only a ToolJet-minted session may name the actor. May
-      // make a live call to the Gateway when x-tooljet-url falls outside the static allowlist —
-      // see validateApiUrl/checkOriginWithGateway in config.ts.
+      // Gateway mode serves every user, so only a ToolJet-minted session may name the actor.
       identity = await identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid identity headers';

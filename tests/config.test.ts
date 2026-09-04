@@ -426,10 +426,8 @@ describe('per-request target origin (x-tooljet-url)', () => {
   });
 });
 
-/* The dynamic fallback for self-hosted customers: an origin outside the static allowlist is no
-   longer rejected outright when the request also names a customerId — instead this asks the Gateway
-   live. Real HTTP calls, hitting a local http server rather than mocking fetch, so the request shape
-   (method, headers, body) is verified for real, not assumed. */
+/* Dynamic fallback: an origin outside the static allowlist asks the Gateway live when a customerId
+   is present. Hits a real local http server rather than mocking fetch. */
 describe('per-request target origin — live Gateway fallback', () => {
   let gatewayServer: import('node:http').Server;
   let receivedRequests: Array<{ authorization?: string; body: unknown }>;
@@ -474,9 +472,7 @@ describe('per-request target origin — live Gateway fallback', () => {
     ]);
   });
 
-  // Each test below names a distinct origin/customer — checkOriginWithGateway caches by
-  // customer+origin at module scope, so reusing one across tests would read a stale cached verdict
-  // from a previous test instead of exercising this one's gateway behavior.
+  // Distinct origin per test — the cache is module-scoped, reusing one would hit a stale verdict.
 
   it('rejects when the Gateway says no', async () => {
     gatewayShouldAllow = false;
