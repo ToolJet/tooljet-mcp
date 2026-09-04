@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import type { AppTheme, ToolJetClient } from '../tooljetClient.js';
+import { ToolJetHttpError, type AppTheme, type ToolJetClient } from '../tooljetClient.js';
+
+/** Shown to the end user, verbatim, when the instance's plan has no custom-themes feature. */
+export const THEME_LICENCE_USER_MESSAGE =
+  'Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. ' +
+  'Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.';
 import { fail, ok, type ToolDef } from './types.js';
 
 const colorPair = z.object({
@@ -133,12 +138,32 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
               ],
             });
           }
-          const created = await client.createAppTheme({
-            name,
-            definition: requireValue(args.definition, 'definition'),
-            isDefault: args.is_default ?? false,
-          });
-          return ok({ theme: created });
+          try {
+            const created = await client.createAppTheme({
+              name,
+              definition: requireValue(args.definition, 'definition'),
+              isDefault: args.is_default ?? false,
+            });
+            return ok({ theme: created });
+          } catch (error) {
+            // Custom themes are a licensed feature; Community Edition answers 451. That is a fact about
+            // the customer's plan, not a mistake in the call, so it must not read as an error the model
+            // should repair (retrying under another name, guessing a theme id). Return a plain result
+            // that says what happened and what to tell the user.
+            if (error instanceof ToolJetHttpError && error.status === 451) {
+              return ok({
+                theme: null,
+                licensed: false,
+                user_message: THEME_LICENCE_USER_MESSAGE,
+                warnings: [
+                  'Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace ' +
+                    'default theme. Do not retry theme creation or guess a theme id; build the app on the default ' +
+                    'theme and repeat `user_message` to the user in the closing handoff.',
+                ],
+              });
+            }
+            throw error;
+          }
         }
 
         const themeId = requireValue(args.theme_id, 'theme_id');
