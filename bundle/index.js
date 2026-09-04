@@ -42887,19 +42887,30 @@ function manageThemeTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval.",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
       theme_id: external_exports.string().uuid().optional(),
       name: external_exports.string().trim().min(1).max(100).optional(),
       definition: themeDefinition.optional(),
       is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional()
+      confirm: external_exports.boolean().optional(),
+      include_definitions: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
         if (args.action === "list") {
-          return ok({ themes: await client.listAppThemes() });
+          const themes = await client.listAppThemes();
+          if (args.include_definitions)
+            return ok({ themes });
+          if (args.theme_id) {
+            const one = themes.find((theme) => theme.id === args.theme_id);
+            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
+          }
+          return ok({
+            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
+          });
         }
         if (args.action === "create") {
           const name = requireValue(args.name, "name");

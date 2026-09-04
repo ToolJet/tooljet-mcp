@@ -59,6 +59,7 @@ type Args = {
   definition?: z.infer<typeof themeDefinition>;
   is_default?: boolean;
   confirm?: boolean;
+  include_definitions?: boolean;
 };
 
 function requireValue<T>(value: T | undefined, label: string): T {
@@ -86,7 +87,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       'Manage workspace theme objects through ToolJet\'s typed theme API. Actions: list, create, set_default, ' +
       'update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens ' +
       'with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. ' +
-      'Delete requires confirm:true after exact-target approval.',
+      'Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass ' +
+      'include_definitions:true (or theme_id) to get a definition.',
     inputSchema: {
       action: z.enum(['list', 'create', 'set_default', 'update_definition', 'rename', 'delete']),
       theme_id: z.string().uuid().optional(),
@@ -94,11 +96,23 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       definition: themeDefinition.optional(),
       is_default: z.boolean().optional(),
       confirm: z.boolean().optional(),
+      include_definitions: z.boolean().optional(),
     },
     async handler(args: Args) {
       try {
         if (args.action === 'list') {
-          return ok({ themes: await client.listAppThemes() });
+          const themes = await client.listAppThemes();
+          // A workspace with a couple of dozen themes returns ~12k chars of token definitions, and the
+          // caller almost always only needs to know which names exist. Definitions on request only.
+          if (args.include_definitions) return ok({ themes });
+          if (args.theme_id) {
+            const one = themes.find((theme) => theme.id === args.theme_id);
+            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
+          }
+          return ok({
+            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            note: 'Definitions omitted; pass include_definitions:true or theme_id to read one.',
+          });
         }
 
         if (args.action === 'create') {
