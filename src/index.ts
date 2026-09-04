@@ -60,7 +60,7 @@ export function createGatewayHttpServer(): GatewayHttpServer {
      x-tooljet-url rather than silently writing into this process's static TOOLJET_URL. */
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '');
 
-  const httpServer = createServer((req, res) => {
+  const httpServer = createServer(async (req, res) => {
     // The bearer token authenticates the CALLER (that it is the trusted AI shim). The identity
     // headers below say which user it is acting for. Checked first: an unauthenticated caller must
     // never be able to name a user.
@@ -71,8 +71,10 @@ export function createGatewayHttpServer(): GatewayHttpServer {
 
     let identity: RequestIdentity | undefined;
     try {
-      // Gateway mode serves every user, so only a ToolJet-minted session may name the actor.
-      identity = identityFromHeaders(req.headers, { allowPat: !gatewayMode });
+      // Gateway mode serves every user, so only a ToolJet-minted session may name the actor. May
+      // make a live call to the Gateway when x-tooljet-url falls outside the static allowlist —
+      // see validateApiUrl/checkOriginWithGateway in config.ts.
+      identity = await identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid identity headers';
       res.writeHead(400, { 'Content-Type': 'text/plain' }).end(message);

@@ -102,7 +102,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
        without one, or any local caller could name a user. */
     let identity: RequestIdentity | undefined;
     try {
-      identity = identityFromHeaders(req.headers);
+      identity = await identityFromHeaders(req.headers);
     } catch (error) {
       writeError(res, 400, error instanceof Error ? error.message : 'Invalid identity headers');
       return;

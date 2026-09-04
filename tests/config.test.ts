@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { loadConfig, identityFromHeaders } from '../src/config.js';
 
 describe('loadConfig', () => {
@@ -180,9 +180,9 @@ describe('apiUrl falls back to the deployment URL', () => {
 /* Staging and cloud run one shared MCP for every user, so identity arrives per request instead of
    from the environment. */
 describe('per-request identity', () => {
-  it('reads the acting user from headers', () => {
+  it('reads the acting user from headers', async () => {
     expect(
-      identityFromHeaders({
+      await identityFromHeaders({
         'x-tooljet-session': 'SESSION',
         'x-tooljet-workspace-id': 'org-1',
         'x-tooljet-workspace-slug': 'acme',
@@ -190,9 +190,9 @@ describe('per-request identity', () => {
     ).toEqual({ sessionToken: 'SESSION', workspaceId: 'org-1', workspaceSlug: 'acme' });
   });
 
-  it('tolerates repeated headers and blank values', () => {
+  it('tolerates repeated headers and blank values', async () => {
     expect(
-      identityFromHeaders({
+      await identityFromHeaders({
         'x-tooljet-session': ['SESSION', 'other'],
         'x-tooljet-workspace-id': 'org-1',
         'x-tooljet-workspace-slug': '   ',
@@ -200,21 +200,21 @@ describe('per-request identity', () => {
     ).toEqual({ sessionToken: 'SESSION', workspaceId: 'org-1', workspaceSlug: undefined });
   });
 
-  it('returns undefined when the caller sent no identity at all', () => {
-    expect(identityFromHeaders({ authorization: 'Bearer x' })).toBeUndefined();
+  it('returns undefined when the caller sent no identity at all', async () => {
+    expect(await identityFromHeaders({ authorization: 'Bearer x' })).toBeUndefined();
   });
 
   /* Half an identity must fail loudly. Treating it as "no identity" would silently downgrade the
      request to the server's own shared credential — a build that looks right and is attributed to
      the wrong person, which is the one outcome this mechanism exists to prevent. */
-  it('refuses a session with no workspace rather than falling back', () => {
-    expect(() => identityFromHeaders({ 'x-tooljet-session': 'SESSION' })).toThrow(
+  it('refuses a session with no workspace rather than falling back', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-session': 'SESSION' })).rejects.toThrow(
       /without x-tooljet-workspace-id/
     );
   });
 
-  it('refuses a workspace with no session', () => {
-    expect(() => identityFromHeaders({ 'x-tooljet-workspace-id': 'org-1' })).toThrow(
+  it('refuses a workspace with no session', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-workspace-id': 'org-1' })).rejects.toThrow(
       /without x-tooljet-session/
     );
   });
@@ -235,22 +235,22 @@ describe('per-request identity', () => {
 });
 
 describe('per-request PAT identity', () => {
-  it('reads a caller-supplied PAT from its own header', () => {
-    expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).toEqual({ pat: 'tj_pat_caller' });
+  it('reads a caller-supplied PAT from its own header', async () => {
+    expect(await identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).toEqual({ pat: 'tj_pat_caller' });
   });
 
-  it('needs no workspace header, because a PAT is pinned to the workspace it was issued in', () => {
-    expect(() => identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).not.toThrow();
+  it('needs no workspace header, because a PAT is pinned to the workspace it was issued in', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_caller' })).resolves.not.toThrow();
   });
 
-  it('refuses a PAT and a session together rather than picking one', () => {
-    expect(() =>
+  it('refuses a PAT and a session together rather than picking one', async () => {
+    await expect(
       identityFromHeaders({
         'x-tooljet-pat': 'tj_pat_caller',
         'x-tooljet-session': 'SESSION',
         'x-tooljet-workspace-id': 'org-1',
       })
-    ).toThrow(/not both/i);
+    ).rejects.toThrow(/not both/i);
   });
 
   it('makes the caller PAT the whole credential, never merging the process token', () => {
@@ -262,29 +262,29 @@ describe('per-request PAT identity', () => {
 });
 
 describe('gateway servers refuse a PAT as identity', () => {
-  it('rejects the PAT header outright when PATs are not allowed', () => {
-    expect(() => identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_anyones' }, { allowPat: false })).toThrow(
-      /not accepted by this server/i
-    );
+  it('rejects the PAT header outright when PATs are not allowed', async () => {
+    await expect(
+      identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_anyones' }, { allowPat: false })
+    ).rejects.toThrow(/not accepted by this server/i);
   });
 
-  it('rejects it even alongside a valid session, so it can never be the credential that wins', () => {
-    expect(() =>
+  it('rejects it even alongside a valid session, so it can never be the credential that wins', async () => {
+    await expect(
       identityFromHeaders(
         { 'x-tooljet-pat': 'tj_pat_anyones', 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' },
         { allowPat: false }
       )
-    ).toThrow(/not accepted by this server/i);
+    ).rejects.toThrow(/not accepted by this server/i);
   });
 
-  it('still accepts a session, which is the only identity a shared server may act on', () => {
+  it('still accepts a session, which is the only identity a shared server may act on', async () => {
     expect(
-      identityFromHeaders({ 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' }, { allowPat: false })
+      await identityFromHeaders({ 'x-tooljet-session': 'S', 'x-tooljet-workspace-id': 'org-1' }, { allowPat: false })
     ).toEqual({ sessionToken: 'S', workspaceId: 'org-1', workspaceSlug: undefined });
   });
 
-  it('defaults to allowing a PAT, so the direct path is unaffected', () => {
-    expect(identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_mine' })).toEqual({ pat: 'tj_pat_mine' });
+  it('defaults to allowing a PAT, so the direct path is unaffected', async () => {
+    expect(await identityFromHeaders({ 'x-tooljet-pat': 'tj_pat_mine' })).toEqual({ pat: 'tj_pat_mine' });
   });
 });
 
@@ -295,73 +295,77 @@ describe('per-request target origin (x-tooljet-url)', () => {
   beforeEach(() => {
     delete process.env.TOOLJET_URL;
     delete process.env.MCP_ALLOWED_API_ORIGINS;
+    delete process.env.MCP_GATEWAY_URL;
+    delete process.env.MCP_GATEWAY_TOKEN;
   });
 
-  it('accepts an allowlisted bare https origin', () => {
+  it('accepts an allowlisted bare https origin', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
       apiUrl: 'https://tj.example.com',
     });
   });
 
   /* ToolJet supports SUB_PATH hosting, so a self-hosted customer reverse-proxied under a path
      prefix is a legitimate target, not a malformed one. The allowlist names the host, not the path. */
-  it('accepts a path prefix, for SUB_PATH-hosted self-hosted instances', () => {
+  it('accepts a path prefix, for SUB_PATH-hosted self-hosted instances', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet' })).toEqual({
       apiUrl: 'https://tj.example.com/tooljet',
     });
   });
 
-  it('normalizes away a trailing slash rather than treating it as a different target', () => {
+  it('normalizes away a trailing slash rather than treating it as a different target', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet/' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/tooljet/' })).toEqual({
       apiUrl: 'https://tj.example.com/tooljet',
     });
   });
 
-  it('rejects plain http, which would send the session cookie or PAT in plaintext', () => {
+  it('rejects plain http, which would send the session cookie or PAT in plaintext', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'http://tj.example.com' })).toThrow(/must use https/);
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'http://tj.example.com' })).rejects.toThrow(
+      /must use https/
+    );
   });
 
-  it('rejects a query string', () => {
+  it('rejects a query string', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/?x=1' })).toThrow(
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com/?x=1' })).rejects.toThrow(
       /query, hash, or credentials/
     );
   });
 
-  it('rejects embedded credentials', () => {
+  it('rejects embedded credentials', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://user:pass@tj.example.com' })).toThrow(
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://user:pass@tj.example.com' })).rejects.toThrow(
       /query, hash, or credentials/
     );
   });
 
-  it('rejects a value that does not parse as an absolute URL', () => {
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'not a url' })).toThrow(/valid absolute URL/);
+  it('rejects a value that does not parse as an absolute URL', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'not a url' })).rejects.toThrow(/valid absolute URL/);
   });
 
   /* https alone does not make a host trustworthy — an attacker's own domain has a valid cert too.
      Sending the session cookie or PAT there regardless of the allowlist is the exact exfiltration
      path this check exists to close. */
-  it('rejects an origin not in MCP_ALLOWED_API_ORIGINS, even a well-formed https one', () => {
+  it('rejects an origin not in MCP_ALLOWED_API_ORIGINS, even a well-formed https one', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://evil.example' })).toThrow(
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://evil.example' })).rejects.toThrow(
       /not in MCP_ALLOWED_API_ORIGINS/
     );
   });
 
-  it('rejects every https origin when the allowlist is unset — unset means empty, not "allow anything"', () => {
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+  it('rejects every https origin when the allowlist is unset — unset means empty, not "allow anything"', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).rejects.toThrow(
       /not in MCP_ALLOWED_API_ORIGINS/
     );
   });
 
-  it('accepts any origin named in a multi-entry, whitespace-tolerant allowlist', () => {
+  it('accepts any origin named in a multi-entry, whitespace-tolerant allowlist', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = ' https://a.example.com , https://b.example.com ';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://b.example.com' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://b.example.com' })).toEqual({
       apiUrl: 'https://b.example.com',
     });
   });
@@ -370,30 +374,30 @@ describe('per-request target origin (x-tooljet-url)', () => {
      new URL(...).origin produces (lowercased, default port stripped, no trailing slash), so an
      allowlist entry written any other way has to be normalized the same way or it can never match —
      denying real traffic while looking, next to the error, like it should have worked. */
-  it('normalizes an allowlist entry with different casing to the same origin', () => {
+  it('normalizes an allowlist entry with different casing to the same origin', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://Tj.Example.com';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
       apiUrl: 'https://tj.example.com',
     });
   });
 
-  it('normalizes an allowlist entry with a trailing slash', () => {
+  it('normalizes an allowlist entry with a trailing slash', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com/';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
       apiUrl: 'https://tj.example.com',
     });
   });
 
-  it('normalizes an allowlist entry carrying the default https port', () => {
+  it('normalizes an allowlist entry carrying the default https port', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com:443';
-    expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
+    expect(await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toEqual({
       apiUrl: 'https://tj.example.com',
     });
   });
 
-  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has an unparseable value', () => {
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has an unparseable value', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com, not a url';
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).rejects.toThrow(
       /not a valid URL: "not a url"/
     );
   });
@@ -402,9 +406,9 @@ describe('per-request target origin (x-tooljet-url)', () => {
      (validateApiUrl), so a non-https allowlist entry — a typo'd "http://" — could never match
      anything. Silently keeping it would leave the operator with a dead entry and no signal it's
      wrong, the same shape of failure as the un-normalized entries this file already guards against. */
-  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has a non-https entry', () => {
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has a non-https entry', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'http://tj.example.com';
-    expect(() => identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).toThrow(
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).rejects.toThrow(
       /"http:\/\/tj\.example\.com" must use https/
     );
   });
@@ -419,6 +423,102 @@ describe('per-request target origin (x-tooljet-url)', () => {
     process.env.TOOLJET_URL = 'https://static.example.com';
     const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
     expect(c.apiUrl).toBe('https://static.example.com');
+  });
+});
+
+/* The dynamic fallback for self-hosted customers: an origin outside the static allowlist is no
+   longer rejected outright when the request also names a customerId — instead this asks the Gateway
+   live. Real HTTP calls, hitting a local http server rather than mocking fetch, so the request shape
+   (method, headers, body) is verified for real, not assumed. */
+describe('per-request target origin — live Gateway fallback', () => {
+  let gatewayServer: import('node:http').Server;
+  let receivedRequests: Array<{ authorization?: string; body: unknown }>;
+  let gatewayShouldAllow: boolean;
+
+  beforeEach(async () => {
+    delete process.env.TOOLJET_URL;
+    delete process.env.MCP_ALLOWED_API_ORIGINS;
+    receivedRequests = [];
+    gatewayShouldAllow = true;
+    const { createServer } = await import('node:http');
+    gatewayServer = createServer((req, res) => {
+      let raw = '';
+      req.on('data', (chunk) => (raw += chunk));
+      req.on('end', () => {
+        receivedRequests.push({ authorization: req.headers.authorization, body: JSON.parse(raw || '{}') });
+        res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ allowed: gatewayShouldAllow }));
+      });
+    });
+    await new Promise<void>((resolve) => gatewayServer.listen(0, resolve));
+    const address = gatewayServer.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    process.env.MCP_GATEWAY_URL = `http://127.0.0.1:${port}`;
+    process.env.MCP_GATEWAY_TOKEN = 'gateway-secret';
+  });
+
+  afterEach(async () => {
+    delete process.env.MCP_GATEWAY_URL;
+    delete process.env.MCP_GATEWAY_TOKEN;
+    await new Promise<void>((resolve) => gatewayServer.close(() => resolve()));
+  });
+
+  it('accepts an origin outside the static allowlist when the Gateway says yes', async () => {
+    expect(
+      await identityFromHeaders({
+        'x-tooljet-url': 'https://customer.example.com',
+        'x-tooljet-customer-id': 'cust-1',
+      })
+    ).toEqual({ apiUrl: 'https://customer.example.com' });
+    expect(receivedRequests).toEqual([
+      { authorization: 'gateway-secret', body: { customer_id: 'cust-1', origin: 'https://customer.example.com' } },
+    ]);
+  });
+
+  // Each test below names a distinct origin/customer — checkOriginWithGateway caches by
+  // customer+origin at module scope, so reusing one across tests would read a stale cached verdict
+  // from a previous test instead of exercising this one's gateway behavior.
+
+  it('rejects when the Gateway says no', async () => {
+    gatewayShouldAllow = false;
+    await expect(
+      identityFromHeaders({ 'x-tooljet-url': 'https://denied.example.com', 'x-tooljet-customer-id': 'cust-2' })
+    ).rejects.toThrow(/not in MCP_ALLOWED_API_ORIGINS/);
+  });
+
+  it('rejects, without calling the Gateway, when no customer id was sent', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'https://no-customer.example.com' })).rejects.toThrow(
+      /not in MCP_ALLOWED_API_ORIGINS/
+    );
+    expect(receivedRequests).toEqual([]);
+  });
+
+  it('fails closed when MCP_GATEWAY_URL/TOKEN are unset even with a customer id', async () => {
+    delete process.env.MCP_GATEWAY_URL;
+    delete process.env.MCP_GATEWAY_TOKEN;
+    await expect(
+      identityFromHeaders({ 'x-tooljet-url': 'https://unconfigured.example.com', 'x-tooljet-customer-id': 'cust-3' })
+    ).rejects.toThrow(/not in MCP_ALLOWED_API_ORIGINS/);
+  });
+
+  it('fails closed when the Gateway is unreachable', async () => {
+    await new Promise<void>((resolve) => gatewayServer.close(() => resolve()));
+    await expect(
+      identityFromHeaders({ 'x-tooljet-url': 'https://unreachable.example.com', 'x-tooljet-customer-id': 'cust-4' })
+    ).rejects.toThrow(/not in MCP_ALLOWED_API_ORIGINS/);
+  });
+
+  it('caches a Gateway response instead of calling it again for the same customer+origin', async () => {
+    await identityFromHeaders({ 'x-tooljet-url': 'https://cached.example.com', 'x-tooljet-customer-id': 'cust-5' });
+    await identityFromHeaders({ 'x-tooljet-url': 'https://cached.example.com', 'x-tooljet-customer-id': 'cust-5' });
+    expect(receivedRequests).toHaveLength(1);
+  });
+
+  it('still checks the static allowlist first, without calling the Gateway at all', async () => {
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
+    expect(
+      await identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com', 'x-tooljet-customer-id': 'cust-1' })
+    ).toEqual({ apiUrl: 'https://tj.example.com' });
+    expect(receivedRequests).toEqual([]);
   });
 });
 
@@ -449,4 +549,3 @@ describe('blank environment variables count as unset', () => {
     expect(() => loadConfig()).toThrow(/TOOLJET_PAT is required/);
   });
 });
-
