@@ -105,6 +105,20 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
           const name = requireValue(args.name, 'name');
           if (name.length < 5) throw new Error('Theme name must contain at least 5 characters.');
           if (name === 'ToolJet') throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          // Theme names are unique per workspace and the skill derives them from the brand, so a second
+          // build for the same brand hits the same name. Returning the existing theme keeps create
+          // idempotent instead of costing the caller a 422 and a retry turn.
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
+          if (existing) {
+            return ok({
+              theme: existing,
+              reused: true,
+              warnings: [
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` +
+                  'Apply it with update_app_settings, or use update_definition to change it.',
+              ],
+            });
+          }
           const created = await client.createAppTheme({
             name,
             definition: requireValue(args.definition, 'definition'),

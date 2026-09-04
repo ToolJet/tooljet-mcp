@@ -40841,9 +40841,19 @@ function applyAppPhaseTool(client) {
         if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
+        let renameWarning;
         if (spec.app_name && spec.app_name !== initialSummary.name) {
           stage = "rename target app";
-          await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          try {
+            await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          } catch (error51) {
+            const message = error51 instanceof Error ? error51.message : String(error51);
+            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
+              throw error51;
+            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
+            await client.renameApp(args.app_id, args.version_id, fallback);
+            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
+          }
           applied.app_metadata = 1;
         }
         const plannedPageMatches = /* @__PURE__ */ new Map();
@@ -40994,6 +41004,8 @@ function applyAppPhaseTool(client) {
           type: component.type
         })));
         const warnings = [];
+        if (renameWarning)
+          warnings.push(renameWarning);
         for (const page of componentResults) {
           applied.components += page.created.length;
           warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
@@ -42895,6 +42907,16 @@ function manageThemeTool(client) {
             throw new Error("Theme name must contain at least 5 characters.");
           if (name === "ToolJet")
             throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
+          if (existing) {
+            return ok({
+              theme: existing,
+              reused: true,
+              warnings: [
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. Apply it with update_app_settings, or use update_definition to change it.`
+              ]
+            });
+          }
           const created = await client.createAppTheme({
             name,
             definition: requireValue(args.definition, "definition"),
