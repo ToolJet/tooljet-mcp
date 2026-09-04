@@ -78,9 +78,15 @@ Read the request for cues, in this order of strength, and derive a theme when an
 
 1. **A named brand or pasted design system** — use its real colours (a supplied design file, a well-known brand
    palette, a logo colour the user quotes). Name the theme after the brand.
-2. **An industry or business type** — pick the archetype below. Name the theme after the customer
+2. **A colour, plant, material or place in the name** — Aloe, Sage, Olive, Indigo, Coral, Amber, Saffron, Slate,
+   Ocean, Terra, Rose: the customer chose that word, so the primary comes from it (a deep, contrast-safe shade of
+   that colour: Aloe or Sage → a muted green such as `#3F6B4A`; Indigo → `#3730A3`; Amber or Saffron → a dark
+   `#B45309`), and the industry row below supplies only the neutrals, radii and accent logic. Never let a row's
+   sample hex override a colour the name already states.
+3. **An industry or business type** — pick the archetype below. Its primary column is a starting point for a
+   customer whose name says nothing about colour, not a fixed value. Name the theme after the customer
    ("Bernal Fire Pizza", "Northline Clinic").
-3. **An audience or scale word** — "enterprise", "bank", "government", "startup", "kids" — shifts the archetype
+4. **An audience or scale word** — "enterprise", "bank", "government", "startup", "kids" — shifts the archetype
    toward conservative or playful.
 
 Nothing in the request → standard theme. Do not ask the user which they prefer; derive, apply, and say in the
