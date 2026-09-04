@@ -56,6 +56,20 @@ and the handoff should say so.
   name/id to reuse one, or `theme: { name, definition }` to create (once, by name) and apply a derived theme.
 - Never call `set_default`, rename, or delete a theme unless the user asks for exactly that.
 
+## When theming applies
+
+Theming is part of building an app from scratch, and of nothing else.
+
+- **New app** (you call `create_app`, or a host hands you an empty shell with a single blank page): derive and
+  apply the theme as described below. For an empty shell there is no `create_app` call, so create the theme with
+  `manage_theme` (by name, reusing one of that name if it exists) and apply it with `update_app_settings` before
+  the first phase.
+- **Design request on an existing app** (the message is about theme, colours, palette, branding, fonts, corner
+  radius, "make it look like a spa", "match our brand"): change the theme and styling as asked, and nothing else.
+- **Any other change to an existing app** (pages, components, queries, data, behaviour, text, defects): do not
+  create, change or apply a theme, do not touch app settings, and style what you add to match what is already
+  there. The app's current theme is the user's decision, not yours.
+
 ## Derive a theme from the request (do this before `create_app`)
 
 The user does not have to ask for a theme. If the request says who the app is for, the customer has an expectation
