@@ -35213,6 +35213,25 @@ function tableCreationLevels(tables) {
   return levels;
 }
 
+// dist/bindings.js
+function staticBooleanBinding(value) {
+  return { value: `{{${value}}}`, fxActive: false };
+}
+function booleanBindingValue(value) {
+  if (typeof value === "boolean")
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = /^\{\{\s*(true|false)\s*\}\}$/.exec(value);
+  return match ? match[1] === "true" : void 0;
+}
+function isCanonicalStaticBooleanBinding(value, expected) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return false;
+  const binding = value;
+  return binding.value === `{{${expected}}}` && binding.fxActive === false;
+}
+
 // dist/tooljetClient.js
 var PartialWriteError = class extends Error {
   completed;
@@ -35245,6 +35264,14 @@ var ToolJetHttpError = class extends Error {
     this.name = "ToolJetHttpError";
   }
 };
+function isPageHidden(page) {
+  return booleanBindingValue(page?.hidden?.value) === true;
+}
+function pageHiddenNeedsUpdate(page, expected) {
+  if (page?.hidden === void 0 || page?.hidden === null)
+    return expected;
+  return booleanBindingValue(page.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page.hidden, expected);
+}
 async function assertOk(res, method) {
   if (!res.ok) {
     throw new ToolJetHttpError(res.status, method, await res.text());
@@ -35390,7 +35417,7 @@ function createClient(auth, config2) {
       name: p.name,
       handle: p.handle,
       icon: p.icon,
-      hidden: p.hidden?.value === true,
+      hidden: isPageHidden(p),
       ...typeof p.index === "number" ? { index: p.index } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
@@ -35474,7 +35501,9 @@ function createClient(auth, config2) {
     await assertOk(res, "clearAppPermission");
   }
   async function getAppSettings(appId, versionId) {
-    const app = await getApp(appId);
+    const res = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`);
+    await assertOk(res, "getAppSettings");
+    const app = await res.json();
     const editingVersion = app.editing_version ?? app.editingVersion;
     if (!editingVersion || editingVersion.id !== versionId) {
       throw new Error(`ToolJet getAppSettings failed: version "${versionId}" is not the current editing version for app "${appId}".`);
@@ -35483,8 +35512,7 @@ function createClient(auth, config2) {
       app_id: appId,
       version_id: versionId,
       global_settings: editingVersion.global_settings ?? editingVersion.globalSettings ?? {},
-      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {},
-      ...typeof (editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation) === "boolean" ? { show_viewer_navigation: editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation } : {}
+      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {}
     };
   }
   async function listAppThemes() {
@@ -35653,7 +35681,7 @@ function createClient(auth, config2) {
     const failures = createSettled.flatMap((result, index) => result.status === "rejected" ? [`${entries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
     const metadataTasks = createdEntries.flatMap((page) => [
       ...page.icon ? [{ page, field: "icon", promise: persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`) }] : [],
-      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", { value: true }, `createPages "${page.name}" hidden update`) }] : []
+      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", staticBooleanBinding(true), `createPages "${page.name}" hidden update`) }] : []
     ]);
     const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
     failures.push(...metadataSettled.flatMap((result, index) => result.status === "rejected" ? [`${metadataTasks[index].page.name} ${metadataTasks[index].field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []));
@@ -35667,7 +35695,7 @@ function createClient(auth, config2) {
           if (entry.icon && page?.icon !== entry.icon) {
             failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
           }
-          if (entry.hidden && page?.hidden?.value !== true) {
+          if (entry.hidden && !isPageHidden(page)) {
             failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
           }
         }
@@ -35680,7 +35708,7 @@ function createClient(auth, config2) {
       name: page.name,
       index: page.index,
       ...persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon } : {},
-      ...persistedById.get(page.id)?.hidden?.value === true ? { hidden: true } : {}
+      ...isPageHidden(persistedById.get(page.id)) ? { hidden: true } : {}
     }));
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
@@ -35711,6 +35739,8 @@ function createClient(auth, config2) {
     const app = await getApp(params.appId);
     const pages = app.pages ?? [];
     const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const editingVersion = app.editing_version ?? app.editingVersion ?? {};
+    const homePageId = String(editingVersion.home_page_id ?? editingVersion.homePageId ?? app.home_page_id ?? app.homePageId ?? "");
     const seenUpdateIds = /* @__PURE__ */ new Set();
     for (const update of updates) {
       if (!pagesById.has(update.pageId)) {
@@ -35728,6 +35758,10 @@ function createClient(auth, config2) {
       }
       if (update.icon !== void 0 && !update.icon.trim()) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty icon.`);
+      }
+      const current = pagesById.get(update.pageId);
+      if (update.hidden === true && (update.pageId === homePageId || !homePageId && current?.handle === "home")) {
+        throw new Error("ToolJet updatePages failed: the Home page cannot be hidden from navigation.");
       }
     }
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
@@ -35758,8 +35792,8 @@ function createClient(auth, config2) {
       if (update.icon !== void 0 && update.icon !== current.icon) {
         fieldUpdates.push({ pageId: update.pageId, field: "icon", value: update.icon });
       }
-      if (update.hidden !== void 0 && update.hidden !== (current.hidden?.value === true)) {
-        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: { value: update.hidden } });
+      if (update.hidden !== void 0 && pageHiddenNeedsUpdate(current, update.hidden)) {
+        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: staticBooleanBinding(update.hidden) });
       }
     }
     await Promise.all(fieldUpdates.map(async ({ pageId, field, value }) => {
@@ -35790,7 +35824,7 @@ function createClient(auth, config2) {
       if (update.icon !== void 0 && page?.icon !== update.icon) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
       }
-      if (update.hidden !== void 0 && page?.hidden?.value === true !== update.hidden) {
+      if (update.hidden !== void 0 && isPageHidden(page) !== update.hidden) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
       }
     }
@@ -35809,7 +35843,7 @@ function createClient(auth, config2) {
         name: page.name,
         handle: page.handle,
         icon: page.icon,
-        hidden: page.hidden?.value === true,
+        hidden: isPageHidden(page),
         ...typeof page.index === "number" ? { index: page.index } : {}
       }))
     };
@@ -36586,13 +36620,7 @@ function asRecord(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 function bindingBoolean(value) {
-  if (typeof value === "boolean")
-    return value;
-  if (value === "{{true}}")
-    return true;
-  if (value === "{{false}}")
-    return false;
-  return value;
+  return booleanBindingValue(value) ?? value;
 }
 function compactTheme(theme) {
   if (!theme)
@@ -36607,9 +36635,7 @@ function compactTheme(theme) {
 }
 function projectAppSettings(snapshot2) {
   const global2 = snapshot2.global_settings ?? {};
-  const page = snapshot2.page_settings ?? {};
-  const definition = asRecord(page.definition);
-  const properties = asRecord(definition.properties);
+  const properties = pageSettingProperties(snapshot2);
   const disableMenu = asRecord(properties.disableMenu);
   const theme = asRecord(global2.theme);
   return {
@@ -36634,12 +36660,11 @@ function projectAppSettings(snapshot2) {
       position: properties.position,
       style: properties.style,
       collapsible: properties.collapsable
-    },
-    ...snapshot2.show_viewer_navigation !== void 0 ? { show_viewer_navigation: snapshot2.show_viewer_navigation } : {}
+    }
   };
 }
 function pageSettingProperties(snapshot2) {
-  return asRecord(asRecord(snapshot2.page_settings.definition).properties);
+  return asRecord(asRecord(snapshot2.page_settings).properties);
 }
 
 // dist/tools/getAppSettings.js
@@ -36701,13 +36726,13 @@ var SETTING_KEYS = [
   "navigation_style",
   "navigation_collapsible"
 ];
-function expectedWarnings(args, snapshot2) {
+function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
-  const warnings = [];
+  const mismatches = [];
   const expectEqual = (label, actual, expected) => {
     if (actual !== expected)
-      warnings.push(`${label} was accepted by the API but did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)}).`);
+      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -36737,7 +36762,7 @@ function expectedWarnings(args, snapshot2) {
     expectEqual("navigation_style", page.style, args.navigation_style);
   if (args.navigation_collapsible !== void 0)
     expectEqual("navigation_collapsible", page.collapsable, args.navigation_collapsible);
-  return warnings;
+  return mismatches;
 }
 function updateAppSettingsTool(client) {
   return {
@@ -36748,7 +36773,7 @@ function updateAppSettingsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. Omitted fields are preserved. Returns warnings for settings ToolJet accepted but ignored (for example a license-gated header setting).",
+    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
     inputSchema: {
       app_id: external_exports.string().min(1),
       version_id: external_exports.string().min(1),
@@ -36759,10 +36784,10 @@ function updateAppSettingsTool(client) {
       }).optional(),
       app_mode: external_exports.enum(["auto", "light", "dark"]).optional(),
       theme_id: external_exports.string().uuid().optional(),
-      hide_header: external_exports.boolean().optional(),
+      hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
       hide_logo: external_exports.boolean().optional(),
       header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional(),
+      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional()
@@ -36811,13 +36836,17 @@ function updateAppSettingsTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           ...Object.keys(globalSettings).length ? { globalSettings } : {},
-          ...Object.keys(properties).length ? { pageSettings: { definition: { properties } } } : {}
+          ...Object.keys(properties).length ? { pageSettings: { properties } } : {}
         });
         const persisted = await client.getAppSettings(args.app_id, args.version_id);
+        const mismatches = persistenceMismatches(args, persisted);
+        if (mismatches.length) {
+          throw new Error(`update_app_settings partially failed readback: ${mismatches.join("; ")}. Other requested fields may already have persisted; inspect get_app_settings before retrying.`);
+        }
         return ok({
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
-          warnings: expectedWarnings(args, persisted)
+          warnings: []
         });
       } catch (error51) {
         return fail(error51);
@@ -41558,7 +41587,7 @@ var updateSchema = external_exports.object({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
-  hidden: external_exports.boolean().optional()
+  hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
 });
 function updatePagesTool(client) {
   return {
@@ -41569,7 +41598,7 @@ function updatePagesTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes. This can restyle and reposition the auto-created Home page.",
+    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle one non-Home page in the menu. The Home page can be renamed, restyled, and reordered, but cannot be hidden. To hide or show the entire generated navigation menu, use update_app_settings.navigation_hidden instead. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),

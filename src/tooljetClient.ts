@@ -4,6 +4,7 @@ import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
+import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
 
 export interface CreateAppResult {
   app_id: string;
@@ -97,7 +98,6 @@ export interface AppSettingsSnapshot {
   version_id: string;
   global_settings: Record<string, unknown>;
   page_settings: Record<string, unknown>;
-  show_viewer_navigation?: boolean;
 }
 
 export interface UpdateAppSettingsParams {
@@ -629,6 +629,16 @@ export class ToolJetHttpError extends Error {
   }
 }
 
+function isPageHidden(page: any): boolean {
+  return booleanBindingValue(page?.hidden?.value) === true;
+}
+
+function pageHiddenNeedsUpdate(page: any, expected: boolean): boolean {
+  if (page?.hidden === undefined || page?.hidden === null) return expected;
+  return booleanBindingValue(page.hidden?.value) !== expected ||
+    !isCanonicalStaticBooleanBinding(page.hidden, expected);
+}
+
 async function assertOk(res: Response, method: string): Promise<void> {
   if (!res.ok) {
     throw new ToolJetHttpError(res.status, method, await res.text());
@@ -794,7 +804,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       name: p.name,
       handle: p.handle,
       icon: p.icon,
-      hidden: p.hidden?.value === true,
+      hidden: isPageHidden(p),
       ...(typeof p.index === 'number' ? { index: p.index } : {}),
       ...(typeof p.isPageGroup === 'boolean' ? { is_page_group: p.isPageGroup } : {}),
       ...(typeof p.pageGroupId === 'string' ? { page_group_id: p.pageGroupId } : {}),
@@ -901,7 +911,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function getAppSettings(appId: string, versionId: string): Promise<AppSettingsSnapshot> {
-    const app = await getApp(appId);
+    // GET /api/apps/:id deep-snake-cases free-form settings keys (for example disableMenu becomes
+    // disable_menu), which makes a successful settings write look absent during readback. The native
+    // version endpoint preserves the page/global settings blobs in the camelCase shape ToolJet's
+    // settings editor and update endpoint use.
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`
+    );
+    await assertOk(res, 'getAppSettings');
+    const app = await res.json();
     const editingVersion = app.editing_version ?? app.editingVersion;
     if (!editingVersion || editingVersion.id !== versionId) {
       throw new Error(
@@ -913,9 +931,6 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       version_id: versionId,
       global_settings: editingVersion.global_settings ?? editingVersion.globalSettings ?? {},
       page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {},
-      ...(typeof (editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation) === 'boolean'
-        ? { show_viewer_navigation: editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation }
-        : {}),
     };
   }
 
@@ -1137,14 +1152,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
     // ToolJet's create-page service ignores `icon` and `hidden`, even though the DTO accepts them.
     // Persist them via the update route — which applies a single-field diff (a diff with >1 key throws
-    // "Can not update multiple pages"), so send ONE field per call. `hidden: { value: true }` removes the
-    // page from the sidebar nav. Read back afterwards so a silent drop cannot look successful.
+    // "Can not update multiple pages"), so send ONE field per call. Boolean bindable fields use ToolJet's
+    // canonical expression wrapper even when fxActive is false. Read back so a silent drop cannot look successful.
     const metadataTasks = createdEntries.flatMap((page) => [
       ...(page.icon
         ? [{ page, field: 'icon', promise: persistFieldForPage(page.id, 'icon', page.icon, `createPages "${page.name}" icon update`) }]
         : []),
       ...(page.hidden
-        ? [{ page, field: 'hidden', promise: persistFieldForPage(page.id, 'hidden', { value: true }, `createPages "${page.name}" hidden update`) }]
+        ? [{ page, field: 'hidden', promise: persistFieldForPage(page.id, 'hidden', staticBooleanBinding(true), `createPages "${page.name}" hidden update`) }]
         : []),
     ]);
     const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
@@ -1162,7 +1177,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           if (entry.icon && page?.icon !== entry.icon) {
             failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
           }
-          if (entry.hidden && page?.hidden?.value !== true) {
+          if (entry.hidden && !isPageHidden(page)) {
             failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
           }
         }
@@ -1176,7 +1191,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       name: page.name,
       index: page.index,
       ...(persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon as string } : {}),
-      ...(persistedById.get(page.id)?.hidden?.value === true ? { hidden: true } : {}),
+      ...(isPageHidden(persistedById.get(page.id)) ? { hidden: true } : {}),
     }));
     if (failures.length) throw new PartialWriteError('createPages', completed, failures);
     return completed;
@@ -1210,6 +1225,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const app = await getApp(params.appId);
     const pages: any[] = app.pages ?? [];
     const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const editingVersion = app.editing_version ?? app.editingVersion ?? {};
+    const homePageId = String(
+      editingVersion.home_page_id ?? editingVersion.homePageId ?? app.home_page_id ?? app.homePageId ?? ''
+    );
     const seenUpdateIds = new Set<string>();
     for (const update of updates) {
       if (!pagesById.has(update.pageId)) {
@@ -1227,6 +1246,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
       if (update.icon !== undefined && !update.icon.trim()) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty icon.`);
+      }
+      const current = pagesById.get(update.pageId);
+      if (update.hidden === true && (update.pageId === homePageId || (!homePageId && current?.handle === 'home'))) {
+        throw new Error('ToolJet updatePages failed: the Home page cannot be hidden from navigation.');
       }
     }
 
@@ -1260,8 +1283,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (update.icon !== undefined && update.icon !== current.icon) {
         fieldUpdates.push({ pageId: update.pageId, field: 'icon', value: update.icon });
       }
-      if (update.hidden !== undefined && update.hidden !== (current.hidden?.value === true)) {
-        fieldUpdates.push({ pageId: update.pageId, field: 'hidden', value: { value: update.hidden } });
+      if (update.hidden !== undefined && pageHiddenNeedsUpdate(current, update.hidden)) {
+        fieldUpdates.push({ pageId: update.pageId, field: 'hidden', value: staticBooleanBinding(update.hidden) });
       }
     }
 
@@ -1302,7 +1325,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (update.icon !== undefined && page?.icon !== update.icon) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
       }
-      if (update.hidden !== undefined && (page?.hidden?.value === true) !== update.hidden) {
+      if (update.hidden !== undefined && isPageHidden(page) !== update.hidden) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
       }
     }
@@ -1325,7 +1348,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           name: page.name,
           handle: page.handle,
           icon: page.icon,
-          hidden: page.hidden?.value === true,
+          hidden: isPageHidden(page),
           ...(typeof page.index === 'number' ? { index: page.index } : {}),
         })),
     };
