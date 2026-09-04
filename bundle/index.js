@@ -3088,7 +3088,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve3.call(this, root, ref);
+      let _sch = resolve4.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3115,7 +3115,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve3(root, ref) {
+    function resolve4(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3746,7 +3746,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve3(baseURI, relativeURI, options2) {
+    function resolve4(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -4030,7 +4030,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve3,
+      resolve: resolve4,
       resolveComponent,
       equal,
       serialize,
@@ -7022,7 +7022,7 @@ var require_dist = __commonJS({
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -23167,12 +23167,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve3) => {
+    return new Promise((resolve4) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve3();
+        resolve4();
       } else {
-        this._stdout.once("drain", resolve3);
+        this._stdout.once("drain", resolve4);
       }
     });
   }
@@ -23600,7 +23600,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve3, reject) => {
+  const promise2 = new Promise((resolve4, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -23618,7 +23618,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error51 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve3(recovered);
+          resolve4(recovered);
         }
       });
       return true;
@@ -23630,7 +23630,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve3(buffer);
+        resolve4(buffer);
       });
     };
     const onError = (error51) => {
@@ -24155,7 +24155,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve3) => setTimeout(resolve3));
+            await new Promise((resolve4) => setTimeout(resolve4));
             maxReadCount = 3;
             continue;
           }
@@ -24835,9 +24835,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve3) => {
+        return new Promise((resolve4) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve3,
+            resolveJson: resolve4,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -31138,7 +31138,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -31155,7 +31155,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -31233,7 +31233,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve3(parseResult.data);
+            resolve4(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -31494,12 +31494,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve3, interval);
+      const timeoutId = setTimeout(resolve4, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -32590,7 +32590,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -33237,8 +33237,8 @@ function identityFromHeaders(headers, { allowPat = true } = {}) {
 }
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
-  const staticApiUrl = explicitApiUrl ?? "http://localhost:3000";
   const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
     const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
@@ -33949,6 +33949,28 @@ function renderedHeight(component, rect2) {
   const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label === void 0 || (typeof label === "string" ? label.trim().length > 0 : Boolean(label));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
+function lintStandardSingleLineInputHeight(component) {
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const defaultHeight = schema?.defaultSize?.height;
+  if (!schema?.renderingHints?.compactFormHeight || defaultHeight === void 0)
+    return [];
+  const layouts = [];
+  if (component.layout)
+    layouts.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    layouts.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    layouts.push(["mobile", component.layouts.mobile]);
+  const label = component.name ?? component.type ?? "component";
+  return layouts.flatMap(([layoutName, layout]) => {
+    const authoredHeight = layout.height;
+    if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
+      return [];
+    return [
+      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+    ];
+  });
+}
 function minimumTextHeight(component) {
   if (component.type !== "Text")
     return void 0;
@@ -33964,6 +33986,32 @@ function minimumTextHeight(component) {
   if (textSize === void 0 || lineHeight === void 0)
     return void 0;
   return Math.ceil(textSize * lineHeight + 6);
+}
+function minimumTextContentHeight(component) {
+  const minimum = minimumTextHeight(component);
+  return minimum === void 0 ? void 0 : minimum - 6;
+}
+function lintUnusableTextGeometry(components) {
+  const errors = [];
+  for (const component of components) {
+    const minimum = minimumTextContentHeight(component);
+    if (minimum === void 0)
+      continue;
+    const layouts = [
+      [component.layouts?.desktop ? "desktop" : "layout", component.layouts?.desktop ?? component.layout],
+      ["mobile", component.layouts?.mobile]
+    ];
+    const undersized = layouts.filter((entry) => !!entry[1] && typeof entry[1].height === "number" && entry[1].height < minimum);
+    if (undersized.length) {
+      const recommended = minimumTextHeight(component);
+      errors.push(`Text "${component.name ?? component.id ?? "Text"}" is too short to render one line: ${undersized.map(([resolution, layout]) => `${resolution} height ${layout.height}px`).join(", ")}; use at least ${recommended}px or enable dynamicHeight.`);
+    }
+  }
+  return errors;
+}
+function introducedLintFindings(before, after) {
+  const existing = new Set(before);
+  return after.filter((finding) => !existing.has(finding));
 }
 function lintTextGeometry(components) {
   const warnings = [];
@@ -34201,7 +34249,7 @@ function lintComponentSpec(spec) {
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      warnings.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
@@ -34415,7 +34463,9 @@ function lintComponentSpec(spec) {
       const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < minimumHeight) {
+      if (desktopHeight < chromeHeight + rowHeight) {
+        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+      } else if (desktopHeight < minimumHeight) {
         warnings.push(`Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
     }
@@ -34682,7 +34732,6 @@ function lintRenderedGeometry(components) {
   return [
     ...detectOverlaps(components),
     ...lintModalChildren(components),
-    ...lintTextGeometry(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
@@ -34695,9 +34744,12 @@ function lintComponents(components) {
   for (const c of components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
+    errors.push(...lintStandardSingleLineInputHeight(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintUnusableTextGeometry(components));
+  warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
@@ -34893,6 +34945,8 @@ function validateAppStructure(summary) {
     }
   }
   for (const p of summary.pages) {
+    errors.push(...lintUnusableTextGeometry(p.components));
+    warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
@@ -34900,7 +34954,181 @@ function validateAppStructure(summary) {
 }
 
 // dist/tableValidation.js
-var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set(["action", "comment", "condition"]);
+var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
+  "abort",
+  "abs",
+  "absolute",
+  "access",
+  "action",
+  "ada",
+  "add",
+  "admin",
+  "after",
+  "aggregate",
+  "all",
+  "allocate",
+  "alter",
+  "analyse",
+  "analyze",
+  "and",
+  "any",
+  "are",
+  "array",
+  "as",
+  "asc",
+  "asensitive",
+  "assertion",
+  "assignment",
+  "asymmetric",
+  "at",
+  "atomic",
+  "attribute",
+  "attributes",
+  "authorization",
+  "avg",
+  "backward",
+  "before",
+  "begin",
+  "bernoulli",
+  "between",
+  "bigint",
+  "binary",
+  "bit",
+  "bit_length",
+  "bitvar",
+  "blob",
+  "boolean",
+  "both",
+  "breadth",
+  "by",
+  "c",
+  "cache",
+  "call",
+  "called",
+  "cardinality",
+  "cascade",
+  "cascaded",
+  "case",
+  "cast",
+  "catalog",
+  "catalog_name",
+  "ceil",
+  "ceiling",
+  "chain",
+  "char",
+  "char_length",
+  "character",
+  "character_length",
+  "character_set_catalog",
+  "character_set_name",
+  "character_set_schema",
+  "characteristics",
+  "characters",
+  "check",
+  "checked",
+  "checkpoint",
+  "class",
+  "class_origin",
+  "clob",
+  "close",
+  "cluster",
+  "coalesce",
+  "cobol",
+  "collate",
+  "collation",
+  "collation_catalog",
+  "collation_name",
+  "collation_schema",
+  "collect",
+  "column",
+  "column_name",
+  "command_function",
+  "command_function_code",
+  "comment",
+  "commit",
+  "committed",
+  "completion",
+  "condition",
+  "condition_number",
+  "connect",
+  "connection",
+  "connection_name",
+  "constraint",
+  "constraint_catalog",
+  "constraint_name",
+  "constraint_schema",
+  "constraints",
+  "constructor",
+  "contains",
+  "continue",
+  "conversion",
+  "convert",
+  "copy",
+  "corr",
+  "corresponding",
+  "count",
+  "covar_pop",
+  "covar_samp",
+  "create",
+  "createdb",
+  "createrole",
+  "createuser",
+  "cross",
+  "csv",
+  "cube",
+  "cume_dist",
+  "current",
+  "current_date",
+  "current_default_transform_group",
+  "current_path",
+  "current_role",
+  "current_time",
+  "current_timestamp",
+  "current_transform_group_for_type",
+  "current_user",
+  "cursor",
+  "cursor_name",
+  "cycle",
+  "data",
+  "database",
+  "date",
+  "datetime_interval_code",
+  "datetime_interval_precision",
+  "day",
+  "deallocate",
+  "dec",
+  "decimal",
+  "declare",
+  "default",
+  "defaults",
+  "deferrable",
+  "deferred",
+  "defined",
+  "definer",
+  "delete",
+  "delimiter",
+  "delimiters",
+  "dense_rank",
+  "depth",
+  "deref",
+  "derived",
+  "from"
+]);
+var RESERVED_SUGGESTIONS = {
+  data: "payload or details",
+  date: "event_date or scheduled_on",
+  day: "day_of_week",
+  count: "item_count",
+  default: "is_default",
+  action: "step_action",
+  comment: "note or result_comment",
+  condition: "item_condition",
+  check: "check_name",
+  current: "is_current",
+  class: "class_name",
+  case: "case_ref",
+  begin: "starts_at"
+};
 function normalized(value) {
   return value.trim().toLowerCase();
 }
@@ -34923,7 +35151,11 @@ function validateTableBatch(tables) {
         columnsByName.set(columnKey, column.name);
       }
       if (TOOLJET_DB_RESERVED_COLUMN_NAMES.has(columnKey)) {
-        errors.push(`Table "${table.tableName}" uses reserved column name "${column.name}". Use a descriptive name such as step_action, result_comment, or item_condition.`);
+        errors.push(`Table "${table.tableName}" uses reserved column name "${column.name}" (ToolJet DB rejects SQL keywords). Rename it, e.g. ${RESERVED_SUGGESTIONS[columnKey] ?? `${columnKey}_value`}.`);
+      }
+      const dataType = normalizeType(column.type);
+      if (!TOOLJET_DB_DATA_TYPES.has(dataType)) {
+        errors.push(`Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.`);
       }
     }
     for (const foreignKey of table.foreignKeys ?? []) {
@@ -34981,6 +35213,25 @@ function tableCreationLevels(tables) {
   return levels;
 }
 
+// dist/bindings.js
+function staticBooleanBinding(value) {
+  return { value: `{{${value}}}`, fxActive: false };
+}
+function booleanBindingValue(value) {
+  if (typeof value === "boolean")
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = /^\{\{\s*(true|false)\s*\}\}$/.exec(value);
+  return match ? match[1] === "true" : void 0;
+}
+function isCanonicalStaticBooleanBinding(value, expected) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return false;
+  const binding = value;
+  return binding.value === `{{${expected}}}` && binding.fxActive === false;
+}
+
 // dist/tooljetClient.js
 var PartialWriteError = class extends Error {
   completed;
@@ -35001,9 +35252,29 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+var ToolJetHttpError = class extends Error {
+  status;
+  method;
+  detail;
+  constructor(status, method, detail) {
+    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    this.status = status;
+    this.method = method;
+    this.detail = detail;
+    this.name = "ToolJetHttpError";
+  }
+};
+function isPageHidden(page) {
+  return booleanBindingValue(page?.hidden?.value) === true;
+}
+function pageHiddenNeedsUpdate(page, expected) {
+  if (page?.hidden === void 0 || page?.hidden === null)
+    return expected;
+  return booleanBindingValue(page.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page.hidden, expected);
+}
 async function assertOk(res, method) {
   if (!res.ok) {
-    throw new Error(`ToolJet ${method} failed (${res.status}): ${await res.text()}`);
+    throw new ToolJetHttpError(res.status, method, await res.text());
   }
 }
 var TYPE_ALIASES = {
@@ -35026,7 +35297,17 @@ var TYPE_ALIASES = {
   jsonb: "jsonb",
   serial: "serial"
 };
-var normalizeType = (t) => TYPE_ALIASES[t.trim().toLowerCase()] ?? t;
+var normalizeType = (t) => TYPE_ALIASES[t.trim().toLowerCase()] ?? t.trim().toLowerCase();
+var TOOLJET_DB_DATA_TYPES = /* @__PURE__ */ new Set([
+  "character varying",
+  "integer",
+  "bigint",
+  "serial",
+  "double precision",
+  "boolean",
+  "timestamp with time zone",
+  "jsonb"
+]);
 function tableColumnDto(column) {
   return {
     column_name: column.name,
@@ -35136,7 +35417,7 @@ function createClient(auth, config2) {
       name: p.name,
       handle: p.handle,
       icon: p.icon,
-      hidden: p.hidden?.value === true,
+      hidden: isPageHidden(p),
       ...typeof p.index === "number" ? { index: p.index } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
@@ -35220,7 +35501,9 @@ function createClient(auth, config2) {
     await assertOk(res, "clearAppPermission");
   }
   async function getAppSettings(appId, versionId) {
-    const app = await getApp(appId);
+    const res = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`);
+    await assertOk(res, "getAppSettings");
+    const app = await res.json();
     const editingVersion = app.editing_version ?? app.editingVersion;
     if (!editingVersion || editingVersion.id !== versionId) {
       throw new Error(`ToolJet getAppSettings failed: version "${versionId}" is not the current editing version for app "${appId}".`);
@@ -35229,8 +35512,7 @@ function createClient(auth, config2) {
       app_id: appId,
       version_id: versionId,
       global_settings: editingVersion.global_settings ?? editingVersion.globalSettings ?? {},
-      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {},
-      ...typeof (editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation) === "boolean" ? { show_viewer_navigation: editingVersion.show_viewer_navigation ?? editingVersion.showViewerNavigation } : {}
+      page_settings: editingVersion.page_settings ?? editingVersion.pageSettings ?? {}
     };
   }
   async function listAppThemes() {
@@ -35399,7 +35681,7 @@ function createClient(auth, config2) {
     const failures = createSettled.flatMap((result, index) => result.status === "rejected" ? [`${entries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
     const metadataTasks = createdEntries.flatMap((page) => [
       ...page.icon ? [{ page, field: "icon", promise: persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`) }] : [],
-      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", { value: true }, `createPages "${page.name}" hidden update`) }] : []
+      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", staticBooleanBinding(true), `createPages "${page.name}" hidden update`) }] : []
     ]);
     const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
     failures.push(...metadataSettled.flatMap((result, index) => result.status === "rejected" ? [`${metadataTasks[index].page.name} ${metadataTasks[index].field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []));
@@ -35413,7 +35695,7 @@ function createClient(auth, config2) {
           if (entry.icon && page?.icon !== entry.icon) {
             failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
           }
-          if (entry.hidden && page?.hidden?.value !== true) {
+          if (entry.hidden && !isPageHidden(page)) {
             failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
           }
         }
@@ -35426,7 +35708,7 @@ function createClient(auth, config2) {
       name: page.name,
       index: page.index,
       ...persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon } : {},
-      ...persistedById.get(page.id)?.hidden?.value === true ? { hidden: true } : {}
+      ...isPageHidden(persistedById.get(page.id)) ? { hidden: true } : {}
     }));
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
@@ -35457,6 +35739,8 @@ function createClient(auth, config2) {
     const app = await getApp(params.appId);
     const pages = app.pages ?? [];
     const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const editingVersion = app.editing_version ?? app.editingVersion ?? {};
+    const homePageId = String(editingVersion.home_page_id ?? editingVersion.homePageId ?? app.home_page_id ?? app.homePageId ?? "");
     const seenUpdateIds = /* @__PURE__ */ new Set();
     for (const update of updates) {
       if (!pagesById.has(update.pageId)) {
@@ -35474,6 +35758,10 @@ function createClient(auth, config2) {
       }
       if (update.icon !== void 0 && !update.icon.trim()) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" has an empty icon.`);
+      }
+      const current = pagesById.get(update.pageId);
+      if (update.hidden === true && (update.pageId === homePageId || !homePageId && current?.handle === "home")) {
+        throw new Error("ToolJet updatePages failed: the Home page cannot be hidden from navigation.");
       }
     }
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
@@ -35504,8 +35792,8 @@ function createClient(auth, config2) {
       if (update.icon !== void 0 && update.icon !== current.icon) {
         fieldUpdates.push({ pageId: update.pageId, field: "icon", value: update.icon });
       }
-      if (update.hidden !== void 0 && update.hidden !== (current.hidden?.value === true)) {
-        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: { value: update.hidden } });
+      if (update.hidden !== void 0 && pageHiddenNeedsUpdate(current, update.hidden)) {
+        fieldUpdates.push({ pageId: update.pageId, field: "hidden", value: staticBooleanBinding(update.hidden) });
       }
     }
     await Promise.all(fieldUpdates.map(async ({ pageId, field, value }) => {
@@ -35536,7 +35824,7 @@ function createClient(auth, config2) {
       if (update.icon !== void 0 && page?.icon !== update.icon) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
       }
-      if (update.hidden !== void 0 && page?.hidden?.value === true !== update.hidden) {
+      if (update.hidden !== void 0 && isPageHidden(page) !== update.hidden) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
       }
     }
@@ -35555,7 +35843,7 @@ function createClient(auth, config2) {
         name: page.name,
         handle: page.handle,
         icon: page.icon,
-        hidden: page.hidden?.value === true,
+        hidden: isPageHidden(page),
         ...typeof page.index === "number" ? { index: page.index } : {}
       }))
     };
@@ -35758,7 +36046,7 @@ function createClient(auth, config2) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve3) => setTimeout(resolve3, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
     }
   }
   async function insertRows(params) {
@@ -36243,6 +36531,45 @@ function useWorkspaceTool(client) {
 }
 
 // dist/tools/createApp.js
+import { existsSync, readFileSync as readFileSync2 } from "node:fs";
+import { dirname as dirname3, resolve as resolve2 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+var here = dirname3(fileURLToPath2(import.meta.url));
+var standardThemeCandidates = [
+  resolve2(here, "../../data/default-theme.json"),
+  resolve2(here, "../data/default-theme.json")
+];
+var standardThemeCache;
+function loadStandardTheme() {
+  if (!standardThemeCache) {
+    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
+    if (!path) {
+      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
+    }
+    standardThemeCache = JSON.parse(readFileSync2(path, "utf8"));
+  }
+  return standardThemeCache;
+}
+var derivedThemeSchema = external_exports.object({
+  name: external_exports.string().trim().min(1).max(100),
+  definition: external_exports.record(external_exports.string(), external_exports.any())
+});
+async function resolveTheme(client, choice) {
+  const themes = await client.listAppThemes();
+  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
+  if (wanted) {
+    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
+    if (existing)
+      return existing;
+    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
+  }
+  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
+  if (!named)
+    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
+  if (named.isDisabled)
+    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
+  return named;
+}
 function createAppTool(client) {
   return {
     name: "create_app",
@@ -36252,13 +36579,34 @@ function createAppTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, and app_url (a backward-compatible alias for editor_url).",
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Decide the theme before calling: when the request names a brand, an industry or a customer type, derive a theme (see references/themes.md) and pass theme:{name, definition}; it is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
     inputSchema: {
-      name: external_exports.string().min(1)
+      name: external_exports.string().min(1),
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional()
     },
     async handler(args) {
       try {
-        const result = await client.createApp(args.name);
+        const created = await client.createApp(args.name);
+        const choice = args.theme ?? "standard";
+        const result = { ...created, theme: { mode: "workspace_default" } };
+        if (choice === "workspace_default")
+          return ok(result);
+        const label = typeof choice === "object" ? choice.name : choice;
+        try {
+          const theme = await resolveTheme(client, choice);
+          await client.updateAppSettings({
+            appId: created.app_id,
+            versionId: created.version_id,
+            globalSettings: { theme }
+          });
+          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
+          result.theme = { mode, id: theme.id, name: theme.name };
+        } catch (themeErr) {
+          result.theme = {
+            mode: "workspace_default",
+            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+          };
+        }
         return ok(result);
       } catch (err) {
         return fail(err);
@@ -36272,13 +36620,7 @@ function asRecord(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 function bindingBoolean(value) {
-  if (typeof value === "boolean")
-    return value;
-  if (value === "{{true}}")
-    return true;
-  if (value === "{{false}}")
-    return false;
-  return value;
+  return booleanBindingValue(value) ?? value;
 }
 function compactTheme(theme) {
   if (!theme)
@@ -36293,9 +36635,7 @@ function compactTheme(theme) {
 }
 function projectAppSettings(snapshot2) {
   const global2 = snapshot2.global_settings ?? {};
-  const page = snapshot2.page_settings ?? {};
-  const definition = asRecord(page.definition);
-  const properties = asRecord(definition.properties);
+  const properties = pageSettingProperties(snapshot2);
   const disableMenu = asRecord(properties.disableMenu);
   const theme = asRecord(global2.theme);
   return {
@@ -36320,12 +36660,11 @@ function projectAppSettings(snapshot2) {
       position: properties.position,
       style: properties.style,
       collapsible: properties.collapsable
-    },
-    ...snapshot2.show_viewer_navigation !== void 0 ? { show_viewer_navigation: snapshot2.show_viewer_navigation } : {}
+    }
   };
 }
 function pageSettingProperties(snapshot2) {
-  return asRecord(asRecord(snapshot2.page_settings.definition).properties);
+  return asRecord(asRecord(snapshot2.page_settings).properties);
 }
 
 // dist/tools/getAppSettings.js
@@ -36387,13 +36726,13 @@ var SETTING_KEYS = [
   "navigation_style",
   "navigation_collapsible"
 ];
-function expectedWarnings(args, snapshot2) {
+function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
-  const warnings = [];
+  const mismatches = [];
   const expectEqual = (label, actual, expected) => {
     if (actual !== expected)
-      warnings.push(`${label} was accepted by the API but did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)}).`);
+      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -36423,7 +36762,7 @@ function expectedWarnings(args, snapshot2) {
     expectEqual("navigation_style", page.style, args.navigation_style);
   if (args.navigation_collapsible !== void 0)
     expectEqual("navigation_collapsible", page.collapsable, args.navigation_collapsible);
-  return warnings;
+  return mismatches;
 }
 function updateAppSettingsTool(client) {
   return {
@@ -36434,7 +36773,7 @@ function updateAppSettingsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. Omitted fields are preserved. Returns warnings for settings ToolJet accepted but ignored (for example a license-gated header setting).",
+    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
     inputSchema: {
       app_id: external_exports.string().min(1),
       version_id: external_exports.string().min(1),
@@ -36445,10 +36784,10 @@ function updateAppSettingsTool(client) {
       }).optional(),
       app_mode: external_exports.enum(["auto", "light", "dark"]).optional(),
       theme_id: external_exports.string().uuid().optional(),
-      hide_header: external_exports.boolean().optional(),
+      hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
       hide_logo: external_exports.boolean().optional(),
       header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional(),
+      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional()
@@ -36497,13 +36836,17 @@ function updateAppSettingsTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           ...Object.keys(globalSettings).length ? { globalSettings } : {},
-          ...Object.keys(properties).length ? { pageSettings: { definition: { properties } } } : {}
+          ...Object.keys(properties).length ? { pageSettings: { properties } } : {}
         });
         const persisted = await client.getAppSettings(args.app_id, args.version_id);
+        const mismatches = persistenceMismatches(args, persisted);
+        if (mismatches.length) {
+          throw new Error(`update_app_settings partially failed readback: ${mismatches.join("; ")}. Other requested fields may already have persisted; inspect get_app_settings before retrying.`);
+        }
         return ok({
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
-          warnings: expectedWarnings(args, persisted)
+          warnings: []
         });
       } catch (error51) {
         return fail(error51);
@@ -37023,9 +37366,9 @@ function getComponentCatalogTool(_client) {
 }
 
 // dist/datasourceCatalog.js
-import { readFileSync as readFileSync2 } from "node:fs";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { dirname as dirname3, resolve as resolve2 } from "node:path";
+import { readFileSync as readFileSync3 } from "node:fs";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { dirname as dirname4, resolve as resolve3 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
@@ -37043,11 +37386,11 @@ var COMMON_QUERY_OPTION_FIELDS = {
   disableQuery: { path: "disableQuery", type: "boolean|binding" },
   disabledMessage: { path: "disabledMessage", type: "string|binding" }
 };
-var dataPath2 = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/datasource-schemas.json");
+var dataPath2 = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/datasource-schemas.json");
 var cache2 = null;
 function load2() {
   if (!cache2)
-    cache2 = JSON.parse(readFileSync2(dataPath2, "utf8"));
+    cache2 = JSON.parse(readFileSync3(dataPath2, "utf8"));
   return cache2;
 }
 function getDatasourceCatalog() {
@@ -37337,15 +37680,17 @@ function inspectDatasourceSchemaTool(client) {
 }
 
 // dist/tools/testDatasourceConnection.js
-var NOT_IMPLEMENTED = /testconnection method not implemented/i;
 function unsupportedMessage(kind) {
   return `Datasource kind "${kind}" does not implement a connection test. This is not a failure and carries no information about the connection: verify it with a bounded read instead.`;
 }
-function isForbidden(message) {
-  return /\(403\)/.test(message) || /forbidden/i.test(message);
-}
-function isNotFound(message) {
-  return /\(404\)/.test(message);
+function inconclusive(header, detail) {
+  return ok({
+    ...header,
+    supported: true,
+    status: "inconclusive",
+    message: `The connection test did not prove this datasource is broken${detail ? ` (${detail.trim()})` : ""}.`,
+    verification: { action: "ask_then_run_bounded_read", requires_user_approval: true }
+  });
 }
 function testDatasourceConnectionTool(client) {
   return {
@@ -37362,16 +37707,18 @@ function testDatasourceConnectionTool(client) {
       datasource_id: external_exports.string().min(1)
     },
     async handler(args) {
+      let header;
       try {
         const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const header = {
+        header = {
           datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind },
           settings_url: datasource.settings_url
         };
-        if (getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection === false) {
+        const supportsTestConnection = getDatasourceQuerySchema(datasource.kind)?.supportsTestConnection;
+        if (supportsTestConnection === false) {
           return ok({
             ...header,
             supported: false,
@@ -37387,7 +37734,7 @@ function testDatasourceConnectionTool(client) {
           options: details.options
         });
         const message = typeof result.message === "string" ? result.message : void 0;
-        if (message && NOT_IMPLEMENTED.test(message)) {
+        if (result.category === "unsupported") {
           return ok({
             ...header,
             supported: false,
@@ -37398,6 +37745,8 @@ function testDatasourceConnectionTool(client) {
         if (result.status === "ok") {
           return ok({ ...header, supported: true, status: "ok" });
         }
+        if (supportsTestConnection !== true)
+          return inconclusive(header, message);
         return ok({
           ...header,
           supported: true,
@@ -37410,17 +37759,31 @@ function testDatasourceConnectionTool(client) {
           }
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (isForbidden(message)) {
+        if (!header)
+          return fail(err);
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 403) {
           return ok({
-            datasource: { id: args.datasource_id },
+            ...header,
             supported: true,
             status: "not_permitted",
             message: "This ToolJet user is not permitted to test datasource connections (the ability is granted to admins, datasource create/delete holders, and users with editable/viewable datasource access). The connection itself was not tested."
           });
         }
-        if (isNotFound(message)) {
-          return fail(new Error(`ToolJet has no test-connection endpoint or no datasource "${args.datasource_id}" for this environment (${message}).`));
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 404) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: "ToolJet has no datasource-level test endpoint. This says nothing about connection health."
+          });
+        }
+        if (err instanceof ToolJetHttpError && err.method === "testDatasourceConnection" && err.status === 501) {
+          return ok({
+            ...header,
+            supported: false,
+            status: "unsupported",
+            message: "This ToolJet datasource plugin does not implement a connection test."
+          });
         }
         return fail(err);
       }
@@ -37878,7 +38241,7 @@ var COMPONENT_FIELDS = [
 ];
 var QUERY_FIELDS = ["id", "name", "kind", "data_source_id", "options"];
 var EVENT_FIELDS = ["id", "name", "sourceId", "target", "event"];
-var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts", "parent"];
+var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts.desktop", "parent"];
 var STRUCTURE_QUERY_FIELDS = ["id", "name", "kind", "data_source_id"];
 var STRUCTURE_EVENT_FIELDS = ["id", "name", "sourceId", "target"];
 var UNSAFE_PATH_SEGMENTS = /* @__PURE__ */ new Set(["__proto__", "prototype", "constructor"]);
@@ -37926,6 +38289,15 @@ function pickPaths(source2, paths) {
   }
   return result;
 }
+function stripLayoutTimestamps(component) {
+  const layouts = component.layouts;
+  if (!layouts || typeof layouts !== "object")
+    return;
+  for (const rect2 of Object.values(layouts)) {
+    if (rect2 && typeof rect2 === "object")
+      delete rect2.updatedAt;
+  }
+}
 function matches(value, accepted) {
   return !accepted?.length || typeof value === "string" && accepted.includes(value);
 }
@@ -37947,7 +38319,12 @@ function selectAppSummary(summary, selection = {}) {
     result.pages = summary.pages.filter((page) => matches(page.id, selection.pageIds) && matches(page.name, selection.pageNames) && matches(page.handle, selection.pageHandles)).map((page) => {
       const selectedPage = pickPaths(page, pageFields);
       if (selection.includeComponents !== false) {
-        selectedPage.components = page.components.filter((component) => matches(component.id, selection.componentIds) && matches(component.name, selection.componentNames) && matches(component.type, selection.componentTypes)).map((component) => pickPaths(component, componentFields));
+        selectedPage.components = page.components.filter((component) => matches(component.id, selection.componentIds) && matches(component.name, selection.componentNames) && matches(component.type, selection.componentTypes)).map((component) => {
+          const picked = pickPaths(component, componentFields);
+          if (detail === "structure" && !selection.componentFields)
+            stripLayoutTimestamps(picked);
+          return picked;
+        });
       }
       return selectedPage;
     });
@@ -38560,6 +38937,53 @@ function assessRestGet(options2, datasourceId) {
     ...identity
   };
 }
+function assessSupabase(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options2.count_table_name : options2.get_table_name;
+  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
+  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Supabase operation is not a static row read.",
+      ...identity
+    };
+  }
+  const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === "count_rows") {
+    const countFilters = options2.count_filters;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record2(countFilters) && Object.keys(record2(countFilters)).length === 0;
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  const maxRows = staticPositiveInteger(options2.get_limit);
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD,
+    requiresRemoteReadConfirmation: true,
+    simpleSourceRead: true,
+    source: source2,
+    maxRows,
+    ...identity
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -38829,6 +39253,8 @@ function assessQueryRead(query) {
     return assessRestGet(options2, datasourceId);
   if (kind === "servicenow")
     return assessServiceNow(options2, datasourceId);
+  if (kind === "supabase")
+    return assessSupabase(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -39555,6 +39981,101 @@ function unique(values, label, sourceName, warnings) {
   return result;
 }
 
+// dist/bindingBraces.js
+function separateAdjacentClosingBraces(text) {
+  let out = "";
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    if (!text.startsWith("{{", i)) {
+      out += text[i];
+      i += 1;
+      continue;
+    }
+    let j = i + 2;
+    let depth = 0;
+    let quote2 = null;
+    let expr = "";
+    let terminated = false;
+    while (j < n) {
+      const c = text[j];
+      if (quote2) {
+        expr += c;
+        if (c === "\\" && j + 1 < n) {
+          expr += text[j + 1];
+          j += 2;
+          continue;
+        }
+        if (c === quote2)
+          quote2 = null;
+        j += 1;
+        continue;
+      }
+      if (c === "'" || c === '"' || c === "`") {
+        quote2 = c;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "{") {
+        depth += 1;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "}") {
+        if (depth === 0 && text[j + 1] === "}") {
+          terminated = true;
+          break;
+        }
+        depth = Math.max(depth - 1, 0);
+        expr += c;
+        if (text[j + 1] === "}")
+          expr += " ";
+        j += 1;
+        continue;
+      }
+      expr += c;
+      j += 1;
+    }
+    if (!terminated) {
+      out += text.slice(i);
+      break;
+    }
+    out += `{{${expr}}}`;
+    i = j + 2;
+  }
+  return out;
+}
+function separateAdjacentClosingBracesDeep(value) {
+  if (typeof value === "string") {
+    if (!value.includes("{{"))
+      return { value, changed: false };
+    const fixed = separateAdjacentClosingBraces(value);
+    return { value: fixed, changed: fixed !== value };
+  }
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      return result.value;
+    });
+    return { value: changed ? next : value, changed };
+  }
+  if (value && typeof value === "object") {
+    let changed = false;
+    const next = {};
+    for (const [key, item] of Object.entries(value)) {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      next[key] = result.value;
+    }
+    return { value: changed ? next : value, changed };
+  }
+  return { value, changed: false };
+}
+
 // dist/componentNormalization.js
 function normalizeSection(section) {
   if (!section)
@@ -39751,6 +40272,24 @@ function normalizeComponentSpec(component, options2 = {}) {
       }
     }
   }
+  const braceFixedKeys = [];
+  for (const key of Object.keys(properties)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
+    if (!result.changed)
+      continue;
+    setProperty(key, result.value);
+    braceFixedKeys.push(`properties.${key}`);
+  }
+  for (const key of Object.keys(stylesValue)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
+    if (!result.changed)
+      continue;
+    setStyle(key, result.value);
+    braceFixedKeys.push(`styles.${key}`);
+  }
+  if (braceFixedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
+  }
   const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
     const envelopePatch = normalizedSections[section].patch ?? {};
     const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
@@ -39768,6 +40307,49 @@ function normalizeComponentSpec(component, options2 = {}) {
     patch,
     warnings
   };
+}
+
+// dist/layoutNormalization.js
+function normalizePlannedLayouts(component) {
+  const warnings = [];
+  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const targets = [];
+  if (component.layout)
+    targets.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    targets.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    targets.push(["mobile", component.layouts.mobile]);
+  if (!targets.length)
+    return { component, warnings };
+  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
+  const fixed = /* @__PURE__ */ new Map();
+  for (const [name, rect2] of targets) {
+    if (typeof rect2.height !== "number")
+      continue;
+    if (textMinimum !== void 0 && rect2.height < textMinimum) {
+      fixed.set(name, { ...rect2, height: textMinimum });
+      warnings.push(`${label}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
+    } else if (compactHeight !== void 0 && rect2.height > compactHeight) {
+      fixed.set(name, { ...rect2, height: compactHeight });
+      warnings.push(`${label}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+    }
+  }
+  if (!fixed.size)
+    return { component, warnings };
+  const next = { ...component };
+  if (fixed.has("layout"))
+    next.layout = fixed.get("layout");
+  if (fixed.has("desktop") || fixed.has("mobile")) {
+    next.layouts = {
+      ...component.layouts,
+      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
+      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
+    };
+  }
+  return { component: next, warnings };
 }
 
 // dist/referenceSafety.js
@@ -39981,7 +40563,11 @@ function lintPlannedApp(spec, existingSummary) {
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
     if (!plannedPage.icon.trim())
       errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
-    const normalized2 = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+    const normalized2 = (plannedPage.components ?? []).map((component) => {
+      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+      const geometry = normalizePlannedLayouts(definition.component);
+      return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+    });
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
     warnings.push(...expansion.warnings);
@@ -40251,7 +40837,11 @@ function prepareComponentBatch(inputs) {
     parentRef: parent_ref,
     slotName: slot_name
   }));
-  const normalized2 = requested.map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+  const normalized2 = requested.map((component) => {
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const geometry = normalizePlannedLayouts(definition.component);
+    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+  });
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
@@ -40405,6 +40995,7 @@ function lintAppSpecTool(client) {
           return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
         }
         const preflightErrors = [];
+        const preflightWarnings = [];
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -40436,9 +41027,14 @@ function lintAppSpecTool(client) {
                 }
                 return indexes;
               }, []);
-              if (missingRows.length) {
-                preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              if (!missingRows.length)
+                continue;
+              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && missingRows.length === seed.rows.length) {
+                column.type = "serial";
+                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
+                continue;
               }
+              preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
             }
           }
         }
@@ -40521,7 +41117,8 @@ function lintAppSpecTool(client) {
         const result = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
-          errors: unique3([...preflightErrors, ...lint.errors])
+          errors: unique3([...preflightErrors, ...lint.errors]),
+          warnings: unique3([...preflightWarnings, ...lint.warnings])
         };
         return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
       } catch (error51) {
@@ -40602,7 +41199,7 @@ async function waitForCreatedTables(client, tableNames) {
         const delay = TABLE_READY_DELAYS_MS[attempt];
         if (delay === void 0)
           break;
-        await new Promise((resolve3) => setTimeout(resolve3, delay));
+        await new Promise((resolve4) => setTimeout(resolve4, delay));
       }
     }
     throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
@@ -40646,9 +41243,19 @@ function applyAppPhaseTool(client) {
         if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
+        let renameWarning;
         if (spec.app_name && spec.app_name !== initialSummary.name) {
           stage = "rename target app";
-          await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          try {
+            await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          } catch (error51) {
+            const message = error51 instanceof Error ? error51.message : String(error51);
+            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
+              throw error51;
+            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
+            await client.renameApp(args.app_id, args.version_id, fallback);
+            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
+          }
           applied.app_metadata = 1;
         }
         const plannedPageMatches = /* @__PURE__ */ new Map();
@@ -40799,6 +41406,8 @@ function applyAppPhaseTool(client) {
           type: component.type
         })));
         const warnings = [];
+        if (renameWarning)
+          warnings.push(renameWarning);
         for (const page of componentResults) {
           applied.components += page.created.length;
           warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
@@ -40978,7 +41587,7 @@ var updateSchema = external_exports.object({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
-  hidden: external_exports.boolean().optional()
+  hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
 });
 function updatePagesTool(client) {
   return {
@@ -40989,7 +41598,7 @@ function updatePagesTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes. This can restyle and reposition the auto-created Home page.",
+    description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle one non-Home page in the menu. The Home page can be renamed, restyled, and reordered, but cannot be hidden. To hide or show the entire generated navigation menu, use update_app_settings.navigation_hidden instead. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -41250,8 +41859,11 @@ function addComponentTool(client) {
         layouts: args.layouts
       };
       const normalized2 = normalizeComponentSpec(requested);
-      const expanded = materializeRequiredDefaultChildren([normalized2.component]);
-      const { errors, warnings } = lintComponents(expanded.components);
+      const geometry = normalizePlannedLayouts(normalized2.component);
+      const expanded = materializeRequiredDefaultChildren([geometry.component]);
+      const lintResult = lintComponents(expanded.components);
+      const errors = lintResult.errors;
+      const warnings = [...geometry.warnings, ...lintResult.warnings];
       if (errors.length)
         return fail(new Error(errors.join(" ")));
       try {
@@ -41419,10 +42031,11 @@ function updateComponentsTool(client) {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (!page)
           return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
         const projected = new Map(page.components.map((component) => [component.id, component]));
         const warnings = [];
         const errors = [];
+        const changedComponents = [];
+        let placementChanged = false;
         const resolvedUpdates = [];
         for (const update of args.updates) {
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
@@ -41473,8 +42086,11 @@ function updateComponentsTool(client) {
             layouts: next.layouts,
             parent: next.parent
           });
-          const normalizedNext = normalized2.component;
+          const normalizedNext = { ...normalized2.component, id: current.id };
           projected.set(current.id, normalizedNext);
+          if (update.definition)
+            changedComponents.push({ before: current, after: normalizedNext });
+          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
           warnings.push(...normalized2.warnings);
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized2.patch).length) {
@@ -41498,15 +42114,21 @@ function updateComponentsTool(client) {
           });
           if (!update.definition)
             continue;
-          const lint = lintComponentSpec(normalizedNext);
-          errors.push(...lint.errors);
-          warnings.push(...lint.warnings);
+          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
+          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
         }
-        errors.push(...lintComponentSlots([...projected.values()]));
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length)
           return fail(new Error(errors.join(" ")));
-        warnings.push(...lintRenderedGeometry([...projected.values()]));
-        warnings.push(...lintKanbanInteractions([...projected.values()]));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,
@@ -41703,14 +42325,22 @@ function updateLayoutTool(client) {
             slotName: change.slot_name
           };
         });
-        const slotErrors = lintComponentSlots(projected);
-        if (slotErrors.length)
-          return fail(new Error(slotErrors.join(" ")));
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
+        const introducedForChanged = (lint) => changed.flatMap((component) => introducedLintFindings(lint([components.get(component.id)]), lint([component])));
+        const errors = [
+          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
+          ...introducedForChanged(lintUnusableTextGeometry)
+        ];
+        if (errors.length)
+          return fail(new Error(errors.join(" ")));
         const warnings = [.../* @__PURE__ */ new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
-          ...projected.filter((component) => component.id && changedIds.has(component.id)).flatMap((component) => lintComponentSpec(component).warnings),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
+          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
+          ...introducedForChanged(lintTextGeometry),
           ...lintRenderedGeometry(projected)
         ])];
         const result = await client.updateLayouts({
@@ -42087,24 +42717,54 @@ function datasourceRecovery(query) {
     instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
   };
 }
-var CONNECTION_SQLSTATE = /^(08|28|53|57P0|3D000)/;
-var CONNECTION_MESSAGE = /econnrefused|etimedout|enotfound|ehostunreach|econnreset|getaddrinfo|connection (refused|reset|closed|terminated|timed out)|could not connect|couldn'?t connect|authentication failed|password authentication|no pg_hba|timeout expired|server closed the connection|too many connections|access denied for user|login failed for user/i;
-var SCHEMA_NAME_SQLSTATE = /^(42P01|42703|3F000|42P02|42704)/;
-var SCHEMA_NAME_MESSAGE = /(relation|column|table|schema|function|type)\b.{0,40}\bdoes(n'?t| not) exist|unknown column|no such (table|column)|invalid object name/i;
+var CONNECTION_SQLSTATE_PREFIXES = ["08", "28", "53", "57P0", "3D000"];
+var SCHEMA_NAME_SQLSTATES = /* @__PURE__ */ new Set(["42P01", "42703", "3F000", "42P02", "42704"]);
+var LEGACY_CONNECTION_CODES = /* @__PURE__ */ new Set([
+  "ELOGIN",
+  "ESOCKET",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ER_ACCESS_DENIED_ERROR",
+  "ER_DBACCESS_DENIED_ERROR",
+  "ER_BAD_DB_ERROR",
+  "PROTOCOL_CONNECTION_LOST"
+]);
+var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR", "ER_NO_SUCH_TABLE"]);
 function classifyQueryFailure(result) {
   if (!result)
-    return "query";
-  const data = result.data;
-  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
-  const text = `${result.description ?? ""} ${result.message ?? ""}`;
-  if (code && CONNECTION_SQLSTATE.test(code) || CONNECTION_MESSAGE.test(text))
+    return "unknown";
+  const category = result.category;
+  if (category === "authentication" || category === "connection")
     return "connection";
-  if (code && SCHEMA_NAME_SQLSTATE.test(code) || SCHEMA_NAME_MESSAGE.test(text))
+  if (category === "schema_name")
     return "schema_name";
-  return "query";
+  if (category === "unknown")
+    return "unknown";
+  if (["timeout", "rate_limit", "transient", "query"].includes(String(category)))
+    return "query";
+  if (typeof category === "string")
+    return "unknown";
+  const data = result.data;
+  const codes = data && typeof data === "object" ? [data.code, data.sqlState, data.sqlstate].map((value) => String(value ?? "").toUpperCase()).filter(Boolean) : [];
+  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) || codes.some((code) => LEGACY_CONNECTION_CODES.has(code)))
+    return "connection";
+  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code)))
+    return "schema_name";
+  return codes.length ? "query" : "unknown";
 }
 function failureRecovery(query, result) {
   return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
+}
+function failureVerification(query, result) {
+  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
+    return void 0;
+  return {
+    action: "test_datasource_connection",
+    datasource_id: query.data_source_id,
+    instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
+  };
 }
 function introspectedNames(result) {
   const data = result?.data;
@@ -42163,7 +42823,7 @@ function runQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static REST GET requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data, consume quota, or return an unbounded payload; REST writes and binding-dependent requests are always refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42185,10 +42845,10 @@ function runQueryTool(client) {
           warnings.push('Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.');
         }
         if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused REST GET "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
         }
         if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push("User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.");
+          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -42203,7 +42863,7 @@ function runQueryTool(client) {
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
           const countAssessment = assessQueryRead(countQuery);
-          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true;
+          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true || countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true;
           if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
             return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
           }
@@ -42232,19 +42892,16 @@ function runQueryTool(client) {
             environmentId: args.environment_id
           });
         } catch (error51) {
-          const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-          const recovery2 = failureRecovery(query, failure);
-          const schemaHint2 = await schemaNameHint(client, query, failure);
           return ok({
-            ...failure,
+            status: "failed",
+            message: error51 instanceof Error ? error51.message : String(error51),
             ...preflight ? { preflight } : {},
-            ...warnings.length ? { warnings } : {},
-            ...recovery2 ? { recovery: recovery2 } : {},
-            ...schemaHint2 ? { schema_hint: schemaHint2 } : {}
+            ...warnings.length ? { warnings } : {}
           });
         }
         const failed = result.status === "failed";
         const recovery = failed ? failureRecovery(query, result) : void 0;
+        const verification = failed ? failureVerification(query, result) : void 0;
         const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
         const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
         if (output.warning)
@@ -42254,6 +42911,7 @@ function runQueryTool(client) {
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {},
+          ...verification ? { verification } : {},
           ...schemaHint ? { schema_hint: schemaHint } : {}
         });
       } catch (err) {
@@ -42329,6 +42987,7 @@ function runQueriesTool(client) {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const failed = result.status === "failed";
             const recovery = failed ? failureRecovery(query, result) : void 0;
+            const verification = failed ? failureVerification(query, result) : void 0;
             const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
             const shaped = args.include_data === false ? (() => {
               const { data, ...rest } = result;
@@ -42340,19 +42999,16 @@ function runQueriesTool(client) {
               ...shaped,
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {},
+              ...verification ? { verification } : {},
               ...schemaHint ? { schema_hint: schemaHint } : {}
             };
           } catch (error51) {
             const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-            const recovery = failureRecovery(query, failure);
-            const schemaHint = await schemaNameHint(client, query, failure);
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
               ...failure,
-              ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {},
-              ...schemaHint ? { schema_hint: schemaHint } : {}
+              ...warnings.length ? { warnings } : {}
             };
           }
         }));
@@ -42497,7 +43153,7 @@ function deleteEventTool(client) {
 // dist/runtimeFreshness.js
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.2.0";
 function snapshot(path) {
   try {
@@ -42516,7 +43172,7 @@ var RuntimeFreshnessMonitor = class {
   artifactPath;
   loaded;
   startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  constructor(artifactPath = fileURLToPath3(import.meta.url)) {
+  constructor(artifactPath = fileURLToPath4(import.meta.url)) {
     this.artifactPath = artifactPath;
     this.loaded = snapshot(artifactPath);
   }
@@ -42636,19 +43292,30 @@ function manageThemeTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval.",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
       theme_id: external_exports.string().uuid().optional(),
       name: external_exports.string().trim().min(1).max(100).optional(),
       definition: themeDefinition.optional(),
       is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional()
+      confirm: external_exports.boolean().optional(),
+      include_definitions: external_exports.boolean().optional()
     },
     async handler(args) {
       try {
         if (args.action === "list") {
-          return ok({ themes: await client.listAppThemes() });
+          const themes = await client.listAppThemes();
+          if (args.include_definitions)
+            return ok({ themes });
+          if (args.theme_id) {
+            const one = themes.find((theme) => theme.id === args.theme_id);
+            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
+          }
+          return ok({
+            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
+          });
         }
         if (args.action === "create") {
           const name = requireValue(args.name, "name");
@@ -42656,6 +43323,16 @@ function manageThemeTool(client) {
             throw new Error("Theme name must contain at least 5 characters.");
           if (name === "ToolJet")
             throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
+          if (existing) {
+            return ok({
+              theme: existing,
+              reused: true,
+              warnings: [
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. Apply it with update_app_settings, or use update_definition to change it.`
+              ]
+            });
+          }
           const created = await client.createAppTheme({
             name,
             definition: requireValue(args.definition, "definition"),
@@ -42748,6 +43425,14 @@ function normalizePermission(permissions) {
 function manageAppPermissionsTool(client) {
   return {
     name: "manage_app_permissions",
+    title: "Manage App Permissions",
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
     inputSchema: {
       action: external_exports.enum(["list_subjects", "get", "set", "clear"]),
@@ -42809,6 +43494,11 @@ var userStatus = external_exports.enum(["active", "archived", "invited"]);
 function listWorkspaceAppsTool(client) {
   return {
     name: "list_workspace_apps",
+    title: "List Workspace Apps",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
@@ -42826,6 +43516,11 @@ function listWorkspaceAppsTool(client) {
 function listWorkspaceUsersTool(client) {
   return {
     name: "list_workspace_users",
+    title: "List Workspace Users",
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
     description: "List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
@@ -42853,6 +43548,14 @@ function required2(value, label) {
 function manageWorkspaceUsersTool(client) {
   return {
     name: "manage_workspace_users",
+    title: "Manage Workspace Users",
+    // invite is additive, but update overwrites a member's role and archive revokes their access to
+    // the workspace, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
     description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups, change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
     inputSchema: {
       action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
@@ -43091,9 +43794,9 @@ async function serveHttp() {
   }
   const { server: httpServer, gatewayMode } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
-  await new Promise((resolve3, reject) => {
+  await new Promise((resolve4, reject) => {
     httpServer.once("error", reject);
-    httpServer.listen(port, host, resolve3);
+    httpServer.listen(port, host, resolve4);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
@@ -43117,7 +43820,7 @@ function isEntrypoint() {
   if (!invoked)
     return false;
   try {
-    return realpathSync(invoked) === realpathSync(fileURLToPath4(import.meta.url));
+    return realpathSync(invoked) === realpathSync(fileURLToPath5(import.meta.url));
   } catch {
     return false;
   }

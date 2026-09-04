@@ -1,0 +1,44 @@
+{
+  "name": "ToolJet Modern",
+  "rationale": "Cool-neutral greys, hairline borders, an 8/6/12 radius scale and a calibrated blue primary. Synthesised from what shadcn/v0, Vercel, Stripe and Lovable agree on, with blue kept instead of black so the primary action stays obvious in dense internal tools. Non-polarising by design.",
+  "definition": {
+    "brand": {
+      "colors": {
+        "primary": { "light": "#2563EB", "dark": "#3B82F6" },
+        "secondary": { "light": "#111827", "dark": "#F9FAFB" },
+        "tertiary": { "light": "#6B7280", "dark": "#9CA3AF" }
+      }
+    },
+    "text": {
+      "font": "Inter",
+      "colors": {
+        "primary": { "light": "#111827", "dark": "#F9FAFB" },
+        "placeholder": { "light": "#6B7280", "dark": "#9CA3AF" },
+        "disabled": { "light": "#9CA3AF", "dark": "#6B7280" }
+      }
+    },
+    "border": {
+      "radius": { "default": 8, "small": 6, "large": 12 },
+      "colors": {
+        "default": { "light": "#E5E7EB", "dark": "#374151" },
+        "weak": { "light": "#F3F4F6", "dark": "#1F2937" },
+        "disabled": { "light": "#F3F4F6", "dark": "#1F2937" }
+      }
+    },
+    "systemStatus": {
+      "colors": {
+        "success": { "light": "#16A34A", "dark": "#4ADE80" },
+        "error": { "light": "#DC2626", "dark": "#F87171" },
+        "warning": { "light": "#D97706", "dark": "#FBBF24" }
+      }
+    },
+    "surface": {
+      "colors": {
+        "appBackground": { "light": "#F9FAFB", "dark": "#111827" },
+        "surface1": { "light": "#FFFFFF", "dark": "#1F2937" },
+        "surface2": { "light": "#F9FAFB", "dark": "#1F2937" },
+        "surface3": { "light": "#F3F4F6", "dark": "#374151" }
+      }
+    }
+  }
+}

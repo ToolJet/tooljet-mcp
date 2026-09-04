@@ -137,7 +137,7 @@ describe('plan token + apply_app_phase', () => {
     expect(retry.content[0]!.text).toMatch(/Unknown or expired plan_token/i);
   });
 
-  it('rejects seed rows that omit a required non-generated planned key', async () => {
+  it('makes an unseeded integer primary key serial instead of rejecting the seed rows', async () => {
     const client = {
       listTables: vi.fn().mockResolvedValue([]),
       listDatasources: vi.fn().mockResolvedValue([]),
@@ -155,8 +155,9 @@ describe('plan token + apply_app_phase', () => {
     });
 
     const body = textOf(result);
-    expect(body.ok).toBe(false);
-    expect(body.errors.join(' ')).toMatch(/required non-generated column "id".*type "serial"/i);
+    expect(body.ok).toBe(true);
+    expect(body.errors).toEqual([]);
+    expect(body.warnings.join(' ')).toMatch(/primary key "id".*created as "serial"/i);
   });
 
   it('reports partial page persistence instead of claiming the failed batch wrote nothing', async () => {

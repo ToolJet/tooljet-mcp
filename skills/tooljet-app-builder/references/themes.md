@@ -44,10 +44,162 @@ surface.colors
 Theme colors are normally hex values. The saved definition generates ToolJet's semantic `--cc-*` variables at
 runtime; do not put CSS variable references inside the theme definition itself.
 
-## Styling components with a selected theme
+## The standard theme (applied by default)
 
-Themes are optional. Do not create a theme, change the workspace default, or replace an app's selected theme unless
-the user asks for it.
+`create_app` applies the skill's standard theme, **"ToolJet Modern"**, to every new app unless told otherwise. It is
+created once per workspace (matched by name, from `data/default-theme.json`) and is never set as the workspace
+default, so hand-built apps are unaffected. The result of `create_app` reports `theme.mode` and any `theme.warning`;
+if the theme could not be created (for example a licence gate on custom themes) the app is on the workspace default
+and the handoff should say so.
+
+- Pass `create_app({ theme: "workspace_default" })` when the user wants the workspace default, or an existing theme
+  name/id to reuse one, or `theme: { name, definition }` to create (once, by name) and apply a derived theme.
+- Never call `set_default`, rename, or delete a theme unless the user asks for exactly that.
+
+## When theming applies
+
+Theming is part of building an app from scratch, and of nothing else.
+
+- **New app** (you call `create_app`, or a host hands you an empty shell with a single blank page): derive and
+  apply the theme as described below. For an empty shell there is no `create_app` call, so create the theme with
+  `manage_theme` (by name, reusing one of that name if it exists) and apply it with `update_app_settings` before
+  the first phase.
+- **Design request on an existing app** (the message is about theme, colours, palette, branding, fonts, corner
+  radius, "make it look like a spa", "match our brand"): change the theme and styling as asked, and nothing else.
+- **Any other change to an existing app** (pages, components, queries, data, behaviour, text, defects): do not
+  create, change or apply a theme, do not touch app settings, and style what you add to match what is already
+  there. The app's current theme is the user's decision, not yours.
+
+## Derive a theme from the request (do this before `create_app`)
+
+The user does not have to ask for a theme. If the request says who the app is for, the customer has an expectation
+about how it should look, and the standard theme is only the answer when nothing in the request points anywhere.
+Read the request for cues, in this order of strength, and derive a theme when any of them is present:
+
+1. **A named brand or pasted design system** — use its real colours (a supplied design file, a well-known brand
+   palette, a logo colour the user quotes). Name the theme after the brand.
+2. **A colour, plant, material or place in the name** — Aloe, Sage, Olive, Indigo, Coral, Amber, Saffron, Slate,
+   Ocean, Terra, Rose: the customer chose that word, so the primary comes from it (a deep, contrast-safe shade of
+   that colour: Aloe or Sage → a muted green such as `#3F6B4A`; Indigo → `#3730A3`; Amber or Saffron → a dark
+   `#B45309`), and the industry row below supplies only the neutrals, radii and accent logic. Never let a row's
+   sample hex override a colour the name already states.
+3. **An industry or business type** — pick the archetype below. Its primary column is a starting point for a
+   customer whose name says nothing about colour, not a fixed value. Name the theme after the customer
+   ("Bernal Fire Pizza", "Northline Clinic").
+4. **An audience or scale word** — "enterprise", "bank", "government", "startup", "kids" — shifts the archetype
+   toward conservative or playful.
+
+Nothing in the request → standard theme. Do not ask the user which they prefer; derive, apply, and say in the
+handoff which cue you used so they can redirect in one line.
+
+**Then read who uses it.** Industry sets the palette; the use case sets how much of the archetype to apply.
+Decide one of three before building the definition:
+
+- **Staff tool** (back office, front desk, kitchen, warehouse, ops, admin, "internal tool" with no customer in
+  the room): keep the standard **8 / 6 / 12 radii** and density, take the archetype's primary, accent and canvas
+  tint, and shift the neutrals to the primary's temperature (below). Dense screens need contrast and speed more
+  than atmosphere, so the neutrals move a little, not the radii.
+- **Customer-facing** (booking, ordering, portal, kiosk, anything a guest or shopper sees): apply the full row,
+  including its radii, and derive the whole palette: neutrals, second surface and status colours (below).
+- **Executive reporting** (board pack, KPI review, investor view): use the enterprise row's neutrals and radii
+  with the industry's accent for charts.
+
+When the request does not say, an "operations", "management" or "tracking" app is a staff tool.
+
+**How to derive.** A theme is a palette, not a primary swap. A rose primary on the standard grey borders, black
+text and white cards reads as the standard theme with one button recoloured; the neutrals are what make a page
+feel designed for its customer. Derive all of these from the primary:
+
+- `brand.primary` from the row; the **accent** as described below; `secondary` = the ink colour; `tertiary` =
+  the muted text colour.
+- **Neutrals follow the primary's temperature.** Ink, muted text, borders, canvas and the surfaces are tinted
+  toward the primary's hue at very low saturation, never the standard pure greys next to a warm or cool primary.
+  Worked sets to start from (light values; dark values are the standard dark scale unless the row says otherwise):
+
+  | Temperature | Ink `text.primary` | Muted `text.placeholder` | Border default / weak | Canvas `appBackground` | Surface1 / Surface2 |
+  | --- | --- | --- | --- | --- | --- |
+  | Warm (rose, plum, brick, terracotta, bronze, brown) | `#2B1E22` | `#8A737A` | `#E3D4CE` / `#EEE4DF` | `#F7F1ED` | `#FFFCFA` / `#F1E6E1` |
+  | Cool (navy, royal, teal, steel, indigo, forest) | `#0F172A` | `#64748B` | `#E2E8F0` / `#F1F5F9` | `#F8FAFC` | `#FFFFFF` / `#F1F5F9` |
+  | Neutral (charcoal, standard blue) | `#111827` | `#6B7280` | `#E5E7EB` / `#F3F4F6` | `#F9FAFB` | `#FFFFFF` / `#F3F4F6` |
+
+  Shift each set toward the actual primary (a plum primary lifts the warm set toward violet; a teal one cools the
+  cool set toward green). `surface2` is the tinted panel surface for side rails, notes and highlighted rows.
+- **Status colours desaturate on premium rows** (beauty, hospitality, luxury, restaurant): success `#47705A`,
+  warning `#9A6A32`, error `#A13D4E`, so a status column does not shout on a soft page. Everywhere else they stay
+  standard, except the shifts in the notes column.
+- The primary must keep white text readable (contrast ≥ 4.5:1), must not collide with the status colours (no pure
+  red, amber or green primaries), and the dark-mode primary is a lighter tint of the same hue.
+
+**The accent is not a theme token; it is the colour the build uses wherever the skill's visual defaults say
+"the theme accent"**: chart series, the informational state in status columns (Booked, Confirmed, New, In
+progress), links, and the highlighted figure in a KPI card. Buttons and inputs take the primary from the theme.
+For blue primaries the accent is the primary. For a near-black, brown or grey primary the accent is what gives
+the app a colour at all, so never leave it as the standard blue.
+
+| Cue in the request | Primary (light / dark) | Accent | Canvas | Radius | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Large enterprise, bank, insurer, government, legal | `#1E40AF` / `#60A5FA` navy | `#1D4ED8` | `#F8FAFC` cool | 6 / 4 / 10 | Conservative, denser; nothing warm |
+| SaaS, developer tools, startup | `#2563EB` / `#3B82F6` (standard) | `#2563EB` | `#F9FAFB` | 8 / 6 / 12 | The standard theme already fits |
+| Healthcare, clinic, dental, pharmacy | `#0F766E` / `#2DD4BF` teal | `#0D9488` | `#F7FAFA` | 8 / 6 / 12 | Calm, clinical; success stays green |
+| Beauty, spa, salon, wellness, boutique | `#BE185D` / `#F472B6` rose or `#7C3AED` plum | `#DB2777` (rose) or `#8B5CF6` (plum) | `#FBF7F5` warm ivory | 12 / 8 / 16 | Softer corners, warm neutrals `#1F1A1C` ink |
+| Restaurant, pizza, bakery, café, bar | `#B91C1C` brick or `#C2410C` terracotta / `#F87171` | `#C2410C` | `#FAF7F2` warm | 10 / 6 / 14 | Warm ink `#1C1917`; keep error red darker `#991B1B` to stay distinct |
+| Consumer brand, soda, snacks, apparel, retail | The brand's own hue at full saturation, e.g. `#DC2626`→ use `#C81E1E` / `#F87171` | the same hue | `#FFFFFF` | 12 / 8 / 16 | Bolder primary is expected here; still one accent only |
+| Outdoors, sports, cycling, fitness | `#15803D` forest or `#0369A1` deep sky / lighter tints | `#0369A1` (with forest) or `#15803D` (with sky) | `#F8FAF8` | 8 / 6 / 12 | Success shifts to `#22C55E` so it differs from a green primary |
+| Logistics, manufacturing, field ops, energy | `#EA580C` safety orange or `#0E7490` steel / lighter tints | `#0E7490` (with orange) or `#EA580C` (with steel) | `#F8FAFC` | 6 / 4 / 10 | Warning shifts to `#B45309` if the primary is orange |
+| Finance, fintech, accounting | `#1D4ED8` royal or `#065F46` money green / lighter tints | `#1D4ED8` | `#F8FAFC` | 6 / 4 / 10 | Dense tables; keep borders `#E5E7EB` |
+| Education, kids, nonprofit, community | `#4F46E5` indigo or `#0891B2` cyan / lighter tints | `#0891B2` (with indigo) or `#4F46E5` (with cyan) | `#FAFAFF` | 12 / 8 / 16 | Friendlier corners; never garish |
+| Real estate, hospitality, luxury | `#1F2937` charcoal or `#78350F` bronze / `#D6D3D1` | `#B45309` bronze | `#FAF9F7` | 4 / 4 / 8 | Near-black primary is the one case where it reads as intended; the accent carries charts and states |
+
+Build the definition from the standard theme in `data/default-theme.json`, override it with the row, the neutral
+set and the status rule above according to the use case, and pass it as
+`create_app({ name, theme: { name: "<Customer> theme", definition } })`. For the app itself, follow the same
+visual defaults as always: they read the theme through the `--cc-*` tokens (text, muted, border, surfaces,
+status), so a derived theme flows into every Html block and style without further work; only the accent is a
+literal colour, substituted wherever the defaults name it. Say in the handoff which row and which use case you
+applied, in one line.
+
+#### Signature: what the request's own words add
+
+The archetype sets the palette. How much presence the page gets is set by the wording of the request, so read
+it for that too, and let what is absent count as much as what is present:
+
+- **No feel words** ("ops", "tracking", "admin", "internal", a plain list of features): build the standard
+  skeleton on the derived palette and stop. Restraint is the correct reading of a plain request.
+- **Feel words** ("beautiful", "premium", "luxury", "elegant", "modern", "not like a spreadsheet", "for our
+  clients"), a named brand, a pasted design system, or a customer-facing use case: the customer is telling you
+  the page must carry their identity. Add a signature layer on top of the skeleton.
+
+A signature layer is two or three deliberate moves, chosen for this customer, never all of them and never the
+same set twice. Each is display-only `Html` on the theme tokens; everything interactive stays native:
+
+- a header band that carries the brand: monogram or initials, an uppercase letter-spaced eyebrow, the name, a
+  one-line promise or tagline, on a tinted or gently graded surface with a large radius;
+- the figure the business runs on emphasised in the KPI strip (an inverted brand-fill card, or a wider column);
+- a side rail on `surface2` with the thing this user looks at next, drawn from their world (a clinic: the next
+  appointments; a hotel: today's arrivals; a fleet desk: aircraft on ground) plus a short house note;
+- section headings as `Html` with a sub line and a right-aligned eyebrow ("ordered by date"), instead of a bare Text;
+- a softer table: weak borders, generous row height, status in colour only.
+
+Derive the content of each move from the request and the data, not from this list: the rail shows what
+that customer waits for, the eyebrow says what that page is, the tagline is theirs. If nothing in the request
+tells you what that is, leave the move out rather than fill it with filler.
+
+The standard theme's tokens, for reference when choosing literal colours that must match it:
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| Primary (`--cc-primary-brand`) | `#2563EB` | `#3B82F6` |
+| Text (`--cc-primary-text`) | `#111827` | `#F9FAFB` |
+| Muted text (`--cc-placeholder-text`) | `#6B7280` | `#9CA3AF` |
+| Border (`--cc-default-border`) / weak (`--cc-weak-border`) | `#E5E7EB` / `#F3F4F6` | `#374151` / `#1F2937` |
+| App background (`--cc-appBackground-surface`) | `#F9FAFB` | `#111827` |
+| Surface 1 (`--cc-surface1-surface`, cards, modals) / Surface 2 (`--cc-surface2-surface`, tinted panels) | `#FFFFFF` / `#F3F4F6` | `#1F2937` / `#111827` |
+| Success / warning / error (`--cc-success-systemStatus`, `--cc-error-systemStatus`) | `#16A34A` / `#D97706` / `#DC2626` | `#4ADE80` / `#FBBF24` / `#F87171` |
+| Radius default / small / large | 8 / 6 / 12 | |
+
+The theme's `text.font` is advisory: ToolJet instances render their configured UI font regardless.
+
+## Styling components with a selected theme
 
 When an app has a selected theme, preserve token-backed component defaults and use existing semantic variables for
 repeated visual roles. Common tokens include:

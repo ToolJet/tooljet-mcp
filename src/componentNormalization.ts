@@ -1,6 +1,7 @@
 import { getComponentSchema } from './catalog.js';
 import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, nearestCatalogKey } from './lint.js';
 import type { ComponentSpec } from './tooljetClient.js';
+import { separateAdjacentClosingBracesDeep } from './bindingBraces.js';
 
 export interface ComponentNormalization<T extends ComponentSpec = ComponentSpec> {
   component: T;
@@ -310,6 +311,31 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
       }
     }
+  }
+
+  // ToolJet ends a {{ }} expression at the first "}}" it sees, so two adjacent closing braces inside a
+  // binding (a nested object literal, a Plotly layout, an IIFE ending "}})()") blank the component with no
+  // error. "} }" is identical JavaScript; insert the space so the binding survives. Runs on every write
+  // path (planned apply, add, update) because every host model writes this at least occasionally.
+  const braceFixedKeys: string[] = [];
+  for (const key of Object.keys(properties)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
+    if (!result.changed) continue;
+    setProperty(key, result.value);
+    braceFixedKeys.push(`properties.${key}`);
+  }
+  for (const key of Object.keys(stylesValue)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
+    if (!result.changed) continue;
+    setStyle(key, result.value);
+    braceFixedKeys.push(`styles.${key}`);
+  }
+  if (braceFixedKeys.length) {
+    warnings.push(
+      `${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(', ')} ` +
+        '(ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). ' +
+        'Write nested closes as "} }" inside bindings.'
+    );
   }
 
   const patch = Object.fromEntries(

@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
 import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
+import { normalizePlannedLayouts } from '../layoutNormalization.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const layoutSchema = z.object({
@@ -77,8 +78,11 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
         layouts: args.layouts,
       };
       const normalized = normalizeComponentSpec(requested);
-      const expanded = materializeRequiredDefaultChildren([normalized.component]);
-      const { errors, warnings } = lintComponents(expanded.components);
+      const geometry = normalizePlannedLayouts(normalized.component);
+      const expanded = materializeRequiredDefaultChildren([geometry.component]);
+      const lintResult = lintComponents(expanded.components);
+      const errors = lintResult.errors;
+      const warnings = [...geometry.warnings, ...lintResult.warnings];
       if (errors.length) return fail(new Error(errors.join(' ')));
       try {
         if (expanded.materializedChildren) {
