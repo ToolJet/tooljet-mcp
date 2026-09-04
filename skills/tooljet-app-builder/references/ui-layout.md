@@ -35,7 +35,7 @@ Infer, in one quick pass:
 
 Then hold to these:
 - **One dominant region and at most one dominant action** per page; everything else is clearly secondary.
-- **Reading order on Monitor and Operate pages:** page title, then the KPI row, then filters, then the main table or list, then charts and secondary panels. The table never comes before the KPI row, and the KPI row never sits below the fold.
+- **KPI row before the table, above the fold, on Monitor and Operate pages.** That is the only fixed order. Compose the rest for the job: a snapshot band, charts, a watchlist, a detail or alert panel, wherever it answers a question the table does not. Tiles plus a table is the floor of a page, not its target.
 - **Every component answers a distinct user question.** Remove anything that repeats information already communicated adequately.
 - **Size regions by importance, information density, and label length** — not reflexive equal widths. The main region gets the space.
 - **One primary accent**, taken from the user's branding or the domain; keep other surfaces neutral and reserve semantic colors (green/amber/red) for actual state, not decoration.
