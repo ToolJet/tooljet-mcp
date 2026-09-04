@@ -90,21 +90,39 @@ handoff which cue you used so they can redirect in one line.
 Decide one of three before building the definition:
 
 - **Staff tool** (back office, front desk, kitchen, warehouse, ops, admin, "internal tool" with no customer in
-  the room): keep the standard theme's grey scale, borders, surfaces and **8 / 6 / 12 radii**. Take only the
-  archetype's primary, accent and canvas tint. Dense screens need contrast and speed more than atmosphere.
+  the room): keep the standard **8 / 6 / 12 radii** and density, take the archetype's primary, accent and canvas
+  tint, and shift the neutrals to the primary's temperature (below). Dense screens need contrast and speed more
+  than atmosphere, so the neutrals move a little, not the radii.
 - **Customer-facing** (booking, ordering, portal, kiosk, anything a guest or shopper sees): apply the full row,
-  including its radii and any warm ink.
+  including its radii, and derive the whole palette: neutrals, second surface and status colours (below).
 - **Executive reporting** (board pack, KPI review, investor view): use the enterprise row's neutrals and radii
   with the industry's accent for charts.
 
 When the request does not say, an "operations", "management" or "tracking" app is a staff tool.
 
-**How to derive.** Change as little as possible from the standard theme. Keep its grey scale, border weights,
-status colours and surfaces unless the row says otherwise; swap `brand.primary`, pick the **accent**, and only
-for customer-facing apps also take the canvas tint and radius scale. The primary must keep white text readable
-(contrast ≥ 4.5:1), must not collide with the status colours (no pure red, amber or green primaries), and the
-dark-mode primary is a lighter tint of the same hue. Compute `secondary` as the ink colour and `tertiary` as the
-muted text colour.
+**How to derive.** A theme is a palette, not a primary swap. A rose primary on the standard grey borders, black
+text and white cards reads as the standard theme with one button recoloured; the neutrals are what make a page
+feel designed for its customer. Derive all of these from the primary:
+
+- `brand.primary` from the row; the **accent** as described below; `secondary` = the ink colour; `tertiary` =
+  the muted text colour.
+- **Neutrals follow the primary's temperature.** Ink, muted text, borders, canvas and the surfaces are tinted
+  toward the primary's hue at very low saturation, never the standard pure greys next to a warm or cool primary.
+  Worked sets to start from (light values; dark values are the standard dark scale unless the row says otherwise):
+
+  | Temperature | Ink `text.primary` | Muted `text.placeholder` | Border default / weak | Canvas `appBackground` | Surface1 / Surface2 |
+  | --- | --- | --- | --- | --- | --- |
+  | Warm (rose, plum, brick, terracotta, bronze, brown) | `#2B1E22` | `#8A737A` | `#E3D4CE` / `#EEE4DF` | `#F7F1ED` | `#FFFCFA` / `#F1E6E1` |
+  | Cool (navy, royal, teal, steel, indigo, forest) | `#0F172A` | `#64748B` | `#E2E8F0` / `#F1F5F9` | `#F8FAFC` | `#FFFFFF` / `#F1F5F9` |
+  | Neutral (charcoal, standard blue) | `#111827` | `#6B7280` | `#E5E7EB` / `#F3F4F6` | `#F9FAFB` | `#FFFFFF` / `#F3F4F6` |
+
+  Shift each set toward the actual primary (a plum primary lifts the warm set toward violet; a teal one cools the
+  cool set toward green). `surface2` is the tinted panel surface for side rails, notes and highlighted rows.
+- **Status colours desaturate on premium rows** (beauty, hospitality, luxury, restaurant): success `#47705A`,
+  warning `#9A6A32`, error `#A13D4E`, so a status column does not shout on a soft page. Everywhere else they stay
+  standard, except the shifts in the notes column.
+- The primary must keep white text readable (contrast ≥ 4.5:1), must not collide with the status colours (no pure
+  red, amber or green primaries), and the dark-mode primary is a lighter tint of the same hue.
 
 **The accent is not a theme token; it is the colour the build uses wherever the skill's visual defaults say
 "the theme accent"**: chart series, the informational state in status columns (Booked, Confirmed, New, In
@@ -126,12 +144,39 @@ the app a colour at all, so never leave it as the standard blue.
 | Education, kids, nonprofit, community | `#4F46E5` indigo or `#0891B2` cyan / lighter tints | `#0891B2` (with indigo) or `#4F46E5` (with cyan) | `#FAFAFF` | 12 / 8 / 16 | Friendlier corners; never garish |
 | Real estate, hospitality, luxury | `#1F2937` charcoal or `#78350F` bronze / `#D6D3D1` | `#B45309` bronze | `#FAF9F7` | 4 / 4 / 8 | Near-black primary is the one case where it reads as intended; the accent carries charts and states |
 
-Build the definition from the standard theme in `data/default-theme.json`, override the rows above according to
-the use case, and pass it as `create_app({ name, theme: { name: "<Customer> theme", definition } })`. For the
-app itself, follow the same visual defaults as always with the accent substituted wherever they name it; the
-success, warning and error colours and the muted grey stay standard unless the primary is one of those hues, in
-which case pick the shifted status colour from the notes column. Say in the handoff which row and which use case
-you applied, in one line.
+Build the definition from the standard theme in `data/default-theme.json`, override it with the row, the neutral
+set and the status rule above according to the use case, and pass it as
+`create_app({ name, theme: { name: "<Customer> theme", definition } })`. For the app itself, follow the same
+visual defaults as always: they read the theme through the `--cc-*` tokens (text, muted, border, surfaces,
+status), so a derived theme flows into every Html block and style without further work; only the accent is a
+literal colour, substituted wherever the defaults name it. Say in the handoff which row and which use case you
+applied, in one line.
+
+#### Signature: what the request's own words add
+
+The archetype sets the palette. How much presence the page gets is set by the wording of the request, so read
+it for that too, and let what is absent count as much as what is present:
+
+- **No feel words** ("ops", "tracking", "admin", "internal", a plain list of features): build the standard
+  skeleton on the derived palette and stop. Restraint is the correct reading of a plain request.
+- **Feel words** ("beautiful", "premium", "luxury", "elegant", "modern", "not like a spreadsheet", "for our
+  clients"), a named brand, a pasted design system, or a customer-facing use case: the customer is telling you
+  the page must carry their identity. Add a signature layer on top of the skeleton.
+
+A signature layer is two or three deliberate moves, chosen for this customer, never all of them and never the
+same set twice. Each is display-only `Html` on the theme tokens; everything interactive stays native:
+
+- a header band that carries the brand: monogram or initials, an uppercase letter-spaced eyebrow, the name, a
+  one-line promise or tagline, on a tinted or gently graded surface with a large radius;
+- the figure the business runs on emphasised in the KPI strip (an inverted brand-fill card, or a wider column);
+- a side rail on `surface2` with the thing this user looks at next, drawn from their world (a clinic: the next
+  appointments; a hotel: today's arrivals; a fleet desk: aircraft on ground) plus a short house note;
+- section headings as `Html` with a sub line and a right-aligned eyebrow ("ordered by date"), instead of a bare Text;
+- a softer table: weak borders, generous row height, status in colour only.
+
+Derive the content of each move from the request and the data, not from this list: the rail shows what
+that customer waits for, the eyebrow says what that page is, the tagline is theirs. If nothing in the request
+tells you what that is, leave the move out rather than fill it with filler.
 
 The standard theme's tokens, for reference when choosing literal colours that must match it:
 
@@ -140,10 +185,10 @@ The standard theme's tokens, for reference when choosing literal colours that mu
 | Primary (`--cc-primary-brand`) | `#2563EB` | `#3B82F6` |
 | Text (`--cc-primary-text`) | `#111827` | `#F9FAFB` |
 | Muted text (`--cc-placeholder-text`) | `#6B7280` | `#9CA3AF` |
-| Border (`--cc-default-border`) | `#E5E7EB` | `#374151` |
-| App background | `#F9FAFB` | `#111827` |
-| Surface 1 (cards, modals) | `#FFFFFF` | `#1F2937` |
-| Success / warning / error | `#16A34A` / `#D97706` / `#DC2626` | `#4ADE80` / `#FBBF24` / `#F87171` |
+| Border (`--cc-default-border`) / weak (`--cc-weak-border`) | `#E5E7EB` / `#F3F4F6` | `#374151` / `#1F2937` |
+| App background (`--cc-appBackground-surface`) | `#F9FAFB` | `#111827` |
+| Surface 1 (`--cc-surface1-surface`, cards, modals) / Surface 2 (`--cc-surface2-surface`, tinted panels) | `#FFFFFF` / `#F3F4F6` | `#1F2937` / `#111827` |
+| Success / warning / error (`--cc-success-systemStatus`, `--cc-error-systemStatus`) | `#16A34A` / `#D97706` / `#DC2626` | `#4ADE80` / `#FBBF24` / `#F87171` |
 | Radius default / small / large | 8 / 6 / 12 | |
 
 The theme's `text.font` is advisory: ToolJet instances render their configured UI font regardless.
