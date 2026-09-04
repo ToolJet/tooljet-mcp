@@ -392,6 +392,7 @@ Then hold to these:
 - **Peer components** in a row (KPI tiles, filters) share equal widths, equal gaps and a common top — unless importance or label length justifies otherwise (see framing).
 
 ### 3. ToolJet rendering guardrails (these prevent real render bugs)
+- **Two adjacent \`}\` inside a \`{{ }}\` binding end it early** (ToolJet matches the first \`}}\`): the component renders blank with no error. Inside a binding, write nested closes as \`} }\` and end an IIFE as \`}; })()}}\`, never \`}})()}}\` or \`}}}\`. This applies to every bound property: Table \`data\`, Chart JSON, Html, visibility, query parameters.
 - **Chart titles clip** at common dashboard sizes. **Default: leave \`Chart.title\` empty and put a separate \`Text\` heading above the chart**, with its own heading slot + spacing. Enable a native chart title only after you've visually verified it doesn't clip at that size.
 - **Chart widths** (defaults, not hard limits): a compact few-category pie/donut ≈ **13–15 columns**; a categorical bar with longer labels ≈ **20–24 columns**; at most **two** normal analytical charts in one ~39-column content row unless labels are short and readability is verified.
 - **Statistics sizing:** a value-only tile with \`hideSecondary:true\` needs at least **12 columns** and ≈ **110–120px** height (at most three per content row), but **12–17 columns is safe only for a short one- or two-word label**; longer labels can wrap vertically and hide the value, so shorten them or use at least 18 columns. A tile with visible secondary content needs at least **18 columns** and ≈ **130–150px** height (normally two per row).
@@ -738,7 +739,7 @@ Every read is metered against the customer's cloud bill, so treat query COUNT as
 
 ## Charts — how to make them render reliably (READ THIS before adding a Chart)
 
-The \`Chart\` component fails in a specific, common way: **ToolJet's chart-property evaluator silently returns EMPTY for complex expressions** — inline IIFEs, dynamic field-name detection, big reduces written inside the \`{{ }}\` binding. The chart then draws its axes/containers but receives **no data traces** (looks empty/broken). Avoid it:
+The \`Chart\` component fails in a specific, common way, and the cause is not complexity: **ToolJet ends a \`{{ }}\` binding at the first \`}}\` it finds**, so any expression that contains two adjacent closing braces before its end (a nested object literal such as \`marker:{color:'#0E7490'}}\`, a Plotly \`layout\` block, an IIFE whose last statement closes an object) is cut off, evaluates to nothing, and the chart draws axes with **no data traces**. The same trap blanks a Table whose \`data\` projection ends in \`}})\`, and any other bound property. Rule: **inside a binding, never let two \`}\` touch; write \`} }\`** (a space between them is valid JavaScript). The MCP inserts that space for you in component properties, but write it correctly anyway. Then:
 
 1. **Use the simple mode** (the default — keep \`plotFromJson\` false / don't set it). Set two properties:
    - \`type\`: \`"bar"\` | \`"line"\` | \`"pie"\`

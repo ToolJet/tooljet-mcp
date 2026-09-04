@@ -39750,6 +39750,101 @@ function unique(values, label, sourceName, warnings) {
   return result;
 }
 
+// dist/bindingBraces.js
+function separateAdjacentClosingBraces(text) {
+  let out = "";
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    if (!text.startsWith("{{", i)) {
+      out += text[i];
+      i += 1;
+      continue;
+    }
+    let j = i + 2;
+    let depth = 0;
+    let quote2 = null;
+    let expr = "";
+    let terminated = false;
+    while (j < n) {
+      const c = text[j];
+      if (quote2) {
+        expr += c;
+        if (c === "\\" && j + 1 < n) {
+          expr += text[j + 1];
+          j += 2;
+          continue;
+        }
+        if (c === quote2)
+          quote2 = null;
+        j += 1;
+        continue;
+      }
+      if (c === "'" || c === '"' || c === "`") {
+        quote2 = c;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "{") {
+        depth += 1;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "}") {
+        if (depth === 0 && text[j + 1] === "}") {
+          terminated = true;
+          break;
+        }
+        depth = Math.max(depth - 1, 0);
+        expr += c;
+        if (text[j + 1] === "}")
+          expr += " ";
+        j += 1;
+        continue;
+      }
+      expr += c;
+      j += 1;
+    }
+    if (!terminated) {
+      out += text.slice(i);
+      break;
+    }
+    out += `{{${expr}}}`;
+    i = j + 2;
+  }
+  return out;
+}
+function separateAdjacentClosingBracesDeep(value) {
+  if (typeof value === "string") {
+    if (!value.includes("{{"))
+      return { value, changed: false };
+    const fixed = separateAdjacentClosingBraces(value);
+    return { value: fixed, changed: fixed !== value };
+  }
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      return result.value;
+    });
+    return { value: changed ? next : value, changed };
+  }
+  if (value && typeof value === "object") {
+    let changed = false;
+    const next = {};
+    for (const [key, item] of Object.entries(value)) {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      next[key] = result.value;
+    }
+    return { value: changed ? next : value, changed };
+  }
+  return { value, changed: false };
+}
+
 // dist/componentNormalization.js
 function normalizeSection(section) {
   if (!section)
@@ -39945,6 +40040,24 @@ function normalizeComponentSpec(component, options2 = {}) {
         }
       }
     }
+  }
+  const braceFixedKeys = [];
+  for (const key of Object.keys(properties)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
+    if (!result.changed)
+      continue;
+    setProperty(key, result.value);
+    braceFixedKeys.push(`properties.${key}`);
+  }
+  for (const key of Object.keys(stylesValue)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
+    if (!result.changed)
+      continue;
+    setStyle(key, result.value);
+    braceFixedKeys.push(`styles.${key}`);
+  }
+  if (braceFixedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
   }
   const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
     const envelopePatch = normalizedSections[section].patch ?? {};
