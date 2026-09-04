@@ -51,8 +51,14 @@ export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
 export const PAT_HEADER = 'x-tooljet-pat';
 export const BASE_URL_HEADER = 'x-tooljet-url';
+/** Self-hosted customer ID, forwarded by tooljet-agent — lets validateApiUrl check an origin outside
+ *  the static allowlist against the Gateway instead of rejecting it outright. */
+export const CUSTOMER_ID_HEADER = 'x-tooljet-customer-id';
 /** Comma-separated https origins this server will accept as a request-named target. */
 export const ALLOWED_API_ORIGINS_VAR = 'MCP_ALLOWED_API_ORIGINS';
+/** Gateway origin-verification endpoint + bearer secret. Unset means the dynamic check is off. */
+const GATEWAY_URL_VAR = 'MCP_GATEWAY_URL';
+const GATEWAY_TOKEN_VAR = 'MCP_GATEWAY_TOKEN';
 
 /** An environment variable, or undefined when unset OR blank. */
 function env(name: string): string | undefined {
@@ -102,21 +108,55 @@ function readHeader(headers: HeaderBag, name: string): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+/** Last Gateway verdict per customer+origin. A revoked customer can stay "allowed" up to the TTL. */
+const gatewayOriginCache = new Map<string, { allowed: boolean; expiresAt: number }>();
+const GATEWAY_CACHE_TTL_MS = 60_000;
+
+/** Live fallback for an origin outside MCP_ALLOWED_API_ORIGINS. Fails closed on any error/timeout. */
+async function checkOriginWithGateway(customerId: string, origin: string): Promise<boolean> {
+  const cacheKey = `${customerId} ${origin}`;
+  const cached = gatewayOriginCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.allowed;
+
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  if (!gatewayUrl || !gatewayToken) return false;
+
+  let allowed = false;
+  try {
+    const res = await fetch(new URL('/internal/mcp/verify-origin', gatewayUrl), {
+      method: 'POST',
+      headers: { authorization: gatewayToken, 'content-type': 'application/json' },
+      body: JSON.stringify({ customer_id: customerId, origin }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (res.ok) {
+      const body = (await res.json()) as { allowed?: boolean };
+      allowed = body.allowed === true;
+    }
+  } catch {
+    allowed = false;
+  }
+  gatewayOriginCache.set(cacheKey, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return allowed;
+}
+
 /**
  * Validate the request-supplied target origin, or throw.
  *
  * Gets the caller's session/PAT attached and sent straight to it (auth.ts) — a bearer-grade
  * credential, not just traffic. https alone does not make a host trustworthy: an attacker's own
  * domain has a valid cert too. So beyond parse+scheme (garbage input, http downgrade), the origin
- * must also appear in MCP_ALLOWED_API_ORIGINS. Unset means empty, not "allow anything" — a shared
- * deployment must opt in to which backends it will ever write into.
+ * must also appear in MCP_ALLOWED_API_ORIGINS, or — when the request names a customerId — pass a
+ * live check against the Gateway. Neither set means "allow anything": a shared deployment must
+ * opt in to which backends it will ever write into.
  *
  * A path prefix is allowed (not just a bare origin): ToolJet supports SUB_PATH hosting, so a
  * self-hosted customer reverse-proxied at e.g. https://tj.example.com/tooljet is a legitimate target,
- * not a malformed one. The allowlist matches on origin only — the path is the operator's own
+ * not a malformed one. Both checks match on origin only — the path is the operator's own
  * reverse-proxy detail, not the trust boundary. Query, hash, and credentials are rejected outright.
  */
-function validateApiUrl(raw: string): string {
+async function validateApiUrl(raw: string, customerId?: string): Promise<string> {
   let parsed: URL;
   try {
     parsed = new URL(raw);
@@ -129,10 +169,11 @@ function validateApiUrl(raw: string): string {
   if (parsed.search || parsed.hash || parsed.username || parsed.password) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
-  if (!allowedApiOrigins().includes(parsed.origin)) {
+  const inStaticList = allowedApiOrigins().includes(parsed.origin);
+  if (!inStaticList && !(customerId && (await checkOriginWithGateway(customerId, parsed.origin)))) {
     throw new Error(
-      `${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR}. Add it to that ` +
-        'comma-separated list to let this server write into that backend.'
+      `${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify ` +
+        `against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`
     );
   }
   // A trailing slash is cosmetic; normalize it away so "https://x.com/tooljet" and
@@ -149,15 +190,16 @@ function validateApiUrl(raw: string): string {
  * correct but is attributed to the wrong user, which is the single failure this whole mechanism
  * exists to prevent. Failing the request is recoverable; mis-attributing it is not.
  */
-export function identityFromHeaders(
+export async function identityFromHeaders(
   headers: HeaderBag,
   { allowPat = true }: { allowPat?: boolean } = {}
-): RequestIdentity | undefined {
+): Promise<RequestIdentity | undefined> {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
-  const apiUrl = rawApiUrl ? validateApiUrl(rawApiUrl) : undefined;
+  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
+  const apiUrl = rawApiUrl ? await validateApiUrl(rawApiUrl, customerId) : undefined;
 
   if (pat) {
     /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
