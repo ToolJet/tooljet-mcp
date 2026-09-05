@@ -1984,6 +1984,61 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }
+  warnings.push(...lintInnerPageBands(summary));
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
+}
+
+/* Relative luminance of a CSS hex colour (0 = black, 1 = white); NaN for anything that is not hex. */
+function hexLuminance(hex: string): number {
+  const raw = hex.replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return NaN;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** True when an Html block's ROOT element paints a dark or brand-filled background: a flat dark hex,
+ *  a gradient with a dark stop, or the primary brand token. Only the root's inline style counts, so a
+ *  light card that merely contains a dark badge is not a band. */
+export function htmlRootHasDarkBackground(rawHtml: string): boolean {
+  const root = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
+  if (!root) return false;
+  const declaration = root[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
+  if (!declaration) return false;
+  const value = declaration[1];
+  if (/var\(--cc-primary-brand\)/i.test(value)) return true;
+  const hexes = value.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi) ?? [];
+  return hexes.some((hex) => hexLuminance(hex) < 0.35);
+}
+
+/** The skill's header treatments put a statement band (a dark or brand-filled header) on the home page
+ *  only; inner pages take a plain title, toolbar or masthead. Measured on two Sol builds with a stated
+ *  design brief, the second or third page still came back with a dark band the brief never chose, so
+ *  this names the drift at lint time. A warning, not an error: a brief can choose it deliberately. */
+export function lintInnerPageBands(summary: AppSummary): string[] {
+  const warnings: string[] = [];
+  const pages = summary.pages ?? [];
+  const explicitHome = pages.some((p) => p.handle === 'home' || p.name === 'Home' || p.index === 1);
+  pages.forEach((page, pageIndex) => {
+    const isHome =
+      page.handle === 'home' || page.name === 'Home' || page.index === 1 || (!explicitHome && pageIndex === 0);
+    if (isHome) return;
+    for (const component of page.components ?? []) {
+      if (component.type !== 'Html' || component.parent) continue;
+      const rawHtml = propVal((component as { properties?: Record<string, unknown> }).properties ?? {}, 'rawHtml');
+      if (typeof rawHtml !== 'string') continue;
+      const desktop = (component.layouts as { desktop?: { top?: number; height?: number; width?: number } } | undefined)
+        ?.desktop;
+      if (!desktop || (desktop.top ?? 0) > 60 || (desktop.height ?? 0) > 200 || (desktop.width ?? 0) < 20) continue;
+      if (!htmlRootHasDarkBackground(rawHtml)) continue;
+      warnings.push(
+        `Page "${page.name ?? page.id}": Html "${component.name ?? component.id}" is a dark or brand-filled header ` +
+          'band on a page that is not Home. The skill\'s header treatments put a statement band on the home page ' +
+          'only; inner pages take a plain title, toolbar or masthead. Keep it only if the design brief chose it ' +
+          'for this page deliberately.'
+      );
+    }
+  });
+  return warnings;
 }
