@@ -224,6 +224,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     const id = `planned-query:${index}:${ref}`;
     if (existingQueryNames.has(query.name)) errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
+    if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
     // Repair a flat {column: value} tooljetdb write map before validating, so the phase this lint
     // hands to apply_app_phase persists the shape ToolJet actually reads. Without this, the plan
@@ -507,7 +508,12 @@ function resolveAction(
   errors: string[],
   label: string
 ): Record<string, unknown> {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === 'run-query' ? action.queryId ?? action.queryName : undefined);
+  if (Object.values(action).some((value) => typeof value === 'string' && /^planned-(query|page|component):/.test(value))) {
+    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    return action;
+  }
   if (targetRef === undefined) return action;
   if (typeof targetRef !== 'string') {
     errors.push(`${label} target_ref must be a string.`);

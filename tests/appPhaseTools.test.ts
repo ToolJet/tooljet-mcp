@@ -12,7 +12,12 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 describe('plan token + apply_app_phase', () => {
   beforeEach(() => clearAppPlansForTests());
 
-  it('applies the exact validated phase, resolves refs, combines events, and consumes the token', async () => {
+  it.each([
+    { actionId: 'run-query', target_ref: 'create' },
+    { actionId: 'run-query', queryId: 'create' },
+    { actionId: 'run-query', queryId: 'create_case' },
+    { actionId: 'run-query', queryName: 'create_case' },
+  ])('applies the exact validated phase with query reference %j and consumes the token', async (action) => {
     let persistedEvents: EventSpec[] = [];
     let summaryReads = 0;
     let tableCreated = false;
@@ -106,7 +111,7 @@ describe('plan token + apply_app_phase', () => {
           { client_ref: 'save', name: 'saveCase', type: 'Button', properties: { text: 'Save' }, layout: { top: 120, left: 2, width: 6, height: 40 } },
         ],
       }],
-      events: [{ source_ref: 'save', source_type: 'component', trigger: 'onClick', action: { actionId: 'run-query', target_ref: 'create' } }],
+      events: [{ source_ref: 'save', source_type: 'component', trigger: 'onClick', action }],
       lifecycles: [{ query_ref: 'create', refresh_query_refs: ['list'], clear_component_refs: ['title'], success_alert: { message: 'Created' }, failure_alert: { message: 'Failed' } }],
     });
     const planToken = textOf(lintResult).plan_token;
@@ -131,6 +136,7 @@ describe('plan token + apply_app_phase', () => {
       queries: expect.arrayContaining([expect.objectContaining({ options: expect.objectContaining({ table_id: 'table-id' }) })]),
     }));
     expect(client.createEvents).toHaveBeenCalledOnce();
+    expect(persistedEvents[0].action).toMatchObject({ queryId: 'create-id', queryName: 'create_case' });
 
     const retry = await applyAppPhaseTool(client).handler({ app_id: 'app1', version_id: 'v1', plan_token: planToken });
     expect(retry.isError).toBe(true);
@@ -189,6 +195,7 @@ describe('plan token + apply_app_phase', () => {
     expect(result.content[0]!.text).toMatch(/Applied before failure:.*pages=1/i);
     expect(result.content[0]!.text).toMatch(/no resources were auto-deleted/i);
     expect(result.content[0]!.text).toMatch(/Persisted before failure.*page-a/i);
+    expect(result.content[0]!.text).toContain('Persisted resources for targeted repair');
   });
 
   it('applies a repair phase that targets an existing query without recreating it', async () => {

@@ -2,6 +2,7 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
+import { bindingReferences } from './bindingReferences.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
@@ -1908,6 +1909,23 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   // Bindings to non-existent queries/components + re-run per-component render lints.
+  const bindingSources = [
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
+    ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event })),
+  ];
+  for (const source of bindingSources) {
+    const seen = new Set<string>();
+    for (const ref of bindingReferences(source.value)) {
+      const names = ref.namespace === 'components' ? componentNames : queryNames;
+      const key = `${ref.namespace}.${ref.name}`;
+      if (!names.has(ref.name) && !seen.has(key)) {
+        seen.add(key);
+        errors.push(`${source.label} references ${key}, but no ${ref.namespace === 'components' ? 'component' : 'query'} ` +
+          `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
+      }
+    }
+  }
   for (const c of allComponents) {
     const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
     for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
