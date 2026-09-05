@@ -39711,6 +39711,28 @@ function validateQueryOptions(kind, options2) {
       });
     }
   }
+  if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
+    const filters = valueAtPath(options2, `${operation}.where_filters`);
+    if (isObject2(filters)) {
+      for (const [mapKey, rawClause] of Object.entries(filters)) {
+        if (!isObject2(rawClause) || rawClause.operator !== "eq")
+          continue;
+        const column = typeof rawClause.column === "string" ? rawClause.column : "";
+        const value = typeof rawClause.value === "string" ? rawClause.value : "";
+        const dateLikeColumn = /(^|_)(date|day|time|at|on)$|_date_|timestamp/i.test(column);
+        const dayValue = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) || /format\(\s*['"]YYYY-MM-DD['"]\s*\)/.test(value);
+        if (!dayValue && !dateLikeColumn)
+          continue;
+        if (!dayValue && !/moment\(|new Date|Date\.now/.test(value))
+          continue;
+        warnings.push({
+          code: "date_equality_filter",
+          path: `${operation}.where_filters.${mapKey}`,
+          message: `ToolJet DB ${operation} filter "${column}" uses "eq" against a calendar day. Date and timestamp columns come back as full ISO timestamps ("2026-09-04T00:00:00+00:00"), so equality with "YYYY-MM-DD" matches no rows and the table shows "No data" with no error. Filter a day as a range instead: one clause "gte" the day at 00:00 and one "lt" the next day, or store the day in a text column seeded as YYYY-MM-DD when this build creates the table.`
+        });
+      }
+    }
+  }
   if (kind === "tooljetdb" && operation === "list_rows") {
     const orderFilters = valueAtPath(options2, "list_rows.order_filters");
     if (isObject2(orderFilters)) {
