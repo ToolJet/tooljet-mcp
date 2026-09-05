@@ -43,8 +43,8 @@ Then hold to these:
 - **Headings name the user's decision or context** ("Needs attention today"), not the component type ("Table").
 - **Quick internal design critique before building** — one line each: hierarchy (is the main thing biggest?), redundancy (anything duplicated?), density (too cramped or too empty?), responsive order (what should lead on a narrow screen?), visual signature (one accent, not five?), sameness (would this page come out identical for a different customer or a different job? then it was templated, not designed). Fix it before you create components.
 
-#### Design brief (write it before the first lint)
-Before the first `lint_app_spec`, decide the design in one short brief and hold to it for the whole app. Five lines:
+#### Design brief (write it before the first write)
+Before the first write of any kind (the first `lint_app_spec`, add or update), decide the design in one short brief and hold to it for the whole app. Five lines:
 1. **Register** — staff tool, customer-facing, or executive reporting (`references/themes.md`), and the two or three words in the request that decide it.
 2. **Header treatment** per page, from the list below, with the reason.
 3. **Composition** per page, from the list below, with the reason.
