@@ -1,16 +1,24 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
+import { strictEntry } from '../strictEntry.js';
 
-const updateSchema = z.object({
-  page_id: z.string().min(1),
-  name: z.string().min(1).optional(),
-  icon: z.string().min(1).optional(),
-  hidden: z.boolean().optional().describe(
-    'Hide or show only this non-Home page in the generated navigation menu. ' +
-    'This does not hide the whole menu; use update_app_settings.navigation_hidden for that.'
-  ),
-});
+// Unknown entry keys are rejected, never stripped, so a misspelt field is an error rather than a
+// page update that quietly changes nothing (see src/strictEntry.ts).
+const updateSchema = strictEntry(
+  {
+    page_id: z.string().min(1),
+    name: z.string().min(1).optional(),
+    icon: z.string().min(1).optional(),
+    hidden: z.boolean().optional().describe(
+      'Hide or show only this non-Home page in the generated navigation menu. ' +
+      'This does not hide the whole menu; use update_app_settings.navigation_hidden for that.'
+    ),
+  },
+  (key) =>
+    `Page update key "${key}" is not accepted; update_pages entries take page_id plus name, icon, hidden. ` +
+    'App-level settings belong to update_app_settings.'
+);
 
 export function updatePagesTool(client: ToolJetClient): ToolDef {
   return {

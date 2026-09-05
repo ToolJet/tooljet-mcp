@@ -34953,6 +34953,18 @@ function validateAppStructure(summary) {
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }
 
+// dist/strictEntry.js
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue2) => issue2.code === "unrecognized_keys" ? issue2.keys.map(describeUnknown).join(" ") : void 0
+  });
+}
+function hasNonEmptyDefinition(definition) {
+  if (!definition)
+    return false;
+  return Object.values(definition).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+}
+
 // dist/tableValidation.js
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -36207,8 +36219,11 @@ function createClient(auth, config2) {
   async function updateComponents(params) {
     const diff = {};
     for (const u of params.updates) {
-      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasDef = hasNonEmptyDefinition(u.definition);
       const hasRaw = u.name !== void 0 || u.parent !== void 0 || u.slotName !== void 0;
+      if (!hasDef && !hasRaw) {
+        throw new Error(`updateComponents "${u.componentId}": nothing to update. Provide a non-empty definition (properties/styles/validation/others) or a name/parent change.`);
+      }
       if (hasDef && hasRaw) {
         throw new Error(`updateComponents "${u.componentId}": set EITHER definition (properties/styles/\u2026) OR name/parent/slotName in one entry \u2014 ToolJet applies only one path. Split into two update calls.`);
       }
@@ -36250,6 +36265,9 @@ function createClient(auth, config2) {
   async function updateLayouts(params) {
     const diff = {};
     for (const l of params.layouts) {
+      if (!l.desktop && !l.mobile && l.parent === void 0) {
+        throw new Error(`updateLayouts "${l.componentId}": nothing to update. Provide desktop and/or mobile rects, or a parent change.`);
+      }
       const entry = {
         layouts: {
           ...l.desktop ? { desktop: l.desktop } : {},
@@ -40150,8 +40168,21 @@ function normalizeComponentSpec(component, options2 = {}) {
     stylePatch[key] = stylesValue[key];
     normalizedSections.styles.value = stylesValue;
   };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key) => {
+    if (knownPropertyKeys?.has(key))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
   for (const key of Object.keys(properties)) {
-    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
     const belongsInStyles = canonical !== "styles" && STYLE_KEYS_IN_PROPERTIES.has(canonical);
     if (!aliasTarget && !belongsInStyles)
@@ -40253,8 +40284,8 @@ function normalizeComponentSpec(component, options2 = {}) {
     }
   }
   if (options2.stripUnknownKeys) {
-    const schema = getComponentSchema(component.type);
-    if (schema) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
       const sections = [
         ["properties", properties],
         ["styles", normalizedSections.styles.value]
@@ -40262,7 +40293,7 @@ function normalizeComponentSpec(component, options2 = {}) {
       for (const [section, sectionValue] of sections) {
         if (!sectionValue)
           continue;
-        const knownKeys = (schema[section] ?? []).map((entry) => entry.key);
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
         for (const key of Object.keys(sectionValue)) {
           if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
             continue;
@@ -41583,12 +41614,12 @@ function addPagesTool(client) {
 }
 
 // dist/tools/updatePages.js
-var updateSchema = external_exports.object({
+var updateSchema = strictEntry({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
   hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
-});
+}, (key) => `Page update key "${key}" is not accepted; update_pages entries take page_id plus name, icon, hidden. App-level settings belong to update_app_settings.`);
 function updatePagesTool(client) {
   return {
     name: "update_pages",
@@ -41995,19 +42026,29 @@ function addComponentBatchesTool(client) {
 }
 
 // dist/tools/updateComponents.js
-var updateSchema2 = external_exports.object({
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
   component_id: external_exports.string(),
-  definition: external_exports.object({
-    properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-  }).optional(),
+  definition: definitionSchema.optional(),
   name: external_exports.string().optional(),
   parent: external_exports.string().optional(),
   slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
 });
 function updateComponentsTool(client) {
   return {
@@ -42018,7 +42059,7 @@ function updateComponentsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.",
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42049,6 +42090,10 @@ function updateComponentsTool(client) {
           const componentId = current.id;
           if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
             errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
             continue;
           }
           let parent = update.parent;
@@ -42237,6 +42282,25 @@ function deleteComponentsTool(client) {
 
 // dist/tools/updateLayout.js
 var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var layoutEntrySchema = strictEntry({
+  component_id: external_exports.string(),
+  desktop: rect.optional(),
+  mobile: rect.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (RECT_KEYS.has(key)) {
+    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+  }
+  if (key === "definition" || key === "properties" || key === "styles") {
+    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+  }
+  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+});
 function updateLayoutTool(client) {
   return {
     name: "update_layout",
@@ -42251,13 +42315,7 @@ function updateLayoutTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      layouts: external_exports.array(external_exports.object({
-        component_id: external_exports.string(),
-        desktop: rect.optional(),
-        mobile: rect.optional(),
-        parent: external_exports.string().optional(),
-        slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
-      })).min(1)
+      layouts: external_exports.array(layoutEntrySchema).min(1)
     },
     async handler(args) {
       try {
@@ -42270,6 +42328,10 @@ function updateLayoutTool(client) {
         const resolveErrors = [];
         const resolvedIds = /* @__PURE__ */ new Map();
         for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
+            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
+            continue;
+          }
           if (resolvedIds.has(layout.component_id))
             continue;
           const resolution = resolveRef2(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
@@ -43064,12 +43126,12 @@ function updateEventsTool(client) {
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      events: external_exports.array(external_exports.object({
+      events: external_exports.array(strictEntry({
         event_id: external_exports.string(),
         name: external_exports.string().optional(),
         event: external_exports.record(external_exports.string(), external_exports.any()).optional(),
         index: external_exports.number().optional()
-      })).min(1),
+      }, (key) => `Event entry key "${key}" must be nested under \`event\` (the full { eventId, actionId, ...params } blob). Accepted entry keys are event_id, name, event, index.`)).min(1),
       update_type: external_exports.enum(["update", "reorder"]).optional()
     },
     async handler(args) {
