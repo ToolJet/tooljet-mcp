@@ -1184,7 +1184,7 @@ describe('validateAppStructure', () => {
         ],
       },
     ],
-    queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: {} }],
+    queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true } }],
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 

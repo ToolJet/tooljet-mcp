@@ -1,0 +1,202 @@
+/**
+ * Render-readiness lints: shapes that lint clean, apply clean, and then render as an empty or broken
+ * page. Each one was shipped by a Gemini or Luna build on the four-page benchmark:
+ *  - a Table bound to a query that nothing ever runs (No data on every page);
+ *  - a Table whose `columns` value is a JSON string, not an array (the Table component crashes);
+ *  - a Text holding markdown while its format is the default html (headings render as "## Title");
+ *  - component widths authored in pixels on the 43-column grid (a 1160-wide sliver of layout).
+ * The skill documents the right shape for every one of these; the linter is where it has to be enforced.
+ */
+import type { AppSummary } from './tooljetClient.js';
+
+export interface ReadinessComponent {
+  id?: string;
+  name?: string;
+  type?: string;
+  properties?: Record<string, unknown>;
+  layout?: { left?: number; width?: number; top?: number; height?: number };
+  layouts?: { desktop?: { left?: number; width?: number; top?: number; height?: number } };
+}
+
+export const GRID_COLUMNS = 43;
+
+function propVal(props: Record<string, unknown> | undefined, key: string): unknown {
+  const p = props?.[key] as { value?: unknown } | undefined;
+  return p && typeof p === 'object' && 'value' in p ? p.value : p;
+}
+
+function truthy(v: unknown): boolean {
+  if (typeof v === 'boolean') return v;
+  if (typeof v !== 'string') return false;
+  const s = v.trim().replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '').toLowerCase();
+  return s === 'true';
+}
+
+function label(c: ReadinessComponent): string {
+  return c.name ?? c.id ?? '?';
+}
+
+/** `columns` must be an array of column objects. A JSON string that happens to parse is still wrong:
+ *  ToolJet stores it as a string and the Table component throws while reading `columns.length`. */
+export function lintTableColumnsShape(c: ReadinessComponent): string[] {
+  if (c.type !== 'Table') return [];
+  const columns = propVal(c.properties, 'columns');
+  if (columns === undefined || columns === null || Array.isArray(columns)) return [];
+  if (typeof columns === 'string') {
+    let parsesToArray = false;
+    try {
+      parsesToArray = Array.isArray(JSON.parse(columns));
+    } catch {
+      parsesToArray = false;
+    }
+    return [
+      `Table "${label(c)}": properties.columns.value is a JSON string${parsesToArray ? ' that happens to parse as an array' : ''}. ` +
+        'ToolJet stores it as text and the Table crashes on render ("Something went wrong"). Pass the column ' +
+        'objects as a real array value: columns: { value: [ { key, name, columnType, ... } ] }.',
+    ];
+  }
+  return [
+    `Table "${label(c)}": properties.columns.value must be an array of column objects, not ${typeof columns}.`,
+  ];
+}
+
+const MARKDOWN_SIGNS = /(^|\n)\s*#{1,6}\s+\S|\*\*[^*\n]+\*\*|(^|\n)\s*[-*]\s+\S|\[[^\]\n]+\]\([^)\n]+\)|(^|\n)\s*\d+\.\s+\S/;
+
+/** Text renders `html` by default. Markdown syntax in a non-markdown Text shows up literally. */
+export function lintTextFormat(c: ReadinessComponent): string[] {
+  if (c.type !== 'Text') return [];
+  const text = propVal(c.properties, 'text');
+  if (typeof text !== 'string') return [];
+  const format = propVal(c.properties, 'textFormat');
+  const effective = typeof format === 'string' && format ? format : 'html';
+  if (effective === 'markdown') return [];
+  // Ignore what sits inside bindings: {{ a ** b }} is arithmetic, not emphasis.
+  const literal = text.replace(/\{\{[\s\S]*?\}\}/g, ' ');
+  if (!MARKDOWN_SIGNS.test(literal)) return [];
+  return [
+    `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is ` +
+      `"${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the ` +
+      'heading as HTML / plain text.',
+  ];
+}
+
+const WIDTH_EXEMPT = new Set(['Modal', 'ModalV2', 'Drawer']);
+
+/** Widths and lefts are columns on a 43-column grid. A value past the grid is pixels by mistake. */
+export function lintOversizedWidths(components: ReadinessComponent[]): string[] {
+  const errors: string[] = [];
+  for (const c of components) {
+    if (!c.type || WIDTH_EXEMPT.has(c.type)) continue;
+    const rect = c.layouts?.desktop ?? c.layout;
+    if (!rect) continue;
+    const width = typeof rect.width === 'number' ? rect.width : undefined;
+    const left = typeof rect.left === 'number' ? rect.left : 0;
+    if (width === undefined) continue;
+    if (width > GRID_COLUMNS || left + width > GRID_COLUMNS) {
+      errors.push(
+        `${c.type} "${label(c)}": desktop left ${left} + width ${width} exceeds ToolJet's ${GRID_COLUMNS}-column grid. ` +
+          'Widths and lefts are grid columns, not pixels: a full-width row is left 2, width 39; a half is width 19; ' +
+          'a quarter is width 9.'
+      );
+    }
+  }
+  return errors;
+}
+
+interface QueryTriggers {
+  automatic: boolean;
+  manual: string[];
+}
+
+function eventPayload(event: unknown): Record<string, unknown> | undefined {
+  return event && typeof event === 'object' ? (event as Record<string, unknown>) : undefined;
+}
+
+/** Which queries run on their own (page load, dependency change, or a success chain from one that
+ *  does) and which only run from a user event. */
+function queryTriggers(summary: AppSummary): Map<string, QueryTriggers> {
+  const byId = new Map(summary.queries.map((q) => [q.id, q]));
+  const byName = new Map(summary.queries.flatMap((q) => (q.name ? [[q.name, q] as const] : [])));
+  const resolve = (ref: unknown) =>
+    typeof ref === 'string' ? (byId.get(ref) ?? byName.get(ref)) : undefined;
+  const triggers = new Map<string, QueryTriggers>();
+  for (const q of summary.queries) {
+    const options = (q.options && typeof q.options === 'object' ? q.options : {}) as Record<string, unknown>;
+    const automatic = truthy(propVal(options, 'runOnPageLoad')) || truthy(propVal(options, 'runOnDependencyChange'));
+    triggers.set(q.id, { automatic, manual: [] });
+  }
+  const chains: Array<[string, string]> = [];
+  for (const e of summary.events) {
+    const payload = eventPayload(e.event);
+    if (!payload || payload.actionId !== 'run-query') continue;
+    const target = resolve(payload.queryId ?? payload.queryName);
+    if (!target) continue;
+    const entry = triggers.get(target.id);
+    if (!entry) continue;
+    const trigger = String(payload.eventId ?? '');
+    if (e.target === 'page' && trigger === 'onPageLoad') {
+      entry.automatic = true;
+    } else if (e.target === 'data_query' && trigger === 'onDataQuerySuccess' && e.sourceId) {
+      chains.push([e.sourceId, target.id]);
+    } else {
+      entry.manual.push(`${e.target ?? 'component'} ${trigger || 'event'}`);
+    }
+  }
+  // A query chained from an automatic one is automatic too; iterate to a fixpoint.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [sourceId, targetId] of chains) {
+      const source = triggers.get(sourceId);
+      const target = triggers.get(targetId);
+      if (source?.automatic && target && !target.automatic) {
+        target.automatic = true;
+        changed = true;
+      }
+    }
+  }
+  return triggers;
+}
+
+const DATA_BOUND = new Set(['Table', 'ListView', 'Chart', 'Kanban']);
+
+/** A data-bound component whose query nothing runs stays empty forever. Table gets an error (it is the
+ *  one users notice first); other data-bound components get a warning. A query with only manual triggers
+ *  is a warning: the component fills after that click, which may be intended. */
+export function lintUntriggeredDataQueries(summary: AppSummary): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (!summary.queries.length) return { errors, warnings };
+  const triggers = queryTriggers(summary);
+  const byName = new Map(summary.queries.flatMap((q) => (q.name ? [[q.name, q] as const] : [])));
+  for (const page of summary.pages) {
+    for (const c of page.components) {
+      if (!c.type || !DATA_BOUND.has(c.type)) continue;
+      const data = propVal(c.properties as Record<string, unknown> | undefined, 'data');
+      if (typeof data !== 'string') continue;
+      const names = [...new Set([...data.matchAll(/\bqueries\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]!))];
+      for (const name of names) {
+        const query = byName.get(name);
+        if (!query) continue; // unknown query names are reported by the reference lint
+        const t = triggers.get(query.id);
+        if (!t || t.automatic) continue;
+        const who = `${c.type} "${c.name ?? c.id}"`;
+        if (t.manual.length) {
+          warnings.push(
+            `${who} binds queries.${name}.data, but "${name}" only runs from ${[...new Set(t.manual)].join(', ')}, ` +
+              'so the component is empty until then. If it should show data on open, set the query\'s ' +
+              'runOnPageLoad: true or run it from the page\'s onPageLoad event.'
+          );
+          continue;
+        }
+        const message =
+          `${who} binds queries.${name}.data, but nothing runs "${name}": it has no runOnPageLoad, no page ` +
+          'onPageLoad event, no success chain from a query that does, and no user event. It will show No data ' +
+          "forever. Set the query's runOnPageLoad: true (or add a page onPageLoad run-query event).";
+        if (c.type === 'Table') errors.push(message);
+        else warnings.push(message);
+      }
+    }
+  }
+  return { errors, warnings };
+}

@@ -2,6 +2,7 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
+import { lintOversizedWidths, lintTableColumnsShape, lintTextFormat, lintUntriggeredDataQueries } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -1229,8 +1230,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
+  // Text holding markdown in the default html format renders the markdown literally.
+  errors.push(...lintTextFormat(spec));
+
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
+    // A stringified columns array crashes the Table component; check it before the shape-dependent lints.
+    errors.push(...lintTableColumnsShape(spec));
     const data = propVal(props, 'data');
     const selector = propVal(props, 'dataSourceSelector');
     const autogen = propVal(props, 'autogenerateColumns');
@@ -1732,6 +1738,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
+  errors.push(...lintOversizedWidths(components));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -2023,11 +2030,16 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
+    errors.push(...lintOversizedWidths(p.components as LintComponent[]));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }
   warnings.push(...lintInnerPageBands(summary));
+  // Data-bound components whose query nothing runs render No data forever.
+  const readiness = lintUntriggeredDataQueries(summary);
+  errors.push(...readiness.errors);
+  warnings.push(...readiness.warnings);
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }

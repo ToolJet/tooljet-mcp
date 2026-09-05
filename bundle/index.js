@@ -556,9 +556,9 @@ var require_codegen = __commonJS({
       }
     };
     var Label = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
@@ -566,14 +566,14 @@ var require_codegen = __commonJS({
       }
     };
     var Break = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
-        const label = this.label ? ` ${this.label}` : "";
-        return `break${label};` + _n;
+        const label2 = this.label ? ` ${this.label}` : "";
+        return `break${label2};` + _n;
       }
     };
     var Throw = class extends Node {
@@ -985,12 +985,12 @@ var require_codegen = __commonJS({
         return this._endBlockNode(For);
       }
       // `label` statement
-      label(label) {
-        return this._leafNode(new Label(label));
+      label(label2) {
+        return this._leafNode(new Label(label2));
       }
       // `break` statement
-      break(label) {
-        return this._leafNode(new Break(label));
+      break(label2) {
+        return this._leafNode(new Break(label2));
       }
       // `return` statement
       return(value) {
@@ -33450,6 +33450,167 @@ function createAuth(config2, fetchImpl = fetch) {
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
+// dist/renderReadiness.js
+var GRID_COLUMNS = 43;
+function propVal(props, key) {
+  const p = props?.[key];
+  return p && typeof p === "object" && "value" in p ? p.value : p;
+}
+function truthy(v) {
+  if (typeof v === "boolean")
+    return v;
+  if (typeof v !== "string")
+    return false;
+  const s = v.trim().replace(/^\{\{\s*/, "").replace(/\s*\}\}$/, "").toLowerCase();
+  return s === "true";
+}
+function label(c) {
+  return c.name ?? c.id ?? "?";
+}
+function lintTableColumnsShape(c) {
+  if (c.type !== "Table")
+    return [];
+  const columns = propVal(c.properties, "columns");
+  if (columns === void 0 || columns === null || Array.isArray(columns))
+    return [];
+  if (typeof columns === "string") {
+    let parsesToArray = false;
+    try {
+      parsesToArray = Array.isArray(JSON.parse(columns));
+    } catch {
+      parsesToArray = false;
+    }
+    return [
+      `Table "${label(c)}": properties.columns.value is a JSON string${parsesToArray ? " that happens to parse as an array" : ""}. ToolJet stores it as text and the Table crashes on render ("Something went wrong"). Pass the column objects as a real array value: columns: { value: [ { key, name, columnType, ... } ] }.`
+    ];
+  }
+  return [
+    `Table "${label(c)}": properties.columns.value must be an array of column objects, not ${typeof columns}.`
+  ];
+}
+var MARKDOWN_SIGNS = /(^|\n)\s*#{1,6}\s+\S|\*\*[^*\n]+\*\*|(^|\n)\s*[-*]\s+\S|\[[^\]\n]+\]\([^)\n]+\)|(^|\n)\s*\d+\.\s+\S/;
+function lintTextFormat(c) {
+  if (c.type !== "Text")
+    return [];
+  const text = propVal(c.properties, "text");
+  if (typeof text !== "string")
+    return [];
+  const format = propVal(c.properties, "textFormat");
+  const effective = typeof format === "string" && format ? format : "html";
+  if (effective === "markdown")
+    return [];
+  const literal3 = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  if (!MARKDOWN_SIGNS.test(literal3))
+    return [];
+  return [
+    `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
+  ];
+}
+var WIDTH_EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "Drawer"]);
+function lintOversizedWidths(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || WIDTH_EXEMPT.has(c.type))
+      continue;
+    const rect2 = c.layouts?.desktop ?? c.layout;
+    if (!rect2)
+      continue;
+    const width = typeof rect2.width === "number" ? rect2.width : void 0;
+    const left = typeof rect2.left === "number" ? rect2.left : 0;
+    if (width === void 0)
+      continue;
+    if (width > GRID_COLUMNS || left + width > GRID_COLUMNS) {
+      errors.push(`${c.type} "${label(c)}": desktop left ${left} + width ${width} exceeds ToolJet's ${GRID_COLUMNS}-column grid. Widths and lefts are grid columns, not pixels: a full-width row is left 2, width 39; a half is width 19; a quarter is width 9.`);
+    }
+  }
+  return errors;
+}
+function eventPayload(event) {
+  return event && typeof event === "object" ? event : void 0;
+}
+function queryTriggers(summary) {
+  const byId = new Map(summary.queries.map((q) => [q.id, q]));
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  const resolve4 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const triggers = /* @__PURE__ */ new Map();
+  for (const q of summary.queries) {
+    const options2 = q.options && typeof q.options === "object" ? q.options : {};
+    const automatic = truthy(propVal(options2, "runOnPageLoad")) || truthy(propVal(options2, "runOnDependencyChange"));
+    triggers.set(q.id, { automatic, manual: [] });
+  }
+  const chains = [];
+  for (const e of summary.events) {
+    const payload = eventPayload(e.event);
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const target = resolve4(payload.queryId ?? payload.queryName);
+    if (!target)
+      continue;
+    const entry = triggers.get(target.id);
+    if (!entry)
+      continue;
+    const trigger = String(payload.eventId ?? "");
+    if (e.target === "page" && trigger === "onPageLoad") {
+      entry.automatic = true;
+    } else if (e.target === "data_query" && trigger === "onDataQuerySuccess" && e.sourceId) {
+      chains.push([e.sourceId, target.id]);
+    } else {
+      entry.manual.push(`${e.target ?? "component"} ${trigger || "event"}`);
+    }
+  }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [sourceId, targetId] of chains) {
+      const source2 = triggers.get(sourceId);
+      const target = triggers.get(targetId);
+      if (source2?.automatic && target && !target.automatic) {
+        target.automatic = true;
+        changed = true;
+      }
+    }
+  }
+  return triggers;
+}
+var DATA_BOUND = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban"]);
+function lintUntriggeredDataQueries(summary) {
+  const errors = [];
+  const warnings = [];
+  if (!summary.queries.length)
+    return { errors, warnings };
+  const triggers = queryTriggers(summary);
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  for (const page of summary.pages) {
+    for (const c of page.components) {
+      if (!c.type || !DATA_BOUND.has(c.type))
+        continue;
+      const data = propVal(c.properties, "data");
+      if (typeof data !== "string")
+        continue;
+      const names = [...new Set([...data.matchAll(/\bqueries\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+      for (const name of names) {
+        const query = byName.get(name);
+        if (!query)
+          continue;
+        const t = triggers.get(query.id);
+        if (!t || t.automatic)
+          continue;
+        const who = `${c.type} "${c.name ?? c.id}"`;
+        if (t.manual.length) {
+          warnings.push(`${who} binds queries.${name}.data, but "${name}" only runs from ${[...new Set(t.manual)].join(", ")}, so the component is empty until then. If it should show data on open, set the query's runOnPageLoad: true or run it from the page's onPageLoad event.`);
+          continue;
+        }
+        const message = `${who} binds queries.${name}.data, but nothing runs "${name}": it has no runOnPageLoad, no page onPageLoad event, no success chain from a query that does, and no user event. It will show No data forever. Set the query's runOnPageLoad: true (or add a page onPageLoad run-query event).`;
+        if (c.type === "Table")
+          errors.push(message);
+        else
+          warnings.push(message);
+      }
+    }
+  }
+  return { errors, warnings };
+}
+
 // dist/bindingReferences.js
 function bindingReferences(value) {
   if (Array.isArray(value))
@@ -33651,7 +33812,7 @@ var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]
 var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
 var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
 var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
-function propVal(props, key) {
+function propVal2(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
@@ -33761,7 +33922,7 @@ function explicitlyProjectsObjectData(value) {
   return (directObject || returnedObject) && !expression.includes("...");
 }
 function visibilityExpression(component) {
-  const value = propVal(component.properties, "visibility");
+  const value = propVal2(component.properties, "visibility");
   if (typeof value !== "string")
     return void 0;
   const trimmed = value.trim();
@@ -33803,8 +33964,8 @@ function rowsStateExpression(value) {
   return void 0;
 }
 function mutuallyExclusiveVisibility(a, b) {
-  const aVisibility = propVal(a.properties, "visibility");
-  const bVisibility = propVal(b.properties, "visibility");
+  const aVisibility = propVal2(a.properties, "visibility");
+  const bVisibility = propVal2(b.properties, "visibility");
   if (isFalseBinding(aVisibility) || isFalseBinding(bVisibility))
     return true;
   const aExpression = visibilityExpression(a);
@@ -33851,7 +34012,7 @@ function differsFromCatalogDefault(type, key, value) {
   return defaultValue === void 0 || JSON.stringify(value) !== JSON.stringify(defaultValue);
 }
 function catalogValue(type, entries, key, section = "properties") {
-  const authored = propVal(entries, key);
+  const authored = propVal2(entries, key);
   if (authored !== void 0)
     return authored;
   return getComponentSchema(type)?.[section].find((entry) => entry.key === key)?.default;
@@ -33963,11 +34124,11 @@ function renderedHeight(component, rect2) {
   const authored = layout?.height ?? 0;
   if (!TOP_ALIGNED_INPUT_TYPES.has(component.type ?? ""))
     return authored;
-  if (propVal(component.styles, "alignment") !== "top")
+  if (propVal2(component.styles, "alignment") !== "top")
     return authored;
-  const labelType = propVal(component.properties, "labelType");
-  const label = propVal(component.properties, "label");
-  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label === void 0 || (typeof label === "string" ? label.trim().length > 0 : Boolean(label));
+  const labelType = propVal2(component.properties, "labelType");
+  const label2 = propVal2(component.properties, "label");
+  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label2 === void 0 || (typeof label2 === "string" ? label2.trim().length > 0 : Boolean(label2));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
 function lintStandardSingleLineInputHeight(component) {
@@ -33982,26 +34143,26 @@ function lintStandardSingleLineInputHeight(component) {
     layouts.push(["desktop", component.layouts.desktop]);
   if (component.layouts?.mobile)
     layouts.push(["mobile", component.layouts.mobile]);
-  const label = component.name ?? component.type ?? "component";
+  const label2 = component.name ?? component.type ?? "component";
   return layouts.flatMap(([layoutName, layout]) => {
     const authoredHeight = layout.height;
     if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
       return [];
     return [
-      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+      `${component.type} "${label2}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
     ];
   });
 }
 function minimumTextHeight(component) {
   if (component.type !== "Text")
     return void 0;
-  const dynamicHeight = propVal(component.properties, "dynamicHeight");
+  const dynamicHeight = propVal2(component.properties, "dynamicHeight");
   if (isTruthyBinding(dynamicHeight))
     return void 0;
   if (typeof dynamicHeight === "string" && /\{\{/.test(dynamicHeight) && !isFalseBinding(dynamicHeight))
     return void 0;
-  const textSizeValue = propVal(component.styles, "textSize");
-  const lineHeightValue = propVal(component.styles, "lineHeight");
+  const textSizeValue = propVal2(component.styles, "textSize");
+  const lineHeightValue = propVal2(component.styles, "lineHeight");
   const textSize = textSizeValue === void 0 ? 14 : optionalStaticNumber(textSizeValue);
   const lineHeight = lineHeightValue === void 0 ? 1.5 : optionalStaticNumber(lineHeightValue);
   if (textSize === void 0 || lineHeight === void 0)
@@ -34097,7 +34258,7 @@ function lintKanbanInteractions(components) {
     const key = componentKey(board);
     if (!key)
       continue;
-    const openModal = propVal(board.properties, "openModalOnCardClick");
+    const openModal = propVal2(board.properties, "openModalOnCardClick");
     const nativeModalEnabled = openModal === void 0 || isTruthyBinding(openModal);
     if (!nativeModalEnabled)
       continue;
@@ -34123,7 +34284,7 @@ function lintListviewChildren(components) {
   }
   for (const [parentId, children] of childrenByParent) {
     const parent = refs2.get(parentId);
-    if (propVal(parent.properties, "mode") !== "grid")
+    if (propVal2(parent.properties, "mode") !== "grid")
       continue;
     for (const child of children) {
       const rect2 = child.layouts?.desktop ?? child.layout;
@@ -34146,7 +34307,7 @@ function lintListviewChildren(components) {
     const parent = refs2.get(parentPlacement(child)?.parentId ?? "");
     if (parent?.type !== "Listview")
       continue;
-    const rawHtml = propVal(child.properties, "rawHtml");
+    const rawHtml = propVal2(child.properties, "rawHtml");
     if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
       continue;
     if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
@@ -34197,7 +34358,7 @@ function lintOperationalViewport(components) {
     return [];
   const warnings = [];
   for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
-    if (propVal(button.styles, "type") !== "primary")
+    if (propVal2(button.styles, "type") !== "primary")
       continue;
     const rect2 = button.layouts?.desktop ?? button.layout;
     if (!rect2)
@@ -34254,35 +34415,35 @@ function lintComponentSpec(spec) {
   const errors = [];
   const warnings = [];
   const props = spec.properties ?? {};
-  const label = spec.name ?? spec.type ?? "component";
+  const label2 = spec.name ?? spec.type ?? "component";
   if (spec.slotName !== void 0) {
     if (!COMPONENT_SLOT_NAMES.includes(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
+      errors.push(`Component "${label2}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
     }
     if (!spec.parentRef && !spec.parent) {
-      errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
+      errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
     }
   }
   const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
   if (misplaced.length) {
-    errors.push(`Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
+    errors.push(`Component "${label2}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      errors.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label2}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
   if (!spec.type) {
-    errors.push(`Component "${label}": type is required.`);
+    errors.push(`Component "${label2}": type is required.`);
   } else if (!componentSchema) {
     const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
-    errors.push(`Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+    errors.push(`Component "${label2}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
-      warnings.push(`Component "${label}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
+      warnings.push(`Component "${label2}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
     }
   }
   for (const [sectionName, authored, entries] of [
@@ -34301,121 +34462,121 @@ function lintComponentSpec(spec) {
       const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
       const suggestion = alias ?? nearestCatalogKey(key, knownKeys);
       if (suggestion) {
-        errors.push(`Component "${label}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
+        errors.push(`Component "${label2}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
       } else {
-        warnings.push(`Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
+        warnings.push(`Component "${label2}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
       }
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length)
         continue;
-      const value = propVal(authored, entry.key);
+      const value = propVal2(authored, entry.key);
       if (value === void 0 || isDynamicBinding(value))
         continue;
       if (!entry.allowedValues.some((allowed) => Object.is(allowed, value))) {
-        errors.push(`Component "${label}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
+        errors.push(`Component "${label2}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
       }
     }
   }
   if (spec.type === "Chart") {
-    const title = propVal(props, "title");
+    const title = propVal2(props, "title");
     if (title === void 0) {
-      warnings.push(`Chart "${label}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
+      warnings.push(`Chart "${label2}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
     } else if (typeof title === "string" && title.trim() !== "") {
-      warnings.push(`Chart "${label}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
+      warnings.push(`Chart "${label2}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
     }
-    const plotFromJson = propVal(props, "plotFromJson");
-    const jsonDescription = propVal(props, "jsonDescription");
+    const plotFromJson = propVal2(props, "plotFromJson");
+    const jsonDescription = propVal2(props, "jsonDescription");
     if (isTruthyBinding(plotFromJson)) {
       if (jsonDescription === void 0) {
-        errors.push(`Chart "${label}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
+        errors.push(`Chart "${label2}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
       } else if (isDynamicBinding(jsonDescription)) {
-        warnings.push(`Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
+        warnings.push(`Chart "${label2}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
       } else {
         let parsed = jsonDescription;
         if (typeof jsonDescription === "string") {
           try {
             parsed = JSON.parse(jsonDescription);
           } catch {
-            errors.push(`Chart "${label}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
+            errors.push(`Chart "${label2}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
             parsed = void 0;
           }
         }
         if (parsed !== void 0) {
           const description = recordValue(parsed);
           if (!description || !Array.isArray(description.data) || description.data.length === 0) {
-            errors.push(`Chart "${label}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
+            errors.push(`Chart "${label2}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
           }
         }
       }
     }
   }
-  if (spec.type === "Html" && nestedMapInValue(propVal(props, "rawHtml"))) {
-    warnings.push(`Html "${label}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
+  if (spec.type === "Html" && nestedMapInValue(propVal2(props, "rawHtml"))) {
+    warnings.push(`Html "${label2}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
   }
   if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
-    warnings.push(`Component "${label}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
+    warnings.push(`Component "${label2}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
   }
   if (spec.type === "Statistics") {
-    const secondaryValue = propVal(props, "secondaryValue");
+    const secondaryValue = propVal2(props, "secondaryValue");
     if (typeof secondaryValue === "string" && !secondaryValue.includes("{{") && /[A-Za-z]/.test(secondaryValue)) {
-      warnings.push(`Statistics "${label}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
+      warnings.push(`Statistics "${label2}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
     }
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
-    const secondaryHidden = isTruthyBinding(propVal(props, "hideSecondary"));
+    const secondaryHidden = isTruthyBinding(propVal2(props, "hideSecondary"));
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
-      warnings.push(`Statistics "${label}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
+      warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
     }
     const iconName = catalogValue("Statistics", props, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal(props, "iconVisibility") !== false && propVal(props, "iconVisibility") !== "{{false}}";
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props, "iconVisibility") !== false && propVal2(props, "iconVisibility") !== "{{false}}";
     const valueFontPx = optionalStaticNumber(catalogValue("Statistics", props, "primaryValueSize"));
     const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
-      errors.push(`Statistics "${label}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
+      errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
     const primaryLabel = catalogValue("Statistics", props, "primaryValueLabel");
     if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)) {
-      warnings.push(`Statistics "${label}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
+      warnings.push(`Statistics "${label2}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
     }
   }
   if (spec.type === "DropdownV2") {
-    const advanced = propVal(props, "advanced");
-    const schema = propVal(props, "schema");
-    const options2 = propVal(props, "options");
+    const advanced = propVal2(props, "advanced");
+    const schema = propVal2(props, "schema");
+    const options2 = propVal2(props, "options");
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
     const customOptions = differsFromCatalogDefault("DropdownV2", "options", options2);
     if (customOptions && !Array.isArray(options2)) {
-      errors.push(`DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
+      errors.push(`DropdownV2 "${label2}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
     } else if (Array.isArray(options2)) {
       const malformedIndexes = options2.flatMap((option, index) => {
         const entry = recordValue(option);
         return entry && "label" in entry && "value" in entry ? [] : [index];
       });
       if (malformedIndexes.length) {
-        errors.push(`DropdownV2 "${label}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
+        errors.push(`DropdownV2 "${label2}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
       }
     }
     if (customSchema && customOptions) {
-      warnings.push(`DropdownV2 "${label}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label2}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
     }
     if (customSchema && (advanced === void 0 || isFalseBinding(advanced))) {
-      warnings.push(`DropdownV2 "${label}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
+      warnings.push(`DropdownV2 "${label2}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
     }
     if (customOptions && isTruthyBinding(advanced)) {
-      warnings.push(`DropdownV2 "${label}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label2}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
     }
   }
   if (spec.type === "DatePickerV2") {
-    const defaultValue = propVal(props, "defaultValue");
+    const defaultValue = propVal2(props, "defaultValue");
     const demoDefault = getComponentSchema("DatePickerV2")?.properties.find((property) => property.key === "defaultValue")?.default;
     if (defaultValue === void 0 || JSON.stringify(defaultValue) === JSON.stringify(demoDefault)) {
-      warnings.push(`DatePickerV2 "${label}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
+      warnings.push(`DatePickerV2 "${label2}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
     }
   }
   if (spec.type === "KeyValuePair") {
-    const data = propVal(props, "data");
-    const fields = propVal(props, "fields");
+    const data = propVal2(props, "data");
+    const fields = propVal2(props, "fields");
     if (data !== void 0 && Array.isArray(fields) && fields.length > 0) {
       const declaredKeys = new Set(fields.flatMap((field) => {
         const key = recordValue(field)?.key;
@@ -34424,7 +34585,7 @@ function lintComponentSpec(spec) {
       const staticData = recordValue(data);
       const undeclaredKeys = staticData ? Object.keys(staticData).filter((key) => !declaredKeys.has(key)) : [];
       if (undeclaredKeys.length > 0 || !staticData && !explicitlyProjectsObjectData(data)) {
-        warnings.push(`KeyValuePair "${label}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
+        warnings.push(`KeyValuePair "${label2}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
       }
     }
     if (Array.isArray(fields) && fields.length > 0) {
@@ -34438,7 +34599,7 @@ function lintComponentSpec(spec) {
           }
         }
       }
-      const deletionHistoryValue = propVal(props, "fieldDeletionHistory");
+      const deletionHistoryValue = propVal2(props, "fieldDeletionHistory");
       const deletionHistory = new Set(Array.isArray(deletionHistoryValue) ? deletionHistoryValue.filter((key) => typeof key === "string") : []);
       const hasCustomField = fields.some((field) => {
         const id = recordValue(field)?.id;
@@ -34450,21 +34611,23 @@ function lintComponentSpec(spec) {
         return key && deletionHistory.has(key) ? [key] : [];
       }) : [];
       if (contradictoryDemoKeys.length) {
-        warnings.push(`KeyValuePair "${label}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
+        warnings.push(`KeyValuePair "${label2}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
       }
       fields.forEach((field, index) => {
         const entry = recordValue(field);
         if (entry?.fieldType === "string" && (looksDateLikeField(entry.key) || looksDateLikeField(entry.name))) {
-          warnings.push(`KeyValuePair "${label}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`KeyValuePair "${label2}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
       });
     }
   }
+  errors.push(...lintTextFormat(spec));
   if (spec.type === "Table") {
-    const data = propVal(props, "data");
-    const selector = propVal(props, "dataSourceSelector");
-    const autogen = propVal(props, "autogenerateColumns");
-    const columns = propVal(props, "columns");
+    errors.push(...lintTableColumnsShape(spec));
+    const data = propVal2(props, "data");
+    const selector = propVal2(props, "dataSourceSelector");
+    const autogen = propVal2(props, "autogenerateColumns");
+    const columns = propVal2(props, "columns");
     const hasColumns = Array.isArray(columns);
     const projectedDataKeys = projectedTableDataKeys(data);
     const projectsDataKeys = projectedDataKeys !== void 0;
@@ -34476,7 +34639,7 @@ function lintComponentSpec(spec) {
     const serverSide = catalogValue("Table", props, "serverSidePagination");
     const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props, "serverSideRowsPerPage") : catalogValue("Table", props, "rowsPerPage"));
     if (statementBodyMapInValue(data)) {
-      errors.push(`Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
+      errors.push(`Table "${label2}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(contentWrap) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
@@ -34485,16 +34648,16 @@ function lintComponentSpec(spec) {
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
       if (desktopHeight < chromeHeight + rowHeight) {
-        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
+        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {
-      warnings.push(`Table "${label}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
+      warnings.push(`Table "${label2}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
     }
     if (data !== void 0 && !isTruthyBinding(autogen) && !hasColumns) {
-      warnings.push(`Table "${label}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
+      warnings.push(`Table "${label2}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
     }
     if (hasColumns) {
       const columnKeys = /* @__PURE__ */ new Map();
@@ -34508,47 +34671,47 @@ function lintComponentSpec(spec) {
       });
       for (const [key, indexes] of columnKeys) {
         if (indexes.length > 1) {
-          errors.push(`Table "${label}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
+          errors.push(`Table "${label2}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
         }
       }
       if (isTruthyBinding(autogen) && projectedDataKeys) {
         const undeclaredKeys = projectedDataKeys.filter((key) => !columnKeys.has(key));
         if (undeclaredKeys.length) {
-          warnings.push(`Table "${label}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
+          warnings.push(`Table "${label2}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
         }
       }
       if (isTruthyBinding(autogen) && !projectsDataKeys) {
-        warnings.push(`Table "${label}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
+        warnings.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
       }
       columns.forEach((col, i) => {
         const c = col;
         for (const req of ["name", "key"]) {
           if (c == null || c[req] === void 0) {
-            warnings.push(`Table "${label}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
+            warnings.push(`Table "${label2}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
           }
         }
         const deprecatedReplacement = typeof c?.columnType === "string" ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : void 0;
         if (deprecatedReplacement) {
-          errors.push(`Table "${label}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
+          errors.push(`Table "${label2}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
         }
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
-          warnings.push(`Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
+          warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
         if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
-          warnings.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
           if (!Array.isArray(buttons) || buttons.length === 0) {
-            warnings.push(`Table "${label}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
+            warnings.push(`Table "${label2}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
           } else {
             const ids = /* @__PURE__ */ new Set();
             buttons.forEach((button, buttonIndex) => {
               const id = button?.id;
               if (typeof id !== "string" || id.length === 0) {
-                warnings.push(`Table "${label}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
+                warnings.push(`Table "${label2}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
               } else if (ids.has(id)) {
-                warnings.push(`Table "${label}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
+                warnings.push(`Table "${label2}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
               } else {
                 ids.add(id);
               }
@@ -34559,33 +34722,33 @@ function lintComponentSpec(spec) {
       const visibleColumns = columns.map((column) => column).filter((column) => column && column.columnVisibility !== false && column.columnVisibility !== "{{false}}");
       const rawHeaderColumns = visibleColumns.map((column) => String(column.name ?? column.key ?? "").trim()).filter((header) => header && (looksRawFieldHeader(header) || looksInternalIdField(header)));
       if (rawHeaderColumns.length) {
-        warnings.push(`Table "${label}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
+        warnings.push(`Table "${label2}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
       }
       if (visibleColumns.length > TABLE_VISIBLE_COLUMN_WARN) {
-        warnings.push(`Table "${label}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
+        warnings.push(`Table "${label2}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
       }
     }
-    const legacyActions = propVal(props, "actions");
+    const legacyActions = propVal2(props, "actions");
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
-      warnings.push(`Table "${label}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
+      warnings.push(`Table "${label2}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
     }
-    if (isTruthyBinding(propVal(props, "serverSidePagination"))) {
-      if (propVal(props, "serverSideRowsPerPage") === void 0) {
-        warnings.push(`Table "${label}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
+    if (isTruthyBinding(propVal2(props, "serverSidePagination"))) {
+      if (propVal2(props, "serverSideRowsPerPage") === void 0) {
+        warnings.push(`Table "${label2}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
       }
-      if (propVal(props, "totalRecords") === void 0) {
-        warnings.push(`Table "${label}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
+      if (propVal2(props, "totalRecords") === void 0) {
+        warnings.push(`Table "${label2}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
       }
     }
   }
   if (spec.type === "Form") {
-    const mode = propVal(props, "generateFormFrom");
-    const schemaValue = propVal(props, "newJsonSchema");
+    const mode = propVal2(props, "generateFormFrom");
+    const schemaValue = propVal2(props, "newJsonSchema");
     if (mode === "jsonSchema" && schemaValue === void 0) {
-      warnings.push(`Form "${label}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
+      warnings.push(`Form "${label2}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
     }
-    if (mode === "rawJson" && propVal(props, "JSONData") === void 0) {
-      warnings.push(`Form "${label}": generateFormFrom is "rawJson" but JSONData is missing.`);
+    if (mode === "rawJson" && propVal2(props, "JSONData") === void 0) {
+      warnings.push(`Form "${label2}": generateFormFrom is "rawJson" but JSONData is missing.`);
     }
     const fields = recordValue(recordValue(schemaValue)?.properties);
     if (mode === "jsonSchema" && fields) {
@@ -34596,21 +34759,21 @@ function lintComponentSpec(spec) {
           continue;
         const type = field.type;
         if (typeof type !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(type)) {
-          errors.push(`Form "${label}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
+          errors.push(`Form "${label2}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
           continue;
         }
         if (type === "filepicker") {
-          errors.push(`Form "${label}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
+          errors.push(`Form "${label2}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
         }
         if (type === "datepicker" && (field.value === null || field.value === void 0)) {
-          warnings.push(`Form "${label}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
+          warnings.push(`Form "${label2}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
         }
         if (["dropdown", "multiselect"].includes(type)) {
           if ("options" in field) {
-            errors.push(`Form "${label}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
+            errors.push(`Form "${label2}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
           }
           if (!("values" in field) || !("displayValues" in field)) {
-            warnings.push(`Form "${label}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
+            warnings.push(`Form "${label2}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
           }
         }
         if (type !== "filepicker" && !SAFE_GENERATED_FORM_FIELD_TYPE_SET.has(type)) {
@@ -34618,19 +34781,19 @@ function lintComponentSpec(spec) {
         }
         const validation = recordValue(field.validation);
         if ("required" in field || validation?.required !== void 0) {
-          warnings.push(`Form "${label}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
+          warnings.push(`Form "${label2}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
         }
       }
       if (standaloneRequiredFields.length > 0) {
-        errors.push(`Form "${label}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
+        errors.push(`Form "${label2}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
       }
     }
   }
   if (FORM_INPUT_TYPES.has(spec.type ?? "")) {
-    const align = propVal(spec.styles, "alignment");
+    const align = propVal2(spec.styles, "alignment");
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
     if ((align === void 0 || align === "side") && typeof width === "number" && width <= NARROW_SIDE_LABEL_COLS) {
-      warnings.push(`${spec.type} "${label}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
+      warnings.push(`${spec.type} "${label2}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
     }
   }
   return { errors, warnings };
@@ -34668,9 +34831,9 @@ function isTitleLikeText(component) {
   if (top > 100)
     return false;
   const name = component.name ?? "";
-  const text = propVal(component.properties, "text");
-  const fontWeight = propVal(component.styles, "fontWeight");
-  const textSize = optionalStaticNumber(propVal(component.styles, "textSize"));
+  const text = propVal2(component.properties, "text");
+  const fontWeight = propVal2(component.styles, "fontWeight");
+  const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
   return /(?:title|heading|header)/i.test(name) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
 }
 function lintModalChildren(components) {
@@ -34688,7 +34851,7 @@ function lintModalChildren(components) {
   for (const child of bodyChildren) {
     if (!FORM_INPUT_TYPES.has(child.type ?? ""))
       continue;
-    const align = propVal(child.styles, "alignment");
+    const align = propVal2(child.styles, "alignment");
     if (align === void 0 || align === "side") {
       warnings.push(`${child.type} "${child.name ?? child.type}": modal form child uses a SIDE-aligned label \u2014 set styles.alignment.value = "top" so the control gets the full field width.`);
     }
@@ -34718,7 +34881,7 @@ function lintModalChildren(components) {
     if (!key)
       continue;
     const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key);
-    if (modal.type === "ModalV2" && !isFalseBinding(propVal(modal.properties, "showHeader"))) {
+    if (modal.type === "ModalV2" && !isFalseBinding(propVal2(modal.properties, "showHeader"))) {
       const headerChildren = modalChildren.filter((child) => {
         const placement = parentPlacement(child);
         return placement?.parentId === key && placement.slotName === "header";
@@ -34737,10 +34900,10 @@ function lintModalChildren(components) {
     if (!childBottoms.length)
       continue;
     const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
-    const modalHeight = staticNumber(propVal(modal.properties, "modalHeight"), 400);
+    const modalHeight = staticNumber(propVal2(modal.properties, "modalHeight"), 400);
     const isV2 = modal.type === "ModalV2";
-    const headerHeight = !isV2 || isFalseBinding(propVal(modal.properties, "showHeader")) ? 0 : staticNumber(propVal(modal.properties, "headerHeight"), 80);
-    const footerHeight = !isV2 || isFalseBinding(propVal(modal.properties, "showFooter")) ? 0 : staticNumber(propVal(modal.properties, "footerHeight"), 80);
+    const headerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showHeader")) ? 0 : staticNumber(propVal2(modal.properties, "headerHeight"), 80);
+    const footerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showFooter")) ? 0 : staticNumber(propVal2(modal.properties, "footerHeight"), 80);
     const bottomSlack = 20;
     const requiredHeight = lowest.bottom + headerHeight + footerHeight + bottomSlack;
     if (modalHeight < requiredHeight) {
@@ -34785,6 +34948,7 @@ function lintComponents(components) {
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
+  errors.push(...lintOversizedWidths(components));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -34831,7 +34995,7 @@ function validateAppStructure(summary) {
   }
   const homePage = summary.pages.find((page) => page.handle === "home" || page.name === "Home");
   if (homePage) {
-    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
+    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal2(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
     for (const event of summary.events) {
       if (event.target !== "page" || event.sourceId !== homePage.id)
         continue;
@@ -34846,7 +35010,7 @@ function validateAppStructure(summary) {
   for (const query of summary.queries.filter((candidate) => candidate.kind === "runjs")) {
     const options2 = recordValue(query.options);
     const code = options2?.code;
-    if (typeof code !== "string" || !isTruthyBinding(propVal(options2, "runOnDependencyChange")))
+    if (typeof code !== "string" || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
       continue;
     const referencedNames = [...new Set([...code.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     if (!referencedNames.length)
@@ -34875,7 +35039,7 @@ function validateAppStructure(summary) {
     const options2 = recordValue(query.options);
     if (!options2)
       continue;
-    const automatic = isTruthyBinding(propVal(options2, "runOnPageLoad")) || isTruthyBinding(propVal(options2, "runOnDependencyChange"));
+    const automatic = isTruthyBinding(propVal2(options2, "runOnPageLoad")) || isTruthyBinding(propVal2(options2, "runOnDependencyChange"));
     if (!automatic)
       continue;
     const blob = JSON.stringify(options2);
@@ -34952,12 +35116,12 @@ function validateAppStructure(summary) {
   }
   for (const table of allComponents.filter((component) => component.type === "Table")) {
     const triggers = eventsBySource.get(table.id) ?? /* @__PURE__ */ new Set();
-    const dataBinding = JSON.stringify(propVal(table.properties, "data") ?? "");
+    const dataBinding = JSON.stringify(propVal2(table.properties, "data") ?? "");
     const boundDataQueries = [...new Set([...dataBinding.matchAll(/queries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const hasReactiveDataQuery = (stateName) => boundDataQueries.some((queryName) => {
       const query = queryByName.get(queryName);
       const options2 = recordValue(query?.options);
-      if (!options2 || !isTruthyBinding(propVal(options2, "runOnDependencyChange")))
+      if (!options2 || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
         return false;
       return typeof table.name === "string" && JSON.stringify(options2).includes(`components.${table.name}.${stateName}`);
     });
@@ -34968,12 +35132,12 @@ function validateAppStructure(summary) {
       ["serverSideFilter", "onFilterChanged", "filters"]
     ];
     for (const [property, trigger, stateName] of requirements) {
-      if (isTruthyBinding(propVal(table.properties, property)) && !triggers.has(trigger) && !hasReactiveDataQuery(stateName)) {
+      if (isTruthyBinding(propVal2(table.properties, property)) && !triggers.has(trigger) && !hasReactiveDataQuery(stateName)) {
         warnings.push(`Table "${table.name ?? table.id}": ${property} is enabled but no ${trigger} event refreshes its data query and no runOnDependencyChange data query is bound to components.${table.name ?? "<table>"}.${stateName}.`);
       }
     }
     const tableColumnRefs = new Set(summary.events.filter((event) => event.sourceId === table.id && event.target === "table_column").map((event) => event.event?.ref).filter((ref) => typeof ref === "string"));
-    const columns = propVal(table.properties, "columns");
+    const columns = propVal2(table.properties, "columns");
     if (Array.isArray(columns)) {
       columns.forEach((column, columnIndex) => {
         const col = column;
@@ -34999,11 +35163,15 @@ function validateAppStructure(summary) {
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components));
     errors.push(...lintUnrenderableHeights(p.components));
+    errors.push(...lintOversizedWidths(p.components));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
   warnings.push(...lintInnerPageBands(summary));
+  const readiness = lintUntriggeredDataQueries(summary);
+  errors.push(...readiness.errors);
+  warnings.push(...readiness.warnings);
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }
 function hexLuminance(hex3) {
@@ -35038,7 +35206,7 @@ function lintInnerPageBands(summary) {
     for (const component of page.components ?? []) {
       if (component.type !== "Html" || component.parent)
         continue;
-      const rawHtml = propVal(component.properties ?? {}, "rawHtml");
+      const rawHtml = propVal2(component.properties ?? {}, "rawHtml");
       if (typeof rawHtml !== "string")
         continue;
       const desktop = component.layouts?.desktop;
@@ -35812,13 +35980,13 @@ function createClient(auth, config2) {
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
     return completed;
-    async function persistFieldForPage(pageId, field, value, label) {
+    async function persistFieldForPage(pageId, field, value, label2) {
       const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, diff: { [field]: value } })
       });
-      await assertOk(r, label);
+      await assertOk(r, label2);
     }
   }
   async function createPage(params) {
@@ -36690,7 +36858,7 @@ function createAppTool(client) {
         const result = { ...created, theme: { mode: "workspace_default" } };
         if (choice === "workspace_default")
           return ok(result);
-        const label = typeof choice === "object" ? choice.name : choice;
+        const label2 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
           await client.updateAppSettings({
@@ -36703,7 +36871,7 @@ function createAppTool(client) {
         } catch (themeErr) {
           result.theme = {
             mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+            warning: `Could not apply theme "${label2}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
           };
         }
         return ok(result);
@@ -36829,9 +36997,9 @@ function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
   const mismatches = [];
-  const expectEqual = (label, actual, expected) => {
+  const expectEqual = (label2, actual, expected) => {
     if (actual !== expected)
-      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
+      mismatches.push(`${label2} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -37899,9 +38067,9 @@ var DIALECTS = {
   bigquery: { quote: "backtick", limit: "limit" },
   oracledb: { quote: "double", limit: "fetch" }
 };
-function assertIdentifier(identifier, label) {
+function assertIdentifier(identifier, label2) {
   if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+    throw new Error(`${label2} contains unsupported or unsafe identifier characters.`);
   }
 }
 function quote(kind, identifier) {
@@ -38344,15 +38512,15 @@ var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts.desktop", "pare
 var STRUCTURE_QUERY_FIELDS = ["id", "name", "kind", "data_source_id"];
 var STRUCTURE_EVENT_FIELDS = ["id", "name", "sourceId", "target"];
 var UNSAFE_PATH_SEGMENTS = /* @__PURE__ */ new Set(["__proto__", "prototype", "constructor"]);
-function validatePaths(paths, roots, label) {
+function validatePaths(paths, roots, label2) {
   const allowedRoots = new Set(roots);
   for (const path of paths) {
     const segments = path.split(".");
     if (!path || segments.some((segment) => !segment || UNSAFE_PATH_SEGMENTS.has(segment))) {
-      throw new Error(`${label} contains an invalid path: "${path}".`);
+      throw new Error(`${label2} contains an invalid path: "${path}".`);
     }
     if (!allowedRoots.has(segments[0])) {
-      throw new Error(`${label} path "${path}" must start with one of: ${roots.join(", ")}.`);
+      throw new Error(`${label2} path "${path}" must start with one of: ${roots.join(", ")}.`);
     }
   }
 }
@@ -38592,7 +38760,7 @@ var ACTION_IDS = /* @__PURE__ */ new Set([
   "set-localstorage-value",
   "scroll-component-into-view"
 ]);
-function propVal2(properties, key) {
+function propVal3(properties, key) {
   const value = properties?.[key];
   return value && typeof value === "object" && "value" in value ? value.value : value;
 }
@@ -38613,7 +38781,7 @@ function validateTableColumnRef(source2, ref) {
     return `Table Button-column ref "${ref}" is malformed.`;
   const columnRef = ref.slice(0, separator);
   const buttonId = ref.slice(separator + 2);
-  const columns = propVal2(source2.properties, "columns");
+  const columns = propVal3(source2.properties, "columns");
   if (!Array.isArray(columns))
     return `Table "${source2.name ?? source2.id}" has no explicit columns array for ref "${ref}".`;
   const column = columns.find((candidate) => {
@@ -38658,51 +38826,51 @@ function validateEvents(summary, events, options2 = {}) {
   const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
   events.forEach((event, index) => {
-    const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
+    const label2 = event.name ? `Event "${event.name}"` : `Event[${index}]`;
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: component source "${event.sourceId}" does not exist.`);
       else if (source2.type) {
         const schema = getComponentSchema(source2.type);
         const validTriggers = schema?.events?.map((item) => item.id) ?? [];
         if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
+          errors.push(`${label2}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
         }
-        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal2(source2.properties, "openModalOnCardClick"))) {
-          errors.push(`${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
+        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick"))) {
+          errors.push(`${label2}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
         }
       }
     } else if (event.sourceType === "data_query") {
       if (!queries.has(event.sourceId))
-        errors.push(`${label}: query source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: query source "${event.sourceId}" does not exist.`);
       if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
-        errors.push(`${label}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
+        errors.push(`${label2}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
       }
     } else if (event.sourceType === "page") {
       if (!pages.has(event.sourceId))
-        errors.push(`${label}: page source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: page source "${event.sourceId}" does not exist.`);
       if (event.trigger !== "onPageLoad")
-        errors.push(`${label}: page trigger must be onPageLoad, not "${event.trigger}".`);
+        errors.push(`${label2}: page trigger must be onPageLoad, not "${event.trigger}".`);
     } else if (event.sourceType === "table_column") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label}: Table source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: Table source "${event.sourceId}" does not exist.`);
       else if (source2.type !== "Table")
-        errors.push(`${label}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
+        errors.push(`${label2}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
       else {
         if (event.trigger !== "onClick")
-          errors.push(`${label}: Table Button-column trigger must be onClick.`);
+          errors.push(`${label2}: Table Button-column trigger must be onClick.`);
         const refError = validateTableColumnRef(source2, event.ref);
         if (refError)
-          errors.push(`${label}: ${refError}`);
+          errors.push(`${label2}: ${refError}`);
       }
     } else if (event.sourceType === "table_action") {
-      errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
+      errors.push(`${label2}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
     }
     const actionId = event.action.actionId;
     if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
-      errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
+      errors.push(`${label2}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
     }
     if (actionId === "run-query") {
@@ -38711,19 +38879,19 @@ function validateEvents(summary, events, options2 = {}) {
         const resolution = resolveRef2(summary.queries, queryId, "Query", "in this app");
         if (resolution.ok) {
           if (resolution.warning)
-            warnings.push(`${label}: ${resolution.warning}`);
+            warnings.push(`${label2}: ${resolution.warning}`);
           queryId = resolution.target.id;
           event.action.queryId = queryId;
         }
       }
       if (typeof queryId !== "string" || !queries.has(queryId)) {
         const available = summary.queries.map((q) => `${q.name ?? "(unnamed)"}=${q.id}`).join(", ");
-        errors.push(`${label}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
+        errors.push(`${label2}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
       } else if (event.sourceType === "component" && event.trigger === "onClick") {
         const source2 = components.get(event.sourceId);
         const query = queryById.get(queryId);
         if (source2?.type === "Button" && query && isMutationQuery(query)) {
-          const disabled = propVal2(source2.properties, "disabledState");
+          const disabled = propVal3(source2.properties, "disabledState");
           const guarded = typeof disabled === "string" && disabled.includes("{{") && /isloading/i.test(disabled);
           if (!guarded) {
             warnings.push(`Button "${source2.name ?? source2.id}" runs the mutation query "${query.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`);
@@ -38734,47 +38902,47 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "switch-page") {
       const pageId = event.action.pageId;
       if (typeof pageId !== "string" || !pages.has(pageId)) {
-        errors.push(`${label}: switch-page target "${String(pageId)}" does not exist.`);
+        errors.push(`${label2}: switch-page target "${String(pageId)}" does not exist.`);
       }
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
       const target = typeof modal === "string" ? components.get(modal) : void 0;
       if (!target) {
-        errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
+        errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
       } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
-        errors.push(`${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
+        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
       const target = typeof componentId === "string" ? components.get(componentId) : void 0;
       if (!target) {
-        errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
+        errors.push(`${label2}: control-component target "${String(componentId)}" does not exist.`);
       } else {
         const handle = event.action.componentSpecificActionHandle;
         const schema = target.type ? getComponentSchema(target.type) : null;
         const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
         if (!nonEmptyString(handle)) {
-          errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
+          errors.push(`${label2}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
-            errors.push(`${label}: componentSpecificActionParams must be an array.`);
+            errors.push(`${label2}: componentSpecificActionParams must be an array.`);
           } else if (Array.isArray(params)) {
             const supplied = new Set(params.flatMap((param) => isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []));
             if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
-              errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
+              errors.push(`${label2}: every componentSpecificActionParams entry requires a string handle.`);
             }
             const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
             const missing = requiredHandles.filter((required3) => !supplied.has(required3));
             if (missing.length) {
-              errors.push(`${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
+              errors.push(`${label2}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
             }
           } else if ((componentAction.params?.length ?? 0) > 0) {
-            errors.push(`${label}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
+            errors.push(`${label2}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
           }
         }
       }
@@ -38782,48 +38950,48 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "scroll-component-into-view") {
       const componentId = event.action.componentId;
       if (typeof componentId !== "string" || !components.has(componentId)) {
-        errors.push(`${label}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
+        errors.push(`${label2}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
       }
     }
     if (actionId === "show-alert") {
       if (!nonEmptyString(event.action.message))
-        errors.push(`${label}: show-alert requires a non-empty message.`);
+        errors.push(`${label2}: show-alert requires a non-empty message.`);
       if (!["success", "info", "warning", "error"].includes(String(event.action.alertType))) {
-        errors.push(`${label}: show-alert alertType must be success, info, warning, or error.`);
+        errors.push(`${label2}: show-alert alertType must be success, info, warning, or error.`);
       }
     }
     if (["set-custom-variable", "set-page-variable", "set-localstorage-value"].includes(actionId)) {
       if (!nonEmptyString(event.action.key))
-        errors.push(`${label}: ${actionId} requires a non-empty key.`);
+        errors.push(`${label2}: ${actionId} requires a non-empty key.`);
       if (!Object.prototype.hasOwnProperty.call(event.action, "value"))
-        errors.push(`${label}: ${actionId} requires value.`);
+        errors.push(`${label2}: ${actionId} requires value.`);
     }
     if (actionId === "unset-custom-variable" && !nonEmptyString(event.action.key)) {
-      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
+      errors.push(`${label2}: unset-custom-variable requires a non-empty key.`);
     }
     if (actionId === "open-webpage" && !nonEmptyString(event.action.url)) {
-      errors.push(`${label}: open-webpage requires a non-empty url.`);
+      errors.push(`${label2}: open-webpage requires a non-empty url.`);
     }
     if (actionId === "copy-to-clipboard" && !Object.prototype.hasOwnProperty.call(event.action, "contentToCopy")) {
-      errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
+      errors.push(`${label2}: copy-to-clipboard requires contentToCopy.`);
     }
     if (actionId === "set-table-page") {
       const tableId = event.action.table;
       const table = typeof tableId === "string" ? components.get(tableId) : void 0;
       if (!table) {
-        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
+        errors.push(`${label2}: set-table-page Table target "${String(tableId)}" does not exist.`);
       } else if (table.type !== "Table") {
-        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
+        errors.push(`${label2}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
       }
       const pageIndex = event.action.pageIndex;
       if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
-        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
+        errors.push(`${label2}: set-table-page requires a numeric value or binding in pageIndex.`);
       }
     }
     if (actionId === "generate-file") {
       const format = ["fileType", "type", "format", "extension"].map((key) => event.action[key]).find((value) => typeof value === "string");
       if (format && /\bpdf\b/i.test(format)) {
-        warnings.push(`${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
+        warnings.push(`${label2}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
       }
     }
   });
@@ -38882,8 +39050,8 @@ function validateEvents(summary, events, options2 = {}) {
       continue;
     const navigation = chain[navigationIndex];
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
-    errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
+    const label2 = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
+    errors.push(`${label2}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
@@ -39903,14 +40071,14 @@ function validatePersistedAppSummary(summary) {
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const query of summary.queries) {
-    const label = `Query "${query.name ?? query.id}"`;
+    const label2 = `Query "${query.name ?? query.id}"`;
     if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
-      warnings.push(`${label}: kind/options are unavailable, so its datasource contract was not validated.`);
+      warnings.push(`${label2}: kind/options are unavailable, so its datasource contract was not validated.`);
       continue;
     }
     const validation = validateQueryOptions(query.kind, query.options);
-    errors.push(...issueMessages(validation.errors, label));
-    warnings.push(...issueMessages(validation.warnings, label));
+    errors.push(...issueMessages(validation.errors, label2));
+    warnings.push(...issueMessages(validation.warnings, label2));
   }
   return {
     ok: errors.length === 0,
@@ -40122,12 +40290,12 @@ function alertEvent(queryId, queryName, trigger, alert, defaultType) {
     name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
   };
 }
-function unique(values, label, sourceName, warnings) {
+function unique(values, label2, sourceName, warnings) {
   const seen = /* @__PURE__ */ new Set();
   const result = [];
   for (const value of values) {
     if (seen.has(value)) {
-      warnings.push(`Query "${sourceName}" lifecycle listed ${label} "${value}" more than once; duplicate ignored.`);
+      warnings.push(`Query "${sourceName}" lifecycle listed ${label2} "${value}" more than once; duplicate ignored.`);
       continue;
     }
     seen.add(value);
@@ -40467,7 +40635,7 @@ function normalizeComponentSpec(component, options2 = {}) {
 // dist/layoutNormalization.js
 function normalizePlannedLayouts(component) {
   const warnings = [];
-  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const label2 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
   const targets = [];
   if (component.layout)
     targets.push(["layout", component.layout]);
@@ -40486,10 +40654,10 @@ function normalizePlannedLayouts(component) {
       continue;
     if (textMinimum !== void 0 && rect2.height < textMinimum) {
       fixed.set(name, { ...rect2, height: textMinimum });
-      warnings.push(`${label}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
+      warnings.push(`${label2}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
     } else if (compactHeight !== void 0 && rect2.height > compactHeight) {
       fixed.set(name, { ...rect2, height: compactHeight });
-      warnings.push(`${label}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+      warnings.push(`${label2}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
     }
   }
   if (!fixed.size)
@@ -40902,23 +41070,23 @@ function sourceMap(sourceType, components, queries, pages) {
     return pages;
   return components;
 }
-function resolveAction(raw, queries, pages, components, errors, label) {
+function resolveAction(raw, queries, pages, components, errors, label2) {
   const { target_ref: explicitRef, ...action } = raw;
   const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (Object.values(action).some((value) => typeof value === "string" && /^planned-(query|page|component):/.test(value))) {
-    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    errors.push(`${label2}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
     return action;
   }
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string") {
-    errors.push(`${label} target_ref must be a string.`);
+    errors.push(`${label2} target_ref must be a string.`);
     return action;
   }
   const actionId = action.actionId;
   const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
   if (!target) {
-    errors.push(`${label} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
+    errors.push(`${label2} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
   if (actionId === "run-query")
@@ -40934,22 +41102,22 @@ function resolveAction(raw, queries, pages, components, errors, label) {
     return { ...action, table: target.id };
   return action;
 }
-function resolveRefs(refs2, map2, errors, label) {
+function resolveRefs(refs2, map2, errors, label2) {
   return refs2?.flatMap((ref) => {
     const value = map2.get(ref);
     if (!value) {
-      errors.push(`${label} ref "${ref}" does not exist.`);
+      errors.push(`${label2} ref "${ref}" does not exist.`);
       return [];
     }
     return [value.id];
   });
 }
-function resolveRef3(ref, map2, errors, label) {
+function resolveRef3(ref, map2, errors, label2) {
   if (!ref)
     return void 0;
   const value = map2.get(ref);
   if (!value) {
-    errors.push(`${label} ref "${ref}" does not exist.`);
+    errors.push(`${label2} ref "${ref}" does not exist.`);
     return void 0;
   }
   return value.id;
@@ -41158,7 +41326,7 @@ function lintAppSpecTool(client) {
         }
         const preflightErrors = [];
         const preflightWarnings = [];
-        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
+        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
@@ -41220,6 +41388,13 @@ function lintAppSpecTool(client) {
               preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
             else
               options2.table_id = tableId;
+          } else if ((datasourceKind ?? query.kind) === "tooljetdb" && typeof options2.table_id === "string") {
+            const known = new Set(existingTables.map((table) => table.id));
+            if (!known.has(options2.table_id)) {
+              const prefix = options2.table_id.slice(0, 8);
+              const nearest = existingTables.filter((table) => table.id.startsWith(prefix)).map((table) => `${table.table_name} (${table.id})`);
+              preflightErrors.push(`Query "${query.name}": table_id "${options2.table_id}" is not a table in this workspace` + (nearest.length ? `; the closest id is ${nearest.join(", ")}` : "") + ". Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.");
+            }
           }
           return {
             clientRef: query.client_ref,
@@ -41325,20 +41500,20 @@ function resolveAction2(raw, pages, queries, components) {
     return { ...action, table: target.id };
   return action;
 }
-function refs(values, targets, label) {
+function refs(values, targets, label2) {
   return values?.map((ref) => {
     const target = targets.get(ref);
     if (!target)
-      throw new Error(`${label} ref "${ref}" does not exist.`);
+      throw new Error(`${label2} ref "${ref}" does not exist.`);
     return target.id;
   });
 }
-function oneRef(value, targets, label) {
+function oneRef(value, targets, label2) {
   if (!value)
     return void 0;
   const target = targets.get(value);
   if (!target)
-    throw new Error(`${label} ref "${value}" does not exist.`);
+    throw new Error(`${label2} ref "${value}" does not exist.`);
   return target.id;
 }
 function appliedSummary(applied) {
@@ -43450,9 +43625,9 @@ var themeDefinition = external_exports.object({
     }).strict()
   }).strict()
 }).strict();
-function requireValue(value, label) {
+function requireValue(value, label2) {
   if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
+    throw new Error(`manage_theme requires ${label2} for this action.`);
   return value;
 }
 async function readTheme(client, themeId) {
@@ -43546,9 +43721,9 @@ function manageThemeTool(client) {
 }
 
 // dist/tools/manageAppPermissions.js
-function requireValue2(value, label) {
+function requireValue2(value, label2) {
   if (value === void 0)
-    throw new Error(`${label} is required for this action.`);
+    throw new Error(`${label2} is required for this action.`);
   return value;
 }
 function findResource(summary, resourceType, resourceId) {
@@ -43719,9 +43894,9 @@ function listWorkspaceUsersTool(client) {
     }
   };
 }
-function required2(value, label) {
+function required2(value, label2) {
   if (!value)
-    throw new Error(`${label} is required for this action.`);
+    throw new Error(`${label2} is required for this action.`);
   return value;
 }
 function manageWorkspaceUsersTool(client) {
