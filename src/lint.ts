@@ -1695,6 +1695,29 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
   ];
 }
 
+// Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
+const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'Modal', 'Icon']);
+const MIN_RENDERABLE_HEIGHT = 24;
+
+/** A model that mistakes the pixel grid for row units authors 14px headers, 10px inputs and 1px
+ *  modals; every other lint passes and the app renders as a row of slivers. Measured on one Grok 4.5
+ *  build: four pages, every header, KPI strip and input under 16px, no lint error. Below 24px
+ *  nothing but a divider can show its content, so this is an error, not a warning. */
+export function lintUnrenderableHeights(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const c of components) {
+    if (!c.type || THIN_BY_DESIGN.has(c.type)) continue;
+    const height = c.layouts?.desktop?.height;
+    if (typeof height !== 'number' || height >= MIN_RENDERABLE_HEIGHT) continue;
+    errors.push(
+      `${c.type} "${c.name ?? c.id ?? '?'}": desktop height ${height}px cannot render its content; heights are ` +
+        `pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, ` +
+        'KPI strips 120+, tables 300+).'
+    );
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -1707,6 +1730,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
+  errors.push(...lintUnrenderableHeights(components));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -1980,6 +2004,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
 
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
+    errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));

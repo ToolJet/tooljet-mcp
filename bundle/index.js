@@ -34738,6 +34738,20 @@ function lintRenderedGeometry(components) {
     ...lintCanvasSideGutter(components)
   ];
 }
+var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "Modal", "Icon"]);
+var MIN_RENDERABLE_HEIGHT = 24;
+function lintUnrenderableHeights(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || THIN_BY_DESIGN.has(c.type))
+      continue;
+    const height = c.layouts?.desktop?.height;
+    if (typeof height !== "number" || height >= MIN_RENDERABLE_HEIGHT)
+      continue;
+    errors.push(`${c.type} "${c.name ?? c.id ?? "?"}": desktop height ${height}px cannot render its content; heights are pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, KPI strips 120+, tables 300+).`);
+  }
+  return errors;
+}
 function lintComponents(components) {
   const errors = [];
   const warnings = [];
@@ -34749,6 +34763,7 @@ function lintComponents(components) {
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
+  errors.push(...lintUnrenderableHeights(components));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -34946,6 +34961,7 @@ function validateAppStructure(summary) {
   }
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components));
+    errors.push(...lintUnrenderableHeights(p.components));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
