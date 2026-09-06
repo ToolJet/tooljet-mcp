@@ -1618,7 +1618,7 @@ describe('add_components tool', () => {
       app_id: 'app1', version_id: 'v1', page_id: 'p1',
       components: [{
         name: 'lateCard', type: 'Html', parent: 'persisted-listview-id',
-        properties: { rawHtml: '<div>{{listItem.title}}</div>' },
+        properties: { rawHtml: '<div style="height:100%;box-sizing:border-box;margin:0;background:var(--cc-surface1-surface)">{{listItem.title}}</div>' },
         layout: { top: 0, left: 0, width: 40, height: 100 },
       }],
     });
