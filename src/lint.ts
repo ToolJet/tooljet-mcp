@@ -4,6 +4,7 @@
 import type { AppSummary } from './tooljetClient.js';
 import {
   lintHtmlContentHeight,
+  lintHtmlRootSurface,
   lintOversizedWidths,
   lintTableColumnsShape,
   lintTextFormat,
@@ -1239,6 +1240,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   // Text holding markdown in the default html format renders the markdown literally.
   errors.push(...lintTextFormat(spec));
   errors.push(...lintHtmlContentHeight(spec));
+  errors.push(...lintHtmlRootSurface(spec));
 
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
@@ -1746,7 +1748,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
-  for (const c of components) errors.push(...lintHtmlContentHeight(c));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -2039,7 +2041,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
-    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));

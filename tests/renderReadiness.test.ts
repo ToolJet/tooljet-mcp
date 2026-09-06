@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lintHtmlContentHeight,
+  lintHtmlRootSurface,
   lintOversizedWidths,
   lintTableColumnsShape,
   lintTextFormat,
@@ -202,5 +203,60 @@ describe('lintHtmlContentHeight', () => {
     const tpl = '{{`<div style="padding:1em;font-size:14px"><div style="font-size:2em">${queries.q.data.length}</div><div>flights</div></div>`}}';
     expect(lintHtmlContentHeight(html(tpl, 100))).toEqual([]);
     expect(lintHtmlContentHeight(html(tpl, 50))[0]).toMatch(/needs about/);
+  });
+});
+
+describe('lintHtmlRootSurface', () => {
+  const html = (rawHtml: string, extra: Record<string, unknown> = {}) => ({
+    name: 'masthead',
+    type: 'Html',
+    properties: { rawHtml: { value: rawHtml }, ...extra },
+    layouts: { desktop: { left: 2, top: 10, width: 39, height: 120 } },
+  });
+  const good = '<div style="height:100%;box-sizing:border-box;margin:0;background:var(--cc-appBackground-surface)"><div style="background:linear-gradient(135deg,#4B2928,#8F5E59);border-radius:22px;padding:24px;color:#fff">Maison Aurelie</div></div>';
+
+  it('accepts a full-bleed root painted with the canvas surface and a card inside it', () => {
+    expect(lintHtmlRootSurface(html(good))).toEqual([]);
+    expect(lintComponentSpec(html(good)).errors).toEqual([]);
+  });
+
+  it('rejects the tinted rounded root every 2026-09-05 build wrote', () => {
+    const rounded = '<div style="height:100%;background:linear-gradient(135deg,#4B2928,#8F5E59);border-radius:22px;padding:24px">Maison Aurelie</div>';
+    const errors = lintHtmlRootSurface(html(rounded));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/background is "linear-gradient/);
+    expect(errors[0]).toMatch(/border-radius 22px/);
+    expect(errors[0]).toMatch(/paints its box white/);
+    expect(errors[0]).toMatch(/var\(--cc-appBackground-surface\)/);
+  });
+
+  it('rejects a root with no height or background (the white block under a short header)', () => {
+    const bare = '<div style="padding:12px"><h2>Agenda da clínica</h2></div>';
+    const [error] = lintHtmlRootSurface(html(bare));
+    expect(error).toMatch(/no height:100%/);
+    expect(error).toMatch(/paints no background/);
+    expect(lintComponentSpec(html(bare)).errors.join(' ')).toMatch(/full-bleed box/);
+  });
+
+  it('expects the card surface inside a container and accepts surface2 there', () => {
+    const inside = '<div style="height:100%;box-sizing:border-box;margin:0;background:var(--cc-surface2-surface)">rail</div>';
+    expect(lintHtmlRootSurface({ ...html(inside), parent: 'card-1' })).toEqual([]);
+    const canvasTokenInside = '<div style="height:100%;background:var(--cc-appBackground-surface)">x</div>';
+    expect(lintHtmlRootSurface({ ...html(canvasTokenInside), parentRef: 'card' })).toEqual([]);
+    const literal = '<div style="height:100%;background:#FFFFFF">x</div>';
+    expect(lintHtmlRootSurface({ ...html(literal), parent: 'card-1' })[0]).toMatch(/var\(--cc-surface1-surface\)/);
+  });
+
+  it('rejects several top-level nodes, a fixed width and a margin', () => {
+    expect(lintHtmlRootSurface(html('<style>.a{}</style><div style="height:100%;background:var(--cc-appBackground-surface)">a</div><p>b</p>'))[0]).toMatch(/2 top-level nodes/);
+    expect(lintHtmlRootSurface(html('<div style="height:100%;background:var(--cc-appBackground-surface);width:960px;margin:8px">a</div>'))[0]).toMatch(/margin 8px/);
+    expect(lintHtmlRootSurface(html('<div style="height:100%;background:var(--cc-appBackground-surface);width:960px;margin:8px">a</div>'))[0]).toMatch(/width is "960px"/);
+  });
+
+  it('does not require height:100% on a dynamic-height block, and accepts a template-literal root', () => {
+    const dyn = '<div style="background:var(--cc-appBackground-surface)">long prose</div>';
+    expect(lintHtmlRootSurface(html(dyn, { dynamicHeight: { value: true } }))).toEqual([]);
+    const tpl = '{{`<div style="height:100%;margin:0;background:var(--cc-appBackground-surface)">${queries.q.data.length}</div>`}}';
+    expect(lintHtmlRootSurface(html(tpl))).toEqual([]);
   });
 });

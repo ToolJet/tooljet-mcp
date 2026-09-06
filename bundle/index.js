@@ -34171,6 +34171,58 @@ function lintHtmlContentHeight(c) {
     `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
   ];
 }
+var SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
+function lintHtmlRootSurface(c) {
+  if (c.type !== "Html")
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const { html } = stripHtmlBindings(raw);
+  const tree = parseHtml(html);
+  const roots = tree.children.filter((n) => n.tag !== "#text" || n.text.trim());
+  const who = `Html "${label(c)}"`;
+  const parented = Boolean(c.parent || c.parentRef);
+  const surface = parented ? "var(--cc-surface1-surface)" : "var(--cc-appBackground-surface)";
+  const template = `<div style="height:100%;box-sizing:border-box;margin:0;background:${surface}"> ...your markup... </div>`;
+  const why = "ToolJet's Html widget paints its box white underneath the markup, so on a tinted canvas anything the root does not cover shows as a white edge.";
+  if (roots.length !== 1 || roots[0].tag === "#text") {
+    return [
+      `${who}: rawHtml has ${roots.length} top-level nodes. ${why} Wrap everything in one root element: ${template}`
+    ];
+  }
+  const root = roots[0];
+  const style = root.style;
+  const problems = [];
+  const dynamic = truthy(propVal(c.properties, "dynamicHeight"));
+  const heightValue = (style.height ?? style["min-height"] ?? "").trim();
+  if (!dynamic && heightValue !== "100%") {
+    problems.push(heightValue ? `its height is "${heightValue}" instead of 100%, so the rest of the box stays white` : "it has no height:100%, so the box below the content stays white");
+  }
+  const background = (style.background ?? style["background-color"] ?? "").trim();
+  if (!background || /^(transparent|none|inherit|initial|unset)$/i.test(background)) {
+    problems.push(`it paints no background of its own, so the widget's white shows through; use ${surface}` + (parented ? " (or the surface2 token for a tinted rail)" : ""));
+  } else if (parented ? !SURFACE_TOKENS.test(background) : !/var\(--cc-appBackground-surface\)/.test(background)) {
+    problems.push(`its background is "${background.slice(0, 60)}" rather than the surface it sits on (${surface}); a tint, gradient or literal colour belongs on a child card so the root still matches the canvas around it`);
+  }
+  const radius = (style["border-radius"] ?? "").trim();
+  if (radius && !/^0(px)?$/.test(radius)) {
+    problems.push(`it has border-radius ${radius}, and the corners outside the curve show the widget's white`);
+  }
+  const margin = (style.margin ?? "").trim();
+  if (margin && !/^0(px)?(\s+0(px)?){0,3}$/.test(margin)) {
+    problems.push(`it has margin ${margin}, which leaves a white gap around it`);
+  }
+  const width = (style.width ?? "").trim();
+  if (width && !/^(100%|auto)$/.test(width)) {
+    problems.push(`its width is "${width}", which leaves white at the sides`);
+  }
+  if (!problems.length)
+    return [];
+  return [
+    `${who}: the root element ${problems.join("; ")}. ${why} Make the root a plain full-bleed box and move the card (tint, gradient, radius, padding, shadow) into a child element: ${template}`
+  ];
+}
 
 // dist/bindingReferences.js
 function bindingReferences(value) {
@@ -35184,6 +35236,7 @@ function lintComponentSpec(spec) {
   }
   errors.push(...lintTextFormat(spec));
   errors.push(...lintHtmlContentHeight(spec));
+  errors.push(...lintHtmlRootSurface(spec));
   if (spec.type === "Table") {
     errors.push(...lintTableColumnsShape(spec));
     const data = propVal2(props, "data");
@@ -35512,7 +35565,7 @@ function lintComponents(components) {
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
   for (const c of components)
-    errors.push(...lintHtmlContentHeight(c));
+    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -35729,7 +35782,7 @@ function validateAppStructure(summary) {
     errors.push(...lintUnrenderableHeights(p.components));
     errors.push(...lintOversizedWidths(p.components));
     for (const c of p.components)
-      errors.push(...lintHtmlContentHeight(c));
+      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
