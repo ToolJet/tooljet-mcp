@@ -3,6 +3,7 @@ import {
   lintHtmlContentHeight,
   lintHtmlRootSurface,
   lintOversizedWidths,
+  lintUnguardedComponentRefs,
   lintTableColumnsShape,
   lintTextFormat,
   lintUntriggeredDataQueries,
@@ -258,5 +259,36 @@ describe('lintHtmlRootSurface', () => {
     expect(lintHtmlRootSurface(html(dyn, { dynamicHeight: { value: true } }))).toEqual([]);
     const tpl = '{{`<div style="height:100%;margin:0;background:var(--cc-appBackground-surface)">${queries.q.data.length}</div>`}}';
     expect(lintHtmlRootSurface(html(tpl))).toEqual([]);
+  });
+});
+
+describe('lintUnguardedComponentRefs', () => {
+  const tableWith = (data: string) => ({
+    name: 'Tabela de Agendamentos',
+    type: 'Table',
+    properties: { data: { value: data } },
+    layouts: { desktop: { left: 2, top: 10, width: 39, height: 400 } },
+  });
+
+  it('rejects the bracket and dot forms the Luna clinic build used', () => {
+    const data = "{{queries.listar.data.filter(r => (!components['Buscar Cliente'].value || r.nome.includes(components['Buscar Cliente'].value)) && (!components.filtroData.value || r.data === components.filtroData.value))}}";
+    const errors = lintUnguardedComponentRefs(tableWith(data));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/components\['Buscar Cliente'\]\.value/);
+    expect(errors[0]).toMatch(/components\.filtroData\.value/);
+    expect(errors[0]).toMatch(/Table shows No data/);
+    expect(errors[0]).toMatch(/components\['Buscar Cliente'\]\?\.value, components\.filtroData\?\.value/);
+    expect(lintComponentSpec(tableWith(data)).errors.join(' ')).toMatch(/optional chaining/);
+  });
+
+  it('accepts optional chaining and bindings without component references', () => {
+    expect(lintUnguardedComponentRefs(tableWith("{{queries.q.data.filter(r => !components.search?.value || r.name.includes(components['Buscar']?.value))}}"))).toEqual([]);
+    expect(lintUnguardedComponentRefs(tableWith('{{queries.q.data}}'))).toEqual([]);
+    expect(lintUnguardedComponentRefs({ name: 'b', type: 'Button', properties: { text: { value: '{{components.x.value}}' } } })).toEqual([]);
+  });
+
+  it('covers Html and Text bindings and selectedRow reads', () => {
+    expect(lintUnguardedComponentRefs({ name: 'panel', type: 'Html', properties: { rawHtml: { value: '<div>{{components.tbl.selectedRow.name}}</div>' } } })[0]).toMatch(/components\.tbl\?\.selectedRow/);
+    expect(lintUnguardedComponentRefs({ name: 't', type: 'Text', properties: { text: { value: '{{components.tbl?.selectedRow?.name}}' } } })).toEqual([]);
   });
 });

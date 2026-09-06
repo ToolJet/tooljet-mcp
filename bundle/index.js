@@ -34223,6 +34223,32 @@ function lintHtmlRootSurface(c) {
     `${who}: the root element ${problems.join("; ")}. ${why} Make the root a plain full-bleed box and move the card (tint, gradient, radius, padding, shadow) into a child element: ${template}`
   ];
 }
+var DATA_BOUND_FOR_REFS = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"]);
+var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)\2\s*\])(\??\.)(value|selectedRow|selectedRowId|selectedRows|isValid|searchText|selectedOptionLabel|checked|filteredData|text)\b/g;
+function lintUnguardedComponentRefs(c) {
+  if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type))
+    return [];
+  const props = c.properties ?? {};
+  const keys = c.type === "Html" ? ["rawHtml"] : c.type === "Text" ? ["text"] : ["data"];
+  const errors = [];
+  for (const key of keys) {
+    const value = propVal(props, key);
+    if (typeof value !== "string" || !value.includes("components"))
+      continue;
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of value.matchAll(COMPONENT_REF)) {
+      if (m[4] === "?.")
+        continue;
+      const name = m[1] ?? m[3];
+      bad.add(m[1] ? `components.${name}.${m[5]}` : `components['${name}'].${m[5]}`);
+    }
+    if (!bad.size)
+      continue;
+    const fixes = [...bad].map((ref) => `${ref.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
+    errors.push(`${c.type} "${label(c)}": ${key} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
+  }
+  return errors;
+}
 
 // dist/bindingReferences.js
 function bindingReferences(value) {
@@ -35237,6 +35263,7 @@ function lintComponentSpec(spec) {
   errors.push(...lintTextFormat(spec));
   errors.push(...lintHtmlContentHeight(spec));
   errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintUnguardedComponentRefs(spec));
   if (spec.type === "Table") {
     errors.push(...lintTableColumnsShape(spec));
     const data = propVal2(props, "data");
@@ -35565,7 +35592,7 @@ function lintComponents(components) {
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
   for (const c of components)
-    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c));
+    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -35782,7 +35809,7 @@ function validateAppStructure(summary) {
     errors.push(...lintUnrenderableHeights(p.components));
     errors.push(...lintOversizedWidths(p.components));
     for (const c of p.components)
-      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c));
+      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
