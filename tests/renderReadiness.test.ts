@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  lintHtmlContentHeight,
   lintOversizedWidths,
   lintTableColumnsShape,
   lintTextFormat,
@@ -143,5 +144,63 @@ describe('lintUntriggeredDataQueries', () => {
     });
     expect(lintUntriggeredDataQueries(untriggeredChart).errors).toEqual([]);
     expect(lintUntriggeredDataQueries(untriggeredChart).warnings[0]).toMatch(/nothing runs "get_flights"/);
+  });
+});
+
+describe('lintHtmlContentHeight', () => {
+  const html = (rawHtml: string, height: number, extra: Record<string, unknown> = {}, width = 39) => ({
+    name: 'kpis',
+    type: 'Html',
+    properties: { rawHtml: { value: rawHtml }, ...extra },
+    layouts: { desktop: { left: 2, top: 10, width, height } },
+  });
+  const card = (padding: number, figure: number) =>
+    `<div style="height:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">` +
+    `<div style="padding:${padding}px;border:1px solid var(--cc-default-border);border-radius:10px">` +
+    `<div style="font-size:12px">Departures</div><div style="font-size:${figure}px;font-weight:800;margin-top:10px">{{queries.q.data.length}}</div>` +
+    `<div style="font-size:12px;margin-top:4px">scheduled today</div></div></div>`;
+
+  it('rejects a KPI strip whose cards need more than the authored height (the Luna max build)', () => {
+    const errors = lintHtmlContentHeight(html(card(18, 34), 118));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/needs about 1\d\dpx/);
+    expect(errors[0]).toMatch(/desktop height is 118px/);
+    expect(errors[0]).toMatch(/Set height to 1[56]0px/);
+    expect(lintComponentSpec(html(card(18, 34), 118)).errors.join(' ')).toMatch(/cut off behind a hidden scrollbar/);
+  });
+
+  it('accepts the same strip at a height that fits, and tighter cards at a lower one', () => {
+    expect(lintHtmlContentHeight(html(card(18, 34), 160))).toEqual([]);
+    expect(lintHtmlContentHeight(html(card(12, 29), 130))).toEqual([]);
+    expect(lintHtmlContentHeight(html(card(12, 29), 100))[0]).toMatch(/needs about 1[12]\dpx/);
+  });
+
+  it('flags a vertically centred header whose lines exceed the box (clipped at both edges)', () => {
+    const header =
+      '<div style="height:100%;display:flex;align-items:center;justify-content:space-between;padding:22px 26px">' +
+      '<div><div style="font-size:12px">Lufthansa Frankfurt hub</div><div style="font-size:30px;margin-top:6px">Operations control</div>' +
+      '<div style="font-size:13px;margin-top:6px">Saturday, live operating picture</div></div></div>';
+    expect(lintHtmlContentHeight(html(header, 80))[0]).toMatch(/needs about 9\dpx/);
+    expect(lintHtmlContentHeight(html(header, 110))).toEqual([]);
+  });
+
+  it('counts wrapped lines at the authored width', () => {
+    const note = '<div style="padding:12px;font-size:13px">Select a flight in the table, then update the delay code and minutes. The save action writes to the live flight record.</div>';
+    expect(lintHtmlContentHeight(html(note, 50, {}, 39))).toEqual([]);
+    expect(lintHtmlContentHeight(html(note, 50, {}, 9))[0]).toMatch(/needs about/);
+  });
+
+  it('skips dynamic-height blocks, empty markup, and reports a .map() estimate as a lower bound', () => {
+    expect(lintHtmlContentHeight(html(card(18, 34), 118, { dynamicHeight: { value: true } }))).toEqual([]);
+    expect(lintHtmlContentHeight(html('', 40))).toEqual([]);
+    const rail = '<div style="padding:16px"><div style="font-size:16px">Open disruptions</div>{{queries.d.data.map(r => `<div style="padding:12px 0">${r.title}</div>`).join("")}}</div>';
+    expect(lintHtmlContentHeight(html(rail, 300))).toEqual([]);
+    expect(lintHtmlContentHeight(html(rail, 30))[0]).toMatch(/at least \(a \.map\(\) repeats rows\)/);
+  });
+
+  it('accepts a template-literal rawHtml and heights given in em', () => {
+    const tpl = '{{`<div style="padding:1em;font-size:14px"><div style="font-size:2em">${queries.q.data.length}</div><div>flights</div></div>`}}';
+    expect(lintHtmlContentHeight(html(tpl, 100))).toEqual([]);
+    expect(lintHtmlContentHeight(html(tpl, 50))[0]).toMatch(/needs about/);
   });
 });

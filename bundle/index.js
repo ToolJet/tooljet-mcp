@@ -33450,6 +33450,539 @@ function createAuth(config2, fetchImpl = fetch) {
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
+// dist/htmlHeight.js
+var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
+var INLINE_TAGS = /* @__PURE__ */ new Set([
+  "span",
+  "b",
+  "strong",
+  "i",
+  "em",
+  "a",
+  "small",
+  "code",
+  "u",
+  "s",
+  "sup",
+  "sub",
+  "abbr",
+  "time",
+  "mark",
+  "label",
+  "kbd",
+  "q",
+  "cite",
+  "var",
+  "bdi",
+  "font"
+]);
+var DEFAULT_FONT_SIZE = 14;
+var LINE_HEIGHT_FACTOR = 1.5;
+var GLYPH_WIDTH_FACTOR = 0.52;
+var TAG_DEFAULTS = {
+  h1: { fontSize: 32, marginBottom: 8 },
+  h2: { fontSize: 24, marginBottom: 8 },
+  h3: { fontSize: 20, marginBottom: 8 },
+  h4: { fontSize: 18, marginBottom: 8 },
+  h5: { fontSize: 16, marginBottom: 8 },
+  h6: { fontSize: 14, marginBottom: 8 },
+  p: { marginBottom: 16 },
+  ul: { marginBottom: 16 },
+  ol: { marginBottom: 16 },
+  hr: { marginTop: 16, marginBottom: 16 }
+};
+function stripHtmlBindings(raw) {
+  let repeats = false;
+  const trimmed = raw.trim();
+  const template = /^\{\{\s*`([\s\S]*)`\s*\}\}$/.exec(trimmed);
+  if (template) {
+    const body = template[1];
+    const html2 = replaceBalanced(body, "${", "}", (inner) => {
+      if (/\.map\s*\(/.test(inner)) {
+        repeats = true;
+        return "";
+      }
+      return "00";
+    });
+    return { html: html2, repeats };
+  }
+  const html = replaceBalanced(raw, "{{", "}}", (inner) => {
+    if (/\.map\s*\(/.test(inner)) {
+      repeats = true;
+      return "";
+    }
+    return "00";
+  });
+  return { html, repeats };
+}
+function replaceBalanced(src, open, close, fn) {
+  let out = "";
+  let i = 0;
+  while (i < src.length) {
+    const start = src.indexOf(open, i);
+    if (start < 0) {
+      out += src.slice(i);
+      break;
+    }
+    out += src.slice(i, start);
+    let depth = 0;
+    let j = start;
+    let end = -1;
+    while (j < src.length) {
+      if (src.startsWith(open, j)) {
+        depth += 1;
+        j += open.length;
+        continue;
+      }
+      if (src.startsWith(close, j)) {
+        depth -= 1;
+        if (depth === 0) {
+          end = j;
+          break;
+        }
+        j += close.length;
+        continue;
+      }
+      if (open === "${" && src[j] === "{")
+        depth += 1;
+      j += 1;
+    }
+    if (end < 0) {
+      out += src.slice(start);
+      break;
+    }
+    out += fn(src.slice(start + open.length, end));
+    i = end + close.length;
+  }
+  return out;
+}
+function parseStyle(text) {
+  const style = {};
+  if (!text)
+    return style;
+  for (const decl of text.split(";")) {
+    const idx = decl.indexOf(":");
+    if (idx < 0)
+      continue;
+    const key = decl.slice(0, idx).trim().toLowerCase();
+    const value = decl.slice(idx + 1).trim().replace(/\s*!important$/i, "");
+    if (key)
+      style[key] = value;
+  }
+  return style;
+}
+function parseAttrs(text) {
+  const attrs = {};
+  const re = /([a-zA-Z_:][-\w:.]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  let m;
+  while (m = re.exec(text)) {
+    attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? "";
+  }
+  return attrs;
+}
+function parseHtml(html) {
+  const root = { tag: "#root", style: {}, attrs: {}, children: [], text: "" };
+  const stack = [root];
+  const re = /<!--[\s\S]*?-->|<\/\s*([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^>]*?)?)\s*(\/?)>|([^<]+)|</g;
+  let m;
+  while (m = re.exec(html)) {
+    if (m[0].startsWith("<!--"))
+      continue;
+    if (m[1]) {
+      const tag = m[1].toLowerCase();
+      for (let k = stack.length - 1; k > 0; k -= 1) {
+        if (stack[k].tag === tag) {
+          stack.length = k;
+          break;
+        }
+      }
+      continue;
+    }
+    if (m[2]) {
+      const tag = m[2].toLowerCase();
+      if (tag === "style" || tag === "script") {
+        const close = html.indexOf(`</${tag}`, re.lastIndex);
+        if (close >= 0)
+          re.lastIndex = close;
+        continue;
+      }
+      const attrs = parseAttrs(m[3] ?? "");
+      const node = { tag, style: parseStyle(attrs.style), attrs, children: [], text: "" };
+      stack[stack.length - 1].children.push(node);
+      if (!VOID_TAGS.has(tag) && !m[4])
+        stack.push(node);
+      continue;
+    }
+    if (m[5] !== void 0) {
+      const text = decodeEntities(m[5]);
+      if (text.trim() || /\s/.test(text)) {
+        stack[stack.length - 1].children.push({ tag: "#text", style: {}, attrs: {}, children: [], text });
+      }
+    }
+  }
+  return root;
+}
+function decodeEntities(text) {
+  return text.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
+}
+function px(value, fontSize, base = 0) {
+  if (value === void 0)
+    return void 0;
+  const v = value.trim();
+  const m = /^(-?\d*\.?\d+)(px|em|rem|%|pt)?$/.exec(v);
+  if (!m)
+    return v === "0" ? 0 : void 0;
+  const n = parseFloat(m[1]);
+  switch (m[2]) {
+    case void 0:
+    case "px":
+      return n;
+    case "em":
+      return n * fontSize;
+    case "rem":
+      return n * 16;
+    case "pt":
+      return n * (4 / 3);
+    case "%":
+      return base ? n / 100 * base : void 0;
+    default:
+      return void 0;
+  }
+}
+function vertical(style, prop, fontSize) {
+  let top = 0;
+  let bottom = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      top = bottom = parts[0];
+    else if (parts.length === 2 || parts.length === 3) {
+      top = parts[0];
+      bottom = parts[2] ?? parts[0];
+    } else if (parts.length >= 4) {
+      top = parts[0];
+      bottom = parts[2];
+    }
+  }
+  const t = px(style[`${prop}-top`], fontSize);
+  const b = px(style[`${prop}-bottom`], fontSize);
+  if (t !== void 0)
+    top = t;
+  if (b !== void 0)
+    bottom = b;
+  return [top, bottom];
+}
+function horizontal(style, prop, fontSize) {
+  let left = 0;
+  let right = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      left = right = parts[0];
+    else if (parts.length === 2 || parts.length === 3)
+      left = right = parts[1];
+    else if (parts.length >= 4) {
+      right = parts[1];
+      left = parts[3];
+    }
+  }
+  const l = px(style[`${prop}-left`], fontSize);
+  const r = px(style[`${prop}-right`], fontSize);
+  if (l !== void 0)
+    left = l;
+  if (r !== void 0)
+    right = r;
+  return left + right;
+}
+function borderWidth(value) {
+  if (!value)
+    return 0;
+  if (/^(none|0)$/i.test(value.trim()))
+    return 0;
+  const m = /(\d*\.?\d+)px/.exec(value);
+  if (m)
+    return parseFloat(m[1]);
+  if (/\b(thin)\b/.test(value))
+    return 1;
+  if (/\b(medium)\b/.test(value))
+    return 3;
+  if (/\b(thick)\b/.test(value))
+    return 5;
+  return /\b(solid|dashed|dotted|double)\b/.test(value) ? 1 : 0;
+}
+function borders(style) {
+  const all = borderWidth(style.border);
+  const top = style["border-top"] !== void 0 ? borderWidth(style["border-top"]) : all;
+  const bottom = style["border-bottom"] !== void 0 ? borderWidth(style["border-bottom"]) : all;
+  const t = px(style["border-top-width"], 0);
+  const b = px(style["border-bottom-width"], 0);
+  return [t ?? top, b ?? bottom];
+}
+function gridColumns(value) {
+  if (!value)
+    return 1;
+  let count = 0;
+  const re = /repeat\(\s*(\d+|auto-fit|auto-fill)\s*,([^)]*)\)|[^\s,]+/g;
+  let m;
+  while (m = re.exec(value)) {
+    if (m[1]) {
+      const n = parseInt(m[1], 10);
+      const inner = (m[2] ?? "").trim().split(/\s+/).filter(Boolean).length || 1;
+      count += (Number.isFinite(n) ? n : 1) * inner;
+    } else
+      count += 1;
+  }
+  return Math.max(1, count);
+}
+function gapOf(style, axis, fontSize) {
+  const specific = px(style[`${axis}-gap`], fontSize);
+  if (specific !== void 0)
+    return specific;
+  const gap = style.gap ?? style["grid-gap"];
+  if (!gap)
+    return 0;
+  const parts = gap.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+  if (axis === "row")
+    return parts[0] ?? 0;
+  return parts[1] ?? parts[0] ?? 0;
+}
+function isInline(node) {
+  if (node.tag === "#text")
+    return true;
+  const display = node.style.display;
+  if (display) {
+    if (/^inline(?!-block|-flex|-grid)/.test(display))
+      return true;
+    return false;
+  }
+  return INLINE_TAGS.has(node.tag);
+}
+function isHidden(node) {
+  return node.style.display === "none" || node.style.visibility === "hidden";
+}
+function contextFor(node, parent) {
+  const defaults = TAG_DEFAULTS[node.tag];
+  let fontSize = px(node.style["font-size"], parent.fontSize) ?? defaults?.fontSize ?? parent.fontSize;
+  if (!fontSize || fontSize <= 0)
+    fontSize = parent.fontSize;
+  let lineHeight = parent.lineHeight;
+  const lh = node.style["line-height"];
+  if (lh !== void 0) {
+    const unitless = /^\d*\.?\d+$/.test(lh.trim());
+    const value = unitless ? parseFloat(lh) * fontSize : px(lh, fontSize);
+    if (value !== void 0)
+      lineHeight = value;
+    else if (lh.trim() === "normal")
+      lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  } else if (node.style["font-size"] || defaults?.fontSize || parent.lineHeight === 0) {
+    lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  }
+  return { fontSize, lineHeight, width: parent.width };
+}
+function inlineRunHeight(run, ctx) {
+  let maxLine = ctx.lineHeight;
+  const segments = [""];
+  const walk = (nodes, c) => {
+    for (const n of nodes) {
+      if (n.tag === "#text") {
+        segments[segments.length - 1] += n.text;
+      } else if (n.tag === "br") {
+        segments.push("");
+      } else if (n.tag === "img") {
+        const h = px(n.style.height, c.fontSize) ?? (n.attrs.height ? parseFloat(n.attrs.height) : void 0);
+        if (h)
+          maxLine = Math.max(maxLine, h);
+      } else {
+        const inner = contextFor(n, c);
+        const [pt, pb] = vertical(n.style, "padding", inner.fontSize);
+        maxLine = Math.max(maxLine, inner.lineHeight + pt + pb);
+        walk(n.children, inner);
+      }
+    }
+  };
+  walk(run, ctx);
+  let lines = 0;
+  for (const segment of segments) {
+    const text = segment.replace(/\s+/g, " ").trim();
+    if (!text) {
+      if (segments.length > 1)
+        lines += 1;
+      continue;
+    }
+    const textWidth = text.length * ctx.fontSize * GLYPH_WIDTH_FACTOR;
+    lines += Math.max(1, Math.ceil(textWidth / Math.max(ctx.width, 40)));
+  }
+  if (lines === 0)
+    return 0;
+  return lines * maxLine;
+}
+function blockHeight(node, parent) {
+  if (isHidden(node))
+    return 0;
+  const ctx = contextFor(node, parent);
+  const defaults = TAG_DEFAULTS[node.tag];
+  const [pt, pb] = vertical(node.style, "padding", ctx.fontSize);
+  const [bt, bb] = borders(node.style);
+  let [mt, mb] = vertical(node.style, "margin", ctx.fontSize);
+  if (node.style.margin === void 0 && node.style["margin-top"] === void 0 && defaults?.marginTop)
+    mt = defaults.marginTop;
+  if (node.style.margin === void 0 && node.style["margin-bottom"] === void 0 && defaults?.marginBottom)
+    mb = defaults.marginBottom;
+  const explicitWidth = px(node.style.width, ctx.fontSize, parent.width);
+  const innerWidth = Math.max(40, (explicitWidth ?? parent.width) - horizontal(node.style, "padding", ctx.fontSize));
+  const inner = { ...ctx, width: innerWidth };
+  let content;
+  if (node.tag === "hr")
+    content = 1;
+  else if (node.tag === "img")
+    content = px(node.style.height, ctx.fontSize) ?? 0;
+  else
+    content = childrenHeight(node, inner, px(node.style.height, ctx.fontSize) !== void 0);
+  const explicit = px(node.style.height, ctx.fontSize);
+  if (explicit !== void 0 && !/%|auto/.test(node.style.height ?? "")) {
+    const borderBox = node.style["box-sizing"] === "border-box";
+    const boxHeight = borderBox ? explicit : explicit + pt + pb + bt + bb;
+    const overflowHidden = /^(hidden|auto|scroll|clip)$/.test(node.style.overflow ?? node.style["overflow-y"] ?? "");
+    const full = content + pt + pb + bt + bb;
+    return (overflowHidden ? boxHeight : Math.max(boxHeight, full)) + mt + mb;
+  }
+  const minHeight = px(node.style["min-height"], ctx.fontSize);
+  let total = content + pt + pb + bt + bb;
+  if (minHeight !== void 0)
+    total = Math.max(total, node.style["box-sizing"] === "border-box" ? minHeight : minHeight + pt + pb);
+  return total + mt + mb;
+}
+function childrenHeight(node, ctx, pinned = false) {
+  const display = node.style.display ?? "";
+  const children = node.children.filter((c) => !isHidden(c));
+  if (/grid/.test(display))
+    return gridHeight(node, children, ctx);
+  if (/flex/.test(display))
+    return flexHeight(node, children, ctx, pinned);
+  if (node.tag === "tr")
+    return rowHeight(children, ctx);
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of children) {
+    if (isInline(child))
+      run.push(child);
+    else {
+      flush();
+      total += blockHeight(child, ctx);
+    }
+  }
+  flush();
+  return total;
+}
+function rowHeight(children, ctx) {
+  const cells = children.filter((c) => !isInline(c));
+  if (!cells.length)
+    return inlineRunHeight(children, ctx);
+  const width = Math.max(40, ctx.width / cells.length);
+  return Math.max(...cells.map((c) => blockHeight(c, { ...ctx, width })));
+}
+function gridHeight(node, children, ctx) {
+  const columns = gridColumns(node.style["grid-template-columns"]);
+  const rowGap = gapOf(node.style, "row", ctx.fontSize);
+  const colGap = gapOf(node.style, "column", ctx.fontSize);
+  const width = Math.max(40, (ctx.width - colGap * (columns - 1)) / columns);
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  let total = 0;
+  for (let i = 0; i < items.length; i += columns) {
+    const row = items.slice(i, i + columns);
+    total += Math.max(...row.map((c) => isInline(c) ? inlineRunHeight([c], { ...ctx, width }) : blockHeight(c, { ...ctx, width })));
+    if (i + columns < items.length)
+      total += rowGap;
+  }
+  return total;
+}
+function flexHeight(node, children, ctx, pinned = false) {
+  const direction = node.style["flex-direction"] ?? "row";
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  if (/column/.test(direction)) {
+    const gap2 = gapOf(node.style, "row", ctx.fontSize);
+    return items.reduce((sum, c, i) => sum + (isInline(c) ? inlineRunHeight([c], ctx) : blockHeight(c, ctx)) + (i ? gap2 : 0), 0);
+  }
+  const gap = gapOf(node.style, "column", ctx.fontSize);
+  const weights = items.map((c) => {
+    const flex = c.style.flex ?? c.style["flex-grow"];
+    const n = flex ? parseFloat(flex) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  });
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const free = ctx.width - gap * (items.length - 1);
+  const stretched = pinned && !/^(flex-start|center|flex-end|baseline|start|end)$/.test(node.style["align-items"] ?? "");
+  return Math.max(...items.map((c, i) => {
+    const explicit = px(c.style.width, ctx.fontSize, ctx.width);
+    const width = Math.max(40, explicit ?? free * weights[i] / totalWeight);
+    if (isInline(c))
+      return inlineRunHeight([c], { ...ctx, width });
+    if (!stretched)
+      return blockHeight(c, { ...ctx, width });
+    const inner = contextFor(c, { ...ctx, width });
+    const [pt] = vertical(c.style, "padding", inner.fontSize);
+    const [bt] = borders(c.style);
+    const [mt] = vertical(c.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, width - horizontal(c.style, "padding", inner.fontSize));
+    return mt + pt + bt + childrenHeight(c, { ...inner, width: innerWidth });
+  }));
+}
+function rootHeight(root, ctx) {
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of root.children.filter((c) => !isHidden(c))) {
+    if (isInline(child)) {
+      run.push(child);
+      continue;
+    }
+    flush();
+    const percentHeight = /%$/.test((child.style.height ?? "").trim());
+    if (!percentHeight) {
+      total += blockHeight(child, ctx);
+      continue;
+    }
+    const inner = contextFor(child, ctx);
+    const [pt] = vertical(child.style, "padding", inner.fontSize);
+    const [bt] = borders(child.style);
+    const [mt] = vertical(child.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, ctx.width - horizontal(child.style, "padding", inner.fontSize));
+    const content = childrenHeight(child, { ...inner, width: innerWidth }, true);
+    const display = child.style.display ?? "";
+    const column = /column/.test(child.style["flex-direction"] ?? "");
+    const centred = /flex|grid/.test(display) && !column && /center/.test(child.style["align-items"] ?? child.style["align-content"] ?? "") || /flex/.test(display) && column && /center/.test(child.style["justify-content"] ?? "");
+    total += mt + (centred ? content : pt + bt + content);
+  }
+  flush();
+  return total;
+}
+function estimateHtmlHeight(rawHtml, widthPx) {
+  const { html, repeats } = stripHtmlBindings(rawHtml);
+  if (!html.trim())
+    return null;
+  const root = parseHtml(html);
+  const ctx = { fontSize: DEFAULT_FONT_SIZE, lineHeight: DEFAULT_FONT_SIZE * LINE_HEIGHT_FACTOR, width: Math.max(40, widthPx) };
+  const height = rootHeight(root, ctx);
+  if (!Number.isFinite(height) || height <= 0)
+    return null;
+  return { height: Math.round(height), lowerBound: repeats };
+}
+
 // dist/renderReadiness.js
 var GRID_COLUMNS = 43;
 function propVal(props, key) {
@@ -33609,6 +34142,34 @@ function lintUntriggeredDataQueries(summary) {
     }
   }
   return { errors, warnings };
+}
+var HTML_PX_PER_COLUMN = 32;
+var HTML_WIDGET_HEIGHT_LOSS = 4;
+var HTML_HEIGHT_TOLERANCE = 8;
+function lintHtmlContentHeight(c) {
+  if (c.type !== "Html")
+    return [];
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const rect2 = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const width = typeof rect2?.width === "number" ? rect2.width : 39;
+  if (height === void 0)
+    return [];
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return [];
+  const usable = height - HTML_WIDGET_HEIGHT_LOSS;
+  const overflow = estimate.height - usable;
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return [];
+  const suggested = Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10;
+  return [
+    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
+  ];
 }
 
 // dist/bindingReferences.js
@@ -34622,6 +35183,7 @@ function lintComponentSpec(spec) {
     }
   }
   errors.push(...lintTextFormat(spec));
+  errors.push(...lintHtmlContentHeight(spec));
   if (spec.type === "Table") {
     errors.push(...lintTableColumnsShape(spec));
     const data = propVal2(props, "data");
@@ -34643,12 +35205,12 @@ function lintComponentSpec(spec) {
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(contentWrap) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
-      const rowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const rowHeight2 = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
       const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < chromeHeight + rowHeight) {
-        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+      const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
+      if (desktopHeight < chromeHeight + rowHeight2) {
+        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight2}px.`);
       } else if (desktopHeight < minimumHeight) {
         warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
@@ -34949,6 +35511,8 @@ function lintComponents(components) {
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
+  for (const c of components)
+    errors.push(...lintHtmlContentHeight(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -35164,6 +35728,8 @@ function validateAppStructure(summary) {
     errors.push(...lintUnusableTextGeometry(p.components));
     errors.push(...lintUnrenderableHeights(p.components));
     errors.push(...lintOversizedWidths(p.components));
+    for (const c of p.components)
+      errors.push(...lintHtmlContentHeight(c));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));

@@ -4,10 +4,13 @@
  *  - a Table bound to a query that nothing ever runs (No data on every page);
  *  - a Table whose `columns` value is a JSON string, not an array (the Table component crashes);
  *  - a Text holding markdown while its format is the default html (headings render as "## Title");
- *  - component widths authored in pixels on the 43-column grid (a 1160-wide sliver of layout).
+ *  - component widths authored in pixels on the 43-column grid (a 1160-wide sliver of layout);
+ *  - an Html block whose inline CSS needs more height than it was given (the widget never grows, so
+ *    the bottom of every header band and KPI card is cut off behind a hidden scrollbar).
  * The skill documents the right shape for every one of these; the linter is where it has to be enforced.
  */
 import type { AppSummary } from './tooljetClient.js';
+import { estimateHtmlHeight } from './htmlHeight.js';
 
 export interface ReadinessComponent {
   id?: string;
@@ -199,4 +202,38 @@ export function lintUntriggeredDataQueries(summary: AppSummary): { errors: strin
     }
   }
   return { errors, warnings };
+}
+
+/** Canvas columns to pixels at a typical 1300px canvas (39 columns of content span about 1250px). */
+export const HTML_PX_PER_COLUMN = 32;
+/** The Html widget's box renders about 4px shorter than the authored height (measured 2026-09-05). */
+export const HTML_WIDGET_HEIGHT_LOSS = 4;
+/** The estimator is within a few px on real blocks; only flag a clear miss so a borderline fit never costs a turn. */
+export const HTML_HEIGHT_TOLERANCE = 8;
+
+/** An Html block never grows. When the height its own CSS needs exceeds the authored height, the
+ *  bottom (or, for a vertically centred flex header, both edges) is clipped behind a hidden scrollbar.
+ *  Seven of fourteen Html blocks in one Luna build did this on 2026-09-05, by 5 to 42px each. */
+export function lintHtmlContentHeight(c: ReadinessComponent): string[] {
+  if (c.type !== 'Html') return [];
+  if (truthy(propVal(c.properties, 'dynamicHeight'))) return [];
+  const raw = propVal(c.properties, 'rawHtml');
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+  const rect = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect?.height === 'number' ? rect.height : undefined;
+  const width = typeof rect?.width === 'number' ? rect.width : 39;
+  if (height === undefined) return [];
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate) return [];
+  const usable = height - HTML_WIDGET_HEIGHT_LOSS;
+  const overflow = estimate.height - usable;
+  if (overflow <= HTML_HEIGHT_TOLERANCE) return [];
+  const suggested = Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10;
+  return [
+    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? ' at least (a .map() repeats rows)' : ''} ` +
+      `(paddings, margins, font sizes × 1.5 line height and wrapped lines, summed from its inline CSS) but desktop ` +
+      `height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ` +
+      `${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes ` +
+      'to fit the height you have. An Html block never grows to its content.',
+  ];
 }

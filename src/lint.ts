@@ -2,7 +2,13 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
-import { lintOversizedWidths, lintTableColumnsShape, lintTextFormat, lintUntriggeredDataQueries } from './renderReadiness.js';
+import {
+  lintHtmlContentHeight,
+  lintOversizedWidths,
+  lintTableColumnsShape,
+  lintTextFormat,
+  lintUntriggeredDataQueries,
+} from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -1232,6 +1238,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 
   // Text holding markdown in the default html format renders the markdown literally.
   errors.push(...lintTextFormat(spec));
+  errors.push(...lintHtmlContentHeight(spec));
 
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
@@ -1739,6 +1746,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -2031,6 +2039,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
