@@ -618,13 +618,25 @@ export interface UpdateEventsParams {
   updateType?: 'update' | 'reorder';
 }
 
+/** An HTML error page (Cloudflare's 524 "A timeout occurred", an nginx 502) says nothing useful past
+ *  its title, and a production build once carried 12 KB of Cloudflare markup into the model's context
+ *  for every failed seed row. Keep the title, drop the markup, and cap plain bodies too. */
+export function condenseErrorBody(detail: string, limit = 600): string {
+  const text = String(detail ?? '');
+  if (/<!doctype html|<html[\s>]/i.test(text)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(text)?.[1]?.trim();
+    return `${title || 'HTML error page'} (HTML error page from the proxy, markup omitted)`;
+  }
+  return text.length > limit ? `${text.slice(0, limit)} …[${text.length - limit} more chars]` : text;
+}
+
 export class ToolJetHttpError extends Error {
   constructor(
     public readonly status: number,
     public readonly method: string,
     public readonly detail: string
   ) {
-    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    super(`ToolJet ${method} failed (${status}): ${condenseErrorBody(detail)}`);
     this.name = 'ToolJetHttpError';
   }
 }
@@ -1615,18 +1627,43 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // an app error. Retry with backoff so seeding waits the cache out instead of failing the phase and
   // handing an unfixable error to the model. Once the cache refreshes, later rows succeed on attempt 0.
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4000];
+  // A seed insert on production once sat until Cloudflare cut it off at 100s with a 524, twice in one
+  // build, and the same rows went in 20s later. A gateway timeout on an insert is a wait-and-retry,
+  // not a plan error: cap each attempt well under Cloudflare's limit and back off between attempts.
+  const GATEWAY_RETRY_DELAYS_MS = [2000, 5000, 10000, 20000];
+  const INSERT_ATTEMPT_TIMEOUT_MS = 45_000;
+  const isGatewayTimeout = (status: number) => status === 502 || status === 503 || status === 504 || (status >= 520 && status <= 527);
 
   async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
-    for (let attempt = 0; ; attempt += 1) {
-      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(row),
-      });
-      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
+    let schemaWaits = 0;
+    let gatewayWaits = 0;
+    for (;;) {
+      let res: Response;
+      try {
+        res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(row),
+          signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS),
+        });
+      } catch (error) {
+        const timedOut = (error as { name?: string })?.name === 'TimeoutError' || (error as { name?: string })?.name === 'AbortError';
+        if (!timedOut || gatewayWaits >= GATEWAY_RETRY_DELAYS_MS.length) throw error;
+        await new Promise((resolve) => setTimeout(resolve, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
+        gatewayWaits += 1;
+        continue;
+      }
+      if (res.ok) return res;
+      if (isGatewayTimeout(res.status) && gatewayWaits < GATEWAY_RETRY_DELAYS_MS.length) {
+        await new Promise((resolve) => setTimeout(resolve, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
+        gatewayWaits += 1;
+        continue;
+      }
+      if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
-      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      schemaWaits += 1;
     }
   }
 

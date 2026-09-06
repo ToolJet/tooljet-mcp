@@ -1181,6 +1181,51 @@ describe('createClient', () => {
       expect(result).toEqual({ processed_rows: 2 });
     });
 
+    it('waits out a gateway timeout on an insert and retries the same row', async () => {
+      vi.useFakeTimers();
+      try {
+        const cloudflare = '<!DOCTYPE html><html><head><title>tooljet.ai | 524: A timeout occurred</title></head><body>…</body></html>';
+        auth.authedFetch
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+          .mockResolvedValueOnce(mockResponse({ status: 524, text: cloudflare }))
+          .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }] }));
+
+        const client = createClient(auth, config);
+        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] });
+        await vi.runAllTimersAsync();
+        const result = await pending;
+
+        expect(result).toEqual({ processed_rows: 1 });
+        expect(auth.authedFetch).toHaveBeenCalledTimes(4);
+        expect(auth.authedFetch.mock.calls[2][1].signal).toBeInstanceOf(AbortSignal);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('surfaces a persistent gateway timeout as one line, not the HTML page', async () => {
+      vi.useFakeTimers();
+      try {
+        const cloudflare = '<!DOCTYPE html><html><head><title>tooljet.ai | 524: A timeout occurred</title></head><body>' + 'x'.repeat(12000) + '</body></html>';
+        auth.authedFetch
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+          .mockResolvedValue(mockResponse({ status: 524, text: cloudflare }));
+
+        const client = createClient(auth, config);
+        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] }).catch((error: Error) => error);
+        await vi.runAllTimersAsync();
+        const error = (await pending) as Error;
+
+        expect(error.message).toContain('insertRows failed (524): tooljet.ai | 524: A timeout occurred (HTML error page from the proxy, markup omitted)');
+        expect(error.message.length).toBeLessThan(200);
+        expect(auth.authedFetch).toHaveBeenCalledTimes(2 + 5); // first try plus four gateway retries
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('rejects explicit values for a generated primary key before writing', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({
         status: 200,

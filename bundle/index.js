@@ -36165,12 +36165,20 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+function condenseErrorBody(detail, limit = 600) {
+  const text = String(detail ?? "");
+  if (/<!doctype html|<html[\s>]/i.test(text)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(text)?.[1]?.trim();
+    return `${title || "HTML error page"} (HTML error page from the proxy, markup omitted)`;
+  }
+  return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
+}
 var ToolJetHttpError = class extends Error {
   status;
   method;
   detail;
   constructor(status, method, detail) {
-    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    super(`ToolJet ${method} failed (${status}): ${condenseErrorBody(detail)}`);
     this.status = status;
     this.method = method;
     this.detail = detail;
@@ -36947,19 +36955,43 @@ function createClient(auth, config2) {
     });
   }
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
+  const GATEWAY_RETRY_DELAYS_MS = [2e3, 5e3, 1e4, 2e4];
+  const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
+  const isGatewayTimeout = (status) => status === 502 || status === 503 || status === 504 || status >= 520 && status <= 527;
   async function insertRowViaProxy(tableId, row) {
-    for (let attempt = 0; ; attempt += 1) {
-      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(row)
-      });
-      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
+    let schemaWaits = 0;
+    let gatewayWaits = 0;
+    for (; ; ) {
+      let res;
+      try {
+        res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(row),
+          signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS)
+        });
+      } catch (error51) {
+        const timedOut = error51?.name === "TimeoutError" || error51?.name === "AbortError";
+        if (!timedOut || gatewayWaits >= GATEWAY_RETRY_DELAYS_MS.length)
+          throw error51;
+        await new Promise((resolve4) => setTimeout(resolve4, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
+        gatewayWaits += 1;
+        continue;
+      }
+      if (res.ok)
+        return res;
+      if (isGatewayTimeout(res.status) && gatewayWaits < GATEWAY_RETRY_DELAYS_MS.length) {
+        await new Promise((resolve4) => setTimeout(resolve4, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
+        gatewayWaits += 1;
+        continue;
+      }
+      if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
         return res;
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      schemaWaits += 1;
     }
   }
   async function insertRows(params) {
