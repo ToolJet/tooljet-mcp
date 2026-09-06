@@ -157,6 +157,32 @@ describe('update_components validation', () => {
     }));
   });
 
+  // Regression: "moved style key X" was reported for a stored key the caller never sent and that a
+  // merge-only update cannot delete, so the model read the impossible edit as done and retried it.
+  it('does not claim to have moved a style key it cannot remove from a persisted component', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1',
+        pages: [{ id: 'p1', components: [{
+          id: 'c1', name: 'text1', type: 'Text',
+          properties: { text: { value: 'Hi' }, fontWeight: { value: 'bold' } }, styles: {},
+          layouts: { desktop: { top: 0, left: 0, width: 20, height: 40 } },
+        }] }],
+        queries: [], events: [],
+      }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1 }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({
+      app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 'text1', definition: { properties: { text: 'Bye' } } }],
+    });
+    expect(result.isError).not.toBe(true);
+    const warnings = (textOf(result) as { warnings: string[] }).warnings.join(' ');
+    expect(warnings).not.toMatch(/moved style key "fontWeight"/i);
+    expect(warnings).toMatch(/already stored under `properties`.*REMAIN there/i);
+    expect(warnings).toMatch(/cannot delete keys/i);
+  });
+
   it('lists what the page actually holds when nothing matches, instead of a bare "does not exist"', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

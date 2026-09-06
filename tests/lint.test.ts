@@ -36,6 +36,16 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it('WARNS instead of erroring for the same keys on an already-persisted component', () => {
+    const r = lintComponentSpec(
+      { name: 'title', type: 'Text', properties: { textColor: { value: '#111' } } },
+      { persisted: true }
+    );
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.join(' ')).toMatch(/already.*|stored under `properties`/i);
+    expect(r.warnings.join(' ')).toMatch(/cannot be removed/i);
+  });
+
   it('warns when a Chart has no explicit (empty) title — the default clips', () => {
     const r = lintComponentSpec({ name: 'c', type: 'Chart', properties: { data: { value: [] } } });
     expect(r.warnings.join(' ')).toMatch(/native title defaults to a non-empty string that clips/);
@@ -1208,6 +1218,27 @@ describe('validateAppStructure', () => {
       events: [],
     };
     expect(validateAppStructure(corrupted).errors.join(' ')).toMatch(/malformed entries.*shredded dynamic binding/is);
+  });
+
+  it('does not FAIL an app over inherited style keys under properties (they are inert and unremovable)', () => {
+    const inherited: AppSummary = {
+      ...base,
+      pages: [{
+        id: 'p1',
+        name: 'Home',
+        components: [{
+          id: 'c9',
+          name: 'text1',
+          type: 'Text',
+          properties: { text: { value: 'hi' }, fontWeight: { value: 'bold' }, textColor: { value: '#111' } },
+        }],
+      }],
+      queries: [],
+      events: [],
+    };
+    const r = validateAppStructure(inherited);
+    expect(r.errors.join(' ')).not.toMatch(/style keys/);
+    expect(r.warnings.join(' ')).toMatch(/stored under `properties`/);
   });
 
   it('passes a well-formed app', () => {
