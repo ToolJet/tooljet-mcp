@@ -39503,6 +39503,52 @@ function validateEvents(summary, events, options2 = {}) {
   const queries = new Set(summary.queries.map((query) => query.id));
   const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
+  const pageOfComponent = new Map(summary.pages.flatMap((page) => page.components.map((c) => [c.id, page.id])));
+  const pageName = new Map(summary.pages.map((page) => [page.id, page.name ?? page.handle ?? page.id]));
+  const queryTriggerPages = /* @__PURE__ */ new Map();
+  const noteTrigger = (queryId, pageId) => {
+    if (!queryId)
+      return;
+    const set2 = queryTriggerPages.get(queryId) ?? /* @__PURE__ */ new Set();
+    set2.add(pageId ?? "*");
+    queryTriggerPages.set(queryId, set2);
+  };
+  for (const query of summary.queries) {
+    const opts = query.options && typeof query.options === "object" ? query.options : {};
+    const onLoad = opts.runOnPageLoad;
+    const raw = onLoad && typeof onLoad === "object" ? onLoad.value : onLoad;
+    if (raw === true || String(raw ?? "").replace(/[{}\s]/g, "").toLowerCase() === "true")
+      noteTrigger(query.id, void 0);
+  }
+  for (const persisted of summary.events ?? []) {
+    const payload = persisted.event && typeof persisted.event === "object" ? persisted.event : void 0;
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const queryId = String(payload.queryId ?? "");
+    if (persisted.target === "page")
+      noteTrigger(queryId, persisted.sourceId);
+    else if (persisted.target === "component" && persisted.sourceId)
+      noteTrigger(queryId, pageOfComponent.get(persisted.sourceId));
+  }
+  for (const event of events) {
+    if (event.action?.actionId !== "run-query")
+      continue;
+    const queryId = String(event.action.queryId ?? "");
+    if (event.sourceType === "page")
+      noteTrigger(queryId, event.sourceId);
+    else if (event.sourceType === "component" || event.sourceType === "table_column")
+      noteTrigger(queryId, pageOfComponent.get(event.sourceId));
+  }
+  const pageScopedTarget = (action) => {
+    const id = action.actionId;
+    if (id === "set-table-page")
+      return typeof action.table === "string" ? action.table : void 0;
+    if (id === "control-component" || id === "scroll-component-into-view")
+      return typeof action.componentId === "string" ? action.componentId : void 0;
+    if (id === "show-modal" || id === "close-modal")
+      return typeof action.modal === "string" ? action.modal : void 0;
+    return void 0;
+  };
   events.forEach((event, index) => {
     const label2 = event.name ? `Event "${event.name}"` : `Event[${index}]`;
     if (event.sourceType === "component") {
@@ -39550,6 +39596,22 @@ function validateEvents(summary, events, options2 = {}) {
     if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
       errors.push(`${label2}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
+    }
+    const targetId = pageScopedTarget(event.action);
+    const targetPage = targetId ? pageOfComponent.get(targetId) : void 0;
+    if (targetId && targetPage) {
+      const targetLabel = `${components.get(targetId)?.type ?? "component"} "${components.get(targetId)?.name ?? targetId}" on page "${pageName.get(targetPage)}"`;
+      const sourcePage = event.sourceType === "page" ? event.sourceId : event.sourceType === "component" || event.sourceType === "table_column" ? pageOfComponent.get(event.sourceId) : void 0;
+      if (sourcePage && sourcePage !== targetPage) {
+        errors.push(`${label2}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action only reaches components on the page that is open; on another page the target is not mounted and the action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a component there), or drop it: switch-page mounts that page fresh.`);
+      } else if (event.sourceType === "data_query") {
+        const triggerPages = queryTriggerPages.get(event.sourceId);
+        const elsewhere = triggerPages ? [...triggerPages].filter((page) => page !== targetPage) : [];
+        if (elsewhere.length) {
+          const where = elsewhere.includes("*") ? "on every page load (runOnPageLoad)" : `from page "${elsewhere.map((p) => pageName.get(p) ?? p).join('", "')}"`;
+          errors.push(`${label2}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, where that component is not mounted, so the success handler fails at runtime. Move the action to page "${pageName.get(targetPage)}" (its onPageLoad, or the filter's own event there), or run the query only from that page.`);
+        }
+      }
     }
     if (actionId === "run-query") {
       let queryId = event.action.queryId;
