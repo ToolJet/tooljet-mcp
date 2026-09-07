@@ -35897,6 +35897,20 @@ function validateAppStructure(summary) {
     }
   }
   for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? "");
+    const bare = /* @__PURE__ */ new Set();
+    for (const name of queryByName.keys()) {
+      if (!name || !/^[A-Za-z_$][\w$]*$/.test(name))
+        continue;
+      const pattern = new RegExp(`(?<![\\w$.\\]'"])${name.replace(/\$/g, "\\$")}\\??\\.(data|rawData|isLoading)\\b`);
+      if (pattern.test(blob))
+        bare.add(name);
+    }
+    for (const name of bare) {
+      errors.push(`${component.type ?? "Component"} "${component.name ?? component.id}": reads ${name}.data by bare name; queries are referenced as queries.${name}.data. A bare name is undefined at runtime and the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
     if (component.type !== "Chart")
       continue;
     const props = component.properties ?? {};
