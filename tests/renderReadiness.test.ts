@@ -348,6 +348,30 @@ describe('lintChartDataShape', () => {
     expect(lintComponentSpec(chart('{{queries.q.data.map(r => ({day: r.day, count: r.count}))}}')).errors.join(' ')).toMatch(/plots \[\{x, y\}\] only/);
   });
 
+  it('checks the final map rather than intermediate objects', () => {
+    const expression = 'queries.orders.data.map(r => ({date: r.day, total: r.amount})).map(r => ({x: r.date, y: r.total}))';
+    expect(new Function('queries', `return ${expression}`)({ orders: { data: [{ day: 'Mon', amount: 3 }] } }))
+      .toEqual([{ x: 'Mon', y: 3 }]);
+    expect(lintChartDataShape(chart(`{{${expression}}}`))).toEqual([]);
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({x: r.day, y: r.n})).map(r => ({date: r.x, count: r.y}))}}')))
+      .toHaveLength(1);
+  });
+
+  it('handles nested object values and quoted keys without splitting their contents', () => {
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({meta: {date: r.day}, "x": r.day, "y": r.n}))}}'))).toEqual([]);
+  });
+
+  it('leaves ambiguous final shapes and unrelated callbacks unverified', () => {
+    for (const expression of [
+      'convert(queries.q.data.map(r => ({date: r.day})))',
+      'queries.q.data.map(r => ({date: r.day})).map(toPoint)',
+      'queries.q.data.map(r => ({date: r.day})).flatMap(toPoints)',
+      'queries.q.data.map(r => ({[r.axis]: r.day, y: r.n}))',
+      'queries.q.data.map(r => ({date: r.day, ...toPoint(r)}))',
+      'queries.q.data.map(r => ({x: r.day, y: r.parts.map(p => ({amount: p.n})).length}))',
+    ]) expect(lintChartDataShape(chart(`{{${expression}}}`))).toEqual([]);
+  });
+
   it('flags a bare query binding, the Terra case, and accepts x/y maps, spreads and plotly JSON', () => {
     expect(lintChartDataShape(chart('{{queries.orders_by_day.data}}'))).toEqual([]);
     expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({x: r.day, y: Number(r.count)}))}}'))).toEqual([]);

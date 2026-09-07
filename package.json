@@ -23,11 +23,11 @@
   "license": "ISC",
   "description": "MCP server and app-builder skill for ToolJet: build and modify ToolJet apps end to end through governed tools.",
   "dependencies": {
+    "@babel/parser": "^7.29.8",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@babel/parser": "^7.29.8",
     "@types/node": "^26.2.0",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.12",

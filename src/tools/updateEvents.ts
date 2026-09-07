@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from '../eventValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { strictEntry } from '../strictEntry.js';
 
 export function updateEventsTool(client: ToolJetClient): ToolDef {
   return {
@@ -23,12 +24,17 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
       version_id: z.string(),
       events: z
         .array(
-          z.object({
-            event_id: z.string(),
-            name: z.string().optional(),
-            event: z.record(z.string(), z.any()).optional(),
-            index: z.number().optional(),
-          })
+          strictEntry(
+            {
+              event_id: z.string(),
+              name: z.string().optional(),
+              event: z.record(z.string(), z.any()).optional(),
+              index: z.number().optional(),
+            },
+            (key) =>
+              `Event entry key "${key}" must be nested under \`event\` (the full { eventId, actionId, ...params } blob). ` +
+              'Accepted entry keys are event_id, name, event, index.'
+          )
         )
         .min(1),
       update_type: z.enum(['update', 'reorder']).optional(),

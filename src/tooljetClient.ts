@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
@@ -1639,16 +1640,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // an app error. Retry with backoff so seeding waits the cache out instead of failing the phase and
   // handing an unfixable error to the model. Once the cache refreshes, later rows succeed on attempt 0.
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4000];
-  // A seed insert on production once sat until Cloudflare cut it off at 100s with a 524, twice in one
-  // build, and the same rows went in 20s later. A gateway timeout on an insert is a wait-and-retry,
-  // not a plan error: cap each attempt well under Cloudflare's limit and back off between attempts.
-  const GATEWAY_RETRY_DELAYS_MS = [2000, 5000, 10000, 20000];
+  // A timed-out POST may already have committed. Bound the wait, but never replay an insert after
+  // a transport failure or uncertain server response without server-side idempotency.
   const INSERT_ATTEMPT_TIMEOUT_MS = 45_000;
-  const isGatewayTimeout = (status: number) => status === 502 || status === 503 || status === 504 || (status >= 520 && status <= 527);
+  const UNKNOWN_INSERT_OUTCOME = 'Insert outcome unknown: the row may already have been inserted. ' +
+    'Verify persisted rows before retrying; do not replay the whole batch.';
 
   async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
     let schemaWaits = 0;
-    let gatewayWaits = 0;
     for (;;) {
       let res: Response;
       try {
@@ -1659,18 +1658,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS),
         });
       } catch (error) {
-        const timedOut = (error as { name?: string })?.name === 'TimeoutError' || (error as { name?: string })?.name === 'AbortError';
-        if (!timedOut || gatewayWaits >= GATEWAY_RETRY_DELAYS_MS.length) throw error;
-        await new Promise((resolve) => setTimeout(resolve, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
-        gatewayWaits += 1;
-        continue;
+        throw new Error(`ToolJet insertRows request failed (${error instanceof Error ? error.name : 'transport error'}). ${UNKNOWN_INSERT_OUTCOME}`);
       }
       if (res.ok) return res;
-      if (isGatewayTimeout(res.status) && gatewayWaits < GATEWAY_RETRY_DELAYS_MS.length) {
-        await new Promise((resolve) => setTimeout(resolve, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
-        gatewayWaits += 1;
-        continue;
+      if (res.status === 408 || res.status >= 500) {
+        const body = await res.text().catch(() => 'Response body unavailable');
+        const error = new ToolJetHttpError(res.status, 'insertRows', body);
+        error.message += ` ${UNKNOWN_INSERT_OUTCOME}`;
+        throw error;
       }
+      // Only retry explicit schema-cache rejections, where PostgREST did not execute the insert.
+      if (res.status !== 400 && res.status !== 404) return res;
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
@@ -1884,8 +1882,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }> {
     const diff: Record<string, unknown> = {};
     for (const u of params.updates) {
-      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasDef = hasNonEmptyDefinition(u.definition);
       const hasRaw = u.name !== undefined || u.parent !== undefined || u.slotName !== undefined;
+      if (!hasDef && !hasRaw) {
+        // Never PUT an empty diff: ToolJet answers 200 without writing and the caller would report
+        // it as updated. Observed live when a patch was sent outside `definition` and stripped.
+        throw new Error(
+          `updateComponents "${u.componentId}": nothing to update. Provide a non-empty definition ` +
+            '(properties/styles/validation/others) or a name/parent change.'
+        );
+      }
       if (hasDef && hasRaw) {
         throw new Error(
           `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent/slotName ` +
@@ -1940,6 +1946,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }> {
     const diff: Record<string, unknown> = {};
     for (const l of params.layouts) {
+      if (!l.desktop && !l.mobile && l.parent === undefined) {
+        throw new Error(
+          `updateLayouts "${l.componentId}": nothing to update. Provide desktop and/or mobile rects, or a parent change.`
+        );
+      }
       const entry: Record<string, unknown> = {
         layouts: {
           ...(l.desktop ? { desktop: l.desktop } : {}),

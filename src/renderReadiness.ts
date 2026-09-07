@@ -9,6 +9,7 @@
  *    the bottom of every header band and KPI card is cut off behind a hidden scrollbar).
  * The skill documents the right shape for every one of these; the linter is where it has to be enforced.
  */
+import { parseExpression } from '@babel/parser';
 import type { AppSummary } from './tooljetClient.js';
 import { estimateHtmlHeight, parseHtml, stripHtmlBindings } from './htmlHeight.js';
 
@@ -366,14 +367,30 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  names render a blank plot with no error. Observed live on the Nordlicht benchmark (2026-09-07): Terra
  *  bound `queries.orders_by_day.data` straight from a list_rows query and Luna medium mapped rows to
  *  `{date, orders}`; both "orders per day" charts drew an empty axis. */
-const OBJECT_LITERAL = /=>\s*\(\s*\{([^}]*)\}\s*\)/g;
-function literalKeys(body: string): string[] {
-  // `x: r.day`, shorthand `orders`, quoted `'x': 1` and `...spread` entries, split on top-level commas.
-  return body
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => (part.startsWith('...') ? '...' : part.split(':')[0]!.trim().replace(/^['"]|['"]$/g, '')));
+/** Inspect only a direct final .map() whose callback returns a static object. Earlier maps,
+ * nested callbacks, spreads and computed keys do not establish the final point shape. */
+function finalChartPointKeys(value: string): string[] | undefined {
+  const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
+  if (!binding) return undefined;
+  try {
+    const expression = parseExpression(binding[1]!);
+    if (expression.type !== 'CallExpression' || expression.callee.type !== 'MemberExpression') return undefined;
+    const method = expression.callee;
+    if (method.computed || method.property.type !== 'Identifier' || method.property.name !== 'map') return undefined;
+    const callback = expression.arguments[0];
+    if (callback?.type !== 'ArrowFunctionExpression' || callback.async || callback.body.type !== 'ObjectExpression') return undefined;
+    const keys: string[] = [];
+    for (const property of callback.body.properties) {
+      if (property.type === 'SpreadElement' || property.computed) return undefined;
+      if (property.key.type === 'Identifier') keys.push(property.key.name);
+      else if (property.key.type === 'StringLiteral') keys.push(property.key.value);
+      else return undefined;
+    }
+    return keys;
+  } catch {
+    // Syntax validation is handled separately; this check never evaluates user code.
+    return undefined;
+  }
 }
 export const BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
 export function lintChartDataShape(c: ReadinessComponent): string[] {
@@ -382,21 +399,12 @@ export function lintChartDataShape(c: ReadinessComponent): string[] {
   if (truthy(propVal(props, 'plotFromJson'))) return [];
   const value = propVal(props, 'data');
   if (typeof value !== 'string' || !value.includes('{{')) return [];
-  const literals = [...value.matchAll(OBJECT_LITERAL)];
-  if (!literals.length) return []; // a bare query binding is judged against the query in validateAppStructure
-  const errors: string[] = [];
-  for (const m of literals) {
-    const keys = literalKeys(m[1]!);
-    if (!keys.length || keys.includes('...')) continue;
-    if (!keys.includes('x') || !keys.includes('y')) {
-      errors.push(
-        `Chart "${label(c)}": data maps rows to {${keys.join(', ')}} but the Chart plots [{x, y}] only; ` +
-          'any other key names draw an empty plot with no error. Name the category x and the number y.'
-      );
-      break;
-    }
-  }
-  return errors;
+  const keys = finalChartPointKeys(value);
+  if (!keys || keys.includes('x') && keys.includes('y')) return [];
+  return [
+    `Chart "${label(c)}": data maps rows to {${keys.join(', ')}} but the Chart plots [{x, y}] only; ` +
+      'any other key names draw an empty plot with no error. Name the category x and the number y.',
+  ];
 }
 
 /** Bindings embedded in Html/Text markup are compiled one `{{...}}` at a time. Observed live (Luna high,

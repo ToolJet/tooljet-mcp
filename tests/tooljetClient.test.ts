@@ -1197,7 +1197,7 @@ describe('createClient', () => {
       expect(result).toEqual({ processed_rows: 2 });
     });
 
-    it('waits out a gateway timeout on an insert and retries the same row', async () => {
+    it('reports an uncertain insert without retrying a gateway timeout', async () => {
       vi.useFakeTimers();
       try {
         const cloudflare = '<!DOCTYPE html><html><head><title>tooljet.ai | 524: A timeout occurred</title></head><body>…</body></html>';
@@ -1208,12 +1208,13 @@ describe('createClient', () => {
           .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }] }));
 
         const client = createClient(auth, config);
-        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] });
+        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] }).catch((error: Error) => error);
         await vi.runAllTimersAsync();
-        const result = await pending;
+        const error = await pending;
 
-        expect(result).toEqual({ processed_rows: 1 });
-        expect(auth.authedFetch).toHaveBeenCalledTimes(4);
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toMatch(/outcome unknown.*verify persisted rows/i);
+        expect(auth.authedFetch).toHaveBeenCalledTimes(3);
         expect(auth.authedFetch.mock.calls[2][1].signal).toBeInstanceOf(AbortSignal);
       } finally {
         vi.useRealTimers();
@@ -1235,8 +1236,9 @@ describe('createClient', () => {
         const error = (await pending) as Error;
 
         expect(error.message).toContain('insertRows failed (524): tooljet.ai | 524: A timeout occurred (HTML error page from the proxy, markup omitted)');
-        expect(error.message.length).toBeLessThan(200);
-        expect(auth.authedFetch).toHaveBeenCalledTimes(2 + 5); // first try plus four gateway retries
+        expect(error.message).toContain('Insert outcome unknown');
+        expect(error.message.length).toBeLessThan(400);
+        expect(auth.authedFetch).toHaveBeenCalledTimes(3); // two reads and one insert; no gateway retries
       } finally {
         vi.useRealTimers();
       }

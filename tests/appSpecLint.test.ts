@@ -388,6 +388,55 @@ describe('plan preflight repairs', () => {
     expect(args.tables[1]!.foreign_keys![0]!.referencedTable).toBe('orders_3');
   });
 
+  it.each([
+    'SELECT id, total FROM orders LIMIT 10',
+    'UPDATE orders SET total = 20 WHERE id = 1',
+    'SELECT o.id FROM "orders" o JOIN order_items i ON i.order_id = o.id',
+    'SELECT i.order_id FROM order_items i JOIN orders o ON o.id = i.order_id',
+  ])('rejects a colliding table without silently redirecting SQL: %s', async (sql) => {
+    const args = {
+      version_id: 'v1',
+      tables: [{ table_name: 'orders', columns: [{ name: 'total', type: 'number' }] }],
+      seed_data: [{ table_name: 'orders', rows: [{ total: 10 }] }],
+      queries: [{ datasource_id: 'tjdb', name: 'orders_sql', table_ref: 'orders',
+        options: { operation: 'sql_execution', sql_execution: { sqlQuery: sql } } }],
+    };
+    const before = structuredClone(args);
+    const parsed = textOf(await lintAppSpecTool(client()).handler(args));
+    expect(parsed.ok).toBe(false);
+    expect(parsed.plan_token).toBeUndefined();
+    expect(parsed.errors.join(' ')).toContain('SQL');
+    expect(parsed.errors.join(' ')).toContain('Rename');
+    expect(args).toEqual(before);
+  });
+
+  it('accepts a revised SQL plan with a unique table name and consistent references', async () => {
+    const args = {
+      version_id: 'v1',
+      tables: [{ table_name: 'new_orders', columns: [{ name: 'total', type: 'number' }] }],
+      seed_data: [{ table_name: 'new_orders', rows: [{ total: 10 }] }],
+      queries: [{ datasource_id: 'tjdb', name: 'list_orders', table_ref: 'new_orders',
+        options: { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT total FROM new_orders LIMIT 10' } } }],
+    };
+    const parsed = textOf(await lintAppSpecTool(client()).handler(args));
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.plan_token).toEqual(expect.any(String));
+  });
+
+  it('also rejects a collision when the SQL query has no table_ref', async () => {
+    const args = {
+      version_id: 'v1',
+      tables: [{ table_name: 'orders', columns: [{ name: 'total', type: 'number' }] }],
+      queries: [{ datasource_id: 'tjdb', name: 'joined',
+        options: { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT * FROM orders JOIN order_items ON orders.id = order_items.order_id' } } }],
+    };
+    const parsed = textOf(await lintAppSpecTool(client()).handler(args));
+    expect(parsed.ok).toBe(false);
+    expect(parsed.plan_token).toBeUndefined();
+    expect(args.tables[0].table_name).toBe('orders');
+  });
+
   it('raises a short Html block to the height its markup needs and moves the components below it', async () => {
     const args = {
       version_id: 'v1',

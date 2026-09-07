@@ -56,6 +56,20 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
           if (tableIds.has(key)) {
+            // SQL can name multiple tables, independently of table_ref/table_id. Without resolving
+            // SQL identifiers, even a query without table_ref may depend on the colliding name.
+            // Require a coherent revised plan rather than silently splitting seeds and SQL targets.
+            const hasSql = args.queries?.some((query) =>
+              query.options?.operation === 'sql_execution' || query.options?.sql_execution !== undefined
+            );
+            if (hasSql) {
+              preflightErrors.push(
+                `Planned table "${table.table_name}" already exists and this plan contains SQL queries. ` +
+                  'Rename the planned table and update all SQL references, seed data, table_ref and foreign keys together, ' +
+                  'then lint again. To reuse the existing table, remove it from tables instead.'
+              );
+              continue;
+            }
             // A name already in the workspace used to fail the plan; every model then spent a turn inventing
             // a prefix (seven of twelve Nordlicht builds, 2026-09-07). Suffix it here and carry the new name
             // into seed data, table_ref and foreign keys, since they all name the table.
