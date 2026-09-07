@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  lintChartDataShape,
+  lintUnguardedSelectionText,
+  lintEmbeddedBindingSyntax,
   lintHtmlContentHeight,
   lintHtmlRootSurface,
   lintOversizedWidths,
@@ -290,5 +293,117 @@ describe('lintUnguardedComponentRefs', () => {
   it('covers Html and Text bindings and selectedRow reads', () => {
     expect(lintUnguardedComponentRefs({ name: 'panel', type: 'Html', properties: { rawHtml: { value: '<div>{{components.tbl.selectedRow.name}}</div>' } } })[0]).toMatch(/components\.tbl\?\.selectedRow/);
     expect(lintUnguardedComponentRefs({ name: 't', type: 'Text', properties: { text: { value: '{{components.tbl?.selectedRow?.name}}' } } })).toEqual([]);
+  });
+});
+
+describe('lintEmbeddedBindingSyntax', () => {
+  const html = (rawHtml: string) => ({
+    name: 'overviewKpis',
+    type: 'Html',
+    properties: { rawHtml: { value: rawHtml } },
+    layouts: { desktop: { left: 2, top: 10, width: 39, height: 120 } },
+  });
+
+  it('rejects the backslash-escaped quotes that blanked the Luna high KPI cards', () => {
+    const errors = lintEmbeddedBindingSyntax(
+      html('<div>{{(queries.q_overview_disruptions.data || []).filter(r=>r.status!==\\"Closed\\").length}}</div>')
+    );
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/not valid JavaScript/);
+    expect(errors[0]).toMatch(/must not be backslash-escaped/);
+    expect(lintComponentSpec(html('<b>{{r.status!==\\"Closed\\"}}</b>')).errors.join(' ')).toMatch(/backslash-escaped/);
+  });
+
+  it('accepts IIFEs, object literals, escaped quotes inside string literals and plain text', () => {
+    expect(
+      lintEmbeddedBindingSyntax(
+        html('<div>{{(()=>{const d=queries.q.data||[];const e=d.filter(r=>r.status!=="Cancelled");return e.length?Math.round(e.length/2)+"%":"N/A"})()}}</div>')
+      )
+    ).toEqual([]);
+    expect(lintEmbeddedBindingSyntax(html('<i>{{ ({a: 1}).a }}</i>'))).toEqual([]);
+    expect(lintEmbeddedBindingSyntax(html('<i>{{ "say \\"hi\\"" }}</i>'))).toEqual([]);
+    expect(lintEmbeddedBindingSyntax(html('<p>No bindings here</p>'))).toEqual([]);
+    expect(lintEmbeddedBindingSyntax({ name: 't', type: 'Text', properties: { text: { value: 'Open: {{queries.q.data?.length ?? 0}}' } } })).toEqual([]);
+  });
+
+  it('flags a balanced expression that does not compile in a Text component', () => {
+    const errors = lintEmbeddedBindingSyntax({ name: 't', type: 'Text', properties: { text: { value: 'Rows: {{queries.q.data.length +}}' } } });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Text "t": text contains a binding/);
+  });
+});
+
+describe('lintChartDataShape', () => {
+  const chart = (data: string, extra: Record<string, unknown> = {}) => ({
+    name: 'ordersChart',
+    type: 'Chart',
+    properties: { type: { value: 'bar' }, data: { value: data }, ...extra },
+    layouts: { desktop: { left: 0, top: 0, width: 20, height: 300 } },
+  });
+
+  it('rejects the {date, orders} shape Luna medium drew as an empty plot', () => {
+    const errors = lintChartDataShape(chart('{{Object.entries(queries.q.data.reduce((a, r) => (a[r.d] = (a[r.d] || 0) + 1, a), {})).map(([date, orders]) => ({date, orders}))}}'));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/maps rows to \{date, orders\}/);
+    expect(lintComponentSpec(chart('{{queries.q.data.map(r => ({day: r.day, count: r.count}))}}')).errors.join(' ')).toMatch(/plots \[\{x, y\}\] only/);
+  });
+
+  it('checks the final map rather than intermediate objects', () => {
+    const expression = 'queries.orders.data.map(r => ({date: r.day, total: r.amount})).map(r => ({x: r.date, y: r.total}))';
+    expect(new Function('queries', `return ${expression}`)({ orders: { data: [{ day: 'Mon', amount: 3 }] } }))
+      .toEqual([{ x: 'Mon', y: 3 }]);
+    expect(lintChartDataShape(chart(`{{${expression}}}`))).toEqual([]);
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({x: r.day, y: r.n})).map(r => ({date: r.x, count: r.y}))}}')))
+      .toHaveLength(1);
+  });
+
+  it('handles nested object values and quoted keys without splitting their contents', () => {
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({meta: {date: r.day}, "x": r.day, "y": r.n}))}}'))).toEqual([]);
+  });
+
+  it('leaves ambiguous final shapes and unrelated callbacks unverified', () => {
+    for (const expression of [
+      'convert(queries.q.data.map(r => ({date: r.day})))',
+      'ready ? points : queries.q.data.map(r => ({date: r.day}))',
+      'queries.q.data.map(r => ({date: /[,}]/.test(r.day)})).map(toPoint)',
+      'queries.q.data.map(r => ({date: `value ${r.day}`})).map(toPoint)',
+      'queries.q.data.map(r => ({date: r.day} /* intermediate */)).map(toPoint)',
+      'queries.q.data.map(r => ({x: "a,b", y: r.n}))',
+      'queries.q.data.map(r => ({x: r.day, y: r.n, metadata: {a: 1, b: 2}}))',
+
+      'queries.q.data.map(r => ({date: r.day})).map(toPoint)',
+      'queries.q.data.map(r => ({date: r.day})).flatMap(toPoints)',
+      'queries.q.data.map(r => ({[r.axis]: r.day, y: r.n}))',
+      'queries.q.data.map(r => ({date: r.day, ...toPoint(r)}))',
+      'queries.q.data.map(r => ({x: r.day, y: r.parts.map(p => ({amount: p.n})).length}))',
+    ]) expect(lintChartDataShape(chart(`{{${expression}}}`))).toEqual([]);
+  });
+
+  it('flags a bare query binding, the Terra case, and accepts x/y maps, spreads and plotly JSON', () => {
+    expect(lintChartDataShape(chart('{{queries.orders_by_day.data}}'))).toEqual([]);
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({x: r.day, y: Number(r.count)}))}}'))).toEqual([]);
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({x: r.day, y: r.n, color: r.c}))}}'))).toEqual([]);
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({...r}))}}'))).toEqual([]);
+    expect(lintChartDataShape(chart('{{queries.q.data.map(r => ({date: r.d}))}}', { plotFromJson: { value: '{{true}}' } }))).toEqual([]);
+    expect(lintChartDataShape({ name: 't', type: 'Table', properties: { data: { value: '{{queries.q.data.map(r => ({date: r.d}))}}' } } })).toEqual([]);
+  });
+});
+
+describe('lintUnguardedSelectionText', () => {
+  const html = (rawHtml: string) => ({ name: 'selectedFlight', type: 'Html', properties: { rawHtml: { value: rawHtml } }, layouts: { desktop: { left: 0, top: 0, width: 20, height: 100 } } });
+
+  it('rejects the "undefined · undefined" panel from the Luna max build', () => {
+    const errors = lintUnguardedSelectionText(html('<b>{{components.flights?.selectedRow?.flight_no}}</b> · {{components.flights?.selectedRow?.destination}}'));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/without a fallback/);
+    expect(errors[0]).toMatch(/components\.flights\?\.selectedRow\?\.flight_no/);
+    expect(lintComponentSpec({ name: 't', type: 'Text', properties: { text: { value: 'Order {{components.orders.selectedRow.id}}' } } }).errors.join(' ')).toMatch(/without a fallback/);
+  });
+
+  it('accepts nullish, or, and ternary fallbacks and ignores other components', () => {
+    expect(lintUnguardedSelectionText(html("{{components.flights?.selectedRow?.flight_no ?? 'Select a flight'}}"))).toEqual([]);
+    expect(lintUnguardedSelectionText(html("{{components.flights?.selectedRow?.flight_no || '—'}}"))).toEqual([]);
+    expect(lintUnguardedSelectionText(html("{{components.flights?.selectedRow ? components.flights.selectedRow.flight_no : 'none'}}"))).toEqual([]);
+    expect(lintUnguardedSelectionText({ name: 'b', type: 'Button', properties: { text: { value: '{{components.t.selectedRow.id}}' } } })).toEqual([]);
   });
 });

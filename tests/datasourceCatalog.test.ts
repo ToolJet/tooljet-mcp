@@ -54,6 +54,16 @@ describe('datasource query catalog', () => {
     expect(anthropic.response.type).toBe('array<object>');
   });
 
+  it('gives update_rows exact filters and a non-id primary-key fallback', () => {
+    const update = selectDatasourceQuerySchema('tooljetdb', { operation: 'update_rows' }) as any;
+    const fields = update.request.variants[0].fields;
+    expect(fields['update_rows.columns'].description).toContain('bulk_update_with_primary_key');
+    expect(fields['update_rows.columns'].description).toContain('never recreate the table');
+    expect(fields['update_rows.where_filters'].example['filter-status'].operator).toBe('eq');
+    expect(fields['update_rows.where_filters'].shape['<filter-id>'].value).toContain('notNull');
+    expect(fields['update_rows.where_filters'].shape['<filter-id>'].operator.split('|')).not.toContain('imatch');
+  });
+
   it('publishes exact REST tuple fields, current raw body, and diagnostic metadata', () => {
     const rest = selectDatasourceQuerySchema('restapi', { operation: 'get' }) as any;
     const fields = rest.request.variants[0].fields;

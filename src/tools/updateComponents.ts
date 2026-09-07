@@ -1,3 +1,4 @@
+import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import {
@@ -101,6 +102,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const errors: string[] = [];
         const changedComponents: Array<{ before: LintComponent; after: LintComponent }> = [];
         let placementChanged = false;
+        const layoutFixes: Array<{ componentId: string; desktop: never }> = [];
         const resolvedUpdates: Array<{
           componentId: string;
           definition?: Record<string, unknown>;
@@ -190,6 +192,18 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             parent: next.parent,
           });
           const normalizedNext = { ...normalized.component, id: current.id } as LintComponent;
+          // New markup that no longer fits its box: raise the box (a second, layout write) instead of
+          // rejecting the update. The plan and add paths do the same.
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext as never) : null;
+          const desktopRect = (current.layouts as { desktop?: Record<string, unknown> } | undefined)?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === 'number') {
+            normalizedNext.layouts = { ...(normalizedNext.layouts ?? {}), desktop: { ...(desktopRect as object), height: heightFix.to } } as LintComponent['layouts'];
+            layoutFixes.push({ componentId: current.id, desktop: { ...(desktopRect as object), height: heightFix.to } as never });
+            warnings.push(
+              `Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; ` +
+                `its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`
+            );
+          }
           projected.set(current.id, normalizedNext);
           if (update.definition) changedComponents.push({ before: current as LintComponent, after: normalizedNext });
           placementChanged ||= update.parent !== undefined || update.slot_name !== undefined;
@@ -246,6 +260,9 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           pageId: args.page_id,
           updates: resolvedUpdates,
         });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
         return fail(err);

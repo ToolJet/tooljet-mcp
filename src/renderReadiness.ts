@@ -216,6 +216,49 @@ export const HTML_HEIGHT_TOLERANCE = 8;
 /** An Html block never grows. When the height its own CSS needs exceeds the authored height, the
  *  bottom (or, for a vertically centred flex header, both edges) is clipped behind a hidden scrollbar.
  *  Seven of fourteen Html blocks in one Luna build did this on 2026-09-05, by 5 to 42px each. */
+/** The height an Html block needs for its markup, when it is short: {from, to, needed}. Shared by the
+ *  lint (which reports it) and the plan preflight (which now applies it). */
+export function suggestedHtmlHeight(c: ReadinessComponent): { from: number; to: number; needed: number } | null {
+  if (c.type !== 'Html') return null;
+  if (truthy(propVal(c.properties, 'dynamicHeight'))) return null;
+  const raw = propVal(c.properties, 'rawHtml');
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const rect = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect?.height === 'number' ? rect.height : undefined;
+  const width = typeof rect?.width === 'number' ? rect.width : 39;
+  if (height === undefined) return null;
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate) return null;
+  const overflow = estimate.height - (height - HTML_WIDGET_HEIGHT_LOSS);
+  if (overflow <= HTML_HEIGHT_TOLERANCE) return null;
+  return { from: height, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
+}
+
+/** A selection panel reads `components.table.selectedRow.field`; before any row is selected that is
+ *  `undefined`, and ToolJet prints the word. Observed on three of twelve Nordlicht apps and on the Luna max
+ *  Lufthansa build ("undefined · undefined · undefined" under "Select a flight"). Each read needs a fallback. */
+const SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
+export function lintUnguardedSelectionText(c: ReadinessComponent): string[] {
+  if (c.type !== 'Html' && c.type !== 'Text') return [];
+  const key = c.type === 'Html' ? 'rawHtml' : 'text';
+  const value = propVal(c.properties, key);
+  if (typeof value !== 'string' || !value.includes('selectedRow')) return [];
+  const bad: string[] = [];
+  for (const m of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const expr = m[1]!;
+    const read = expr.match(SELECTION_READ);
+    if (!read) continue;
+    const hasFallback = /\?\?|\|\||\?[^.?][\s\S]*:/.test(expr);
+    if (!hasFallback) bad.push(read[0]);
+  }
+  if (!bad.length) return [];
+  return [
+    `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(', ')} without a fallback. Until a row is selected that ` +
+      "value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') " +
+      'or wrap the panel in a ternary on components.table?.selectedRow.',
+  ];
+}
+
 export function lintHtmlContentHeight(c: ReadinessComponent): string[] {
   if (c.type !== 'Html') return [];
   if (truthy(propVal(c.properties, 'dynamicHeight'))) return [];
@@ -319,6 +362,122 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  exist: `components.filter.value` throws, the Table shows No data, and nothing re-evaluates it
  *  until a filter changes or the page reloads (a Luna clinic build on 2026-09-05 shipped exactly
  *  this). `components.filter?.value` is the shape the skill asks for; this makes it mandatory. */
+/** The Chart widget plots `data` as an array of `{x, y}` points (plus optional `color`/`type`); any other key
+ *  names render a blank plot with no error. Observed live on the Nordlicht benchmark (2026-09-07): Terra
+ *  bound `queries.orders_by_day.data` straight from a list_rows query and Luna medium mapped rows to
+ *  `{date, orders}`; both "orders per day" charts drew an empty axis. */
+/** Collapse balanced groups to inspect only the outer expression. Strings are opaque; regexes,
+ * templates and comments are deliberately unverified. This is not a general JavaScript parser. */
+function chartExpressionSurface(source: string): { text: string; lastGroupStart: number } | undefined {
+  const stack: string[] = [];
+  let quote = '';
+  let text = '';
+  let lastGroupStart = -1;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i]!;
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '/' || ch === '`') return undefined;
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      if (!stack.length) text += '?';
+      continue;
+    }
+    if ('([{'.includes(ch)) {
+      if (!stack.length) { text += ch; lastGroupStart = i; }
+      stack.push(ch);
+    } else if (')]}'.includes(ch)) {
+      if (stack.pop() !== ({ ')': '(', ']': '[', '}': '{' } as Record<string, string>)[ch]) return undefined;
+      if (!stack.length) text += ch;
+    } else if (!stack.length) text += ch;
+  }
+  return quote || stack.length ? undefined : { text, lastGroupStart };
+}
+
+/** Check simple final .map() object shapes only. Intermediate maps and nested callbacks are ignored;
+ * ambiguous transformations, spreads and computed/quoted keys are left unverified. */
+function finalChartPointKeys(value: string): string[] | undefined {
+  const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
+  if (!binding) return undefined;
+  const expression = binding[1]!.trim();
+  const surface = chartExpressionSurface(expression);
+  // Only a member/call chain ending in .map(), with no outer operator or enclosing function.
+  if (!surface || !/^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*|\s*\(\s*\)|\s*\[\s*\])*\s*\.\s*map\s*\(\s*\)$/.test(surface.text.trim())) return undefined;
+  const callback = expression.slice(surface.lastGroupStart + 1, -1).trim();
+  const callbackSurface = chartExpressionSurface(callback);
+  if (!callbackSurface || !/^(?:[A-Za-z_$][\w$]*|\(\s*\))\s*=>\s*\(\s*\)$/.test(callbackSurface.text.trim())) return undefined;
+  const object = callback.slice(callbackSurface.lastGroupStart + 1, -1).trim();
+  if (!object.startsWith('{') || !object.endsWith('}')) return undefined;
+  const properties = chartExpressionSurface(object.slice(1, -1));
+  if (!properties) return undefined;
+  const keys: string[] = [];
+  for (const property of properties.text.split(',')) {
+    if (!property.trim()) continue;
+    const key = /^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/.exec(property);
+    if (!key) return undefined;
+    keys.push(key[1]!);
+  }
+  return keys;
+}
+export const BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
+export function lintChartDataShape(c: ReadinessComponent): string[] {
+  if (c.type !== 'Chart') return [];
+  const props = c.properties ?? {};
+  if (truthy(propVal(props, 'plotFromJson'))) return [];
+  const value = propVal(props, 'data');
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const keys = finalChartPointKeys(value);
+  if (!keys || keys.includes('x') && keys.includes('y')) return [];
+  return [
+    `Chart "${label(c)}": data maps rows to {${keys.join(', ')}} but the Chart plots [{x, y}] only; ` +
+      'any other key names draw an empty plot with no error. Name the category x and the number y.',
+  ];
+}
+
+/** Bindings embedded in Html/Text markup are compiled one `{{...}}` at a time. Observed live (Luna high,
+ *  2026-09-06): two KPI cards rendered blank because the model wrote `r.status!==\"Cancelled\"` inside
+ *  the markup, escaping the quotes as if the expression sat inside a JSON string. A backslash outside a
+ *  string literal is a JavaScript syntax error, and ToolJet renders a failed binding as nothing. */
+const EMBEDDED_BINDING = /\{\{([\s\S]*?)\}\}/g;
+const BACKSLASH_QUOTE = /\\["']/;
+export function lintEmbeddedBindingSyntax(c: ReadinessComponent): string[] {
+  if (c.type !== 'Html' && c.type !== 'Text') return [];
+  const key = c.type === 'Html' ? 'rawHtml' : 'text';
+  const value = propVal(c.properties, key);
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const errors: string[] = [];
+  for (const m of value.matchAll(EMBEDDED_BINDING)) {
+    const expr = m[1]!;
+    if (expr.includes('{{')) continue;
+    let message = '';
+    try {
+      new Function(`return (\n${expr}\n);`);
+      continue;
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) continue;
+      message = error.message;
+    }
+    // A `}}` that closes an object literal splits the expression early; only report a fragment when the
+    // braces balance (so the cut is not the cause) or the tell-tale backslash-quote is present.
+    const balanced = (expr.match(/\{/g) ?? []).length === (expr.match(/\}/g) ?? []).length;
+    const escaped = BACKSLASH_QUOTE.test(expr);
+    if (!balanced && !escaped) continue;
+    const snippet = expr.length > 90 ? `${expr.slice(0, 90)}…` : expr;
+    errors.push(
+      `${c.type} "${label(c)}": ${key} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` +
+        (escaped
+          ? 'Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or ' +
+            "'Cancelled', not \\\"Cancelled\\\". "
+          : '') +
+        'A failed binding renders as nothing, which leaves the card or line blank.'
+    );
+  }
+  return errors;
+}
+
 export function lintUnguardedComponentRefs(c: ReadinessComponent): string[] {
   if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type)) return [];
   const props = c.properties ?? {};

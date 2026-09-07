@@ -428,6 +428,8 @@ export interface ComponentSummary {
   /** Bound property values, e.g. { text: { value: 'Hello' } }. */
   properties?: Record<string, unknown>;
   styles?: Record<string, unknown>;
+  /** Actual native input validation, not the widget's editor schema. */
+  validation?: Record<string, unknown>;
   others?: Record<string, unknown>;
   parent?: string;
   /** Present for persisted header/footer children. Body children use the plain parent id. */
@@ -804,6 +806,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
+      ...(def.validation !== undefined ? { validation: def.validation } : {}),
       others: def.others,
       ...(persistedParent ? { parent: persistedParent } : {}),
       ...(decodedParent && decodedParent.slotName !== 'body' ? { slot_name: decodedParent.slotName } : {}),
@@ -1046,13 +1049,22 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createApp(name: string): Promise<CreateAppResult> {
-    const createRes = await auth.authedFetch('/api/apps', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, type: 'front-end' }),
-    });
-    await assertOk(createRes, 'createApp');
-    const created = (await createRes.json()) as { id: string; slug?: string };
+    // A taken name is a 409 that used to bounce back to the model, which then spent a turn (and at
+    // max reasoning effort, a minute) inventing "… 2026" or "… A9". Every build in a shared workspace
+    // paid it twice. Append a counter ourselves; the model sees the name it got in the result.
+    let createRes: Response | undefined;
+    let finalName = name;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      finalName = attempt === 1 ? name : `${name} ${attempt}`;
+      createRes = await auth.authedFetch('/api/apps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: finalName, type: 'front-end' }),
+      });
+      if (createRes.status !== 409) break;
+    }
+    await assertOk(createRes!, 'createApp');
+    const created = (await createRes!.json()) as { id: string; slug?: string };
 
     const app = await getApp(created.id);
     const versionId: string = app.editing_version.id;

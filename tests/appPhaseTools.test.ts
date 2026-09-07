@@ -178,6 +178,7 @@ describe('plan token + apply_app_phase', () => {
       createPages: vi.fn().mockRejectedValue(new PartialWriteError('createPages', [
         { page_id: 'page-a', name: 'Queue', index: 2, icon: 'IconList' },
       ], ['Reports: upstream failure'])),
+      deletePage: vi.fn().mockResolvedValue({ deleted: true }),
     } as unknown as ToolJetClient;
 
     const lintResult = await lintAppSpecTool(client).handler({
@@ -192,10 +193,13 @@ describe('plan token + apply_app_phase', () => {
     });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/Applied before failure:.*pages=1/i);
-    expect(result.content[0]!.text).toMatch(/no resources were auto-deleted/i);
+    // The empty page the failed foundation stage created is removed again, so the next plan can recreate
+    // it under the same name instead of leaving a debris page behind.
+    expect(client.deletePage).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', pageId: 'page-a' });
+    expect(result.content[0]!.text).toMatch(/Applied before failure:.*pages=0/i);
+    expect(result.content[0]!.text).toMatch(/Removed the 1 empty page/);
+    expect(result.content[0]!.text).toMatch(/nothing with content on it was auto-deleted/i);
     expect(result.content[0]!.text).toMatch(/Persisted before failure.*page-a/i);
-    expect(result.content[0]!.text).toContain('Persisted resources for targeted repair');
   });
 
   it('applies a repair phase that targets an existing query without recreating it', async () => {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
 
 export function addQueryTool(client: ToolJetClient): ToolDef {
   return {
@@ -55,6 +56,7 @@ export function addQueryTool(client: ToolJetClient): ToolDef {
             `Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`
           );
         }
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,

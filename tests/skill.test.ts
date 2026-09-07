@@ -27,6 +27,20 @@ const both = guidance;
 // Unescape them so anchor comparisons match the rendered skill text.
 const generator = readFileSync(resolve(root, 'scripts/generate-skill.mjs'), 'utf8').replace(/\\`/g, '`');
 
+it('publishes source-backed Kanban persistence paths from maintained local rules', () => {
+  const rules = JSON.parse(readFileSync(resolve(root, 'data/component-binding-rules.json'), 'utf8'));
+  expect(Object.keys(rules)).toHaveLength(22);
+  expect(rules.KanbanBoard).toContain('lastCardMovement.cardDetails.id');
+  expect(rules.KanbanBoard).toContain('lastCardMovement.destinationColumnId');
+  for (const host of ['skill', 'skills/tooljet-app-builder']) {
+    const text = readFileSync(resolve(root, host, 'references/components.md'), 'utf8');
+    expect(text).toContain(rules.KanbanBoard);
+    expect(text).not.toContain('lastCardMovement exposes {cardId, sourceColumn, destinationColumn}');
+  }
+  expect(generator).toContain("data/component-binding-rules.json");
+  expect(generator).not.toContain("const TJAI = locate(");
+});
+
 // The generated skill's design section, from its heading to the next top-level heading.
 function section(document: string, from: string): string {
   const start = document.indexOf(from);
