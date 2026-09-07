@@ -9737,7 +9737,7 @@
         "key": "autoLabelWidth",
         "label": "Width",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "accentColor",
@@ -9752,20 +9752,14 @@
         "default": "var(--cc-primary-text)"
       },
       {
-        "key": "hoverBackgroundMode",
-        "label": "Hover background",
-        "valueType": "string",
-        "default": "auto",
-        "allowedValues": [
-          "auto",
-          "manual"
-        ]
-      },
-      {
-        "key": "paddingInside",
-        "label": "Padding inside",
+        "key": "padding",
+        "label": "Padding",
         "valueType": "union",
-        "default": "12"
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none"
+        ]
       },
       {
         "key": "backgroundColor",
@@ -9775,7 +9769,7 @@
       },
       {
         "key": "borderColor",
-        "label": "Border",
+        "label": "Border color",
         "valueType": "string",
         "default": "var(--cc-weak-border)"
       },
@@ -9792,13 +9786,13 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
-        "key": "padding",
-        "label": "Padding",
-        "valueType": "union",
-        "default": "default",
+        "key": "hoverBackgroundMode",
+        "label": "Hover background",
+        "valueType": "string",
+        "default": "auto",
         "allowedValues": [
-          "default",
-          "none"
+          "auto",
+          "manual"
         ]
       },
       {
@@ -15865,12 +15859,6 @@
         "default": "{{false}}"
       },
       {
-        "key": "autogenerateColumns",
-        "label": "Lock column schema",
-        "valueType": "boolean",
-        "default": true
-      },
-      {
         "key": "columnData",
         "label": "Column data",
         "valueType": "array",
@@ -16069,6 +16057,10 @@
       {
         "key": "visible",
         "default": "{{true}}"
+      },
+      {
+        "key": "autogenerateColumns",
+        "default": true
       },
       {
         "key": "isAllColumnsEditable",

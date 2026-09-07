@@ -11,7 +11,7 @@
       "name": "tooljet-app-builder",
       "source": "./",
       "description": "Build ToolJet apps end-to-end via governed MCP tools and an app-builder skill.",
-      "version": "0.3.0",
+      "version": "0.2.0",
       "author": {
         "name": "ToolJet"
       },
