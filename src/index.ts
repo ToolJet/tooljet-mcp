@@ -93,7 +93,9 @@ export function createGatewayHttpServer(): GatewayHttpServer {
     // check below with nobody actually signed in.
     const hasUserCredential = Boolean(identity?.pat || identity?.sessionToken);
 
-    if (!hasUserCredential && requireUserSession) {
+    // Old ToolJet versions send no session at all — bypassed only for a Gateway-verified customer,
+    // never a blanket bypass, since upgrading is the real fix.
+    if (!hasUserCredential && requireUserSession && !identity?.customerVerified) {
       res
         .writeHead(400, { 'Content-Type': 'text/plain' })
         .end(
