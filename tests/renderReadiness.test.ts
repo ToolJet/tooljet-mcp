@@ -364,6 +364,13 @@ describe('lintChartDataShape', () => {
   it('leaves ambiguous final shapes and unrelated callbacks unverified', () => {
     for (const expression of [
       'convert(queries.q.data.map(r => ({date: r.day})))',
+      'ready ? points : queries.q.data.map(r => ({date: r.day}))',
+      'queries.q.data.map(r => ({date: /[,}]/.test(r.day)})).map(toPoint)',
+      'queries.q.data.map(r => ({date: `value ${r.day}`})).map(toPoint)',
+      'queries.q.data.map(r => ({date: r.day} /* intermediate */)).map(toPoint)',
+      'queries.q.data.map(r => ({x: "a,b", y: r.n}))',
+      'queries.q.data.map(r => ({x: r.day, y: r.n, metadata: {a: 1, b: 2}}))',
+
       'queries.q.data.map(r => ({date: r.day})).map(toPoint)',
       'queries.q.data.map(r => ({date: r.day})).flatMap(toPoints)',
       'queries.q.data.map(r => ({[r.axis]: r.day, y: r.n}))',

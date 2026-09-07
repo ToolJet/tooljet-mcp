@@ -9,7 +9,6 @@
  *    the bottom of every header band and KPI card is cut off behind a hidden scrollbar).
  * The skill documents the right shape for every one of these; the linter is where it has to be enforced.
  */
-import { parseExpression } from '@babel/parser';
 import type { AppSummary } from './tooljetClient.js';
 import { estimateHtmlHeight, parseHtml, stripHtmlBindings } from './htmlHeight.js';
 
@@ -367,30 +366,61 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  names render a blank plot with no error. Observed live on the Nordlicht benchmark (2026-09-07): Terra
  *  bound `queries.orders_by_day.data` straight from a list_rows query and Luna medium mapped rows to
  *  `{date, orders}`; both "orders per day" charts drew an empty axis. */
-/** Inspect only a direct final .map() whose callback returns a static object. Earlier maps,
- * nested callbacks, spreads and computed keys do not establish the final point shape. */
+/** Collapse balanced groups to inspect only the outer expression. Strings are opaque; regexes,
+ * templates and comments are deliberately unverified. This is not a general JavaScript parser. */
+function chartExpressionSurface(source: string): { text: string; lastGroupStart: number } | undefined {
+  const stack: string[] = [];
+  let quote = '';
+  let text = '';
+  let lastGroupStart = -1;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i]!;
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '/' || ch === '`') return undefined;
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      if (!stack.length) text += '?';
+      continue;
+    }
+    if ('([{'.includes(ch)) {
+      if (!stack.length) { text += ch; lastGroupStart = i; }
+      stack.push(ch);
+    } else if (')]}'.includes(ch)) {
+      if (stack.pop() !== ({ ')': '(', ']': '[', '}': '{' } as Record<string, string>)[ch]) return undefined;
+      if (!stack.length) text += ch;
+    } else if (!stack.length) text += ch;
+  }
+  return quote || stack.length ? undefined : { text, lastGroupStart };
+}
+
+/** Check simple final .map() object shapes only. Intermediate maps and nested callbacks are ignored;
+ * ambiguous transformations, spreads and computed/quoted keys are left unverified. */
 function finalChartPointKeys(value: string): string[] | undefined {
   const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
   if (!binding) return undefined;
-  try {
-    const expression = parseExpression(binding[1]!);
-    if (expression.type !== 'CallExpression' || expression.callee.type !== 'MemberExpression') return undefined;
-    const method = expression.callee;
-    if (method.computed || method.property.type !== 'Identifier' || method.property.name !== 'map') return undefined;
-    const callback = expression.arguments[0];
-    if (callback?.type !== 'ArrowFunctionExpression' || callback.async || callback.body.type !== 'ObjectExpression') return undefined;
-    const keys: string[] = [];
-    for (const property of callback.body.properties) {
-      if (property.type === 'SpreadElement' || property.computed) return undefined;
-      if (property.key.type === 'Identifier') keys.push(property.key.name);
-      else if (property.key.type === 'StringLiteral') keys.push(property.key.value);
-      else return undefined;
-    }
-    return keys;
-  } catch {
-    // Syntax validation is handled separately; this check never evaluates user code.
-    return undefined;
+  const expression = binding[1]!.trim();
+  const surface = chartExpressionSurface(expression);
+  // Only a member/call chain ending in .map(), with no outer operator or enclosing function.
+  if (!surface || !/^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*|\s*\(\s*\)|\s*\[\s*\])*\s*\.\s*map\s*\(\s*\)$/.test(surface.text.trim())) return undefined;
+  const callback = expression.slice(surface.lastGroupStart + 1, -1).trim();
+  const callbackSurface = chartExpressionSurface(callback);
+  if (!callbackSurface || !/^(?:[A-Za-z_$][\w$]*|\(\s*\))\s*=>\s*\(\s*\)$/.test(callbackSurface.text.trim())) return undefined;
+  const object = callback.slice(callbackSurface.lastGroupStart + 1, -1).trim();
+  if (!object.startsWith('{') || !object.endsWith('}')) return undefined;
+  const properties = chartExpressionSurface(object.slice(1, -1));
+  if (!properties) return undefined;
+  const keys: string[] = [];
+  for (const property of properties.text.split(',')) {
+    if (!property.trim()) continue;
+    const key = /^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/.exec(property);
+    if (!key) return undefined;
+    keys.push(key[1]!);
   }
+  return keys;
 }
 export const BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
 export function lintChartDataShape(c: ReadinessComponent): string[] {
