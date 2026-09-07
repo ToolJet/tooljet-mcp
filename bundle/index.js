@@ -33164,7 +33164,10 @@ var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
 var PAT_HEADER = "x-tooljet-pat";
 var BASE_URL_HEADER = "x-tooljet-url";
+var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
 var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
+var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
+var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
 function env(name) {
   const value = process.env[name]?.trim();
   return value ? value : void 0;
@@ -33192,7 +33195,66 @@ function readHeader(headers, name) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : void 0;
 }
-function validateApiUrl(raw) {
+var gatewayOriginCache = /* @__PURE__ */ new Map();
+var GATEWAY_CACHE_TTL_MS = 6e4;
+async function checkOriginWithGateway(customerId, origin) {
+  const cacheKey2 = `${customerId} ${origin}`;
+  const cached2 = gatewayOriginCache.get(cacheKey2);
+  if (cached2 && cached2.expiresAt > Date.now())
+    return cached2.allowed;
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  if (!gatewayUrl || !gatewayToken)
+    return false;
+  let allowed = false;
+  try {
+    const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
+      method: "POST",
+      headers: { authorization: gatewayToken, "content-type": "application/json" },
+      body: JSON.stringify({ customer_id: customerId, origin }),
+      signal: AbortSignal.timeout(5e3)
+    });
+    if (res.ok) {
+      const body = await res.json();
+      allowed = body.allowed === true;
+    }
+  } catch {
+    allowed = false;
+  }
+  gatewayOriginCache.set(cacheKey2, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return allowed;
+}
+var gatewayResolveCache = /* @__PURE__ */ new Map();
+async function resolveApiUrlFromGateway(customerId) {
+  const cached2 = gatewayResolveCache.get(customerId);
+  if (cached2 && cached2.expiresAt > Date.now())
+    return cached2.result;
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  let result = { url: void 0, verified: false };
+  if (gatewayUrl && gatewayToken) {
+    try {
+      const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
+        method: "POST",
+        headers: { authorization: gatewayToken, "content-type": "application/json" },
+        body: JSON.stringify({ customer_id: customerId }),
+        signal: AbortSignal.timeout(5e3)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if ("host_name" in body) {
+          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
+          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
+        }
+      }
+    } catch {
+      result = { url: void 0, verified: false };
+    }
+  }
+  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return result;
+}
+async function validateApiUrl(raw, customerId) {
   let parsed;
   try {
     parsed = new URL(raw);
@@ -33205,35 +33267,55 @@ function validateApiUrl(raw) {
   if (parsed.search || parsed.hash || parsed.username || parsed.password) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
-  if (!allowedApiOrigins().includes(parsed.origin)) {
-    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR}. Add it to that comma-separated list to let this server write into that backend.`);
+  const inStaticList = allowedApiOrigins().includes(parsed.origin);
+  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  if (!inStaticList && !verifiedViaGateway) {
+    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
   }
   const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
-  return parsed.origin + path;
+  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
 }
-function identityFromHeaders(headers, { allowPat = true } = {}) {
+async function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
-  const apiUrl = rawApiUrl ? validateApiUrl(rawApiUrl) : void 0;
+  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
+  let apiUrl;
+  let customerVerified;
+  if (rawApiUrl) {
+    const validated = await validateApiUrl(rawApiUrl, customerId);
+    apiUrl = validated.apiUrl;
+    customerVerified = validated.customerVerified;
+  } else if (customerId) {
+    const resolved = await resolveApiUrlFromGateway(customerId);
+    apiUrl = resolved.url;
+    customerVerified = resolved.verified ? true : void 0;
+  }
   if (pat) {
     if (!allowPat) {
       throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
     }
     if (sessionToken)
       throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl };
+    return { pat, apiUrl, customerVerified };
   }
-  if (!sessionToken && !workspaceId)
-    return apiUrl ? { apiUrl } : void 0;
+  if (!sessionToken && !workspaceId) {
+    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
+  }
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
   }
   if (!workspaceId) {
     throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
   }
-  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
+  return {
+    sessionToken,
+    workspaceId,
+    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
+    apiUrl,
+    customerVerified
+  };
 }
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
@@ -35866,6 +35948,18 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 
+// dist/strictEntry.js
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue2) => issue2.code === "unrecognized_keys" ? issue2.keys.map(describeUnknown).join(" ") : void 0
+  });
+}
+function hasNonEmptyDefinition(definition) {
+  if (!definition)
+    return false;
+  return Object.values(definition).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+}
+
 // dist/tableValidation.js
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -37148,8 +37242,11 @@ function createClient(auth, config2) {
   async function updateComponents(params) {
     const diff = {};
     for (const u of params.updates) {
-      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasDef = hasNonEmptyDefinition(u.definition);
       const hasRaw = u.name !== void 0 || u.parent !== void 0 || u.slotName !== void 0;
+      if (!hasDef && !hasRaw) {
+        throw new Error(`updateComponents "${u.componentId}": nothing to update. Provide a non-empty definition (properties/styles/validation/others) or a name/parent change.`);
+      }
       if (hasDef && hasRaw) {
         throw new Error(`updateComponents "${u.componentId}": set EITHER definition (properties/styles/\u2026) OR name/parent/slotName in one entry \u2014 ToolJet applies only one path. Split into two update calls.`);
       }
@@ -37191,6 +37288,9 @@ function createClient(auth, config2) {
   async function updateLayouts(params) {
     const diff = {};
     for (const l of params.layouts) {
+      if (!l.desktop && !l.mobile && l.parent === void 0) {
+        throw new Error(`updateLayouts "${l.componentId}": nothing to update. Provide desktop and/or mobile rects, or a parent change.`);
+      }
       const entry = {
         layouts: {
           ...l.desktop ? { desktop: l.desktop } : {},
@@ -41209,8 +41309,21 @@ function normalizeComponentSpec(component, options2 = {}) {
     stylePatch[key] = stylesValue[key];
     normalizedSections.styles.value = stylesValue;
   };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key) => {
+    if (knownPropertyKeys?.has(key))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
   for (const key of Object.keys(properties)) {
-    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
     const belongsInStyles = canonical !== "styles" && STYLE_KEYS_IN_PROPERTIES.has(canonical);
     if (!aliasTarget && !belongsInStyles)
@@ -41312,8 +41425,8 @@ function normalizeComponentSpec(component, options2 = {}) {
     }
   }
   if (options2.stripUnknownKeys) {
-    const schema = getComponentSchema(component.type);
-    if (schema) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
       const sections = [
         ["properties", properties],
         ["styles", normalizedSections.styles.value]
@@ -41321,7 +41434,7 @@ function normalizeComponentSpec(component, options2 = {}) {
       for (const [section, sectionValue] of sections) {
         if (!sectionValue)
           continue;
-        const knownKeys = (schema[section] ?? []).map((entry) => entry.key);
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
         for (const key of Object.keys(sectionValue)) {
           if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
             continue;
@@ -42673,12 +42786,12 @@ function addPagesTool(client) {
 }
 
 // dist/tools/updatePages.js
-var updateSchema = external_exports.object({
+var updateSchema = strictEntry({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
   hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
-});
+}, (key) => `Page update key "${key}" is not accepted; update_pages entries take page_id plus name, icon, hidden. App-level settings belong to update_app_settings.`);
 function updatePagesTool(client) {
   return {
     name: "update_pages",
@@ -43085,19 +43198,29 @@ function addComponentBatchesTool(client) {
 }
 
 // dist/tools/updateComponents.js
-var updateSchema2 = external_exports.object({
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
   component_id: external_exports.string(),
-  definition: external_exports.object({
-    properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-  }).optional(),
+  definition: definitionSchema.optional(),
   name: external_exports.string().optional(),
   parent: external_exports.string().optional(),
   slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
 });
 function updateComponentsTool(client) {
   return {
@@ -43108,7 +43231,7 @@ function updateComponentsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.",
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -43139,6 +43262,10 @@ function updateComponentsTool(client) {
           const componentId = current.id;
           if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
             errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
             continue;
           }
           let parent = update.parent;
@@ -43327,6 +43454,25 @@ function deleteComponentsTool(client) {
 
 // dist/tools/updateLayout.js
 var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var layoutEntrySchema = strictEntry({
+  component_id: external_exports.string(),
+  desktop: rect.optional(),
+  mobile: rect.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (RECT_KEYS.has(key)) {
+    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+  }
+  if (key === "definition" || key === "properties" || key === "styles") {
+    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+  }
+  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+});
 function updateLayoutTool(client) {
   return {
     name: "update_layout",
@@ -43341,13 +43487,7 @@ function updateLayoutTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      layouts: external_exports.array(external_exports.object({
-        component_id: external_exports.string(),
-        desktop: rect.optional(),
-        mobile: rect.optional(),
-        parent: external_exports.string().optional(),
-        slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
-      })).min(1)
+      layouts: external_exports.array(layoutEntrySchema).min(1)
     },
     async handler(args) {
       try {
@@ -43360,6 +43500,10 @@ function updateLayoutTool(client) {
         const resolveErrors = [];
         const resolvedIds = /* @__PURE__ */ new Map();
         for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
+            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
+            continue;
+          }
           if (resolvedIds.has(layout.component_id))
             continue;
           const resolution = resolveRef2(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
@@ -44154,12 +44298,12 @@ function updateEventsTool(client) {
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      events: external_exports.array(external_exports.object({
+      events: external_exports.array(strictEntry({
         event_id: external_exports.string(),
         name: external_exports.string().optional(),
         event: external_exports.record(external_exports.string(), external_exports.any()).optional(),
         index: external_exports.number().optional()
-      })).min(1),
+      }, (key) => `Event entry key "${key}" must be nested under \`event\` (the full { eventId, actionId, ...params } blob). Accepted entry keys are event_id, name, event, index.`)).min(1),
       update_type: external_exports.enum(["update", "reorder"]).optional()
     },
     async handler(args) {
@@ -44313,6 +44457,7 @@ function getRuntimeInfoTool(runtime) {
 }
 
 // dist/tools/manageTheme.js
+var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
 var colorPair = external_exports.object({
   light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
   dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
@@ -44423,12 +44568,26 @@ function manageThemeTool(client) {
               ]
             });
           }
-          const created = await client.createAppTheme({
-            name,
-            definition: requireValue(args.definition, "definition"),
-            isDefault: args.is_default ?? false
-          });
-          return ok({ theme: created });
+          try {
+            const created = await client.createAppTheme({
+              name,
+              definition: requireValue(args.definition, "definition"),
+              isDefault: args.is_default ?? false
+            });
+            return ok({ theme: created });
+          } catch (error51) {
+            if (error51 instanceof ToolJetHttpError && error51.status === 451) {
+              return ok({
+                theme: null,
+                licensed: false,
+                user_message: THEME_LICENCE_USER_MESSAGE,
+                warnings: [
+                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
+                ]
+              });
+            }
+            throw error51;
+          }
         }
         const themeId = requireValue(args.theme_id, "theme_id");
         await readTheme(client, themeId);
@@ -44828,14 +44987,14 @@ function createGatewayHttpServer() {
   const gatewayMode = Boolean(sharedToken);
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
-  const httpServer = createServer((req, res) => {
+  const httpServer = createServer(async (req, res) => {
     if (gatewayMode && !checkBearerToken(req.headers.authorization, sharedToken)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end("Unauthorized");
       return;
     }
     let identity;
     try {
-      identity = identityFromHeaders(req.headers, { allowPat: !gatewayMode });
+      identity = await identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Invalid identity headers";
       res.writeHead(400, { "Content-Type": "text/plain" }).end(message);
@@ -44847,11 +45006,11 @@ function createGatewayHttpServer() {
         identity = { pat: bearer };
     }
     const hasUserCredential = Boolean(identity?.pat || identity?.sessionToken);
-    if (!hasUserCredential && requireUserSession) {
+    if (!hasUserCredential && requireUserSession && !identity?.customerVerified) {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on behalf of a signed-in user: send the ${SESSION_TOKEN_HEADER} header (with x-tooljet-workspace-id). Refusing rather than using a shared identity.`);
       return;
     }
-    if (!identity?.apiUrl && requireRequestUrl) {
+    if (!identity?.apiUrl && !identity?.customerVerified && requireRequestUrl) {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} header. Refusing rather than falling back to a fixed TOOLJET_URL.`);
       return;
     }
