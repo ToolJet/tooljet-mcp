@@ -34,6 +34,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         }
 
         const preflightErrors: string[] = [];
+        const preflightWarnings: string[] = [];
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -71,13 +72,27 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
                 }
                 return indexes;
               }, []);
-              if (missingRows.length) {
-                preflightErrors.push(
-                  `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
-                  `"${column.name}" in row(s) ${missingRows.join(', ')}. Use type "serial" for a generated key, ` +
-                  'add a defaultValue, or provide explicit values.'
+              if (!missingRows.length) continue;
+              // An integer primary key that no seed row supplies is a generated key the model forgot to
+              // declare (three of four Grok builds in one evening lost a full lint round trip to this).
+              // The intent is unambiguous, so make it serial and say so instead of failing the plan.
+              if (
+                column.primaryKey &&
+                /^(integer|bigint|int|int4|int8)$/i.test(column.type) &&
+                missingRows.length === seed.rows.length
+              ) {
+                column.type = 'serial';
+                preflightWarnings.push(
+                  `Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} ` +
+                  'with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.'
                 );
+                continue;
               }
+              preflightErrors.push(
+                `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
+                `"${column.name}" in row(s) ${missingRows.join(', ')}. Use type "serial" for a generated key, ` +
+                'add a defaultValue, or provide explicit values.'
+              );
             }
           }
         }
@@ -169,6 +184,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
           errors: unique([...preflightErrors, ...lint.errors]),
+          warnings: unique([...preflightWarnings, ...lint.warnings]),
         };
         return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
       } catch (error) {

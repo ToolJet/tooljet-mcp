@@ -61,9 +61,9 @@ describe('generated skill — progressive disclosure', () => {
     expect(qa).toContain('## Verify your work — browser-free checks first');
   });
 
-  it('documents compact app settings discovery, theme selection, and readback warnings', () => {
+  it('documents compact app settings discovery, theme selection, and hard readback verification', () => {
     expect(toolWorkflows).toMatch(/get_app_settings.*list_app_themes.*update_app_settings/is);
-    expect(toolWorkflows).toMatch(/reads back every requested field.*warnings.*silent-drop|license-gating/is);
+    expect(toolWorkflows).toMatch(/reads back every requested field.*returns an error.*did not persist/is);
   });
 
   it('documents batched selector discovery and mutation-free SQL discovery specs', () => {
@@ -412,8 +412,16 @@ describe('generated skill — HTML usage, page icons, validation, efficiency', (
 
   it('uses update_pages to restyle and reorder existing pages including Home', () => {
     expect(guidance).toMatch(/update_pages\(\{ app_id, version_id, updates\?, order\? \}\)/);
-    expect(guidance).toMatch(/including the auto-created Home page/i);
+    expect(guidance).toMatch(/Home itself cannot be hidden/i);
     expect(guidance).toMatch(/complete ordered list of current page ids/i);
+  });
+
+  it('keeps header, whole-menu, and individual-page visibility controls distinct', () => {
+    expect(skill).toMatch(/hide_header.*app header\/banner.*navigation_position.*side or top.*navigation_hidden.*whole menu.*either position.*update_pages\.hidden.*one non-Home page/is);
+    expect(guidance).toMatch(/app-chrome controls separate/i);
+    expect(guidance).toMatch(/navigation_position.*side or top.*navigation_hidden.*entire menu.*either position/i);
+    expect(guidance).toMatch(/update_pages\.hidden.*one non-Home page/i);
+    expect(guidance).toMatch(/neighbouring element disappearing is not proof/i);
   });
 
   it('requires explicit confirmation for guarded page deletion', () => {

@@ -6,7 +6,10 @@ const updateSchema = z.object({
   page_id: z.string().min(1),
   name: z.string().min(1).optional(),
   icon: z.string().min(1).optional(),
-  hidden: z.boolean().optional(),
+  hidden: z.boolean().optional().describe(
+    'Hide or show only this non-Home page in the generated navigation menu. ' +
+    'This does not hide the whole menu; use update_app_settings.navigation_hidden for that.'
+  ),
 });
 
 export function updatePagesTool(client: ToolJetClient): ToolDef {
@@ -20,9 +23,11 @@ export function updatePagesTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Update existing page sidebar metadata and/or reorder pages, with one final readback verification. ' +
-      'Use updates to rename pages, set a relevant Tabler icon, or toggle hidden. Use order only with the ' +
+      'Use updates to rename pages, set a relevant Tabler icon, or toggle one non-Home page in the menu. ' +
+      'The Home page can be renamed, restyled, and reordered, but cannot be hidden. To hide or show the entire ' +
+      'generated navigation menu, use update_app_settings.navigation_hidden instead. Use order only with the ' +
       'complete ordered list of every current page id (available from create_app/get_app_summary); partial ' +
-      'orders are rejected to prevent duplicate indexes. This can restyle and reposition the auto-created Home page.',
+      'orders are rejected to prevent duplicate indexes.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),

@@ -39,6 +39,12 @@ describe('table batch validation', () => {
 });
 
 describe('batch authoring tools', () => {
+  it('distinguishes one page visibility from the entire navigation menu', () => {
+    const tool = updatePagesTool({} as ToolJetClient);
+    expect(tool.description).toMatch(/Home page.*cannot be hidden/i);
+    expect(tool.description).toMatch(/entire.*navigation menu.*update_app_settings\.navigation_hidden/i);
+  });
+
   it('preflights every page and creates independent component batches concurrently', async () => {
     const client = {
       createComponents: vi.fn()

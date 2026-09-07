@@ -163,9 +163,20 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
 
+        let renameWarning: string | undefined;
         if (spec.app_name && spec.app_name !== initialSummary.name) {
           stage = 'rename target app';
-          await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          try {
+            await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          } catch (error) {
+            // App names are unique per workspace. A collision is not worth failing the whole phase
+            // (and consuming the plan token) over: suffix the name the way ToolJet's own create flow does.
+            const message = error instanceof Error ? error.message : String(error);
+            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message)) throw error;
+            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
+            await client.renameApp(args.app_id, args.version_id, fallback);
+            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
+          }
           applied.app_metadata = 1;
         }
 
@@ -348,6 +359,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           }))
         );
         const warnings: string[] = [];
+        if (renameWarning) warnings.push(renameWarning);
         for (const page of componentResults) {
           applied.components += page.created.length;
           warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));

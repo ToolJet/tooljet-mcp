@@ -54,33 +54,127 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
     updateEvents: vi.fn(),
     deleteEvent: vi.fn(),
     createQueries: vi.fn(),
+    listAppThemes: vi.fn(),
+    createAppTheme: vi.fn(),
+    updateAppSettings: vi.fn(),
   };
 }
+
+const createdApp = {
+  app_id: 'app1',
+  version_id: 'v1',
+  home_page_id: 'p1',
+  app_url: 'http://localhost:8082/apps/app1',
+  editor_url: 'http://localhost:8082/apps/app1',
+  viewer_url: 'http://localhost:8082/applications/app1/home?env=development&version=v1',
+  datasources_url: 'http://localhost:8082/tooljets-workspace/data-sources',
+};
 
 function textOf(result: { content: Array<{ type: string; text: string }> }): unknown {
   return JSON.parse(result.content[0]!.text);
 }
 
 describe('create_app tool', () => {
-  it('calls client.createApp with the name and returns the result as text', async () => {
+  it('creates the app, creates the standard theme once, and applies it to the new version', async () => {
     const client = makeClient();
-    const created = {
-      app_id: 'app1',
-      version_id: 'v1',
-      home_page_id: 'p1',
-      app_url: 'http://localhost:8082/apps/app1',
-      editor_url: 'http://localhost:8082/apps/app1',
-      viewer_url: 'http://localhost:8082/applications/app1/home?env=development&version=v1',
-      datasources_url: 'http://localhost:8082/tooljets-workspace/data-sources',
-    };
-    client.createApp.mockResolvedValue(created);
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([{ id: 'builtin', name: 'TJ default', definition: {}, isDefault: true }]);
+    client.createAppTheme.mockResolvedValue({ id: 'theme-std', name: 'ToolJet Modern', definition: {} });
+    client.updateAppSettings.mockResolvedValue(undefined);
 
     const tool = createAppTool(client as unknown as ToolJetClient);
     const result = await tool.handler({ name: 'My App' });
 
     expect(client.createApp).toHaveBeenCalledWith('My App');
-    expect(textOf(result)).toEqual(created);
+    expect(client.createAppTheme).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'ToolJet Modern', isDefault: false })
+    );
+    expect(client.updateAppSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }) } })
+    );
+    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern' } });
     expect(result.isError).toBeUndefined();
+  });
+
+  it('reuses an existing standard theme by name instead of creating a duplicate', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([{ id: 'theme-std', name: 'ToolJet Modern', definition: {} }]);
+    client.updateAppSettings.mockResolvedValue(undefined);
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App' });
+
+    expect(client.createAppTheme).not.toHaveBeenCalled();
+    expect(textOf(result).theme).toEqual({ mode: 'standard', id: 'theme-std', name: 'ToolJet Modern' });
+  });
+
+  it('leaves the workspace default untouched when theme is "workspace_default"', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', theme: 'workspace_default' });
+
+    expect(client.listAppThemes).not.toHaveBeenCalled();
+    expect(client.updateAppSettings).not.toHaveBeenCalled();
+    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'workspace_default' } });
+  });
+
+  it('applies an existing named theme when one is requested', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([{ id: 'brand-1', name: 'Acme', definition: {} }]);
+    client.updateAppSettings.mockResolvedValue(undefined);
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', theme: 'Acme' });
+
+    expect(client.createAppTheme).not.toHaveBeenCalled();
+    expect(textOf(result).theme).toEqual({ mode: 'named', id: 'brand-1', name: 'Acme' });
+  });
+
+  it('creates and applies a derived theme passed as {name, definition}, once per workspace', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([{ id: 'theme-std', name: 'ToolJet Modern', definition: {} }]);
+    client.createAppTheme.mockResolvedValue({ id: 'theme-pizza', name: 'Bernal Fire Pizza theme', definition: {} });
+    client.updateAppSettings.mockResolvedValue(undefined);
+    const definition = { brand: { colors: { primary: { light: '#B91C1C', dark: '#F87171' } } } };
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({
+      name: 'Pizza Ops',
+      theme: { name: 'Bernal Fire Pizza theme', definition },
+    });
+
+    expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Bernal Fire Pizza theme', definition, isDefault: false });
+    expect(client.updateAppSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-pizza' }) } })
+    );
+    expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
+
+    // Second build for the same customer reuses the theme instead of creating a duplicate.
+    client.createAppTheme.mockClear();
+    client.listAppThemes.mockResolvedValue([{ id: 'theme-pizza', name: 'Bernal Fire Pizza theme', definition }]);
+    const again = await createAppTool(client as unknown as ToolJetClient).handler({
+      name: 'Pizza Ops 2',
+      theme: { name: 'Bernal Fire Pizza theme', definition },
+    });
+    expect(client.createAppTheme).not.toHaveBeenCalled();
+    expect(textOf(again).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
+  });
+
+  it('still returns the created app with a warning when the theme cannot be created', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([]);
+    client.createAppTheme.mockRejectedValue(new Error('ToolJet createAppTheme failed: 402 licence required'));
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App' });
+
+    expect(result.isError).toBeUndefined();
+    expect(client.updateAppSettings).not.toHaveBeenCalled();
+    const body = textOf(result) as { app_id: string; theme: { mode: string; warning?: string } };
+    expect(body.app_id).toBe('app1');
+    expect(body.theme.mode).toBe('workspace_default');
+    expect(body.theme.warning).toContain('licence required');
   });
 
   it('returns isError with an Error: message when the client throws', async () => {

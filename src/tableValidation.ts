@@ -1,7 +1,29 @@
-import type { CreateTableParams } from './tooljetClient.js';
+import { normalizeType, TOOLJET_DB_DATA_TYPES, type CreateTableParams } from './tooljetClient.js';
 
-/** Column names the ToolJet DB API has explicitly rejected as reserved keywords. */
-export const TOOLJET_DB_RESERVED_COLUMN_NAMES = new Set(['action', 'comment', 'condition']);
+/** Column names ToolJet DB rejects as reserved keywords (its ReservedKeywordConstraint, case-insensitive). The
+ *  list is the server's own; `data`, `date`, `count`, `default` and `action` are the ones models reach for. */
+export const TOOLJET_DB_RESERVED_COLUMN_NAMES = new Set([
+  'abort', 'abs', 'absolute', 'access', 'action', 'ada', 'add', 'admin', 'after', 'aggregate', 'all', 'allocate',
+  'alter', 'analyse', 'analyze', 'and', 'any', 'are', 'array', 'as', 'asc', 'asensitive', 'assertion', 'assignment',
+  'asymmetric', 'at', 'atomic', 'attribute', 'attributes', 'authorization', 'avg', 'backward', 'before', 'begin', 'bernoulli', 'between',
+  'bigint', 'binary', 'bit', 'bit_length', 'bitvar', 'blob', 'boolean', 'both', 'breadth', 'by', 'c', 'cache',
+  'call', 'called', 'cardinality', 'cascade', 'cascaded', 'case', 'cast', 'catalog', 'catalog_name', 'ceil', 'ceiling', 'chain',
+  'char', 'char_length', 'character', 'character_length', 'character_set_catalog', 'character_set_name', 'character_set_schema', 'characteristics', 'characters', 'check', 'checked', 'checkpoint',
+  'class', 'class_origin', 'clob', 'close', 'cluster', 'coalesce', 'cobol', 'collate', 'collation', 'collation_catalog', 'collation_name', 'collation_schema',
+  'collect', 'column', 'column_name', 'command_function', 'command_function_code', 'comment', 'commit', 'committed', 'completion', 'condition', 'condition_number', 'connect',
+  'connection', 'connection_name', 'constraint', 'constraint_catalog', 'constraint_name', 'constraint_schema', 'constraints', 'constructor', 'contains', 'continue', 'conversion', 'convert',
+  'copy', 'corr', 'corresponding', 'count', 'covar_pop', 'covar_samp', 'create', 'createdb', 'createrole', 'createuser', 'cross', 'csv',
+  'cube', 'cume_dist', 'current', 'current_date', 'current_default_transform_group', 'current_path', 'current_role', 'current_time', 'current_timestamp', 'current_transform_group_for_type', 'current_user', 'cursor',
+  'cursor_name', 'cycle', 'data', 'database', 'date', 'datetime_interval_code', 'datetime_interval_precision', 'day', 'deallocate', 'dec', 'decimal', 'declare',
+  'default', 'defaults', 'deferrable', 'deferred', 'defined', 'definer', 'delete', 'delimiter', 'delimiters', 'dense_rank', 'depth', 'deref',
+  'derived', 'from',
+]);
+
+const RESERVED_SUGGESTIONS: Record<string, string> = {
+  data: 'payload or details', date: 'event_date or scheduled_on', day: 'day_of_week', count: 'item_count',
+  default: 'is_default', action: 'step_action', comment: 'note or result_comment', condition: 'item_condition',
+  check: 'check_name', current: 'is_current', class: 'class_name', case: 'case_ref', begin: 'starts_at',
+};
 
 function normalized(value: string): string {
   return value.trim().toLowerCase();
@@ -30,8 +52,15 @@ export function validateTableBatch(tables: CreateTableParams[]): string[] {
       }
       if (TOOLJET_DB_RESERVED_COLUMN_NAMES.has(columnKey)) {
         errors.push(
-          `Table "${table.tableName}" uses reserved column name "${column.name}". ` +
-            'Use a descriptive name such as step_action, result_comment, or item_condition.'
+          `Table "${table.tableName}" uses reserved column name "${column.name}" (ToolJet DB rejects SQL keywords). ` +
+            `Rename it, e.g. ${RESERVED_SUGGESTIONS[columnKey] ?? `${columnKey}_value`}.`
+        );
+      }
+      const dataType = normalizeType(column.type);
+      if (!TOOLJET_DB_DATA_TYPES.has(dataType)) {
+        errors.push(
+          `Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. ` +
+            'Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.'
         );
       }
     }

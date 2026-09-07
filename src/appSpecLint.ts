@@ -6,6 +6,7 @@ import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js'
 import { validateTableBatch } from './tableValidation.js';
 import { encodeComponentParent } from './componentParent.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
+import { normalizePlannedLayouts } from './layoutNormalization.js';
 import { containsNamedBinding } from './referenceSafety.js';
 import type {
   AppSummary,
@@ -288,7 +289,11 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
     if (!plannedPage.icon.trim()) errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
 
-    const normalized = (plannedPage.components ?? []).map((component) => normalizeComponentSpec(component, { stripUnknownKeys: true }));
+    const normalized = (plannedPage.components ?? []).map((component) => {
+      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+      const geometry = normalizePlannedLayouts(definition.component);
+      return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+    });
     warnings.push(...normalized.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
     warnings.push(...expansion.warnings);

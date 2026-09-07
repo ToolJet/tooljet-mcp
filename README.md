@@ -179,7 +179,7 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `generate_form_schema({table_name, mode, ...})` | Generate one schema-driven create/edit Form from a ToolJet DB table |
 | `lint_app_spec(...)` / `apply_app_phase(...)` / `validate_app(app_id)` | Dry-run a logical phase, apply its one-time plan token, then statically validate persisted state |
 | `get_app_summary({app_id, sections?, filters?, *_fields?})` | Selectively inspect actual persisted values |
-| `add_pages(...)` / `update_pages(...)` | Add one or more pages, then restyle, hide, rename, or reorder existing sidebar pages (including Home) |
+| `add_pages(...)` / `update_pages(...)` | Add pages, then rename, restyle, reorder, or hide individual non-Home pages; use `update_app_settings.navigation_hidden` for the whole menu |
 | `delete_page(..., confirm:true)` | Permanently delete one non-Home/non-group page after checking event and component references |
 | `add_queries(...)` | Create one or more datasource queries; use the schema tool for `options` |
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |

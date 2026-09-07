@@ -18,14 +18,23 @@ const before: AppSettingsSnapshot = {
     theme: { id: 'old', name: 'ToolJet' },
   },
   page_settings: {
-    definition: { properties: {
+    properties: {
       hideHeader: false, hideLogo: false, name: 'App', disableMenu: { value: '{{false}}', fxActive: false },
       position: 'side', style: 'texticon', collapsable: true,
-    } },
+    },
   },
 };
 
 describe('app settings tools', () => {
+  it('distinguishes the app header, whole navigation menu, and individual page visibility', () => {
+    const tool = updateAppSettingsTool({} as ToolJetClient);
+    expect(tool.description).toMatch(/hide_header controls the app header\/banner/i);
+    expect(tool.description).toMatch(/navigation menu.*side or top.*navigation_hidden hides.*entire menu/i);
+    expect(tool.description).toMatch(/one non-Home page.*update_pages\.hidden/i);
+    expect(tool.inputSchema.hide_header.description).toMatch(/separate from.*page-navigation menu/i);
+    expect(tool.inputSchema.navigation_hidden.description).toMatch(/entire.*page-navigation menu.*side or top/i);
+  });
+
   it('projects compact settings without returning the full theme definition', async () => {
     const client = { getAppSettings: vi.fn().mockResolvedValue(before) } as unknown as ToolJetClient;
     const result = await getAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId });
@@ -35,6 +44,7 @@ describe('app settings tools', () => {
       navigation: { hidden: false, position: 'side', style: 'texticon', collapsible: true },
     });
     expect(result.content[0]!.text).not.toContain('definition');
+    expect(result.content[0]!.text).not.toContain('show_viewer_navigation');
   });
 
   it('lists compact themes and preserves disabled status', async () => {
@@ -53,10 +63,10 @@ describe('app settings tools', () => {
         canvasBackgroundColor: '#f7f8fa', canvasMaxWidth: 1280, canvasMaxWidthType: 'px', appMode: 'auto',
         theme: { id: themeId, name: 'Ocean' },
       },
-      page_settings: { definition: { properties: {
-        ...((before.page_settings.definition as any).properties),
+      page_settings: { properties: {
+        ...((before.page_settings as any).properties),
         hideHeader: true, name: 'Operations', position: 'top', style: 'text',
-      } } },
+      } },
     };
     const theme = { id: themeId, name: 'Ocean', definition: { colors: { primary: '#00f' } } };
     const client = {
@@ -77,14 +87,14 @@ describe('app settings tools', () => {
       globalSettings: {
         canvasBackgroundColor: '#f7f8fa', canvasMaxWidth: 1280, canvasMaxWidthType: 'px', appMode: 'auto', theme,
       },
-      pageSettings: { definition: { properties: {
+      pageSettings: { properties: {
         hideHeader: true, name: 'Operations', position: 'top', style: 'text',
-      } } },
+      } },
     });
     expect(textOf(result)).toMatchObject({ updated_fields: 8, warnings: [] });
   });
 
-  it('reports a silently ignored setting from readback', async () => {
+  it('fails when a setting is silently ignored on readback', async () => {
     const client = {
       getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(before),
       updateAppSettings: vi.fn().mockResolvedValue(undefined),
@@ -92,7 +102,8 @@ describe('app settings tools', () => {
     const result = await updateAppSettingsTool(client).handler({
       app_id: 'app1', version_id: versionId, hide_header: true,
     });
-    expect(textOf(result).warnings.join(' ')).toMatch(/hide_header.*did not persist/i);
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/partially failed.*hide_header.*did not persist/i);
   });
 
   it('rejects unsupported top icon navigation before writing', async () => {
