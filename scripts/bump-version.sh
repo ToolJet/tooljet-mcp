@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Bumps the plugin version everywhere it's duplicated, regenerates the committed plugin
-# artifacts so they match. Run from a clean tree:
+# Bumps the plugin version everywhere it's duplicated — nothing else. Run from a clean tree:
 #   ./scripts/bump-version.sh              # prompts for patch/minor/major/custom
 #   ./scripts/bump-version.sh <patch|minor|major|X.Y.Z>   # non-interactive
 #
 # On main: branches off into release/vX.Y.Z and opens a PR against main.
 # On any other branch (e.g. an existing release/* branch): bumps and pushes IN PLACE,
 # no new branch, no PR — you already have one for that branch.
+#
+# Deliberately just the version fields — not catalogs/skill/bundle regeneration, so this can't be
+# blocked by an unrelated generator breaking (it happened). Run those yourself when you actually want
+# fresh content: npm run generate:catalogs && npm run generate:skill && npm run build:plugin.
 #
 # Does NOT tag — that's scripts/tag-release.sh, run separately once you're ready.
 set -euo pipefail
@@ -55,16 +58,11 @@ jq --arg v "$NEW" '.version = $v' .claude-plugin/plugin.json > .claude-plugin/pl
 jq --arg v "$NEW" '.version = $v' .codex-plugin/plugin.json > .codex-plugin/plugin.json.tmp && mv .codex-plugin/plugin.json.tmp .codex-plugin/plugin.json
 jq --arg v "$NEW" '.plugins[0].version = $v' .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp && mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
 
-npm run generate:catalogs
-npm run generate:skill
-npm run build:plugin
-npm test
-
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git checkout -b "release/v$NEW"
 fi
 
-git add -A
+git add package.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
 git commit -m "Chore: bump version to $NEW"
 
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
@@ -72,7 +70,7 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git push -u origin "$BRANCH"
 
   gh pr create --base main --head "$BRANCH" --title "Chore: release v$NEW" --body "$(cat <<EOF
-Version bump: \`$CURRENT\` → \`$NEW\`, across \`package.json\`, \`plugin.json\`, \`.claude-plugin/plugin.json\`, \`.claude-plugin/marketplace.json\`, \`.codex-plugin/plugin.json\`. Bundle/skill regenerated to match current \`main\`.
+Version bump only: \`$CURRENT\` → \`$NEW\`, across \`package.json\`, \`plugin.json\`, \`.claude-plugin/plugin.json\`, \`.claude-plugin/marketplace.json\`, \`.codex-plugin/plugin.json\`. No catalog/skill/bundle regeneration — run those separately if this release needs fresh content too.
 
 No tag yet — run \`scripts/tag-release.sh\` once this merges.
 EOF
