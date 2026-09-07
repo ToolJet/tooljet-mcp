@@ -3,6 +3,46 @@ import { getCatalog, getComponentSchema } from '../src/catalog.js';
 import { FORM_SCHEMA_FIELD_TYPES, SAFE_GENERATED_FORM_FIELD_TYPES } from '../src/formFieldTypes.js';
 
 describe('catalog', () => {
+  it('distinguishes inline Table edits from original selected-row values', () => {
+    const hints = getComponentSchema('Table')!.authoringHints as any;
+    expect(hints.inlineEditing.selection).toMatch(/selectedRow.*original.*not.*pending/i);
+    expect(hints.inlineEditing.pendingRows).toContain('Object.values(components.<table>.dataUpdates || {})');
+    expect(hints.inlineEditing.pendingRows).toMatch(/row indexes.*not.*database/i);
+    expect(hints.inlineEditing.saveEvent).toContain('onBulkUpdate');
+    expect(hints.inlineEditing.perRowSave).toMatch(/stable.*key/i);
+    expect(hints.inlineEditing.validation).toMatch(/negative.*derived/i);
+    expect(hints.rowActionButtons.eventRule).toMatch(/not pending inline edits/i);
+  });
+  it('distinguishes FilePicker base64 payloads from preview URLs', () => {
+    const picker = getComponentSchema('FilePicker')!.authoringHints as any;
+    expect(picker.filePayload).toMatch(/file\[0\]\.dataURL.*bare base64/);
+    expect(picker.filePayload).toMatch(/base64Data.*same payload/);
+    expect(picker.filePayload).toMatch(/name.*type/);
+    expect(picker.preview).toMatch(/never bind bare base64 directly to href or src/i);
+    expect(picker.preview).toContain('data:<validated MIME>;base64,<payload>');
+    expect(picker.preview).toMatch(/top-level data-URL navigation.*blocked/);
+  });
+  it('explains numeric validation and PDF acceptance in on-demand authoring contracts', () => {
+    const numeric = getComponentSchema('NumberInput')!.authoringHints as any;
+    expect(numeric.validationPlacement).toMatch(/validation.minValue.*validation.maxValue/);
+    expect(numeric.submitGuard).toMatch(/isValid.*negative/);
+    const picker = getComponentSchema('FilePicker')!.authoringHints as any;
+    expect(picker.acceptedTypes).toMatch(/validation.fileType.*image\/\*,application\/pdf/);
+    expect(picker.acceptedTypes).toMatch(/enableValidation.*does not disable/);
+    expect(picker.processing).toMatch(/not.*OCR.*PDF rasterization/);
+  });
+
+  it('documents native modal-close cleanup rather than Cancel-only selection reset', () => {
+    const modal = getComponentSchema('ModalV2')!;
+    const hints = modal.authoringHints as any;
+    expect(modal.events?.map(event => event.id)).toContain('onClose');
+    expect(hints.closeLifecycle.event).toBe('onClose');
+    expect(hints.closeLifecycle.rule).toMatch(/not only on a Cancel button.*native X/);
+    expect(hints.closeLifecycle.rule).toMatch(/deselect its row/);
+    expect(hints.closeLifecycle.rule).toMatch(/never write or delete database records/);
+    expect(hints.closeLifecycle.verification).toMatch(/reopen the same record and a different record/);
+    expect(hints.nativeSlots.allowedValues).toEqual(['header', 'body', 'footer']);
+  });
   it('palette lists the built-in components incl. Table and Statistics', () => {
     const types = getCatalog().map((c) => c.type);
     expect(types).toContain('Table');
@@ -186,6 +226,19 @@ describe('catalog', () => {
     expect(String(timelineData.default)).toMatch(/title.*subTitle.*date.*iconBackgroundColor/s);
   });
 
+  it('distinguishes Calendar event projections from source records and shares date parsing contracts', () => {
+    const calendar = getComponentSchema('Calendar')!;
+    expect(calendar.description).toMatch(/selectedEvent is the projected event, not the source row/);
+    const selected = calendar.exposedVariables!.find(variable => variable.name === 'selectedEvent') as any;
+    expect(selected.semantics).toMatch(/NOT automatically the original query row/);
+    expect(selected.semantics).toMatch(/start\/end become JavaScript Date objects/);
+    expect(selected.semantics).toMatch(/look up the original row by selectedEvent.id/);
+    for (const key of ['dateFormat', 'events', 'defaultDate', 'startTime', 'endTime']) {
+      const property = calendar.properties.find(property => property.key === key) as any;
+      expect(property.description).toMatch(/raw ISO query timestamps do not match the default/);
+    }
+  });
+
   it('serves the KeyValuePair projection contract', () => {
     const hints = getComponentSchema('KeyValuePair')!.authoringHints!.dataProjection as any;
     expect(hints.rule).toMatch(/explicit fields.*does not suppress undeclared keys.*new object/i);
@@ -219,6 +272,43 @@ describe('catalog', () => {
     const rule = getComponentSchema('Kanban')!.authoringHints!.cardContent as any;
     expect(rule.interactionRule.selectionDependency).toMatch(/onCardSelected.*only when openModalOnCardClick.*true/i);
     expect(rule.interactionRule.customHtmlModal).toMatch(/custom Html.*built-in card modal.*blank/i);
+  });
+
+  it('describes the runtime movement payload rather than moveCard action arguments', () => {
+    const movement = getComponentSchema('Kanban')!.exposedVariables!
+      .find(variable => variable.name === 'lastCardMovement') as any;
+    // Payload emitted by KanbanBoard.jsx onDragEnd/moveCard; the action's cardId
+    // parameter is NOT a member of the exposed movement object.
+    const emitted = {
+      originColumnId: 'Brief', destinationColumnId: 'Client review', originCardIndex: 0,
+      destinationIndex: 0, cardDetails: { id: 'p-026', columnId: 'Client review', title: 'Test' },
+    };
+    expect(Object.keys(movement.shape).sort()).toEqual(Object.keys(emitted).sort());
+    expect(movement.shape.cardDetails.id).toBe('moved card id');
+    expect(movement.shape).not.toHaveProperty('cardId');
+    expect(movement.shape).not.toHaveProperty('destinationColumn');
+  });
+
+  it('exposes Map marker identity and the deployment provider dependency', () => {
+    const map = getComponentSchema('Map')!;
+    const variables = new Map(map.exposedVariables!.map(variable => [variable.name, variable as any]));
+    expect(map.events!.map(event => event.id)).toContain('onMarkerClick');
+    expect(variables.get('selectedMarker').semantics).toMatch(/original marker object.*before onMarkerClick.*stable record id/i);
+    expect(variables.get('selectedMarker').semantics).toMatch(/Guard a missing or empty selection/);
+    expect(variables.get('markers').valueType).toBe('array');
+    expect(variables.get('bounds').shape.northEast).toEqual({ lat: 'number', lng: 'number' });
+    expect(map.description).toMatch(/deployment Google Maps API configuration/);
+    expect(map.authoringHints!.providerSetup).toMatch(/GOOGLE_MAPS_API_KEY.*do not invent/i);
+    expect(map.authoringHints!.markerSelection).toMatch(/Do not match solely by coordinates/);
+  });
+
+  it('distinguishes date-only DatePicker output from its offset timestamp', () => {
+    const variables = new Map(getComponentSchema('DatePickerV2')!.exposedVariables!
+      .map(variable => [variable.name, variable as any]));
+    expect(variables.get('value').semantics).toMatch(/ISO timestamp with a timezone offset/);
+    expect(variables.get('selectedDate').semantics).toMatch(/dateFormat="YYYY-MM-DD".*selectedDate/);
+    expect(variables.get('displayValue').semantics).toMatch(/same formatting as selectedDate/);
+    expect(variables.has('unixTimestamp')).toBe(true);
   });
 
   it('serves Listview grid, repeated-child, and selection semantics', () => {

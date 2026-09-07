@@ -427,6 +427,8 @@ export interface ComponentSummary {
   /** Bound property values, e.g. { text: { value: 'Hello' } }. */
   properties?: Record<string, unknown>;
   styles?: Record<string, unknown>;
+  /** Actual native input validation, not the widget's editor schema. */
+  validation?: Record<string, unknown>;
   others?: Record<string, unknown>;
   parent?: string;
   /** Present for persisted header/footer children. Body children use the plain parent id. */
@@ -803,6 +805,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
+      ...(def.validation !== undefined ? { validation: def.validation } : {}),
       others: def.others,
       ...(persistedParent ? { parent: persistedParent } : {}),
       ...(decodedParent && decodedParent.slotName !== 'body' ? { slot_name: decodedParent.slotName } : {}),
