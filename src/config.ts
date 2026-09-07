@@ -273,7 +273,12 @@ export async function identityFromHeaders(
   }
 
   if (!sessionToken && !workspaceId) {
-    return apiUrl || customerVerified ? { apiUrl, customerVerified } : undefined;
+    if (!apiUrl && !customerVerified) return undefined;
+    // Old ToolJet versions send no session/PAT at all — this is the only credential left for a
+    // Gateway-verified customer. Separate from TOOLJET_PAT on purpose: removable in one place once
+    // those versions are gone, without touching the generic no-session gate for everyone else.
+    const fallbackPat = customerVerified ? env('TOOLJET_PAT_OLD_VERSION') : undefined;
+    return { apiUrl, customerVerified, pat: fallbackPat };
   }
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);

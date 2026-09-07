@@ -582,6 +582,24 @@ describe('per-request target origin — resolved from customer_id with no x-tool
     });
   });
 
+  it('uses TOOLJET_PAT_OLD_VERSION as the credential for a verified customer with no session', async () => {
+    process.env.TOOLJET_PAT_OLD_VERSION = 'tj_pat_fallback';
+    gatewayResponse = { host_name: null, subpath: null };
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-3b' })).toEqual({
+      apiUrl: undefined,
+      customerVerified: true,
+      pat: 'tj_pat_fallback',
+    });
+    delete process.env.TOOLJET_PAT_OLD_VERSION;
+  });
+
+  it('leaves pat undefined for an unverified request even if TOOLJET_PAT_OLD_VERSION is set', async () => {
+    process.env.TOOLJET_PAT_OLD_VERSION = 'tj_pat_fallback';
+    gatewayResponse = { allowed: false };
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-unverified' })).toBeUndefined();
+    delete process.env.TOOLJET_PAT_OLD_VERSION;
+  });
+
   it('stays fully unverified for an unknown customer_id (Gateway 404-equivalent shape)', async () => {
     gatewayResponse = { allowed: false };
     expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-unknown' })).toBeUndefined();
