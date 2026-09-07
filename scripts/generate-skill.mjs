@@ -1,15 +1,19 @@
-// Generates skill/SKILL.md from component binding rules (data/component-binding-rules.json,
-// owned by this repo) + ToolJet's canvas grid constants. It also carries adaptable quality
+// Generates skill/SKILL.md from the TJ-AI agent's authoritative knowledge (component
+// binding rules) + ToolJet's canvas grid constants. It also carries adaptable quality
 // defaults; explicit user requirements always win. Re-run when source rules change to avoid drift.
 //
 // Usage: node scripts/generate-skill.mjs
-//   env: TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
+//   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
+//        TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, copyFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-/* ToolJet's directory name varies by machine (sometimes nested one level down). Probe the known
+/* Both checkouts are read at generate time, and their directory names vary by machine (the agent repo
+   is cloned as tooljet-agent or TJ-AI; ToolJet is sometimes nested one level down). Probe the known
    layouts and fail with the env var to set, rather than a raw ENOENT stack a hundred lines deep: an
    unrunnable generator means the packaged skill silently drifts from its source, which is exactly how
    the browser-audit script went stale. */
@@ -24,6 +28,7 @@ function locate(envVar, label, candidates, marker) {
   );
 }
 
+const TJAI = locate('TJAI_ROOT', 'agent', [['..', 'tooljet-agent'], ['..', 'TJ-AI']], 'src/tooljet_agent');
 const TOOLJET = locate(
   'TOOLJET_ROOT',
   'ToolJet',
@@ -34,12 +39,27 @@ const { legacyReplacements: LEGACY_REPLACEMENTS } = JSON.parse(
   readFileSync(resolve(root, 'data/component-compatibility.json'), 'utf8')
 );
 
-// --- 1. Read component binding rules — this repo's own data, not another repo's internals. It used
-// to be read live out of tooljet-agent's source tree; that file was deleted as "dead tooling" from
-// their side without anyone noticing tooljet-mcp's own release process depended on it. Recovered from
-// git history and moved here so this repo's release script doesn't need another repo checked out.
+// --- 1. Extract COMPONENT_BINDING_RULES (dict[str,str]) from the agent via Python ast ---
 function extractBindingRules() {
-  return JSON.parse(readFileSync(resolve(root, 'data/component-binding-rules.json'), 'utf8'));
+  const py = `
+import ast, json, sys
+src = open(sys.argv[1]).read()
+tree = ast.parse(src)
+rules = {}
+for node in ast.walk(tree):
+    name = None
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+        name = node.target.id
+    elif isinstance(node, ast.Assign):
+        for t in node.targets:
+            if isinstance(t, ast.Name): name = t.id
+    if name == 'COMPONENT_BINDING_RULES' and node.value is not None:
+        rules = ast.literal_eval(node.value)
+print(json.dumps(rules))
+`;
+  const file = resolve(TJAI, 'src/tooljet_agent/services/app_builder/v1/bindings/tool_utils.py');
+  const out = execFileSync('python3', ['-c', py, file], { encoding: 'utf8' });
+  return JSON.parse(out);
 }
 
 // --- 2. Read ToolJet canvas grid constants (facts, not opinions) ---
