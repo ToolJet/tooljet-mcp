@@ -9,6 +9,7 @@ import {
   lintStandardSingleLineInputHeight,
   lintTextGeometry,
   lintUnusableTextGeometry,
+  STYLE_KEYS_IN_PROPERTIES,
   type LintComponent,
 } from '../lint.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
@@ -156,7 +157,25 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           projected.set(current.id, normalizedNext);
           if (update.definition) changedComponents.push({ before: current as LintComponent, after: normalizedNext });
           placementChanged ||= update.parent !== undefined || update.slot_name !== undefined;
-          warnings.push(...normalized.warnings);
+          // The normalizer runs over current-merged-with-patch, so a style key already stored under
+          // `properties` makes it claim "moved style key X" for a key the caller never sent and that
+          // ToolJet's merge-only update cannot delete. Reading that as done loops the caller forever.
+          const storedMisplaced = Object.keys(current.properties ?? {}).filter((key) =>
+            STYLE_KEYS_IN_PROPERTIES.has(key)
+          );
+          warnings.push(
+            ...normalized.warnings.filter(
+              (warning) => !storedMisplaced.some((key) => warning.includes(`moved style key "${key}"`))
+            )
+          );
+          if (storedMisplaced.length) {
+            warnings.push(
+              `Component "${next.name}": style keys ${JSON.stringify(storedMisplaced)} were already stored under ` +
+                `\`properties\` before this update and REMAIN there — component updates merge and cannot delete ` +
+                `keys. Any new value you sent is applied to \`styles\` and renders correctly; the leftovers are ` +
+                `inert. Do not retry this update to clear them, it cannot work.`
+            );
+          }
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized.patch).length) {
             normalizedDefinition = { ...update.definition };

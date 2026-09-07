@@ -34311,7 +34311,7 @@ function lintDesktopCanvasCoverage(components) {
     `Desktop page content spans only columns ${left}-${right} of ToolJet's 43-column canvas despite having multiple operational/analytical surfaces. This often produces an accidental half-width app. Expand the main composition toward the standard columns 2-41, or browser-verify that the narrow rail is deliberate.`
   ];
 }
-function lintComponentSpec(spec) {
+function lintComponentSpec(spec, options2 = {}) {
   const errors = [];
   const warnings = [];
   const props = spec.properties ?? {};
@@ -34325,7 +34325,9 @@ function lintComponentSpec(spec) {
     }
   }
   const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
-  if (misplaced.length) {
+  if (misplaced.length && options2.persisted) {
+    warnings.push(`Component "${label}": style keys ${JSON.stringify(misplaced)} are stored under \`properties\`, where ToolJet ignores them. They are inert leftovers and cannot be removed by an update (ToolJet merges component definitions and cannot delete keys) \u2014 do not attempt to repair this. Set styling on \`styles\` instead; delete and recreate the component only if the user asks for it.`);
+  } else if (misplaced.length) {
     errors.push(`Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
@@ -34443,13 +34445,13 @@ function lintComponentSpec(spec) {
   if (spec.type === "DropdownV2") {
     const advanced = propVal(props, "advanced");
     const schema = propVal(props, "schema");
-    const options2 = propVal(props, "options");
+    const options3 = propVal(props, "options");
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
-    const customOptions = differsFromCatalogDefault("DropdownV2", "options", options2);
-    if (customOptions && !Array.isArray(options2)) {
-      errors.push(`DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
-    } else if (Array.isArray(options2)) {
-      const malformedIndexes = options2.flatMap((option, index) => {
+    const customOptions = differsFromCatalogDefault("DropdownV2", "options", options3);
+    if (customOptions && !Array.isArray(options3)) {
+      errors.push(`DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options3 === "string" && isDynamicBinding(options3) ? "a dynamic {{ }} binding" : typeof options3}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
+    } else if (Array.isArray(options3)) {
+      const malformedIndexes = options3.flatMap((option, index) => {
         const entry = recordValue(option);
         return entry && "label" in entry && "value" in entry ? [] : [index];
       });
@@ -34965,7 +34967,7 @@ function validateAppStructure(summary) {
       styles: c.styles,
       layouts: c.layouts,
       parent: c.parent
-    });
+    }, { persisted: true });
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
@@ -42173,7 +42175,11 @@ function updateComponentsTool(client) {
           if (update.definition)
             changedComponents.push({ before: current, after: normalizedNext });
           placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...normalized2.warnings);
+          const storedMisplaced = Object.keys(current.properties ?? {}).filter((key) => STYLE_KEYS_IN_PROPERTIES.has(key));
+          warnings.push(...normalized2.warnings.filter((warning) => !storedMisplaced.some((key) => warning.includes(`moved style key "${key}"`))));
+          if (storedMisplaced.length) {
+            warnings.push(`Component "${next.name}": style keys ${JSON.stringify(storedMisplaced)} were already stored under \`properties\` before this update and REMAIN there \u2014 component updates merge and cannot delete keys. Any new value you sent is applied to \`styles\` and renders correctly; the leftovers are inert. Do not retry this update to clear them, it cannot work.`);
+          }
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized2.patch).length) {
             normalizedDefinition = { ...update.definition };

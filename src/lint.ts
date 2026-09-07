@@ -857,8 +857,14 @@ export function lintDesktopCanvasCoverage(components: LintComponent[]): string[]
   ];
 }
 
-/** Lint a single component spec (pre-write). */
-export function lintComponentSpec(spec: LintComponent): LintResult {
+export interface LintComponentSpecOptions {
+  /** Reporting on an already-stored component rather than gating a write: findings that are inert
+   *  once persisted, and that no tool can repair, are warnings here so they cannot fail a build. */
+  persisted?: boolean;
+}
+
+/** Lint a single component spec (pre-write by default; pass `persisted` for an as-stored report). */
+export function lintComponentSpec(spec: LintComponent, options: LintComponentSpecOptions = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const props = spec.properties ?? {};
@@ -873,9 +879,19 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
-  // ERROR: style keys under `properties` are silently dropped by ToolJet.
+  // ERROR pre-write (ToolJet drops these, so the styling is lost). Once persisted they are inert —
+  // the component still renders, since new values are normalized into `styles` — and unremovable,
+  // because ToolJet merges component updates and cannot delete keys. Erroring there fails builds over
+  // damage the agent neither caused nor can fix.
   const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
-  if (misplaced.length) {
+  if (misplaced.length && options.persisted) {
+    warnings.push(
+      `Component "${label}": style keys ${JSON.stringify(misplaced)} are stored under \`properties\`, where ` +
+        `ToolJet ignores them. They are inert leftovers and cannot be removed by an update (ToolJet merges ` +
+        `component definitions and cannot delete keys) — do not attempt to repair this. Set styling on ` +
+        `\`styles\` instead; delete and recreate the component only if the user asks for it.`
+    );
+  } else if (misplaced.length) {
     errors.push(
       `Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ` +
         `ignores them — move them to the top-level \`styles\` object.`
@@ -1904,7 +1920,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       styles: c.styles,
       layouts: c.layouts as LintComponent['layouts'],
       parent: c.parent,
-    });
+    }, { persisted: true });
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
