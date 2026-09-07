@@ -111,6 +111,29 @@ describe('ToolJet DB maintenance tools', () => {
 });
 
 describe('update_components validation', () => {
+  it('blocks a malformed binding before persistence and permits repairing one', async () => {
+    const good = '{{(queries.loans.data || []).map(r => ({id:r.id}))}}';
+    const bad = '{{(queries.loans.data || []).map(r => ({id:r.id})) )}}';
+    for (const [before, after, blocked] of [[good, bad, true], [bad, good, false]] as const) {
+      const client = {
+        getAppSummary: vi.fn().mockResolvedValue({app_id:'app1', pages:[{id:'p1', components:[{
+          id:'c1', name:'loansTable', type:'Table', properties:{data:{value:before}}, styles:{},
+        }]}], queries:[], events:[]}),
+        updateComponents: vi.fn().mockResolvedValue({updated:1}),
+      } as unknown as ToolJetClient;
+      const result = await updateComponentsTool(client).handler({app_id:'app1',version_id:'v1',page_id:'p1',
+        updates:[{component_id:'c1',definition:{properties:{data:{value:after}}}}]});
+      if (blocked) {
+        expect(result.isError).toBe(true);
+        expect(result.content[0]!.text).toContain('invalid JavaScript binding syntax');
+        expect(client.updateComponents).not.toHaveBeenCalled();
+      } else {
+        expect(result.isError).not.toBe(true);
+        expect(client.updateComponents).toHaveBeenCalledTimes(1);
+      }
+    }
+  });
+
   it('refuses a style update that makes existing Text geometry unusable', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

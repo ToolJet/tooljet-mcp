@@ -4,6 +4,73 @@ import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
+  it('warns when outline buttons inherit surface-colored text on a transparent background', () => {
+    for (const textColor of [undefined, {value: 'var(--cc-surface1-surface)'}]) {
+      const result = lintComponentSpec({name: 'reject', type: 'Button', styles: {
+        type: {value: 'outline'}, ...(textColor ? {textColor} : {}),
+      }});
+      expect(result.warnings.join(' ')).toContain('outline background is transparent');
+      expect(result.warnings.join(' ')).toContain('primary-text');
+    }
+  });
+
+  it('does not rewrite explicit outline colors or warn about primary button defaults', () => {
+    for (const styles of [{}, {type: {value: 'primary'}},
+      {type: {value: 'outline'}, textColor: {value: 'var(--cc-primary-text)'}},
+      {type: {value: 'outline'}, textColor: {value: '#ffffff'}},
+      {type: {value: '{{variables.variant}}'}}]) {
+      const spec = {name: 'action', type: 'Button', styles};
+      const before = JSON.stringify(spec);
+      expect(lintComponentSpec(spec).warnings.join(' ')).not.toContain('outline background is transparent');
+      expect(JSON.stringify(spec)).toBe(before);
+    }
+  });
+
+  it('rejects active NumberInput limits under properties, which the renderer ignores', () => {
+    for (const key of ['minValue', 'maxValue']) {
+      for (const value of [0, 1, -5, '1', '{{variables.limit}}']) {
+        const result = lintComponentSpec({ name: 'quantity', type: 'NumberInput', properties: { [key]: { value } } });
+        expect(result.errors.join(' ')).toContain(`properties.${key} is ignored`);
+        expect(result.errors.join(' ')).toContain(`validation.${key}`);
+      }
+    }
+  });
+
+  it('allows empty legacy numeric-limit defaults and does not infer limits for other widgets', () => {
+    for (const value of ['', null, undefined, '   ']) {
+      const result = lintComponentSpec({ name: 'quantity', type: 'NumberInput', properties: {
+        minValue: { value }, maxValue: { value },
+      } });
+      expect(result.errors.join(' ')).not.toContain('is ignored');
+    }
+    expect(lintComponentSpec({ type: 'NumberInput', properties: {} }).errors).toEqual([]);
+    expect(lintComponentSpec({ type: 'Slider', properties: { min: { value: 0 } } }).errors.join(' '))
+      .not.toContain('is ignored');
+  });
+
+  it('rejects tiny proportional-looking pixel widths on visible data columns', () => {
+    for (const columnType of ['string', 'text', 'number', 'datepicker', 'button']) {
+      const result = lintComponentSpec({name: 'equipment', type: 'Table', properties: {
+        columns: {value: [{id: 'name', key: 'name', name: 'Equipment', columnType, columnSize: 3}]},
+      }});
+      expect(result.errors.join(' ')).toMatch(/columnSize 3 is in pixels, not proportional weights/);
+    }
+  });
+
+  it('does not infer widths for hidden, dynamic, omitted, or legitimate narrow columns', () => {
+    for (const column of [
+      {columnSize: 1, columnVisibility: false},
+      {columnSize: 1, columnVisibility: '{{false}}'},
+      {columnSize: '{{variables.width}}'}, {}, {columnSize: 30}, {columnSize: 240},
+      {columnSize: 3, columnType: 'image'},
+    ]) {
+      const result = lintComponentSpec({name: 'equipment', type: 'Table', properties: {
+        columns: {value: [{id: 'name', key: 'name', name: 'Equipment', columnType: 'string', ...column}]},
+      }});
+      expect(result.errors.join(' ')).not.toContain('not proportional weights');
+    }
+  });
+
   it('blocks unknown component types and typo keys with spelling suggestions', () => {
     const unknownType = lintComponentSpec({ name: 'progress', type: 'CircularProgressbar', properties: {} });
     expect(unknownType.errors.join(' ')).toMatch(/unknown component type "CircularProgressbar".*CircularProgressBar/i);

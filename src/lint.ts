@@ -4,6 +4,7 @@
 import type { AppSummary } from './tooljetClient.js';
 import {
   lintHtmlContentHeight,
+  lintEmbeddedBindingSyntax,
   lintHtmlRootSurface,
   lintOversizedWidths,
   lintUnguardedComponentRefs,
@@ -12,6 +13,7 @@ import {
   lintUntriggeredDataQueries,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { lintBindingSyntax } from './bindingSyntax.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
@@ -874,6 +876,46 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   const props = spec.properties ?? {};
   const label = spec.name ?? spec.type ?? 'component';
 
+  // Outline ignores backgroundColor; surface-colored primary-button text is not remapped
+  // by Button.jsx. Warn, rather than rewrite: a deliberately dark parent can be valid.
+  if (spec.type === 'Button' && propVal(spec.styles ?? {}, 'type') === 'outline') {
+    const textColor = propVal(spec.styles ?? {}, 'textColor') ??
+      getComponentSchema('Button')?.styles.find((style) => style.key === 'textColor')?.default;
+    if (textColor === 'var(--cc-surface1-surface)') {
+      warnings.push(
+        `Button "${label}": outline background is transparent even when backgroundColor is set. ` +
+          'Surface-colored text can disappear against the page or card. Set textColor to a contrasting ' +
+          'token such as var(--cc-primary-text), and check iconColor/loaderColor against the actual parent; ' +
+          'retain surface-colored text only when the parent provides sufficient contrast.'
+      );
+    }
+  }
+
+  // NumberInput's persisted defaults contain these legacy property keys, but its current
+  // renderer reads bounds only from validation. Empty defaults must remain repair-compatible.
+  if (spec.type === 'NumberInput') {
+    for (const key of ['minValue', 'maxValue']) {
+      const value = propVal(props, key);
+      if (value == null || (typeof value === 'string' && value.trim() === '')) continue;
+      errors.push(
+        `NumberInput "${label}": properties.${key} is ignored by the renderer. ` +
+          `Move the limit to top-level validation.${key}: {value: ...} and clear the legacy property. ` +
+          'Gate standalone submit actions on field validity and the intended numeric range; truthiness accepts negative values.'
+      );
+    }
+  }
+
+  errors.push(...lintBindingSyntax(props, `Component "${label}".properties`));
+  errors.push(...lintBindingSyntax(spec.styles, `Component "${label}".styles`));
+  // These boolean controls are not text templates. A malformed expression plus stray prose can
+  // silently become a truthy string and disable/hide an otherwise working primary action.
+  for (const key of ['disabledState', 'loadingState', 'visibility', 'collapseWhenHidden']) {
+    const path = `Component "${label}".properties.${key}`;
+    for (const error of lintBindingSyntax(props[key], path, true)) {
+      if (!errors.includes(error)) errors.push(error);
+    }
+  }
+
   if (spec.slotName !== undefined) {
     if (!(COMPONENT_SLOT_NAMES as readonly string[]).includes(spec.slotName)) {
       errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
@@ -1243,6 +1285,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintHtmlContentHeight(spec));
   errors.push(...lintHtmlRootSurface(spec));
   errors.push(...lintUnguardedComponentRefs(spec));
+  errors.push(...lintEmbeddedBindingSyntax(spec));
 
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
@@ -1365,6 +1408,20 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         const deprecatedReplacement =
           typeof c?.columnType === 'string' ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : undefined;
+        // columnSize is a pixel width, not a flex weight or canvas grid span. Tiny positive
+        // values collapse ordinary text/date columns to the renderer's minimum width.
+        // Ignore hidden columns and non-literal values rather than guessing their runtime intent.
+        if (
+          c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}' &&
+          typeof c.columnSize === 'number' && c.columnSize > 0 && c.columnSize < 16 &&
+          ['string', 'text', 'number', 'datepicker', 'button'].includes(String(c.columnType))
+        ) {
+          errors.push(
+            `Table "${label}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} ` +
+              'is in pixels, not proportional weights or grid columns. Use a readable pixel width ' +
+              '(for example 240 for a name, 140 for a date), or omit columnSize for the default.'
+          );
+        }
         if (deprecatedReplacement) {
           errors.push(
             `Table "${label}" column[${i}] "${String(c?.key ?? c?.name ?? '')}" uses deprecated ` +
@@ -1750,7 +1807,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
-  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -2043,7 +2100,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
-    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));

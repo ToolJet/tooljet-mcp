@@ -319,6 +319,47 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  exist: `components.filter.value` throws, the Table shows No data, and nothing re-evaluates it
  *  until a filter changes or the page reloads (a Luna clinic build on 2026-09-05 shipped exactly
  *  this). `components.filter?.value` is the shape the skill asks for; this makes it mandatory. */
+/** Bindings embedded in Html/Text markup are compiled one `{{...}}` at a time. Observed live (Luna high,
+ *  2026-09-06): two KPI cards rendered blank because the model wrote `r.status!==\"Cancelled\"` inside
+ *  the markup, escaping the quotes as if the expression sat inside a JSON string. A backslash outside a
+ *  string literal is a JavaScript syntax error, and ToolJet renders a failed binding as nothing. */
+const EMBEDDED_BINDING = /\{\{([\s\S]*?)\}\}/g;
+const BACKSLASH_QUOTE = /\\["']/;
+export function lintEmbeddedBindingSyntax(c: ReadinessComponent): string[] {
+  if (c.type !== 'Html' && c.type !== 'Text') return [];
+  const key = c.type === 'Html' ? 'rawHtml' : 'text';
+  const value = propVal(c.properties, key);
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const errors: string[] = [];
+  for (const m of value.matchAll(EMBEDDED_BINDING)) {
+    const expr = m[1]!;
+    if (expr.includes('{{')) continue;
+    let message = '';
+    try {
+      new Function(`return (\n${expr}\n);`);
+      continue;
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) continue;
+      message = error.message;
+    }
+    // A `}}` that closes an object literal splits the expression early; only report a fragment when the
+    // braces balance (so the cut is not the cause) or the tell-tale backslash-quote is present.
+    const balanced = (expr.match(/\{/g) ?? []).length === (expr.match(/\}/g) ?? []).length;
+    const escaped = BACKSLASH_QUOTE.test(expr);
+    if (!balanced && !escaped) continue;
+    const snippet = expr.length > 90 ? `${expr.slice(0, 90)}…` : expr;
+    errors.push(
+      `${c.type} "${label(c)}": ${key} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` +
+        (escaped
+          ? 'Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or ' +
+            "'Cancelled', not \\\"Cancelled\\\". "
+          : '') +
+        'A failed binding renders as nothing, which leaves the card or line blank.'
+    );
+  }
+  return errors;
+}
+
 export function lintUnguardedComponentRefs(c: ReadinessComponent): string[] {
   if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type)) return [];
   const props = c.properties ?? {};

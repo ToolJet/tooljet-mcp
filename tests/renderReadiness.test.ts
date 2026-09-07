@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  lintEmbeddedBindingSyntax,
   lintHtmlContentHeight,
   lintHtmlRootSurface,
   lintOversizedWidths,
@@ -290,5 +291,42 @@ describe('lintUnguardedComponentRefs', () => {
   it('covers Html and Text bindings and selectedRow reads', () => {
     expect(lintUnguardedComponentRefs({ name: 'panel', type: 'Html', properties: { rawHtml: { value: '<div>{{components.tbl.selectedRow.name}}</div>' } } })[0]).toMatch(/components\.tbl\?\.selectedRow/);
     expect(lintUnguardedComponentRefs({ name: 't', type: 'Text', properties: { text: { value: '{{components.tbl?.selectedRow?.name}}' } } })).toEqual([]);
+  });
+});
+
+describe('lintEmbeddedBindingSyntax', () => {
+  const html = (rawHtml: string) => ({
+    name: 'overviewKpis',
+    type: 'Html',
+    properties: { rawHtml: { value: rawHtml } },
+    layouts: { desktop: { left: 2, top: 10, width: 39, height: 120 } },
+  });
+
+  it('rejects the backslash-escaped quotes that blanked the Luna high KPI cards', () => {
+    const errors = lintEmbeddedBindingSyntax(
+      html('<div>{{(queries.q_overview_disruptions.data || []).filter(r=>r.status!==\\"Closed\\").length}}</div>')
+    );
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/not valid JavaScript/);
+    expect(errors[0]).toMatch(/must not be backslash-escaped/);
+    expect(lintComponentSpec(html('<b>{{r.status!==\\"Closed\\"}}</b>')).errors.join(' ')).toMatch(/backslash-escaped/);
+  });
+
+  it('accepts IIFEs, object literals, escaped quotes inside string literals and plain text', () => {
+    expect(
+      lintEmbeddedBindingSyntax(
+        html('<div>{{(()=>{const d=queries.q.data||[];const e=d.filter(r=>r.status!=="Cancelled");return e.length?Math.round(e.length/2)+"%":"N/A"})()}}</div>')
+      )
+    ).toEqual([]);
+    expect(lintEmbeddedBindingSyntax(html('<i>{{ ({a: 1}).a }}</i>'))).toEqual([]);
+    expect(lintEmbeddedBindingSyntax(html('<i>{{ "say \\"hi\\"" }}</i>'))).toEqual([]);
+    expect(lintEmbeddedBindingSyntax(html('<p>No bindings here</p>'))).toEqual([]);
+    expect(lintEmbeddedBindingSyntax({ name: 't', type: 'Text', properties: { text: { value: 'Open: {{queries.q.data?.length ?? 0}}' } } })).toEqual([]);
+  });
+
+  it('flags a balanced expression that does not compile in a Text component', () => {
+    const errors = lintEmbeddedBindingSyntax({ name: 't', type: 'Text', properties: { text: { value: 'Rows: {{queries.q.data.length +}}' } } });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Text "t": text contains a binding/);
   });
 });
