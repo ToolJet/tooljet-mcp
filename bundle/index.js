@@ -33450,6 +33450,27 @@ function createAuth(config2, fetchImpl = fetch) {
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
+// dist/bindingReferences.js
+function bindingReferences(value) {
+  if (Array.isArray(value))
+    return value.flatMap(bindingReferences);
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap(bindingReferences);
+  if (typeof value !== "string")
+    return [];
+  const refs2 = [];
+  for (const binding of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const tokens = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*|(?<![\w$.])(components|queries)\s*(?:\?\.)?\s*(?:\.\s*([A-Za-z_$][\w$]*)|\[\s*(['"])([^'"\n]+)\3\s*\])|(?<![\w$.])(components|queries)\?\.\s*([A-Za-z_$][\w$]*)/g;
+    for (const match of binding[1].matchAll(tokens)) {
+      const namespace = match[1] || match[5];
+      const name = match[2] || match[4] || match[6];
+      if (namespace && name)
+        refs2.push({ namespace, name });
+    }
+  }
+  return refs2;
+}
+
 // dist/catalog.js
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -34861,6 +34882,22 @@ function validateAppStructure(summary) {
     const ev = e.event ?? {};
     if (ev.actionId === "run-query" && typeof ev.queryId === "string" && !queryIds.has(ev.queryId)) {
       errors.push(`Event "${name}" runs a query (${ev.queryId}) that no longer exists.`);
+    }
+  }
+  const bindingSources = [
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
+    ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event }))
+  ];
+  for (const source2 of bindingSources) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const ref of bindingReferences(source2.value)) {
+      const names = ref.namespace === "components" ? componentNames : queryNames;
+      const key = `${ref.namespace}.${ref.name}`;
+      if (!names.has(ref.name) && !seen.has(key)) {
+        seen.add(key);
+        errors.push(`${source2.label} references ${key}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
+      }
     }
   }
   for (const c of allComponents) {
@@ -38392,6 +38429,23 @@ function getAppSummaryTool(client) {
     },
     async handler(args) {
       try {
+        for (const key of [
+          "page_ids",
+          "page_names",
+          "page_handles",
+          "component_ids",
+          "component_names",
+          "component_types",
+          "query_ids",
+          "query_names",
+          "query_kinds",
+          "event_ids",
+          "event_source_ids"
+        ]) {
+          if (args[key]?.some((value) => !value.trim() || value === "*" || value === "00000000-0000-0000-0000-000000000000")) {
+            throw new Error(`${key} contains a placeholder, not an exact selector. Omit unused filters entirely; wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.`);
+          }
+        }
         const summary = await client.getAppSummary(args.app_id);
         return ok(selectAppSummary(summary, {
           sections: args.sections,
@@ -38762,6 +38816,23 @@ function validateEvents(summary, events, options2 = {}) {
   });
   for (const chain of chains.values()) {
     chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
+    chain.forEach(({ event }, index) => {
+      if (event.action.actionId !== "control-component" || !["selectOption", "selectOptions", "setText", "setValue"].includes(String(event.action.componentSpecificActionHandle)))
+        return;
+      let child = components.get(String(event.action.componentId));
+      const visited = /* @__PURE__ */ new Set();
+      while (child?.parent && !visited.has(child.id)) {
+        visited.add(child.id);
+        const parent = components.get(decodeComponentParent(child.parent).parentId);
+        if (!parent)
+          break;
+        if (parent.type === "ModalV2" && chain.slice(index + 1).some(({ event: later2 }) => later2.action.actionId === "show-modal" && later2.action.modal === parent.id)) {
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" before show-modal. Closed modal children are not mounted; these values can be lost. Bind input defaults to the selected record, or initialize after the modal opens.`);
+          break;
+        }
+        child = parent;
+      }
+    });
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
     if (navigationIndex === -1 || navigationIndex === chain.length - 1)
       continue;
@@ -40535,6 +40606,8 @@ function lintPlannedApp(spec, existingSummary) {
     if (existingQueryNames.has(query.name))
       errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
+    if (ref !== query.name)
+      registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
     let options2 = query.options;
     if (!query.kind) {
@@ -40777,7 +40850,12 @@ function sourceMap(sourceType, components, queries, pages) {
   return components;
 }
 function resolveAction(raw, queries, pages, components, errors, label) {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
+  if (Object.values(action).some((value) => typeof value === "string" && /^planned-(query|page|component):/.test(value))) {
+    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    return action;
+  }
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string") {
@@ -41171,7 +41249,8 @@ function sourceTarget(sourceType, ref, pages, queries, components) {
   return components.get(ref);
 }
 function resolveAction2(raw, pages, queries, components) {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string")
@@ -41407,6 +41486,7 @@ function applyAppPhaseTool(client) {
           if (!created)
             throw new Error(`Could not resolve query "${query.name}" after creation.`);
           queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
+          queryTargets.set(query.name, { id: created.query_id, name: created.name });
         });
         stage = "create page components";
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
@@ -41516,7 +41596,22 @@ function applyAppPhaseTool(client) {
           validation
         });
       } catch (error51) {
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}`));
+        let recovery = "";
+        if (Object.values(applied).some((count) => count > 0)) {
+          try {
+            const current = await client.getAppSummary(args.app_id);
+            recovery = " Persisted resources for targeted repair (do not recreate): " + JSON.stringify({
+              pages: current.pages.map((page) => ({
+                id: page.id,
+                name: page.name,
+                components: page.components.map((c) => ({ id: c.id, name: c.name }))
+              })),
+              queries: current.queries.map((q) => ({ id: q.id, name: q.name }))
+            }).slice(0, 12e3);
+          } catch {
+          }
+        }
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
       }
     }
   };
