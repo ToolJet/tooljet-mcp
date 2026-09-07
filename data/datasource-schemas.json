@@ -52493,8 +52493,8 @@
                 "shape": {
                   "<filter-id>": {
                     "column": "string",
-                    "operator": "eq|gt|gte|lt|lte|neq|like|ilike|match|imatch|in|is",
-                    "value": "unknown|binding (use null or not_null with operator is)",
+                    "operator": "eq|gt|gte|lt|lte|neq|like|ilike|in|is",
+                    "value": "unknown|binding (use null or notNull with operator is)",
                     "id?": "string",
                     "jsonpath?": "string"
                   }
@@ -52591,11 +52591,30 @@
               },
               "update_rows.columns": {
                 "path": "update_rows.columns",
-                "type": "record"
+                "type": "record",
+                "description": "Indexed {column,value} records. Some ToolJet deployments append order=id to this PATCH. If the actual table has no id column, use bulk_update_with_primary_key with the inspected primary key and one rows_update record instead; never recreate the table or assume a missing id column."
               },
               "update_rows.where_filters": {
                 "path": "update_rows.where_filters",
-                "type": "record"
+                "type": "record",
+                "description": "Map of stable ids to filter clauses. `id` is optional metadata; `jsonpath` is optional for JSONB columns.",
+                "shape": {
+                  "<filter-id>": {
+                    "column": "string",
+                    "operator": "eq|gt|gte|lt|lte|neq|like|ilike|in|is",
+                    "value": "unknown|binding (use null or notNull with operator is)",
+                    "id?": "string",
+                    "jsonpath?": "string"
+                  }
+                },
+                "example": {
+                  "filter-status": {
+                    "id": "filter-status",
+                    "column": "status",
+                    "operator": "eq",
+                    "value": "Open"
+                  }
+                }
               }
             },
             "required": [
@@ -52799,6 +52818,7 @@
               },
               "sql_execution.sqlQuery": {
                 "path": "sql_execution.sqlQuery",
+                "description": "ToolJet DB SQL reads return data: {results: rows}; bind tables/charts to queries.<name>.data.results and KPIs to data.results[0]. Inspect the actual result before binding; list_rows and other datasource operations can use different shapes.",
                 "type": "string"
               }
             },
@@ -52834,8 +52854,8 @@
             "shape": {
               "<filter-id>": {
                 "column": "string",
-                "operator": "eq|gt|gte|lt|lte|neq|like|ilike|match|imatch|in|is",
-                "value": "unknown|binding (use null or not_null with operator is)",
+                "operator": "eq|gt|gte|lt|lte|neq|like|ilike|in|is",
+                "value": "unknown|binding (use null or notNull with operator is)",
                 "id?": "string",
                 "jsonpath?": "string"
               }

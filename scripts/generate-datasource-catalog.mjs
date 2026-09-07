@@ -381,8 +381,8 @@ const tooljetWhereFilters = {
   shape: {
     '<filter-id>': {
       column: 'string',
-      operator: 'eq|gt|gte|lt|lte|neq|like|ilike|match|imatch|in|is',
-      value: 'unknown|binding (use null or not_null with operator is)',
+      operator: 'eq|gt|gte|lt|lte|neq|like|ilike|in|is',
+      value: 'unknown|binding (use null or notNull with operator is)',
       'id?': 'string',
       'jsonpath?': 'string',
     },
@@ -426,8 +426,10 @@ const tooljetContracts = {
   create_row: oneVariant('create_row', [...tooljetCommon, field('create_row', 'record')], ['operation', 'table_id', 'create_row'], { operation: 'create_row' }),
   update_rows: oneVariant('update_rows', [
     ...tooljetCommon,
-    field('update_rows.columns', 'record'),
-    field('update_rows.where_filters', 'record'),
+    field('update_rows.columns', 'record', {
+      description: 'Indexed {column,value} records. Some ToolJet deployments append order=id to this PATCH. If the actual table has no id column, use bulk_update_with_primary_key with the inspected primary key and one rows_update record instead; never recreate the table or assume a missing id column.',
+    }),
+    field('update_rows.where_filters', tooljetWhereFilters.type, tooljetWhereFilters),
   ], ['operation', 'table_id', 'update_rows.columns', 'update_rows.where_filters'], { operation: 'update_rows' }),
   delete_rows: oneVariant('delete_rows', [
     ...tooljetCommon,
@@ -446,7 +448,9 @@ const tooljetContracts = {
     field('bulk_upsert_with_primary_key.primary_key', 'array<string>'),
     field('bulk_upsert_with_primary_key.rows', 'array|binding'),
   ], ['operation', 'table_id', 'bulk_upsert_with_primary_key.primary_key', 'bulk_upsert_with_primary_key.rows'], { operation: 'bulk_upsert_with_primary_key' }),
-  sql_execution: oneVariant('sql_execution', [field('operation', 'string'), field('sql_execution.sqlQuery', 'string')], ['operation', 'sql_execution.sqlQuery'], { operation: 'sql_execution' }),
+  sql_execution: oneVariant('sql_execution', [field('operation', 'string'), field('sql_execution.sqlQuery', 'string', {
+    description: 'ToolJet DB SQL reads return data: {results: rows}; bind tables/charts to queries.<name>.data.results and KPIs to data.results[0]. Inspect the actual result before binding; list_rows and other datasource operations can use different shapes.',
+  })], ['operation', 'sql_execution.sqlQuery'], { operation: 'sql_execution' }),
 };
 
 const staticSchemas = {
