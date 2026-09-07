@@ -141,6 +141,46 @@ async function checkOriginWithGateway(customerId: string, origin: string): Promi
   return allowed;
 }
 
+/** Last resolved origin per customer, from resolveApiUrlFromGateway. */
+const gatewayResolveCache = new Map<string, { url: string | undefined; expiresAt: number }>();
+
+/**
+ * For when x-tooljet-url is absent entirely — an old ToolJet version never sends it (the field is
+ * new), while customer_id still arrives regardless of version (gateway billing already depends on
+ * it). Asks the Gateway for that customer's own registered host instead of requiring the header.
+ * Undefined (not a guess) when the Gateway has nothing on file or is unreachable — same fail-closed
+ * rule as checkOriginWithGateway.
+ */
+async function resolveApiUrlFromGateway(customerId: string): Promise<string | undefined> {
+  const cached = gatewayResolveCache.get(customerId);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  let url: string | undefined;
+  if (gatewayUrl && gatewayToken) {
+    try {
+      const res = await fetch(new URL('/internal/mcp/verify-origin', gatewayUrl), {
+        method: 'POST',
+        headers: { authorization: gatewayToken, 'content-type': 'application/json' },
+        body: JSON.stringify({ customer_id: customerId }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (res.ok) {
+        const body = (await res.json()) as { host_name?: string | null; subpath?: string | null };
+        if (body.host_name) {
+          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, '')}` : '';
+          url = `https://${body.host_name}${path}`;
+        }
+      }
+    } catch {
+      url = undefined;
+    }
+  }
+  gatewayResolveCache.set(customerId, { url, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return url;
+}
+
 /**
  * Validate the request-supplied target origin, or throw.
  *
@@ -199,7 +239,13 @@ export async function identityFromHeaders(
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
   const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
-  const apiUrl = rawApiUrl ? await validateApiUrl(rawApiUrl, customerId) : undefined;
+  // No x-tooljet-url at all (an old ToolJet version that never sends it) but a customer_id is
+  // present — ask the Gateway to resolve it rather than falling straight to "no target."
+  const apiUrl = rawApiUrl
+    ? await validateApiUrl(rawApiUrl, customerId)
+    : customerId
+      ? await resolveApiUrlFromGateway(customerId)
+      : undefined;
 
   if (pat) {
     /* A PAT names whoever owns it and lives for weeks; a session names the person this request is

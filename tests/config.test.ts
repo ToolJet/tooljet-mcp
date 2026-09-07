@@ -518,6 +518,81 @@ describe('per-request target origin — live Gateway fallback', () => {
   });
 });
 
+/* An old ToolJet version never sends x-tooljet-url at all (the field is new) — customer_id still
+   arrives regardless of version, since gateway billing already depends on it. Resolve mode asks the
+   Gateway for that customer's own host instead of requiring the header. */
+describe('per-request target origin — resolved from customer_id with no x-tooljet-url', () => {
+  let gatewayServer: import('node:http').Server;
+  let receivedRequests: Array<{ authorization?: string; body: unknown }>;
+  let gatewayResponse: { host_name: string | null; subpath: string | null };
+
+  beforeEach(async () => {
+    delete process.env.TOOLJET_URL;
+    delete process.env.MCP_ALLOWED_API_ORIGINS;
+    receivedRequests = [];
+    gatewayResponse = { host_name: null, subpath: null };
+    const { createServer } = await import('node:http');
+    gatewayServer = createServer((req, res) => {
+      let raw = '';
+      req.on('data', (chunk) => (raw += chunk));
+      req.on('end', () => {
+        receivedRequests.push({ authorization: req.headers.authorization, body: JSON.parse(raw || '{}') });
+        res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(gatewayResponse));
+      });
+    });
+    await new Promise<void>((resolve) => gatewayServer.listen(0, resolve));
+    const address = gatewayServer.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    process.env.MCP_GATEWAY_URL = `http://127.0.0.1:${port}`;
+    process.env.MCP_GATEWAY_TOKEN = 'gateway-secret';
+  });
+
+  afterEach(async () => {
+    delete process.env.MCP_GATEWAY_URL;
+    delete process.env.MCP_GATEWAY_TOKEN;
+    await new Promise<void>((resolve) => gatewayServer.close(() => resolve()));
+  });
+
+  it('resolves the apiUrl from the customer\'s registered host when no x-tooljet-url was sent', async () => {
+    gatewayResponse = { host_name: 'resolved.example.com', subpath: null };
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-1' })).toEqual({
+      apiUrl: 'https://resolved.example.com',
+    });
+    expect(receivedRequests).toEqual([
+      { authorization: 'gateway-secret', body: { customer_id: 'cust-old-1' } },
+    ]);
+  });
+
+  it('includes the subpath when the customer has one registered', async () => {
+    gatewayResponse = { host_name: 'resolved.example.com', subpath: 'tooljet' };
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-2' })).toEqual({
+      apiUrl: 'https://resolved.example.com/tooljet',
+    });
+  });
+
+  it('leaves apiUrl undefined when the customer has no host on file either', async () => {
+    gatewayResponse = { host_name: null, subpath: null };
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-3' })).toBeUndefined();
+  });
+
+  it('leaves apiUrl undefined, without calling the Gateway, when no customer id was sent', async () => {
+    expect(await identityFromHeaders({})).toBeUndefined();
+    expect(receivedRequests).toEqual([]);
+  });
+
+  it('fails closed (undefined, not a guess) when the Gateway is unreachable', async () => {
+    await new Promise<void>((resolve) => gatewayServer.close(() => resolve()));
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-4' })).toBeUndefined();
+  });
+
+  it('caches a resolved response instead of calling the Gateway again for the same customer', async () => {
+    gatewayResponse = { host_name: 'resolved.example.com', subpath: null };
+    await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-5' });
+    await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-5' });
+    expect(receivedRequests).toHaveLength(1);
+  });
+});
+
 describe('blank environment variables count as unset', () => {
   beforeEach(() => {
     for (const k of [
