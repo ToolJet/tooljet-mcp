@@ -33268,11 +33268,12 @@ async function validateApiUrl(raw, customerId) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
   const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  if (!inStaticList && !(customerId && await checkOriginWithGateway(customerId, parsed.origin))) {
+  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  if (!inStaticList && !verifiedViaGateway) {
     throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
   }
   const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
-  return parsed.origin + path;
+  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
 }
 async function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
@@ -33283,7 +33284,9 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
   let apiUrl;
   let customerVerified;
   if (rawApiUrl) {
-    apiUrl = await validateApiUrl(rawApiUrl, customerId);
+    const validated = await validateApiUrl(rawApiUrl, customerId);
+    apiUrl = validated.apiUrl;
+    customerVerified = validated.customerVerified;
   } else if (customerId) {
     const resolved = await resolveApiUrlFromGateway(customerId);
     apiUrl = resolved.url;
