@@ -200,7 +200,10 @@ async function resolveApiUrlFromGateway(customerId: string): Promise<ResolvedOri
  * not a malformed one. Both checks match on origin only — the path is the operator's own
  * reverse-proxy detail, not the trust boundary. Query, hash, and credentials are rejected outright.
  */
-async function validateApiUrl(raw: string, customerId?: string): Promise<string> {
+async function validateApiUrl(
+  raw: string,
+  customerId?: string
+): Promise<{ apiUrl: string; customerVerified?: true }> {
   let parsed: URL;
   try {
     parsed = new URL(raw);
@@ -214,7 +217,10 @@ async function validateApiUrl(raw: string, customerId?: string): Promise<string>
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
   const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  if (!inStaticList && !(customerId && (await checkOriginWithGateway(customerId, parsed.origin)))) {
+  // Same Gateway confirmation as resolve mode — a customer verified this way should bypass
+  // MCP_REQUIRE_USER_SESSION too, not just the origin check that verified them.
+  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  if (!inStaticList && !verifiedViaGateway) {
     throw new Error(
       `${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify ` +
         `against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`
@@ -223,7 +229,7 @@ async function validateApiUrl(raw: string, customerId?: string): Promise<string>
   // A trailing slash is cosmetic; normalize it away so "https://x.com/tooljet" and
   // "https://x.com/tooljet/" resolve to the same target instead of being treated as different ones.
   const path = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, '');
-  return parsed.origin + path;
+  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : undefined };
 }
 
 /**
@@ -246,7 +252,9 @@ export async function identityFromHeaders(
   let apiUrl: string | undefined;
   let customerVerified: true | undefined;
   if (rawApiUrl) {
-    apiUrl = await validateApiUrl(rawApiUrl, customerId);
+    const validated = await validateApiUrl(rawApiUrl, customerId);
+    apiUrl = validated.apiUrl;
+    customerVerified = validated.customerVerified;
   } else if (customerId) {
     const resolved = await resolveApiUrlFromGateway(customerId);
     apiUrl = resolved.url;

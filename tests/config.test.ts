@@ -460,13 +460,15 @@ describe('per-request target origin — live Gateway fallback', () => {
     await new Promise<void>((resolve) => gatewayServer.close(() => resolve()));
   });
 
-  it('accepts an origin outside the static allowlist when the Gateway says yes', async () => {
+  /* Verified via the live check, not just resolve mode — MCP_REQUIRE_USER_SESSION needs to see this
+     too, so a Gateway-verified customer isn't hard-rejected there for lacking a session. */
+  it('accepts an origin outside the static allowlist when the Gateway says yes, and marks it verified', async () => {
     expect(
       await identityFromHeaders({
         'x-tooljet-url': 'https://customer.example.com',
         'x-tooljet-customer-id': 'cust-1',
       })
-    ).toEqual({ apiUrl: 'https://customer.example.com' });
+    ).toEqual({ apiUrl: 'https://customer.example.com', customerVerified: true });
     expect(receivedRequests).toEqual([
       { authorization: 'gateway-secret', body: { customer_id: 'cust-1', origin: 'https://customer.example.com' } },
     ]);
