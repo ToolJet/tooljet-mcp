@@ -33,9 +33,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/content-type/index.js
+// ../tooljet-mcp/node_modules/content-type/index.js
 var require_content_type = __commonJS({
-  "node_modules/content-type/index.js"(exports) {
+  "../tooljet-mcp/node_modules/content-type/index.js"(exports) {
     "use strict";
     var PARAM_REGEXP = /; *([!#$%&'*+.^_`|~0-9A-Za-z-]+) *= *("(?:[\u000b\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\u000b\u0020-\u00ff])*"|[!#$%&'*+.^_`|~0-9A-Za-z-]+) */g;
     var TEXT_REGEXP = /^[\u000b\u0020-\u007e\u0080-\u00ff]+$/;
@@ -137,9 +137,9 @@ var require_content_type = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/code.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/codegen/code.js
 var require_code = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/code.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/codegen/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.regexpCode = exports.getEsmExportName = exports.getProperty = exports.safeStringify = exports.stringify = exports.strConcat = exports.addCodeArg = exports.str = exports._ = exports.nil = exports._Code = exports.Name = exports.IDENTIFIER = exports._CodeOrName = void 0;
@@ -291,9 +291,9 @@ var require_code = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/scope.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/codegen/scope.js
 var require_scope = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
@@ -436,9 +436,9 @@ var require_scope = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/codegen/index.js
 var require_codegen = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/codegen/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.or = exports.and = exports.not = exports.CodeGen = exports.operators = exports.varKinds = exports.ValueScopeName = exports.ValueScope = exports.Scope = exports.Name = exports.regexpCode = exports.stringify = exports.getProperty = exports.nil = exports.strConcat = exports.str = exports._ = void 0;
@@ -556,9 +556,9 @@ var require_codegen = __commonJS({
       }
     };
     var Label = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
@@ -566,14 +566,14 @@ var require_codegen = __commonJS({
       }
     };
     var Break = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
-        const label = this.label ? ` ${this.label}` : "";
-        return `break${label};` + _n;
+        const label2 = this.label ? ` ${this.label}` : "";
+        return `break${label2};` + _n;
       }
     };
     var Throw = class extends Node {
@@ -985,12 +985,12 @@ var require_codegen = __commonJS({
         return this._endBlockNode(For);
       }
       // `label` statement
-      label(label) {
-        return this._leafNode(new Label(label));
+      label(label2) {
+        return this._leafNode(new Label(label2));
       }
       // `break` statement
-      break(label) {
-        return this._leafNode(new Break(label));
+      break(label2) {
+        return this._leafNode(new Break(label2));
       }
       // `return` statement
       return(value) {
@@ -1156,9 +1156,9 @@ var require_codegen = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/util.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/util.js
 var require_util = __commonJS({
-  "node_modules/ajv/dist/compile/util.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/util.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.checkStrictMode = exports.getErrorPath = exports.Type = exports.useFunc = exports.setEvaluated = exports.evaluatedPropsToName = exports.mergeEvaluated = exports.eachItem = exports.unescapeJsonPointer = exports.escapeJsonPointer = exports.escapeFragment = exports.unescapeFragment = exports.schemaRefOrVal = exports.schemaHasRulesButRef = exports.schemaHasRules = exports.checkUnknownRules = exports.alwaysValidSchema = exports.toHash = void 0;
@@ -1323,9 +1323,9 @@ var require_util = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/names.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/names.js
 var require_names = __commonJS({
-  "node_modules/ajv/dist/compile/names.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/names.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -1362,9 +1362,9 @@ var require_names = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/errors.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/errors.js
 var require_errors = __commonJS({
-  "node_modules/ajv/dist/compile/errors.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/errors.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendErrors = exports.resetErrorsCount = exports.reportExtraError = exports.reportError = exports.keyword$DataError = exports.keywordError = void 0;
@@ -1484,9 +1484,9 @@ var require_errors = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/boolSchema.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/boolSchema.js
 var require_boolSchema = __commonJS({
-  "node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.boolOrEmptySchema = exports.topBoolOrEmptySchema = void 0;
@@ -1535,9 +1535,9 @@ var require_boolSchema = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/rules.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/rules.js
 var require_rules = __commonJS({
-  "node_modules/ajv/dist/compile/rules.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/rules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getRules = exports.isJSONType = void 0;
@@ -1566,9 +1566,9 @@ var require_rules = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/applicability.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/applicability.js
 var require_applicability = __commonJS({
-  "node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.shouldUseRule = exports.shouldUseGroup = exports.schemaHasRulesForType = void 0;
@@ -1589,9 +1589,9 @@ var require_applicability = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/dataType.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/dataType.js
 var require_dataType = __commonJS({
-  "node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.reportTypeError = exports.checkDataTypes = exports.checkDataType = exports.coerceAndCheckDataType = exports.getJSONTypes = exports.getSchemaTypes = exports.DataType = void 0;
@@ -1773,9 +1773,9 @@ var require_dataType = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/defaults.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/defaults.js
 var require_defaults = __commonJS({
-  "node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.assignDefaults = void 0;
@@ -1810,9 +1810,9 @@ var require_defaults = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/code.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/code.js
 var require_code2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/code.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateUnion = exports.validateArray = exports.usePattern = exports.callValidateCode = exports.schemaProperties = exports.allSchemaProperties = exports.noPropertyInData = exports.propertyInData = exports.isOwnProperty = exports.hasPropFunc = exports.reportMissingProp = exports.checkMissingProp = exports.checkReportMissingProp = void 0;
@@ -1943,9 +1943,9 @@ var require_code2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/keyword.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/keyword.js
 var require_keyword = __commonJS({
-  "node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateKeywordUsage = exports.validSchemaType = exports.funcKeywordCode = exports.macroKeywordCode = void 0;
@@ -2061,9 +2061,9 @@ var require_keyword = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/subschema.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/subschema.js
 var require_subschema = __commonJS({
-  "node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendSubschemaMode = exports.extendSubschemaData = exports.getSubschema = void 0;
@@ -2144,9 +2144,9 @@ var require_subschema = __commonJS({
   }
 });
 
-// node_modules/fast-deep-equal/index.js
+// ../tooljet-mcp/node_modules/fast-deep-equal/index.js
 var require_fast_deep_equal = __commonJS({
-  "node_modules/fast-deep-equal/index.js"(exports, module) {
+  "../tooljet-mcp/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
     module.exports = function equal(a, b) {
       if (a === b) return true;
@@ -2179,9 +2179,9 @@ var require_fast_deep_equal = __commonJS({
   }
 });
 
-// node_modules/json-schema-traverse/index.js
+// ../tooljet-mcp/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse = __commonJS({
-  "node_modules/json-schema-traverse/index.js"(exports, module) {
+  "../tooljet-mcp/node_modules/json-schema-traverse/index.js"(exports, module) {
     "use strict";
     var traverse = module.exports = function(schema, opts, cb) {
       if (typeof opts == "function") {
@@ -2267,9 +2267,9 @@ var require_json_schema_traverse = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/resolve.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/resolve.js
 var require_resolve = __commonJS({
-  "node_modules/ajv/dist/compile/resolve.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/resolve.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getSchemaRefs = exports.resolveUrl = exports.normalizeId = exports._getFullPath = exports.getFullPath = exports.inlineRef = void 0;
@@ -2423,9 +2423,9 @@ var require_resolve = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/validate/index.js
 var require_validate = __commonJS({
-  "node_modules/ajv/dist/compile/validate/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/validate/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getData = exports.KeywordCxt = exports.validateFunctionCode = void 0;
@@ -2931,9 +2931,9 @@ var require_validate = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/validation_error.js
+// ../tooljet-mcp/node_modules/ajv/dist/runtime/validation_error.js
 var require_validation_error = __commonJS({
-  "node_modules/ajv/dist/runtime/validation_error.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/runtime/validation_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ValidationError = class extends Error {
@@ -2947,9 +2947,9 @@ var require_validation_error = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/ref_error.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/ref_error.js
 var require_ref_error = __commonJS({
-  "node_modules/ajv/dist/compile/ref_error.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/ref_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var resolve_1 = require_resolve();
@@ -2964,9 +2964,9 @@ var require_ref_error = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/compile/index.js
 var require_compile = __commonJS({
-  "node_modules/ajv/dist/compile/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/compile/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.resolveSchema = exports.getCompilingSchema = exports.resolveRef = exports.compileSchema = exports.SchemaEnv = void 0;
@@ -3188,9 +3188,9 @@ var require_compile = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/refs/data.json
+// ../tooljet-mcp/node_modules/ajv/dist/refs/data.json
 var require_data = __commonJS({
-  "node_modules/ajv/dist/refs/data.json"(exports, module) {
+  "../tooljet-mcp/node_modules/ajv/dist/refs/data.json"(exports, module) {
     module.exports = {
       $id: "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#",
       description: "Meta-schema for $data reference (JSON AnySchema extension proposal)",
@@ -3207,9 +3207,9 @@ var require_data = __commonJS({
   }
 });
 
-// node_modules/fast-uri/lib/utils.js
+// ../tooljet-mcp/node_modules/fast-uri/lib/utils.js
 var require_utils = __commonJS({
-  "node_modules/fast-uri/lib/utils.js"(exports, module) {
+  "../tooljet-mcp/node_modules/fast-uri/lib/utils.js"(exports, module) {
     "use strict";
     var isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu);
     var isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u);
@@ -3520,9 +3520,9 @@ var require_utils = __commonJS({
   }
 });
 
-// node_modules/fast-uri/lib/schemes.js
+// ../tooljet-mcp/node_modules/fast-uri/lib/schemes.js
 var require_schemes = __commonJS({
-  "node_modules/fast-uri/lib/schemes.js"(exports, module) {
+  "../tooljet-mcp/node_modules/fast-uri/lib/schemes.js"(exports, module) {
     "use strict";
     var { isUUID } = require_utils();
     var URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu;
@@ -3730,9 +3730,9 @@ var require_schemes = __commonJS({
   }
 });
 
-// node_modules/fast-uri/index.js
+// ../tooljet-mcp/node_modules/fast-uri/index.js
 var require_fast_uri = __commonJS({
-  "node_modules/fast-uri/index.js"(exports, module) {
+  "../tooljet-mcp/node_modules/fast-uri/index.js"(exports, module) {
     "use strict";
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
@@ -4042,9 +4042,9 @@ var require_fast_uri = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/uri.js
+// ../tooljet-mcp/node_modules/ajv/dist/runtime/uri.js
 var require_uri = __commonJS({
-  "node_modules/ajv/dist/runtime/uri.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/runtime/uri.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var uri = require_fast_uri();
@@ -4053,9 +4053,9 @@ var require_uri = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/core.js
+// ../tooljet-mcp/node_modules/ajv/dist/core.js
 var require_core = __commonJS({
-  "node_modules/ajv/dist/core.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/core.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
@@ -4664,9 +4664,9 @@ var require_core = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/id.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/core/id.js
 var require_id = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var def = {
@@ -4679,9 +4679,9 @@ var require_id = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/ref.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/core/ref.js
 var require_ref = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.callRef = exports.getValidate = void 0;
@@ -4801,9 +4801,9 @@ var require_ref = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/core/index.js
 var require_core2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var id_1 = require_id();
@@ -4822,9 +4822,9 @@ var require_core2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitNumber.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitNumber.js
 var require_limitNumber = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4854,9 +4854,9 @@ var require_limitNumber = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/multipleOf.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/multipleOf.js
 var require_multipleOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4882,9 +4882,9 @@ var require_multipleOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/ucs2length.js
+// ../tooljet-mcp/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
-  "node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function ucs2length(str) {
@@ -4908,9 +4908,9 @@ var require_ucs2length = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitLength.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitLength.js
 var require_limitLength = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4940,9 +4940,9 @@ var require_limitLength = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/pattern.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/pattern.js
 var require_pattern = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -4977,9 +4977,9 @@ var require_pattern = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitProperties.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitProperties.js
 var require_limitProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5006,9 +5006,9 @@ var require_limitProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/required.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/required.js
 var require_required = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5088,9 +5088,9 @@ var require_required = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitItems.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitItems.js
 var require_limitItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5117,9 +5117,9 @@ var require_limitItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/equal.js
+// ../tooljet-mcp/node_modules/ajv/dist/runtime/equal.js
 var require_equal = __commonJS({
-  "node_modules/ajv/dist/runtime/equal.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var equal = require_fast_deep_equal();
@@ -5128,9 +5128,9 @@ var require_equal = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
 var require_uniqueItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var dataType_1 = require_dataType();
@@ -5195,9 +5195,9 @@ var require_uniqueItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/const.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/const.js
 var require_const = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5224,9 +5224,9 @@ var require_const = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/enum.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/enum.js
 var require_enum = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5273,9 +5273,9 @@ var require_enum = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/index.js
 var require_validation = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var limitNumber_1 = require_limitNumber();
@@ -5311,9 +5311,9 @@ var require_validation = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
 var require_additionalItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateAdditionalItems = void 0;
@@ -5364,9 +5364,9 @@ var require_additionalItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/items.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/items.js
 var require_items = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateTuple = void 0;
@@ -5421,9 +5421,9 @@ var require_items = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
 var require_prefixItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var items_1 = require_items();
@@ -5438,9 +5438,9 @@ var require_prefixItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/items2020.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/items2020.js
 var require_items2020 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5473,9 +5473,9 @@ var require_items2020 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/contains.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/contains.js
 var require_contains = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5567,9 +5567,9 @@ var require_contains = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/dependencies.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/dependencies.js
 var require_dependencies = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateSchemaDeps = exports.validatePropertyDeps = exports.error = void 0;
@@ -5661,9 +5661,9 @@ var require_dependencies = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
 var require_propertyNames = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5704,9 +5704,9 @@ var require_propertyNames = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
 var require_additionalProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5810,9 +5810,9 @@ var require_additionalProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/properties.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/properties.js
 var require_properties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var validate_1 = require_validate();
@@ -5868,9 +5868,9 @@ var require_properties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
 var require_patternProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5942,9 +5942,9 @@ var require_patternProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/not.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/not.js
 var require_not = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -5973,9 +5973,9 @@ var require_not = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/anyOf.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/anyOf.js
 var require_anyOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5990,9 +5990,9 @@ var require_anyOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/oneOf.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/oneOf.js
 var require_oneOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6048,9 +6048,9 @@ var require_oneOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/allOf.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/allOf.js
 var require_allOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6075,9 +6075,9 @@ var require_allOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/if.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/if.js
 var require_if = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6144,9 +6144,9 @@ var require_if = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/thenElse.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/thenElse.js
 var require_thenElse = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6162,9 +6162,9 @@ var require_thenElse = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/index.js
 var require_applicator = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var additionalItems_1 = require_additionalItems();
@@ -6210,9 +6210,9 @@ var require_applicator = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/format/format.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/format/format.js
 var require_format = __commonJS({
-  "node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6300,9 +6300,9 @@ var require_format = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/format/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/format/index.js
 var require_format2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var format_1 = require_format();
@@ -6311,9 +6311,9 @@ var require_format2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/metadata.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/metadata.js
 var require_metadata = __commonJS({
-  "node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.contentVocabulary = exports.metadataVocabulary = void 0;
@@ -6334,9 +6334,9 @@ var require_metadata = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/draft7.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/draft7.js
 var require_draft7 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var core_1 = require_core2();
@@ -6356,9 +6356,9 @@ var require_draft7 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/discriminator/types.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/discriminator/types.js
 var require_types = __commonJS({
-  "node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DiscrError = void 0;
@@ -6370,9 +6370,9 @@ var require_types = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/discriminator/index.js
+// ../tooljet-mcp/node_modules/ajv/dist/vocabularies/discriminator/index.js
 var require_discriminator = __commonJS({
-  "node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6475,9 +6475,9 @@ var require_discriminator = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/refs/json-schema-draft-07.json
+// ../tooljet-mcp/node_modules/ajv/dist/refs/json-schema-draft-07.json
 var require_json_schema_draft_07 = __commonJS({
-  "node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
+  "../tooljet-mcp/node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
     module.exports = {
       $schema: "http://json-schema.org/draft-07/schema#",
       $id: "http://json-schema.org/draft-07/schema#",
@@ -6632,9 +6632,9 @@ var require_json_schema_draft_07 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/ajv.js
+// ../tooljet-mcp/node_modules/ajv/dist/ajv.js
 var require_ajv = __commonJS({
-  "node_modules/ajv/dist/ajv.js"(exports, module) {
+  "../tooljet-mcp/node_modules/ajv/dist/ajv.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv = void 0;
@@ -6702,9 +6702,9 @@ var require_ajv = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/formats.js
+// ../tooljet-mcp/node_modules/ajv-formats/dist/formats.js
 var require_formats = __commonJS({
-  "node_modules/ajv-formats/dist/formats.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv-formats/dist/formats.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatNames = exports.fastFormats = exports.fullFormats = void 0;
@@ -6905,9 +6905,9 @@ var require_formats = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/limit.js
+// ../tooljet-mcp/node_modules/ajv-formats/dist/limit.js
 var require_limit = __commonJS({
-  "node_modules/ajv-formats/dist/limit.js"(exports) {
+  "../tooljet-mcp/node_modules/ajv-formats/dist/limit.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatLimitDefinition = void 0;
@@ -6977,9 +6977,9 @@ var require_limit = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/index.js
+// ../tooljet-mcp/node_modules/ajv-formats/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/ajv-formats/dist/index.js"(exports, module) {
+  "../tooljet-mcp/node_modules/ajv-formats/dist/index.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var formats_1 = require_formats();
@@ -7024,10 +7024,10 @@ import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
 
-// node_modules/zod/v4/classic/external.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
   $brand: () => $brand,
@@ -7270,7 +7270,7 @@ __export(external_exports, {
   xor: () => xor
 });
 
-// node_modules/zod/v4/core/index.js
+// ../tooljet-mcp/node_modules/zod/v4/core/index.js
 var core_exports2 = {};
 __export(core_exports2, {
   $ZodAny: () => $ZodAny,
@@ -7549,7 +7549,7 @@ __export(core_exports2, {
   version: () => version
 });
 
-// node_modules/zod/v4/core/core.js
+// ../tooljet-mcp/node_modules/zod/v4/core/core.js
 var _a;
 var NEVER = /* @__PURE__ */ Object.freeze({
   status: "aborted"
@@ -7626,7 +7626,7 @@ function config(newConfig) {
   return globalConfig;
 }
 
-// node_modules/zod/v4/core/util.js
+// ../tooljet-mcp/node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
   BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
@@ -8322,7 +8322,7 @@ var Class = class {
   }
 };
 
-// node_modules/zod/v4/core/errors.js
+// ../tooljet-mcp/node_modules/zod/v4/core/errors.js
 var initializer = (inst, def) => {
   inst.name = "$ZodError";
   Object.defineProperty(inst, "_zod", {
@@ -8461,7 +8461,7 @@ function prettifyError(error51) {
   return lines.join("\n");
 }
 
-// node_modules/zod/v4/core/parse.js
+// ../tooljet-mcp/node_modules/zod/v4/core/parse.js
 var _parse = (_Err) => (schema, value, _ctx, _params) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
   const result = schema._zod.run({ value, issues: [] }, ctx);
@@ -8549,7 +8549,7 @@ var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
-// node_modules/zod/v4/core/regexes.js
+// ../tooljet-mcp/node_modules/zod/v4/core/regexes.js
 var regexes_exports = {};
 __export(regexes_exports, {
   base64: () => base64,
@@ -8708,7 +8708,7 @@ var sha512_hex = /^[0-9a-fA-F]{128}$/;
 var sha512_base64 = /* @__PURE__ */ fixedBase64(86, "==");
 var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
-// node_modules/zod/v4/core/checks.js
+// ../tooljet-mcp/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a3;
   inst._zod ?? (inst._zod = {});
@@ -9256,7 +9256,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// node_modules/zod/v4/core/doc.js
+// ../tooljet-mcp/node_modules/zod/v4/core/doc.js
 var Doc = class {
   constructor(args = []) {
     this.content = [];
@@ -9292,14 +9292,14 @@ var Doc = class {
   }
 };
 
-// node_modules/zod/v4/core/versions.js
+// ../tooljet-mcp/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 4,
   patch: 3
 };
 
-// node_modules/zod/v4/core/schemas.js
+// ../tooljet-mcp/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a3;
   inst ?? (inst = {});
@@ -11392,7 +11392,7 @@ function handleRefineResult(result, payload, input, inst) {
   }
 }
 
-// node_modules/zod/v4/locales/index.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/index.js
 var locales_exports = {};
 __export(locales_exports, {
   ar: () => ar_default,
@@ -11449,7 +11449,7 @@ __export(locales_exports, {
   zhTW: () => zh_TW_default
 });
 
-// node_modules/zod/v4/locales/ar.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ar.js
 var error = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0641", verb: "\u0623\u0646 \u064A\u062D\u0648\u064A" },
@@ -11556,7 +11556,7 @@ function ar_default() {
   };
 }
 
-// node_modules/zod/v4/locales/az.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/az.js
 var error2 = () => {
   const Sizable = {
     string: { unit: "simvol", verb: "olmal\u0131d\u0131r" },
@@ -11662,7 +11662,7 @@ function az_default() {
   };
 }
 
-// node_modules/zod/v4/locales/be.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/be.js
 function getBelarusianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -11819,7 +11819,7 @@ function be_default() {
   };
 }
 
-// node_modules/zod/v4/locales/bg.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/bg.js
 var error4 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0430", verb: "\u0434\u0430 \u0441\u044A\u0434\u044A\u0440\u0436\u0430" },
@@ -11940,7 +11940,7 @@ function bg_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ca.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ca.js
 var error5 = () => {
   const Sizable = {
     string: { unit: "car\xE0cters", verb: "contenir" },
@@ -12049,7 +12049,7 @@ function ca_default() {
   };
 }
 
-// node_modules/zod/v4/locales/cs.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/cs.js
 var error6 = () => {
   const Sizable = {
     string: { unit: "znak\u016F", verb: "m\xEDt" },
@@ -12161,7 +12161,7 @@ function cs_default() {
   };
 }
 
-// node_modules/zod/v4/locales/da.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/da.js
 var error7 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "havde" },
@@ -12277,7 +12277,7 @@ function da_default() {
   };
 }
 
-// node_modules/zod/v4/locales/de.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/de.js
 var error8 = () => {
   const Sizable = {
     string: { unit: "Zeichen", verb: "zu haben" },
@@ -12386,7 +12386,7 @@ function de_default() {
   };
 }
 
-// node_modules/zod/v4/locales/el.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/el.js
 var error9 = () => {
   const Sizable = {
     string: { unit: "\u03C7\u03B1\u03C1\u03B1\u03BA\u03C4\u03AE\u03C1\u03B5\u03C2", verb: "\u03BD\u03B1 \u03AD\u03C7\u03B5\u03B9" },
@@ -12496,7 +12496,7 @@ function el_default() {
   };
 }
 
-// node_modules/zod/v4/locales/en.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/en.js
 var error10 = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -12609,7 +12609,7 @@ function en_default() {
   };
 }
 
-// node_modules/zod/v4/locales/eo.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/eo.js
 var error11 = () => {
   const Sizable = {
     string: { unit: "karaktrojn", verb: "havi" },
@@ -12719,7 +12719,7 @@ function eo_default() {
   };
 }
 
-// node_modules/zod/v4/locales/es.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/es.js
 var error12 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "tener" },
@@ -12852,7 +12852,7 @@ function es_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fa.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/fa.js
 var error13 = () => {
   const Sizable = {
     string: { unit: "\u06A9\u0627\u0631\u0627\u06A9\u062A\u0631", verb: "\u062F\u0627\u0634\u062A\u0647 \u0628\u0627\u0634\u062F" },
@@ -12967,7 +12967,7 @@ function fa_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fi.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/fi.js
 var error14 = () => {
   const Sizable = {
     string: { unit: "merkki\xE4", subject: "merkkijonon" },
@@ -13080,7 +13080,7 @@ function fi_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fr.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/fr.js
 var error15 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -13206,7 +13206,7 @@ function fr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fr-CA.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/fr-CA.js
 var error16 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -13314,7 +13314,7 @@ function fr_CA_default() {
   };
 }
 
-// node_modules/zod/v4/locales/he.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/he.js
 var error17 = () => {
   const TypeNames = {
     string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA", gender: "f" },
@@ -13509,7 +13509,7 @@ function he_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hr.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/hr.js
 var error18 = () => {
   const Sizable = {
     string: { unit: "znakova", verb: "imati" },
@@ -13632,7 +13632,7 @@ function hr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hu.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/hu.js
 var error19 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "legyen" },
@@ -13741,7 +13741,7 @@ function hu_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hy.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/hy.js
 function getArmenianPlural(count, one, many) {
   return Math.abs(count) === 1 ? one : many;
 }
@@ -13889,7 +13889,7 @@ function hy_default() {
   };
 }
 
-// node_modules/zod/v4/locales/id.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/id.js
 var error21 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "memiliki" },
@@ -13996,7 +13996,7 @@ function id_default() {
   };
 }
 
-// node_modules/zod/v4/locales/is.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/is.js
 var error22 = () => {
   const Sizable = {
     string: { unit: "stafi", verb: "a\xF0 hafa" },
@@ -14106,7 +14106,7 @@ function is_default() {
   };
 }
 
-// node_modules/zod/v4/locales/it.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/it.js
 var error23 = () => {
   const Sizable = {
     string: { unit: "caratteri", verb: "avere" },
@@ -14215,7 +14215,7 @@ function it_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ja.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ja.js
 var error24 = () => {
   const Sizable = {
     string: { unit: "\u6587\u5B57", verb: "\u3067\u3042\u308B" },
@@ -14323,7 +14323,7 @@ function ja_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ka.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ka.js
 var error25 = () => {
   const Sizable = {
     string: { unit: "\u10E1\u10D8\u10DB\u10D1\u10DD\u10DA\u10DD", verb: "\u10E3\u10DC\u10D3\u10D0 \u10E8\u10D4\u10D8\u10EA\u10D0\u10D5\u10D3\u10D4\u10E1" },
@@ -14436,7 +14436,7 @@ function ka_default() {
   };
 }
 
-// node_modules/zod/v4/locales/km.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/km.js
 var error26 = () => {
   const Sizable = {
     string: { unit: "\u178F\u17BD\u17A2\u1780\u17D2\u179F\u179A", verb: "\u1782\u17BD\u179A\u1798\u17B6\u1793" },
@@ -14547,12 +14547,12 @@ function km_default() {
   };
 }
 
-// node_modules/zod/v4/locales/kh.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/kh.js
 function kh_default() {
   return km_default();
 }
 
-// node_modules/zod/v4/locales/ko.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ko.js
 var error27 = () => {
   const Sizable = {
     string: { unit: "\uBB38\uC790", verb: "to have" },
@@ -14664,7 +14664,7 @@ function ko_default() {
   };
 }
 
-// node_modules/zod/v4/locales/lt.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/lt.js
 var capitalizeFirstCharacter = (text) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
@@ -14868,7 +14868,7 @@ function lt_default() {
   };
 }
 
-// node_modules/zod/v4/locales/mk.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/mk.js
 var error29 = () => {
   const Sizable = {
     string: { unit: "\u0437\u043D\u0430\u0446\u0438", verb: "\u0434\u0430 \u0438\u043C\u0430\u0430\u0442" },
@@ -14978,7 +14978,7 @@ function mk_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ms.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ms.js
 var error30 = () => {
   const Sizable = {
     string: { unit: "aksara", verb: "mempunyai" },
@@ -15086,7 +15086,7 @@ function ms_default() {
   };
 }
 
-// node_modules/zod/v4/locales/nl.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/nl.js
 var error31 = () => {
   const Sizable = {
     string: { unit: "tekens", verb: "heeft" },
@@ -15197,7 +15197,7 @@ function nl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/no.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/no.js
 var error32 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "\xE5 ha" },
@@ -15306,7 +15306,7 @@ function no_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ota.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ota.js
 var error33 = () => {
   const Sizable = {
     string: { unit: "harf", verb: "olmal\u0131d\u0131r" },
@@ -15416,7 +15416,7 @@ function ota_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ps.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ps.js
 var error34 = () => {
   const Sizable = {
     string: { unit: "\u062A\u0648\u06A9\u064A", verb: "\u0648\u0644\u0631\u064A" },
@@ -15531,7 +15531,7 @@ function ps_default() {
   };
 }
 
-// node_modules/zod/v4/locales/pl.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/pl.js
 var error35 = () => {
   const Sizable = {
     string: { unit: "znak\xF3w", verb: "mie\u0107" },
@@ -15641,7 +15641,7 @@ function pl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/pt.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/pt.js
 var error36 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "ter" },
@@ -15750,7 +15750,7 @@ function pt_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ro.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ro.js
 var error37 = () => {
   const Sizable = {
     string: { unit: "caractere", verb: "s\u0103 aib\u0103" },
@@ -15870,7 +15870,7 @@ function ro_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ru.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ru.js
 function getRussianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -16027,7 +16027,7 @@ function ru_default() {
   };
 }
 
-// node_modules/zod/v4/locales/sl.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/sl.js
 var error39 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "imeti" },
@@ -16137,7 +16137,7 @@ function sl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/sv.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/sv.js
 var error40 = () => {
   const Sizable = {
     string: { unit: "tecken", verb: "att ha" },
@@ -16248,7 +16248,7 @@ function sv_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ta.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ta.js
 var error41 = () => {
   const Sizable = {
     string: { unit: "\u0B8E\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BCD\u0B95\u0BB3\u0BCD", verb: "\u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BBF\u0BB0\u0BC1\u0B95\u0BCD\u0B95 \u0BB5\u0BC7\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD" },
@@ -16359,7 +16359,7 @@ function ta_default() {
   };
 }
 
-// node_modules/zod/v4/locales/th.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/th.js
 var error42 = () => {
   const Sizable = {
     string: { unit: "\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23", verb: "\u0E04\u0E27\u0E23\u0E21\u0E35" },
@@ -16470,7 +16470,7 @@ function th_default() {
   };
 }
 
-// node_modules/zod/v4/locales/tr.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/tr.js
 var error43 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "olmal\u0131" },
@@ -16576,7 +16576,7 @@ function tr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/uk.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/uk.js
 var error44 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0456\u0432", verb: "\u043C\u0430\u0442\u0438\u043C\u0435" },
@@ -16685,12 +16685,12 @@ function uk_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ua.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ua.js
 function ua_default() {
   return uk_default();
 }
 
-// node_modules/zod/v4/locales/ur.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/ur.js
 var error45 = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0648\u0641", verb: "\u06C1\u0648\u0646\u0627" },
@@ -16801,7 +16801,7 @@ function ur_default() {
   };
 }
 
-// node_modules/zod/v4/locales/uz.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/uz.js
 var error46 = () => {
   const Sizable = {
     string: { unit: "belgi", verb: "bo\u2018lishi kerak" },
@@ -16912,7 +16912,7 @@ function uz_default() {
   };
 }
 
-// node_modules/zod/v4/locales/vi.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/vi.js
 var error47 = () => {
   const Sizable = {
     string: { unit: "k\xFD t\u1EF1", verb: "c\xF3" },
@@ -17021,7 +17021,7 @@ function vi_default() {
   };
 }
 
-// node_modules/zod/v4/locales/zh-CN.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/zh-CN.js
 var error48 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u7B26", verb: "\u5305\u542B" },
@@ -17131,7 +17131,7 @@ function zh_CN_default() {
   };
 }
 
-// node_modules/zod/v4/locales/zh-TW.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/zh-TW.js
 var error49 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u5143", verb: "\u64C1\u6709" },
@@ -17239,7 +17239,7 @@ function zh_TW_default() {
   };
 }
 
-// node_modules/zod/v4/locales/yo.js
+// ../tooljet-mcp/node_modules/zod/v4/locales/yo.js
 var error50 = () => {
   const Sizable = {
     string: { unit: "\xE0mi", verb: "n\xED" },
@@ -17347,7 +17347,7 @@ function yo_default() {
   };
 }
 
-// node_modules/zod/v4/core/registries.js
+// ../tooljet-mcp/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -17397,7 +17397,7 @@ function registry() {
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
 
-// node_modules/zod/v4/core/api.js
+// ../tooljet-mcp/node_modules/zod/v4/core/api.js
 // @__NO_SIDE_EFFECTS__
 function _string(Class2, params) {
   return new Class2({
@@ -18436,7 +18436,7 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
   return inst;
 }
 
-// node_modules/zod/v4/core/to-json-schema.js
+// ../tooljet-mcp/node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
   let target = params?.target ?? "draft-2020-12";
   if (target === "draft-4")
@@ -18795,7 +18795,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   return finalize(ctx, schema);
 };
 
-// node_modules/zod/v4/core/json-schema-processors.js
+// ../tooljet-mcp/node_modules/zod/v4/core/json-schema-processors.js
 var formatMap = {
   guid: "uuid",
   url: "uri",
@@ -19339,7 +19339,7 @@ function toJSONSchema(input, params) {
   return finalize(ctx, input);
 }
 
-// node_modules/zod/v4/core/json-schema-generator.js
+// ../tooljet-mcp/node_modules/zod/v4/core/json-schema-generator.js
 var JSONSchemaGenerator = class {
   /** @deprecated Access via ctx instead */
   get metadataRegistry() {
@@ -19414,10 +19414,10 @@ var JSONSchemaGenerator = class {
   }
 };
 
-// node_modules/zod/v4/core/json-schema.js
+// ../tooljet-mcp/node_modules/zod/v4/core/json-schema.js
 var json_schema_exports = {};
 
-// node_modules/zod/v4/classic/schemas.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/schemas.js
 var schemas_exports2 = {};
 __export(schemas_exports2, {
   ZodAny: () => ZodAny,
@@ -19588,7 +19588,7 @@ __export(schemas_exports2, {
   xor: () => xor
 });
 
-// node_modules/zod/v4/classic/checks.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/checks.js
 var checks_exports2 = {};
 __export(checks_exports2, {
   endsWith: () => _endsWith,
@@ -19622,7 +19622,7 @@ __export(checks_exports2, {
   uppercase: () => _uppercase
 });
 
-// node_modules/zod/v4/classic/iso.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/iso.js
 var iso_exports = {};
 __export(iso_exports, {
   ZodISODate: () => ZodISODate,
@@ -19663,7 +19663,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// node_modules/zod/v4/classic/errors.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/errors.js
 var initializer2 = (inst, issues) => {
   $ZodError.init(inst, issues);
   inst.name = "ZodError";
@@ -19703,7 +19703,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, {
   Parent: Error
 });
 
-// node_modules/zod/v4/classic/parse.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse2 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -19717,7 +19717,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// node_modules/zod/v4/classic/schemas.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/schemas.js
 var _installedGroups = /* @__PURE__ */ new WeakMap();
 function _installLazyMethods(inst, group, methods) {
   const proto = Object.getPrototypeOf(inst);
@@ -21007,7 +21007,7 @@ function preprocess(fn, schema) {
   });
 }
 
-// node_modules/zod/v4/classic/compat.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/compat.js
 var ZodIssueCode = {
   invalid_type: "invalid_type",
   too_big: "too_big",
@@ -21033,7 +21033,7 @@ var ZodFirstPartyTypeKind;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind3) {
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
 
-// node_modules/zod/v4/classic/from-json-schema.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/from-json-schema.js
 var z = {
   ...schemas_exports2,
   ...checks_exports2,
@@ -21513,7 +21513,7 @@ function fromJSONSchema(schema, params) {
   return convertSchema(normalized2, ctx);
 }
 
-// node_modules/zod/v4/classic/coerce.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/coerce.js
 var coerce_exports = {};
 __export(coerce_exports, {
   bigint: () => bigint3,
@@ -21538,10 +21538,10 @@ function date4(params) {
   return _coercedDate(ZodDate, params);
 }
 
-// node_modules/zod/v4/classic/external.js
+// ../tooljet-mcp/node_modules/zod/v4/classic/external.js
 config(en_default());
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
 var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var DEFAULT_NEGOTIATED_PROTOCOL_VERSION = "2025-03-26";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
@@ -23074,7 +23074,7 @@ var UrlElicitationRequiredError = class extends McpError {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
   constructor(options2) {
@@ -23111,7 +23111,7 @@ function serializeMessage(message) {
   return JSON.stringify(message) + "\n";
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 var StdioServerTransport = class {
   constructor(_stdin = process3.stdin, _stdout = process3.stdout, options2) {
     this._stdin = _stdin;
@@ -23178,14 +23178,14 @@ var StdioServerTransport = class {
   }
 };
 
-// node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
+// ../tooljet-mcp/node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
 var X_ALREADY_SENT = "x-hono-already-sent";
 
-// node_modules/@hono/node-server/dist/index.mjs
+// ../tooljet-mcp/node_modules/@hono/node-server/dist/index.mjs
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
 
-// node_modules/hono/dist/helper/websocket/index.js
+// ../tooljet-mcp/node_modules/hono/dist/helper/websocket/index.js
 var defineWebSocketHelper = (handler) => {
   return ((...args) => {
     if (typeof args[0] === "function") {
@@ -23211,7 +23211,7 @@ var defineWebSocketHelper = (handler) => {
   });
 };
 
-// node_modules/@hono/node-server/dist/index.mjs
+// ../tooljet-mcp/node_modules/@hono/node-server/dist/index.mjs
 var RequestError = class extends Error {
   constructor(message, options2) {
     super(message, options2);
@@ -24356,7 +24356,7 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   return new Response();
 });
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/mediaType.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/mediaType.js
 var import_content_type = __toESM(require_content_type(), 1);
 function mediaTypeEssence(header) {
   if (!header) {
@@ -24379,7 +24379,7 @@ function isJsonContentType(header) {
   return mediaTypeEssence(header) === "application/json";
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/sseKeepAlive.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sseKeepAlive.js
 var DEFAULT_SSE_KEEP_ALIVE_MS = 15e3;
 var MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
 function armSseKeepAlive(intervalMs, onTick) {
@@ -24391,7 +24391,7 @@ function armSseKeepAlive(intervalMs, onTick) {
   return timer;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/webStandardStreamableHttp.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/webStandardStreamableHttp.js
 var WebStandardStreamableHTTPServerTransport = class {
   constructor(options2 = {}) {
     this._started = false;
@@ -25123,7 +25123,7 @@ data:
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/streamableHttp.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/streamableHttp.js
 var StreamableHTTPServerTransport = class {
   constructor(options2 = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
@@ -25225,7 +25225,7 @@ var StreamableHTTPServerTransport = class {
   }
 };
 
-// node_modules/zod/v3/helpers/util.js
+// ../tooljet-mcp/node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
   util2.assertEqual = (_) => {
@@ -25359,7 +25359,7 @@ var getParsedType2 = (data) => {
   }
 };
 
-// node_modules/zod/v3/ZodError.js
+// ../tooljet-mcp/node_modules/zod/v3/ZodError.js
 var ZodIssueCode2 = util.arrayToEnum([
   "invalid_type",
   "invalid_literal",
@@ -25473,7 +25473,7 @@ ZodError2.create = (issues) => {
   return error51;
 };
 
-// node_modules/zod/v3/locales/en.js
+// ../tooljet-mcp/node_modules/zod/v3/locales/en.js
 var errorMap = (issue2, _ctx) => {
   let message;
   switch (issue2.code) {
@@ -25576,13 +25576,13 @@ var errorMap = (issue2, _ctx) => {
 };
 var en_default2 = errorMap;
 
-// node_modules/zod/v3/errors.js
+// ../tooljet-mcp/node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default2;
 function getErrorMap2() {
   return overrideErrorMap;
 }
 
-// node_modules/zod/v3/helpers/parseUtil.js
+// ../tooljet-mcp/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
   const { data, path, errorMaps, issueData } = params;
   const fullPath = [...path, ...issueData.path || []];
@@ -25691,14 +25691,14 @@ var isDirty = (x) => x.status === "dirty";
 var isValid = (x) => x.status === "valid";
 var isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-// node_modules/zod/v3/helpers/errorUtil.js
+// ../tooljet-mcp/node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil;
 (function(errorUtil2) {
   errorUtil2.errToObj = (message) => typeof message === "string" ? { message } : message || {};
   errorUtil2.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil || (errorUtil = {}));
 
-// node_modules/zod/v3/types.js
+// ../tooljet-mcp/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
   constructor(parent, value, path, key) {
     this._cachedPath = [];
@@ -29101,7 +29101,7 @@ var nullableType = ZodNullable2.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
 
-// node_modules/zod/v4/mini/schemas.js
+// ../tooljet-mcp/node_modules/zod/v4/mini/schemas.js
 var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
   if (!inst._zod)
     throw new Error("Uninitialized schema in ZodMiniType.");
@@ -29147,7 +29147,7 @@ function object2(shape, params) {
   return new ZodMiniObject(def);
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
 function isZ4Schema(s) {
   const schema = s;
   return !!schema._zod;
@@ -29307,12 +29307,12 @@ function getLiteralValue(schema) {
   return void 0;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
 function isTerminal(status) {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 
-// node_modules/zod-to-json-schema/dist/esm/Options.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/Options.js
 var ignoreOverride = /* @__PURE__ */ Symbol("Let zodToJsonSchema decide on which parser to use");
 var defaultOptions = {
   name: void 0,
@@ -29346,7 +29346,7 @@ var getDefaultOptions = (options2) => typeof options2 === "string" ? {
   ...options2
 };
 
-// node_modules/zod-to-json-schema/dist/esm/Refs.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/Refs.js
 var getRefs = (options2) => {
   const _options = getDefaultOptions(options2);
   const currentPath = _options.name !== void 0 ? [..._options.basePath, _options.definitionPath, _options.name] : _options.basePath;
@@ -29367,7 +29367,7 @@ var getRefs = (options2) => {
   };
 };
 
-// node_modules/zod-to-json-schema/dist/esm/errorMessages.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/errorMessages.js
 function addErrorMessage(res, key, errorMessage, refs2) {
   if (!refs2?.errorMessages)
     return;
@@ -29383,7 +29383,7 @@ function setResponseValueAndErrors(res, key, value, errorMessage, refs2) {
   addErrorMessage(res, key, errorMessage, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
 var getRelativePath = (pathA, pathB) => {
   let i = 0;
   for (; i < pathA.length && i < pathB.length; i++) {
@@ -29393,7 +29393,7 @@ var getRelativePath = (pathA, pathB) => {
   return [(pathA.length - i).toString(), ...pathB.slice(i)].join("/");
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/any.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/any.js
 function parseAnyDef(refs2) {
   if (refs2.target !== "openAi") {
     return {};
@@ -29409,7 +29409,7 @@ function parseAnyDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/array.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/array.js
 function parseArrayDef(def, refs2) {
   const res = {
     type: "array"
@@ -29433,7 +29433,7 @@ function parseArrayDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
 function parseBigintDef(def, refs2) {
   const res = {
     type: "integer",
@@ -29479,24 +29479,24 @@ function parseBigintDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
 function parseBooleanDef() {
   return {
     type: "boolean"
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
 function parseBrandedDef(_def, refs2) {
   return parseDef(_def.type._def, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
 var parseCatchDef = (def, refs2) => {
   return parseDef(def.innerType._def, refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/date.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/date.js
 function parseDateDef(def, refs2, overrideDateStrategy) {
   const strategy = overrideDateStrategy ?? refs2.dateStrategy;
   if (Array.isArray(strategy)) {
@@ -29555,7 +29555,7 @@ var integerDateParser = (def, refs2) => {
   return res;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/default.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/default.js
 function parseDefaultDef(_def, refs2) {
   return {
     ...parseDef(_def.innerType._def, refs2),
@@ -29563,12 +29563,12 @@ function parseDefaultDef(_def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
 function parseEffectsDef(_def, refs2) {
   return refs2.effectStrategy === "input" ? parseDef(_def.schema._def, refs2) : parseAnyDef(refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
 function parseEnumDef(def) {
   return {
     type: "string",
@@ -29576,7 +29576,7 @@ function parseEnumDef(def) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
 var isJsonSchema7AllOfType = (type) => {
   if ("type" in type && type.type === "string")
     return false;
@@ -29618,7 +29618,7 @@ function parseIntersectionDef(def, refs2) {
   } : void 0;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
 function parseLiteralDef(def, refs2) {
   const parsedType2 = typeof def.value;
   if (parsedType2 !== "bigint" && parsedType2 !== "number" && parsedType2 !== "boolean" && parsedType2 !== "string") {
@@ -29638,7 +29638,7 @@ function parseLiteralDef(def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/string.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/string.js
 var emojiRegex2 = void 0;
 var zodPatterns = {
   /**
@@ -29963,7 +29963,7 @@ function stringifyRegExpWithFlags(regex, refs2) {
   return pattern;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/record.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/record.js
 function parseRecordDef(def, refs2) {
   if (refs2.target === "openAi") {
     console.warn("Warning: OpenAI may not support records in schemas! Try an array of key-value pairs instead.");
@@ -30015,7 +30015,7 @@ function parseRecordDef(def, refs2) {
   return schema;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/map.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/map.js
 function parseMapDef(def, refs2) {
   if (refs2.mapStrategy === "record") {
     return parseRecordDef(def, refs2);
@@ -30040,7 +30040,7 @@ function parseMapDef(def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object3 = def.values;
   const actualKeys = Object.keys(def.values).filter((key) => {
@@ -30054,7 +30054,7 @@ function parseNativeEnumDef(def) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/never.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/never.js
 function parseNeverDef(refs2) {
   return refs2.target === "openAi" ? void 0 : {
     not: parseAnyDef({
@@ -30064,7 +30064,7 @@ function parseNeverDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/null.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/null.js
 function parseNullDef(refs2) {
   return refs2.target === "openApi3" ? {
     enum: ["null"],
@@ -30074,7 +30074,7 @@ function parseNullDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/union.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/union.js
 var primitiveMappings = {
   ZodString: "string",
   ZodNumber: "number",
@@ -30142,7 +30142,7 @@ var asAnyOf = (def, refs2) => {
   return anyOf.length ? { anyOf } : void 0;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
 function parseNullableDef(def, refs2) {
   if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) && (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
     if (refs2.target === "openApi3") {
@@ -30174,7 +30174,7 @@ function parseNullableDef(def, refs2) {
   return base && { anyOf: [base, { type: "null" }] };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/number.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/number.js
 function parseNumberDef(def, refs2) {
   const res = {
     type: "number"
@@ -30223,7 +30223,7 @@ function parseNumberDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/object.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/object.js
 function parseObjectDef(def, refs2) {
   const forceOptionalIntoNullable = refs2.target === "openAi";
   const result = {
@@ -30293,7 +30293,7 @@ function safeIsOptional(schema) {
   }
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
 var parseOptionalDef = (def, refs2) => {
   if (refs2.currentPath.toString() === refs2.propertyPath?.toString()) {
     return parseDef(def.innerType._def, refs2);
@@ -30312,7 +30312,7 @@ var parseOptionalDef = (def, refs2) => {
   } : parseAnyDef(refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
 var parsePipelineDef = (def, refs2) => {
   if (refs2.pipeStrategy === "input") {
     return parseDef(def.in._def, refs2);
@@ -30332,12 +30332,12 @@ var parsePipelineDef = (def, refs2) => {
   };
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
 function parsePromiseDef(def, refs2) {
   return parseDef(def.type._def, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/set.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/set.js
 function parseSetDef(def, refs2) {
   const items = parseDef(def.valueType._def, {
     ...refs2,
@@ -30357,7 +30357,7 @@ function parseSetDef(def, refs2) {
   return schema;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
 function parseTupleDef(def, refs2) {
   if (def.rest) {
     return {
@@ -30385,24 +30385,24 @@ function parseTupleDef(def, refs2) {
   }
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
 function parseUndefinedDef(refs2) {
   return {
     not: parseAnyDef(refs2)
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
 function parseUnknownDef(refs2) {
   return parseAnyDef(refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
 var parseReadonlyDef = (def, refs2) => {
   return parseDef(def.innerType._def, refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/selectParser.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/selectParser.js
 var selectParser = (def, typeName, refs2) => {
   switch (typeName) {
     case ZodFirstPartyTypeKind2.ZodString:
@@ -30478,7 +30478,7 @@ var selectParser = (def, typeName, refs2) => {
   }
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parseDef.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/parseDef.js
 function parseDef(def, refs2, forceResolution = false) {
   const seenItem = refs2.seen.get(def);
   if (refs2.override) {
@@ -30534,7 +30534,7 @@ var addMeta = (def, refs2, jsonSchema) => {
   return jsonSchema;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
+// ../tooljet-mcp/node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
 var zodToJsonSchema = (schema, options2) => {
   const refs2 = getRefs(options2);
   let definitions = typeof options2 === "object" && options2.definitions ? Object.entries(options2.definitions).reduce((acc, [name2, schema2]) => ({
@@ -30596,7 +30596,7 @@ var zodToJsonSchema = (schema, options2) => {
   return combined;
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
 function mapMiniTarget(t) {
   if (!t)
     return "draft-7";
@@ -30638,7 +30638,7 @@ function parseWithCompat(schema, data) {
   return result.data;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
 var DEFAULT_REQUEST_TIMEOUT_MSEC = 6e4;
 var Protocol = class {
   constructor(_options) {
@@ -31592,7 +31592,7 @@ function mergeCapabilities(base, additional) {
   return result;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
 var import_ajv = __toESM(require_ajv(), 1);
 var import_ajv_formats = __toESM(require_dist(), 1);
 function createDefaultAjvInstance() {
@@ -31660,7 +31660,7 @@ var AjvJsonSchemaValidator = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
 var ExperimentalServerTasks = class {
   constructor(_server) {
     this._server = _server;
@@ -31873,7 +31873,7 @@ var ExperimentalServerTasks = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
 function assertToolsCallTaskCapability(requests, method, entityName) {
   if (!requests) {
     throw new Error(`${entityName} does not support task creation (required for ${method})`);
@@ -31908,7 +31908,7 @@ function assertClientRequestTaskCapability(requests, method, entityName) {
   }
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
 var Server = class extends Protocol {
   /**
    * Initializes this server with the given name and version information.
@@ -32279,7 +32279,7 @@ var Server = class extends Protocol {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
 var COMPLETABLE_SYMBOL = /* @__PURE__ */ Symbol.for("mcp.completable");
 function isCompletable(schema) {
   return !!schema && typeof schema === "object" && COMPLETABLE_SYMBOL in schema;
@@ -32293,7 +32293,7 @@ var McpZodTypeKind;
   McpZodTypeKind2["Completable"] = "McpCompletable";
 })(McpZodTypeKind || (McpZodTypeKind = {}));
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
 var TOOL_NAME_REGEX = /^[A-Za-z0-9._-]{1,128}$/;
 function validateToolName(name) {
   const warnings = [];
@@ -32351,7 +32351,7 @@ function validateAndWarnToolName(name) {
   return result.isValid;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
 var ExperimentalMcpServerTasks = class {
   constructor(_mcpServer) {
     this._mcpServer = _mcpServer;
@@ -32366,7 +32366,7 @@ var ExperimentalMcpServerTasks = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
+// ../tooljet-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
 var McpServer = class {
   constructor(serverInfo, options2) {
     this._registeredResources = {};
@@ -33532,6 +33532,806 @@ function createAuth(config2, fetchImpl = fetch) {
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
+// dist/htmlHeight.js
+var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
+var INLINE_TAGS = /* @__PURE__ */ new Set([
+  "span",
+  "b",
+  "strong",
+  "i",
+  "em",
+  "a",
+  "small",
+  "code",
+  "u",
+  "s",
+  "sup",
+  "sub",
+  "abbr",
+  "time",
+  "mark",
+  "label",
+  "kbd",
+  "q",
+  "cite",
+  "var",
+  "bdi",
+  "font"
+]);
+var DEFAULT_FONT_SIZE = 14;
+var LINE_HEIGHT_FACTOR = 1.5;
+var GLYPH_WIDTH_FACTOR = 0.52;
+var TAG_DEFAULTS = {
+  h1: { fontSize: 32, marginBottom: 8 },
+  h2: { fontSize: 24, marginBottom: 8 },
+  h3: { fontSize: 20, marginBottom: 8 },
+  h4: { fontSize: 18, marginBottom: 8 },
+  h5: { fontSize: 16, marginBottom: 8 },
+  h6: { fontSize: 14, marginBottom: 8 },
+  p: { marginBottom: 16 },
+  ul: { marginBottom: 16 },
+  ol: { marginBottom: 16 },
+  hr: { marginTop: 16, marginBottom: 16 }
+};
+function stripHtmlBindings(raw) {
+  let repeats = false;
+  const trimmed = raw.trim();
+  const template = /^\{\{\s*`([\s\S]*)`\s*\}\}$/.exec(trimmed);
+  if (template) {
+    const body = template[1];
+    const html2 = replaceBalanced(body, "${", "}", (inner) => {
+      if (/\.map\s*\(/.test(inner)) {
+        repeats = true;
+        return "";
+      }
+      return "00";
+    });
+    return { html: html2, repeats };
+  }
+  const html = replaceBalanced(raw, "{{", "}}", (inner) => {
+    if (/\.map\s*\(/.test(inner)) {
+      repeats = true;
+      return "";
+    }
+    return "00";
+  });
+  return { html, repeats };
+}
+function replaceBalanced(src, open, close, fn) {
+  let out = "";
+  let i = 0;
+  while (i < src.length) {
+    const start = src.indexOf(open, i);
+    if (start < 0) {
+      out += src.slice(i);
+      break;
+    }
+    out += src.slice(i, start);
+    let depth = 0;
+    let j = start;
+    let end = -1;
+    while (j < src.length) {
+      if (src.startsWith(open, j)) {
+        depth += 1;
+        j += open.length;
+        continue;
+      }
+      if (src.startsWith(close, j)) {
+        depth -= 1;
+        if (depth === 0) {
+          end = j;
+          break;
+        }
+        j += close.length;
+        continue;
+      }
+      if (open === "${" && src[j] === "{")
+        depth += 1;
+      j += 1;
+    }
+    if (end < 0) {
+      out += src.slice(start);
+      break;
+    }
+    out += fn(src.slice(start + open.length, end));
+    i = end + close.length;
+  }
+  return out;
+}
+function parseStyle(text) {
+  const style = {};
+  if (!text)
+    return style;
+  for (const decl of text.split(";")) {
+    const idx = decl.indexOf(":");
+    if (idx < 0)
+      continue;
+    const key = decl.slice(0, idx).trim().toLowerCase();
+    const value = decl.slice(idx + 1).trim().replace(/\s*!important$/i, "");
+    if (key)
+      style[key] = value;
+  }
+  return style;
+}
+function parseAttrs(text) {
+  const attrs = {};
+  const re = /([a-zA-Z_:][-\w:.]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  let m;
+  while (m = re.exec(text)) {
+    attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? "";
+  }
+  return attrs;
+}
+function parseHtml(html) {
+  const root = { tag: "#root", style: {}, attrs: {}, children: [], text: "" };
+  const stack = [root];
+  const re = /<!--[\s\S]*?-->|<\/\s*([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^>]*?)?)\s*(\/?)>|([^<]+)|</g;
+  let m;
+  while (m = re.exec(html)) {
+    if (m[0].startsWith("<!--"))
+      continue;
+    if (m[1]) {
+      const tag = m[1].toLowerCase();
+      for (let k = stack.length - 1; k > 0; k -= 1) {
+        if (stack[k].tag === tag) {
+          stack.length = k;
+          break;
+        }
+      }
+      continue;
+    }
+    if (m[2]) {
+      const tag = m[2].toLowerCase();
+      if (tag === "style" || tag === "script") {
+        const close = html.indexOf(`</${tag}`, re.lastIndex);
+        if (close >= 0)
+          re.lastIndex = close;
+        continue;
+      }
+      const attrs = parseAttrs(m[3] ?? "");
+      const node = { tag, style: parseStyle(attrs.style), attrs, children: [], text: "" };
+      stack[stack.length - 1].children.push(node);
+      if (!VOID_TAGS.has(tag) && !m[4])
+        stack.push(node);
+      continue;
+    }
+    if (m[5] !== void 0) {
+      const text = decodeEntities(m[5]);
+      if (text.trim() || /\s/.test(text)) {
+        stack[stack.length - 1].children.push({ tag: "#text", style: {}, attrs: {}, children: [], text });
+      }
+    }
+  }
+  return root;
+}
+function decodeEntities(text) {
+  return text.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
+}
+function px(value, fontSize, base = 0) {
+  if (value === void 0)
+    return void 0;
+  const v = value.trim();
+  const m = /^(-?\d*\.?\d+)(px|em|rem|%|pt)?$/.exec(v);
+  if (!m)
+    return v === "0" ? 0 : void 0;
+  const n = parseFloat(m[1]);
+  switch (m[2]) {
+    case void 0:
+    case "px":
+      return n;
+    case "em":
+      return n * fontSize;
+    case "rem":
+      return n * 16;
+    case "pt":
+      return n * (4 / 3);
+    case "%":
+      return base ? n / 100 * base : void 0;
+    default:
+      return void 0;
+  }
+}
+function vertical(style, prop, fontSize) {
+  let top = 0;
+  let bottom = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      top = bottom = parts[0];
+    else if (parts.length === 2 || parts.length === 3) {
+      top = parts[0];
+      bottom = parts[2] ?? parts[0];
+    } else if (parts.length >= 4) {
+      top = parts[0];
+      bottom = parts[2];
+    }
+  }
+  const t = px(style[`${prop}-top`], fontSize);
+  const b = px(style[`${prop}-bottom`], fontSize);
+  if (t !== void 0)
+    top = t;
+  if (b !== void 0)
+    bottom = b;
+  return [top, bottom];
+}
+function horizontal(style, prop, fontSize) {
+  let left = 0;
+  let right = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      left = right = parts[0];
+    else if (parts.length === 2 || parts.length === 3)
+      left = right = parts[1];
+    else if (parts.length >= 4) {
+      right = parts[1];
+      left = parts[3];
+    }
+  }
+  const l = px(style[`${prop}-left`], fontSize);
+  const r = px(style[`${prop}-right`], fontSize);
+  if (l !== void 0)
+    left = l;
+  if (r !== void 0)
+    right = r;
+  return left + right;
+}
+function borderWidth(value) {
+  if (!value)
+    return 0;
+  if (/^(none|0)$/i.test(value.trim()))
+    return 0;
+  const m = /(\d*\.?\d+)px/.exec(value);
+  if (m)
+    return parseFloat(m[1]);
+  if (/\b(thin)\b/.test(value))
+    return 1;
+  if (/\b(medium)\b/.test(value))
+    return 3;
+  if (/\b(thick)\b/.test(value))
+    return 5;
+  return /\b(solid|dashed|dotted|double)\b/.test(value) ? 1 : 0;
+}
+function borders(style) {
+  const all = borderWidth(style.border);
+  const top = style["border-top"] !== void 0 ? borderWidth(style["border-top"]) : all;
+  const bottom = style["border-bottom"] !== void 0 ? borderWidth(style["border-bottom"]) : all;
+  const t = px(style["border-top-width"], 0);
+  const b = px(style["border-bottom-width"], 0);
+  return [t ?? top, b ?? bottom];
+}
+function gridColumns(value) {
+  if (!value)
+    return 1;
+  let count = 0;
+  const re = /repeat\(\s*(\d+|auto-fit|auto-fill)\s*,([^)]*)\)|[^\s,]+/g;
+  let m;
+  while (m = re.exec(value)) {
+    if (m[1]) {
+      const n = parseInt(m[1], 10);
+      const inner = (m[2] ?? "").trim().split(/\s+/).filter(Boolean).length || 1;
+      count += (Number.isFinite(n) ? n : 1) * inner;
+    } else
+      count += 1;
+  }
+  return Math.max(1, count);
+}
+function gapOf(style, axis, fontSize) {
+  const specific = px(style[`${axis}-gap`], fontSize);
+  if (specific !== void 0)
+    return specific;
+  const gap = style.gap ?? style["grid-gap"];
+  if (!gap)
+    return 0;
+  const parts = gap.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+  if (axis === "row")
+    return parts[0] ?? 0;
+  return parts[1] ?? parts[0] ?? 0;
+}
+function isInline(node) {
+  if (node.tag === "#text")
+    return true;
+  const display = node.style.display;
+  if (display) {
+    if (/^inline(?!-block|-flex|-grid)/.test(display))
+      return true;
+    return false;
+  }
+  return INLINE_TAGS.has(node.tag);
+}
+function isHidden(node) {
+  return node.style.display === "none" || node.style.visibility === "hidden";
+}
+function contextFor(node, parent) {
+  const defaults = TAG_DEFAULTS[node.tag];
+  let fontSize = px(node.style["font-size"], parent.fontSize) ?? defaults?.fontSize ?? parent.fontSize;
+  if (!fontSize || fontSize <= 0)
+    fontSize = parent.fontSize;
+  let lineHeight = parent.lineHeight;
+  const lh = node.style["line-height"];
+  if (lh !== void 0) {
+    const unitless = /^\d*\.?\d+$/.test(lh.trim());
+    const value = unitless ? parseFloat(lh) * fontSize : px(lh, fontSize);
+    if (value !== void 0)
+      lineHeight = value;
+    else if (lh.trim() === "normal")
+      lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  } else if (node.style["font-size"] || defaults?.fontSize || parent.lineHeight === 0) {
+    lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  }
+  return { fontSize, lineHeight, width: parent.width };
+}
+function inlineRunHeight(run, ctx) {
+  let maxLine = ctx.lineHeight;
+  const segments = [""];
+  const walk = (nodes, c) => {
+    for (const n of nodes) {
+      if (n.tag === "#text") {
+        segments[segments.length - 1] += n.text;
+      } else if (n.tag === "br") {
+        segments.push("");
+      } else if (n.tag === "img") {
+        const h = px(n.style.height, c.fontSize) ?? (n.attrs.height ? parseFloat(n.attrs.height) : void 0);
+        if (h)
+          maxLine = Math.max(maxLine, h);
+      } else {
+        const inner = contextFor(n, c);
+        const [pt, pb] = vertical(n.style, "padding", inner.fontSize);
+        maxLine = Math.max(maxLine, inner.lineHeight + pt + pb);
+        walk(n.children, inner);
+      }
+    }
+  };
+  walk(run, ctx);
+  let lines = 0;
+  for (const segment of segments) {
+    const text = segment.replace(/\s+/g, " ").trim();
+    if (!text) {
+      if (segments.length > 1)
+        lines += 1;
+      continue;
+    }
+    const textWidth = text.length * ctx.fontSize * GLYPH_WIDTH_FACTOR;
+    lines += Math.max(1, Math.ceil(textWidth / Math.max(ctx.width, 40)));
+  }
+  if (lines === 0)
+    return 0;
+  return lines * maxLine;
+}
+function blockHeight(node, parent) {
+  if (isHidden(node))
+    return 0;
+  const ctx = contextFor(node, parent);
+  const defaults = TAG_DEFAULTS[node.tag];
+  const [pt, pb] = vertical(node.style, "padding", ctx.fontSize);
+  const [bt, bb] = borders(node.style);
+  let [mt, mb] = vertical(node.style, "margin", ctx.fontSize);
+  if (node.style.margin === void 0 && node.style["margin-top"] === void 0 && defaults?.marginTop)
+    mt = defaults.marginTop;
+  if (node.style.margin === void 0 && node.style["margin-bottom"] === void 0 && defaults?.marginBottom)
+    mb = defaults.marginBottom;
+  const explicitWidth = px(node.style.width, ctx.fontSize, parent.width);
+  const innerWidth = Math.max(40, (explicitWidth ?? parent.width) - horizontal(node.style, "padding", ctx.fontSize));
+  const inner = { ...ctx, width: innerWidth };
+  let content;
+  if (node.tag === "hr")
+    content = 1;
+  else if (node.tag === "img")
+    content = px(node.style.height, ctx.fontSize) ?? 0;
+  else
+    content = childrenHeight(node, inner, px(node.style.height, ctx.fontSize) !== void 0);
+  const explicit = px(node.style.height, ctx.fontSize);
+  if (explicit !== void 0 && !/%|auto/.test(node.style.height ?? "")) {
+    const borderBox = node.style["box-sizing"] === "border-box";
+    const boxHeight = borderBox ? explicit : explicit + pt + pb + bt + bb;
+    const overflowHidden = /^(hidden|auto|scroll|clip)$/.test(node.style.overflow ?? node.style["overflow-y"] ?? "");
+    const full = content + pt + pb + bt + bb;
+    return (overflowHidden ? boxHeight : Math.max(boxHeight, full)) + mt + mb;
+  }
+  const minHeight = px(node.style["min-height"], ctx.fontSize);
+  let total = content + pt + pb + bt + bb;
+  if (minHeight !== void 0)
+    total = Math.max(total, node.style["box-sizing"] === "border-box" ? minHeight : minHeight + pt + pb);
+  return total + mt + mb;
+}
+function childrenHeight(node, ctx, pinned = false) {
+  const display = node.style.display ?? "";
+  const children = node.children.filter((c) => !isHidden(c));
+  if (/grid/.test(display))
+    return gridHeight(node, children, ctx);
+  if (/flex/.test(display))
+    return flexHeight(node, children, ctx, pinned);
+  if (node.tag === "tr")
+    return rowHeight(children, ctx);
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of children) {
+    if (isInline(child))
+      run.push(child);
+    else {
+      flush();
+      total += blockHeight(child, ctx);
+    }
+  }
+  flush();
+  return total;
+}
+function rowHeight(children, ctx) {
+  const cells = children.filter((c) => !isInline(c));
+  if (!cells.length)
+    return inlineRunHeight(children, ctx);
+  const width = Math.max(40, ctx.width / cells.length);
+  return Math.max(...cells.map((c) => blockHeight(c, { ...ctx, width })));
+}
+function gridHeight(node, children, ctx) {
+  const columns = gridColumns(node.style["grid-template-columns"]);
+  const rowGap = gapOf(node.style, "row", ctx.fontSize);
+  const colGap = gapOf(node.style, "column", ctx.fontSize);
+  const width = Math.max(40, (ctx.width - colGap * (columns - 1)) / columns);
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  let total = 0;
+  for (let i = 0; i < items.length; i += columns) {
+    const row = items.slice(i, i + columns);
+    total += Math.max(...row.map((c) => isInline(c) ? inlineRunHeight([c], { ...ctx, width }) : blockHeight(c, { ...ctx, width })));
+    if (i + columns < items.length)
+      total += rowGap;
+  }
+  return total;
+}
+function flexHeight(node, children, ctx, pinned = false) {
+  const direction = node.style["flex-direction"] ?? "row";
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  if (/column/.test(direction)) {
+    const gap2 = gapOf(node.style, "row", ctx.fontSize);
+    return items.reduce((sum, c, i) => sum + (isInline(c) ? inlineRunHeight([c], ctx) : blockHeight(c, ctx)) + (i ? gap2 : 0), 0);
+  }
+  const gap = gapOf(node.style, "column", ctx.fontSize);
+  const weights = items.map((c) => {
+    const flex = c.style.flex ?? c.style["flex-grow"];
+    const n = flex ? parseFloat(flex) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  });
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const free = ctx.width - gap * (items.length - 1);
+  const stretched = pinned && !/^(flex-start|center|flex-end|baseline|start|end)$/.test(node.style["align-items"] ?? "");
+  return Math.max(...items.map((c, i) => {
+    const explicit = px(c.style.width, ctx.fontSize, ctx.width);
+    const width = Math.max(40, explicit ?? free * weights[i] / totalWeight);
+    if (isInline(c))
+      return inlineRunHeight([c], { ...ctx, width });
+    if (!stretched)
+      return blockHeight(c, { ...ctx, width });
+    const inner = contextFor(c, { ...ctx, width });
+    const [pt] = vertical(c.style, "padding", inner.fontSize);
+    const [bt] = borders(c.style);
+    const [mt] = vertical(c.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, width - horizontal(c.style, "padding", inner.fontSize));
+    return mt + pt + bt + childrenHeight(c, { ...inner, width: innerWidth });
+  }));
+}
+function rootHeight(root, ctx) {
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of root.children.filter((c) => !isHidden(c))) {
+    if (isInline(child)) {
+      run.push(child);
+      continue;
+    }
+    flush();
+    const percentHeight = /%$/.test((child.style.height ?? "").trim());
+    if (!percentHeight) {
+      total += blockHeight(child, ctx);
+      continue;
+    }
+    const inner = contextFor(child, ctx);
+    const [pt] = vertical(child.style, "padding", inner.fontSize);
+    const [bt] = borders(child.style);
+    const [mt] = vertical(child.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, ctx.width - horizontal(child.style, "padding", inner.fontSize));
+    const content = childrenHeight(child, { ...inner, width: innerWidth }, true);
+    const display = child.style.display ?? "";
+    const column = /column/.test(child.style["flex-direction"] ?? "");
+    const centred = /flex|grid/.test(display) && !column && /center/.test(child.style["align-items"] ?? child.style["align-content"] ?? "") || /flex/.test(display) && column && /center/.test(child.style["justify-content"] ?? "");
+    total += mt + (centred ? content : pt + bt + content);
+  }
+  flush();
+  return total;
+}
+function estimateHtmlHeight(rawHtml, widthPx) {
+  const { html, repeats } = stripHtmlBindings(rawHtml);
+  if (!html.trim())
+    return null;
+  const root = parseHtml(html);
+  const ctx = { fontSize: DEFAULT_FONT_SIZE, lineHeight: DEFAULT_FONT_SIZE * LINE_HEIGHT_FACTOR, width: Math.max(40, widthPx) };
+  const height = rootHeight(root, ctx);
+  if (!Number.isFinite(height) || height <= 0)
+    return null;
+  return { height: Math.round(height), lowerBound: repeats };
+}
+
+// dist/renderReadiness.js
+var GRID_COLUMNS = 43;
+function propVal(props, key) {
+  const p = props?.[key];
+  return p && typeof p === "object" && "value" in p ? p.value : p;
+}
+function truthy(v) {
+  if (typeof v === "boolean")
+    return v;
+  if (typeof v !== "string")
+    return false;
+  const s = v.trim().replace(/^\{\{\s*/, "").replace(/\s*\}\}$/, "").toLowerCase();
+  return s === "true";
+}
+function label(c) {
+  return c.name ?? c.id ?? "?";
+}
+function lintTableColumnsShape(c) {
+  if (c.type !== "Table")
+    return [];
+  const columns = propVal(c.properties, "columns");
+  if (columns === void 0 || columns === null || Array.isArray(columns))
+    return [];
+  if (typeof columns === "string") {
+    let parsesToArray = false;
+    try {
+      parsesToArray = Array.isArray(JSON.parse(columns));
+    } catch {
+      parsesToArray = false;
+    }
+    return [
+      `Table "${label(c)}": properties.columns.value is a JSON string${parsesToArray ? " that happens to parse as an array" : ""}. ToolJet stores it as text and the Table crashes on render ("Something went wrong"). Pass the column objects as a real array value: columns: { value: [ { key, name, columnType, ... } ] }.`
+    ];
+  }
+  return [
+    `Table "${label(c)}": properties.columns.value must be an array of column objects, not ${typeof columns}.`
+  ];
+}
+var MARKDOWN_SIGNS = /(^|\n)\s*#{1,6}\s+\S|\*\*[^*\n]+\*\*|(^|\n)\s*[-*]\s+\S|\[[^\]\n]+\]\([^)\n]+\)|(^|\n)\s*\d+\.\s+\S/;
+function lintTextFormat(c) {
+  if (c.type !== "Text")
+    return [];
+  const text = propVal(c.properties, "text");
+  if (typeof text !== "string")
+    return [];
+  const format = propVal(c.properties, "textFormat");
+  const effective = typeof format === "string" && format ? format : "html";
+  if (effective === "markdown")
+    return [];
+  const literal3 = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  if (!MARKDOWN_SIGNS.test(literal3))
+    return [];
+  return [
+    `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
+  ];
+}
+var WIDTH_EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "Drawer"]);
+function lintOversizedWidths(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || WIDTH_EXEMPT.has(c.type))
+      continue;
+    const rect2 = c.layouts?.desktop ?? c.layout;
+    if (!rect2)
+      continue;
+    const width = typeof rect2.width === "number" ? rect2.width : void 0;
+    const left = typeof rect2.left === "number" ? rect2.left : 0;
+    if (width === void 0)
+      continue;
+    if (width > GRID_COLUMNS || left + width > GRID_COLUMNS) {
+      errors.push(`${c.type} "${label(c)}": desktop left ${left} + width ${width} exceeds ToolJet's ${GRID_COLUMNS}-column grid. Widths and lefts are grid columns, not pixels: a full-width row is left 2, width 39; a half is width 19; a quarter is width 9.`);
+    }
+  }
+  return errors;
+}
+function eventPayload(event) {
+  return event && typeof event === "object" ? event : void 0;
+}
+function queryTriggers(summary) {
+  const byId = new Map(summary.queries.map((q) => [q.id, q]));
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  const resolve4 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const triggers = /* @__PURE__ */ new Map();
+  for (const q of summary.queries) {
+    const options2 = q.options && typeof q.options === "object" ? q.options : {};
+    const automatic = truthy(propVal(options2, "runOnPageLoad")) || truthy(propVal(options2, "runOnDependencyChange"));
+    triggers.set(q.id, { automatic, manual: [] });
+  }
+  const chains = [];
+  for (const e of summary.events) {
+    const payload = eventPayload(e.event);
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const target = resolve4(payload.queryId ?? payload.queryName);
+    if (!target)
+      continue;
+    const entry = triggers.get(target.id);
+    if (!entry)
+      continue;
+    const trigger = String(payload.eventId ?? "");
+    if (e.target === "page" && trigger === "onPageLoad") {
+      entry.automatic = true;
+    } else if (e.target === "data_query" && trigger === "onDataQuerySuccess" && e.sourceId) {
+      chains.push([e.sourceId, target.id]);
+    } else {
+      entry.manual.push(`${e.target ?? "component"} ${trigger || "event"}`);
+    }
+  }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [sourceId, targetId] of chains) {
+      const source2 = triggers.get(sourceId);
+      const target = triggers.get(targetId);
+      if (source2?.automatic && target && !target.automatic) {
+        target.automatic = true;
+        changed = true;
+      }
+    }
+  }
+  return triggers;
+}
+var DATA_BOUND = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban"]);
+function lintUntriggeredDataQueries(summary) {
+  const errors = [];
+  const warnings = [];
+  if (!summary.queries.length)
+    return { errors, warnings };
+  const triggers = queryTriggers(summary);
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  for (const page of summary.pages) {
+    for (const c of page.components) {
+      if (!c.type || !DATA_BOUND.has(c.type))
+        continue;
+      const data = propVal(c.properties, "data");
+      if (typeof data !== "string")
+        continue;
+      const names = [...new Set([...data.matchAll(/\bqueries\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+      for (const name of names) {
+        const query = byName.get(name);
+        if (!query)
+          continue;
+        const t = triggers.get(query.id);
+        if (!t || t.automatic)
+          continue;
+        const who = `${c.type} "${c.name ?? c.id}"`;
+        if (t.manual.length) {
+          warnings.push(`${who} binds queries.${name}.data, but "${name}" only runs from ${[...new Set(t.manual)].join(", ")}, so the component is empty until then. If it should show data on open, set the query's runOnPageLoad: true or run it from the page's onPageLoad event.`);
+          continue;
+        }
+        const message = `${who} binds queries.${name}.data, but nothing runs "${name}": it has no runOnPageLoad, no page onPageLoad event, no success chain from a query that does, and no user event. It will show No data forever. Set the query's runOnPageLoad: true (or add a page onPageLoad run-query event).`;
+        if (c.type === "Table")
+          errors.push(message);
+        else
+          warnings.push(message);
+      }
+    }
+  }
+  return { errors, warnings };
+}
+var HTML_PX_PER_COLUMN = 32;
+var HTML_WIDGET_HEIGHT_LOSS = 4;
+var HTML_HEIGHT_TOLERANCE = 8;
+function lintHtmlContentHeight(c) {
+  if (c.type !== "Html")
+    return [];
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const rect2 = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const width = typeof rect2?.width === "number" ? rect2.width : 39;
+  if (height === void 0)
+    return [];
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return [];
+  const usable = height - HTML_WIDGET_HEIGHT_LOSS;
+  const overflow = estimate.height - usable;
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return [];
+  const suggested = Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10;
+  return [
+    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
+  ];
+}
+var SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
+function lintHtmlRootSurface(c) {
+  if (c.type !== "Html")
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const { html } = stripHtmlBindings(raw);
+  const tree = parseHtml(html);
+  const roots = tree.children.filter((n) => n.tag !== "#text" || n.text.trim());
+  const who = `Html "${label(c)}"`;
+  const parented = Boolean(c.parent || c.parentRef);
+  const surface = parented ? "var(--cc-surface1-surface)" : "var(--cc-appBackground-surface)";
+  const template = `<div style="height:100%;box-sizing:border-box;margin:0;background:${surface}"> ...your markup... </div>`;
+  const why = "ToolJet's Html widget paints its box white underneath the markup, so on a tinted canvas anything the root does not cover shows as a white edge.";
+  if (roots.length !== 1 || roots[0].tag === "#text") {
+    return [
+      `${who}: rawHtml has ${roots.length} top-level nodes. ${why} Wrap everything in one root element: ${template}`
+    ];
+  }
+  const root = roots[0];
+  const style = root.style;
+  const problems = [];
+  const dynamic = truthy(propVal(c.properties, "dynamicHeight"));
+  const heightValue = (style.height ?? style["min-height"] ?? "").trim();
+  if (!dynamic && heightValue !== "100%") {
+    problems.push(heightValue ? `its height is "${heightValue}" instead of 100%, so the rest of the box stays white` : "it has no height:100%, so the box below the content stays white");
+  }
+  const background = (style.background ?? style["background-color"] ?? "").trim();
+  if (!background || /^(transparent|none|inherit|initial|unset)$/i.test(background)) {
+    problems.push(`it paints no background of its own, so the widget's white shows through; use ${surface}` + (parented ? " (or the surface2 token for a tinted rail)" : ""));
+  } else if (parented ? !SURFACE_TOKENS.test(background) : !/var\(--cc-appBackground-surface\)/.test(background)) {
+    problems.push(`its background is "${background.slice(0, 60)}" rather than the surface it sits on (${surface}); a tint, gradient or literal colour belongs on a child card so the root still matches the canvas around it`);
+  }
+  const radius = (style["border-radius"] ?? "").trim();
+  if (radius && !/^0(px)?$/.test(radius)) {
+    problems.push(`it has border-radius ${radius}, and the corners outside the curve show the widget's white`);
+  }
+  const margin = (style.margin ?? "").trim();
+  if (margin && !/^0(px)?(\s+0(px)?){0,3}$/.test(margin)) {
+    problems.push(`it has margin ${margin}, which leaves a white gap around it`);
+  }
+  const width = (style.width ?? "").trim();
+  if (width && !/^(100%|auto)$/.test(width)) {
+    problems.push(`its width is "${width}", which leaves white at the sides`);
+  }
+  if (!problems.length)
+    return [];
+  return [
+    `${who}: the root element ${problems.join("; ")}. ${why} Make the root a plain full-bleed box and move the card (tint, gradient, radius, padding, shadow) into a child element: ${template}`
+  ];
+}
+var DATA_BOUND_FOR_REFS = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"]);
+var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)\2\s*\])(\??\.)(value|selectedRow|selectedRowId|selectedRows|isValid|searchText|selectedOptionLabel|checked|filteredData|text)\b/g;
+function lintUnguardedComponentRefs(c) {
+  if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type))
+    return [];
+  const props = c.properties ?? {};
+  const keys = c.type === "Html" ? ["rawHtml"] : c.type === "Text" ? ["text"] : ["data"];
+  const errors = [];
+  for (const key of keys) {
+    const value = propVal(props, key);
+    if (typeof value !== "string" || !value.includes("components"))
+      continue;
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of value.matchAll(COMPONENT_REF)) {
+      if (m[4] === "?.")
+        continue;
+      const name = m[1] ?? m[3];
+      bad.add(m[1] ? `components.${name}.${m[5]}` : `components['${name}'].${m[5]}`);
+    }
+    if (!bad.size)
+      continue;
+    const fixes = [...bad].map((ref) => `${ref.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
+    errors.push(`${c.type} "${label(c)}": ${key} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
+  }
+  return errors;
+}
+
 // dist/bindingReferences.js
 function bindingReferences(value) {
   if (Array.isArray(value))
@@ -33733,7 +34533,7 @@ var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]
 var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
 var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
 var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
-function propVal(props, key) {
+function propVal2(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
@@ -33843,7 +34643,7 @@ function explicitlyProjectsObjectData(value) {
   return (directObject || returnedObject) && !expression.includes("...");
 }
 function visibilityExpression(component) {
-  const value = propVal(component.properties, "visibility");
+  const value = propVal2(component.properties, "visibility");
   if (typeof value !== "string")
     return void 0;
   const trimmed = value.trim();
@@ -33885,8 +34685,8 @@ function rowsStateExpression(value) {
   return void 0;
 }
 function mutuallyExclusiveVisibility(a, b) {
-  const aVisibility = propVal(a.properties, "visibility");
-  const bVisibility = propVal(b.properties, "visibility");
+  const aVisibility = propVal2(a.properties, "visibility");
+  const bVisibility = propVal2(b.properties, "visibility");
   if (isFalseBinding(aVisibility) || isFalseBinding(bVisibility))
     return true;
   const aExpression = visibilityExpression(a);
@@ -33933,7 +34733,7 @@ function differsFromCatalogDefault(type, key, value) {
   return defaultValue === void 0 || JSON.stringify(value) !== JSON.stringify(defaultValue);
 }
 function catalogValue(type, entries, key, section = "properties") {
-  const authored = propVal(entries, key);
+  const authored = propVal2(entries, key);
   if (authored !== void 0)
     return authored;
   return getComponentSchema(type)?.[section].find((entry) => entry.key === key)?.default;
@@ -34045,11 +34845,11 @@ function renderedHeight(component, rect2) {
   const authored = layout?.height ?? 0;
   if (!TOP_ALIGNED_INPUT_TYPES.has(component.type ?? ""))
     return authored;
-  if (propVal(component.styles, "alignment") !== "top")
+  if (propVal2(component.styles, "alignment") !== "top")
     return authored;
-  const labelType = propVal(component.properties, "labelType");
-  const label = propVal(component.properties, "label");
-  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label === void 0 || (typeof label === "string" ? label.trim().length > 0 : Boolean(label));
+  const labelType = propVal2(component.properties, "labelType");
+  const label2 = propVal2(component.properties, "label");
+  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label2 === void 0 || (typeof label2 === "string" ? label2.trim().length > 0 : Boolean(label2));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
 function lintStandardSingleLineInputHeight(component) {
@@ -34064,26 +34864,26 @@ function lintStandardSingleLineInputHeight(component) {
     layouts.push(["desktop", component.layouts.desktop]);
   if (component.layouts?.mobile)
     layouts.push(["mobile", component.layouts.mobile]);
-  const label = component.name ?? component.type ?? "component";
+  const label2 = component.name ?? component.type ?? "component";
   return layouts.flatMap(([layoutName, layout]) => {
     const authoredHeight = layout.height;
     if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
       return [];
     return [
-      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+      `${component.type} "${label2}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
     ];
   });
 }
 function minimumTextHeight(component) {
   if (component.type !== "Text")
     return void 0;
-  const dynamicHeight = propVal(component.properties, "dynamicHeight");
+  const dynamicHeight = propVal2(component.properties, "dynamicHeight");
   if (isTruthyBinding(dynamicHeight))
     return void 0;
   if (typeof dynamicHeight === "string" && /\{\{/.test(dynamicHeight) && !isFalseBinding(dynamicHeight))
     return void 0;
-  const textSizeValue = propVal(component.styles, "textSize");
-  const lineHeightValue = propVal(component.styles, "lineHeight");
+  const textSizeValue = propVal2(component.styles, "textSize");
+  const lineHeightValue = propVal2(component.styles, "lineHeight");
   const textSize = textSizeValue === void 0 ? 14 : optionalStaticNumber(textSizeValue);
   const lineHeight = lineHeightValue === void 0 ? 1.5 : optionalStaticNumber(lineHeightValue);
   if (textSize === void 0 || lineHeight === void 0)
@@ -34179,7 +34979,7 @@ function lintKanbanInteractions(components) {
     const key = componentKey(board);
     if (!key)
       continue;
-    const openModal = propVal(board.properties, "openModalOnCardClick");
+    const openModal = propVal2(board.properties, "openModalOnCardClick");
     const nativeModalEnabled = openModal === void 0 || isTruthyBinding(openModal);
     if (!nativeModalEnabled)
       continue;
@@ -34205,7 +35005,7 @@ function lintListviewChildren(components) {
   }
   for (const [parentId, children] of childrenByParent) {
     const parent = refs2.get(parentId);
-    if (propVal(parent.properties, "mode") !== "grid")
+    if (propVal2(parent.properties, "mode") !== "grid")
       continue;
     for (const child of children) {
       const rect2 = child.layouts?.desktop ?? child.layout;
@@ -34228,7 +35028,7 @@ function lintListviewChildren(components) {
     const parent = refs2.get(parentPlacement(child)?.parentId ?? "");
     if (parent?.type !== "Listview")
       continue;
-    const rawHtml = propVal(child.properties, "rawHtml");
+    const rawHtml = propVal2(child.properties, "rawHtml");
     if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
       continue;
     if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
@@ -34279,7 +35079,7 @@ function lintOperationalViewport(components) {
     return [];
   const warnings = [];
   for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
-    if (propVal(button.styles, "type") !== "primary")
+    if (propVal2(button.styles, "type") !== "primary")
       continue;
     const rect2 = button.layouts?.desktop ?? button.layout;
     if (!rect2)
@@ -34336,35 +35136,35 @@ function lintComponentSpec(spec) {
   const errors = [];
   const warnings = [];
   const props = spec.properties ?? {};
-  const label = spec.name ?? spec.type ?? "component";
+  const label2 = spec.name ?? spec.type ?? "component";
   if (spec.slotName !== void 0) {
     if (!COMPONENT_SLOT_NAMES.includes(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
+      errors.push(`Component "${label2}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
     }
     if (!spec.parentRef && !spec.parent) {
-      errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
+      errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
     }
   }
   const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
   if (misplaced.length) {
-    errors.push(`Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
+    errors.push(`Component "${label2}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      errors.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label2}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
   if (!spec.type) {
-    errors.push(`Component "${label}": type is required.`);
+    errors.push(`Component "${label2}": type is required.`);
   } else if (!componentSchema) {
     const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
-    errors.push(`Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+    errors.push(`Component "${label2}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
-      warnings.push(`Component "${label}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
+      warnings.push(`Component "${label2}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
     }
   }
   for (const [sectionName, authored, entries] of [
@@ -34383,121 +35183,121 @@ function lintComponentSpec(spec) {
       const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
       const suggestion = alias ?? nearestCatalogKey(key, knownKeys);
       if (suggestion) {
-        errors.push(`Component "${label}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
+        errors.push(`Component "${label2}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
       } else {
-        warnings.push(`Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
+        warnings.push(`Component "${label2}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
       }
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length)
         continue;
-      const value = propVal(authored, entry.key);
+      const value = propVal2(authored, entry.key);
       if (value === void 0 || isDynamicBinding(value))
         continue;
       if (!entry.allowedValues.some((allowed) => Object.is(allowed, value))) {
-        errors.push(`Component "${label}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
+        errors.push(`Component "${label2}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
       }
     }
   }
   if (spec.type === "Chart") {
-    const title = propVal(props, "title");
+    const title = propVal2(props, "title");
     if (title === void 0) {
-      warnings.push(`Chart "${label}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
+      warnings.push(`Chart "${label2}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
     } else if (typeof title === "string" && title.trim() !== "") {
-      warnings.push(`Chart "${label}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
+      warnings.push(`Chart "${label2}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
     }
-    const plotFromJson = propVal(props, "plotFromJson");
-    const jsonDescription = propVal(props, "jsonDescription");
+    const plotFromJson = propVal2(props, "plotFromJson");
+    const jsonDescription = propVal2(props, "jsonDescription");
     if (isTruthyBinding(plotFromJson)) {
       if (jsonDescription === void 0) {
-        errors.push(`Chart "${label}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
+        errors.push(`Chart "${label2}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
       } else if (isDynamicBinding(jsonDescription)) {
-        warnings.push(`Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
+        warnings.push(`Chart "${label2}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
       } else {
         let parsed = jsonDescription;
         if (typeof jsonDescription === "string") {
           try {
             parsed = JSON.parse(jsonDescription);
           } catch {
-            errors.push(`Chart "${label}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
+            errors.push(`Chart "${label2}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
             parsed = void 0;
           }
         }
         if (parsed !== void 0) {
           const description = recordValue(parsed);
           if (!description || !Array.isArray(description.data) || description.data.length === 0) {
-            errors.push(`Chart "${label}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
+            errors.push(`Chart "${label2}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
           }
         }
       }
     }
   }
-  if (spec.type === "Html" && nestedMapInValue(propVal(props, "rawHtml"))) {
-    warnings.push(`Html "${label}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
+  if (spec.type === "Html" && nestedMapInValue(propVal2(props, "rawHtml"))) {
+    warnings.push(`Html "${label2}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
   }
   if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
-    warnings.push(`Component "${label}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
+    warnings.push(`Component "${label2}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
   }
   if (spec.type === "Statistics") {
-    const secondaryValue = propVal(props, "secondaryValue");
+    const secondaryValue = propVal2(props, "secondaryValue");
     if (typeof secondaryValue === "string" && !secondaryValue.includes("{{") && /[A-Za-z]/.test(secondaryValue)) {
-      warnings.push(`Statistics "${label}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
+      warnings.push(`Statistics "${label2}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
     }
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
-    const secondaryHidden = isTruthyBinding(propVal(props, "hideSecondary"));
+    const secondaryHidden = isTruthyBinding(propVal2(props, "hideSecondary"));
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
-      warnings.push(`Statistics "${label}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
+      warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
     }
     const iconName = catalogValue("Statistics", props, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal(props, "iconVisibility") !== false && propVal(props, "iconVisibility") !== "{{false}}";
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props, "iconVisibility") !== false && propVal2(props, "iconVisibility") !== "{{false}}";
     const valueFontPx = optionalStaticNumber(catalogValue("Statistics", props, "primaryValueSize"));
     const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
-      errors.push(`Statistics "${label}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
+      errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
     const primaryLabel = catalogValue("Statistics", props, "primaryValueLabel");
     if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)) {
-      warnings.push(`Statistics "${label}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
+      warnings.push(`Statistics "${label2}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
     }
   }
   if (spec.type === "DropdownV2") {
-    const advanced = propVal(props, "advanced");
-    const schema = propVal(props, "schema");
-    const options2 = propVal(props, "options");
+    const advanced = propVal2(props, "advanced");
+    const schema = propVal2(props, "schema");
+    const options2 = propVal2(props, "options");
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
     const customOptions = differsFromCatalogDefault("DropdownV2", "options", options2);
     if (customOptions && !Array.isArray(options2)) {
-      errors.push(`DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
+      errors.push(`DropdownV2 "${label2}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
     } else if (Array.isArray(options2)) {
       const malformedIndexes = options2.flatMap((option, index) => {
         const entry = recordValue(option);
         return entry && "label" in entry && "value" in entry ? [] : [index];
       });
       if (malformedIndexes.length) {
-        errors.push(`DropdownV2 "${label}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
+        errors.push(`DropdownV2 "${label2}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
       }
     }
     if (customSchema && customOptions) {
-      warnings.push(`DropdownV2 "${label}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label2}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
     }
     if (customSchema && (advanced === void 0 || isFalseBinding(advanced))) {
-      warnings.push(`DropdownV2 "${label}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
+      warnings.push(`DropdownV2 "${label2}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
     }
     if (customOptions && isTruthyBinding(advanced)) {
-      warnings.push(`DropdownV2 "${label}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label2}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
     }
   }
   if (spec.type === "DatePickerV2") {
-    const defaultValue = propVal(props, "defaultValue");
+    const defaultValue = propVal2(props, "defaultValue");
     const demoDefault = getComponentSchema("DatePickerV2")?.properties.find((property) => property.key === "defaultValue")?.default;
     if (defaultValue === void 0 || JSON.stringify(defaultValue) === JSON.stringify(demoDefault)) {
-      warnings.push(`DatePickerV2 "${label}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
+      warnings.push(`DatePickerV2 "${label2}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
     }
   }
   if (spec.type === "KeyValuePair") {
-    const data = propVal(props, "data");
-    const fields = propVal(props, "fields");
+    const data = propVal2(props, "data");
+    const fields = propVal2(props, "fields");
     if (data !== void 0 && Array.isArray(fields) && fields.length > 0) {
       const declaredKeys = new Set(fields.flatMap((field) => {
         const key = recordValue(field)?.key;
@@ -34506,7 +35306,7 @@ function lintComponentSpec(spec) {
       const staticData = recordValue(data);
       const undeclaredKeys = staticData ? Object.keys(staticData).filter((key) => !declaredKeys.has(key)) : [];
       if (undeclaredKeys.length > 0 || !staticData && !explicitlyProjectsObjectData(data)) {
-        warnings.push(`KeyValuePair "${label}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
+        warnings.push(`KeyValuePair "${label2}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
       }
     }
     if (Array.isArray(fields) && fields.length > 0) {
@@ -34520,7 +35320,7 @@ function lintComponentSpec(spec) {
           }
         }
       }
-      const deletionHistoryValue = propVal(props, "fieldDeletionHistory");
+      const deletionHistoryValue = propVal2(props, "fieldDeletionHistory");
       const deletionHistory = new Set(Array.isArray(deletionHistoryValue) ? deletionHistoryValue.filter((key) => typeof key === "string") : []);
       const hasCustomField = fields.some((field) => {
         const id = recordValue(field)?.id;
@@ -34532,21 +35332,26 @@ function lintComponentSpec(spec) {
         return key && deletionHistory.has(key) ? [key] : [];
       }) : [];
       if (contradictoryDemoKeys.length) {
-        warnings.push(`KeyValuePair "${label}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
+        warnings.push(`KeyValuePair "${label2}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
       }
       fields.forEach((field, index) => {
         const entry = recordValue(field);
         if (entry?.fieldType === "string" && (looksDateLikeField(entry.key) || looksDateLikeField(entry.name))) {
-          warnings.push(`KeyValuePair "${label}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`KeyValuePair "${label2}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
       });
     }
   }
+  errors.push(...lintTextFormat(spec));
+  errors.push(...lintHtmlContentHeight(spec));
+  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintUnguardedComponentRefs(spec));
   if (spec.type === "Table") {
-    const data = propVal(props, "data");
-    const selector = propVal(props, "dataSourceSelector");
-    const autogen = propVal(props, "autogenerateColumns");
-    const columns = propVal(props, "columns");
+    errors.push(...lintTableColumnsShape(spec));
+    const data = propVal2(props, "data");
+    const selector = propVal2(props, "dataSourceSelector");
+    const autogen = propVal2(props, "autogenerateColumns");
+    const columns = propVal2(props, "columns");
     const hasColumns = Array.isArray(columns);
     const projectedDataKeys = projectedTableDataKeys(data);
     const projectsDataKeys = projectedDataKeys !== void 0;
@@ -34558,25 +35363,25 @@ function lintComponentSpec(spec) {
     const serverSide = catalogValue("Table", props, "serverSidePagination");
     const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props, "serverSideRowsPerPage") : catalogValue("Table", props, "rowsPerPage"));
     if (statementBodyMapInValue(data)) {
-      errors.push(`Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
+      errors.push(`Table "${label2}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(contentWrap) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
-      const rowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const rowHeight2 = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
       const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < chromeHeight + rowHeight) {
-        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+      const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
+      if (desktopHeight < chromeHeight + rowHeight2) {
+        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight2}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
+        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {
-      warnings.push(`Table "${label}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
+      warnings.push(`Table "${label2}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
     }
     if (data !== void 0 && !isTruthyBinding(autogen) && !hasColumns) {
-      warnings.push(`Table "${label}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
+      warnings.push(`Table "${label2}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
     }
     if (hasColumns) {
       const columnKeys = /* @__PURE__ */ new Map();
@@ -34590,47 +35395,47 @@ function lintComponentSpec(spec) {
       });
       for (const [key, indexes] of columnKeys) {
         if (indexes.length > 1) {
-          errors.push(`Table "${label}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
+          errors.push(`Table "${label2}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
         }
       }
       if (isTruthyBinding(autogen) && projectedDataKeys) {
         const undeclaredKeys = projectedDataKeys.filter((key) => !columnKeys.has(key));
         if (undeclaredKeys.length) {
-          warnings.push(`Table "${label}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
+          warnings.push(`Table "${label2}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
         }
       }
       if (isTruthyBinding(autogen) && !projectsDataKeys) {
-        warnings.push(`Table "${label}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
+        warnings.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
       }
       columns.forEach((col, i) => {
         const c = col;
         for (const req of ["name", "key"]) {
           if (c == null || c[req] === void 0) {
-            warnings.push(`Table "${label}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
+            warnings.push(`Table "${label2}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
           }
         }
         const deprecatedReplacement = typeof c?.columnType === "string" ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : void 0;
         if (deprecatedReplacement) {
-          errors.push(`Table "${label}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
+          errors.push(`Table "${label2}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
         }
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
-          warnings.push(`Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
+          warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
         if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
-          warnings.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
           if (!Array.isArray(buttons) || buttons.length === 0) {
-            warnings.push(`Table "${label}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
+            warnings.push(`Table "${label2}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
           } else {
             const ids = /* @__PURE__ */ new Set();
             buttons.forEach((button, buttonIndex) => {
               const id = button?.id;
               if (typeof id !== "string" || id.length === 0) {
-                warnings.push(`Table "${label}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
+                warnings.push(`Table "${label2}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
               } else if (ids.has(id)) {
-                warnings.push(`Table "${label}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
+                warnings.push(`Table "${label2}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
               } else {
                 ids.add(id);
               }
@@ -34641,33 +35446,33 @@ function lintComponentSpec(spec) {
       const visibleColumns = columns.map((column) => column).filter((column) => column && column.columnVisibility !== false && column.columnVisibility !== "{{false}}");
       const rawHeaderColumns = visibleColumns.map((column) => String(column.name ?? column.key ?? "").trim()).filter((header) => header && (looksRawFieldHeader(header) || looksInternalIdField(header)));
       if (rawHeaderColumns.length) {
-        warnings.push(`Table "${label}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
+        warnings.push(`Table "${label2}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
       }
       if (visibleColumns.length > TABLE_VISIBLE_COLUMN_WARN) {
-        warnings.push(`Table "${label}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
+        warnings.push(`Table "${label2}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
       }
     }
-    const legacyActions = propVal(props, "actions");
+    const legacyActions = propVal2(props, "actions");
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
-      warnings.push(`Table "${label}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
+      warnings.push(`Table "${label2}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
     }
-    if (isTruthyBinding(propVal(props, "serverSidePagination"))) {
-      if (propVal(props, "serverSideRowsPerPage") === void 0) {
-        warnings.push(`Table "${label}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
+    if (isTruthyBinding(propVal2(props, "serverSidePagination"))) {
+      if (propVal2(props, "serverSideRowsPerPage") === void 0) {
+        warnings.push(`Table "${label2}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
       }
-      if (propVal(props, "totalRecords") === void 0) {
-        warnings.push(`Table "${label}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
+      if (propVal2(props, "totalRecords") === void 0) {
+        warnings.push(`Table "${label2}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
       }
     }
   }
   if (spec.type === "Form") {
-    const mode = propVal(props, "generateFormFrom");
-    const schemaValue = propVal(props, "newJsonSchema");
+    const mode = propVal2(props, "generateFormFrom");
+    const schemaValue = propVal2(props, "newJsonSchema");
     if (mode === "jsonSchema" && schemaValue === void 0) {
-      warnings.push(`Form "${label}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
+      warnings.push(`Form "${label2}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
     }
-    if (mode === "rawJson" && propVal(props, "JSONData") === void 0) {
-      warnings.push(`Form "${label}": generateFormFrom is "rawJson" but JSONData is missing.`);
+    if (mode === "rawJson" && propVal2(props, "JSONData") === void 0) {
+      warnings.push(`Form "${label2}": generateFormFrom is "rawJson" but JSONData is missing.`);
     }
     const fields = recordValue(recordValue(schemaValue)?.properties);
     if (mode === "jsonSchema" && fields) {
@@ -34678,21 +35483,21 @@ function lintComponentSpec(spec) {
           continue;
         const type = field.type;
         if (typeof type !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(type)) {
-          errors.push(`Form "${label}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
+          errors.push(`Form "${label2}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
           continue;
         }
         if (type === "filepicker") {
-          errors.push(`Form "${label}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
+          errors.push(`Form "${label2}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
         }
         if (type === "datepicker" && (field.value === null || field.value === void 0)) {
-          warnings.push(`Form "${label}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
+          warnings.push(`Form "${label2}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
         }
         if (["dropdown", "multiselect"].includes(type)) {
           if ("options" in field) {
-            errors.push(`Form "${label}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
+            errors.push(`Form "${label2}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
           }
           if (!("values" in field) || !("displayValues" in field)) {
-            warnings.push(`Form "${label}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
+            warnings.push(`Form "${label2}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
           }
         }
         if (type !== "filepicker" && !SAFE_GENERATED_FORM_FIELD_TYPE_SET.has(type)) {
@@ -34700,19 +35505,19 @@ function lintComponentSpec(spec) {
         }
         const validation = recordValue(field.validation);
         if ("required" in field || validation?.required !== void 0) {
-          warnings.push(`Form "${label}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
+          warnings.push(`Form "${label2}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
         }
       }
       if (standaloneRequiredFields.length > 0) {
-        errors.push(`Form "${label}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
+        errors.push(`Form "${label2}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
       }
     }
   }
   if (FORM_INPUT_TYPES.has(spec.type ?? "")) {
-    const align = propVal(spec.styles, "alignment");
+    const align = propVal2(spec.styles, "alignment");
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
     if ((align === void 0 || align === "side") && typeof width === "number" && width <= NARROW_SIDE_LABEL_COLS) {
-      warnings.push(`${spec.type} "${label}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
+      warnings.push(`${spec.type} "${label2}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
     }
   }
   return { errors, warnings };
@@ -34750,9 +35555,9 @@ function isTitleLikeText(component) {
   if (top > 100)
     return false;
   const name = component.name ?? "";
-  const text = propVal(component.properties, "text");
-  const fontWeight = propVal(component.styles, "fontWeight");
-  const textSize = optionalStaticNumber(propVal(component.styles, "textSize"));
+  const text = propVal2(component.properties, "text");
+  const fontWeight = propVal2(component.styles, "fontWeight");
+  const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
   return /(?:title|heading|header)/i.test(name) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
 }
 function lintModalChildren(components) {
@@ -34770,7 +35575,7 @@ function lintModalChildren(components) {
   for (const child of bodyChildren) {
     if (!FORM_INPUT_TYPES.has(child.type ?? ""))
       continue;
-    const align = propVal(child.styles, "alignment");
+    const align = propVal2(child.styles, "alignment");
     if (align === void 0 || align === "side") {
       warnings.push(`${child.type} "${child.name ?? child.type}": modal form child uses a SIDE-aligned label \u2014 set styles.alignment.value = "top" so the control gets the full field width.`);
     }
@@ -34800,7 +35605,7 @@ function lintModalChildren(components) {
     if (!key)
       continue;
     const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key);
-    if (modal.type === "ModalV2" && !isFalseBinding(propVal(modal.properties, "showHeader"))) {
+    if (modal.type === "ModalV2" && !isFalseBinding(propVal2(modal.properties, "showHeader"))) {
       const headerChildren = modalChildren.filter((child) => {
         const placement = parentPlacement(child);
         return placement?.parentId === key && placement.slotName === "header";
@@ -34819,10 +35624,10 @@ function lintModalChildren(components) {
     if (!childBottoms.length)
       continue;
     const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
-    const modalHeight = staticNumber(propVal(modal.properties, "modalHeight"), 400);
+    const modalHeight = staticNumber(propVal2(modal.properties, "modalHeight"), 400);
     const isV2 = modal.type === "ModalV2";
-    const headerHeight = !isV2 || isFalseBinding(propVal(modal.properties, "showHeader")) ? 0 : staticNumber(propVal(modal.properties, "headerHeight"), 80);
-    const footerHeight = !isV2 || isFalseBinding(propVal(modal.properties, "showFooter")) ? 0 : staticNumber(propVal(modal.properties, "footerHeight"), 80);
+    const headerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showHeader")) ? 0 : staticNumber(propVal2(modal.properties, "headerHeight"), 80);
+    const footerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showFooter")) ? 0 : staticNumber(propVal2(modal.properties, "footerHeight"), 80);
     const bottomSlack = 20;
     const requiredHeight = lowest.bottom + headerHeight + footerHeight + bottomSlack;
     if (modalHeight < requiredHeight) {
@@ -34841,6 +35646,20 @@ function lintRenderedGeometry(components) {
     ...lintCanvasSideGutter(components)
   ];
 }
+var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "Modal", "Icon"]);
+var MIN_RENDERABLE_HEIGHT = 24;
+function lintUnrenderableHeights(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || THIN_BY_DESIGN.has(c.type))
+      continue;
+    const height = c.layouts?.desktop?.height;
+    if (typeof height !== "number" || height >= MIN_RENDERABLE_HEIGHT)
+      continue;
+    errors.push(`${c.type} "${c.name ?? c.id ?? "?"}": desktop height ${height}px cannot render its content; heights are pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, KPI strips 120+, tables 300+).`);
+  }
+  return errors;
+}
 function lintComponents(components) {
   const errors = [];
   const warnings = [];
@@ -34852,6 +35671,10 @@ function lintComponents(components) {
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
+  errors.push(...lintUnrenderableHeights(components));
+  errors.push(...lintOversizedWidths(components));
+  for (const c of components)
+    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -34898,7 +35721,7 @@ function validateAppStructure(summary) {
   }
   const homePage = summary.pages.find((page) => page.handle === "home" || page.name === "Home");
   if (homePage) {
-    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
+    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal2(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
     for (const event of summary.events) {
       if (event.target !== "page" || event.sourceId !== homePage.id)
         continue;
@@ -34913,7 +35736,7 @@ function validateAppStructure(summary) {
   for (const query of summary.queries.filter((candidate) => candidate.kind === "runjs")) {
     const options2 = recordValue(query.options);
     const code = options2?.code;
-    if (typeof code !== "string" || !isTruthyBinding(propVal(options2, "runOnDependencyChange")))
+    if (typeof code !== "string" || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
       continue;
     const referencedNames = [...new Set([...code.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     if (!referencedNames.length)
@@ -34942,7 +35765,7 @@ function validateAppStructure(summary) {
     const options2 = recordValue(query.options);
     if (!options2)
       continue;
-    const automatic = isTruthyBinding(propVal(options2, "runOnPageLoad")) || isTruthyBinding(propVal(options2, "runOnDependencyChange"));
+    const automatic = isTruthyBinding(propVal2(options2, "runOnPageLoad")) || isTruthyBinding(propVal2(options2, "runOnDependencyChange"));
     if (!automatic)
       continue;
     const blob = JSON.stringify(options2);
@@ -35019,12 +35842,12 @@ function validateAppStructure(summary) {
   }
   for (const table of allComponents.filter((component) => component.type === "Table")) {
     const triggers = eventsBySource.get(table.id) ?? /* @__PURE__ */ new Set();
-    const dataBinding = JSON.stringify(propVal(table.properties, "data") ?? "");
+    const dataBinding = JSON.stringify(propVal2(table.properties, "data") ?? "");
     const boundDataQueries = [...new Set([...dataBinding.matchAll(/queries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const hasReactiveDataQuery = (stateName) => boundDataQueries.some((queryName) => {
       const query = queryByName.get(queryName);
       const options2 = recordValue(query?.options);
-      if (!options2 || !isTruthyBinding(propVal(options2, "runOnDependencyChange")))
+      if (!options2 || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
         return false;
       return typeof table.name === "string" && JSON.stringify(options2).includes(`components.${table.name}.${stateName}`);
     });
@@ -35035,12 +35858,12 @@ function validateAppStructure(summary) {
       ["serverSideFilter", "onFilterChanged", "filters"]
     ];
     for (const [property, trigger, stateName] of requirements) {
-      if (isTruthyBinding(propVal(table.properties, property)) && !triggers.has(trigger) && !hasReactiveDataQuery(stateName)) {
+      if (isTruthyBinding(propVal2(table.properties, property)) && !triggers.has(trigger) && !hasReactiveDataQuery(stateName)) {
         warnings.push(`Table "${table.name ?? table.id}": ${property} is enabled but no ${trigger} event refreshes its data query and no runOnDependencyChange data query is bound to components.${table.name ?? "<table>"}.${stateName}.`);
       }
     }
     const tableColumnRefs = new Set(summary.events.filter((event) => event.sourceId === table.id && event.target === "table_column").map((event) => event.event?.ref).filter((ref) => typeof ref === "string"));
-    const columns = propVal(table.properties, "columns");
+    const columns = propVal2(table.properties, "columns");
     if (Array.isArray(columns)) {
       columns.forEach((column, columnIndex) => {
         const col = column;
@@ -35065,11 +35888,64 @@ function validateAppStructure(summary) {
   }
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components));
+    errors.push(...lintUnrenderableHeights(p.components));
+    errors.push(...lintOversizedWidths(p.components));
+    for (const c of p.components)
+      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
+  warnings.push(...lintInnerPageBands(summary));
+  const readiness = lintUntriggeredDataQueries(summary);
+  errors.push(...readiness.errors);
+  warnings.push(...readiness.warnings);
   return { errors: uniq(errors), warnings: uniq(warnings) };
+}
+function hexLuminance(hex3) {
+  const raw = hex3.replace("#", "");
+  const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full))
+    return NaN;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function htmlRootHasDarkBackground(rawHtml) {
+  const root = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
+  if (!root)
+    return false;
+  const declaration = root[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
+  if (!declaration)
+    return false;
+  const value = declaration[1];
+  if (/var\(--cc-primary-brand\)/i.test(value))
+    return true;
+  const hexes = value.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi) ?? [];
+  return hexes.some((hex3) => hexLuminance(hex3) < 0.35);
+}
+function lintInnerPageBands(summary) {
+  const warnings = [];
+  const pages = summary.pages ?? [];
+  const explicitHome = pages.some((p) => p.handle === "home" || p.name === "Home" || p.index === 1);
+  pages.forEach((page, pageIndex) => {
+    const isHome = page.handle === "home" || page.name === "Home" || page.index === 1 || !explicitHome && pageIndex === 0;
+    if (isHome)
+      return;
+    for (const component of page.components ?? []) {
+      if (component.type !== "Html" || component.parent)
+        continue;
+      const rawHtml = propVal2(component.properties ?? {}, "rawHtml");
+      if (typeof rawHtml !== "string")
+        continue;
+      const desktop = component.layouts?.desktop;
+      if (!desktop || (desktop.top ?? 0) > 60 || (desktop.height ?? 0) > 200 || (desktop.width ?? 0) < 20)
+        continue;
+      if (!htmlRootHasDarkBackground(rawHtml))
+        continue;
+      warnings.push(`Page "${page.name ?? page.id}": Html "${component.name ?? component.id}" is a dark or brand-filled header band on a page that is not Home. The skill's header treatments put a statement band on the home page only; inner pages take a plain title, toolbar or masthead. Keep it only if the design brief chose it for this page deliberately.`);
+    }
+  });
+  return warnings;
 }
 
 // dist/strictEntry.js
@@ -35383,12 +36259,20 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+function condenseErrorBody(detail, limit = 600) {
+  const text = String(detail ?? "");
+  if (/<!doctype html|<html[\s>]/i.test(text)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(text)?.[1]?.trim();
+    return `${title || "HTML error page"} (HTML error page from the proxy, markup omitted)`;
+  }
+  return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
+}
 var ToolJetHttpError = class extends Error {
   status;
   method;
   detail;
   constructor(status, method, detail) {
-    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    super(`ToolJet ${method} failed (${status}): ${condenseErrorBody(detail)}`);
     this.status = status;
     this.method = method;
     this.detail = detail;
@@ -35844,13 +36728,13 @@ function createClient(auth, config2) {
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
     return completed;
-    async function persistFieldForPage(pageId, field, value, label) {
+    async function persistFieldForPage(pageId, field, value, label2) {
       const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, diff: { [field]: value } })
       });
-      await assertOk(r, label);
+      await assertOk(r, label2);
     }
   }
   async function createPage(params) {
@@ -36165,19 +37049,39 @@ function createClient(auth, config2) {
     });
   }
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
+  const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
+  const UNKNOWN_INSERT_OUTCOME = "Insert outcome unknown: the row may already have been inserted. Verify persisted rows before retrying; do not replay the whole batch.";
   async function insertRowViaProxy(tableId, row) {
-    for (let attempt = 0; ; attempt += 1) {
-      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(row)
-      });
-      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
+    let schemaWaits = 0;
+    for (; ; ) {
+      let res;
+      try {
+        res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(row),
+          signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS)
+        });
+      } catch (error51) {
+        throw new Error(`ToolJet insertRows request failed (${error51 instanceof Error ? error51.name : "transport error"}). ${UNKNOWN_INSERT_OUTCOME}`);
+      }
+      if (res.ok)
+        return res;
+      if (res.status === 408 || res.status >= 500) {
+        const body2 = await res.text().catch(() => "Response body unavailable");
+        const error51 = new ToolJetHttpError(res.status, "insertRows", body2);
+        error51.message += ` ${UNKNOWN_INSERT_OUTCOME}`;
+        throw error51;
+      }
+      if (res.status !== 400 && res.status !== 404)
+        return res;
+      if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
         return res;
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      schemaWaits += 1;
     }
   }
   async function insertRows(params) {
@@ -36728,7 +37632,7 @@ function createAppTool(client) {
         const result = { ...created, theme: { mode: "workspace_default" } };
         if (choice === "workspace_default")
           return ok(result);
-        const label = typeof choice === "object" ? choice.name : choice;
+        const label2 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
           await client.updateAppSettings({
@@ -36741,7 +37645,7 @@ function createAppTool(client) {
         } catch (themeErr) {
           result.theme = {
             mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+            warning: `Could not apply theme "${label2}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
           };
         }
         return ok(result);
@@ -36867,9 +37771,9 @@ function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
   const mismatches = [];
-  const expectEqual = (label, actual, expected) => {
+  const expectEqual = (label2, actual, expected) => {
     if (actual !== expected)
-      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
+      mismatches.push(`${label2} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -37937,9 +38841,9 @@ var DIALECTS = {
   bigquery: { quote: "backtick", limit: "limit" },
   oracledb: { quote: "double", limit: "fetch" }
 };
-function assertIdentifier(identifier, label) {
+function assertIdentifier(identifier, label2) {
   if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+    throw new Error(`${label2} contains unsupported or unsafe identifier characters.`);
   }
 }
 function quote(kind, identifier) {
@@ -38382,15 +39286,15 @@ var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts.desktop", "pare
 var STRUCTURE_QUERY_FIELDS = ["id", "name", "kind", "data_source_id"];
 var STRUCTURE_EVENT_FIELDS = ["id", "name", "sourceId", "target"];
 var UNSAFE_PATH_SEGMENTS = /* @__PURE__ */ new Set(["__proto__", "prototype", "constructor"]);
-function validatePaths(paths, roots, label) {
+function validatePaths(paths, roots, label2) {
   const allowedRoots = new Set(roots);
   for (const path of paths) {
     const segments = path.split(".");
     if (!path || segments.some((segment) => !segment || UNSAFE_PATH_SEGMENTS.has(segment))) {
-      throw new Error(`${label} contains an invalid path: "${path}".`);
+      throw new Error(`${label2} contains an invalid path: "${path}".`);
     }
     if (!allowedRoots.has(segments[0])) {
-      throw new Error(`${label} path "${path}" must start with one of: ${roots.join(", ")}.`);
+      throw new Error(`${label2} path "${path}" must start with one of: ${roots.join(", ")}.`);
     }
   }
 }
@@ -38630,7 +39534,7 @@ var ACTION_IDS = /* @__PURE__ */ new Set([
   "set-localstorage-value",
   "scroll-component-into-view"
 ]);
-function propVal2(properties, key) {
+function propVal3(properties, key) {
   const value = properties?.[key];
   return value && typeof value === "object" && "value" in value ? value.value : value;
 }
@@ -38651,7 +39555,7 @@ function validateTableColumnRef(source2, ref) {
     return `Table Button-column ref "${ref}" is malformed.`;
   const columnRef = ref.slice(0, separator);
   const buttonId = ref.slice(separator + 2);
-  const columns = propVal2(source2.properties, "columns");
+  const columns = propVal3(source2.properties, "columns");
   if (!Array.isArray(columns))
     return `Table "${source2.name ?? source2.id}" has no explicit columns array for ref "${ref}".`;
   const column = columns.find((candidate) => {
@@ -38695,53 +39599,115 @@ function validateEvents(summary, events, options2 = {}) {
   const queries = new Set(summary.queries.map((query) => query.id));
   const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
+  const pageOfComponent = new Map(summary.pages.flatMap((page) => page.components.map((c) => [c.id, page.id])));
+  const pageName = new Map(summary.pages.map((page) => [page.id, page.name ?? page.handle ?? page.id]));
+  const queryTriggerPages = /* @__PURE__ */ new Map();
+  const noteTrigger = (queryId, pageId) => {
+    if (!queryId)
+      return;
+    const set2 = queryTriggerPages.get(queryId) ?? /* @__PURE__ */ new Set();
+    set2.add(pageId ?? "*");
+    queryTriggerPages.set(queryId, set2);
+  };
+  for (const query of summary.queries) {
+    const opts = query.options && typeof query.options === "object" ? query.options : {};
+    const onLoad = opts.runOnPageLoad;
+    const raw = onLoad && typeof onLoad === "object" ? onLoad.value : onLoad;
+    if (raw === true || String(raw ?? "").replace(/[{}\s]/g, "").toLowerCase() === "true")
+      noteTrigger(query.id, void 0);
+  }
+  for (const persisted of summary.events ?? []) {
+    const payload = persisted.event && typeof persisted.event === "object" ? persisted.event : void 0;
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const queryId = String(payload.queryId ?? "");
+    if (persisted.target === "page")
+      noteTrigger(queryId, persisted.sourceId);
+    else if (persisted.target === "component" && persisted.sourceId)
+      noteTrigger(queryId, pageOfComponent.get(persisted.sourceId));
+  }
+  for (const event of events) {
+    if (event.action?.actionId !== "run-query")
+      continue;
+    const queryId = String(event.action.queryId ?? "");
+    if (event.sourceType === "page")
+      noteTrigger(queryId, event.sourceId);
+    else if (event.sourceType === "component" || event.sourceType === "table_column")
+      noteTrigger(queryId, pageOfComponent.get(event.sourceId));
+  }
+  const pageScopedTarget = (action) => {
+    const id = action.actionId;
+    if (id === "set-table-page")
+      return typeof action.table === "string" ? action.table : void 0;
+    if (id === "control-component" || id === "scroll-component-into-view")
+      return typeof action.componentId === "string" ? action.componentId : void 0;
+    if (id === "show-modal" || id === "close-modal")
+      return typeof action.modal === "string" ? action.modal : void 0;
+    return void 0;
+  };
   events.forEach((event, index) => {
-    const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
+    const label2 = event.name ? `Event "${event.name}"` : `Event[${index}]`;
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: component source "${event.sourceId}" does not exist.`);
       else if (source2.type) {
         const schema = getComponentSchema(source2.type);
         const validTriggers = schema?.events?.map((item) => item.id) ?? [];
         if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
+          errors.push(`${label2}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
         }
-        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal2(source2.properties, "openModalOnCardClick"))) {
-          errors.push(`${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
+        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick"))) {
+          errors.push(`${label2}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
         }
       }
     } else if (event.sourceType === "data_query") {
       if (!queries.has(event.sourceId))
-        errors.push(`${label}: query source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: query source "${event.sourceId}" does not exist.`);
       if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
-        errors.push(`${label}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
+        errors.push(`${label2}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
       }
     } else if (event.sourceType === "page") {
       if (!pages.has(event.sourceId))
-        errors.push(`${label}: page source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: page source "${event.sourceId}" does not exist.`);
       if (event.trigger !== "onPageLoad")
-        errors.push(`${label}: page trigger must be onPageLoad, not "${event.trigger}".`);
+        errors.push(`${label2}: page trigger must be onPageLoad, not "${event.trigger}".`);
     } else if (event.sourceType === "table_column") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label}: Table source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: Table source "${event.sourceId}" does not exist.`);
       else if (source2.type !== "Table")
-        errors.push(`${label}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
+        errors.push(`${label2}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
       else {
         if (event.trigger !== "onClick")
-          errors.push(`${label}: Table Button-column trigger must be onClick.`);
+          errors.push(`${label2}: Table Button-column trigger must be onClick.`);
         const refError = validateTableColumnRef(source2, event.ref);
         if (refError)
-          errors.push(`${label}: ${refError}`);
+          errors.push(`${label2}: ${refError}`);
       }
     } else if (event.sourceType === "table_action") {
-      errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
+      errors.push(`${label2}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
     }
     const actionId = event.action.actionId;
     if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
-      errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
+      errors.push(`${label2}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
+    }
+    const targetId = pageScopedTarget(event.action);
+    const targetPage = targetId ? pageOfComponent.get(targetId) : void 0;
+    if (targetId && targetPage) {
+      const targetLabel = `${components.get(targetId)?.type ?? "component"} "${components.get(targetId)?.name ?? targetId}" on page "${pageName.get(targetPage)}"`;
+      const sourcePage = event.sourceType === "page" ? event.sourceId : event.sourceType === "component" || event.sourceType === "table_column" ? pageOfComponent.get(event.sourceId) : void 0;
+      if (sourcePage && sourcePage !== targetPage) {
+        errors.push(`${label2}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action only reaches components on the page that is open; on another page the target is not mounted and the action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a component there), or drop it: switch-page mounts that page fresh.`);
+      } else if (event.sourceType === "data_query") {
+        const triggerPages = queryTriggerPages.get(event.sourceId);
+        const elsewhere = triggerPages ? [...triggerPages].filter((page) => page !== targetPage) : [];
+        if (elsewhere.length) {
+          const where = elsewhere.includes("*") ? "on every page load (runOnPageLoad)" : `from page "${elsewhere.map((p) => pageName.get(p) ?? p).join('", "')}"`;
+          errors.push(`${label2}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, where that component is not mounted, so the success handler fails at runtime. Move the action to page "${pageName.get(targetPage)}" (its onPageLoad, or the filter's own event there), or run the query only from that page.`);
+        }
+      }
     }
     if (actionId === "run-query") {
       let queryId = event.action.queryId;
@@ -38749,19 +39715,19 @@ function validateEvents(summary, events, options2 = {}) {
         const resolution = resolveRef2(summary.queries, queryId, "Query", "in this app");
         if (resolution.ok) {
           if (resolution.warning)
-            warnings.push(`${label}: ${resolution.warning}`);
+            warnings.push(`${label2}: ${resolution.warning}`);
           queryId = resolution.target.id;
           event.action.queryId = queryId;
         }
       }
       if (typeof queryId !== "string" || !queries.has(queryId)) {
         const available = summary.queries.map((q) => `${q.name ?? "(unnamed)"}=${q.id}`).join(", ");
-        errors.push(`${label}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
+        errors.push(`${label2}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
       } else if (event.sourceType === "component" && event.trigger === "onClick") {
         const source2 = components.get(event.sourceId);
         const query = queryById.get(queryId);
         if (source2?.type === "Button" && query && isMutationQuery(query)) {
-          const disabled = propVal2(source2.properties, "disabledState");
+          const disabled = propVal3(source2.properties, "disabledState");
           const guarded = typeof disabled === "string" && disabled.includes("{{") && /isloading/i.test(disabled);
           if (!guarded) {
             warnings.push(`Button "${source2.name ?? source2.id}" runs the mutation query "${query.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`);
@@ -38772,47 +39738,47 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "switch-page") {
       const pageId = event.action.pageId;
       if (typeof pageId !== "string" || !pages.has(pageId)) {
-        errors.push(`${label}: switch-page target "${String(pageId)}" does not exist.`);
+        errors.push(`${label2}: switch-page target "${String(pageId)}" does not exist.`);
       }
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
       const target = typeof modal === "string" ? components.get(modal) : void 0;
       if (!target) {
-        errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
+        errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
       } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
-        errors.push(`${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
+        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
       const target = typeof componentId === "string" ? components.get(componentId) : void 0;
       if (!target) {
-        errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
+        errors.push(`${label2}: control-component target "${String(componentId)}" does not exist.`);
       } else {
         const handle = event.action.componentSpecificActionHandle;
         const schema = target.type ? getComponentSchema(target.type) : null;
         const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
         if (!nonEmptyString(handle)) {
-          errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
+          errors.push(`${label2}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
-            errors.push(`${label}: componentSpecificActionParams must be an array.`);
+            errors.push(`${label2}: componentSpecificActionParams must be an array.`);
           } else if (Array.isArray(params)) {
             const supplied = new Set(params.flatMap((param) => isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []));
             if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
-              errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
+              errors.push(`${label2}: every componentSpecificActionParams entry requires a string handle.`);
             }
             const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
             const missing = requiredHandles.filter((required3) => !supplied.has(required3));
             if (missing.length) {
-              errors.push(`${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
+              errors.push(`${label2}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
             }
           } else if ((componentAction.params?.length ?? 0) > 0) {
-            errors.push(`${label}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
+            errors.push(`${label2}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
           }
         }
       }
@@ -38820,48 +39786,48 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "scroll-component-into-view") {
       const componentId = event.action.componentId;
       if (typeof componentId !== "string" || !components.has(componentId)) {
-        errors.push(`${label}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
+        errors.push(`${label2}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
       }
     }
     if (actionId === "show-alert") {
       if (!nonEmptyString(event.action.message))
-        errors.push(`${label}: show-alert requires a non-empty message.`);
+        errors.push(`${label2}: show-alert requires a non-empty message.`);
       if (!["success", "info", "warning", "error"].includes(String(event.action.alertType))) {
-        errors.push(`${label}: show-alert alertType must be success, info, warning, or error.`);
+        errors.push(`${label2}: show-alert alertType must be success, info, warning, or error.`);
       }
     }
     if (["set-custom-variable", "set-page-variable", "set-localstorage-value"].includes(actionId)) {
       if (!nonEmptyString(event.action.key))
-        errors.push(`${label}: ${actionId} requires a non-empty key.`);
+        errors.push(`${label2}: ${actionId} requires a non-empty key.`);
       if (!Object.prototype.hasOwnProperty.call(event.action, "value"))
-        errors.push(`${label}: ${actionId} requires value.`);
+        errors.push(`${label2}: ${actionId} requires value.`);
     }
     if (actionId === "unset-custom-variable" && !nonEmptyString(event.action.key)) {
-      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
+      errors.push(`${label2}: unset-custom-variable requires a non-empty key.`);
     }
     if (actionId === "open-webpage" && !nonEmptyString(event.action.url)) {
-      errors.push(`${label}: open-webpage requires a non-empty url.`);
+      errors.push(`${label2}: open-webpage requires a non-empty url.`);
     }
     if (actionId === "copy-to-clipboard" && !Object.prototype.hasOwnProperty.call(event.action, "contentToCopy")) {
-      errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
+      errors.push(`${label2}: copy-to-clipboard requires contentToCopy.`);
     }
     if (actionId === "set-table-page") {
       const tableId = event.action.table;
       const table = typeof tableId === "string" ? components.get(tableId) : void 0;
       if (!table) {
-        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
+        errors.push(`${label2}: set-table-page Table target "${String(tableId)}" does not exist.`);
       } else if (table.type !== "Table") {
-        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
+        errors.push(`${label2}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
       }
       const pageIndex = event.action.pageIndex;
       if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
-        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
+        errors.push(`${label2}: set-table-page requires a numeric value or binding in pageIndex.`);
       }
     }
     if (actionId === "generate-file") {
       const format = ["fileType", "type", "format", "extension"].map((key) => event.action[key]).find((value) => typeof value === "string");
       if (format && /\bpdf\b/i.test(format)) {
-        warnings.push(`${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
+        warnings.push(`${label2}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
       }
     }
   });
@@ -38920,8 +39886,8 @@ function validateEvents(summary, events, options2 = {}) {
       continue;
     const navigation = chain[navigationIndex];
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
-    errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
+    const label2 = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
+    errors.push(`${label2}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
@@ -39836,6 +40802,28 @@ function validateQueryOptions(kind, options2) {
       });
     }
   }
+  if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
+    const filters = valueAtPath(options2, `${operation}.where_filters`);
+    if (isObject2(filters)) {
+      for (const [mapKey, rawClause] of Object.entries(filters)) {
+        if (!isObject2(rawClause) || rawClause.operator !== "eq")
+          continue;
+        const column = typeof rawClause.column === "string" ? rawClause.column : "";
+        const value = typeof rawClause.value === "string" ? rawClause.value : "";
+        const dateLikeColumn = /(^|_)(date|day|time|at|on)$|_date_|timestamp/i.test(column);
+        const dayValue = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) || /format\(\s*['"]YYYY-MM-DD['"]\s*\)/.test(value);
+        if (!dayValue && !dateLikeColumn)
+          continue;
+        if (!dayValue && !/moment\(|new Date|Date\.now/.test(value))
+          continue;
+        warnings.push({
+          code: "date_equality_filter",
+          path: `${operation}.where_filters.${mapKey}`,
+          message: `ToolJet DB ${operation} filter "${column}" uses "eq" against a calendar day. Date and timestamp columns come back as full ISO timestamps ("2026-09-04T00:00:00+00:00"), so equality with "YYYY-MM-DD" matches no rows and the table shows "No data" with no error. Filter a day as a range instead: one clause "gte" the day at 00:00 and one "lt" the next day, or store the day in a text column seeded as YYYY-MM-DD when this build creates the table.`
+        });
+      }
+    }
+  }
   if (kind === "tooljetdb" && operation === "list_rows") {
     const orderFilters = valueAtPath(options2, "list_rows.order_filters");
     if (isObject2(orderFilters)) {
@@ -39919,14 +40907,14 @@ function validatePersistedAppSummary(summary) {
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const query of summary.queries) {
-    const label = `Query "${query.name ?? query.id}"`;
+    const label2 = `Query "${query.name ?? query.id}"`;
     if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
-      warnings.push(`${label}: kind/options are unavailable, so its datasource contract was not validated.`);
+      warnings.push(`${label2}: kind/options are unavailable, so its datasource contract was not validated.`);
       continue;
     }
     const validation = validateQueryOptions(query.kind, query.options);
-    errors.push(...issueMessages(validation.errors, label));
-    warnings.push(...issueMessages(validation.warnings, label));
+    errors.push(...issueMessages(validation.errors, label2));
+    warnings.push(...issueMessages(validation.warnings, label2));
   }
   return {
     ok: errors.length === 0,
@@ -40138,12 +41126,12 @@ function alertEvent(queryId, queryName, trigger, alert, defaultType) {
     name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
   };
 }
-function unique(values, label, sourceName, warnings) {
+function unique(values, label2, sourceName, warnings) {
   const seen = /* @__PURE__ */ new Set();
   const result = [];
   for (const value of values) {
     if (seen.has(value)) {
-      warnings.push(`Query "${sourceName}" lifecycle listed ${label} "${value}" more than once; duplicate ignored.`);
+      warnings.push(`Query "${sourceName}" lifecycle listed ${label2} "${value}" more than once; duplicate ignored.`);
       continue;
     }
     seen.add(value);
@@ -40496,7 +41484,7 @@ function normalizeComponentSpec(component, options2 = {}) {
 // dist/layoutNormalization.js
 function normalizePlannedLayouts(component) {
   const warnings = [];
-  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const label2 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
   const targets = [];
   if (component.layout)
     targets.push(["layout", component.layout]);
@@ -40515,10 +41503,10 @@ function normalizePlannedLayouts(component) {
       continue;
     if (textMinimum !== void 0 && rect2.height < textMinimum) {
       fixed.set(name, { ...rect2, height: textMinimum });
-      warnings.push(`${label}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
+      warnings.push(`${label2}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
     } else if (compactHeight !== void 0 && rect2.height > compactHeight) {
       fixed.set(name, { ...rect2, height: compactHeight });
-      warnings.push(`${label}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+      warnings.push(`${label2}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
     }
   }
   if (!fixed.size)
@@ -40931,23 +41919,23 @@ function sourceMap(sourceType, components, queries, pages) {
     return pages;
   return components;
 }
-function resolveAction(raw, queries, pages, components, errors, label) {
+function resolveAction(raw, queries, pages, components, errors, label2) {
   const { target_ref: explicitRef, ...action } = raw;
   const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (Object.values(action).some((value) => typeof value === "string" && /^planned-(query|page|component):/.test(value))) {
-    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    errors.push(`${label2}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
     return action;
   }
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string") {
-    errors.push(`${label} target_ref must be a string.`);
+    errors.push(`${label2} target_ref must be a string.`);
     return action;
   }
   const actionId = action.actionId;
   const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
   if (!target) {
-    errors.push(`${label} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
+    errors.push(`${label2} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
   if (actionId === "run-query")
@@ -40963,22 +41951,22 @@ function resolveAction(raw, queries, pages, components, errors, label) {
     return { ...action, table: target.id };
   return action;
 }
-function resolveRefs(refs2, map2, errors, label) {
+function resolveRefs(refs2, map2, errors, label2) {
   return refs2?.flatMap((ref) => {
     const value = map2.get(ref);
     if (!value) {
-      errors.push(`${label} ref "${ref}" does not exist.`);
+      errors.push(`${label2} ref "${ref}" does not exist.`);
       return [];
     }
     return [value.id];
   });
 }
-function resolveRef3(ref, map2, errors, label) {
+function resolveRef3(ref, map2, errors, label2) {
   if (!ref)
     return void 0;
   const value = map2.get(ref);
   if (!value) {
-    errors.push(`${label} ref "${ref}" does not exist.`);
+    errors.push(`${label2} ref "${ref}" does not exist.`);
     return void 0;
   }
   return value.id;
@@ -41187,7 +42175,7 @@ function lintAppSpecTool(client) {
         }
         const preflightErrors = [];
         const preflightWarnings = [];
-        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
+        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
@@ -41249,6 +42237,13 @@ function lintAppSpecTool(client) {
               preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
             else
               options2.table_id = tableId;
+          } else if ((datasourceKind ?? query.kind) === "tooljetdb" && typeof options2.table_id === "string") {
+            const known = new Set(existingTables.map((table) => table.id));
+            if (!known.has(options2.table_id)) {
+              const prefix = options2.table_id.slice(0, 8);
+              const nearest = existingTables.filter((table) => table.id.startsWith(prefix)).map((table) => `${table.table_name} (${table.id})`);
+              preflightErrors.push(`Query "${query.name}": table_id "${options2.table_id}" is not a table in this workspace` + (nearest.length ? `; the closest id is ${nearest.join(", ")}` : "") + ". Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.");
+            }
           }
           return {
             clientRef: query.client_ref,
@@ -41354,20 +42349,20 @@ function resolveAction2(raw, pages, queries, components) {
     return { ...action, table: target.id };
   return action;
 }
-function refs(values, targets, label) {
+function refs(values, targets, label2) {
   return values?.map((ref) => {
     const target = targets.get(ref);
     if (!target)
-      throw new Error(`${label} ref "${ref}" does not exist.`);
+      throw new Error(`${label2} ref "${ref}" does not exist.`);
     return target.id;
   });
 }
-function oneRef(value, targets, label) {
+function oneRef(value, targets, label2) {
   if (!value)
     return void 0;
   const target = targets.get(value);
   if (!target)
-    throw new Error(`${label} ref "${value}" does not exist.`);
+    throw new Error(`${label2} ref "${value}" does not exist.`);
   return target.id;
 }
 function appliedSummary(applied) {
@@ -43511,9 +44506,9 @@ var themeDefinition = external_exports.object({
     }).strict()
   }).strict()
 }).strict();
-function requireValue(value, label) {
+function requireValue(value, label2) {
   if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
+    throw new Error(`manage_theme requires ${label2} for this action.`);
   return value;
 }
 async function readTheme(client, themeId) {
@@ -43621,9 +44616,9 @@ function manageThemeTool(client) {
 }
 
 // dist/tools/manageAppPermissions.js
-function requireValue2(value, label) {
+function requireValue2(value, label2) {
   if (value === void 0)
-    throw new Error(`${label} is required for this action.`);
+    throw new Error(`${label2} is required for this action.`);
   return value;
 }
 function findResource(summary, resourceType, resourceId) {
@@ -43794,9 +44789,9 @@ function listWorkspaceUsersTool(client) {
     }
   };
 }
-function required2(value, label) {
+function required2(value, label2) {
   if (!value)
-    throw new Error(`${label} is required for this action.`);
+    throw new Error(`${label2} is required for this action.`);
   return value;
 }
 function manageWorkspaceUsersTool(client) {

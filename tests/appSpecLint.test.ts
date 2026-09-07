@@ -13,7 +13,7 @@ describe('lint_app_spec', () => {
   it('validates a complete planned flow through logical refs without writing', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'existing' }]),
     } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({
       version_id: 'v1',
@@ -58,7 +58,7 @@ describe('lint_app_spec', () => {
   it('turns an unseeded integer primary key into a serial key instead of failing the plan', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([]),
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'existing' }]),
     } as unknown as ToolJetClient;
     const tables = [{
       table_name: 'flights',
@@ -87,7 +87,7 @@ describe('lint_app_spec', () => {
   it('blocks oversized standard single-line fields before issuing a plan token', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([]),
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'existing' }]),
     } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({
       pages: [{
@@ -248,5 +248,43 @@ describe('lint_app_spec', () => {
     const result = await lintAppSpecTool({} as ToolJetClient).handler({});
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toMatch(/at least one table, seed_data batch, query, page, event, or lifecycle/i);
+  });
+});
+
+describe('lint_app_spec table_id preflight', () => {
+  it('rejects a ToolJet DB table_id that is not a workspace table and names the closest id', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+      listTables: vi.fn().mockResolvedValue([
+        { id: 'cea811cf-122a-43ee-af86-f04ee2bb2268', table_name: 'hub_aircraft' },
+        { id: '0a4470b8-481c-4fbe-96a1-34053e027cdf', table_name: 'hub_crew' },
+      ]),
+    } as unknown as ToolJetClient;
+    const result = await lintAppSpecTool(client).handler({
+      version_id: 'v1',
+      queries: [{
+        datasource_id: 'tjdb', name: 'maintenanceAircraft',
+        // the aircraft table's prefix fused with the crew table's tail, as Luna and Gemini Pro produced
+        options: { operation: 'list_rows', table_id: 'cea811cf-122a-43be-96a1-34053e027cdf', list_rows: { limit: 50 }, runOnPageLoad: true },
+      }],
+    });
+    const body = textOf(result);
+    expect(body.ok).toBe(false);
+    expect(body.errors.join(' ')).toMatch(/not a table in this workspace; the closest id is hub_aircraft \(cea811cf-122a-43ee-af86-f04ee2bb2268\)/);
+    expect(body.errors.join(' ')).toMatch(/Use table_ref/);
+  });
+
+  it('accepts a table_id that exists and never lists tables when no query names one', async () => {
+    const listTables = vi.fn().mockResolvedValue([{ id: 't9', table_name: 'flights' }]);
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+      listTables,
+    } as unknown as ToolJetClient;
+    const ok = await lintAppSpecTool(client).handler({
+      version_id: 'v1',
+      queries: [{ datasource_id: 'tjdb', name: 'flights', options: { operation: 'list_rows', table_id: 't9', list_rows: { limit: 25 }, runOnPageLoad: true } }],
+    });
+    expect(textOf(ok).ok).toBe(true);
+    expect(listTables).toHaveBeenCalledTimes(1);
   });
 });

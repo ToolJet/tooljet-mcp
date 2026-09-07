@@ -423,3 +423,30 @@ describe('unquoted SQL bindings', () => {
     expect(r.errors.some((x) => x.code === 'unquoted_sql_binding')).toBe(true);
   });
 });
+
+describe('tooljetdb date equality filters', () => {
+  const listRows = (clause: Record<string, unknown>) =>
+    validateQueryOptions('tooljetdb', {
+      operation: 'list_rows',
+      table_id: 't1',
+      list_rows: { limit: 100, where_filters: { '0': clause } },
+    });
+
+  it('warns when a day is compared with eq against a date column', () => {
+    const result = listRows({ column: 'arrival_date', operator: 'eq', value: "{{moment().format('YYYY-MM-DD')}}" });
+    const warning = result.warnings.find((w) => w.code === 'date_equality_filter');
+    expect(warning).toBeDefined();
+    expect(warning!.message).toContain('full ISO timestamps');
+  });
+
+  it('warns on a literal YYYY-MM-DD value whatever the column is called', () => {
+    const result = listRows({ column: 'visited', operator: 'eq', value: '2026-09-04' });
+    expect(result.warnings.some((w) => w.code === 'date_equality_filter')).toBe(true);
+  });
+
+  it('stays quiet for range filters and non-date equality', () => {
+    expect(listRows({ column: 'arrival_date', operator: 'gte', value: '2026-09-04' }).warnings.some((w) => w.code === 'date_equality_filter')).toBe(false);
+    expect(listRows({ column: 'status', operator: 'eq', value: 'Open' }).warnings.some((w) => w.code === 'date_equality_filter')).toBe(false);
+    expect(listRows({ column: 'created_at', operator: 'eq', value: '{{components.table1.selectedRow.created_at}}' }).warnings.some((w) => w.code === 'date_equality_filter')).toBe(false);
+  });
+});

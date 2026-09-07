@@ -2,6 +2,15 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
+import {
+  lintHtmlContentHeight,
+  lintHtmlRootSurface,
+  lintOversizedWidths,
+  lintUnguardedComponentRefs,
+  lintTableColumnsShape,
+  lintTextFormat,
+  lintUntriggeredDataQueries,
+} from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -1229,8 +1238,16 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
+  // Text holding markdown in the default html format renders the markdown literally.
+  errors.push(...lintTextFormat(spec));
+  errors.push(...lintHtmlContentHeight(spec));
+  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintUnguardedComponentRefs(spec));
+
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
+    // A stringified columns array crashes the Table component; check it before the shape-dependent lints.
+    errors.push(...lintTableColumnsShape(spec));
     const data = propVal(props, 'data');
     const selector = propVal(props, 'dataSourceSelector');
     const autogen = propVal(props, 'autogenerateColumns');
@@ -1696,6 +1713,29 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
   ];
 }
 
+// Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
+const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'Modal', 'Icon']);
+const MIN_RENDERABLE_HEIGHT = 24;
+
+/** A model that mistakes the pixel grid for row units authors 14px headers, 10px inputs and 1px
+ *  modals; every other lint passes and the app renders as a row of slivers. Measured on one Grok 4.5
+ *  build: four pages, every header, KPI strip and input under 16px, no lint error. Below 24px
+ *  nothing but a divider can show its content, so this is an error, not a warning. */
+export function lintUnrenderableHeights(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const c of components) {
+    if (!c.type || THIN_BY_DESIGN.has(c.type)) continue;
+    const height = c.layouts?.desktop?.height;
+    if (typeof height !== 'number' || height >= MIN_RENDERABLE_HEIGHT) continue;
+    errors.push(
+      `${c.type} "${c.name ?? c.id ?? '?'}": desktop height ${height}px cannot render its content; heights are ` +
+        `pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, ` +
+        'KPI strips 120+, tables 300+).'
+    );
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -1708,6 +1748,9 @@ export function lintComponents(components: LintComponent[]): LintResult {
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
+  errors.push(...lintUnrenderableHeights(components));
+  errors.push(...lintOversizedWidths(components));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -1998,10 +2041,72 @@ export function validateAppStructure(summary: AppSummary): LintResult {
 
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
+    errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
+    errors.push(...lintOversizedWidths(p.components as LintComponent[]));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }
+  warnings.push(...lintInnerPageBands(summary));
+  // Data-bound components whose query nothing runs render No data forever.
+  const readiness = lintUntriggeredDataQueries(summary);
+  errors.push(...readiness.errors);
+  warnings.push(...readiness.warnings);
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
+}
+
+/* Relative luminance of a CSS hex colour (0 = black, 1 = white); NaN for anything that is not hex. */
+function hexLuminance(hex: string): number {
+  const raw = hex.replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return NaN;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** True when an Html block's ROOT element paints a dark or brand-filled background: a flat dark hex,
+ *  a gradient with a dark stop, or the primary brand token. Only the root's inline style counts, so a
+ *  light card that merely contains a dark badge is not a band. */
+export function htmlRootHasDarkBackground(rawHtml: string): boolean {
+  const root = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
+  if (!root) return false;
+  const declaration = root[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
+  if (!declaration) return false;
+  const value = declaration[1];
+  if (/var\(--cc-primary-brand\)/i.test(value)) return true;
+  const hexes = value.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi) ?? [];
+  return hexes.some((hex) => hexLuminance(hex) < 0.35);
+}
+
+/** The skill's header treatments put a statement band (a dark or brand-filled header) on the home page
+ *  only; inner pages take a plain title, toolbar or masthead. Measured on two Sol builds with a stated
+ *  design brief, the second or third page still came back with a dark band the brief never chose, so
+ *  this names the drift at lint time. A warning, not an error: a brief can choose it deliberately. */
+export function lintInnerPageBands(summary: AppSummary): string[] {
+  const warnings: string[] = [];
+  const pages = summary.pages ?? [];
+  const explicitHome = pages.some((p) => p.handle === 'home' || p.name === 'Home' || p.index === 1);
+  pages.forEach((page, pageIndex) => {
+    const isHome =
+      page.handle === 'home' || page.name === 'Home' || page.index === 1 || (!explicitHome && pageIndex === 0);
+    if (isHome) return;
+    for (const component of page.components ?? []) {
+      if (component.type !== 'Html' || component.parent) continue;
+      const rawHtml = propVal((component as { properties?: Record<string, unknown> }).properties ?? {}, 'rawHtml');
+      if (typeof rawHtml !== 'string') continue;
+      const desktop = (component.layouts as { desktop?: { top?: number; height?: number; width?: number } } | undefined)
+        ?.desktop;
+      if (!desktop || (desktop.top ?? 0) > 60 || (desktop.height ?? 0) > 200 || (desktop.width ?? 0) < 20) continue;
+      if (!htmlRootHasDarkBackground(rawHtml)) continue;
+      warnings.push(
+        `Page "${page.name ?? page.id}": Html "${component.name ?? component.id}" is a dark or brand-filled header ` +
+          'band on a page that is not Home. The skill\'s header treatments put a statement band on the home page ' +
+          'only; inner pages take a plain title, toolbar or masthead. Keep it only if the design brief chose it ' +
+          'for this page deliberately.'
+      );
+    }
+  });
+  return warnings;
 }

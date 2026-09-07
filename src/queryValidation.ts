@@ -507,6 +507,36 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && ['list_rows', 'update_rows', 'delete_rows'].includes(operation)) {
+    // ToolJet DB returns date and timestamp columns as full ISO timestamps with an offset
+    // ("2026-09-04T00:00:00+00:00"), so an equality filter against a calendar day matches nothing:
+    // the query succeeds, the table shows "No data", and the model spends turns repairing bindings
+    // instead. Measured on a one-page visitor log: two repair rounds and more credits than a
+    // four-page build on the same model. Name it before the query is written.
+    const filters = valueAtPath(options, `${operation}.where_filters`);
+    if (isObject(filters)) {
+      for (const [mapKey, rawClause] of Object.entries(filters)) {
+        if (!isObject(rawClause) || rawClause.operator !== 'eq') continue;
+        const column = typeof rawClause.column === 'string' ? rawClause.column : '';
+        const value = typeof rawClause.value === 'string' ? rawClause.value : '';
+        const dateLikeColumn = /(^|_)(date|day|time|at|on)$|_date_|timestamp/i.test(column);
+        const dayValue = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) || /format\(\s*['"]YYYY-MM-DD['"]\s*\)/.test(value);
+        if (!dayValue && !dateLikeColumn) continue;
+        if (!dayValue && !/moment\(|new Date|Date\.now/.test(value)) continue;
+        warnings.push({
+          code: 'date_equality_filter',
+          path: `${operation}.where_filters.${mapKey}`,
+          message:
+            `ToolJet DB ${operation} filter "${column}" uses "eq" against a calendar day. Date and timestamp ` +
+            'columns come back as full ISO timestamps ("2026-09-04T00:00:00+00:00"), so equality with ' +
+            '"YYYY-MM-DD" matches no rows and the table shows "No data" with no error. Filter a day as a ' +
+            'range instead: one clause "gte" the day at 00:00 and one "lt" the next day, or store the day in a ' +
+            'text column seeded as YYYY-MM-DD when this build creates the table.',
+        });
+      }
+    }
+  }
+
   if (kind === 'tooljetdb' && operation === 'list_rows') {
     const orderFilters = valueAtPath(options, 'list_rows.order_filters');
     if (isObject(orderFilters)) {

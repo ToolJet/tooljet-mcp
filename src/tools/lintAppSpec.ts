@@ -35,7 +35,11 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
 
         const preflightErrors: string[] = [];
         const preflightWarnings: string[] = [];
-        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
+        const needsTables = Boolean(
+          args.tables?.length ||
+          args.seed_data?.length ||
+          args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === 'string')
+        );
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(undefined),
@@ -119,6 +123,21 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
             if (!tableId) preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
             else options.table_id = tableId;
+          } else if ((datasourceKind ?? query.kind) === 'tooljetdb' && typeof options.table_id === 'string') {
+            // A raw table_id must be one of this workspace's tables. Small models splice UUIDs when they
+            // copy them (one table's prefix with another's tail), which lints clean and then returns no rows.
+            const known = new Set(existingTables.map((table) => table.id));
+            if (!known.has(options.table_id)) {
+              const prefix = options.table_id.slice(0, 8);
+              const nearest = existingTables
+                .filter((table) => table.id.startsWith(prefix))
+                .map((table) => `${table.table_name} (${table.id})`);
+              preflightErrors.push(
+                `Query "${query.name}": table_id "${options.table_id}" is not a table in this workspace` +
+                (nearest.length ? `; the closest id is ${nearest.join(', ')}` : '') +
+                '. Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.'
+              );
+            }
           }
           return {
             clientRef: query.client_ref,

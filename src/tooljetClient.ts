@@ -619,13 +619,25 @@ export interface UpdateEventsParams {
   updateType?: 'update' | 'reorder';
 }
 
+/** An HTML error page (Cloudflare's 524 "A timeout occurred", an nginx 502) says nothing useful past
+ *  its title, and a production build once carried 12 KB of Cloudflare markup into the model's context
+ *  for every failed seed row. Keep the title, drop the markup, and cap plain bodies too. */
+export function condenseErrorBody(detail: string, limit = 600): string {
+  const text = String(detail ?? '');
+  if (/<!doctype html|<html[\s>]/i.test(text)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(text)?.[1]?.trim();
+    return `${title || 'HTML error page'} (HTML error page from the proxy, markup omitted)`;
+  }
+  return text.length > limit ? `${text.slice(0, limit)} …[${text.length - limit} more chars]` : text;
+}
+
 export class ToolJetHttpError extends Error {
   constructor(
     public readonly status: number,
     public readonly method: string,
     public readonly detail: string
   ) {
-    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    super(`ToolJet ${method} failed (${status}): ${condenseErrorBody(detail)}`);
     this.name = 'ToolJetHttpError';
   }
 }
@@ -1616,18 +1628,40 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // an app error. Retry with backoff so seeding waits the cache out instead of failing the phase and
   // handing an unfixable error to the model. Once the cache refreshes, later rows succeed on attempt 0.
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4000];
+  // A timed-out POST may already have committed. Bound the wait, but never replay an insert after
+  // a transport failure or uncertain server response without server-side idempotency.
+  const INSERT_ATTEMPT_TIMEOUT_MS = 45_000;
+  const UNKNOWN_INSERT_OUTCOME = 'Insert outcome unknown: the row may already have been inserted. ' +
+    'Verify persisted rows before retrying; do not replay the whole batch.';
 
   async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
-    for (let attempt = 0; ; attempt += 1) {
-      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(row),
-      });
-      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
+    let schemaWaits = 0;
+    for (;;) {
+      let res: Response;
+      try {
+        res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(row),
+          signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS),
+        });
+      } catch (error) {
+        throw new Error(`ToolJet insertRows request failed (${error instanceof Error ? error.name : 'transport error'}). ${UNKNOWN_INSERT_OUTCOME}`);
+      }
+      if (res.ok) return res;
+      if (res.status === 408 || res.status >= 500) {
+        const body = await res.text().catch(() => 'Response body unavailable');
+        const error = new ToolJetHttpError(res.status, 'insertRows', body);
+        error.message += ` ${UNKNOWN_INSERT_OUTCOME}`;
+        throw error;
+      }
+      // Only retry explicit schema-cache rejections, where PostgREST did not execute the insert.
+      if (res.status !== 400 && res.status !== 404) return res;
+      if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
-      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      schemaWaits += 1;
     }
   }
 

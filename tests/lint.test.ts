@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -1184,7 +1184,7 @@ describe('validateAppStructure', () => {
         ],
       },
     ],
-    queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: {} }],
+    queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true } }],
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 
@@ -1589,5 +1589,23 @@ describe('validateAppStructure', () => {
     const warnings = validateAppStructure(app).warnings.join(' ');
     expect(warnings).toMatch(/overlap at rendered desktop size/);
     expect(warnings).toMatch(/modalHeight 200px but needs at least 274px/);
+  });
+});
+
+describe('lintUnrenderableHeights', () => {
+  const at = (type: string, name: string, height: number) =>
+    ({ type, name, properties: {}, layouts: { desktop: { top: 0, left: 2, width: 39, height } } }) as any;
+
+  it('rejects headers, strips and inputs authored in row units', () => {
+    const errors = lintUnrenderableHeights([at('Html', 'ovHeader', 14), at('Html', 'ovKpis', 16), at('TextInput', 'schDest', 10)]);
+    expect(errors).toHaveLength(3);
+    expect(errors[0]).toContain('desktop height 14px cannot render its content');
+    expect(errors[0]).toContain('not row units');
+  });
+
+  it('leaves dividers, modal shells and normal heights alone', () => {
+    expect(
+      lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
+    ).toEqual([]);
   });
 });
