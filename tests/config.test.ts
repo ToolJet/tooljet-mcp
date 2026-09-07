@@ -524,7 +524,7 @@ describe('per-request target origin — live Gateway fallback', () => {
 describe('per-request target origin — resolved from customer_id with no x-tooljet-url', () => {
   let gatewayServer: import('node:http').Server;
   let receivedRequests: Array<{ authorization?: string; body: unknown }>;
-  let gatewayResponse: { host_name: string | null; subpath: string | null };
+  let gatewayResponse: { host_name: string | null; subpath: string | null } | { allowed: false };
 
   beforeEach(async () => {
     delete process.env.TOOLJET_URL;
@@ -557,6 +557,7 @@ describe('per-request target origin — resolved from customer_id with no x-tool
     gatewayResponse = { host_name: 'resolved.example.com', subpath: null };
     expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-1' })).toEqual({
       apiUrl: 'https://resolved.example.com',
+      customerVerified: true,
     });
     expect(receivedRequests).toEqual([
       { authorization: 'gateway-secret', body: { customer_id: 'cust-old-1' } },
@@ -567,12 +568,23 @@ describe('per-request target origin — resolved from customer_id with no x-tool
     gatewayResponse = { host_name: 'resolved.example.com', subpath: 'tooljet' };
     expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-2' })).toEqual({
       apiUrl: 'https://resolved.example.com/tooljet',
+      customerVerified: true,
     });
   });
 
-  it('leaves apiUrl undefined when the customer has no host on file either', async () => {
+  /* Verified real, just no host to route to — distinct from "not a real customer at all," so the
+     caller can tell the two apart (e.g. to relax MCP_REQUIRE_REQUEST_URL for this one). */
+  it('marks the customer verified even with apiUrl undefined, when they have no host on file', async () => {
     gatewayResponse = { host_name: null, subpath: null };
-    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-3' })).toBeUndefined();
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-old-3' })).toEqual({
+      apiUrl: undefined,
+      customerVerified: true,
+    });
+  });
+
+  it('stays fully unverified for an unknown customer_id (Gateway 404-equivalent shape)', async () => {
+    gatewayResponse = { allowed: false };
+    expect(await identityFromHeaders({ 'x-tooljet-customer-id': 'cust-unknown' })).toBeUndefined();
   });
 
   it('leaves apiUrl undefined, without calling the Gateway, when no customer id was sent', async () => {

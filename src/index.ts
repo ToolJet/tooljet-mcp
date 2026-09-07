@@ -103,7 +103,7 @@ export function createGatewayHttpServer(): GatewayHttpServer {
       return;
     }
 
-    if (!identity?.apiUrl && requireRequestUrl) {
+    if (!identity?.apiUrl && !identity?.customerVerified && requireRequestUrl) {
       res
         .writeHead(400, { 'Content-Type': 'text/plain' })
         .end(

@@ -44,6 +44,8 @@ export interface RequestIdentity {
    *  the target can't be this process's own fixed TOOLJET_URL. Wins over that static value when
    *  present — see loadConfig. */
   apiUrl?: string;
+  /** Real customer, resolve mode, no host on file — lets the caller relax MCP_REQUIRE_REQUEST_URL. */
+  customerVerified?: boolean;
 }
 
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
@@ -141,23 +143,24 @@ async function checkOriginWithGateway(customerId: string, origin: string): Promi
   return allowed;
 }
 
-/** Last resolved origin per customer, from resolveApiUrlFromGateway. */
-const gatewayResolveCache = new Map<string, { url: string | undefined; expiresAt: number }>();
+interface ResolvedOrigin {
+  /** Undefined when there's no host on file, the Gateway is unreachable, or customer_id isn't real. */
+  url: string | undefined;
+  /** True only when the Gateway confirmed this customer_id is real, even with no host on file. */
+  verified: boolean;
+}
 
-/**
- * For when x-tooljet-url is absent entirely — an old ToolJet version never sends it (the field is
- * new), while customer_id still arrives regardless of version (gateway billing already depends on
- * it). Asks the Gateway for that customer's own registered host instead of requiring the header.
- * Undefined (not a guess) when the Gateway has nothing on file or is unreachable — same fail-closed
- * rule as checkOriginWithGateway.
- */
-async function resolveApiUrlFromGateway(customerId: string): Promise<string | undefined> {
+/** Last resolved origin per customer. */
+const gatewayResolveCache = new Map<string, { result: ResolvedOrigin; expiresAt: number }>();
+
+/** Resolve fallback when x-tooljet-url is absent. Fails closed on any error/timeout. */
+async function resolveApiUrlFromGateway(customerId: string): Promise<ResolvedOrigin> {
   const cached = gatewayResolveCache.get(customerId);
-  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  if (cached && cached.expiresAt > Date.now()) return cached.result;
 
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  let url: string | undefined;
+  let result: ResolvedOrigin = { url: undefined, verified: false };
   if (gatewayUrl && gatewayToken) {
     try {
       const res = await fetch(new URL('/internal/mcp/verify-origin', gatewayUrl), {
@@ -168,17 +171,18 @@ async function resolveApiUrlFromGateway(customerId: string): Promise<string | un
       });
       if (res.ok) {
         const body = (await res.json()) as { host_name?: string | null; subpath?: string | null };
-        if (body.host_name) {
+        // 'host_name' present = real customer (verify-mode's {allowed:false} has no such key).
+        if ('host_name' in body) {
           const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, '')}` : '';
-          url = `https://${body.host_name}${path}`;
+          result = { url: body.host_name ? `https://${body.host_name}${path}` : undefined, verified: true };
         }
       }
     } catch {
-      url = undefined;
+      result = { url: undefined, verified: false };
     }
   }
-  gatewayResolveCache.set(customerId, { url, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return url;
+  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return result;
 }
 
 /**
@@ -239,13 +243,15 @@ export async function identityFromHeaders(
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
   const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
-  // No x-tooljet-url at all (an old ToolJet version that never sends it) but a customer_id is
-  // present — ask the Gateway to resolve it rather than falling straight to "no target."
-  const apiUrl = rawApiUrl
-    ? await validateApiUrl(rawApiUrl, customerId)
-    : customerId
-      ? await resolveApiUrlFromGateway(customerId)
-      : undefined;
+  let apiUrl: string | undefined;
+  let customerVerified: true | undefined;
+  if (rawApiUrl) {
+    apiUrl = await validateApiUrl(rawApiUrl, customerId);
+  } else if (customerId) {
+    const resolved = await resolveApiUrlFromGateway(customerId);
+    apiUrl = resolved.url;
+    customerVerified = resolved.verified ? true : undefined;
+  }
 
   if (pat) {
     /* A PAT names whoever owns it and lives for weeks; a session names the person this request is
@@ -263,10 +269,12 @@ export async function identityFromHeaders(
     // mechanism exists to prevent, so refuse rather than silently prefer one.
     if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
     // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
-    return { pat, apiUrl };
+    return { pat, apiUrl, customerVerified };
   }
 
-  if (!sessionToken && !workspaceId) return apiUrl ? { apiUrl } : undefined;
+  if (!sessionToken && !workspaceId) {
+    return apiUrl || customerVerified ? { apiUrl, customerVerified } : undefined;
+  }
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
   }
@@ -274,7 +282,13 @@ export async function identityFromHeaders(
     throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
   }
 
-  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
+  return {
+    sessionToken,
+    workspaceId,
+    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
+    apiUrl,
+    customerVerified,
+  };
 }
 
 /**

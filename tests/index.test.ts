@@ -202,6 +202,39 @@ describe('gateway mode — MCP_REQUIRE_REQUEST_URL is reachable', () => {
 
     expect(res.status).not.toBe(400);
   });
+
+  /* Old ToolJet version: no x-tooljet-url at all. A customer_id the Gateway confirms is real, even
+     with no host on file, should bypass the flag rather than being treated like no customer at all. */
+  it('does not require it when the Gateway confirms a real customer with no host on file', async () => {
+    const { createServer } = await import('node:http');
+    const gatewayServer = createServer((req, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ host_name: null, subpath: null }));
+    });
+    runningServers.push(gatewayServer);
+    const gatewayUrl = await listen(gatewayServer);
+    process.env.MCP_GATEWAY_URL = gatewayUrl;
+    process.env.MCP_GATEWAY_TOKEN = 'gateway-secret';
+
+    process.env.MCP_SHARED_TOKEN = 'shared-secret';
+    process.env.MCP_REQUIRE_REQUEST_URL = 'true';
+    const { server } = createGatewayHttpServer();
+    runningServers.push(server);
+    const baseUrl = await listen(server);
+
+    const res = await fetch(new URL('/', baseUrl), {
+      method: 'POST',
+      headers: {
+        ...jsonHeaders,
+        authorization: 'Bearer shared-secret',
+        'x-tooljet-session': 'SESSION',
+        'x-tooljet-workspace-id': 'org-1',
+        'x-tooljet-customer-id': 'cust-old',
+      },
+      body: initializeBody(),
+    });
+
+    expect(res.status).not.toBe(400);
+  });
 });
 
 describe('direct mode', () => {
