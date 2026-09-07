@@ -1255,6 +1255,57 @@ describe('validateAppStructure', () => {
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 
+  it('rejects a bare .data binding on a ToolJet DB sql_execution query, the Haiku empty-app case', () => {
+    const withBinding = (binding: string, options: Record<string, unknown>): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true, ...options } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{queries.getRows.data}}', { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT * FROM orders LIMIT 50' } }));
+    expect(wrong.errors.filter((e) => e.includes('{results: rows}'))).toHaveLength(1);
+    for (const ok of [
+      withBinding('{{queries.getRows.data.results}}', { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT 1' } }),
+      withBinding('{{queries.getRows?.data?.results || []}}', { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT 1' } }),
+      withBinding('{{queries.getRows.data}}', { operation: 'list_rows' }),
+    ]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('{results: rows}'))).toEqual([]);
+    }
+  });
+
+  it('rejects a Chart bound straight to non-x/y query rows and accepts RunJS or x/y SQL sources', () => {
+    const withChart = (binding: string, query: Record<string, unknown>): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ id: 'ch', name: 'ordersChart', type: 'Chart', properties: { type: { value: 'bar' }, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'byDay', ...query }],
+    });
+    const wrong = validateAppStructure(withChart('{{queries.byDay.data}}', { kind: 'tooljetdb', options: { operation: 'list_rows', runOnPageLoad: true, list_rows: { group_by: { order_date: ['order_date'] } } } }));
+    expect(wrong.errors.filter((e) => e.includes('plots [{x, y}] only'))).toHaveLength(1);
+    for (const ok of [
+      withChart('{{queries.byDay.data}}', { kind: 'runjs', options: { code: 'return rows.map(r => ({x: r.d, y: r.n}))' } }),
+      withChart('{{queries.byDay.data}}', { kind: 'postgresql', options: { query: 'SELECT day AS x, COUNT(*)::float AS y FROM orders GROUP BY day' } }),
+      withChart('{{queries.byDay.data.map(r => ({x: r.order_date, y: Number(r.orders_count)}))}}', { kind: 'tooljetdb', options: { operation: 'list_rows' } }),
+    ]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('plots [{x, y}]'))).toEqual([]);
+    }
+  });
+
+  it('rejects data.results on a ToolJet DB list_rows query and accepts it on sql_execution', () => {
+    const withBinding = (binding: string, options: Record<string, unknown>): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true, ...options } }],
+    });
+    const wrong = validateAppStructure(withBinding("{{(queries.getRows?.data?.results || []).filter(r => r.status === 'AOG')}}", { operation: 'list_rows' }));
+    expect(wrong.errors.filter((e) => e.includes('data.results'))).toHaveLength(1);
+    expect(wrong.errors.find((e) => e.includes('data.results'))).toMatch(/list_rows query whose data is the rows array/);
+    for (const ok of [
+      withBinding('{{queries.getRows.data.results}}', { operation: 'sql_execution' }),
+      withBinding('{{queries.getRows.data}}', { operation: 'list_rows' }),
+    ]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('data.results'))).toEqual([]);
+    }
+  });
+
   it('reports persisted DropdownV2 character-object corruption as an error', () => {
     const corrupted: AppSummary = {
       ...base,

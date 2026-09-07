@@ -4,10 +4,13 @@
 import type { AppSummary } from './tooljetClient.js';
 import {
   lintHtmlContentHeight,
+  BARE_QUERY_DATA_BINDING,
+  lintChartDataShape,
   lintEmbeddedBindingSyntax,
   lintHtmlRootSurface,
   lintOversizedWidths,
   lintUnguardedComponentRefs,
+  lintUnguardedSelectionText,
   lintTableColumnsShape,
   lintTextFormat,
   lintUntriggeredDataQueries,
@@ -1286,6 +1289,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintHtmlRootSurface(spec));
   errors.push(...lintUnguardedComponentRefs(spec));
   errors.push(...lintEmbeddedBindingSyntax(spec));
+  errors.push(...lintChartDataShape(spec));
+  errors.push(...lintUnguardedSelectionText(spec));
 
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
@@ -1807,7 +1812,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
-  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -1964,6 +1969,76 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // Result-shape mismatch. ToolJet DB `sql_execution` returns data as {results: rows}; every other
+  // ToolJet DB operation (list_rows, joins) returns the rows array itself. Observed live (Luna max,
+  // 2026-09-06): the catalog hint for SQL reads was applied to two list_rows queries, so both
+  // Maintenance tables read `queries.q.data.results`, got undefined, and showed No data with no error.
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? '');
+    const bad = new Set<string>();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.results\b/g)) {
+      const query = queryByName.get(m[1]!);
+      if (!query || query.kind !== 'tooljetdb') continue;
+      const operation = recordValue(query.options)?.operation;
+      if (operation === 'sql_execution' || operation === undefined) continue;
+      bad.add(m[1]!);
+    }
+    for (const name of bad) {
+      const operation = String(recordValue(queryByName.get(name)?.options)?.operation);
+      errors.push(
+        `${component.type ?? 'Component'} "${component.name ?? component.id}": reads queries.${name}.data.results, but "${name}" is a ` +
+          `ToolJet DB ${operation} query whose data is the rows array itself; only sql_execution returns {results: rows}. ` +
+          `Bind queries.${name}.data instead, or the component shows No data.`
+      );
+    }
+  }
+
+  // The mirror image: a ToolJet DB sql_execution query returns {results: rows}, so a data-bound component
+  // reading `queries.q.data` gets an object, not rows, and shows No data. Observed live (Nordlicht
+  // benchmark, 2026-09-07): Haiku wrote seven SQL queries and bound every table and KPI to `.data`;
+  // all four pages rendered empty although the seeds and the queries were fine.
+  for (const component of allComponents) {
+    if (!['Table', 'ListView', 'Chart', 'Kanban', 'Statistics', 'Text', 'Html'].includes(component.type ?? '')) continue;
+    const blob = JSON.stringify(component.properties ?? '');
+    const bad = new Set<string>();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data(?![\w?]*\.results)\b/g)) {
+      const query = queryByName.get(m[1]!);
+      if (!query || query.kind !== 'tooljetdb') continue;
+      if (recordValue(query.options)?.operation !== 'sql_execution') continue;
+      if (blob.includes(`queries.${m[1]}.data.results`) || blob.includes(`queries.${m[1]}?.data?.results`) || blob.includes(`queries.${m[1]}.data?.results`)) continue;
+      bad.add(m[1]!);
+    }
+    for (const name of bad) {
+      errors.push(
+        `${component.type} "${component.name ?? component.id}": reads queries.${name}.data, but "${name}" is a ToolJet DB sql_execution ` +
+          `query whose data is {results: rows}. Bind queries.${name}.data.results (or data.results[0].<column> for a single value), ` +
+          'or the component shows No data.'
+      );
+    }
+  }
+
+  // A Chart bound straight to query rows plots nothing unless the query itself returns x and y.
+  // Observed live (Nordlicht benchmark, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
+  // returning {order_date, orders_count} and the "orders per day" chart drew an empty axis.
+  for (const component of allComponents) {
+    if (component.type !== 'Chart') continue;
+    const props = component.properties ?? {};
+    if (isTruthyBinding(propVal(props, 'plotFromJson'))) continue;
+    const data = propVal(props, 'data');
+    const m = typeof data === 'string' ? data.trim().match(BARE_QUERY_DATA_BINDING) : null;
+    if (!m) continue;
+    const query = queryByName.get(m[1]!);
+    if (!query || query.kind === 'runjs' || query.kind === 'runpy') continue;
+    const options = recordValue(query.options);
+    const sql = typeof options?.query === 'string' ? options.query : typeof (recordValue(options?.sql_execution))?.sqlQuery === 'string' ? String(recordValue(options?.sql_execution)?.sqlQuery) : '';
+    if (sql && /\bas\s+["'`]?x["'`]?\b/i.test(sql) && /\bas\s+["'`]?y["'`]?\b/i.test(sql)) continue;
+    errors.push(
+      `Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query.kind ?? 'datasource'} query ` +
+        'that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. ' +
+        `Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`
+    );
+  }
+
   // Dangling event references.
   for (const e of summary.events) {
     const name = e.name ?? e.id;
@@ -2100,7 +2175,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
-    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));

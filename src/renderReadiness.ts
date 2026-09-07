@@ -216,6 +216,49 @@ export const HTML_HEIGHT_TOLERANCE = 8;
 /** An Html block never grows. When the height its own CSS needs exceeds the authored height, the
  *  bottom (or, for a vertically centred flex header, both edges) is clipped behind a hidden scrollbar.
  *  Seven of fourteen Html blocks in one Luna build did this on 2026-09-05, by 5 to 42px each. */
+/** The height an Html block needs for its markup, when it is short: {from, to, needed}. Shared by the
+ *  lint (which reports it) and the plan preflight (which now applies it). */
+export function suggestedHtmlHeight(c: ReadinessComponent): { from: number; to: number; needed: number } | null {
+  if (c.type !== 'Html') return null;
+  if (truthy(propVal(c.properties, 'dynamicHeight'))) return null;
+  const raw = propVal(c.properties, 'rawHtml');
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const rect = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect?.height === 'number' ? rect.height : undefined;
+  const width = typeof rect?.width === 'number' ? rect.width : 39;
+  if (height === undefined) return null;
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate) return null;
+  const overflow = estimate.height - (height - HTML_WIDGET_HEIGHT_LOSS);
+  if (overflow <= HTML_HEIGHT_TOLERANCE) return null;
+  return { from: height, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
+}
+
+/** A selection panel reads `components.table.selectedRow.field`; before any row is selected that is
+ *  `undefined`, and ToolJet prints the word. Observed on three of twelve Nordlicht apps and on the Luna max
+ *  Lufthansa build ("undefined · undefined · undefined" under "Select a flight"). Each read needs a fallback. */
+const SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
+export function lintUnguardedSelectionText(c: ReadinessComponent): string[] {
+  if (c.type !== 'Html' && c.type !== 'Text') return [];
+  const key = c.type === 'Html' ? 'rawHtml' : 'text';
+  const value = propVal(c.properties, key);
+  if (typeof value !== 'string' || !value.includes('selectedRow')) return [];
+  const bad: string[] = [];
+  for (const m of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const expr = m[1]!;
+    const read = expr.match(SELECTION_READ);
+    if (!read) continue;
+    const hasFallback = /\?\?|\|\||\?[^.?][\s\S]*:/.test(expr);
+    if (!hasFallback) bad.push(read[0]);
+  }
+  if (!bad.length) return [];
+  return [
+    `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(', ')} without a fallback. Until a row is selected that ` +
+      "value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') " +
+      'or wrap the panel in a ternary on components.table?.selectedRow.',
+  ];
+}
+
 export function lintHtmlContentHeight(c: ReadinessComponent): string[] {
   if (c.type !== 'Html') return [];
   if (truthy(propVal(c.properties, 'dynamicHeight'))) return [];
@@ -319,6 +362,43 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  exist: `components.filter.value` throws, the Table shows No data, and nothing re-evaluates it
  *  until a filter changes or the page reloads (a Luna clinic build on 2026-09-05 shipped exactly
  *  this). `components.filter?.value` is the shape the skill asks for; this makes it mandatory. */
+/** The Chart widget plots `data` as an array of `{x, y}` points (plus optional `color`/`type`); any other key
+ *  names render a blank plot with no error. Observed live on the Nordlicht benchmark (2026-09-07): Terra
+ *  bound `queries.orders_by_day.data` straight from a list_rows query and Luna medium mapped rows to
+ *  `{date, orders}`; both "orders per day" charts drew an empty axis. */
+const OBJECT_LITERAL = /=>\s*\(\s*\{([^}]*)\}\s*\)/g;
+function literalKeys(body: string): string[] {
+  // `x: r.day`, shorthand `orders`, quoted `'x': 1` and `...spread` entries, split on top-level commas.
+  return body
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => (part.startsWith('...') ? '...' : part.split(':')[0]!.trim().replace(/^['"]|['"]$/g, '')));
+}
+export const BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
+export function lintChartDataShape(c: ReadinessComponent): string[] {
+  if (c.type !== 'Chart') return [];
+  const props = c.properties ?? {};
+  if (truthy(propVal(props, 'plotFromJson'))) return [];
+  const value = propVal(props, 'data');
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const literals = [...value.matchAll(OBJECT_LITERAL)];
+  if (!literals.length) return []; // a bare query binding is judged against the query in validateAppStructure
+  const errors: string[] = [];
+  for (const m of literals) {
+    const keys = literalKeys(m[1]!);
+    if (!keys.length || keys.includes('...')) continue;
+    if (!keys.includes('x') || !keys.includes('y')) {
+      errors.push(
+        `Chart "${label(c)}": data maps rows to {${keys.join(', ')}} but the Chart plots [{x, y}] only; ` +
+          'any other key names draw an empty plot with no error. Name the category x and the number y.'
+      );
+      break;
+    }
+  }
+  return errors;
+}
+
 /** Bindings embedded in Html/Text markup are compiled one `{{...}}` at a time. Observed live (Luna high,
  *  2026-09-06): two KPI cards rendered blank because the model wrote `r.status!==\"Cancelled\"` inside
  *  the markup, escaping the quotes as if the expression sat inside a JSON string. A backslash outside a
