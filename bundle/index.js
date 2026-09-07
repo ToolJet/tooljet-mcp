@@ -33164,7 +33164,10 @@ var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
 var PAT_HEADER = "x-tooljet-pat";
 var BASE_URL_HEADER = "x-tooljet-url";
+var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
 var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
+var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
+var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
 function env(name) {
   const value = process.env[name]?.trim();
   return value ? value : void 0;
@@ -33192,7 +33195,66 @@ function readHeader(headers, name) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : void 0;
 }
-function validateApiUrl(raw) {
+var gatewayOriginCache = /* @__PURE__ */ new Map();
+var GATEWAY_CACHE_TTL_MS = 6e4;
+async function checkOriginWithGateway(customerId, origin) {
+  const cacheKey2 = `${customerId} ${origin}`;
+  const cached2 = gatewayOriginCache.get(cacheKey2);
+  if (cached2 && cached2.expiresAt > Date.now())
+    return cached2.allowed;
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  if (!gatewayUrl || !gatewayToken)
+    return false;
+  let allowed = false;
+  try {
+    const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
+      method: "POST",
+      headers: { authorization: gatewayToken, "content-type": "application/json" },
+      body: JSON.stringify({ customer_id: customerId, origin }),
+      signal: AbortSignal.timeout(5e3)
+    });
+    if (res.ok) {
+      const body = await res.json();
+      allowed = body.allowed === true;
+    }
+  } catch {
+    allowed = false;
+  }
+  gatewayOriginCache.set(cacheKey2, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return allowed;
+}
+var gatewayResolveCache = /* @__PURE__ */ new Map();
+async function resolveApiUrlFromGateway(customerId) {
+  const cached2 = gatewayResolveCache.get(customerId);
+  if (cached2 && cached2.expiresAt > Date.now())
+    return cached2.result;
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  let result = { url: void 0, verified: false };
+  if (gatewayUrl && gatewayToken) {
+    try {
+      const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
+        method: "POST",
+        headers: { authorization: gatewayToken, "content-type": "application/json" },
+        body: JSON.stringify({ customer_id: customerId }),
+        signal: AbortSignal.timeout(5e3)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if ("host_name" in body) {
+          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
+          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
+        }
+      }
+    } catch {
+      result = { url: void 0, verified: false };
+    }
+  }
+  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return result;
+}
+async function validateApiUrl(raw, customerId) {
   let parsed;
   try {
     parsed = new URL(raw);
@@ -33205,35 +33267,55 @@ function validateApiUrl(raw) {
   if (parsed.search || parsed.hash || parsed.username || parsed.password) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
-  if (!allowedApiOrigins().includes(parsed.origin)) {
-    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR}. Add it to that comma-separated list to let this server write into that backend.`);
+  const inStaticList = allowedApiOrigins().includes(parsed.origin);
+  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  if (!inStaticList && !verifiedViaGateway) {
+    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
   }
   const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
-  return parsed.origin + path;
+  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
 }
-function identityFromHeaders(headers, { allowPat = true } = {}) {
+async function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
-  const apiUrl = rawApiUrl ? validateApiUrl(rawApiUrl) : void 0;
+  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
+  let apiUrl;
+  let customerVerified;
+  if (rawApiUrl) {
+    const validated = await validateApiUrl(rawApiUrl, customerId);
+    apiUrl = validated.apiUrl;
+    customerVerified = validated.customerVerified;
+  } else if (customerId) {
+    const resolved = await resolveApiUrlFromGateway(customerId);
+    apiUrl = resolved.url;
+    customerVerified = resolved.verified ? true : void 0;
+  }
   if (pat) {
     if (!allowPat) {
       throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
     }
     if (sessionToken)
       throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl };
+    return { pat, apiUrl, customerVerified };
   }
-  if (!sessionToken && !workspaceId)
-    return apiUrl ? { apiUrl } : void 0;
+  if (!sessionToken && !workspaceId) {
+    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
+  }
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
   }
   if (!workspaceId) {
     throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
   }
-  return { sessionToken, workspaceId, workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER), apiUrl };
+  return {
+    sessionToken,
+    workspaceId,
+    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
+    apiUrl,
+    customerVerified
+  };
 }
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
@@ -43738,14 +43820,14 @@ function createGatewayHttpServer() {
   const gatewayMode = Boolean(sharedToken);
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
-  const httpServer = createServer((req, res) => {
+  const httpServer = createServer(async (req, res) => {
     if (gatewayMode && !checkBearerToken(req.headers.authorization, sharedToken)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end("Unauthorized");
       return;
     }
     let identity;
     try {
-      identity = identityFromHeaders(req.headers, { allowPat: !gatewayMode });
+      identity = await identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Invalid identity headers";
       res.writeHead(400, { "Content-Type": "text/plain" }).end(message);
@@ -43757,11 +43839,11 @@ function createGatewayHttpServer() {
         identity = { pat: bearer };
     }
     const hasUserCredential = Boolean(identity?.pat || identity?.sessionToken);
-    if (!hasUserCredential && requireUserSession) {
+    if (!hasUserCredential && requireUserSession && !identity?.customerVerified) {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on behalf of a signed-in user: send the ${SESSION_TOKEN_HEADER} header (with x-tooljet-workspace-id). Refusing rather than using a shared identity.`);
       return;
     }
-    if (!identity?.apiUrl && requireRequestUrl) {
+    if (!identity?.apiUrl && !identity?.customerVerified && requireRequestUrl) {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} header. Refusing rather than falling back to a fixed TOOLJET_URL.`);
       return;
     }
