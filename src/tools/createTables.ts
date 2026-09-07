@@ -52,7 +52,20 @@ export function createTablesTool(client: ToolJetClient): ToolDef {
         }));
         const errors = validateTableBatch(tables);
         if (errors.length) return fail(new Error(errors.join(' ')));
-        return ok({ tables: await client.createTables({ tables }) });
+        // A taken name gets a counter instead of a failure, the same way create_app and the plan lint do.
+        const warnings: string[] = [];
+        const taken = new Set((await client.listTables()).map((table) => table.table_name.toLowerCase()));
+        for (const table of tables) {
+          if (!taken.has(table.tableName.toLowerCase())) { taken.add(table.tableName.toLowerCase()); continue; }
+          const oldName = table.tableName;
+          let candidate = oldName;
+          for (let n = 2; taken.has(candidate.toLowerCase()); n++) candidate = `${oldName.slice(0, 31 - `_${n}`.length)}_${n}`;
+          table.tableName = candidate;
+          taken.add(candidate.toLowerCase());
+          for (const other of tables) for (const fk of other.foreignKeys ?? []) if (fk.referencedTable === oldName) fk.referencedTable = candidate;
+          warnings.push(`Table "${oldName}" already exists in this workspace; created "${candidate}" instead (foreign keys updated). Use the returned name.`);
+        }
+        return ok({ tables: await client.createTables({ tables }), ...(warnings.length ? { warnings } : {}) });
       } catch (error) {
         return fail(error);
       }

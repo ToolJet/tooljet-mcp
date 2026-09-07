@@ -103,6 +103,22 @@ describe('createClient', () => {
       expect(result.home_page_id).toBe('page-first');
     });
 
+    it('retries a taken name with a counter instead of failing', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: '{"message":"This app name is already taken."}' }))
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: '{"message":"This app name is already taken."}' }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'app3' } }))
+        .mockResolvedValueOnce(
+          mockResponse({ status: 200, json: { id: 'app3', slug: 'app3', editing_version: { id: 'v1', name: 'v1' }, pages: [{ id: 'p1', name: 'Home' }] } })
+        );
+
+      const client = createClient(auth, config);
+      const result = await client.createApp('Nordlicht Order Desk');
+      expect(result.app_id).toBe('app3');
+      const names = auth.authedFetch.mock.calls.slice(0, 3).map(([, init]) => JSON.parse((init as RequestInit).body as string).name);
+      expect(names).toEqual(['Nordlicht Order Desk', 'Nordlicht Order Desk 2', 'Nordlicht Order Desk 3']);
+    });
+
     it('throws when the create call is non-2xx', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 500, text: 'boom' }));
 
