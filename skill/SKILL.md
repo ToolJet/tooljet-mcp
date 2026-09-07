@@ -4,7 +4,7 @@ description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create 
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
-    - TJ-AI COMPONENT_BINDING_RULES (22 components)
+    - Source-verified component binding rules (22 components)
     - ToolJet WidgetManager catalog (74 built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---

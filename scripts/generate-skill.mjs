@@ -1,13 +1,10 @@
-// Generates skill/SKILL.md from the TJ-AI agent's authoritative knowledge (component
+// Generates skill/SKILL.md from local, source-verified knowledge (component
 // binding rules) + ToolJet's canvas grid constants. It also carries adaptable quality
 // defaults; explicit user requirements always win. Re-run when source rules change to avoid drift.
 //
 // Usage: node scripts/generate-skill.mjs
-//   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
-//        TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
+//   env: TOOLJET_ROOT (default sibling ToolJet checkout)
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, copyFileSync, existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,7 +25,6 @@ function locate(envVar, label, candidates, marker) {
   );
 }
 
-const TJAI = locate('TJAI_ROOT', 'agent', [['..', 'tooljet-agent'], ['..', 'TJ-AI']], 'src/tooljet_agent');
 const TOOLJET = locate(
   'TOOLJET_ROOT',
   'ToolJet',
@@ -39,27 +35,11 @@ const { legacyReplacements: LEGACY_REPLACEMENTS } = JSON.parse(
   readFileSync(resolve(root, 'data/component-compatibility.json'), 'utf8')
 );
 
-// --- 1. Extract COMPONENT_BINDING_RULES (dict[str,str]) from the agent via Python ast ---
+// --- 1. Read the maintained binding rules. The legacy TJ-AI Python source was removed.
+// Initial rules preserved from db7ae509^:src/tooljet_agent/services/app_builder/v1/bindings/tool_utils.py;
+// subsequent runtime corrections belong here rather than in generated host packages.
 function extractBindingRules() {
-  const py = `
-import ast, json, sys
-src = open(sys.argv[1]).read()
-tree = ast.parse(src)
-rules = {}
-for node in ast.walk(tree):
-    name = None
-    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-        name = node.target.id
-    elif isinstance(node, ast.Assign):
-        for t in node.targets:
-            if isinstance(t, ast.Name): name = t.id
-    if name == 'COMPONENT_BINDING_RULES' and node.value is not None:
-        rules = ast.literal_eval(node.value)
-print(json.dumps(rules))
-`;
-  const file = resolve(TJAI, 'src/tooljet_agent/services/app_builder/v1/bindings/tool_utils.py');
-  const out = execFileSync('python3', ['-c', py, file], { encoding: 'utf8' });
-  return JSON.parse(out);
+  return JSON.parse(readFileSync(resolve(root, 'data/component-binding-rules.json'), 'utf8'));
 }
 
 // --- 2. Read ToolJet canvas grid constants (facts, not opinions) ---
@@ -169,7 +149,7 @@ description: "Build ToolJet apps end-to-end via the tooljet-mcp tools — create
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
-    - TJ-AI COMPONENT_BINDING_RULES (${componentList.length} components)
+    - Source-verified component binding rules (${componentList.length} components)
     - ToolJet WidgetManager catalog (${catalog.length} built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
@@ -912,7 +892,7 @@ description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create 
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
-    - TJ-AI COMPONENT_BINDING_RULES (${componentList.length} components)
+    - Source-verified component binding rules (${componentList.length} components)
     - ToolJet WidgetManager catalog (${catalog.length} built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
