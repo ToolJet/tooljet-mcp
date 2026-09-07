@@ -36955,12 +36955,10 @@ function createClient(auth, config2) {
     });
   }
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
-  const GATEWAY_RETRY_DELAYS_MS = [2e3, 5e3, 1e4, 2e4];
   const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
-  const isGatewayTimeout = (status) => status === 502 || status === 503 || status === 504 || status >= 520 && status <= 527;
+  const UNKNOWN_INSERT_OUTCOME = "Insert outcome unknown: the row may already have been inserted. Verify persisted rows before retrying; do not replay the whole batch.";
   async function insertRowViaProxy(tableId, row) {
     let schemaWaits = 0;
-    let gatewayWaits = 0;
     for (; ; ) {
       let res;
       try {
@@ -36971,20 +36969,18 @@ function createClient(auth, config2) {
           signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS)
         });
       } catch (error51) {
-        const timedOut = error51?.name === "TimeoutError" || error51?.name === "AbortError";
-        if (!timedOut || gatewayWaits >= GATEWAY_RETRY_DELAYS_MS.length)
-          throw error51;
-        await new Promise((resolve4) => setTimeout(resolve4, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
-        gatewayWaits += 1;
-        continue;
+        throw new Error(`ToolJet insertRows request failed (${error51 instanceof Error ? error51.name : "transport error"}). ${UNKNOWN_INSERT_OUTCOME}`);
       }
       if (res.ok)
         return res;
-      if (isGatewayTimeout(res.status) && gatewayWaits < GATEWAY_RETRY_DELAYS_MS.length) {
-        await new Promise((resolve4) => setTimeout(resolve4, GATEWAY_RETRY_DELAYS_MS[gatewayWaits]));
-        gatewayWaits += 1;
-        continue;
+      if (res.status === 408 || res.status >= 500) {
+        const body2 = await res.text().catch(() => "Response body unavailable");
+        const error51 = new ToolJetHttpError(res.status, "insertRows", body2);
+        error51.message += ` ${UNKNOWN_INSERT_OUTCOME}`;
+        throw error51;
       }
+      if (res.status !== 400 && res.status !== 404)
+        return res;
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
         return res;
       const body = await res.clone().text().catch(() => "");
