@@ -33298,10 +33298,7 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
     return { pat, apiUrl, customerVerified };
   }
   if (!sessionToken && !workspaceId) {
-    if (!apiUrl && !customerVerified)
-      return void 0;
-    const fallbackPat = customerVerified ? env("TOOLJET_PAT_OLD_VERSION") : void 0;
-    return { apiUrl, customerVerified, pat: fallbackPat };
+    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
   }
   if (!sessionToken) {
     throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
