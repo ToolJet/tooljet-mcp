@@ -4,6 +4,8 @@ import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { updateRowsCompatibilityWarning } from '../tableQueryCompatibility.js';
+import { suggestedHtmlHeight } from '../renderReadiness.js';
+const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
@@ -53,8 +55,50 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
-          if (tableIds.has(key)) preflightErrors.push(`Planned table "${table.table_name}" already exists.`);
-          else tableIds.set(key, `planned-table:${table.table_name}`);
+          if (tableIds.has(key)) {
+            // A name already in the workspace used to fail the plan; every model then spent a turn inventing
+            // a prefix (seven of twelve Nordlicht builds, 2026-09-07). Suffix it here and carry the new name
+            // into seed data, table_ref and foreign keys, since they all name the table.
+            const oldName = table.table_name;
+            const newName = nextTableName(oldName, tableIds);
+            table.table_name = newName;
+            for (const seed of args.seed_data ?? []) if (seed.table_name === oldName) seed.table_name = newName;
+            for (const query of args.queries ?? []) if (query.table_ref === oldName) query.table_ref = newName;
+            for (const other of args.tables ?? []) {
+              for (const fk of other.foreign_keys ?? []) {
+                const ref = fk as unknown as Record<string, unknown>;
+                for (const field of ['referencedTable', 'referenced_table', 'references_table']) {
+                  if (ref[field] === oldName) ref[field] = newName;
+                }
+              }
+            }
+            preflightWarnings.push(
+              `Planned table "${oldName}" already exists in this workspace, so it is created as "${newName}"; seed data, ` +
+                'table_ref and foreign keys were updated to match. To reuse the existing table instead, drop it from ' +
+                'tables and point queries at it with table_ref.'
+            );
+            tableIds.set(newName.toLowerCase(), `planned-table:${newName}`);
+          } else tableIds.set(key, `planned-table:${table.table_name}`);
+        }
+        preflightWarnings.push(...autoFitHtmlHeights(args));
+        // Empty pages left by an earlier phase must be filled or deleted, not shadowed by new pages with
+        // near-identical names (a Luna build ended with Orders, Orders Archive and Orders Desk; Gemini Pro
+        // with nine pages, five empty). Only pages the plan does not target count.
+        if (existingSummary) {
+          const plannedNames = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
+          const createsPages = (args.pages ?? []).some((page) =>
+            !existingSummary.pages.some((existing) => existing.name?.toLowerCase() === page.name.toLowerCase() || (page.name === 'Home' && existing.handle === 'home'))
+          );
+          const abandoned = existingSummary.pages.filter((page) =>
+            page.components.length === 0 && page.handle !== 'home' && page.name && !plannedNames.has(page.name.toLowerCase())
+          );
+          if (createsPages && abandoned.length) {
+            preflightErrors.push(
+              `App already has ${abandoned.length} empty page(s) this plan does not touch: ${abandoned.map((page) => `"${page.name}"`).join(', ')}. ` +
+                'Build on them (use the exact existing name in pages[]) or delete them with delete_page before creating new pages, ' +
+                'so the app does not end up with duplicates.'
+            );
+          }
         }
         const plannedTables = new Map(
           (args.tables ?? []).map((table) => [table.table_name.toLowerCase(), table])
@@ -242,4 +286,50 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+function nextTableName(name: string, taken: Map<string, string>): string {
+  for (let n = 2; n < 100; n++) {
+    const suffix = `_${n}`;
+    const candidate = `${name.slice(0, Math.max(1, TABLE_NAME_MAX - suffix.length))}${suffix}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return `${name.slice(0, TABLE_NAME_MAX - 7)}_${Date.now().toString(36).slice(-6)}`;
+}
+
+/** Raise every short Html block to the height its markup needs and move the components under it down by
+ *  the same amount, instead of failing the plan. Roughly a third of all lint rounds on the Nordlicht
+ *  benchmark were Html blocks a few pixels short; at max reasoning effort each round cost a minute. */
+function autoFitHtmlHeights(args: AppPlanInput): string[] {
+  const warnings: string[] = [];
+  for (const page of args.pages ?? []) {
+    const components = page.components ?? [];
+    for (const component of components) {
+      if (component.type !== 'Html') continue;
+      const rect = component.layouts?.desktop ?? component.layout;
+      if (!rect || typeof rect.height !== 'number' || typeof rect.top !== 'number') continue;
+      const fix = suggestedHtmlHeight(component as never);
+      if (!fix) continue;
+      const delta = fix.to - fix.from;
+      const oldBottom = rect.top + fix.from;
+      const parentOf = (c: typeof component) => c.parent_ref ?? c.parent ?? '';
+      const moved: string[] = [];
+      for (const sibling of components) {
+        if (sibling === component || parentOf(sibling) !== parentOf(component)) continue;
+        for (const r of [sibling.layout, sibling.layouts?.desktop, sibling.layouts?.mobile]) {
+          if (r && typeof r.top === 'number' && r.top >= oldBottom - 4) r.top += delta;
+        }
+        const r0 = sibling.layouts?.desktop ?? sibling.layout;
+        if (r0 && typeof r0.top === 'number' && r0.top - delta >= oldBottom - 4) moved.push(sibling.name ?? sibling.client_ref ?? '?');
+      }
+      for (const r of [component.layout, component.layouts?.desktop]) if (r && typeof r.height === 'number') r.height = fix.to;
+      warnings.push(
+        `Page "${page.name}": Html "${component.name ?? component.client_ref ?? '?'}" needed about ${fix.needed}px for its markup but was ` +
+          `${fix.from}px, so its height is now ${fix.to}px` +
+          (moved.length ? ` and ${moved.length} component(s) below it moved down ${delta}px (${[...new Set(moved)].join(', ')})` : '') +
+          '. The plan was applied with these values.'
+      );
+    }
+  }
+  return warnings;
 }

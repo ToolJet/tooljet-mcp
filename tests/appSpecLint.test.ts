@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
+import { lintPlannedApp } from '../src/appSpecLint.js';
 import { clearAppPlansForTests } from '../src/appPlanStore.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
@@ -343,5 +344,98 @@ describe('lint_app_spec table_id preflight', () => {
     });
     expect(textOf(ok).ok).toBe(true);
     expect(listTables).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('plan lint error de-duplication', () => {
+  it('reports an Html render error once, with its page prefix', () => {
+    const html = {
+      client_ref: 'hdr', name: 'OverviewHeader', type: 'Html',
+      properties: { rawHtml: { value: '<div style="height:100%;background:var(--cc-surface);padding:24px"><h1 style="font-size:32px;margin:0">Operations</h1><p style="margin:8px 0 0">Today</p><p style="margin:8px 0 0">More</p></div>' } },
+      layouts: { desktop: { left: 0, top: 0, width: 43, height: 60 } },
+    };
+    const result = lintPlannedApp({ pages: [{ client_ref: 'home', name: 'Home', icon: 'IconHome2', components: [html] }] } as any);
+    const heightErrors = result.errors.filter((e) => e.includes('its markup needs about'));
+    expect(heightErrors).toHaveLength(1);
+    expect(heightErrors[0]).toMatch(/^Page "Home": Html "OverviewHeader"/);
+  });
+});
+
+describe('plan preflight repairs', () => {
+  const client = () => ({
+    listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+    listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'orders' }, { id: 't2', table_name: 'orders_2' }]),
+  }) as unknown as ToolJetClient;
+
+  it('renames a planned table that already exists and carries the name into seeds, table_ref and foreign keys', async () => {
+    const args = {
+      version_id: 'v1',
+      tables: [
+        { table_name: 'orders', columns: [{ name: 'id', type: 'serial', primaryKey: true }, { name: 'total', type: 'number' }] },
+        { table_name: 'order_items', columns: [{ name: 'order_id', type: 'integer' }], foreign_keys: [{ columns: ['order_id'], referencedTable: 'orders', referencedColumns: ['id'] }] },
+      ],
+      seed_data: [{ table_name: 'orders', rows: [{ total: 10 }] }],
+      queries: [{ client_ref: 'q', datasource_id: 'tjdb', name: 'list_orders', table_ref: 'orders', options: { operation: 'list_rows', list_rows: { limit: 50 } } }],
+      pages: [{ client_ref: 'home', name: 'Home', icon: 'IconHome2', components: [] }],
+    };
+    const result = await lintAppSpecTool(client()).handler(args as never);
+    const parsed = JSON.parse(result.content[0]!.text!);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.warnings.join(' ')).toMatch(/"orders" already exists in this workspace, so it is created as "orders_3"/);
+    expect(args.tables[0]!.table_name).toBe('orders_3');
+    expect(args.seed_data[0]!.table_name).toBe('orders_3');
+    expect(args.queries[0]!.table_ref).toBe('orders_3');
+    expect(args.tables[1]!.foreign_keys![0]!.referencedTable).toBe('orders_3');
+  });
+
+  it('raises a short Html block to the height its markup needs and moves the components below it', async () => {
+    const args = {
+      version_id: 'v1',
+      pages: [{
+        client_ref: 'home', name: 'Home', icon: 'IconHome2',
+        components: [
+          { client_ref: 'hdr', name: 'header', type: 'Html', layout: { left: 0, top: 10, width: 43, height: 60 },
+            properties: { rawHtml: { value: '<div style="height:100%;background:var(--cc-surface);padding:24px"><h1 style="font-size:32px;margin:0">Orders</h1><p style="margin:8px 0 0">Line one</p><p style="margin:8px 0 0">Line two</p><p style="margin:8px 0 0">Line three</p></div>' } } },
+          { client_ref: 'tbl', name: 'orders', type: 'Table', layout: { left: 0, top: 80, width: 43, height: 400 },
+            properties: { data: { value: '{{[]}}' }, dataSourceSelector: { value: 'rawJson' }, autogenerateColumns: { value: true } } },
+          { client_ref: 'side', name: 'aside', type: 'Text', layout: { left: 30, top: 10, width: 10, height: 30 }, properties: { text: { value: 'Right of the header' } } },
+        ],
+      }],
+    };
+    const result = await lintAppSpecTool(client()).handler(args as never);
+    const parsed = JSON.parse(result.content[0]!.text!);
+    expect(parsed.errors.filter((e: string) => e.includes('its markup needs'))).toEqual([]);
+    const fixed = parsed.warnings.find((w: string) => w.includes('so its height is now'));
+    expect(fixed).toMatch(/Html "header" needed about \d+px .* was 60px, so its height is now (\d+)px and 1 component\(s\) below it moved down/);
+    const newHeight = args.pages[0]!.components[0]!.layout.height;
+    expect(newHeight).toBeGreaterThan(60);
+    expect(args.pages[0]!.components[1]!.layout.top).toBe(80 + newHeight - 60);
+    expect(args.pages[0]!.components[2]!.layout.top).toBe(10);
+  });
+});
+
+describe('empty-page reuse guard', () => {
+  it('refuses to create new pages while the app still has empty pages the plan ignores', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([]),
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1', version_id: 'v1', events: [], queries: [],
+        pages: [
+          { id: 'home', name: 'Home', handle: 'home', components: [{ id: 'c', name: 'title', type: 'Text' }] },
+          { id: 'p2', name: 'Orders', handle: 'orders', components: [] },
+        ],
+      }),
+    } as unknown as ToolJetClient;
+    const shadowing = await lintAppSpecTool(client).handler({
+      app_id: 'app1', version_id: 'v1',
+      pages: [{ client_ref: 'od', name: 'Orders Desk', icon: 'IconList', components: [] }],
+    } as never);
+    expect(JSON.parse(shadowing.content[0]!.text!).errors.join(' ')).toMatch(/empty page\(s\) this plan does not touch: "Orders"/);
+    const reusing = await lintAppSpecTool(client).handler({
+      app_id: 'app1', version_id: 'v1',
+      pages: [{ client_ref: 'od', name: 'Orders', icon: 'IconList', components: [] }],
+    } as never);
+    expect(JSON.parse(reusing.content[0]!.text!).errors.filter((e: string) => e.includes('empty page'))).toEqual([]);
   });
 });

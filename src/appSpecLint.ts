@@ -450,10 +450,14 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   errors.push(...structure.errors);
   warnings.push(...structure.warnings);
 
+  // The per-page component lint and the whole-app structure lint both run the render-readiness
+  // checks, so an Html height or root error arrived twice: once as `Page "Home": Html "X": …` and
+  // once as `Html "X": …`. Each copy is ~400 characters the model has to read; keep the page-prefixed one.
+  const deduped = dropUnprefixedDuplicates(errors);
   return {
-    ok: unique(errors).length === 0,
-    errors: unique(errors),
-    warnings: unique(warnings),
+    ok: deduped.length === 0,
+    errors: deduped,
+    warnings: dropUnprefixedDuplicates(warnings),
     checked,
     not_checked: [
       'server acceptance of writes or external datasource connectivity',
@@ -579,4 +583,10 @@ function slug(value: string): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function dropUnprefixedDuplicates(values: string[]): string[] {
+  const distinct = unique(values);
+  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, '')).filter((value, i) => value !== distinct[i]));
+  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
