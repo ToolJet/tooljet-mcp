@@ -1,5 +1,6 @@
 import { getComponentSchema } from './catalog.js';
 import { resolveRef } from './refResolution.js';
+import { decodeComponentParent } from './componentParent.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 
 export interface EventValidationResult {
@@ -355,6 +356,27 @@ export function validateEvents(
   });
   for (const chain of chains.values()) {
     chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
+    // A closed ModalV2 unmounts its children. Imperative prefill before show-modal is lost
+    // when those controls mount with their defaults (observed in the Luna UI benchmark).
+    chain.forEach(({ event }, index) => {
+      if (event.action.actionId !== 'control-component' ||
+          !['selectOption', 'selectOptions', 'setText', 'setValue'].includes(String(event.action.componentSpecificActionHandle))) return;
+      let child = components.get(String(event.action.componentId));
+      const visited = new Set<string>();
+      while (child?.parent && !visited.has(child.id)) {
+        visited.add(child.id);
+        const parent = components.get(decodeComponentParent(child.parent).parentId);
+        if (!parent) break;
+        if (parent.type === 'ModalV2' && chain.slice(index + 1).some(({ event: later }) =>
+          later.action.actionId === 'show-modal' && later.action.modal === parent.id)) {
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" ` +
+            'before show-modal. Closed modal children are not mounted; these values can be lost. ' +
+            'Bind input defaults to the selected record, or initialize after the modal opens.');
+          break;
+        }
+        child = parent;
+      }
+    });
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === 'switch-page');
     if (navigationIndex === -1 || navigationIndex === chain.length - 1) continue;
     const navigation = chain[navigationIndex]!;

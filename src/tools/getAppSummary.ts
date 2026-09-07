@@ -71,6 +71,13 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: GetAppSummaryArgs) {
       try {
+        for (const key of ['page_ids', 'page_names', 'page_handles', 'component_ids', 'component_names',
+          'component_types', 'query_ids', 'query_names', 'query_kinds', 'event_ids', 'event_source_ids'] as const) {
+          if (args[key]?.some((value) => !value.trim() || value === '*' || value === '00000000-0000-0000-0000-000000000000')) {
+            throw new Error(`${key} contains a placeholder, not an exact selector. Omit unused filters entirely; ` +
+              'wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.');
+          }
+        }
         const summary = await client.getAppSummary(args.app_id);
         return ok(
           selectAppSummary(summary, {
