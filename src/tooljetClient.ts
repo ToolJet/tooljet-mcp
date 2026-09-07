@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
@@ -1835,8 +1836,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }> {
     const diff: Record<string, unknown> = {};
     for (const u of params.updates) {
-      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasDef = hasNonEmptyDefinition(u.definition);
       const hasRaw = u.name !== undefined || u.parent !== undefined || u.slotName !== undefined;
+      if (!hasDef && !hasRaw) {
+        // Never PUT an empty diff: ToolJet answers 200 without writing and the caller would report
+        // it as updated. Observed live when a patch was sent outside `definition` and stripped.
+        throw new Error(
+          `updateComponents "${u.componentId}": nothing to update. Provide a non-empty definition ` +
+            '(properties/styles/validation/others) or a name/parent change.'
+        );
+      }
       if (hasDef && hasRaw) {
         throw new Error(
           `updateComponents "${u.componentId}": set EITHER definition (properties/styles/…) OR name/parent/slotName ` +
@@ -1891,6 +1900,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }> {
     const diff: Record<string, unknown> = {};
     for (const l of params.layouts) {
+      if (!l.desktop && !l.mobile && l.parent === undefined) {
+        throw new Error(
+          `updateLayouts "${l.componentId}": nothing to update. Provide desktop and/or mobile rects, or a parent change.`
+        );
+      }
       const entry: Record<string, unknown> = {
         layouts: {
           ...(l.desktop ? { desktop: l.desktop } : {}),

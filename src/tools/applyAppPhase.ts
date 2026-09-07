@@ -38,7 +38,8 @@ function resolveAction(
   queries: Map<string, LogicalTarget>,
   components: Map<string, LogicalTarget>
 ): Record<string, unknown> {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === 'run-query' ? action.queryId ?? action.queryName : undefined);
   if (targetRef === undefined) return action;
   if (typeof targetRef !== 'string') throw new Error('Event action target_ref must be a string.');
   const actionId = String(action.actionId);
@@ -327,6 +328,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           const created = createdQueries[index];
           if (!created) throw new Error(`Could not resolve query "${query.name}" after creation.`);
           queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
+          queryTargets.set(query.name, { id: created.query_id, name: created.name });
         });
 
         stage = 'create page components';
@@ -446,10 +448,21 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           validation,
         });
       } catch (error) {
+        let recovery = '';
+        if (Object.values(applied).some((count) => count > 0)) {
+          try {
+            const current = await client.getAppSummary(args.app_id);
+            recovery = ' Persisted resources for targeted repair (do not recreate): ' + JSON.stringify({
+              pages: current.pages.map((page) => ({ id: page.id, name: page.name,
+                components: page.components.map((c) => ({ id: c.id, name: c.name })) })),
+              queries: current.queries.map((q) => ({ id: q.id, name: q.name })),
+            }).slice(0, 12000);
+          } catch { /* Preserve the original failure if even the recovery read is unavailable. */ }
+        }
         return fail(new Error(
           `apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. ` +
             `The one-time plan token is consumed and no resources were auto-deleted. ` +
-            `${error instanceof Error ? error.message : String(error)}`
+            `${error instanceof Error ? error.message : String(error)}` + recovery
         ));
       }
     },

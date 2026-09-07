@@ -121,8 +121,23 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     stylePatch[key] = stylesValue[key];
     normalizedSections.styles.value = stylesValue;
   };
+  // Aliases are scoped to the component's real schema: a key that IS a property of this type is never
+  // an alias (ModalV2 `size` = modal width sm/md/lg/xl, not textSize), and an alias only fires when its
+  // target exists on this type (Divider has no textColor for `color` to become). Otherwise the rewrite
+  // itself creates the unknown key the linter then warns about. Types missing from the catalog keep the
+  // unscoped behaviour.
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : undefined;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : undefined;
+  const aliasTargetFor = (key: string): string | undefined => {
+    if (knownPropertyKeys?.has(key)) return undefined;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target) return undefined;
+    if (!schema) return target;
+    return knownStyleKeys!.has(target) || knownPropertyKeys!.has(target) ? target : undefined;
+  };
   for (const key of Object.keys(properties)) {
-    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
     const belongsInStyles = canonical !== 'styles' && STYLE_KEYS_IN_PROPERTIES.has(canonical);
     if (!aliasTarget && !belongsInStyles) continue;

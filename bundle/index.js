@@ -33532,6 +33532,27 @@ function createAuth(config2, fetchImpl = fetch) {
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
+// dist/bindingReferences.js
+function bindingReferences(value) {
+  if (Array.isArray(value))
+    return value.flatMap(bindingReferences);
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap(bindingReferences);
+  if (typeof value !== "string")
+    return [];
+  const refs2 = [];
+  for (const binding of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const tokens = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*|(?<![\w$.])(components|queries)\s*(?:\?\.)?\s*(?:\.\s*([A-Za-z_$][\w$]*)|\[\s*(['"])([^'"\n]+)\3\s*\])|(?<![\w$.])(components|queries)\?\.\s*([A-Za-z_$][\w$]*)/g;
+    for (const match of binding[1].matchAll(tokens)) {
+      const namespace = match[1] || match[5];
+      const name = match[2] || match[4] || match[6];
+      if (namespace && name)
+        refs2.push({ namespace, name });
+    }
+  }
+  return refs2;
+}
+
 // dist/catalog.js
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -34945,6 +34966,22 @@ function validateAppStructure(summary) {
       errors.push(`Event "${name}" runs a query (${ev.queryId}) that no longer exists.`);
     }
   }
+  const bindingSources = [
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
+    ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event }))
+  ];
+  for (const source2 of bindingSources) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const ref of bindingReferences(source2.value)) {
+      const names = ref.namespace === "components" ? componentNames : queryNames;
+      const key = `${ref.namespace}.${ref.name}`;
+      if (!names.has(ref.name) && !seen.has(key)) {
+        seen.add(key);
+        errors.push(`${source2.label} references ${key}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
+      }
+    }
+  }
   for (const c of allComponents) {
     const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
     for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
@@ -35033,6 +35070,18 @@ function validateAppStructure(summary) {
     warnings.push(...lintKanbanInteractions(p.components));
   }
   return { errors: uniq(errors), warnings: uniq(warnings) };
+}
+
+// dist/strictEntry.js
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue2) => issue2.code === "unrecognized_keys" ? issue2.keys.map(describeUnknown).join(" ") : void 0
+  });
+}
+function hasNonEmptyDefinition(definition) {
+  if (!definition)
+    return false;
+  return Object.values(definition).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
 }
 
 // dist/tableValidation.js
@@ -36289,8 +36338,11 @@ function createClient(auth, config2) {
   async function updateComponents(params) {
     const diff = {};
     for (const u of params.updates) {
-      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasDef = hasNonEmptyDefinition(u.definition);
       const hasRaw = u.name !== void 0 || u.parent !== void 0 || u.slotName !== void 0;
+      if (!hasDef && !hasRaw) {
+        throw new Error(`updateComponents "${u.componentId}": nothing to update. Provide a non-empty definition (properties/styles/validation/others) or a name/parent change.`);
+      }
       if (hasDef && hasRaw) {
         throw new Error(`updateComponents "${u.componentId}": set EITHER definition (properties/styles/\u2026) OR name/parent/slotName in one entry \u2014 ToolJet applies only one path. Split into two update calls.`);
       }
@@ -36332,6 +36384,9 @@ function createClient(auth, config2) {
   async function updateLayouts(params) {
     const diff = {};
     for (const l of params.layouts) {
+      if (!l.desktop && !l.mobile && l.parent === void 0) {
+        throw new Error(`updateLayouts "${l.componentId}": nothing to update. Provide desktop and/or mobile rects, or a parent change.`);
+      }
       const entry = {
         layouts: {
           ...l.desktop ? { desktop: l.desktop } : {},
@@ -38456,6 +38511,23 @@ function getAppSummaryTool(client) {
     },
     async handler(args) {
       try {
+        for (const key of [
+          "page_ids",
+          "page_names",
+          "page_handles",
+          "component_ids",
+          "component_names",
+          "component_types",
+          "query_ids",
+          "query_names",
+          "query_kinds",
+          "event_ids",
+          "event_source_ids"
+        ]) {
+          if (args[key]?.some((value) => !value.trim() || value === "*" || value === "00000000-0000-0000-0000-000000000000")) {
+            throw new Error(`${key} contains a placeholder, not an exact selector. Omit unused filters entirely; wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.`);
+          }
+        }
         const summary = await client.getAppSummary(args.app_id);
         return ok(selectAppSummary(summary, {
           sections: args.sections,
@@ -38826,6 +38898,23 @@ function validateEvents(summary, events, options2 = {}) {
   });
   for (const chain of chains.values()) {
     chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
+    chain.forEach(({ event }, index) => {
+      if (event.action.actionId !== "control-component" || !["selectOption", "selectOptions", "setText", "setValue"].includes(String(event.action.componentSpecificActionHandle)))
+        return;
+      let child = components.get(String(event.action.componentId));
+      const visited = /* @__PURE__ */ new Set();
+      while (child?.parent && !visited.has(child.id)) {
+        visited.add(child.id);
+        const parent = components.get(decodeComponentParent(child.parent).parentId);
+        if (!parent)
+          break;
+        if (parent.type === "ModalV2" && chain.slice(index + 1).some(({ event: later2 }) => later2.action.actionId === "show-modal" && later2.action.modal === parent.id)) {
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" before show-modal. Closed modal children are not mounted; these values can be lost. Bind input defaults to the selected record, or initialize after the modal opens.`);
+          break;
+        }
+        child = parent;
+      }
+    });
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
     if (navigationIndex === -1 || navigationIndex === chain.length - 1)
       continue;
@@ -40232,8 +40321,21 @@ function normalizeComponentSpec(component, options2 = {}) {
     stylePatch[key] = stylesValue[key];
     normalizedSections.styles.value = stylesValue;
   };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key) => {
+    if (knownPropertyKeys?.has(key))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
   for (const key of Object.keys(properties)) {
-    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
     const belongsInStyles = canonical !== "styles" && STYLE_KEYS_IN_PROPERTIES.has(canonical);
     if (!aliasTarget && !belongsInStyles)
@@ -40335,8 +40437,8 @@ function normalizeComponentSpec(component, options2 = {}) {
     }
   }
   if (options2.stripUnknownKeys) {
-    const schema = getComponentSchema(component.type);
-    if (schema) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
       const sections = [
         ["properties", properties],
         ["styles", normalizedSections.styles.value]
@@ -40344,7 +40446,7 @@ function normalizeComponentSpec(component, options2 = {}) {
       for (const [section, sectionValue] of sections) {
         if (!sectionValue)
           continue;
-        const knownKeys = (schema[section] ?? []).map((entry) => entry.key);
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
         for (const key of Object.keys(sectionValue)) {
           if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
             continue;
@@ -40586,6 +40688,8 @@ function lintPlannedApp(spec, existingSummary) {
     if (existingQueryNames.has(query.name))
       errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
+    if (ref !== query.name)
+      registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
     let options2 = query.options;
     if (!query.kind) {
@@ -40828,7 +40932,12 @@ function sourceMap(sourceType, components, queries, pages) {
   return components;
 }
 function resolveAction(raw, queries, pages, components, errors, label) {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
+  if (Object.values(action).some((value) => typeof value === "string" && /^planned-(query|page|component):/.test(value))) {
+    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    return action;
+  }
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string") {
@@ -41222,7 +41331,8 @@ function sourceTarget(sourceType, ref, pages, queries, components) {
   return components.get(ref);
 }
 function resolveAction2(raw, pages, queries, components) {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string")
@@ -41458,6 +41568,7 @@ function applyAppPhaseTool(client) {
           if (!created)
             throw new Error(`Could not resolve query "${query.name}" after creation.`);
           queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
+          queryTargets.set(query.name, { id: created.query_id, name: created.name });
         });
         stage = "create page components";
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
@@ -41567,7 +41678,22 @@ function applyAppPhaseTool(client) {
           validation
         });
       } catch (error51) {
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}`));
+        let recovery = "";
+        if (Object.values(applied).some((count) => count > 0)) {
+          try {
+            const current = await client.getAppSummary(args.app_id);
+            recovery = " Persisted resources for targeted repair (do not recreate): " + JSON.stringify({
+              pages: current.pages.map((page) => ({
+                id: page.id,
+                name: page.name,
+                components: page.components.map((c) => ({ id: c.id, name: c.name }))
+              })),
+              queries: current.queries.map((q) => ({ id: q.id, name: q.name }))
+            }).slice(0, 12e3);
+          } catch {
+          }
+        }
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
       }
     }
   };
@@ -41665,12 +41791,12 @@ function addPagesTool(client) {
 }
 
 // dist/tools/updatePages.js
-var updateSchema = external_exports.object({
+var updateSchema = strictEntry({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
   hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
-});
+}, (key) => `Page update key "${key}" is not accepted; update_pages entries take page_id plus name, icon, hidden. App-level settings belong to update_app_settings.`);
 function updatePagesTool(client) {
   return {
     name: "update_pages",
@@ -42077,19 +42203,29 @@ function addComponentBatchesTool(client) {
 }
 
 // dist/tools/updateComponents.js
-var updateSchema2 = external_exports.object({
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
   component_id: external_exports.string(),
-  definition: external_exports.object({
-    properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-  }).optional(),
+  definition: definitionSchema.optional(),
   name: external_exports.string().optional(),
   parent: external_exports.string().optional(),
   slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
 });
 function updateComponentsTool(client) {
   return {
@@ -42100,7 +42236,7 @@ function updateComponentsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.",
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42131,6 +42267,10 @@ function updateComponentsTool(client) {
           const componentId = current.id;
           if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
             errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
             continue;
           }
           let parent = update.parent;
@@ -42319,6 +42459,25 @@ function deleteComponentsTool(client) {
 
 // dist/tools/updateLayout.js
 var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var layoutEntrySchema = strictEntry({
+  component_id: external_exports.string(),
+  desktop: rect.optional(),
+  mobile: rect.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (RECT_KEYS.has(key)) {
+    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+  }
+  if (key === "definition" || key === "properties" || key === "styles") {
+    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+  }
+  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+});
 function updateLayoutTool(client) {
   return {
     name: "update_layout",
@@ -42333,13 +42492,7 @@ function updateLayoutTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      layouts: external_exports.array(external_exports.object({
-        component_id: external_exports.string(),
-        desktop: rect.optional(),
-        mobile: rect.optional(),
-        parent: external_exports.string().optional(),
-        slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
-      })).min(1)
+      layouts: external_exports.array(layoutEntrySchema).min(1)
     },
     async handler(args) {
       try {
@@ -42352,6 +42505,10 @@ function updateLayoutTool(client) {
         const resolveErrors = [];
         const resolvedIds = /* @__PURE__ */ new Map();
         for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
+            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
+            continue;
+          }
           if (resolvedIds.has(layout.component_id))
             continue;
           const resolution = resolveRef2(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
@@ -43146,12 +43303,12 @@ function updateEventsTool(client) {
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      events: external_exports.array(external_exports.object({
+      events: external_exports.array(strictEntry({
         event_id: external_exports.string(),
         name: external_exports.string().optional(),
         event: external_exports.record(external_exports.string(), external_exports.any()).optional(),
         index: external_exports.number().optional()
-      })).min(1),
+      }, (key) => `Event entry key "${key}" must be nested under \`event\` (the full { eventId, actionId, ...params } blob). Accepted entry keys are event_id, name, event, index.`)).min(1),
       update_type: external_exports.enum(["update", "reorder"]).optional()
     },
     async handler(args) {
