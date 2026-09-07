@@ -2017,6 +2017,26 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // A query referenced by bare name. Observed live (Haiku, Helix benchmark 2026-09-07): `jobsWaitingLongest.data`
+  // instead of `queries.jobsWaitingLongest.data`, which is an undefined identifier at runtime, so the table
+  // showed No data while the query itself was fine. Component references are excluded by the lookbehind
+  // (they always follow a dot or bracket).
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? '');
+    const bare = new Set<string>();
+    for (const name of queryByName.keys()) {
+      if (!name || !/^[A-Za-z_$][\w$]*$/.test(name)) continue;
+      const pattern = new RegExp(`(?<![\\w$.\\]'"])${name.replace(/\$/g, '\\$')}\\??\\.(data|rawData|isLoading)\\b`);
+      if (pattern.test(blob)) bare.add(name);
+    }
+    for (const name of bare) {
+      errors.push(
+        `${component.type ?? 'Component'} "${component.name ?? component.id}": reads ${name}.data by bare name; queries are referenced as ` +
+          `queries.${name}.data. A bare name is undefined at runtime and the component shows No data.`
+      );
+    }
+  }
+
   // A Chart bound straight to query rows plots nothing unless the query itself returns x and y.
   // Observed live (Nordlicht benchmark, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
   // returning {order_date, orders_count} and the "orders per day" chart drew an empty axis.

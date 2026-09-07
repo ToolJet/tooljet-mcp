@@ -1255,6 +1255,19 @@ describe('validateAppStructure', () => {
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 
+  it('rejects a query referenced by bare name, the Haiku Helix case', () => {
+    const withBinding = (binding: string): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'jobsWaitingLongest', kind: 'tooljetdb', options: { operation: 'list_rows', runOnPageLoad: true } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{jobsWaitingLongest.data.slice(0, 5)}}'));
+    expect(wrong.errors.filter((e) => e.includes('by bare name'))).toHaveLength(1);
+    for (const ok of ['{{queries.jobsWaitingLongest.data}}', '{{queries.jobsWaitingLongest?.data ?? []}}', "{{components.jobsWaitingLongest.data}}"]) {
+      expect(validateAppStructure(withBinding(ok)).errors.filter((e) => e.includes('by bare name'))).toEqual([]);
+    }
+  });
+
   it('rejects a bare .data binding on a ToolJet DB sql_execution query, the Haiku empty-app case', () => {
     const withBinding = (binding: string, options: Record<string, unknown>): AppSummary => ({
       ...base,
