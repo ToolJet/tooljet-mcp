@@ -433,6 +433,23 @@ describe('update_layout geometry warnings', () => {
 });
 
 describe('update_events validation', () => {
+  it('explains saved handler identity versus trigger name before writing', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({app_id:'app1', pages:[{id:'p1',components:[{
+        id:'button1',name:'open',type:'Button',properties:{},
+      }]}], queries:[], events:[{id:'saved-event',name:'Open',sourceId:'button1',target:'component',
+        event:{eventId:'onClick',actionId:'show-alert',message:'Hi',alertType:'info'}}]}),
+      updateEvents: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await updateEventsTool(client).handler({app_id:'app1',version_id:'v1',events:[{
+      event_id:'saved-event',name:'Open',event:{eventId:'saved-event',event:'onClick',actionId:'show-alert',message:'Hi'},
+    }]});
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('event.eventId must be the trigger name');
+    expect(result.content[0]!.text).toContain('current inner trigger is "onClick"');
+    expect(client.updateEvents).not.toHaveBeenCalled();
+  });
+
   it('accepts an update that keeps state-setting before the final navigation handler', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({
