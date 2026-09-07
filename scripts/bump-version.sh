@@ -47,9 +47,10 @@ fi
 
 echo "Bumping $CURRENT -> $NEW"
 
-# ponytail: four hand-maintained copies of the same version, not a shared config file — this
+# ponytail: five hand-maintained copies of the same version, not a shared config file — this
 # script exists so they can't silently drift, not to fix the duplication itself.
 jq --arg v "$NEW" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
+jq --arg v "$NEW" '.version = $v' plugin.json > plugin.json.tmp && mv plugin.json.tmp plugin.json
 jq --arg v "$NEW" '.version = $v' .claude-plugin/plugin.json > .claude-plugin/plugin.json.tmp && mv .claude-plugin/plugin.json.tmp .claude-plugin/plugin.json
 jq --arg v "$NEW" '.version = $v' .codex-plugin/plugin.json > .codex-plugin/plugin.json.tmp && mv .codex-plugin/plugin.json.tmp .codex-plugin/plugin.json
 jq --arg v "$NEW" '.plugins[0].version = $v' .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp && mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
@@ -71,7 +72,7 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git push -u origin "$BRANCH"
 
   gh pr create --base main --head "$BRANCH" --title "Chore: release v$NEW" --body "$(cat <<EOF
-Version bump: \`$CURRENT\` → \`$NEW\`, across \`package.json\`, \`.claude-plugin/plugin.json\`, \`.claude-plugin/marketplace.json\`, \`.codex-plugin/plugin.json\`. Bundle/skill regenerated to match current \`main\`.
+Version bump: \`$CURRENT\` → \`$NEW\`, across \`package.json\`, \`plugin.json\`, \`.claude-plugin/plugin.json\`, \`.claude-plugin/marketplace.json\`, \`.codex-plugin/plugin.json\`. Bundle/skill regenerated to match current \`main\`.
 
 No tag yet — run \`scripts/tag-release.sh\` once this merges.
 EOF
