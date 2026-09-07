@@ -3,6 +3,7 @@ import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { updateRowsCompatibilityWarning } from '../tableQueryCompatibility.js';
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
@@ -147,6 +148,36 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             options,
           };
         });
+
+        // Inspect only tables actually targeted by this phase's update_rows queries.
+        // Metadata reads only; no query execution and no broad workspace schema scan.
+        const schemas = new Map<string, string[] | undefined>();
+        for (const table of args.tables ?? []) {
+          const columns = table.columns.map(column => column.name);
+          if (!table.columns.some(column => column.primaryKey)) columns.push('id');
+          schemas.set(`planned-table:${table.table_name}`, columns);
+        }
+        const updateTableIds = new Set(queries.filter(query =>
+          query.kind === 'tooljetdb' && query.options.operation === 'update_rows' &&
+          typeof query.options.table_id === 'string'
+        ).map(query => query.options.table_id as string));
+        await Promise.all([...updateTableIds].map(async tableId => {
+          if (schemas.has(tableId)) return;
+          const table = existingTables.find(item => item.id === tableId);
+          if (!table) return;
+          try {
+            schemas.set(tableId, (await client.getTableSchema(table.table_name)).map(column => column.name));
+          } catch {
+            preflightWarnings.push(`Could not inspect update_rows target "${table.table_name}"; primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
+          }
+        }));
+        for (const query of queries) {
+          const tableId = query.options.table_id as string;
+          const tableName = existingTables.find(table => table.id === tableId)?.table_name ??
+            (args.tables ?? []).find(table => `planned-table:${table.table_name}` === tableId)?.table_name ?? tableId;
+          const warning = updateRowsCompatibilityWarning(query.kind, query.options, tableName, schemas.get(tableId));
+          if (warning) preflightWarnings.push(`Query "${query.name}": ${warning}`);
+        }
 
         const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({

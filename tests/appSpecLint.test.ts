@@ -10,6 +10,63 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 describe('lint_app_spec', () => {
   beforeEach(() => clearAppPlansForTests());
 
+  it('checks planned custom-key updates, includes implicit id, and leaves all predicates untouched', async () => {
+    const client = {
+      listTables: vi.fn().mockResolvedValue([]),
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', kind: 'tooljetdb' }]),
+      getTableSchema: vi.fn(),
+    } as unknown as ToolJetClient;
+    const options = { operation: 'update_rows', update_rows: {
+      columns: { 0: { column: 'state', value: 'Approved' } },
+      where_filters: { 0: { column: 'reference', operator: 'eq', value: 'R1' } },
+    } };
+    const before = structuredClone(options);
+    for (const primaryKey of [true, false]) {
+      const body = textOf(await lintAppSpecTool(client).handler({
+        version_id: 'v1',
+        tables: [{ table_name: 'requests', columns: [
+          { name: 'reference', type: 'string', primaryKey }, { name: 'state', type: 'string' },
+        ] }],
+        queries: [{ datasource_id: 'tjdb', name: 'save', table_ref: 'requests', options }],
+      }));
+      expect(body.ok).toBe(true);
+      expect(body.warnings.some((warning: string) => warning.includes('has no id column'))).toBe(primaryKey);
+    }
+    expect(client.getTableSchema).not.toHaveBeenCalled();
+    expect(options).toEqual(before);
+  });
+
+  it('inspects each existing update target once, not unrelated tables or list-only targets', async () => {
+    const client = {
+      listTables: vi.fn().mockResolvedValue([
+        { id: 't1', table_name: 'requests' }, { id: 't2', table_name: 'unrelated' },
+      ]),
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', kind: 'tooljetdb' }]),
+      getTableSchema: vi.fn().mockResolvedValue([{ name: 'request_id', isPrimaryKey: true }, { name: 'state' }]),
+    } as unknown as ToolJetClient;
+    const queries = ['approve', 'reject'].map(name => ({
+      datasource_id: 'tjdb', name, table_ref: 'requests', options: {
+        operation: 'update_rows', update_rows: {
+          columns: { 0: { column: 'state', value: name } },
+          where_filters: { 0: { column: 'request_id', operator: 'eq', value: 'R1' } },
+        },
+      },
+    }));
+    const body = textOf(await lintAppSpecTool(client).handler({ version_id: 'v1', queries }));
+    expect(body.ok).toBe(true);
+    expect(body.warnings.filter((warning: string) => warning.includes('has no id column'))).toHaveLength(2);
+    expect(client.getTableSchema).toHaveBeenCalledExactlyOnceWith('requests');
+    vi.mocked(client.getTableSchema).mockClear();
+    await lintAppSpecTool(client).handler({ version_id: 'v1', queries: [{
+      datasource_id: 'tjdb', name: 'list', table_ref: 'requests', options: { operation: 'list_rows', list_rows: {} },
+    }] });
+    expect(client.getTableSchema).not.toHaveBeenCalled();
+    vi.mocked(client.getTableSchema).mockRejectedValue(new Error('Unavailable'));
+    const failedRead = textOf(await lintAppSpecTool(client).handler({ version_id: 'v1', queries }));
+    expect(failedRead.warnings.join(' ')).toContain('primary-key compatibility was not checked');
+    expect(failedRead.warnings.join(' ')).not.toContain('has no id column');
+  });
+
   it('validates a complete planned flow through logical refs without writing', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),

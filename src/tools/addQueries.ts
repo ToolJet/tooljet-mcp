@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
 
 const querySchema = z.object({
   datasource_id: z.string(),
@@ -73,6 +74,9 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
           });
           return { query: { ...query, options }, kind: datasource.kind };
         });
+        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
+          name: query.name, kind, options: query.options,
+        }))));
         const result = await client.createQueries({
           versionId: args.version_id,
           queries: resolved.map(({ query, kind }) => ({
