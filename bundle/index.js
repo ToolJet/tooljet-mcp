@@ -34146,6 +34146,51 @@ function lintUntriggeredDataQueries(summary) {
 var HTML_PX_PER_COLUMN = 32;
 var HTML_WIDGET_HEIGHT_LOSS = 4;
 var HTML_HEIGHT_TOLERANCE = 8;
+function suggestedHtmlHeight(c) {
+  if (c.type !== "Html")
+    return null;
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return null;
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return null;
+  const rect2 = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const width = typeof rect2?.width === "number" ? rect2.width : 39;
+  if (height === void 0)
+    return null;
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return null;
+  const overflow = estimate.height - (height - HTML_WIDGET_HEIGHT_LOSS);
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return null;
+  return { from: height, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
+}
+var SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
+function lintUnguardedSelectionText(c) {
+  if (c.type !== "Html" && c.type !== "Text")
+    return [];
+  const key = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key);
+  if (typeof value !== "string" || !value.includes("selectedRow"))
+    return [];
+  const bad = [];
+  for (const m of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const expr = m[1];
+    const read = expr.match(SELECTION_READ);
+    if (!read)
+      continue;
+    const hasFallback = /\?\?|\|\||\?[^.?][\s\S]*:/.test(expr);
+    if (!hasFallback)
+      bad.push(read[0]);
+  }
+  if (!bad.length)
+    return [];
+  return [
+    `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(", ")} without a fallback. Until a row is selected that value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') or wrap the panel in a ternary on components.table?.selectedRow.`
+  ];
+}
 function lintHtmlContentHeight(c) {
   if (c.type !== "Html")
     return [];
@@ -34225,6 +34270,69 @@ function lintHtmlRootSurface(c) {
 }
 var DATA_BOUND_FOR_REFS = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"]);
 var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)\2\s*\])(\??\.)(value|selectedRow|selectedRowId|selectedRows|isValid|searchText|selectedOptionLabel|checked|filteredData|text)\b/g;
+var OBJECT_LITERAL = /=>\s*\(\s*\{([^}]*)\}\s*\)/g;
+function literalKeys(body) {
+  return body.split(",").map((part) => part.trim()).filter(Boolean).map((part) => part.startsWith("...") ? "..." : part.split(":")[0].trim().replace(/^['"]|['"]$/g, ""));
+}
+var BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
+function lintChartDataShape(c) {
+  if (c.type !== "Chart")
+    return [];
+  const props = c.properties ?? {};
+  if (truthy(propVal(props, "plotFromJson")))
+    return [];
+  const value = propVal(props, "data");
+  if (typeof value !== "string" || !value.includes("{{"))
+    return [];
+  const literals = [...value.matchAll(OBJECT_LITERAL)];
+  if (!literals.length)
+    return [];
+  const errors = [];
+  for (const m of literals) {
+    const keys = literalKeys(m[1]);
+    if (!keys.length || keys.includes("..."))
+      continue;
+    if (!keys.includes("x") || !keys.includes("y")) {
+      errors.push(`Chart "${label(c)}": data maps rows to {${keys.join(", ")}} but the Chart plots [{x, y}] only; any other key names draw an empty plot with no error. Name the category x and the number y.`);
+      break;
+    }
+  }
+  return errors;
+}
+var EMBEDDED_BINDING = /\{\{([\s\S]*?)\}\}/g;
+var BACKSLASH_QUOTE = /\\["']/;
+function lintEmbeddedBindingSyntax(c) {
+  if (c.type !== "Html" && c.type !== "Text")
+    return [];
+  const key = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key);
+  if (typeof value !== "string" || !value.includes("{{"))
+    return [];
+  const errors = [];
+  for (const m of value.matchAll(EMBEDDED_BINDING)) {
+    const expr = m[1];
+    if (expr.includes("{{"))
+      continue;
+    let message = "";
+    try {
+      new Function(`return (
+${expr}
+);`);
+      continue;
+    } catch (error51) {
+      if (!(error51 instanceof SyntaxError))
+        continue;
+      message = error51.message;
+    }
+    const balanced = (expr.match(/\{/g) ?? []).length === (expr.match(/\}/g) ?? []).length;
+    const escaped = BACKSLASH_QUOTE.test(expr);
+    if (!balanced && !escaped)
+      continue;
+    const snippet = expr.length > 90 ? `${expr.slice(0, 90)}\u2026` : expr;
+    errors.push(`${c.type} "${label(c)}": ${key} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` + (escaped ? `Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or 'Cancelled', not \\"Cancelled\\". ` : "") + "A failed binding renders as nothing, which leaves the card or line blank.");
+  }
+  return errors;
+}
 function lintUnguardedComponentRefs(c) {
   if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type))
     return [];
@@ -35314,6 +35422,9 @@ function lintComponentSpec(spec) {
   errors.push(...lintHtmlContentHeight(spec));
   errors.push(...lintHtmlRootSurface(spec));
   errors.push(...lintUnguardedComponentRefs(spec));
+  errors.push(...lintEmbeddedBindingSyntax(spec));
+  errors.push(...lintChartDataShape(spec));
+  errors.push(...lintUnguardedSelectionText(spec));
   if (spec.type === "Table") {
     errors.push(...lintTableColumnsShape(spec));
     const data = propVal2(props, "data");
@@ -35645,7 +35756,7 @@ function lintComponents(components) {
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
   for (const c of components)
-    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
+    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -35748,6 +35859,61 @@ function validateAppStructure(summary) {
     if (missing.length) {
       warnings.push(`Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ${missing.map((name) => `queries.${name}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
     }
+  }
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? "");
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.results\b/g)) {
+      const query = queryByName.get(m[1]);
+      if (!query || query.kind !== "tooljetdb")
+        continue;
+      const operation = recordValue(query.options)?.operation;
+      if (operation === "sql_execution" || operation === void 0)
+        continue;
+      bad.add(m[1]);
+    }
+    for (const name of bad) {
+      const operation = String(recordValue(queryByName.get(name)?.options)?.operation);
+      errors.push(`${component.type ?? "Component"} "${component.name ?? component.id}": reads queries.${name}.data.results, but "${name}" is a ToolJet DB ${operation} query whose data is the rows array itself; only sql_execution returns {results: rows}. Bind queries.${name}.data instead, or the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    if (!["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"].includes(component.type ?? ""))
+      continue;
+    const blob = JSON.stringify(component.properties ?? "");
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data(?![\w?]*\.results)\b/g)) {
+      const query = queryByName.get(m[1]);
+      if (!query || query.kind !== "tooljetdb")
+        continue;
+      if (recordValue(query.options)?.operation !== "sql_execution")
+        continue;
+      if (blob.includes(`queries.${m[1]}.data.results`) || blob.includes(`queries.${m[1]}?.data?.results`) || blob.includes(`queries.${m[1]}.data?.results`))
+        continue;
+      bad.add(m[1]);
+    }
+    for (const name of bad) {
+      errors.push(`${component.type} "${component.name ?? component.id}": reads queries.${name}.data, but "${name}" is a ToolJet DB sql_execution query whose data is {results: rows}. Bind queries.${name}.data.results (or data.results[0].<column> for a single value), or the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    if (component.type !== "Chart")
+      continue;
+    const props = component.properties ?? {};
+    if (isTruthyBinding(propVal2(props, "plotFromJson")))
+      continue;
+    const data = propVal2(props, "data");
+    const m = typeof data === "string" ? data.trim().match(BARE_QUERY_DATA_BINDING) : null;
+    if (!m)
+      continue;
+    const query = queryByName.get(m[1]);
+    if (!query || query.kind === "runjs" || query.kind === "runpy")
+      continue;
+    const options2 = recordValue(query.options);
+    const sql = typeof options2?.query === "string" ? options2.query : typeof recordValue(options2?.sql_execution)?.sqlQuery === "string" ? String(recordValue(options2?.sql_execution)?.sqlQuery) : "";
+    if (sql && /\bas\s+["'`]?x["'`]?\b/i.test(sql) && /\bas\s+["'`]?y["'`]?\b/i.test(sql))
+      continue;
+    errors.push(`Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query.kind ?? "datasource"} query that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`);
   }
   for (const e of summary.events) {
     const name = e.name ?? e.id;
@@ -35862,7 +36028,7 @@ function validateAppStructure(summary) {
     errors.push(...lintUnrenderableHeights(p.components));
     errors.push(...lintOversizedWidths(p.components));
     for (const c of p.components)
-      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c));
+      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
@@ -36565,11 +36731,18 @@ function createClient(auth, config2) {
     return auth.switchWorkspace(workspaceId);
   }
   async function createApp(name) {
-    const createRes = await auth.authedFetch("/api/apps", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type: "front-end" })
-    });
+    let createRes;
+    let finalName = name;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      finalName = attempt === 1 ? name : `${name} ${attempt}`;
+      createRes = await auth.authedFetch("/api/apps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: finalName, type: "front-end" })
+      });
+      if (createRes.status !== 409)
+        break;
+    }
     await assertOk(createRes, "createApp");
     const created = await createRes.json();
     const app = await getApp(created.id);
@@ -38038,7 +38211,26 @@ function createTablesTool(client) {
         const errors = validateTableBatch(tables);
         if (errors.length)
           return fail(new Error(errors.join(" ")));
-        return ok({ tables: await client.createTables({ tables }) });
+        const warnings = [];
+        const taken = new Set((await client.listTables()).map((table) => table.table_name.toLowerCase()));
+        for (const table of tables) {
+          if (!taken.has(table.tableName.toLowerCase())) {
+            taken.add(table.tableName.toLowerCase());
+            continue;
+          }
+          const oldName = table.tableName;
+          let candidate = oldName;
+          for (let n = 2; taken.has(candidate.toLowerCase()); n++)
+            candidate = `${oldName.slice(0, 31 - `_${n}`.length)}_${n}`;
+          table.tableName = candidate;
+          taken.add(candidate.toLowerCase());
+          for (const other of tables)
+            for (const fk of other.foreignKeys ?? [])
+              if (fk.referencedTable === oldName)
+                fk.referencedTable = candidate;
+          warnings.push(`Table "${oldName}" already exists in this workspace; created "${candidate}" instead (foreign keys updated). Use the returned name.`);
+        }
+        return ok({ tables: await client.createTables({ tables }), ...warnings.length ? { warnings } : {} });
       } catch (error51) {
         return fail(error51);
       }
@@ -41901,10 +42093,11 @@ function lintPlannedApp(spec, existingSummary) {
   const structure = validateAppStructure(summary);
   errors.push(...structure.errors);
   warnings.push(...structure.warnings);
+  const deduped = dropUnprefixedDuplicates(errors);
   return {
-    ok: unique2(errors).length === 0,
-    errors: unique2(errors),
-    warnings: unique2(warnings),
+    ok: deduped.length === 0,
+    errors: deduped,
+    warnings: dropUnprefixedDuplicates(warnings),
     checked,
     not_checked: [
       "server acceptance of writes or external datasource connectivity",
@@ -42000,6 +42193,11 @@ function slug(value) {
 function unique2(values) {
   return [...new Set(values)];
 }
+function dropUnprefixedDuplicates(values) {
+  const distinct = unique2(values);
+  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
+  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
+}
 
 // dist/componentBatch.js
 var layoutSchema = external_exports.object({
@@ -42044,6 +42242,17 @@ function prepareComponentBatch(inputs) {
     const geometry = normalizePlannedLayouts(definition.component);
     return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
   });
+  const heightFixes = [];
+  for (const result of normalized2) {
+    const component = result.component;
+    const fix = suggestedHtmlHeight(component);
+    if (!fix)
+      continue;
+    for (const rect2 of [component.layout, component.layouts?.desktop])
+      if (rect2 && typeof rect2.height === "number")
+        rect2.height = fix.to;
+    heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
+  }
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
@@ -42061,6 +42270,7 @@ function prepareComponentBatch(inputs) {
       ...normalized2.flatMap((item) => item.warnings),
       ...expanded.warnings,
       ...lint.warnings,
+      ...heightFixes,
       ...lateListviewChildWarnings
     ]
   };
@@ -42220,6 +42430,7 @@ async function inspectUpdateCompatibility(client, queries) {
 }
 
 // dist/tools/lintAppSpec.js
+var TABLE_NAME_MAX = 31;
 function unique3(values) {
   return [...new Set(values)];
 }
@@ -42252,10 +42463,38 @@ function lintAppSpecTool(client) {
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
-          if (tableIds.has(key))
-            preflightErrors.push(`Planned table "${table.table_name}" already exists.`);
-          else
+          if (tableIds.has(key)) {
+            const oldName = table.table_name;
+            const newName = nextTableName(oldName, tableIds);
+            table.table_name = newName;
+            for (const seed of args.seed_data ?? [])
+              if (seed.table_name === oldName)
+                seed.table_name = newName;
+            for (const query of args.queries ?? [])
+              if (query.table_ref === oldName)
+                query.table_ref = newName;
+            for (const other of args.tables ?? []) {
+              for (const fk of other.foreign_keys ?? []) {
+                const ref = fk;
+                for (const field of ["referencedTable", "referenced_table", "references_table"]) {
+                  if (ref[field] === oldName)
+                    ref[field] = newName;
+                }
+              }
+            }
+            preflightWarnings.push(`Planned table "${oldName}" already exists in this workspace, so it is created as "${newName}"; seed data, table_ref and foreign keys were updated to match. To reuse the existing table instead, drop it from tables and point queries at it with table_ref.`);
+            tableIds.set(newName.toLowerCase(), `planned-table:${newName}`);
+          } else
             tableIds.set(key, `planned-table:${table.table_name}`);
+        }
+        preflightWarnings.push(...autoFitHtmlHeights(args));
+        if (existingSummary) {
+          const plannedNames = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
+          const createsPages = (args.pages ?? []).some((page) => !existingSummary.pages.some((existing) => existing.name?.toLowerCase() === page.name.toLowerCase() || page.name === "Home" && existing.handle === "home"));
+          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames.has(page.name.toLowerCase()));
+          if (createsPages && abandoned.length) {
+            preflightErrors.push(`App already has ${abandoned.length} empty page(s) this plan does not touch: ${abandoned.map((page) => `"${page.name}"`).join(", ")}. Build on them (use the exact existing name in pages[]) or delete them with delete_page before creating new pages, so the app does not end up with duplicates.`);
+          }
         }
         const plannedTables = new Map((args.tables ?? []).map((table) => [table.table_name.toLowerCase(), table]));
         for (const seed of args.seed_data ?? []) {
@@ -42406,6 +42645,51 @@ function lintAppSpecTool(client) {
     }
   };
 }
+function nextTableName(name, taken) {
+  for (let n = 2; n < 100; n++) {
+    const suffix = `_${n}`;
+    const candidate = `${name.slice(0, Math.max(1, TABLE_NAME_MAX - suffix.length))}${suffix}`;
+    if (!taken.has(candidate.toLowerCase()))
+      return candidate;
+  }
+  return `${name.slice(0, TABLE_NAME_MAX - 7)}_${Date.now().toString(36).slice(-6)}`;
+}
+function autoFitHtmlHeights(args) {
+  const warnings = [];
+  for (const page of args.pages ?? []) {
+    const components = page.components ?? [];
+    for (const component of components) {
+      if (component.type !== "Html")
+        continue;
+      const rect2 = component.layouts?.desktop ?? component.layout;
+      if (!rect2 || typeof rect2.height !== "number" || typeof rect2.top !== "number")
+        continue;
+      const fix = suggestedHtmlHeight(component);
+      if (!fix)
+        continue;
+      const delta = fix.to - fix.from;
+      const oldBottom = rect2.top + fix.from;
+      const parentOf = (c) => c.parent_ref ?? c.parent ?? "";
+      const moved = [];
+      for (const sibling of components) {
+        if (sibling === component || parentOf(sibling) !== parentOf(component))
+          continue;
+        for (const r of [sibling.layout, sibling.layouts?.desktop, sibling.layouts?.mobile]) {
+          if (r && typeof r.top === "number" && r.top >= oldBottom - 4)
+            r.top += delta;
+        }
+        const r0 = sibling.layouts?.desktop ?? sibling.layout;
+        if (r0 && typeof r0.top === "number" && r0.top - delta >= oldBottom - 4)
+          moved.push(sibling.name ?? sibling.client_ref ?? "?");
+      }
+      for (const r of [component.layout, component.layouts?.desktop])
+        if (r && typeof r.height === "number")
+          r.height = fix.to;
+      warnings.push(`Page "${page.name}": Html "${component.name ?? component.client_ref ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px, so its height is now ${fix.to}px` + (moved.length ? ` and ${moved.length} component(s) below it moved down ${delta}px (${[...new Set(moved)].join(", ")})` : "") + ". The plan was applied with these values.");
+    }
+  }
+  return warnings;
+}
 
 // dist/tools/applyAppPhase.js
 function logicalRef(value) {
@@ -42505,6 +42789,7 @@ function applyAppPhaseTool(client) {
     async handler(args) {
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = "consume plan";
+      let createdPageIds = [];
       try {
         const stored = consumeAppPlan(args.plan_token);
         const spec = stored.spec;
@@ -42581,6 +42866,7 @@ function applyAppPhaseTool(client) {
         const createdPages = pageWrite.status === "fulfilled" ? pageWrite.value : completedPartialWrites(pageWrite.reason);
         applied.tables = createdTables.length;
         applied.pages = createdPages.length;
+        createdPageIds = createdPages.map((page) => page.page_id);
         const foundationFailures = [
           ...tableWrite.status === "rejected" ? [`tables: ${tableWrite.reason instanceof Error ? tableWrite.reason.message : String(tableWrite.reason)}`] : [],
           ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
@@ -42767,6 +43053,21 @@ function applyAppPhaseTool(client) {
         });
       } catch (error51) {
         let recovery = "";
+        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;
+        if (onlyFoundation && createdPageIds.length) {
+          const removed = [];
+          for (const pageId of createdPageIds) {
+            try {
+              await client.deletePage({ appId: args.app_id, versionId: args.version_id, pageId });
+              removed.push(pageId);
+            } catch {
+            }
+          }
+          if (removed.length) {
+            applied.pages -= removed.length;
+            recovery += ` Removed the ${removed.length} empty page(s) this phase had created, so the next plan can recreate them under the same names.`;
+          }
+        }
         if (Object.values(applied).some((count) => count > 0)) {
           try {
             const current = await client.getAppSummary(args.app_id);
@@ -42781,7 +43082,7 @@ function applyAppPhaseTool(client) {
           } catch {
           }
         }
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
       }
     }
   };
@@ -43338,6 +43639,7 @@ function updateComponentsTool(client) {
         const errors = [];
         const changedComponents = [];
         let placementChanged = false;
+        const layoutFixes = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
@@ -43389,6 +43691,13 @@ function updateComponentsTool(client) {
             parent: next.parent
           });
           const normalizedNext = { ...normalized2.component, id: current.id };
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
+          const desktopRect = current.layouts?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
+            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
+            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
+            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
+          }
           projected.set(current.id, normalizedNext);
           if (update.definition)
             changedComponents.push({ before: current, after: normalizedNext });
@@ -43437,6 +43746,9 @@ function updateComponentsTool(client) {
           pageId: args.page_id,
           updates: resolvedUpdates
         });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
         return fail(err);
