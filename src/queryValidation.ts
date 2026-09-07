@@ -471,7 +471,10 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     // rewrites EVERY ROW in the table while reporting status:ok. Catch it before it is ever written.
     const filtersPath = `${operation}.where_filters`;
     const filters = valueAtPath(options, filtersPath);
-    if (isObject(filters)) {
+    // The backend iterates Object.keys(filters), accepting indexed objects AND
+    // arrays. Both must receive the same targeting guard: [] otherwise bypasses
+    // validation and can become an unfiltered PATCH.
+    if (isObject(filters) || Array.isArray(filters)) {
       const usable = Object.entries(filters).filter(
         ([, clause]) =>
           isObject(clause) &&
@@ -514,8 +517,32 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     // instead. Measured on a one-page visitor log: two repair rounds and more credits than a
     // four-page build on the same model. Name it before the query is written.
     const filters = valueAtPath(options, `${operation}.where_filters`);
-    if (isObject(filters)) {
+    // Array-form filters execute through the same PostgREST builder as maps.
+    // Case17 saved operator "=" in an array because this check only saw objects.
+    if (isObject(filters) || Array.isArray(filters)) {
       for (const [mapKey, rawClause] of Object.entries(filters)) {
+        // Observed in the Luna stock-movement benchmark: `equals` passes the record-shape
+        // check, then buildPostgrestQuery calls a nonexistent builder method. Reject known
+        // foreign/UI spellings, not an exhaustive allowlist tied to one server version.
+        // Never rewrite a persisted write filter or change its target silently.
+        const aliases: Record<string, string> = {
+          equals: 'eq', equal: 'eq', '==': 'eq', '===': 'eq', '=': 'eq',
+          not_equals: 'neq', notEquals: 'neq', '!=': 'neq', '!==': 'neq', '<>': 'neq',
+          greater_than: 'gt', greaterThan: 'gt', '>': 'gt',
+          greater_than_or_equal: 'gte', '>=': 'gte',
+          less_than: 'lt', lessThan: 'lt', '<': 'lt',
+          less_than_or_equal: 'lte', '<=': 'lte',
+        };
+        if (isObject(rawClause) && typeof rawClause.operator === 'string' &&
+            Object.hasOwn(aliases, rawClause.operator)) {
+          errors.push({
+            code: 'invalid_tooljetdb_filter_operator',
+            path: `${operation}.where_filters.${mapKey}.operator`,
+            message: `ToolJet DB filter operator "${rawClause.operator}" is not a PostgREST builder operator. ` +
+              `Use "${aliases[rawClause.operator]}" for this comparison; keep the same column and value. ` +
+              'The query was not automatically rewritten. Fetch the datasource operation contract if unsure.',
+          });
+        }
         if (!isObject(rawClause) || rawClause.operator !== 'eq') continue;
         const column = typeof rawClause.column === 'string' ? rawClause.column : '';
         const value = typeof rawClause.value === 'string' ? rawClause.value : '';
