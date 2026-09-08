@@ -2017,6 +2017,29 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // ServiceNow unwraps the REST `result` envelope: without a transformation, queries.q.data is the rows
+  // array (or the record). Observed live (model-guide benchmark, 2026-09-07): Luna max,
+  // Luna high and Gemini Pro bound every incident list to data.result from memory of the raw REST API and
+  // rendered empty queues although the queries returned 16 to 40 incidents.
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? '');
+    const bad = new Set<string>();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.result\b/g)) {
+      const query = queryByName.get(m[1]!);
+      if (!query || query.kind !== 'servicenow') continue;
+      // Transformations replace query.data and may deliberately add a result field.
+      if (isTruthyBinding(propVal(recordValue(query.options), 'enableTransformation'))) continue;
+      bad.add(m[1]!);
+    }
+    for (const name of bad) {
+      errors.push(
+        `${component.type ?? 'Component'} "${component.name ?? component.id}": reads queries.${name}.data.result, but "${name}" is a ` +
+          'ServiceNow query and the plugin already unwraps the REST result envelope: queries.<q>.data is the records array ' +
+          `(or the record for get/create/update). Bind queries.${name}.data instead, or the component shows No data.`
+      );
+    }
+  }
+
   // A query referenced by bare name. Observed live (Haiku, Helix benchmark 2026-09-07): `jobsWaitingLongest.data`
   // instead of `queries.jobsWaitingLongest.data`, which is an undefined identifier at runtime, so the table
   // showed No data while the query itself was fine. Component references are excluded by the lookbehind

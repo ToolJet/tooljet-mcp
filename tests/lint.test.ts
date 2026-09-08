@@ -1285,6 +1285,47 @@ describe('validateAppStructure', () => {
     }
   });
 
+  it('rejects a .data.result binding on a ServiceNow query, the Luna Halvard case', () => {
+    const withBinding = (binding: string, kind: string): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'incidents', kind, options: { operation: 'list_records', runOnPageLoad: true } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{queries.incidents.data && queries.incidents.data.result ? queries.incidents.data.result : []}}', 'servicenow'));
+    expect(wrong.errors.filter((e) => e.includes('unwraps the REST result envelope'))).toHaveLength(1);
+    expect(validateAppStructure(withBinding('{{queries.incidents?.data?.result ?? []}}', 'servicenow')).errors.filter((e) => e.includes('unwraps the REST'))).toHaveLength(1);
+    for (const ok of [withBinding('{{queries.incidents.data}}', 'servicenow'), withBinding('{{queries.incidents.data.result}}', 'restapi')]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('unwraps the REST'))).toEqual([]);
+    }
+  });
+
+  it.each([
+    { transformationLanguage: 'javascript', transformations: { javascript: 'return { result: data };' } },
+    { transformationLanguage: 'python', transformations: { python: 'return {"result": data}' } },
+    { transformationLanguage: 'javascript', transformation: 'return { result: data };' },
+  ])('allows transformed ServiceNow result bindings only while the transformation is enabled: %j', (transformation) => {
+    const summary: AppSummary = {
+      ...base,
+      pages: [{
+        id: 'p1', name: 'Home', components: [{
+          ...base.pages[0]!.components[0]!,
+          properties: {
+            ...base.pages[0]!.components[0]!.properties,
+            data: { value: '{{queries.loadHardware.data.result}}' },
+          },
+        }],
+      }],
+      queries: [{
+        id: 'q1', name: 'loadHardware', kind: 'servicenow',
+        options: { operation: 'list_records', runOnPageLoad: true, ...transformation, enableTransformation: true },
+      }],
+    };
+    expect(validateAppStructure(summary).errors.filter((e) => e.includes('unwraps the REST'))).toEqual([]);
+
+    summary.queries[0]!.options = { ...(summary.queries[0]!.options as Record<string, unknown>), enableTransformation: false };
+    expect(validateAppStructure(summary).errors.filter((e) => e.includes('unwraps the REST'))).toHaveLength(1);
+  });
+
   it('rejects a Chart bound straight to non-x/y query rows and accepts RunJS or x/y SQL sources', () => {
     const withChart = (binding: string, query: Record<string, unknown>): AppSummary => ({
       ...base,

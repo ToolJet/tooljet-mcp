@@ -115,6 +115,17 @@ describe('datasource query catalog', () => {
     });
   });
 
+  it('distinguishes ServiceNow MCP workflow results from REST flow outputs', () => {
+    const workflow = selectDatasourceQuerySchema('servicenow', { operation: 'invoke_workflow' }) as any;
+    const flow = selectDatasourceQuerySchema('servicenow', { operation: 'trigger_flow' }) as any;
+
+    expect(workflow.response).toMatchObject({ type: 'object', status: 'known' });
+    expect(workflow.response.description).toContain('data.content');
+    expect(workflow.response.description).toContain('data.structuredContent');
+    expect(workflow.response.description).toContain('does not parse text blocks or expose outputs at data.outputs');
+    expect(flow.response.description).toContain('outputs are at queries.<q>.data.outputs');
+  });
+
   it('gives every generated operation an honest response status', () => {
     for (const source of getDatasourceCatalog()) {
       const schema = getDatasourceQuerySchema(source.kind)!;

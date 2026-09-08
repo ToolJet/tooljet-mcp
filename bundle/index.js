@@ -36035,6 +36035,21 @@ function validateAppStructure(summary) {
   }
   for (const component of allComponents) {
     const blob = JSON.stringify(component.properties ?? "");
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.result\b/g)) {
+      const query = queryByName.get(m[1]);
+      if (!query || query.kind !== "servicenow")
+        continue;
+      if (isTruthyBinding(propVal2(recordValue(query.options), "enableTransformation")))
+        continue;
+      bad.add(m[1]);
+    }
+    for (const name of bad) {
+      errors.push(`${component.type ?? "Component"} "${component.name ?? component.id}": reads queries.${name}.data.result, but "${name}" is a ServiceNow query and the plugin already unwraps the REST result envelope: queries.<q>.data is the records array (or the record for get/create/update). Bind queries.${name}.data instead, or the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? "");
     const bare = /* @__PURE__ */ new Set();
     for (const name of queryByName.keys()) {
       if (!name || !/^[A-Za-z_$][\w$]*$/.test(name))
