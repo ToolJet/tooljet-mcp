@@ -36040,6 +36040,8 @@ function validateAppStructure(summary) {
       const query = queryByName.get(m[1]);
       if (!query || query.kind !== "servicenow")
         continue;
+      if (isTruthyBinding(propVal2(recordValue(query.options), "enableTransformation")))
+        continue;
       bad.add(m[1]);
     }
     for (const name of bad) {

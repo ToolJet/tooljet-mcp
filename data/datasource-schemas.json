@@ -47732,7 +47732,7 @@
           "status": "known",
           "source": "curated-tooljet-source",
           "type": "object",
-          "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs."
+          "description": "The MCP tools/call result, returned directly: queries.<q>.data.content contains the content blocks, and data.structuredContent may contain structured output when supplied by the workflow tool. Inspect the returned content before extracting workflow outputs; the plugin does not parse text blocks or expose outputs at data.outputs."
         }
       },
       "list_flows": {

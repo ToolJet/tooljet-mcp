@@ -305,7 +305,14 @@
         "response": { "type": "array<object>", "description": "Workflow or flow definitions, unwrapped." }
       },
       {
-        "operations": ["invoke_workflow", "trigger_flow"],
+        "operations": ["invoke_workflow"],
+        "response": {
+          "type": "object",
+          "description": "The MCP tools/call result, returned directly: queries.<q>.data.content contains the content blocks, and data.structuredContent may contain structured output when supplied by the workflow tool. Inspect the returned content before extracting workflow outputs; the plugin does not parse text blocks or expose outputs at data.outputs."
+        }
+      },
+      {
+        "operations": ["trigger_flow"],
         "response": { "type": "object", "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs." }
       }
     ],
