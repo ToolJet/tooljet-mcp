@@ -27527,7 +27527,8 @@
           "Users": "@spec/microsoft_graph/users",
           "Teams": "@spec/microsoft_graph/teams",
           "OneDrive": "@spec/microsoft_graph/onedrive",
-          "SharePoint": "@spec/microsoft_graph/sharepoint"
+          "SharePoint": "@spec/microsoft_graph/sharepoint",
+          "OneNote": "@spec/microsoft_graph/onenote"
         }
       }
     },
@@ -47369,10 +47370,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "ServiceNow stats result, unwrapped: data.stats.count (a string), data.stats.avg/sum/min/max keyed by field, or an array of { stats, groupby_fields } when sysparm_group_by is set."
         }
       },
       "create_record": {
@@ -47425,10 +47426,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "The single record (ServiceNow's result object, unwrapped): bind queries.<q>.data.<field>, never data.result.<field>. Reference fields follow the same sysparm_display_value rule as list_records."
         }
       },
       "delete_record": {
@@ -47481,10 +47482,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "Empty object on success (ServiceNow returns 204)."
         }
       },
       "get_field_choices": {
@@ -47543,10 +47544,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Metadata rows, unwrapped from ServiceNow's result envelope."
         }
       },
       "get_record": {
@@ -47616,10 +47617,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "The single record (ServiceNow's result object, unwrapped): bind queries.<q>.data.<field>, never data.result.<field>. Reference fields follow the same sysparm_display_value rule as list_records."
         }
       },
       "get_table_schema": {
@@ -47672,10 +47673,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Metadata rows, unwrapped from ServiceNow's result envelope."
         }
       },
       "invoke_workflow": {
@@ -47728,10 +47729,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs."
         }
       },
       "list_flows": {
@@ -47784,10 +47785,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Workflow or flow definitions, unwrapped."
         }
       },
       "list_records": {
@@ -47869,11 +47870,15 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "The records themselves. The plugin unwraps ServiceNow's REST envelope, so queries.<q>.data IS the array; never bind queries.<q>.data.result. With sysparm_display_value=true, reference fields such as assignment_group, caller_id and assigned_to are objects { display_value, link }: bind <field>.display_value, or request sysparm_display_value=false to get sys_ids, or 'all' to get both."
+        },
+        "notes": [
+          "Bind tables to queries.<q>.data directly. The REST `result` wrapper does not exist in ToolJet: queries.<q>.data.result is undefined and the table shows No data.",
+          "Every read must set a sysparm_limit; use sysparm_query for filters (for example active=true^priorityIN1,2) and sysparm_fields to keep rows small."
+        ]
       },
       "list_tables": {
         "operation": "list_tables",
@@ -47925,10 +47930,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Metadata rows, unwrapped from ServiceNow's result envelope."
         }
       },
       "list_workflows": {
@@ -47975,10 +47980,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Workflow or flow definitions, unwrapped."
         }
       },
       "trigger_flow": {
@@ -48031,10 +48036,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs."
         }
       },
       "update_record": {
@@ -48093,10 +48098,10 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-api-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "The single record (ServiceNow's result object, unwrapped): bind queries.<q>.data.<field>, never data.result.<field>. Reference fields follow the same sysparm_display_value rule as list_records."
         }
       }
     },
@@ -52818,8 +52823,8 @@
               },
               "sql_execution.sqlQuery": {
                 "path": "sql_execution.sqlQuery",
-                "description": "ToolJet DB SQL reads return data: {results: rows}; bind tables/charts to queries.<name>.data.results and KPIs to data.results[0]. Inspect the actual result before binding; list_rows and other datasource operations can use different shapes.",
-                "type": "string"
+                "type": "string",
+                "description": "ToolJet DB SQL reads return data: {results: rows}; bind tables/charts to queries.<name>.data.results and KPIs to data.results[0]. Inspect the actual result before binding; list_rows and other datasource operations can use different shapes."
               }
             },
             "required": [
