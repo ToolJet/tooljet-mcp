@@ -1056,7 +1056,9 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const iconVisible =
       typeof iconName === 'string' && iconName.trim() !== '' &&
       propVal(props, 'iconVisibility') !== false && propVal(props, 'iconVisibility') !== '{{false}}';
-    const valueFontPx = optionalStaticNumber(catalogValue('Statistics', props, 'primaryValueSize'));
+    const valueFontPx = optionalStaticNumber(
+      catalogValue('Statistics', spec.styles, 'primaryValueSize', 'styles')
+    );
     const largeValueFont = valueFontPx === undefined || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (
       secondaryHidden &&
@@ -1715,6 +1717,106 @@ export function lintComponents(components: LintComponent[]): LintResult {
 
 const uniq = (xs: string[]): string[] => [...new Set(xs)];
 
+/** A stat row authored one page at a time drifts: page 1 gets 152px tiles with a 34px value, page 2
+ *  gets 120px tiles with a 28px value, and the app reads as three different products. Nothing in the
+ *  per-component lints can see this, because every individual tile is legal. Compare the app's stat
+ *  rows once, after the pages exist. Nested tiles are skipped: inside a Listview or Kanban they are a
+ *  per-row template, not the page's stat row. */
+const KPI_STRIP_VALUE_FONT_MIN_PX = 20;
+
+function isHtmlKpiStrip(rawHtml: unknown): boolean {
+  if (typeof rawHtml !== 'string') return false;
+  const html = rawHtml.replace(/\s+/g, '');
+  if (!/display:(grid|flex)/.test(html)) return false;
+  // A KPI card carries one figure noticeably larger than its label; prose blocks and legends do not.
+  return [...html.matchAll(/font-size:(\d+)px/g)].some((m) => Number(m[1]) >= KPI_STRIP_VALUE_FONT_MIN_PX);
+}
+
+const distinct = <T,>(xs: T[]): T[] => [...new Set(xs)];
+
+export function lintStatTileConsistency(summary: AppSummary): string[] {
+  const warnings: string[] = [];
+  const tiles: Array<{ page: string; height?: number; valueSize?: number; labelSize?: number }> = [];
+  const stripPages = new Map<string, number[]>();
+
+  for (const page of summary.pages) {
+    const pageName = page.name ?? page.id;
+    for (const component of page.components as LintComponent[]) {
+      if (component.parent) continue;
+      const height = (component.layouts?.desktop ?? component.layout)?.height;
+      if (component.type === 'Statistics') {
+        tiles.push({
+          page: pageName,
+          height: typeof height === 'number' ? height : undefined,
+          valueSize: optionalStaticNumber(
+            catalogValue('Statistics', component.styles, 'primaryValueSize', 'styles')
+          ),
+          labelSize: optionalStaticNumber(
+            catalogValue('Statistics', component.styles, 'primaryLabelSize', 'styles')
+          ),
+        });
+      } else if (
+        component.type === 'Html' &&
+        typeof height === 'number' &&
+        isHtmlKpiStrip(propVal(component.properties, 'rawHtml'))
+      ) {
+        stripPages.set(pageName, [...(stripPages.get(pageName) ?? []), height]);
+      }
+    }
+  }
+
+  const tilePages = distinct(tiles.map((t) => t.page));
+  if (tilePages.length > 1) {
+    const heights = distinct(tiles.map((t) => t.height).filter((h): h is number => h !== undefined));
+    if (heights.length > 1) {
+      const perPage = tilePages
+        .map((page) => `${page}: ${distinct(tiles.filter((t) => t.page === page).map((t) => t.height)).join('/')}`)
+        .join('; ');
+      warnings.push(
+        `Statistics tiles differ in height across pages (${perPage}). Pick one tile height for the app and ` +
+          'reuse it on every page — a stat row that changes height from page to page reads as an unfinished app.'
+      );
+    }
+    const typeScales = distinct(tiles.map((t) => `${t.valueSize ?? '?'}/${t.labelSize ?? '?'}`));
+    if (typeScales.length > 1) {
+      const perPage = tilePages
+        .map(
+          (page) =>
+            `${page}: ${distinct(
+              tiles.filter((t) => t.page === page).map((t) => `${t.valueSize ?? '?'}/${t.labelSize ?? '?'}`)
+            ).join(', ')}`
+        )
+        .join('; ');
+      warnings.push(
+        `Statistics tiles use different value/label font sizes across pages (${perPage}, as primaryValueSize/` +
+          'primaryLabelSize). Set one pair once and reuse it on every page so labels and figures match.'
+      );
+    }
+  }
+
+  if (stripPages.size > 1) {
+    const stripHeights = distinct([...stripPages.values()].flat());
+    if (stripHeights.length > 1) {
+      const perPage = [...stripPages].map(([page, hs]) => `${page}: ${distinct(hs).join('/')}`).join('; ');
+      warnings.push(
+        `Html KPI strips differ in height across pages (${perPage}). Use one strip height and one inline type ` +
+          'scale (same label font-size, same value font-size) on every page.'
+      );
+    }
+  }
+
+  const mechanismPages = distinct([...tilePages, ...stripPages.keys()]);
+  if (mechanismPages.length > 1 && tilePages.length > 0 && stripPages.size > 0) {
+    warnings.push(
+      `Stat rows are built two different ways in one app (Statistics on ${tilePages.join(', ')}; Html KPI strip on ` +
+        `${[...stripPages.keys()].join(', ')}), so heights and label sizes cannot line up. Use the Html strip ` +
+        'everywhere, and Statistics only where a tile must expose its value to other components.'
+    );
+  }
+
+  return warnings;
+}
+
 /** Whole-app structural validation over a compact app summary (post-write). Catches dangling
  *  references, ambiguous duplicate names, and bindings to non-existent queries/components, plus
  *  re-runs the per-component render lints against what actually persisted. */
@@ -1984,6 +2086,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }
+  warnings.push(...lintStatTileConsistency(summary));
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }
