@@ -219,9 +219,75 @@ function interpolatedSqlBindingIssues(sql: string): QueryValidationIssue[] {
   ];
 }
 
+/* A transformation is three fields, not one. `transformations` / `transformation` carries the code,
+   but ToolJet only runs it when `enableTransformation` is true and `transformationLanguage` names the
+   language the code is under. Writing the code alone saves a transformation that never executes, and
+   the app looks like the transformation is wrong rather than off. Observed on a real build (thread
+   f4e3a7da): three turns of rewriting a transformation that was never enabled. */
+function transformationWarnings(options: Record<string, unknown>): QueryValidationIssue[] {
+  const warnings: QueryValidationIssue[] = [];
+  const bag = isObject(options.transformations) ? options.transformations : undefined;
+  const languages: string[] = bag ? Object.keys(bag).filter((key) => key === 'javascript' || key === 'python') : [];
+  const hasCode = languages.length > 0
+    || (typeof options.transformation === 'string' && options.transformation.trim() !== '');
+  if (!hasCode) return warnings;
+
+  const enabled = isTruthyStatic(options.enableTransformation);
+  const language = typeof options.transformationLanguage === 'string' ? options.transformationLanguage : undefined;
+  if (!enabled) {
+    warnings.push({
+      code: 'transformation_not_enabled',
+      path: 'enableTransformation',
+      message:
+        'A transformation is supplied but enableTransformation is not true, so ToolJet saves the code and never runs it. ' +
+        'Set enableTransformation: true and transformationLanguage to the language the code is written in.',
+    });
+  }
+  if (!language) {
+    warnings.push({
+      code: 'transformation_language_missing',
+      path: 'transformationLanguage',
+      message:
+        'A transformation is supplied without transformationLanguage, so ToolJet cannot tell how to run it. ' +
+        `Set it to ${languages.length === 1 ? `"${languages[0]}"` : '"javascript" or "python"'}.`,
+    });
+  } else if (languages.length > 0 && !languages.includes(language)) {
+    warnings.push({
+      code: 'transformation_language_mismatch',
+      path: 'transformationLanguage',
+      message:
+        `transformationLanguage is "${language}" but the code is under transformations.${languages.join('/')}. ` +
+        'ToolJet runs the entry matching transformationLanguage, so the supplied code is ignored.',
+    });
+  }
+  return warnings;
+}
+
+/* InfluxDB query_data returns the raw /api/v2/query response body: annotated CSV as one string, not
+   rows. Every component that expects rows — Table above all — needs a transformation to parse it.
+   The MCP client inferred this; the AI builder did not, and needed telling twice (reported build,
+   90+ minutes). Say it at authoring time instead. */
+function influxTransformWarnings(kind: string, options: Record<string, unknown>): QueryValidationIssue[] {
+  if (kind !== 'influxdb') return [];
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+  if (operation !== 'query_data') return [];
+  if (isTruthyStatic(options.enableTransformation)) return [];
+  return [{
+    code: 'influx_raw_csv_response',
+    path: 'enableTransformation',
+    message:
+      'InfluxDB query_data returns annotated CSV as a single raw string, not rows. Bound directly, a Table renders ' +
+      'nothing. Add a transformation that parses the CSV into an array of row objects (skip the #datatype/#group/' +
+      '#default annotation lines and the empty leading columns), with enableTransformation: true and ' +
+      'transformationLanguage: "javascript".',
+  }];
+}
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  warnings.push(...transformationWarnings(options));
+  warnings.push(...influxTransformWarnings(kind, options));
   if (typeof options.query === "string") {
     errors.push(...unquotedSqlBindingIssues(options.query));
     warnings.push(...interpolatedSqlBindingIssues(options.query));

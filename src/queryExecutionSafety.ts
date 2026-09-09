@@ -168,6 +168,88 @@ function assessOpenapi(options: Record<string, unknown>, datasourceId?: string):
   };
 }
 
+/* InfluxDB's v2 API, split by effect.
+
+   Without this, every InfluxDB query fell through to "no proven read classifier" and was refused
+   before execution — the same failure mode ServiceNow had above. Measured on a real 2-page build
+   (thread f4e3a7da): all three Flux queries were refused on every turn, so the agent never saw a
+   response and shipped a guessed transformation it re-guessed twice more.
+
+   Reads are proven but never directSafe: they cross into a remote system and can return an
+   unbounded series. */
+const INFLUX_ROW_READS = new Set(['query_data']);
+const INFLUX_METADATA_READS = new Set([
+  'list_buckets',
+  'retrieve_bucket',
+  'analyze_flux_query',
+  'abstract_syntax_tree',
+  'query_suggestions',
+  'query_suggestions_for_branching',
+]);
+
+/* Flux is not read-only. `to()` and `experimental.to()` write points back into a bucket, so a
+   query_data body carrying one is a write wearing a read's operation name. */
+const FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_.])(?:experimental\.)?to\s*\(/;
+
+/* A Flux read is bounded by an explicit `limit(n:)`; a bare `range()` over a busy measurement can
+   return millions of points. */
+const FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
+
+function assessInflux(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const identity = { datasourceKind: 'influxdb', ...(datasourceId ? { datasourceId } : {}) };
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity,
+  });
+
+  if (!operation) return refuse('InfluxDB query has no operation.');
+
+  // write appends points; create/update/delete_bucket change retention and can destroy series.
+  if (!INFLUX_ROW_READS.has(operation) && !INFLUX_METADATA_READS.has(operation)) {
+    return refuse(`InfluxDB operation ${operation} is not a read; it can change InfluxDB state.`);
+  }
+
+  const remote = {
+    provenRead: true as const, directSafe: false as const, selectStar: false as const,
+    requiresCountPreflight: false as const, requiresRemoteReadConfirmation: true as const,
+    ...identity,
+  };
+
+  if (INFLUX_METADATA_READS.has(operation)) {
+    return { ...remote, countOnly: false,
+      reason: `InfluxDB ${operation} reads remote metadata without executing a query.` };
+  }
+
+  // query_data: the Flux script is the query, and it decides both effect and size.
+  const body = typeof options.body === 'string' ? options.body : '';
+  if (!body.trim()) return refuse('InfluxDB query_data has no Flux body to classify.');
+  if (FLUX_WRITE_CALL.test(body)) {
+    return refuse('InfluxDB query_data body calls to(), which writes points back into a bucket; that is not a read.');
+  }
+
+  const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
+  const source = bucket
+    ? ({ kind: 'remote_endpoint', value: `influxdb:${bucket}` } as QueryReadAssessment['source'])
+    : undefined;
+  const bounded = { ...remote, countOnly: false, ...(source ? { source } : {}) };
+
+  const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
+  if (maxRows === undefined) {
+    return {
+      ...bounded, requiresCountPreflight: true,
+      reason: 'InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded.',
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...bounded, requiresCountPreflight: true, maxRows,
+      reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+    };
+  }
+  return { ...bounded, maxRows, reason: 'InfluxDB query_data reads remote time-series data.' };
+}
+
 function assessRestGet(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
   const identity = { datasourceKind: 'restapi', ...(datasourceId ? { datasourceId } : {}) };
   const method = typeof options.method === 'string' ? options.method.toLowerCase() : undefined;
@@ -428,6 +510,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   if (kind === 'openapi') return assessOpenapi(options, datasourceId);
 
   if (kind === 'servicenow') return assessServiceNow(options, datasourceId);
+
+  if (kind === 'influxdb') return assessInflux(options, datasourceId);
 
   if (kind === 'supabase') return assessSupabase(options, datasourceId);
 
