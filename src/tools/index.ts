@@ -28,6 +28,7 @@ import { generateEditContractTool } from './generateEditContract.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
+import { createRenderSessionTool } from './createRenderSession.js';
 import { validateAppTool } from './validateApp.js';
 import { verifyPageRenderTool } from './verifyPageRender.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
@@ -122,6 +123,7 @@ export function registerTools(
     getComponentTool(client),
     validateAppTool(client),
     verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082'),
+    createRenderSessionTool(client),
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
