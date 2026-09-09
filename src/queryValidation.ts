@@ -52,7 +52,14 @@ function operationFromOptions(
   defaults: Record<string, unknown>
 ): string | undefined {
   const operation = options.operation ?? defaults.operation;
-  if (typeof operation === 'string' && operation) return operation;
+  if (typeof operation === 'string' && operation) {
+    if (Object.prototype.hasOwnProperty.call(contracts, operation)) return operation;
+    // A kind with a single `default` contract does not enumerate operations, and for some (openapi)
+    // `operation` is not a plugin operation name at all — it is the HTTP method of the endpoint.
+    // Its one contract covers every value, so resolve to it rather than reporting the value invalid.
+    if (Object.prototype.hasOwnProperty.call(contracts, 'default')) return 'default';
+    return operation;
+  }
   const mode = options.mode ?? defaults.mode;
   if (typeof mode === 'string' && mode && Object.prototype.hasOwnProperty.call(contracts, mode)) return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, 'default')) return 'default';

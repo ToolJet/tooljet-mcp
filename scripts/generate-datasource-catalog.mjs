@@ -177,6 +177,9 @@ function applyOverrides(kind, contracts) {
   }
   for (const [operation, operationOverride] of Object.entries(kindOverride.operations || {})) {
     const contract = contracts[operation] || { operation, variants: [] };
+    if (!contract.variants.length && operationOverride.fields) {
+      contract.variants.push({ when: {}, fields: {}, required: [] });
+    }
     if (operationOverride.response) {
       contract.response = {
         status: 'known',
@@ -189,8 +192,12 @@ function applyOverrides(kind, contracts) {
       if (Array.isArray(operationOverride.required)) {
         variant.required = [...new Set([...variant.required, ...operationOverride.required])].sort();
       }
+      // A plugin with an empty operations.json (openapi) compiles to a contract with no fields at
+      // all, so an override that could only patch existing entries could never describe it. Adding
+      // is therefore allowed; `patch_only` keeps a typo from inventing a field on a harvested kind.
       for (const [path, fieldOverride] of Object.entries(operationOverride.fields || {})) {
-        if (variant.fields[path]) variant.fields[path] = { ...variant.fields[path], ...fieldOverride, path };
+        if (!variant.fields[path] && operationOverride.patch_only) continue;
+        variant.fields[path] = { ...(variant.fields[path] || {}), ...fieldOverride, path };
       }
     }
     contracts[operation] = contract;
@@ -320,11 +327,14 @@ for (const collection of pluginCollections) {
       name: source.name || querySchema.title || source.kind,
       type: source.type || querySchema.type,
       description: querySchema.description,
-      defaults: querySchema.defaults || {},
+      defaults: overrides[source.kind]?.defaults || querySchema.defaults || {},
       operations,
       contracts,
       properties,
-      introspectionMethods: introspectionMethods(properties),
+      // Scraped from operations.json `invokeMethod` keys, which openapi's empty file cannot supply
+      // even though its plugin implements the methods; an override fills that gap.
+      introspectionMethods: overrides[source.kind]?.introspection_methods
+        ?? introspectionMethods(properties),
       supportsTestConnection: harvestSupportsTestConnection(libDir),
       sources: [sourceEntry],
     };
