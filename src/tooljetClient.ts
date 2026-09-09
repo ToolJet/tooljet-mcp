@@ -1115,7 +1115,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
     const created = await post(
       '/api/ext/users/personal-access-token',
-      { email, appSlug: appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes },
+      // appId, NOT appSlug: the external API resolves appSlug with a strict `where: { slug }`
+      // lookup, which happens to match only because ToolJet defaults an app's slug to its id. A
+      // renamed app would stop resolving and the caller would silently lose its render check.
+      { email, appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes },
       { Authorization: `Basic ${accessToken}` }
     );
     const pat = created.personalAccessToken;

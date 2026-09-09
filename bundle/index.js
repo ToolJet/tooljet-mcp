@@ -35718,7 +35718,14 @@ function createClient(auth, config2) {
       }
       return await res.json();
     };
-    const created = await post("/api/ext/users/personal-access-token", { email: email3, appSlug: appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes }, { Authorization: `Basic ${accessToken}` });
+    const created = await post(
+      "/api/ext/users/personal-access-token",
+      // appId, NOT appSlug: the external API resolves appSlug with a strict `where: { slug }`
+      // lookup, which happens to match only because ToolJet defaults an app's slug to its id. A
+      // renamed app would stop resolving and the caller would silently lose its render check.
+      { email: email3, appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes },
+      { Authorization: `Basic ${accessToken}` }
+    );
     const pat = created.personalAccessToken;
     if (typeof pat !== "string" || !pat) {
       throw new Error("ToolJet did not return a personal access token for the render session.");
