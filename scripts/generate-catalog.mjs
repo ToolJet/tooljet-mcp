@@ -321,6 +321,22 @@ for (const f of files) {
 // from the editor config. Keep these tiny, source-verified additions next to the generator rather
 // than teaching the skill stale prose.
 const RUNTIME_EXPOSED_VARIABLES = {
+  // Calendar.jsx prepares event dates; eventsSlice.js publishes that event without a DB lookup.
+  Calendar: [
+    { name: 'selectedEvent', valueType: 'object', semantics: 'Clicked projected calendar event, published before onCalendarEventSelect; NOT automatically the original query row. Only fields retained in events are available; start/end become JavaScript Date objects. Preserve a stable record id and look up the original row by selectedEvent.id before prefilling an edit form that expects fields such as start_at or client_name. Guard an empty selection or missing row.' },
+    { name: 'selectedSlots', valueType: 'object', semantics: 'Selected slots with start/end formatted using dateFormat, plus slots, resourceId and action; these are not ISO timestamps unless dateFormat explicitly produces ISO strings.' },
+  ],
+  // Verified in Widgets/Map/Map.jsx and Widgets/Date/DatePickerV2.jsx.
+  Map: [
+    { name: 'markers', valueType: 'array', semantics: 'Current marker objects, initialized from defaultMarkers.' },
+    { name: 'selectedMarker', valueType: 'object', semantics: 'The original marker object, published before onMarkerClick. Preserve a stable record id on each defaultMarkers entry; read selectedMarker.id to resolve details. Guard a missing or empty selection before the first marker click.' },
+    { name: 'bounds', valueType: 'object', shape: { northEast: { lat: 'number', lng: 'number' }, southWest: { lat: 'number', lng: 'number' } }, semantics: 'Published on bounds change.' },
+  ],
+  DatePickerV2: [
+    { name: 'selectedDate', valueType: 'string', semantics: 'Selected date formatted using dateFormat. For date-only persistence set dateFormat="YYYY-MM-DD" and use selectedDate; handle an empty selection.' },
+    { name: 'displayValue', valueType: 'string', semantics: 'Selected date formatted using dateFormat, same formatting as selectedDate.' },
+    { name: 'unixTimestamp', valueType: 'number', semantics: 'Selected date timestamp; use selectedDate for formatted date-only persistence.' },
+  ],
   DropdownV2: [{ name: 'value' }, { name: 'selectedOption' }, { name: 'options' }],
   Form: [{ name: 'formData', default: {} }, { name: 'children', default: {} }],
   Listview: [
@@ -352,10 +368,48 @@ for (const [type, variables] of Object.entries(RUNTIME_EXPOSED_VARIABLES)) {
   if (!schemas[type]) continue;
   const known = new Set((schemas[type].exposedVariables || []).map((variable) => variable.name));
   schemas[type].exposedVariables.push(...variables.filter((variable) => !known.has(variable.name)));
+  // Newer widget configs may already advertise these names. Retain their harvested defaults,
+  // but enrich them with the same runtime semantics instead of dropping the supplement.
+  if (type === 'Map' || type === 'DatePickerV2' || type === 'Calendar') {
+    for (const variable of variables) {
+      Object.assign(schemas[type].exposedVariables.find(entry => entry.name === variable.name), variable);
+    }
+  }
+}
+
+if (schemas.Calendar) {
+  schemas.Calendar.description += ' Use one dateFormat for event dates and calendar bounds; raw ISO values do not match the default format. selectedEvent is the projected event, not the source row: retain its id and resolve the original record before editing.';
+  for (const property of schemas.Calendar.properties) {
+    if (['dateFormat', 'events', 'defaultDate', 'startTime', 'endTime'].includes(property.key)) {
+      property.description = 'Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format all bound date strings consistently; raw ISO query timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern. Preserve the event record id for selection-to-record lookup.';
+    }
+  }
+}
+
+if (schemas.DatePickerV2) {
+  const value = schemas.DatePickerV2.exposedVariables.find((variable) => variable.name === 'value');
+  if (value) Object.assign(value, {
+    semantics: 'ISO timestamp with a timezone offset, not a date-only string. For date-only fields use selectedDate with dateFormat="YYYY-MM-DD"; do not append T00:00:00 to value.',
+  });
+}
+if (schemas.Map) {
+  schemas.Map.description += ' Requires the ToolJet deployment Google Maps API configuration; structural validation does not verify provider access.';
 }
 
 // Exact runtime shapes used by datasource-neutral server-side Table bindings. The widget config
 // advertises the variable names but not their members, which otherwise forces browser probing.
+if (schemas.Kanban) {
+  const movement = schemas.Kanban.exposedVariables.find((variable) => variable.name === 'lastCardMovement');
+  if (movement) Object.assign(movement, {
+    valueType: 'object',
+    shape: {
+      originColumnId: 'origin column id', destinationColumnId: 'destination column id',
+      originCardIndex: 'number', destinationIndex: 'number',
+      cardDetails: { id: 'moved card id', columnId: 'destination column id', '...': 'source card fields' },
+    },
+    semantics: 'Published for onCardMoved. Use cardDetails.id and destinationColumnId in persistence queries; cardId, sourceColumn and destinationColumn are not exposed members.',
+  });
+}
 if (schemas.Table) {
   const tableVariables = new Map(schemas.Table.exposedVariables.map((variable) => [variable.name, variable]));
   Object.assign(tableVariables.get('pageIndex') ?? {}, {
@@ -465,6 +519,23 @@ const SAFE_GENERATED_FORM_FIELD_TYPES = [
   'textinput', 'number', 'emailinput', 'password', 'datepicker', 'checkbox',
 ];
 const AUTHORING_HINTS = {
+  Button: {
+    outlineContrast: 'styles.type=outline renders a transparent background, ignoring backgroundColor. Set textColor, visible iconColor and loaderColor for contrast against the actual page/card; var(--cc-primary-text) is appropriate on a normal light surface. The primary-button default var(--cc-surface1-surface) can disappear there. Preserve intentional contrasting colors on dark parents; do not assume changing type remaps semantic color tokens.',
+  },
+  NumberInput: {
+    validationPlacement: 'Set bounds in top-level validation.minValue and validation.maxValue as {value: ...}. The legacy properties.minValue/maxValue defaults are ignored by the current renderer; leave them empty. Use validation.mandatory for required input.',
+    submitGuard: 'A standalone Button is not automatically blocked by an invalid input. Gate its action using the input isValid state and an explicit finite numeric range check; truthiness accepts negative numbers and rejects valid zero. Keep database constraints authoritative.',
+  },
+  FilePicker: {
+    acceptedTypes: 'Use top-level validation.fileType, a comma-separated MIME string; for images and PDFs use image/*,application/pdf. enableValidation controls mandatory state and does not disable the file-type restriction. Labels and parseFileType do not change accepted types.',
+    filePayload: 'components.<picker>.file[0].dataURL is bare base64, without a data: prefix; base64Data contains the same payload. Preserve name, type (MIME) and payload together. content is decoded text, not a reliable binary-document representation.',
+    preview: 'Never bind bare base64 directly to href or src: it becomes a relative URL. For a consumer that supports data URLs, construct data:<validated MIME>;base64,<payload> from an allowlisted document/image MIME and the stored payload. Browser top-level data-URL navigation may be blocked; use a supported native preview or an explicit Blob download workflow and verify reopening the saved document. Filename display alone does not prove preview works.',
+    processing: 'FilePicker reads file content; it does not provide OCR or PDF rasterization. Inspect configured native JS libraries before promising those workflows. Preserve originals and handle missing dependencies honestly.',
+  },
+  Map: {
+    providerSetup: 'Map.jsx loads Google Maps using deployment public_config.GOOGLE_MAPS_API_KEY. If Google reports a configuration/access error, report the dependency and ask the deployment owner to fix it; do not invent a working key, suppress the warning, or claim the map is production-ready.',
+    markerSelection: 'Use defaultMarkers entries with lat, lng and a stable source-record id. onMarkerClick publishes that whole object as selectedMarker before handlers run. Capture the selected id into the same detail context used by list selection. Do not match solely by coordinates: different visits may share a property.',
+  },
   ButtonGroupV2: {
     selectionTiming: {
       rule: 'onClick can fire before an immediate run-query action observes the new selected value. A page query and count query can therefore disagree after one click.',
@@ -485,6 +556,11 @@ const AUTHORING_HINTS = {
       defaultValue: 'body',
       rule: 'Put the modal title Text in header, fields/content in body, and native action buttons in footer. Do not leave showHeader enabled with an empty header and add a duplicate title row to the body.',
       parentRule: 'Set parent_ref for a same-batch modal or parent for an existing modal; coordinates are relative to the selected slot canvas.',
+    },
+    closeLifecycle: {
+      event: 'onClose',
+      rule: 'Put transient selected-record/form cleanup on ModalV2 onClose, not only on a Cancel button: native X and enabled Escape/outside-dismiss paths must not leave stale selection. If a Table opens the detail modal, deselect its row on close when needed so clicking that same row again can reopen its details. Keep cleanup idempotent and never write or delete database records as cleanup.',
+      verification: 'Test Cancel, native X, each enabled dismissal path and successful-save close, then reopen the same record and a different record. Do not assume a working Cancel proves every close path.',
     },
   },
   DropdownV2: {
@@ -617,6 +693,13 @@ const AUTHORING_HINTS = {
         autogenerated: false,
       },
     },
+    inlineEditing: {
+      selection: 'selectedRow and rowData contain the original source row, not the pending inline edits. selectRowOnCellEdit does not change this contract.',
+      pendingRows: 'Read pending full rows with Object.values(components.<table>.dataUpdates || {}). dataUpdates and changeSet are objects keyed by row indexes, not database primary keys; updatedData contains all rows with edits merged.',
+      saveEvent: 'The native Save changes footer fires onBulkUpdate. Wire a supported mutation to that event before exposing the footer; an editable cell or visible Save control alone does not persist anything.',
+      perRowSave: 'For a per-row Save action, find the pending row by its stable primary key, not its filtered/sorted position. Use selectedRow only for identity; do not save selectedRow field values as if they were edited values. Hide the bulk footer when it has no separate working handler.',
+      validation: 'Validate edited numbers for finite, nonnegative values before writing; reject negative values, recompute derived status fields from the edited values, and refresh/reset edits only after confirmed success. Verify the saved value after reload.',
+    },
     rowActionButtons: {
       recommendedApproach: 'Add a column with columnType="button"; legacy properties.actions.value is deprecated.',
       catalogActionsMeaning: 'Top-level schema.actions are control-component runtime methods, not row-action buttons.',
@@ -649,12 +732,28 @@ const AUTHORING_HINTS = {
         trigger: 'onClick',
         action: { actionId: 'run-query', queryId: '<query id>', queryName: '<query name>' },
       },
-      eventRule: 'ref is <column key or name>::<button id>; use components.<table>.selectedRow in the action.',
+      eventRule: 'ref is <column key or name>::<button id>; use components.<table>.selectedRow for source-row identity, not pending inline edits. See inlineEditing before wiring editable-cell saves.',
     },
   },
 };
 for (const [type, hints] of Object.entries(AUTHORING_HINTS)) {
   if (schemas[type]) schemas[type].authoringHints = hints;
+}
+
+// Also deliver these contracts in selective authoringHints reads, which intentionally omit
+// overview and exposedVariables. Do not expand every compact property response globally.
+if (schemas.Calendar) {
+  schemas.Calendar.authoringHints = {
+    ...schemas.Calendar.authoringHints,
+    selection: {
+      rule: 'selectedEvent is the projected event, not automatically the source row. Preserve a stable record id and either retain every editor field in the event projection or resolve the original record by that id before prefilling. start/end are converted to JavaScript Date objects; do not confuse them with raw database fields.',
+      timing: 'selectedEvent is published before onCalendarEventSelect actions run. Guard empty selection and a missing source row.',
+    },
+    dateParsing: {
+      rule: 'Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format every bound string consistently; raw ISO timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern.',
+      slots: 'selectedSlots.start/end are formatted strings using dateFormat, not necessarily ISO timestamps.',
+    },
+  };
 }
 
 mkdirSync(resolve(root, 'data'), { recursive: true });

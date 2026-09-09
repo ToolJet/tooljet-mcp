@@ -1,0 +1,498 @@
+[
+ {
+  "app": "cl-luna-medium",
+  "name": "Cabecalho Modal",
+  "parent": "5007c6e8-eb6f-443f-aded-995d447ebe02-header",
+  "height": 68,
+  "rawHtml": "<div style=\"font-family:Georgia,serif;color:#2B1E22;font-size:24px;font-weight:600;\">Novo agendamento</div><div style=\"font-family:Inter,sans-serif;color:#8A737A;font-size:13px;margin-top:4px;\">Reserve um momento especial para sua cliente.</div>",
+  "rootStyle": "font-family:Georgia,serif;color:#2B1E22;font-size:24px;font-weight:600;"
+ },
+ {
+  "app": "cl-luna-medium",
+  "name": "Titulo Agenda",
+  "parent": "",
+  "height": 100,
+  "rawHtml": "<div style=\"font-family:Inter,sans-serif;padding:8px 0 14px;\"><div style=\"font-family:Georgia,serif;color:#2B1E22;font-size:24px;font-weight:600;\">Agenda da cl\u00ednica</div><div style=\"color:#8A737A;font-size:13px;margin-top:5px;\">Acompanhe os pr\u00f3ximos momentos de cuidado da Maison Aurelie.</div></div>",
+  "rootStyle": "font-family:Inter,sans-serif;padding:8px 0 14px;"
+ },
+ {
+  "app": "cl-luna-medium",
+  "name": "Masthead Aurelie",
+  "parent": "",
+  "height": 180,
+  "rawHtml": "<div style=\"background:linear-gradient(135deg,#4B2928,#8F5E59);color:#FFF7F3;padding:24px;border-radius:22px;font-family:Georgia,serif\"><div style=\"font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#F4C9C3\">MAISON AURELIE</div><div style=\"font-size:32px;margin-top:8px\">Est\u00e9tica com assinatura</div><div style=\"font-family:Inter,sans-serif;font-size:14px;color:#F8E4E0;margin-top:6px\">Painel de gest\u00e3o da cl\u00ednica, criado para cuidar de cada detalhe.</div></div>",
+  "rootStyle": "background:linear-gradient(135deg,#4B2928,#8F5E59);color:#FFF7F3;padding:24px;border-radius:22px;font-family:Georgia,serif"
+ },
+ {
+  "app": "cl-luna-medium",
+  "name": "Resumo da Casa",
+  "parent": "",
+  "height": 160,
+  "rawHtml": "<div style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:#F8F2EE;padding:18px;border-radius:18px;font-family:Inter,sans-serif\"><div style=\"background:#fff;border:1px solid #E9D7D1;border-radius:14px;padding:16px\"><div style=\"color:#9A7770;font-size:11px;letter-spacing:1px;text-transform:uppercase\">Agendamentos Hoje</div><div style=\"color:#4B2928;font-size:30px;font-weight:700;margin-top:8px\">{{queries['Listar Agendamentos'].data.filter(r => r.data_agendamento.startsWith('2026-09-05')).length}}</div><div style=\"color:#B9827A;font-size:12px;margin-top:5px\">agenda de hoje</div></div><div style=\"background:#fff;border:1px solid #E9D7D1;border-radius:14px;padding:16px\"><div style=\"color:#9A7770;font-size:11px;letter-spacing:1px;text-transform:uppercase\">Esta Semana</div><div style=\"color:#4B2928;font-size:30px;font-weight:700;margin-top:8px\">{{queries['Listar Agendamentos'].data.length}}</div><div style=\"color:#B9827A;font-size:12px;margin-top:5px\">compromissos na agenda</div></div><div style=\"background:#fff;border:1px solid #E9D7D1;border-radius:14px;padding:16px\"><div style=\"color:#9A7770;font-size:11px;letter-spacing:1px;text-transform:uppercase\">Total de Clientes</div><div style=\"color:#4B2928;font-size:30px;font-weight:700;margin-top:8px\">{{queries['Listar Agendamentos'].data.length}}</div><div style=\"color:#B9827A;font-size:12px;margin-top:5px\">clientes cadastradas</div></div><div style=\"background:#fff;border:1px solid #E9D7D1;border-radius:14px;padding:16px\"><div style=\"color:#9A7770;font-size:11px;letter-spacing:1px;text-transform:uppercase\">Faturamento</div><div style=\"color:#4B2928;font-size:30px;font-weight:700;margin-top:8px\">{{queries['Listar Agendamentos'].data.reduce((s,r)=>s+Number(r.valor||0),0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}}</div><div style=\"color:#B9827A;font-size:12px;margin-top:5px\">valor agendado</div></div></div>",
+  "rootStyle": "display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:#F8F2EE;padding:18px;border-radius:18px;font-family:Inter,sans-serif"
+ },
+ {
+  "app": "cl-luna-max",
+  "name": "AurelieHeader",
+  "parent": "",
+  "height": 120,
+  "rawHtml": "<div style=\"height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#FFFCFA;border-bottom:1px solid #E3D4CE;font-family:Inter,ui-sans-serif,sans-serif;\"><div style=\"display:flex;align-items:center;gap:16px;\"><div style=\"width:44px;height:44px;border-radius:50%;background:#A64D6A;color:#FFF7F8;display:flex;align-items:center;justify-content:center;font-size:16px;letter-spacing:2px;font-weight:700;box-shadow:0 6px 18px rgba(166,77,106,.18);\">MA</div><div><div style=\"font-size:12px;letter-spacing:3px;color:#A64D6A;font-weight:700;\">MAISON AURELIE</div><div style=\"font-size:22px;letter-spacing:1px;color:#2B1E22;font-weight:600;margin-top:3px;\">ESTETICA</div></div></div><div style=\"text-align:right;\"><div style=\"font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8A737A;\">Gest\u00e3o de experi\u00eancia e beleza</div><div style=\"font-family:Georgia,serif;font-size:15px;color:#5A3A44;margin-top:8px;\">S\u00e1bado, 05 de setembro de 2026</div></div></div>",
+  "rootStyle": "height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#FFFCFA;border-bottom:1px solid #E3D4CE;font-family:Inter,ui-sans-serif,sans-serif;"
+ },
+ {
+  "app": "cl-luna-max",
+  "name": "AurelieKpis",
+  "parent": "",
+  "height": 150,
+  "rawHtml": "<div style=\"height:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 0;font-family:Inter,ui-sans-serif,sans-serif;\"><div style=\"background:#FFF9F7;border:1px solid #E8D7D2;border-radius:16px;padding:21px 22px;box-shadow:0 8px 18px rgba(90,58,68,.05);\"><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8A737A;\">Agendamentos hoje</div><div style=\"font-size:31px;line-height:1;color:#2B1E22;font-weight:600;margin-top:12px;\">{{(queries.listarAgendamentos.data || []).filter(r => String(r.data_agendamento || '').slice(0,10) === '2026-09-05').length}}</div><div style=\"font-size:12px;color:#A64D6A;margin-top:10px;\">Agenda do dia</div></div><div style=\"background:#FFF9F7;border:1px solid #E8D7D2;border-radius:16px;padding:21px 22px;box-shadow:0 8px 18px rgba(90,58,68,.05);\"><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8A737A;\">Esta semana</div><div style=\"font-size:31px;line-height:1;color:#2B1E22;font-weight:600;margin-top:12px;\">{{(queries.listarAgendamentos.data || []).filter(r => String(r.data_agendamento || '').slice(0,10) >= '2026-08-31' && String(r.data_agendamento || '').slice(0,10) <= '2026-09-06').length}}</div><div style=\"font-size:12px;color:#A64D6A;margin-top:10px;\">31 ago a 06 set</div></div><div style=\"background:#FFF9F7;border:1px solid #E8D7D2;border-radius:16px;padding:21px 22px;box-shadow:0 8px 18px rgba(90,58,68,.05);\"><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8A737A;\">Total de clientes</div><div style=\"font-size:31px;line-height:1;color:#2B1E22;font-weight:600;margin-top:12px;\">{{new Set((queries.listarAgendamentos.data || []).map(r => r.nome)).size}}</div><div style=\"font-size:12px;color:#A64D6A;margin-top:10px;\">Base ativa da cl\u00ednica</div></div><div style=\"background:#5A3A44;border:1px solid #5A3A44;border-radius:16px;padding:21px 22px;box-shadow:0 10px 22px rgba(90,58,68,.16);\"><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#EBCBD3;\">Faturamento</div><div style=\"font-size:29px;line-height:1;color:#FFF7F8;font-weight:600;margin-top:12px;\">{{'R$ ' + (queries.listarAgendamentos.data || []).reduce((sum,r) => sum + Number(r.valor || 0),0).toLocaleString('pt-BR')}}</div><div style=\"font-size:12px;color:#F2D3DA;margin-top:10px;\">Agendamentos cadastrados</div></div></div>",
+  "rootStyle": "height:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 0;font-family:Inter,ui-sans-serif,sans-serif;"
+ },
+ {
+  "app": "cl-luna-max",
+  "name": "AgendaIntro",
+  "parent": "",
+  "height": 85,
+  "rawHtml": "<div style=\"height:100%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 0 14px;font-family:Inter,ui-sans-serif,sans-serif;\"><div><div style=\"font-family:Georgia,serif;font-size:26px;color:#2B1E22;letter-spacing:.2px;\">Pr\u00f3ximos atendimentos</div><div style=\"font-size:13px;color:#8A737A;margin-top:6px;\">Uma leitura delicada e precisa da agenda da Maison.</div></div><div style=\"font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#A64D6A;\">Agenda viva \u00b7 atualiza\u00e7\u00e3o autom\u00e1tica</div></div>",
+  "rootStyle": "height:100%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 0 14px;font-family:Inter,ui-sans-serif,sans-serif;"
+ },
+ {
+  "app": "cl-luna-max",
+  "name": "AgendaMasthead",
+  "parent": "",
+  "height": 100,
+  "rawHtml": "<div style=\"height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 28px;background:linear-gradient(120deg,#fffaf8 0%,#f6ebe8 100%);border:1px solid #eadbd6;border-radius:18px;box-sizing:border-box;\"><div style=\"font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:#a64d6a;font-weight:700;margin-bottom:8px;\">Maison Aurelie Estetica</div><div style=\"font-size:28px;line-height:1.1;font-weight:600;color:#2b1e22;letter-spacing:-.4px;\">Agendamentos</div><div style=\"font-size:13px;color:#8a737a;margin-top:8px;\">Acompanhe a agenda da cl\u00ednica com leveza, precis\u00e3o e cuidado.</div></div>",
+  "rootStyle": "height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 28px;background:linear-gradient(120deg,#fffaf8 0%,#f6ebe8 100%);border:1px solid #eadbd6;border-radius:18px;box-sizing:border-box;"
+ },
+ {
+  "app": "cl-luna-max",
+  "name": "AgendaMeta",
+  "parent": "",
+  "height": 35,
+  "rawHtml": "<div style=\"height:100%;display:flex;align-items:center;padding:0 6px;color:#8a737a;font-size:12px;letter-spacing:.2px;\"><span style=\"display:inline-flex;align-items:center;gap:7px;\"><span style=\"width:7px;height:7px;border-radius:50%;background:#a64d6a;display:inline-block;\"></span>{{((queries.listarAgendamentos.data || []).filter(r => (!components.FiltroNome.value || String(r.nome || '').toLowerCase().includes(String(components.FiltroNome.value).toLowerCase())) && (!components.FiltroData.value || String(r.data_agendamento || '').slice(0,10) === String(components.FiltroData.value).slice(0,10))).length)}} agendamentos encontrados</span></div>",
+  "rootStyle": "height:100%;display:flex;align-items:center;padding:0 6px;color:#8a737a;font-size:12px;letter-spacing:.2px;"
+ },
+ {
+  "app": "cl-luna-max",
+  "name": "NovoAgendamentoHeader",
+  "parent": "f7eb68f9-e3f8-4a6d-968a-2e6f79349dc3-header",
+  "height": 60,
+  "rawHtml": "<div style=\"height:100%;display:flex;align-items:center;padding:0 22px;color:#fff9f7;\"><div><div style=\"font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#edc5cf;font-weight:700;\">Maison Aurelie Estetica</div><div style=\"font-size:20px;font-weight:600;margin-top:4px;\">Novo agendamento</div></div></div>",
+  "rootStyle": "height:100%;display:flex;align-items:center;padding:0 22px;color:#fff9f7;"
+ },
+ {
+  "app": "cl-terra-low",
+  "name": "Faixa Maison Aurelie",
+  "parent": "",
+  "height": 142,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#9D3E61;border-radius:16px;padding:26px 30px;color:#fff;display:flex;align-items:center;justify-content:space-between;font-family:Georgia,serif\"><div><div style=\"font:600 11px Arial;letter-spacing:2px;opacity:.8;margin-bottom:8px\">MAISON AUR\u00c9LIE</div><div style=\"font-size:29px;letter-spacing:.2px\">Est\u00e9tica com inten\u00e7\u00e3o.</div><div style=\"font:14px Arial;margin-top:8px;opacity:.88\">Agenda cl\u00ednica, 05 de setembro de 2026</div></div><div style=\"width:62px;height:62px;border:1px solid #f6dfe5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;letter-spacing:2px\">MA</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#9D3E61;border-radius:16px;padding:26px 30px;color:#fff;display:flex;align-items:center;justify-content:space-between;font-family:Georgia,serif"
+ },
+ {
+  "app": "cl-terra-low",
+  "name": "Resumo da agenda",
+  "parent": "",
+  "height": 125,
+  "rawHtml": "<div style=\"height:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr;gap:14px;font-family:Arial,sans-serif\"><div style=\"background:#fffcfa;border:1px solid #e3d4ce;border-radius:12px;padding:17px\"><div style=\"font-size:11px;letter-spacing:1px;color:#8a737a\">AGENDAMENTOS HOJE</div><div style=\"font:28px Georgia;color:#2b1e22;margin-top:10px\">08</div><div style=\"font-size:12px;color:#47705a;margin-top:7px\">+2 confirma\u00e7\u00f5es</div></div><div style=\"background:#fffcfa;border:1px solid #e3d4ce;border-radius:12px;padding:17px\"><div style=\"font-size:11px;letter-spacing:1px;color:#8a737a\">ESTA SEMANA</div><div style=\"font:28px Georgia;color:#2b1e22;margin-top:10px\">26</div><div style=\"font-size:12px;color:#8a737a;margin-top:7px\">Agenda selecionada</div></div><div style=\"background:#fffcfa;border:1px solid #e3d4ce;border-radius:12px;padding:17px\"><div style=\"font-size:11px;letter-spacing:1px;color:#8a737a\">TOTAL DE CLIENTES</div><div style=\"font:28px Georgia;color:#2b1e22;margin-top:10px\">148</div><div style=\"font-size:12px;color:#8a737a;margin-top:7px\">Base ativa</div></div><div style=\"background:#2b1e22;border-radius:12px;padding:17px;color:#fff\"><div style=\"font-size:11px;letter-spacing:1px;color:#edd3da\">FATURAMENTO</div><div style=\"font:28px Georgia;margin-top:10px\">R$ 18.420</div><div style=\"font-size:12px;color:#f0c6d1;margin-top:7px\">Previs\u00e3o semanal</div></div></div>",
+  "rootStyle": "height:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr;gap:14px;font-family:Arial,sans-serif"
+ },
+ {
+  "app": "cl-terra-low",
+  "name": "T\u00edtulo agenda",
+  "parent": "",
+  "height": 58,
+  "rawHtml": "<div style=\"height:100%;font-family:Arial,sans-serif;display:flex;align-items:end;justify-content:space-between\"><div><div style=\"font:600 22px Georgia;color:#2b1e22\">Agenda de hoje</div><div style=\"font-size:13px;color:#8a737a;margin-top:5px\">Cuide de cada chegada com a aten\u00e7\u00e3o da Maison.</div></div><div style=\"font-size:12px;color:#8a737a\">Pr\u00f3xima cliente \u00e0s 09:30</div></div>",
+  "rootStyle": "height:100%;font-family:Arial,sans-serif;display:flex;align-items:end;justify-content:space-between"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "marca_maison",
+  "parent": "",
+  "height": 200,
+  "rawHtml": "<section style=\"height:100%;box-sizing:border-box;font-family:inherit;background:var(--cc-surface2-surface);border:1px solid var(--cc-default-border);border-radius:16px;padding:24px 30px;color:var(--cc-primary-text);display:flex;align-items:center;justify-content:space-between;overflow:hidden\"><div style=\"display:flex;align-items:center;gap:18px\"><div style=\"width:58px;height:58px;border-radius:50%;background:var(--cc-primary-brand);color:white;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:22px;letter-spacing:1px;box-shadow:0 8px 22px rgba(158,56,91,.18)\">MA</div><div><div style=\"font-family:Georgia,serif;font-size:30px;line-height:1;color:var(--cc-primary-text);letter-spacing:.2px\">Maison Aur\u00e9lie</div><div style=\"margin-top:9px;font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:var(--cc-secondary-text)\">Est\u00e9tica avan\u00e7ada \u00b7 S\u00e3o Paulo</div></div></div><div style=\"text-align:right;border-left:1px solid var(--cc-default-border);padding-left:28px\"><div style=\"font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--cc-secondary-text)\">Agenda de hoje</div><div style=\"margin-top:8px;font-family:Georgia,serif;font-size:19px;color:var(--cc-primary-text)\">Sexta, 05 de setembro</div><div style=\"margin-top:8px;font-size:12px;color:var(--cc-primary-brand)\">Atendimento com excel\u00eancia</div></div></section>",
+  "rootStyle": "height:100%;box-sizing:border-box;font-family:inherit;background:var(--cc-surface2-surface);border:1px solid var(--cc-default-border);border-radius:16px;padding:24px 30px;color:var(--cc-primary-text);display:flex;align-items:center;justify-content:space-between;overflow:hidden"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "indicadores_agenda",
+  "parent": "",
+  "height": 132,
+  "rawHtml": "<section style=\"height:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:inherit\"><div style=\"padding:18px 20px;border:1px solid var(--cc-default-border);border-radius:14px;background:var(--cc-surface2-surface)\"><div style=\"font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--cc-secondary-text)\">Agendamentos hoje</div><div style=\"margin-top:12px;font:30px Georgia,serif;color:var(--cc-primary-text)\">{{queries.listar_agendamentos.data.filter(r => moment(r.data_agendamento).format('YYYY-MM-DD') === '2026-09-05').length}}</div><div style=\"margin-top:6px;font-size:12px;color:var(--cc-success-text)\">5 experi\u00eancias reservadas</div></div><div style=\"padding:18px 20px;border:1px solid var(--cc-default-border);border-radius:14px;background:var(--cc-surface2-surface)\"><div style=\"font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--cc-secondary-text)\">Esta semana</div><div style=\"margin-top:12px;font:30px Georgia,serif;color:var(--cc-primary-text)\">{{queries.listar_agendamentos.data.filter(r => moment(r.data_agendamento).isBetween('2026-08-31','2026-09-06',undefined,'[]')).length}}</div><div style=\"margin-top:6px;font-size:12px;color:var(--cc-secondary-text)\">Agenda selecionada</div></div><div style=\"padding:18px 20px;border:1px solid var(--cc-default-border);border-radius:14px;background:var(--cc-surface2-surface)\"><div style=\"font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--cc-secondary-text)\">Total de clientes</div><div style=\"margin-top:12px;font:30px Georgia,serif;color:var(--cc-primary-text)\">{{new Set(queries.listar_agendamentos.data.map(r => r.nome)).size}}</div><div style=\"margin-top:6px;font-size:12px;color:var(--cc-secondary-text)\">Relacionamentos ativos</div></div><div style=\"padding:18px 20px;border-radius:14px;background:var(--cc-primary-brand);color:white;box-shadow:0 10px 24px rgba(158,56,91,.18)\"><div style=\"font-size:11px;letter-spacing:1.2px;text-transform:uppercase;opacity:.78\">Faturamento</div><div style=\"margin-top:12px;font:27px Georgia,serif\">{{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(queries.listar_agendamentos.data.filter(r => r.status !== 'Cancelado').reduce((s,r) => s + Number(r.valor || 0),0))}}</div><div style=\"margin-top:6px;font-size:12px;opacity:.82\">Base da agenda carregada</div></div></section>",
+  "rootStyle": "height:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:inherit"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "titulo_agenda",
+  "parent": "",
+  "height": 70,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;font-family:inherit;display:flex;flex-direction:column;justify-content:center\"><div style=\"font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--cc-primary-brand)\">Recep\u00e7\u00e3o</div><div style=\"margin-top:7px;font:27px Georgia,serif;color:var(--cc-primary-text)\">Agenda de experi\u00eancias</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;font-family:inherit;display:flex;flex-direction:column;justify-content:center"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "cabecalho_novo",
+  "parent": "",
+  "height": 140,
+  "rawHtml": "<section style=\"height:100%;box-sizing:border-box;font-family:inherit;background:var(--cc-surface2-surface);border:1px solid var(--cc-default-border);border-radius:16px;padding:24px 30px;display:flex;align-items:center;justify-content:space-between\"><div><div style=\"font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--cc-primary-brand)\">Maison Aur\u00e9lie \u00b7 recep\u00e7\u00e3o</div><div style=\"margin-top:9px;font:31px Georgia,serif;color:var(--cc-primary-text)\">Novo agendamento</div><div style=\"margin-top:7px;font-size:13px;color:var(--cc-secondary-text)\">Um cuidado bem planejado come\u00e7a por uma agenda impec\u00e1vel.</div></div><div style=\"width:54px;height:54px;border-radius:50%;background:#F8E7E9;color:var(--cc-primary-brand);display:flex;align-items:center;justify-content:center;font:22px Georgia,serif\">MA</div></section>",
+  "rootStyle": "height:100%;box-sizing:border-box;font-family:inherit;background:var(--cc-surface2-surface);border:1px solid var(--cc-default-border);border-radius:16px;padding:24px 30px;display:flex;align-items:center;justify-content:space-between"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "instrucoes_novo",
+  "parent": "",
+  "height": 72,
+  "rawHtml": "<section style=\"height:100%;box-sizing:border-box;font-family:inherit;background:#FDF8F5;border-left:3px solid var(--cc-primary-brand);border-radius:10px;padding:15px 18px\"><div style=\"font-size:12px;font-weight:600;color:var(--cc-primary-text)\">Detalhes da experi\u00eancia</div><div style=\"margin-top:6px;font-size:12px;line-height:1.45;color:var(--cc-secondary-text)\">Registre os dados essenciais para que cada cliente seja recebida com aten\u00e7\u00e3o e precis\u00e3o.</div></section>",
+  "rootStyle": "height:100%;box-sizing:border-box;font-family:inherit;background:#FDF8F5;border-left:3px solid var(--cc-primary-brand);border-radius:10px;padding:15px 18px"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "nota_privacidade",
+  "parent": "",
+  "height": 72,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;font-family:inherit;border-top:1px solid var(--cc-default-border);padding-top:16px;font-size:12px;line-height:1.5;color:var(--cc-secondary-text)\"><span style=\"color:var(--cc-primary-brand);font-weight:600\">Atendimento com discri\u00e7\u00e3o.</span> Os dados inseridos ficam dispon\u00edveis na agenda da Maison Aur\u00e9lie para a equipe de recep\u00e7\u00e3o.</div>",
+  "rootStyle": "height:100%;box-sizing:border-box;font-family:inherit;border-top:1px solid var(--cc-default-border);padding-top:16px;font-size:12px;line-height:1.5;color:var(--cc-secondary-text)"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "cabecalho_clientes",
+  "parent": "",
+  "height": 190,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:linear-gradient(120deg,#F7ECE7 0%,#FFFDFC 68%,#F0DED5 100%);border:1px solid #E8D3CA;border-radius:18px;padding:22px 28px;color:#2B1E22;position:relative;overflow:hidden;\"><div style=\"font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:#9E385B;font-weight:700;\">MAISON AUR\u00c9LIE</div><div style=\"font-family:Georgia,serif;font-size:29px;line-height:1.12;margin-top:6px;\">Rela\u00e7\u00f5es que inspiram<br/>confian\u00e7a.</div><div style=\"font-size:12px;color:#765A61;margin-top:10px;\">Base de clientes e prefer\u00eancias de cuidado</div><div style=\"position:absolute;right:28px;top:26px;width:42px;height:42px;border-radius:50%;border:1px solid #CFA995;color:#9E385B;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:18px;\">M</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:linear-gradient(120deg,#F7ECE7 0%,#FFFDFC 68%,#F0DED5 100%);border:1px solid #E8D3CA;border-radius:18px;padding:22px 28px;color:#2B1E22;position:relative;overflow:hidden;"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "resumo_clientes",
+  "parent": "",
+  "height": 104,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #EADDD7;border-radius:15px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;color:#2B1E22;\"><div><div style=\"font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#9E385B;font-weight:700;\">CONEX\u00d5ES</div><div style=\"font-family:Georgia,serif;font-size:22px;margin-top:6px;\">{{new Set((queries.listar_agendamentos.data || []).map(r => r.nome)).size}} clientes na agenda</div></div><div style=\"text-align:right;border-left:1px solid #EADDD7;padding-left:25px;\"><div style=\"font-size:23px;font-family:Georgia,serif;color:#9E385B;\">{{(queries.listar_agendamentos.data || []).filter(r => r.status === 'Confirmado').length}}</div><div style=\"font-size:11px;color:#765A61;margin-top:3px;\">sess\u00f5es confirmadas</div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #EADDD7;border-radius:15px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;color:#2B1E22;"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "titulo_clientes",
+  "parent": "",
+  "height": 54,
+  "rawHtml": "<div style=\"height:100%;display:flex;align-items:end;box-sizing:border-box;color:#2B1E22;\"><div><div style=\"font-size:10px;letter-spacing:2px;color:#9E385B;font-weight:700;\">ATENDIMENTO</div><div style=\"font-family:Georgia,serif;font-size:22px;margin-top:4px;\">Clientes recentes</div></div></div>",
+  "rootStyle": "height:100%;display:flex;align-items:end;box-sizing:border-box;color:#2B1E22;"
+ },
+ {
+  "app": "cl-terra-xhigh",
+  "name": "legenda_clientes",
+  "parent": "",
+  "height": 32,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;color:#765A61;font-size:11px;\"><span>Vis\u00e3o consolidada das sess\u00f5es registradas</span><span style=\"color:#9E385B;font-weight:700;letter-spacing:1px;\">ATUALIZA\u00c7\u00c3O EM TEMPO REAL</span></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;color:#765A61;font-size:11px;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "OverviewHeader",
+  "parent": "",
+  "height": 100,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:18px 22px;background:var(--cc-surface1-surface);border:1px solid var(--cc-default-border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif;\"><div><div style=\"font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cc-secondary-brand);\">Lufthansa \u00b7 Frankfurt hub</div><div style=\"font-size:28px;line-height:1.1;font-weight:800;color:var(--cc-primary-text);margin-top:6px;\">Operations overview</div><div style=\"font-size:13px;color:var(--cc-placeholder-text);margin-top:6px;\">Today's operating picture for departures, exceptions and fleet readiness.</div></div><div style=\"text-align:right;\"><div style=\"font-size:13px;font-weight:700;color:var(--cc-primary-text);\">Saturday, 5 September 2026</div><div style=\"font-size:12px;color:var(--cc-placeholder-text);margin-top:5px;\">Frankfurt local time \u00b7 live workspace view</div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:18px 22px;background:var(--cc-surface1-surface);border:1px solid var(--cc-default-border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "OverviewKpis",
+  "parent": "",
+  "height": 118,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:Inter,Arial,sans-serif;\"><div style=\"background:var(--cc-primary-brand);border-radius:10px;padding:18px;color:#fff;\"><div style=\"font-size:12px;font-weight:700;opacity:.82;text-transform:uppercase;letter-spacing:.08em;\">Departures</div><div style=\"font-size:34px;font-weight:800;margin-top:10px;\">{{(queries.overviewFlights.data||[]).length}}</div><div style=\"font-size:12px;opacity:.82;margin-top:4px;\">scheduled today</div></div><div style=\"background:var(--cc-surface1-surface);border:1px solid var(--cc-default-border);border-radius:10px;padding:18px;\"><div style=\"font-size:12px;font-weight:700;color:var(--cc-placeholder-text);text-transform:uppercase;letter-spacing:.08em;\">On-time performance</div><div style=\"font-size:34px;font-weight:800;color:var(--cc-primary-text);margin-top:10px;\">{{(queries.overviewFlights.data||[]).length ? Math.round(((queries.overviewFlights.data||[]).filter(r => Number(r.delay_minutes || 0) <= 15).length/(queries.overviewFlights.data||[]).length)*100) : 0}}%</div><div style=\"font-size:12px;color:var(--cc-placeholder-text);margin-top:4px;\">within 15 minutes</div></div><div style=\"background:var(--cc-surface1-surface);border:1px solid var(--cc-default-border);border-radius:10px;padding:18px;\"><div style=\"font-size:12px;font-weight:700;color:var(--cc-placeholder-text);text-transform:uppercase;letter-spacing:.08em;\">Open disruptions</div><div style=\"font-size:34px;font-weight:800;color:var(--cc-warning-systemStatus);margin-top:10px;\">{{(queries.overviewDisruptions.data||[]).length}}</div><div style=\"font-size:12px;color:var(--cc-placeholder-text);margin-top:4px;\">requiring ownership</div></div><div style=\"background:var(--cc-surface1-surface);border:1px solid var(--cc-default-border);border-radius:10px;padding:18px;\"><div style=\"font-size:12px;font-weight:700;color:var(--cc-placeholder-text);text-transform:uppercase;letter-spacing:.08em;\">Aircraft on ground</div><div style=\"font-size:34px;font-weight:800;color:var(--cc-error-systemStatus);margin-top:10px;\">{{(queries.overviewMaintenance.data||[]).filter(r => r.aog_status==='AOG' && r.serviceable!==true).length}}</div><div style=\"font-size:12px;color:var(--cc-placeholder-text);margin-top:4px;\">AOG aircraft</div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:Inter,Arial,sans-serif;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "DelayChartHeading",
+  "parent": "",
+  "height": 42,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:10px 2px 4px;font-family:Inter,Arial,sans-serif;\"><div style=\"font-size:16px;font-weight:800;color:var(--cc-primary-text);\">Delay minutes across earliest departures</div><div style=\"font-size:12px;color:var(--cc-placeholder-text);margin-top:3px;\">A quick comparative read on the first wave.</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:10px 2px 4px;font-family:Inter,Arial,sans-serif;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "OpenDisruptionsRail",
+  "parent": "",
+  "height": 300,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:18px;background:var(--cc-surface2-surface);border:1px solid var(--cc-default-border);border-radius:10px;font-family:Inter,Arial,sans-serif;\"><div style=\"font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cc-primary-brand);\">Needs attention</div><div style=\"font-size:20px;font-weight:800;color:var(--cc-primary-text);margin-top:5px;\">Open disruptions</div><div style=\"margin-top:12px;\">{{(queries.overviewDisruptions.data||[]).slice(0,4).map(r => '<div style=\"padding:11px 0;border-top:1px solid var(--cc-weak-border);\"><div style=\"display:flex;justify-content:space-between;gap:8px;font-weight:700;color:var(--cc-primary-text);\"><span>'+r.title+'</span><span style=\"color:var(--cc-warning-systemStatus);font-size:11px;\">'+r.severity+'</span></div><div style=\"font-size:12px;color:var(--cc-placeholder-text);margin-top:4px;\">'+r.affected_flights+' \u00b7 '+r.owner+'</div></div>').join('') || '<div style=\"color:var(--cc-placeholder-text);padding-top:16px;\">No open disruptions</div>'}}</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:18px;background:var(--cc-surface2-surface);border:1px solid var(--cc-default-border);border-radius:10px;font-family:Inter,Arial,sans-serif;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "scheduleHeader",
+  "parent": "",
+  "height": 100,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#0B3A6E;border-radius:10px;padding:16px 18px;color:#FFFFFF;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif;\"><div><div style=\"font-size:11px;letter-spacing:1.6px;font-weight:700;color:#F2C300;\">LH FRA CONTROL</div><div style=\"font-size:23px;font-weight:700;margin-top:4px;\">Flight schedule</div><div style=\"font-size:13px;color:#D9E2EC;margin-top:5px;\">Dispatch view for 05 Sep 2026</div></div><div style=\"text-align:right;\"><div style=\"display:inline-block;background:#F2C300;color:#0B3A6E;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800;letter-spacing:.8px;\">LIVE BOARD</div><div style=\"font-size:12px;color:#D9E2EC;margin-top:8px;\">Filter, select, and log delay accountability</div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#0B3A6E;border-radius:10px;padding:16px 18px;color:#FFFFFF;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "scheduleFilterHeading",
+  "parent": "",
+  "height": 36,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #D9E2EC;border-radius:10px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#152536;\"><div style=\"font-size:11px;letter-spacing:1.2px;font-weight:800;color:#0B3A6E;\">TODAY'S DEPARTURE FILTERS</div><div style=\"font-size:12px;color:#6B7C93;margin-top:3px;\">Narrow the control queue by terminal, status, or destination.</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #D9E2EC;border-radius:10px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#152536;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "scheduleEditorHint",
+  "parent": "",
+  "height": 88,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#F7F9FC;border:1px solid #D9E2EC;border-radius:10px;padding:14px;font-family:Inter,Arial,sans-serif;color:#152536;\"><div style=\"font-size:11px;letter-spacing:1px;font-weight:800;color:#0B3A6E;\">DELAY LOG</div><div style=\"font-size:18px;font-weight:700;margin-top:9px;\">{{components.scheduleTable.selectedRow ? components.scheduleTable.selectedRow.flight_no : 'Select a flight'}}</div><div style=\"font-size:12px;color:#6B7C93;line-height:1.45;margin-top:6px;\">{{components.scheduleTable.selectedRow ? components.scheduleTable.selectedRow.destination + ' \u00b7 ' + components.scheduleTable.selectedRow.sched_dep : 'Choose a row to edit its delay code and minutes.'}}</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#F7F9FC;border:1px solid #D9E2EC;border-radius:10px;padding:14px;font-family:Inter,Arial,sans-serif;color:#152536;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "maintenanceHeader",
+  "parent": "",
+  "height": 100,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#0B3A6E;border-radius:10px;padding:16px 18px;color:#FFFFFF;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif;\"><div><div style=\"font-size:11px;letter-spacing:1.6px;font-weight:700;color:#F2C300;\">LH FRA ENGINEERING</div><div style=\"font-size:23px;font-weight:700;margin-top:4px;\">Maintenance control</div><div style=\"font-size:13px;color:#D9E2EC;margin-top:5px;\">Aircraft on ground, defects, and estimated return to service</div></div><div style=\"text-align:right;\"><div style=\"display:inline-block;background:#F2C300;color:#0B3A6E;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800;letter-spacing:.8px;\">AOG DESK</div><div style=\"font-size:12px;color:#D9E2EC;margin-top:8px;\">Keep serviceability decisions explicit</div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#0B3A6E;border-radius:10px;padding:16px 18px;color:#FFFFFF;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "maintenanceSummary",
+  "parent": "",
+  "height": 80,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #D9E2EC;border-radius:10px;padding:14px 16px;font-family:Inter,Arial,sans-serif;color:#152536;display:flex;align-items:center;justify-content:space-between;\"><div><div style=\"font-size:11px;letter-spacing:1px;font-weight:800;color:#0B3A6E;\">FLEET AT A GLANCE</div><div style=\"font-size:13px;color:#6B7C93;margin-top:4px;\">Serviceability queue for the FRA operation.</div></div><div style=\"display:flex;gap:20px;text-align:right;\"><div><div style=\"font-size:24px;font-weight:800;color:#B91C1C;\">{{(queries.maintenanceRows.data||[]).filter(r=>r.aog_status==='AOG' && r.serviceable!==true).length}}</div><div style=\"font-size:11px;color:#6B7C93;\">AOG / open</div></div><div><div style=\"font-size:24px;font-weight:800;color:#B45309;\">{{(queries.maintenanceRows.data||[]).reduce((n,r)=>n+Number(r.defect_count||0),0)}}</div><div style=\"font-size:11px;color:#6B7C93;\">open defects</div></div><div><div style=\"font-size:24px;font-weight:800;color:#15803D;\">{{(queries.maintenanceRows.data||[]).filter(r=>r.serviceable===true).length}}</div><div style=\"font-size:11px;color:#6B7C93;\">serviceable</div></div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #D9E2EC;border-radius:10px;padding:14px 16px;font-family:Inter,Arial,sans-serif;color:#152536;display:flex;align-items:center;justify-content:space-between;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "maintenanceActionPanel",
+  "parent": "",
+  "height": 180,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#F7F9FC;border:1px solid #D9E2EC;border-radius:10px;padding:14px;font-family:Inter,Arial,sans-serif;color:#152536;\"><div style=\"font-size:11px;letter-spacing:1px;font-weight:800;color:#0B3A6E;\">ENGINEER ACTION</div><div style=\"font-size:18px;font-weight:700;margin-top:10px;\">{{components.maintenanceTable.selectedRow ? components.maintenanceTable.selectedRow.aircraft_reg : 'Select an aircraft'}}</div><div style=\"font-size:12px;color:#6B7C93;line-height:1.5;margin-top:6px;\">{{components.maintenanceTable.selectedRow ? components.maintenanceTable.selectedRow.primary_defect : 'Choose a row, then use Mark serviceable in the row actions.'}}</div><div style=\"margin-top:14px;padding:9px 10px;border-radius:8px;background:#FFF7E6;color:#92400E;font-size:12px;\">{{components.maintenanceTable.selectedRow ? (components.maintenanceTable.selectedRow.serviceable===true ? 'Already marked serviceable.' : 'Confirm the engineer handback only when the defect is cleared.') : 'No aircraft selected.'}}</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#F7F9FC;border:1px solid #D9E2EC;border-radius:10px;padding:14px;font-family:Inter,Arial,sans-serif;color:#152536;"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "crewHeader",
+  "parent": "",
+  "height": 112,
+  "rawHtml": "<div style=\"background:#0B3A6E;color:#FFFFFF;border-radius:12px;padding:18px 22px;font-family:Inter,Arial,sans-serif;box-shadow:0 5px 16px rgba(11,58,110,.18)\"><div style=\"font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#C9D8E8\">Lufthansa \u00b7 Frankfurt Hub</div><div style=\"font-size:28px;font-weight:750;margin-top:5px\">Crew Control</div><div style=\"font-size:13px;color:#E8F0F8;margin-top:6px\">Duty status, standby coverage, and expiring limits for today's operation</div></div>",
+  "rootStyle": "background:#0B3A6E;color:#FFFFFF;border-radius:12px;padding:18px 22px;font-family:Inter,Arial,sans-serif;box-shadow:0 5px 16px rgba(11,58,110,.18)"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "crewSummary",
+  "parent": "",
+  "height": 112,
+  "rawHtml": "<div style=\"display:flex;gap:12px;font-family:Inter,Arial,sans-serif\"><div style=\"flex:1;background:#FFFFFF;border:1px solid #D9E2EC;border-radius:10px;padding:14px 16px\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#5B6B7A\">Standby crew</div><div style=\"font-size:27px;font-weight:750;color:#0B3A6E;margin-top:6px\">{{(queries.crewRows.data||[]).filter(r=>r.standby===true).length}}</div><div style=\"font-size:12px;color:#64748B;margin-top:4px\">Ready for assignment</div></div><div style=\"flex:1;background:#FFF8E1;border:1px solid #F2C300;border-radius:10px;padding:14px 16px\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#8A5A00\">Limits inside 2h</div><div style=\"font-size:27px;font-weight:750;color:#B45309;margin-top:6px\">{{(queries.crewRows.data||[]).filter(r=>Number(r.duty_minutes_remaining||0)<120).length}}</div><div style=\"font-size:12px;color:#8A5A00;margin-top:4px\">Needs controller attention</div></div><div style=\"flex:1;background:#FFFFFF;border:1px solid #D9E2EC;border-radius:10px;padding:14px 16px\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#5B6B7A\">Operating crew</div><div style=\"font-size:27px;font-weight:750;color:#15803D;margin-top:6px\">{{(queries.crewRows.data||[]).filter(r=>r.duty_status==='Operating' || r.duty_status==='On duty').length}}</div><div style=\"font-size:12px;color:#64748B;margin-top:4px\">Active duty records</div></div></div>",
+  "rootStyle": "display:flex;gap:12px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "crewAssignmentHint",
+  "parent": "",
+  "height": 112,
+  "rawHtml": "<div style=\"background:#F7FAFC;border:1px solid #D9E2EC;border-radius:10px;padding:14px 16px;font-family:Inter,Arial,sans-serif;color:#152536\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#5B6B7A\">Assignment panel</div><div style=\"font-size:18px;font-weight:700;color:#0B3A6E;margin-top:8px\">{{components.crewTable.selectedRow ? components.crewTable.selectedRow.crew_name : 'Select a standby crew member'}}</div><div style=\"font-size:13px;color:#64748B;margin-top:5px\">{{components.crewTable.selectedRow ? components.crewTable.selectedRow.crew_role + ' \u00b7 ' + components.crewTable.selectedRow.duty_minutes_remaining + ' min remaining' : 'Choose a standby row, then select the flight to cover.'}}</div></div>",
+  "rootStyle": "background:#F7FAFC;border:1px solid #D9E2EC;border-radius:10px;padding:14px 16px;font-family:Inter,Arial,sans-serif;color:#152536"
+ },
+ {
+  "app": "lh-luna-max",
+  "name": "crewExpiring",
+  "parent": "",
+  "height": 150,
+  "rawHtml": "<div style=\"background:#FFF8E1;border:1px solid #F2C300;border-radius:10px;padding:14px 16px;font-family:Inter,Arial,sans-serif;color:#6B4B00\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#8A5A00\">Expiring duty limits</div><div style=\"font-size:13px;line-height:1.55;margin-top:8px\">{{(queries.crewRows.data||[]).filter(r=>Number(r.duty_minutes_remaining||0)<120).slice(0,5).map(r=>r.crew_name + ' \u00b7 ' + r.duty_minutes_remaining + ' min').join(' | ') || 'No crew limits inside two hours.'}}</div></div>",
+  "rootStyle": "background:#FFF8E1;border:1px solid #F2C300;border-radius:10px;padding:14px 16px;font-family:Inter,Arial,sans-serif;color:#6B4B00"
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "maintenanceHeader",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:14px 2px;font-family:Inter,Arial,sans-serif\"><div style=\"display:flex;align-items:center;gap:9px\"><span style=\"display:inline-block;width:10px;height:10px;background:#F9BA00;border-radius:50%\"></span><span style=\"font-size:23px;font-weight:700;color:#05164D\">Maintenance control</span></div><div style=\"font-size:13px;color:#64748B;margin:7px 0 0 19px\">Select an aircraft below and mark it serviceable when engineering has cleared the defect.</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:14px 2px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "maintenanceKpis",
+  "parent": "",
+  "height": 116,
+  "rawHtml": "{{(() => { const a=queries.fra_aircraft.data || []; const aog=a.filter(x=>x.status==='AOG').length; const open=a.filter(x=>x.defect_status==='Open').length; const next=a.filter(x=>x.eta_return).sort((x,y)=>new Date(x.eta_return)-new Date(y.eta_return))[0]; return `<div style=\\\"height:100%;box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;font-family:Inter,Arial,sans-serif\\\"><div style=\\\"background:#FFF1F2;border:1px solid #FECACA;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:12px;color:#991B1B\\\">AOG</div><div style=\\\"font-size:32px;font-weight:750;color:#991B1B;margin-top:6px\\\">${aog}</div></div><div style=\\\"background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:12px;color:#92400E\\\">OPEN DEFECTS</div><div style=\\\"font-size:32px;font-weight:750;color:#92400E;margin-top:6px\\\">${open}</div></div><div style=\\\"background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:12px;color:#64748B\\\">NEXT ESTIMATED RETURN</div><div style=\\\"font-size:20px;font-weight:700;color:#05164D;margin-top:8px\\\">${next ? next.registration+' \u00b7 '+new Date(next.eta_return).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'No active estimate'}</div><div style=\\\"font-size:12px;color:#64748B;margin-top:3px\\\">Engineering estimate, local time</div></div></div>`; })()}}",
+  "rootStyle": ""
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "scheduleHeader",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #E5E7EB;border-left:5px solid #F9BA00;border-radius:10px;padding:16px 20px;font-family:Inter,Arial,sans-serif\"><div style=\"font-size:23px;font-weight:700;color:#05164D\">Flight schedule</div><div style=\"font-size:13px;color:#64748B;margin-top:5px\">Filter today\u2019s departure queue, select a flight, then record a delay code.</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFFFFF;border:1px solid #E5E7EB;border-left:5px solid #F9BA00;border-radius:10px;padding:16px 20px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "crewHeader",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:14px 2px;font-family:Inter,Arial,sans-serif\"><div style=\"font-size:23px;font-weight:700;color:#05164D\">Crew control</div><div style=\"font-size:13px;color:#64748B;margin-top:7px\">Review duty limits and standby availability, then select a standby crew member to assign a flight.</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:14px 2px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "crewKpis",
+  "parent": "",
+  "height": 116,
+  "rawHtml": "{{(() => { const c=queries.fra_crew.data || []; const standby=c.filter(x=>x.duty_status==='Standby').length; const expiring=c.filter(x=>Number(x.hours_remaining)<2).length; const onDuty=c.filter(x=>x.duty_status==='On duty' || x.duty_status==='Assigned').length; return `<div style=\\\"height:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:Inter,Arial,sans-serif\\\"><div style=\\\"background:#E8EEFF;border:1px solid #C7D2FE;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:12px;color:#3730A3\\\">ON DUTY</div><div style=\\\"font-size:32px;font-weight:750;color:#05164D;margin-top:6px\\\">${onDuty}</div></div><div style=\\\"background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:12px;color:#166534\\\">STANDBY CREW</div><div style=\\\"font-size:32px;font-weight:750;color:#166534;margin-top:6px\\\">${standby}</div></div><div style=\\\"background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:12px;color:#92400E\\\">DUTY LIMIT UNDER 2H</div><div style=\\\"font-size:32px;font-weight:750;color:#92400E;margin-top:6px\\\">${expiring}</div></div></div>`; })()}}",
+  "rootStyle": ""
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "overviewHeader",
+  "parent": "",
+  "height": 110,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:18px 24px;background:#05164D;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif\"><div><div style=\"font-size:12px;letter-spacing:1.4px;color:#F9BA00;font-weight:700\">LUFTHANSA GROUP \u00b7 FRANKFURT</div><div style=\"font-size:28px;font-weight:700;margin-top:4px\">Hub Control</div><div style=\"font-size:13px;color:#C7D2FE;margin-top:3px\">Friday, 05 September 2026 \u00b7 Live operation view</div></div><div style=\"text-align:right\"><div style=\"font-size:12px;color:#C7D2FE\">Operational date</div><div style=\"font-size:20px;font-weight:700\">05 SEP</div></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:18px 24px;background:#05164D;color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "overviewKpis",
+  "parent": "",
+  "height": 130,
+  "rawHtml": "{{(() => { const r = queries.fra_today_flights.data || []; const departed=r.filter(x=>x.status==='Departed').length; const otp=r.length?Math.round((r.filter(x=>Number(x.delay_min||0)<15).length/r.length)*100):0; const open=r.filter(x=>x.disruption_status==='Open').length; const aog=2; return `<div style=\\\"height:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:Inter,Arial,sans-serif\\\"><div style=\\\"background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:18px\\\"><div style=\\\"font-size:12px;color:#64748B\\\">TODAY'S DEPARTURES</div><div style=\\\"font-size:34px;font-weight:750;color:#0F172A;margin-top:8px\\\">${r.length}</div><div style=\\\"font-size:12px;color:#166534;margin-top:3px\\\">${departed} departed</div></div><div style=\\\"background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:18px\\\"><div style=\\\"font-size:12px;color:#64748B\\\">ON-TIME PERFORMANCE</div><div style=\\\"font-size:34px;font-weight:750;color:#0F172A;margin-top:8px\\\">${otp}%</div><div style=\\\"font-size:12px;color:#166534;margin-top:3px\\\">Target 85%</div></div><div style=\\\"background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:18px\\\"><div style=\\\"font-size:12px;color:#64748B\\\">OPEN DISRUPTIONS</div><div style=\\\"font-size:34px;font-weight:750;color:#B45309;margin-top:8px\\\">${open}</div><div style=\\\"font-size:12px;color:#92400E;margin-top:3px\\\">Controller review</div></div><div style=\\\"background:#FFF8E1;border:1px solid #F9BA00;border-radius:10px;padding:18px\\\"><div style=\\\"font-size:12px;color:#6B4F00\\\">AIRCRAFT ON GROUND</div><div style=\\\"font-size:34px;font-weight:750;color:#05164D;margin-top:8px\\\">${aog}</div><div style=\\\"font-size:12px;color:#6B4F00;margin-top:3px\\\">Engineering active</div></div></div>`; })()}}",
+  "rootStyle": ""
+ },
+ {
+  "app": "lh-terra-xhigh",
+  "name": "overviewListLabel",
+  "parent": "",
+  "height": 60,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;padding:12px 2px;font-family:Inter,Arial,sans-serif;display:flex;justify-content:space-between;align-items:center\"><div><div style=\"font-weight:700;font-size:18px;color:#0F172A\">Departure monitor</div><div style=\"font-size:13px;color:#64748B;margin-top:3px\">Scheduled departures from Frankfurt, 05 September 2026</div></div><div style=\"font-size:12px;font-weight:700;color:#05164D;background:#E8EEFF;padding:7px 10px;border-radius:999px\">FRA local time</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;padding:12px 2px;font-family:Inter,Arial,sans-serif;display:flex;justify-content:space-between;align-items:center"
+ },
+ {
+  "app": "lh-sol",
+  "name": "overview_header",
+  "parent": "",
+  "height": 78,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#05164D;color:white;border-left:9px solid #FFAD00;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif\"><div><div style=\"font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#FFCC4D;font-weight:700\">Lufthansa \u00b7 Frankfurt Hub</div><div style=\"font-size:27px;font-weight:760;margin-top:4px\">Today\u2019s operation at a glance</div></div><div style=\"text-align:right;color:#DCE4F4;font-size:12px\"><b style=\"color:white;font-size:14px\">Friday, 04 Sep 2026</b><br>Operational control view \u00b7 FRA local</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#05164D;color:white;border-left:9px solid #FFAD00;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-sol",
+  "name": "overview_kpis",
+  "parent": "",
+  "height": 100,
+  "rawHtml": "<div style=\"height:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:Inter,Arial,sans-serif\"><div style=\"background:white;border:1px solid #D8E0EC;border-top:4px solid #05164D;border-radius:9px;padding:12px 15px\"><div style=\"font-size:11px;color:#60708A;text-transform:uppercase;letter-spacing:1px\">Departures</div><div style=\"font-size:29px;font-weight:780;color:#05164D\">{{ (queries.q_schedule_flights.data || []).length }}</div><div style=\"font-size:12px;color:#60708A\">scheduled today</div></div><div style=\"background:white;border:1px solid #D8E0EC;border-top:4px solid #2E7D32;border-radius:9px;padding:12px 15px\"><div style=\"font-size:11px;color:#60708A;text-transform:uppercase;letter-spacing:1px\">On-time performance</div><div style=\"font-size:29px;font-weight:780;color:#05164D\">{{ Math.round(100 * (queries.q_schedule_flights.data || []).filter(f => (f.delay_mins || 0) <= 15 && f.status !== 'Cancelled').length / Math.max(1,(queries.q_schedule_flights.data || []).filter(f => f.status !== 'Cancelled').length)) }}%</div><div style=\"font-size:12px;color:#60708A\">within 15 minutes</div></div><div style=\"background:white;border:1px solid #D8E0EC;border-top:4px solid #C62828;border-radius:9px;padding:12px 15px\"><div style=\"font-size:11px;color:#60708A;text-transform:uppercase;letter-spacing:1px\">Open disruptions</div><div style=\"font-size:29px;font-weight:780;color:#05164D\">{{ (queries.q_schedule_flights.data || []).filter(f => f.status === 'Delayed' || f.status === 'Cancelled').length }}</div><div style=\"font-size:12px;color:#60708A\">requiring control</div></div><div style=\"background:white;border:1px solid #D8E0EC;border-top:4px solid #FFAD00;border-radius:9px;padding:12px 15px\"><div style=\"font-size:11px;color:#60708A;text-transform:uppercase;letter-spacing:1px\">Aircraft on ground</div><div style=\"font-size:29px;font-weight:780;color:#05164D\">{{ (queries.q_aog_overview.data || []).filter(a => a.status !== 'Serviceable' && a.status !== 'Returned').length }}</div><div style=\"font-size:12px;color:#60708A\">open technical cases</div></div></div>",
+  "rootStyle": "height:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-sol",
+  "name": "overview_watch",
+  "parent": "",
+  "height": 70,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:9px;padding:12px 16px;font-family:Inter,Arial,sans-serif;display:flex;align-items:center;justify-content:space-between;color:#4B3A05\"><div><b>Control watch</b><br><span style=\"font-size:12px\">{{ (queries.q_schedule_flights.data || []).filter(f => (f.delay_mins || 0) >= 30).length }} flights are delayed 30 minutes or more.</span></div><div style=\"font-size:12px;text-align:right\">Largest active delay<br><b style=\"font-size:20px\">{{ Math.max(0,...(queries.q_schedule_flights.data || []).map(f => f.delay_mins || 0)) }} min</b></div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:9px;padding:12px 16px;font-family:Inter,Arial,sans-serif;display:flex;align-items:center;justify-content:space-between;color:#4B3A05"
+ },
+ {
+  "app": "lh-sol",
+  "name": "schedule_header",
+  "parent": "",
+  "height": 70,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:white;border:1px solid #D8E0EC;border-left:7px solid #FFAD00;border-radius:9px;padding:14px 18px;font-family:Inter,Arial,sans-serif;color:#05164D;display:flex;align-items:center;justify-content:space-between\"><div><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#60708A;font-weight:700\">Operations control</div><div style=\"font-size:24px;font-weight:760\">Today\u2019s flight schedule</div></div><div style=\"font-size:12px;color:#60708A;text-align:right\"><b>04 Sep 2026</b><br>Departures from FRA</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:white;border:1px solid #D8E0EC;border-left:7px solid #FFAD00;border-radius:9px;padding:14px 18px;font-family:Inter,Arial,sans-serif;color:#05164D;display:flex;align-items:center;justify-content:space-between"
+ },
+ {
+  "app": "lh-sol",
+  "name": "schedule_count",
+  "parent": "",
+  "height": 60,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#05164D\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#60708A\">Visible flights</div><div style=\"font-size:24px;font-weight:750;line-height:28px\">{{ ((queries.q_schedule_flights.data || []).filter(f => (!components.terminal_filter?.value || f.terminal == components.terminal_filter.value) && (!components.status_filter?.value || f.status == components.status_filter.value) && (!components.destination_filter?.value || ((f.destination || '') + ' ' + (f.dest_city || '')).toLowerCase().includes(components.destination_filter.value.toLowerCase())))).length }}</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#05164D"
+ },
+ {
+  "app": "lh-sol",
+  "name": "selection_note",
+  "parent": "",
+  "height": 70,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#4B3A05\"><b>{{ components.schedule_table?.selectedRow?.flight_no || 'Select a flight' }}</b><br><span style=\"font-size:12px\">{{ components.schedule_table?.selectedRow?.destination ? components.schedule_table.selectedRow.destination + ' \u00b7 current delay ' + (components.schedule_table.selectedRow.delay_mins || 0) + ' min' : 'Choose a row below to log its operational delay code.' }}</span></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#4B3A05"
+ },
+ {
+  "app": "lh-sol",
+  "name": "crew_header",
+  "parent": "",
+  "height": 70,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:white;border:1px solid #D8E0EC;border-left:7px solid #FFAD00;border-radius:9px;padding:14px 18px;font-family:Inter,Arial,sans-serif;color:#05164D;display:flex;align-items:center;justify-content:space-between\"><div><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#60708A;font-weight:700\">Crew control</div><div style=\"font-size:24px;font-weight:760\">Duty and standby coverage</div></div><div style=\"font-size:12px;color:#60708A;text-align:right\"><b>FRA crew desk</b><br>Duty limits and flight assignment</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:white;border:1px solid #D8E0EC;border-left:7px solid #FFAD00;border-radius:9px;padding:14px 18px;font-family:Inter,Arial,sans-serif;color:#05164D;display:flex;align-items:center;justify-content:space-between"
+ },
+ {
+  "app": "lh-sol",
+  "name": "crew_kpis",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:Inter,Arial,sans-serif\"><div style=\"background:#F3F6FB;border:1px solid #D8E0EC;border-radius:9px;padding:11px 15px\"><div style=\"font-size:11px;color:#60708A;text-transform:uppercase;letter-spacing:1px\">On duty</div><div style=\"font-size:27px;font-weight:780;color:#05164D\">{{ (queries.q_crew.data || []).filter(c => c.duty_status === 'On duty' || c.duty_status === 'Assigned').length }}</div></div><div style=\"background:#EEF7EF;border:1px solid #B7D7BA;border-radius:9px;padding:11px 15px\"><div style=\"font-size:11px;color:#37663B;text-transform:uppercase;letter-spacing:1px\">Standby available</div><div style=\"font-size:27px;font-weight:780;color:#05164D\">{{ (queries.q_crew.data || []).filter(c => c.is_standby === 'Yes' && !c.assigned_flight).length }}</div></div><div style=\"background:#FFF8E6;border:1px solid #FFD36B;border-radius:9px;padding:11px 15px\"><div style=\"font-size:11px;color:#735A08;text-transform:uppercase;letter-spacing:1px\">Limits within 2h</div><div style=\"font-size:27px;font-weight:780;color:#05164D\">{{ (queries.q_crew.data || []).filter(c => (c.limit_hours || 0) - (c.duty_hours || 0) <= 2).length }}</div></div></div>",
+  "rootStyle": "height:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-sol",
+  "name": "crew_clock",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#05164D;color:white;border-radius:9px;padding:12px 16px;font-family:Inter,Arial,sans-serif\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#C9D4EA\">Planning date</div><div style=\"font-size:20px;font-weight:760\">04 Sep 2026</div><div style=\"font-size:11px;color:#C9D4EA\">FRA local duty clock</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#05164D;color:white;border-radius:9px;padding:12px 16px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-sol",
+  "name": "crew_expiry",
+  "parent": "",
+  "height": 55,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#4B3A05\"><b>Duty-limit watch</b><br><span style=\"font-size:12px\">{{ (queries.q_crew.data || []).filter(c => (c.limit_hours || 0) - (c.duty_hours || 0) <= 2).length }} crew members require reassessment within two duty hours.</span></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#4B3A05"
+ },
+ {
+  "app": "lh-sol",
+  "name": "crew_selection",
+  "parent": "",
+  "height": 65,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#05164D\"><b>{{ components.crew_table?.selectedRow?.crew_name || 'Select standby crew' }}</b><br><span style=\"font-size:12px;color:#60708A\">{{ components.crew_table?.selectedRow?.role ? components.crew_table.selectedRow.role + ' \u00b7 ' + (components.crew_table.selectedRow.duty_hours || 0) + '/' + (components.crew_table.selectedRow.limit_hours || 0) + ' duty hours' : 'Choose an available crew member from the duty table.' }}</span></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#05164D"
+ },
+ {
+  "app": "lh-sol",
+  "name": "crew_legend",
+  "parent": "",
+  "height": 45,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:9px 13px;font-family:Inter,Arial,sans-serif;font-size:12px;color:#60708A\"><b style=\"color:#05164D\">Assignment rule:</b> only records marked standby can be assigned. The action updates duty status and removes standby availability.</div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:9px 13px;font-family:Inter,Arial,sans-serif;font-size:12px;color:#60708A"
+ },
+ {
+  "app": "lh-sol",
+  "name": "maintenance_header",
+  "parent": "",
+  "height": 70,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:white;border:1px solid #D8E0EC;border-left:7px solid #FFAD00;border-radius:9px;padding:14px 18px;font-family:Inter,Arial,sans-serif;color:#05164D;display:flex;align-items:center;justify-content:space-between\"><div><div style=\"font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#60708A;font-weight:700\">Technical operations</div><div style=\"font-size:24px;font-weight:760\">Aircraft on ground control</div></div><div style=\"font-size:12px;color:#60708A;text-align:right\"><b>FRA maintenance desk</b><br>Open defects and return to service</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:white;border:1px solid #D8E0EC;border-left:7px solid #FFAD00;border-radius:9px;padding:14px 18px;font-family:Inter,Arial,sans-serif;color:#05164D;display:flex;align-items:center;justify-content:space-between"
+ },
+ {
+  "app": "lh-sol",
+  "name": "maintenance_kpis",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:Inter,Arial,sans-serif\"><div style=\"background:#F3F6FB;border:1px solid #D8E0EC;border-radius:9px;padding:11px 15px\"><div style=\"font-size:11px;color:#60708A;text-transform:uppercase;letter-spacing:1px\">Aircraft on ground</div><div style=\"font-size:27px;font-weight:780;color:#05164D\">{{ (queries.q_aog_overview.data || []).filter(a => a.status !== 'Serviceable' && a.status !== 'Returned').length }}</div></div><div style=\"background:#FFF8E6;border:1px solid #FFD36B;border-radius:9px;padding:11px 15px\"><div style=\"font-size:11px;color:#735A08;text-transform:uppercase;letter-spacing:1px\">High severity</div><div style=\"font-size:27px;font-weight:780;color:#05164D\">{{ (queries.q_aog_overview.data || []).filter(a => a.status !== 'Serviceable' && (a.severity === 'Critical' || a.severity === 'High')).length }}</div></div><div style=\"background:#FDF0F0;border:1px solid #E8B4B4;border-radius:9px;padding:11px 15px\"><div style=\"font-size:11px;color:#8E2828;text-transform:uppercase;letter-spacing:1px\">Flights impacted</div><div style=\"font-size:27px;font-weight:780;color:#05164D\">{{ (queries.q_aog_overview.data || []).filter(a => a.status !== 'Serviceable').reduce((n,a) => n + (a.delay_impact || 0),0) }}</div></div></div>",
+  "rootStyle": "height:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-sol",
+  "name": "maintenance_count",
+  "parent": "",
+  "height": 82,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#05164D;color:white;border-radius:9px;padding:12px 16px;font-family:Inter,Arial,sans-serif\"><div style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#C9D4EA\">Visible cases</div><div style=\"font-size:27px;font-weight:780\">{{ (queries.q_aog_overview.data || []).filter(a => a.status !== 'Serviceable' && a.status !== 'Returned' && (!components.maintenance_search?.value || ((a.aircraft || '') + ' ' + (a.defect || '') + ' ' + (a.hangar || '')).toLowerCase().includes(components.maintenance_search.value.toLowerCase())) && (!components.severity_filter?.value || a.severity === components.severity_filter.value)).length }}</div></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#05164D;color:white;border-radius:9px;padding:12px 16px;font-family:Inter,Arial,sans-serif"
+ },
+ {
+  "app": "lh-sol",
+  "name": "maintenance_selection",
+  "parent": "",
+  "height": 65,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#4B3A05\"><b>{{ components.maintenance_table?.selectedRow?.aircraft || 'Select an aircraft' }}</b><br><span style=\"font-size:12px\">{{ components.maintenance_table?.selectedRow?.defect || 'Choose an open case below before releasing it to service.' }}</span></div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#FFF8E6;border:1px solid #FFD36B;border-radius:8px;padding:10px 14px;font-family:Inter,Arial,sans-serif;color:#4B3A05"
+ },
+ {
+  "app": "lh-sol",
+  "name": "maintenance_legend",
+  "parent": "",
+  "height": 45,
+  "rawHtml": "<div style=\"height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:9px 13px;font-family:Inter,Arial,sans-serif;font-size:12px;color:#60708A\"><b style=\"color:#05164D\">Release rule:</b> select only a technically cleared aircraft. The action updates the case status and refreshes this queue.</div>",
+  "rootStyle": "height:100%;box-sizing:border-box;background:#F3F6FB;border:1px solid #D8E0EC;border-radius:8px;padding:9px 13px;font-family:Inter,Arial,sans-serif;font-size:12px;color:#60708A"
+ }
+]

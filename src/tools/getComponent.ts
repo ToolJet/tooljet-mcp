@@ -12,7 +12,7 @@ export function getComponentTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Fetch ONE placed component by id — its actual bound values only: ' +
-      '{ id, name, type, page_id, layouts, properties, styles, others }. Cheaper than get_app_summary ' +
+      '{ id, name, type, page_id, layouts, properties, styles, validation, others }. Includes actual native input validation. Cheaper than get_app_summary ' +
       'when you only need to inspect or diff a single component before update_component.',
     inputSchema: {
       app_id: z.string(),

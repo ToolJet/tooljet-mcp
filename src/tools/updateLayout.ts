@@ -13,8 +13,35 @@ import {
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
+import { strictEntry } from '../strictEntry.js';
 
 const rect = z.object({ top: z.number(), left: z.number(), width: z.number(), height: z.number() });
+
+const RECT_KEYS = new Set(['top', 'left', 'width', 'height']);
+
+// Unknown entry keys are rejected, never stripped: a stripped rect or wrapper left an entry with
+// nothing to write, which went out as an empty diff and was reported as updated (see src/strictEntry.ts).
+const layoutEntrySchema = strictEntry(
+  {
+    component_id: z.string(),
+    desktop: rect.optional(),
+    mobile: rect.optional(),
+    parent: z.string().optional(),
+    slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+  },
+  (key) => {
+    if (RECT_KEYS.has(key)) {
+      return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+    }
+    if (key === 'layout' || key === 'layouts') {
+      return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+    }
+    if (key === 'definition' || key === 'properties' || key === 'styles') {
+      return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+    }
+    return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+  }
+);
 
 export function updateLayoutTool(client: ToolJetClient): ToolDef {
   return {
@@ -34,17 +61,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       app_id: z.string(),
       version_id: z.string(),
       page_id: z.string(),
-      layouts: z
-        .array(
-          z.object({
-            component_id: z.string(),
-            desktop: rect.optional(),
-            mobile: rect.optional(),
-            parent: z.string().optional(),
-            slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
-          })
-        )
-        .min(1),
+      layouts: z.array(layoutEntrySchema).min(1),
     },
     async handler(args: {
       app_id: string;
@@ -70,6 +87,12 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         const resolveErrors: string[] = [];
         const resolvedIds = new Map<string, string>();
         for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === undefined && layout.slot_name === undefined) {
+            resolveErrors.push(
+              `Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`
+            );
+            continue;
+          }
           if (resolvedIds.has(layout.component_id)) continue;
           const resolution = resolveRef(page.components, layout.component_id, 'Component', `on page "${args.page_id}"`);
           if (!resolution.ok) {

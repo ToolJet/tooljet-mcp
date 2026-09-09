@@ -873,6 +873,9 @@
   },
   "Button": {
     "type": "Button",
+    "authoringHints": {
+      "outlineContrast": "styles.type=outline renders a transparent background, ignoring backgroundColor. Set textColor, visible iconColor and loaderColor for contrast against the actual page/card; var(--cc-primary-text) is appropriate on a normal light surface. The primary-button default var(--cc-surface1-surface) can disappear there. Preserve intentional contrasting colors on dark parents; do not assume changing type remaps semantic color tokens."
+    },
     "name": "Button",
     "description": "Trigger actions: queries, alerts, set variables etc.",
     "defaultSize": {
@@ -1354,12 +1357,6 @@
         "default": "{{true}}"
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "collapseWhenHidden",
         "label": "Collapse when hidden",
         "valueType": "boolean",
@@ -1433,6 +1430,12 @@
             }
           }
         ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -1680,7 +1683,7 @@
   "Calendar": {
     "type": "Calendar",
     "name": "Calendar",
-    "description": "Display calendar events",
+    "description": "Display calendar events Use one dateFormat for event dates and calendar bounds; raw ISO values do not match the default format. selectedEvent is the projected event, not the source row: retain its id and resolve the original record before editing.",
     "defaultSize": {
       "width": 30,
       "height": 600
@@ -1689,17 +1692,20 @@
       {
         "key": "dateFormat",
         "label": "Date format",
-        "default": "MM-DD-YYYY HH:mm:ss A Z"
+        "default": "MM-DD-YYYY HH:mm:ss A Z",
+        "description": "Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format all bound date strings consistently; raw ISO query timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern. Preserve the event record id for selection-to-record lookup."
       },
       {
         "key": "defaultDate",
         "label": "Default date",
-        "default": "{{moment().format(\"MM-DD-YYYY HH:mm:ss A Z\")}}"
+        "default": "{{moment().format(\"MM-DD-YYYY HH:mm:ss A Z\")}}",
+        "description": "Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format all bound date strings consistently; raw ISO query timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern. Preserve the event record id for selection-to-record lookup."
       },
       {
         "key": "events",
         "label": "Events",
-        "default": "{{[\n\t\t{\n\t\t\t title: 'Sample event',\n\t\t\t start: `${moment().startOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`,\n\t\t\t end: `${moment().endOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`,\n\t\t\t allDay: false\n\t\t}\n]}}"
+        "default": "{{[\n\t\t{\n\t\t\t title: 'Sample event',\n\t\t\t start: `${moment().startOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`,\n\t\t\t end: `${moment().endOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}`,\n\t\t\t allDay: false\n\t\t}\n]}}",
+        "description": "Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format all bound date strings consistently; raw ISO query timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern. Preserve the event record id for selection-to-record lookup."
       },
       {
         "key": "resources",
@@ -1714,12 +1720,14 @@
       {
         "key": "startTime",
         "label": "Start time on week and day view",
-        "default": "{{moment().startOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}}"
+        "default": "{{moment().startOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}}",
+        "description": "Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format all bound date strings consistently; raw ISO query timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern. Preserve the event record id for selection-to-record lookup."
       },
       {
         "key": "endTime",
         "label": "End time on week and day view",
-        "default": "{{moment().endOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}}"
+        "default": "{{moment().endOf('day').format('MM-DD-YYYY HH:mm:ss A Z')}}",
+        "description": "Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format all bound date strings consistently; raw ISO query timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern. Preserve the event record id for selection-to-record lookup."
       },
       {
         "key": "displayToolbar",
@@ -1802,11 +1810,15 @@
     "exposedVariables": [
       {
         "name": "selectedEvent",
-        "default": {}
+        "default": {},
+        "valueType": "object",
+        "semantics": "Clicked projected calendar event, published before onCalendarEventSelect; NOT automatically the original query row. Only fields retained in events are available; start/end become JavaScript Date objects. Preserve a stable record id and look up the original row by selectedEvent.id before prefilling an edit form that expects fields such as start_at or client_name. Guard an empty selection or missing row."
       },
       {
         "name": "selectedSlots",
-        "default": {}
+        "default": {},
+        "valueType": "object",
+        "semantics": "Selected slots with start/end formatted using dateFormat, plus slots, resourceId and action; these are not ISO timestamps unless dateFormat explicitly produces ISO strings."
       },
       {
         "name": "currentView",
@@ -1815,7 +1827,17 @@
       {
         "name": "currentDate"
       }
-    ]
+    ],
+    "authoringHints": {
+      "selection": {
+        "rule": "selectedEvent is the projected event, not automatically the source row. Preserve a stable record id and either retain every editor field in the event projection or resolve the original record by that id before prefilling. start/end are converted to JavaScript Date objects; do not confuse them with raw database fields.",
+        "timing": "selectedEvent is published before onCalendarEventSelect actions run. Guard empty selection and a missing source row."
+      },
+      "dateParsing": {
+        "rule": "Calendar parses event start/end, defaultDate, startTime and endTime with the same dateFormat. Format every bound string consistently; raw ISO timestamps do not match the default MM-DD-YYYY HH:mm:ss A Z pattern.",
+        "slots": "selectedSlots.start/end are formatted strings using dateFormat, not necessarily ISO timestamps."
+      }
+    }
   },
   "Camera": {
     "type": "Camera",
@@ -1984,12 +2006,6 @@
       "height": 40
     },
     "properties": [
-      {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
       {
         "key": "label",
         "label": "Label",
@@ -2229,6 +2245,12 @@
             }
           }
         ]
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -4044,12 +4066,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -4134,6 +4150,12 @@
       {
         "key": "numberFormat",
         "default": "us"
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -4848,7 +4870,23 @@
     "exposedVariables": [
       {
         "name": "value",
-        "default": ""
+        "default": "",
+        "semantics": "ISO timestamp with a timezone offset, not a date-only string. For date-only fields use selectedDate with dateFormat=\"YYYY-MM-DD\"; do not append T00:00:00 to value."
+      },
+      {
+        "name": "selectedDate",
+        "valueType": "string",
+        "semantics": "Selected date formatted using dateFormat. For date-only persistence set dateFormat=\"YYYY-MM-DD\" and use selectedDate; handle an empty selection."
+      },
+      {
+        "name": "displayValue",
+        "valueType": "string",
+        "semantics": "Selected date formatted using dateFormat, same formatting as selectedDate."
+      },
+      {
+        "name": "unixTimestamp",
+        "valueType": "number",
+        "semantics": "Selected date timestamp; use selectedDate for formatted date-only persistence."
       }
     ],
     "renderingHints": {
@@ -6338,12 +6376,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -6406,6 +6438,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -7282,12 +7320,6 @@
         "default": ","
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "loadingState",
         "label": "Show loading state",
         "valueType": "boolean",
@@ -7298,12 +7330,6 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -7326,6 +7352,18 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -7474,7 +7512,13 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "acceptedTypes": "Use top-level validation.fileType, a comma-separated MIME string; for images and PDFs use image/*,application/pdf. enableValidation controls mandatory state and does not disable the file-type restriction. Labels and parseFileType do not change accepted types.",
+      "filePayload": "components.<picker>.file[0].dataURL is bare base64, without a data: prefix; base64Data contains the same payload. Preserve name, type (MIME) and payload together. content is decoded text, not a reliable binary-document representation.",
+      "preview": "Never bind bare base64 directly to href or src: it becomes a relative URL. For a consumer that supports data URLs, construct data:<validated MIME>;base64,<payload> from an allowlisted document/image MIME and the stored payload. Browser top-level data-URL navigation may be blocked; use a supported native preview or an explicit Blob download workflow and verify reopening the saved document. Filename display alone does not prove preview works.",
+      "processing": "FilePicker reads file content; it does not provide OCR or PDF rasterization. Inspect configured native JS libraries before promising those workflows. Preserve originals and handle missing dependencies honestly."
+    }
   },
   "FlexContainer": {
     "type": "FlexContainer",
@@ -8310,12 +8354,6 @@
         "default": "{{true}}"
       },
       {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
@@ -8336,6 +8374,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -8485,12 +8529,6 @@
         "default": "{{true}}"
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "collapseWhenHidden",
         "label": "Collapse when hidden",
         "valueType": "boolean",
@@ -8517,6 +8555,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -9269,7 +9313,20 @@
       },
       {
         "name": "lastCardMovement",
-        "default": {}
+        "default": {},
+        "valueType": "object",
+        "shape": {
+          "originColumnId": "origin column id",
+          "destinationColumnId": "destination column id",
+          "originCardIndex": "number",
+          "destinationIndex": "number",
+          "cardDetails": {
+            "id": "moved card id",
+            "columnId": "destination column id",
+            "...": "source card fields"
+          }
+        },
+        "semantics": "Published for onCardMoved. Use cardDetails.id and destinationColumnId in persistence queries; cardId, sourceColumn and destinationColumn are not exposed members."
       },
       {
         "name": "lastSelectedCard",
@@ -9957,18 +10014,6 @@
         "default": "{{false}}"
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "tooltipFormat",
         "label": "Tooltip",
         "default": "plainText",
@@ -9983,6 +10028,18 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -10393,7 +10450,7 @@
   "Map": {
     "type": "Map",
     "name": "Map",
-    "description": "Display map locations",
+    "description": "Display map locations Requires the ToolJet deployment Google Maps API configuration; structural validation does not verify provider access.",
     "defaultSize": {
       "width": 16,
       "height": 420
@@ -10493,8 +10550,38 @@
       {
         "name": "center",
         "default": {}
+      },
+      {
+        "name": "selectedMarker",
+        "default": {},
+        "valueType": "object",
+        "semantics": "The original marker object, published before onMarkerClick. Preserve a stable record id on each defaultMarkers entry; read selectedMarker.id to resolve details. Guard a missing or empty selection before the first marker click."
+      },
+      {
+        "name": "markers",
+        "valueType": "array",
+        "semantics": "Current marker objects, initialized from defaultMarkers."
+      },
+      {
+        "name": "bounds",
+        "valueType": "object",
+        "shape": {
+          "northEast": {
+            "lat": "number",
+            "lng": "number"
+          },
+          "southWest": {
+            "lat": "number",
+            "lng": "number"
+          }
+        },
+        "semantics": "Published on bounds change."
       }
-    ]
+    ],
+    "authoringHints": {
+      "providerSetup": "Map.jsx loads Google Maps using deployment public_config.GOOGLE_MAPS_API_KEY. If Google reports a configuration/access error, report the dependency and ask the deployment owner to fix it; do not invent a working key, suppress the warning, or claim the map is production-ready.",
+      "markerSelection": "Use defaultMarkers entries with lat, lng and a stable source-record id. onMarkerClick publishes that whole object as selectedMarker before handlers run. Capture the selected id into the same detail context used by list selection. Do not match solely by coordinates: different visits may share a property."
+    }
   },
   "Modal": {
     "type": "Modal",
@@ -11072,6 +11159,11 @@
         "defaultValue": "body",
         "rule": "Put the modal title Text in header, fields/content in body, and native action buttons in footer. Do not leave showHeader enabled with an empty header and add a duplicate title row to the body.",
         "parentRule": "Set parent_ref for a same-batch modal or parent for an existing modal; coordinates are relative to the selected slot canvas."
+      },
+      "closeLifecycle": {
+        "event": "onClose",
+        "rule": "Put transient selected-record/form cleanup on ModalV2 onClose, not only on a Cancel button: native X and enabled Escape/outside-dismiss paths must not leave stale selection. If a Table opens the detail modal, deselect its row on close when needed so clicking that same row again can reopen its details. Keep cleanup idempotent and never write or delete database records as cleanup.",
+        "verification": "Test Cancel, native X, each enabled dismissal path and successful-save close, then reopen the same record and a different record. Do not assume a working Cancel proves every close path."
       }
     }
   },
@@ -11711,12 +11803,6 @@
         "default": "{{true}}"
       },
       {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
@@ -11803,6 +11889,12 @@
             ]
           }
         ]
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -12024,12 +12116,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -12112,6 +12198,12 @@
       {
         "key": "minValue",
         "default": ""
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -12340,6 +12432,10 @@
       "formLabelAlignment": "Use styles.alignment.value=\"top\" in forms, modals, and fields 18 columns or narrower.",
       "compactFormHeight": "Use the harvested defaultSize.height (normally 40px) for a standard single-line field. With a top label it occupies about 60px; use a 70px top-to-top row step for a 10px gap.",
       "valueTextSizing": "Authored height does not enlarge the value text. Only labelFontSize is exposed; oversized fields make the unchanged value text look too small."
+    },
+    "authoringHints": {
+      "validationPlacement": "Set bounds in top-level validation.minValue and validation.maxValue as {value: ...}. The legacy properties.minValue/maxValue defaults are ignored by the current renderer; leave them empty. Use validation.mandatory for required input.",
+      "submitGuard": "A standalone Button is not automatically blocked by an invalid input. Gate its action using the input isValid state and an explicit finite numeric range check; truthiness accepts negative numbers and rejects valid zero. Keep database constraints authoritative."
     }
   },
   "Pagination": {
@@ -12494,12 +12590,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -12556,6 +12646,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -12860,12 +12956,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -12934,6 +13024,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -13753,12 +13849,6 @@
         ]
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -13853,6 +13943,12 @@
       {
         "key": "optionDisable",
         "default": "{{[false, false, false]}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -14489,12 +14585,6 @@
         "default": "{{[{\"label\":\"Card1\",\"value\":\"1\", \"format\": \"plain\"},{\"label\":\"Card2\",\"value\":\"2\", \"format\": \"plain\"},{\"label\":\"Card3\",\"value\":\"3\", \"format\": \"plain\"}]}}"
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -14505,12 +14595,6 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -14553,6 +14637,18 @@
             "value": "3"
           }
         ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -14973,14 +15069,6 @@
         ]
       },
       {
-        "key": "visibility",
-        "default": "{{true}}"
-      },
-      {
-        "key": "disabledState",
-        "default": "{{false}}"
-      },
-      {
         "key": "direction",
         "default": "left"
       },
@@ -14996,6 +15084,14 @@
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      },
+      {
+        "key": "visibility",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "default": "{{false}}"
       }
     ],
     "events": [
@@ -15184,18 +15280,6 @@
         "default": "{{true}}"
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "tooltipFormat",
         "label": "Tooltip",
         "default": "plainText",
@@ -15210,6 +15294,18 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -16640,7 +16736,14 @@
             "queryName": "<query name>"
           }
         },
-        "eventRule": "ref is <column key or name>::<button id>; use components.<table>.selectedRow in the action."
+        "eventRule": "ref is <column key or name>::<button id>; use components.<table>.selectedRow for source-row identity, not pending inline edits. See inlineEditing before wiring editable-cell saves."
+      },
+      "inlineEditing": {
+        "selection": "selectedRow and rowData contain the original source row, not the pending inline edits. selectRowOnCellEdit does not change this contract.",
+        "pendingRows": "Read pending full rows with Object.values(components.<table>.dataUpdates || {}). dataUpdates and changeSet are objects keyed by row indexes, not database primary keys; updatedData contains all rows with edits merged.",
+        "saveEvent": "The native Save changes footer fires onBulkUpdate. Wire a supported mutation to that event before exposing the footer; an editable cell or visible Save control alone does not persist anything.",
+        "perRowSave": "For a per-row Save action, find the pending row by its stable primary key, not its filtered/sorted position. Use selectedRow only for identity; do not save selectedRow field values as if they were edited values. Hide the bulk footer when it has no separate working handler.",
+        "validation": "Validate edited numbers for finite, nonnegative values before writing; reject negative values, recompute derived status fields from the edited values, and refresh/reset edits only after confirmed success. Verify the saved value after reload."
       }
     }
   },
@@ -17082,12 +17185,6 @@
         ]
       },
       {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -17098,12 +17195,6 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -17203,6 +17294,18 @@
             }
           }
         ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -17596,12 +17699,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -17664,6 +17761,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -17920,12 +18023,6 @@
     },
     "properties": [
       {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -17988,6 +18085,12 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -18300,15 +18403,21 @@
     ],
     "styles": [
       {
-        "key": "boxShadow",
-        "label": "Box shadow",
-        "valueType": "union",
-        "default": "0px 0px 0px 0px #00000040"
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
       },
       {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
       }
     ],
     "events": [],

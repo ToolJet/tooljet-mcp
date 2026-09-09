@@ -96,9 +96,9 @@ Decide the **page structure first.** This is the single biggest difference betwe
    - a **focused page per substantial workflow** — each does ONE job thoroughly (its list, its detail, its create/edit) with one obvious primary action.
    - a **genuinely simple, single-job app → a single page.** Don't fragment something that is truly one job.
 4. **Map every capability to exactly ONE page.** If two unrelated capabilities are landing on the same page, that's the signal to split. Nothing unrelated piles onto the overview.
-5. Give each page a clear one-line job and a relevant `icon`, then design each page (see Design below).
+5. Give each page a clear one-line job and a relevant `icon`, then write the design brief (`references/ui-layout.md`, Frame the page): the register, a header treatment and a composition per page, the presence moves the request earns, and the accent. The brief is a decision, not a template; two apps for different customers should not share one.
 
-**State the page plan to the user first** — one line per page (`Home · overview` / `Workouts · log + history` / …). It's cheap, and it prevents the crowded-single-page failure before it happens.
+**State the page plan and the design brief to the user first** — one line per page (`Home · overview` / `Workouts · log + history` / …) plus two or three lines of the brief (register, header and composition choices, presence moves). It's cheap, it prevents the crowded-single-page failure before it happens, and it makes the design a stated choice rather than a habit.
 
 ## Build in phases — page architecture and phasing are SEPARATE decisions
 

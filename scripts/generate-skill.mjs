@@ -1,13 +1,10 @@
-// Generates skill/SKILL.md from the TJ-AI agent's authoritative knowledge (component
+// Generates skill/SKILL.md from local, source-verified knowledge (component
 // binding rules) + ToolJet's canvas grid constants. It also carries adaptable quality
 // defaults; explicit user requirements always win. Re-run when source rules change to avoid drift.
 //
 // Usage: node scripts/generate-skill.mjs
-//   env: TJAI_ROOT (default ~/Claude/Projects/TJ-AI)
-//        TOOLJET_ROOT (default ~/Claude/Projects/ToolJet/ToolJet)
+//   env: TOOLJET_ROOT (default sibling ToolJet checkout)
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, copyFileSync, existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,7 +25,6 @@ function locate(envVar, label, candidates, marker) {
   );
 }
 
-const TJAI = locate('TJAI_ROOT', 'agent', [['..', 'tooljet-agent'], ['..', 'TJ-AI']], 'src/tooljet_agent');
 const TOOLJET = locate(
   'TOOLJET_ROOT',
   'ToolJet',
@@ -39,27 +35,11 @@ const { legacyReplacements: LEGACY_REPLACEMENTS } = JSON.parse(
   readFileSync(resolve(root, 'data/component-compatibility.json'), 'utf8')
 );
 
-// --- 1. Extract COMPONENT_BINDING_RULES (dict[str,str]) from the agent via Python ast ---
+// --- 1. Read the maintained binding rules. The legacy TJ-AI Python source was removed.
+// Initial rules preserved from db7ae509^:src/tooljet_agent/services/app_builder/v1/bindings/tool_utils.py;
+// subsequent runtime corrections belong here rather than in generated host packages.
 function extractBindingRules() {
-  const py = `
-import ast, json, sys
-src = open(sys.argv[1]).read()
-tree = ast.parse(src)
-rules = {}
-for node in ast.walk(tree):
-    name = None
-    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-        name = node.target.id
-    elif isinstance(node, ast.Assign):
-        for t in node.targets:
-            if isinstance(t, ast.Name): name = t.id
-    if name == 'COMPONENT_BINDING_RULES' and node.value is not None:
-        rules = ast.literal_eval(node.value)
-print(json.dumps(rules))
-`;
-  const file = resolve(TJAI, 'src/tooljet_agent/services/app_builder/v1/bindings/tool_utils.py');
-  const out = execFileSync('python3', ['-c', py, file], { encoding: 'utf8' });
-  return JSON.parse(out);
+  return JSON.parse(readFileSync(resolve(root, 'data/component-binding-rules.json'), 'utf8'));
 }
 
 // --- 2. Read ToolJet canvas grid constants (facts, not opinions) ---
@@ -169,7 +149,7 @@ description: "Build ToolJet apps end-to-end via the tooljet-mcp tools — create
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
-    - TJ-AI COMPONENT_BINDING_RULES (${componentList.length} components)
+    - Source-verified component binding rules (${componentList.length} components)
     - ToolJet WidgetManager catalog (${catalog.length} built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
@@ -295,9 +275,9 @@ Decide the **page structure first.** This is the single biggest difference betwe
    - a **focused page per substantial workflow** — each does ONE job thoroughly (its list, its detail, its create/edit) with one obvious primary action.
    - a **genuinely simple, single-job app → a single page.** Don't fragment something that is truly one job.
 4. **Map every capability to exactly ONE page.** If two unrelated capabilities are landing on the same page, that's the signal to split. Nothing unrelated piles onto the overview.
-5. Give each page a clear one-line job and a relevant \`icon\`, then design each page (see Design below).
+5. Give each page a clear one-line job and a relevant \`icon\`, then write the design brief (\`references/ui-layout.md\`, Frame the page): the register, a header treatment and a composition per page, the presence moves the request earns, and the accent. The brief is a decision, not a template; two apps for different customers should not share one.
 
-**State the page plan to the user first** — one line per page (\`Home · overview\` / \`Workouts · log + history\` / …). It's cheap, and it prevents the crowded-single-page failure before it happens.
+**State the page plan and the design brief to the user first** — one line per page (\`Home · overview\` / \`Workouts · log + history\` / …) plus two or three lines of the brief (register, header and composition choices, presence moves). It's cheap, it prevents the crowded-single-page failure before it happens, and it makes the design a stated choice rather than a habit.
 
 ## Build in phases — page architecture and phasing are SEPARATE decisions
 
@@ -355,23 +335,49 @@ Infer, in one quick pass:
 
 Then hold to these:
 - **One dominant region and at most one dominant action** per page; everything else is clearly secondary.
-- **KPI row before the table, above the fold, on Monitor and Operate pages.** That is the only fixed order. Compose the rest for the job: a snapshot band, charts, a watchlist, a detail or alert panel, wherever it answers a question the table does not. Tiles plus a table is the floor of a page, not its target.
+- **The page's key figures come before its main surface, above the fold, on Monitor and Operate pages.** That is the only fixed order; the shape around it is a choice (compositions below). Tiles plus a table is the floor of a page, not its target.
 - **Every component answers a distinct user question.** Remove anything that repeats information already communicated adequately.
 - **Size regions by importance, information density, and label length** — not reflexive equal widths. The main region gets the space.
 - **One primary accent**, taken from the user's branding or the domain; keep other surfaces neutral and reserve semantic colors (green/amber/red) for actual state, not decoration.
 - **Human-readable identity first** in tables — lead with the name/title/human field, not the technical id.
 - **Headings name the user's decision or context** ("Needs attention today"), not the component type ("Table").
-- **Quick internal design critique before building** — one line each: hierarchy (is the main thing biggest?), redundancy (anything duplicated?), density (too cramped or too empty?), responsive order (what should lead on a narrow screen?), visual signature (one accent, not five?). Fix it before you create components.
+- **Quick internal design critique before building** — one line each: hierarchy (is the main thing biggest?), redundancy (anything duplicated?), density (too cramped or too empty?), responsive order (what should lead on a narrow screen?), visual signature (one accent, not five?), sameness (would this page come out identical for a different customer or a different job? then it was templated, not designed). Fix it before you create components.
+
+#### Design brief (write it before the first write)
+Before the first write of any kind (the first \`lint_app_spec\`, add or update), decide the design in one short brief and hold to it for the whole app. Five lines:
+1. **Register** — staff tool, customer-facing, or executive reporting (\`references/themes.md\`), and the two or three words in the request that decide it.
+2. **Header treatment** per page, from the list below, with the reason.
+3. **Composition** per page, from the list below, with the reason.
+4. **Presence moves** — none, or the two or three signature moves the request earns, each tied to a word in the request (the signature section of \`references/themes.md\`).
+5. **Accent and status colours** — the one literal accent and where it is used.
+Say the brief to the user with the page plan, in three or four lines, then build it. Writing it down is what makes it a choice: a page whose header, tiles and headings would come out identical for a bank, a spa and a warehouse was assembled from habit. If your brief reads like the last app's, change something for a reason.
+
+#### Header treatments (choose one per page; vary by page role)
+- **Plain title** — a bold title Text and a muted subtitle Text on the canvas, nothing behind them. The default for staff tools, dense monitors and every inner page. It is the right answer more often than it feels.
+- **Toolbar** — the title at the left and the page's filters or its single primary action on the same row at the right. For Explore and Operate pages where the control is the point; it saves a row and puts the action where the eye lands.
+- **Masthead** — one Html panel on \`surface2\` with the default border and the theme radius: the customer's or the page's name at the left, one live fact at the right (today's date, an open count, a status). Calm brand presence for customer-facing or brand-named apps in a conservative register (clinic, finance, education, enterprise); no gradient, no uppercase eyebrow.
+- **Statement band** — a filled band on the primary or a dark surface with light text: an eyebrow, the title, a tagline or promise, one figure at the right. Only when the request has feel words or names a premium, luxury or consumer brand, and only on the home page; the inner pages of that app drop to the plain title or the toolbar so the band stays a statement. A band on every page, or on a staff tool, is the clearest sign a page was templated.
+- **None** — the KPI strip or a status board is the first thing on the page and the page name lives in the navigation. For Monitor pages where the figures are the header.
+
+#### Compositions by page mode (alternatives, not a default)
+Pick the composition that answers this page's question, and say why in the brief:
+- **Monitor** — (a) a KPI strip, one trend or breakdown chart, and an exceptions table of only the rows that need attention; (b) a status board: a grid of entity cards (rooms, machines, sites) grouped by state, with a summary strip above; (c) two columns: an alert list at the left and a chart or breakdown of the same facts at the right.
+- **Operate** — (a) a work queue: the table with row actions and a compact summary strip; (b) a split view: a narrow queue at the left and the selected item's detail and actions in a side panel at the right, when the table has six columns or fewer; (c) a board by stage (Kanban) when moving items between stages is the job.
+- **Explore** — a filters row and a full-width table, optionally one facet chart above; or a grid of cards when the entities are visual (rooms, products, people) and each card carries two or three facts.
+- **Inspect** — an identity header for the one record, an Html detail group, then its related lists.
+- **Edit / Configure** — a form with grouped sections and one primary save action above the fold.
+Pages of one app whose jobs differ get different compositions; three pages that are each tiles-plus-table were not designed three times.
 
 ### 2. Visual defaults (apply unless the user says otherwise)
 - **Polish:** it must read as a **designed app, not components dropped on a canvas** — real hierarchy, grouped sections, consistent spacing, aligned edges, no overlaps.
 #### Theme and type
 - **Theme first:** \`create_app\` already applied the standard "ToolJet Modern" theme (see \`references/themes.md\`), so buttons, inputs, tables, modals, borders and radii are handled. Do not restyle those per component; spend effort on the things the theme cannot see — type scale, cards, charts and status colours below.
+- **Text format:** a Text renders \`html\` by default. Markdown (\`## Heading\`, \`**bold**\`, lists) needs \`textFormat: "markdown"\`, or it shows literally.
 - **Type scale (Text component):** page title \`textSize 22\`, \`fontWeight bold\`, height **40**; section heading \`textSize 15–16\` bold, height **30**; body \`textSize 14\`, height **30**; muted labels and subtitles \`textSize 12–13\`, \`textColor "var(--cc-placeholder-text)"\`, height **30**; KPI values \`textSize 28\` bold, height **50**. Leave \`textColor\` unset for primary text so the theme supplies it. Use exactly one muted colour, the theme's \`--cc-placeholder-text\`, for every secondary line; never default black for secondary text and never a literal grey, so a derived theme's warm or cool neutrals reach every label. (Exact keys and the height formula from \`get_component_catalog({type:"Text",sections:["styles","renderingHints"]})\`.)
-- **Page header (every page):** title Text (top ≈ 20) + one-line subtitle Text directly under it (top ≈ 60), then ~20px before content. A default-styled Text looks unfinished.
+- **Page header:** the plain-title treatment is a title Text (top ≈ 20) + one-line subtitle Text directly under it (top ≈ 60), then ~20px before content; the other treatments are chosen in Frame the page. A default-styled Text looks unfinished.
 #### Display-only content and KPI tiles
-- **Display-only content goes in \`Html\`:** when something only *shows* data and no built-in component fits it well (KPI tiles, a read-only detail group such as a record's fields in a modal or side panel, a header band with a summary, a status legend, a mini timeline, a labelled stat strip, an empty state), use one \`Html\` component with \`properties.rawHtml\` and inline CSS rather than stacking Text components inside a Container. Rules that keep it on-theme: the root element uses \`font-family:inherit\`, \`box-sizing:border-box\`, \`height:100%\` and \`margin:0\`; its background is **the surface it sits on** (\`var(--cc-appBackground-surface)\` on the canvas, \`var(--cc-surface1-surface)\` inside a card or modal) so it never shows as a mismatched rectangle; borders use \`var(--cc-default-border)\` (hairlines and dividers \`var(--cc-weak-border)\`), cards \`background:var(--cc-surface1-surface); border:1px solid var(--cc-default-border); border-radius:12px\`, a tinted panel or side rail \`background:var(--cc-surface2-surface)\`; text \`var(--cc-primary-text)\`, muted \`var(--cc-placeholder-text)\`, good/bad figures \`var(--cc-success-systemStatus)\` / \`var(--cc-error-systemStatus)\`; never literal greys inside Html, so a derived theme's neutrals flow through every block; accent = the theme accent (\`#2563EB\` on the standard theme; a derived theme names its own in \`references/themes.md\`); no scripts, no external assets, no fixed pixel widths (use flex/grid so it fills the authored width); enable \`dynamicHeight\` only for wrapping prose. Anything the user must **interact with, bind to, or edit in the builder** (inputs, tables, buttons, charts, modals) stays a built-in component.
-- **KPI tiles:** one \`Html\` strip across the content width (about 120–140px tall) holding a CSS grid of cards, each with a muted label, a 28px bold value bound from \`{{queries.<q>.data ...}}\`, and a one-line context. The strip is a rule, not a fixed template: the number of cards (three to six) and the column proportions follow the figures that matter for this user, not a default of four equal columns. The figure the page exists for may lead: a wider column, or an inverted card filled with \`var(--cc-primary-brand)\` and light text, when the request signals a customer-facing or premium product; equal, quiet cards when it is a plain staff tool. Use the theme's error colour on a value only when the number itself is a problem (overdue, failed). Fall back to a \`Container\` with Text children (\`showHeader:"{{false}}"\`, surface1 background, default border, radius 12) only when a tile must expose a value to other components, and use \`Statistics\` only when a tile can be 18+ columns wide.
+- **Display-only content goes in \`Html\`:** when something only *shows* data and no built-in component fits it well (KPI tiles, a read-only detail group such as a record's fields in a modal or side panel, a header band with a summary, a status legend, a mini timeline, a labelled stat strip, an empty state), use one \`Html\` component with \`properties.rawHtml\` and inline CSS rather than stacking Text components inside a Container. Rules that keep it on-theme: ToolJet's Html widget paints its whole box white underneath your markup, so the root element must cover the box completely and match the canvas: \`<div style=\"height:100%;box-sizing:border-box;margin:0;font-family:inherit;background:var(--cc-appBackground-surface)\">\` on the canvas (\`var(--cc-surface1-surface)\` inside a card or modal), with **no border-radius, tint, gradient or shadow on the root**; the card itself (its tint, radius, padding, shadow) is a child element inside that root, otherwise the corners and the leftover height show as white edges on a tinted page. The linter rejects a root that breaks this; borders use \`var(--cc-default-border)\` (hairlines and dividers \`var(--cc-weak-border)\`), cards \`background:var(--cc-surface1-surface); border:1px solid var(--cc-default-border); border-radius:12px\`, a tinted panel or side rail \`background:var(--cc-surface2-surface)\`; text \`var(--cc-primary-text)\`, muted \`var(--cc-placeholder-text)\`, good/bad figures \`var(--cc-success-systemStatus)\` / \`var(--cc-error-systemStatus)\`; never literal greys inside Html, so a derived theme's neutrals flow through every block; accent = the theme accent (\`#2563EB\` on the standard theme; a derived theme names its own in \`references/themes.md\`); no scripts, no external assets, no fixed pixel widths (use flex/grid so it fills the authored width); enable \`dynamicHeight\` only for wrapping prose. Anything the user must **interact with, bind to, or edit in the builder** (inputs, tables, buttons, charts, modals) stays a built-in component.
+- **KPI tiles:** one \`Html\` strip across the content width (about 120–140px tall) holding a CSS grid of cards, each with a muted label, a 28px bold value bound from \`{{queries.<q>.data ...}}\`, and a one-line context. The strip is a rule, not a fixed template: the number of cards (three to six) and the column proportions follow the figures that matter for this user, not a default of four equal columns. The figure the page exists for may lead: a wider column, or an inverted card filled with \`var(--cc-primary-brand)\` and light text, when the request names the number they watch and the design brief spends a presence move on it; equal, quiet cards otherwise, and always on a plain staff tool. Use the theme's error colour on a value only when the number itself is a problem (overdue, failed). Fall back to a \`Container\` with Text children (\`showHeader:"{{false}}"\`, surface1 background, default border, radius 12) only when a tile must expose a value to other components, and use \`Statistics\` only when a tile can be 18+ columns wide.
 #### Charts
 - **Charts:** \`properties.title ""\` with a section-heading Text above; \`markerColor\` = the theme accent (\`#2563EB\` on the standard theme; a derived theme's accent comes from its archetype row in \`references/themes.md\`, never the standard blue on a charcoal, rose or brown theme); \`styles.backgroundColor "var(--cc-surface1-surface)"\`, \`borderColor "var(--cc-default-border)"\`, \`borderRadius 12\`; two charts per row at 19 columns each (lefts 2 and 22), height ≈ 290. Native \`type: "line"\` and \`"bar"\` with \`data: [{x, y}]\` and \`showGridLines true\` are good as-is. Every other common chart needs \`plotFromJson: "{{true}}"\` with a \`jsonDescription\` expression returning \`{ data, layout }\`, because the native pie uses Plotly's rainbow palette with no legend. Shared layout for all of them: \`margin {l:36, r:12, t:8, b:40}\`, \`paper_bgcolor\` and \`plot_bgcolor\` \`'rgba(0,0,0,0)'\`, \`font {size:12, color:<muted>}\`, axes \`gridcolor <weak border>\`, \`zeroline false\` (Plotly cannot read CSS variables, so these two are the theme's literal muted-text and weak-border hex: \`#6B7280\` and \`#F3F4F6\` on the standard theme, the derived neutral set otherwise), and \`showlegend: true\` whenever a legend is wanted (the wrapper hides it otherwise). Series palette, in order: the accent, the accent at 65% and 40% opacity (\`rgba(r,g,b,0.65)\`, \`rgba(r,g,b,0.4)\`), a darker shade of the accent for a fourth series, then the theme's muted text colour for done/neutral and its default border colour for rejected/empty. On the standard theme that is \`#2563EB, rgba(37,99,235,0.65), rgba(37,99,235,0.4), #1D4ED8, #9CA3AF, #E5E7EB\`; on the hospitality row it starts from bronze \`#B45309\`.
   - **Donut:** one \`type:'pie'\` trace, \`hole 0.55\`, \`marker.colors\` from the palette, \`textinfo 'percent'\`, \`textposition 'inside'\`, \`insidetextorientation 'horizontal'\`, white 12px inside text, \`sort false\`; \`layout.showlegend true\` with \`legend {orientation:'v', x:1, y:0.5}\`, margins 8.
@@ -383,7 +389,7 @@ Then hold to these:
 #### Tables, buttons and filters
 - **Status colour in tables:** put conditional \`textColor\` on priority/status/state columns using the theme tokens — success \`"var(--cc-success-systemStatus)"\`, error \`"var(--cc-error-systemStatus)"\`, warning = the theme's warning colour as literal hex (\`#D97706\` on the standard theme; it has no token), informational = the theme accent (\`#2563EB\` on the standard theme), quiet \`"var(--cc-placeholder-text)"\` — and nowhere else. Backgrounds stay white; do not tint rows or cells.
 - **Secondary buttons** (Cancel, Clear, Reset): \`styles.backgroundColor "var(--cc-surface1-surface)"\`, \`textColor "var(--cc-primary-text)"\`, \`borderColor "var(--cc-default-border)"\`. One filled primary button per view; everything else is this outline style.
-- **Filters row:** \`DropdownV2\` filters with a real \`label\`, \`styles.alignment "top"\`, \`showClearBtn true\`, 8 columns each, plus a 3-column outline Clear button at the right edge; the Table starts 60px below the filters' top. In the Table's \`data\` expression, reference every filter as \`components.<filter>?.value\` (optional chaining), never \`components.<filter>.value\`: when the user reaches the page through in-app navigation the queries already hold data, so the Table evaluates the instant it mounts, before the filter components exist. An unguarded reference throws, the Table shows "No data", and nothing re-evaluates it until a filter changes or the page is reloaded. The same rule applies to any component reference inside a Listview, Chart or Html binding.
+- **Filters row:** \`DropdownV2\` filters with a real \`label\`, \`styles.alignment "top"\`, \`showClearBtn true\`, 8 columns each, plus a 3-column outline Clear button at the right edge; the Table starts 60px below the filters' top. In the Table's \`data\` expression, reference every filter as \`components.<filter>?.value\` (optional chaining), never \`components.<filter>.value\`: when the user reaches the page through in-app navigation the queries already hold data, so the Table evaluates the instant it mounts, before the filter components exist. An unguarded reference throws, the Table shows "No data", and nothing re-evaluates it until a filter changes or the page is reloaded. The same rule applies to any component reference inside a Listview, Chart, Text or Html binding; the linter rejects an unguarded one.
 #### Modals and nested views
 - **Modals (\`ModalV2\`):** \`useDefaultButton false\`; a bold 16px Text in the \`header\` slot; \`body\` inputs with top-aligned labels at height 62 (they render 82) and a \`TextArea\` at height 100 (renders 120); \`footer\` holds an outline Cancel at left 26 and the filled primary at left 35, width 8, top 4; \`modalHeight\` = last body child's rendered bottom + 180.
 - **Kanban cards:** the catalog default title/description children are only 14 columns wide and truncate after a few words. After the phase, widen both to \`left 2, width 39\` (title top 12, description top 44, description \`textSize 12\` in the muted grey) or supply an explicit Html child. Keep \`openModalOnCardClick false\` unless the card modal has been browser-verified.
@@ -400,8 +406,8 @@ Then hold to these:
 - **Chart widths** (defaults, not hard limits): a compact few-category pie/donut ≈ **13–15 columns**; a categorical bar with longer labels ≈ **20–24 columns**; at most **two** normal analytical charts in one ~39-column content row unless labels are short and readability is verified.
 - **Statistics sizing:** a value-only tile with \`hideSecondary:true\` needs at least **12 columns** and ≈ **110–120px** height (at most three per content row), but **12–17 columns is safe only for a short one- or two-word label**; longer labels can wrap vertically and hide the value, so shorten them or use at least 18 columns. A tile with visible secondary content needs at least **18 columns** and ≈ **130–150px** height (normally two per row).
 - **Table width:** a Table with more than six visible columns takes the full content width (\`left 2, width 39\`); a narrower table clips columns behind a horizontal scrollbar. Put a side panel below or in a modal instead of beside a wide table.
-- **Html panel height:** an \`Html\` block does not grow; size its \`height\` to its content (rows × line height + padding, e.g. a 7-row detail panel needs about 300px) so nothing is clipped behind an inner scrollbar.
-- **Table columns:** when presentation matters, set an **explicit, complete \`columns\` array** in the order you want and project the Table's \`data\` expression to new objects containing only visible and behavior-needed keys (for example, \`queries.q.data.map(r => ({id:r.id,name:r.name,status:r.status}))\`). An identity map (\`.map(r => r)\`) or object spread (\`({...r})\`) is **not** a safe projection: undeclared datasource fields can still leak. With \`autogenerateColumns\` enabled, ToolJet appends undeclared datasource fields after your explicit columns, which commonly exposes technical IDs and internal notes. For a behavior-only key such as \`id\`, keep it in \`data\` but declare its column with \`columnVisibility:false\`; this preserves it for \`selectedRow\`/actions and prevents autogeneration from showing it. Do not casually disable autogeneration: some ToolJet Table versions crash while generating column transformations when it is false. Do **not** rely on the property order of a transformed query object to reorder existing columns — it won't. Natural header casing is fine: **\`headerCasing: "none"\` is a valid value**.
+- **Html panel height:** an \`Html\` block does not grow, and its box renders about 4px shorter than the authored \`height\`; anything taller is cut off behind a hidden scrollbar (a vertically centred flex header loses both edges). Compute the height from the CSS you wrote, at 1.5× line height: a header band is top+bottom padding + eyebrow (12px → 18) + title (font × 1.5) + subtitle (13px → 20) + margins + 8px slack, so 18px padding with a 28px title and a subtitle needs about 110px, not 80; a KPI card is top+bottom padding + label (12px → 18) + figure (font × 1.5, a 34px figure → 51) + context line (12px → 18) + its margins + 8px slack, so 18px padding with a 34px figure needs about 140px, not 118. A 7-row detail panel needs about 300px. The linter estimates the height from your inline CSS and rejects a block that is short by more than 8px; fix it by raising \`height\` to the number it reports, not by shrinking the copy.
+- **Table columns:** \`properties.columns.value\` is a JSON array value, never a JSON string (a string crashes the Table). When presentation matters, set an **explicit, complete \`columns\` array** in the order you want and project the Table's \`data\` expression to new objects containing only visible and behavior-needed keys (for example, \`queries.q.data.map(r => ({id:r.id,name:r.name,status:r.status}))\`). An identity map (\`.map(r => r)\`) or object spread (\`({...r})\`) is **not** a safe projection: undeclared datasource fields can still leak. With \`autogenerateColumns\` enabled, ToolJet appends undeclared datasource fields after your explicit columns, which commonly exposes technical IDs and internal notes. For a behavior-only key such as \`id\`, keep it in \`data\` but declare its column with \`columnVisibility:false\`; this preserves it for \`selectedRow\`/actions and prevents autogeneration from showing it. Do not casually disable autogeneration: some ToolJet Table versions crash while generating column transformations when it is false. Do **not** rely on the property order of a transformed query object to reorder existing columns — it won't. Natural header casing is fine: **\`headerCasing: "none"\` is a valid value**.
 - **Table row actions:** use a \`columnType: "button"\` column in the complete \`columns\` array; do not use deprecated \`properties.actions\`. Read \`get_component_catalog({type:"Table",sections:["authoringHints"]})\` for the exact column/button defaults. Wire each button with \`source_type:"table_column"\`, \`trigger:"onClick"\`, and \`ref:"<column key or name>::<button id>"\`. Button property expressions can use \`rowData\`/\`cellValue\`; event actions should read \`components.<table>.selectedRow\` (ToolJet sets it before the handler runs).
 - **Operational viewport:** on an **Operate** page with a bounded Table/Listview, avoid adding a page-level scrollbar on top of the pane's own vertical scrolling. Keep the single primary action inside the initial desktop viewport (as a safe authored-canvas default, its bottom should be around **720px or less**) by shortening the header/pane or moving the action above/beside the pane. Long forms and detail pages may deliberately scroll; browser-verify that choice instead of applying this threshold blindly.
 
@@ -713,8 +719,9 @@ Use \`add_table_column\` to evolve a ToolJet DB table in place. Destructive dele
 ### ToolJet DB (\`kind: "tooljetdb"\`)
 - Resolve the table id with \`list_tables()\` — the query references the table by **\`table_id\`** (the id), NOT the name.
 - Bounded preview: \`options = { "operation": "list_rows", "table_id": "<table id>", "list_rows": { "limit": 25, "offset": 0 }, "runOnPageLoad": true }\`. Do not author an automatic unbounded \`list_rows\`; count first and use the server-side Table recipe when size is unknown or growing.
-- \`runOnPageLoad: true\` runs the query when the app opens so bound components populate automatically.
+- \`runOnPageLoad: true\` runs the query when the app opens so bound components populate automatically. Every read query a Table binds must run on its own (\`runOnPageLoad: true\`, a page \`onPageLoad\` run-query event, or a success chain from one that does); the linter rejects a Table whose query nothing runs.
 - \`list_rows\` may carry \`limit\`, \`offset\`, \`where_filters\`, and \`order_filters\`. In \`order_filters\`, the outer map key must match the clause's inner \`id\`; a mismatch can silently disable sorting. Fetch \`get_datasource_query_schema(..., operation:"list_rows")\` for the exact nested shapes instead of guessing.
+- **Date and timestamp columns come back as full ISO timestamps with an offset** (\`2026-09-04T00:00:00+00:00\`), never as \`YYYY-MM-DD\`. An \`eq\` filter or a binding such as \`row.arrival_date === moment().format('YYYY-MM-DD')\` therefore matches nothing, the query succeeds, and the table shows \`No data\` with no error. Filter a day as a range (\`gte\` the day at 00:00, \`lt\` the next day) or compare \`String(row.arrival_date).slice(0, 10)\` in the binding; when this build creates the table, store a calendar day in a text column seeded as \`YYYY-MM-DD\` so "today" is a plain equality. The linter warns on an \`eq\` filter against a day.
 - Prefer ToolJet DB aggregation over fetching every row just to count or sum: use \`list_rows.aggregates\` and optional \`list_rows.group_by\`. The aggregate configuration key is not the result key; results use \`<table_name>_<column>_<aggFx>\` (for example \`starlink_terminals_id_count\`). Multi-table reads use \`operation: "join_tables"\` with \`join_table\`.
 - Primary-key batches use \`bulk_update_with_primary_key\` with \`rows_update\`, or \`bulk_upsert_with_primary_key\` with \`rows\`. Read the generated schema before composing these shapes.
 - **Write operations** (for edit/create flows) use indexed-object option shapes:
@@ -885,7 +892,7 @@ description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create 
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
-    - TJ-AI COMPONENT_BINDING_RULES (${componentList.length} components)
+    - Source-verified component binding rules (${componentList.length} components)
     - ToolJet WidgetManager catalog (${catalog.length} built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
@@ -901,7 +908,7 @@ Build only what ToolJet's real components, connected datasources, and MCP tools 
 1. Call \`list_workspaces\`; if several exist, confirm and switch before creating anything. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into an overview plus focused pages.
 2. Treat 3+ substantive pages, 2+ complex workflows, a multi-table model, or multiple integrations as a large build. Before mutations, show the page/phase plan and rough time ranges, then ask for phased checkpoints (recommended) or the whole app in one run. Do not re-ask if the user already chose.
 3. Call \`create_app\`, preserve its ids and links, then call \`list_datasources\`. Before calling it, decide the theme (\`references/themes.md\`): if the request names a brand, an industry, or a customer type, derive a theme from it and pass \`theme: { name, definition }\`; otherwise \`create_app\` applies the standard "ToolJet Modern" theme. Report its \`theme.warning\` if one comes back. Fetch only the component, event-action, and datasource contracts needed for the current phase, using one selective batch per contract class, and reuse them. Typed component catalog reads are compact by default; request exact \`sections\` and \`property_keys\`/\`style_keys\` instead of broad full contracts. Confirm a new data model before creating it; ToolJet DB table names are at most 31 characters.
-4. Plan a complete useful phase with stable \`client_ref\` values. Root components omit \`parent\` and \`slot_name\`; page ids are not component parents. Await \`lint_app_spec\` as a standalone barrier, fix its errors and review warnings, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never run the linter alongside a write. Put planned persisted component definition patches in \`component_updates\`; use targeted update tools for ad-hoc repairs, never duplicate resources or rebuild the app. After an error, inspect it and change the repair—never replay an identical mutation.
+4. Write the design brief before the first write of any kind (\`references/ui-layout.md\`, Frame the page): the register, a header treatment and a composition per page, the presence moves the request earns, and the accent; state it with the page plan. Then plan a complete useful phase with stable \`client_ref\` values. Root components omit \`parent\` and \`slot_name\`; page ids are not component parents. Await \`lint_app_spec\` as a standalone barrier, fix its errors and review warnings, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never run the linter alongside a write. Put planned persisted component definition patches in \`component_updates\`; use targeted update tools for ad-hoc repairs, never duplicate resources or rebuild the app. After an error, inspect it and change the repair—never replay an identical mutation.
 5. Verify each completed page/primary flow using \`references/qa.md\`. Static validation does not prove runtime query behavior, rendering, or event delivery.
 6. Share \`editor_url\` while authoring. After the first meaningful page works, open \`viewer_url\` in the built-in browser when available and reuse that tab. Final handoff includes both links, what works, limitations, and a short tool-call-count efficiency note.
 
@@ -929,7 +936,7 @@ Tool schemas, catalog responses, and returned warnings are authoritative. Do not
 - Never author or execute \`SELECT *\` against an unfamiliar table. Count first when size is unknown; above 1,000 rows prefer server-side pagination. Large and billable reads require separate explicit approvals.
 - Never run mutations, AI, email, OAuth, or other side effects merely to validate a build.
 - Seed writes are insert-only; omit generated serial keys. A duplicate-key failure is never permission to update existing rows.
-- Page/query/component/table/column deletion requires exact-target approval plus \`confirm:true\`. Visibility is not authorization.
+- Page/query/component/table/column deletion requires exact-target approval plus \`confirm:true\`, except for resources this build created itself (a diagnostic query, a scratch page, a probe component): delete those before finishing rather than renaming or hiding them. Visibility is not authorization.
 - Keep app chrome controls distinct: \`hide_header\` hides the app header/banner; \`navigation_position\` places the separate generated navigation menu on the side or top; \`navigation_hidden\` hides that whole menu in either position; and \`update_pages.hidden\` hides only one non-Home page. Home cannot be hidden.
 - Batch/phase writes can partially persist. Read reported completed resources and repair in place; never auto-delete or replay the whole batch blindly.
 `;

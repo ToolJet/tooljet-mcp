@@ -12,6 +12,8 @@ import { dirname, resolve } from 'node:path';
 
 export interface ComponentProp {
   key: string;
+  /** Source-verified property behavior, available in full or key-selected contracts. */
+  description?: string;
   label?: string;
   valueType?: string;
   default?: unknown;

@@ -32,11 +32,11 @@
   ],
   "response_contracts": {
     "total": 470,
-    "known": 64,
+    "known": 77,
     "runtime_dependent": 35,
-    "unknown": 371,
+    "unknown": 358,
     "missing": 0,
-    "known_percent": 13.6
+    "known_percent": 16.4
   },
   "known_response_kinds": [
     "anthropic",
@@ -46,6 +46,7 @@
     "mysql",
     "openai",
     "postgresql",
+    "servicenow",
     "snowflake",
     "tooljetdb"
   ],
@@ -123,7 +124,6 @@
     "salesforce": 2,
     "saphana": 1,
     "sendgrid": 1,
-    "servicenow": 13,
     "sharepoint": 1,
     "slack": 2,
     "smtp": 1,

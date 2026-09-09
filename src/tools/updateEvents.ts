@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from '../eventValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { strictEntry } from '../strictEntry.js';
 
 export function updateEventsTool(client: ToolJetClient): ToolDef {
   return {
@@ -16,18 +17,24 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
       'Edit existing event handlers (batch) — e.g. change an action or its params — instead of deleting ' +
       'and re-adding. For updateType "update" you MUST include `name` and the full `event` blob ({ eventId, ' +
       'actionId, ...params }) per entry (name becomes null if omitted). For "reorder" only `index` is used. ' +
-      'Get event ids from list_events.',
+      'Get event ids from list_events. Outer event_id identifies the saved handler; inner event.eventId ' +
+      'is its trigger name (for example "onClick"), NOT the saved handler id.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
       events: z
         .array(
-          z.object({
-            event_id: z.string(),
-            name: z.string().optional(),
-            event: z.record(z.string(), z.any()).optional(),
-            index: z.number().optional(),
-          })
+          strictEntry(
+            {
+              event_id: z.string(),
+              name: z.string().optional(),
+              event: z.record(z.string(), z.any()).optional(),
+              index: z.number().optional(),
+            },
+            (key) =>
+              `Event entry key "${key}" must be nested under \`event\` (the full { eventId, actionId, ...params } blob). ` +
+              'Accepted entry keys are event_id, name, event, index.'
+          )
         )
         .min(1),
       update_type: z.enum(['update', 'reorder']).optional(),
@@ -50,6 +57,14 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
           const missing = args.events.filter((event) => !event.name || !event.event);
           if (missing.length) {
             return fail(new Error('update_events with update_type="update" requires name and the full event blob for every entry.'));
+          }
+          const confused = args.events.find((entry) => entry.event?.eventId === entry.event_id);
+          if (confused) {
+            const persisted = summary.events.find((entry) => entry.id === confused.event_id);
+            const trigger = (persisted?.event as Record<string, unknown> | undefined)?.eventId;
+            return fail(new Error(`Event "${confused.name}": event.eventId must be the trigger name, not the saved event id. ` +
+              `Keep event_id="${confused.event_id}" at the outer level; the current inner trigger is ${JSON.stringify(trigger)}. ` +
+              'Use that trigger unless intentionally changing it to another supported trigger. Do not put onClick in event.event.'));
           }
         } else if (args.events.some((event) => event.index === undefined)) {
           return fail(new Error('update_events with update_type="reorder" requires index for every entry.'));

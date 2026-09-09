@@ -70,6 +70,11 @@ Theming is part of building an app from scratch, and of nothing else.
   create, change or apply a theme, do not touch app settings, and style what you add to match what is already
   there. The app's current theme is the user's decision, not yours.
 
+**Licence gate.** Custom themes are a licensed feature. When `manage_theme` create returns `licensed: false`
+(the instance answered HTTP 451), the app stays on the workspace default theme: do not retry under another name
+or guess a theme id, build on the default, and repeat the result's `user_message` to the user in the closing
+handoff so they know their plan does not include custom themes and that upgrading enables them.
+
 ## Derive a theme from the request (do this before `create_app`)
 
 The user does not have to ask for a theme. If the request says who the app is for, the customer has an expectation
@@ -163,26 +168,36 @@ applied, in one line.
 The archetype sets the palette. How much presence the page gets is set by the wording of the request, so read
 it for that too, and let what is absent count as much as what is present:
 
-- **No feel words** ("ops", "tracking", "admin", "internal", a plain list of features): build the standard
-  skeleton on the derived palette and stop. Restraint is the correct reading of a plain request.
+- **No feel words** ("ops", "tracking", "admin", "internal", a plain list of features), even when a brand or an
+  industry is named: the name sets the palette and nothing else. Build the standard skeleton on the derived
+  palette with a plain-title or toolbar header and stop. Restraint is the correct reading of a plain request,
+  and a named brand is not a request for a hero band.
 - **Feel words** ("beautiful", "premium", "luxury", "elegant", "modern", "not like a spreadsheet", "for our
-  clients"), a named brand, a pasted design system, or a customer-facing use case: the customer is telling you
-  the page must carry their identity. Add a signature layer on top of the skeleton.
+  clients"), a pasted design system, or a customer-facing use case with the customer in the room: the request
+  is telling you the page must carry an identity. Add a signature layer on top of the skeleton.
 
-A signature layer is two or three deliberate moves, chosen for this customer, never all of them and never the
-same set twice. Each is display-only `Html` on the theme tokens; everything interactive stays native:
+A signature layer is two or three deliberate moves, chosen for this customer and written into the design brief
+(`references/ui-layout.md`, Frame the page) with the word in the request that earned each one. Never all of
+them, and never the set you used last time: if the brief for a spa reads like the brief for an airline, one of
+them is wrong. Each move is display-only `Html` on the theme tokens; everything interactive stays native. The
+kinds of move, with the kind of request each fits:
 
-- a header band that carries the brand: monogram or initials, an uppercase letter-spaced eyebrow, the name, a
-  one-line promise or tagline, on a tinted or gently graded surface with a large radius;
-- the figure the business runs on emphasised in the KPI strip (an inverted brand-fill card, or a wider column);
-- a side rail on `surface2` with the thing this user looks at next, drawn from their world (a clinic: the next
-  appointments; a hotel: today's arrivals; a fleet desk: aircraft on ground) plus a short house note;
-- section headings as `Html` with a sub line and a right-aligned eyebrow ("ordered by date"), instead of a bare Text;
-- a softer table: weak borders, generous row height, status in colour only.
+- **A header with presence**: the masthead or the statement band from the header treatments, on the home page
+  only. A luxury or consumer brand earns the band; a clinic, a bank or a school earns the masthead.
+- **The figure the business runs on emphasised** in the KPI strip: an inverted brand-fill card or a wider
+  column for the one number the request says they watch, never the first tile by default.
+- **A side rail on `surface2`** with the thing this user looks at next, drawn from their world (a clinic: the
+  next appointments; a hotel: today's arrivals; a fleet desk: aircraft on ground) plus a short house note.
+- **Section headings as `Html`** with a sub line, when the sections need explaining; plain Text headings
+  otherwise.
+- **A softer table**: weak borders, generous row height, status in colour only, for a page a guest or client
+  sees.
+- **A brand element** the request supplies: a monogram or initials, a house colour rule, a tagline in their
+  words.
 
-Derive the content of each move from the request and the data, not from this list: the rail shows what
-that customer waits for, the eyebrow says what that page is, the tagline is theirs. If nothing in the request
-tells you what that is, leave the move out rather than fill it with filler.
+Derive the content of each move from the request and the data, not from this list: the rail shows what that
+customer waits for, the emphasised figure is the one they named, the tagline is theirs. If nothing in the
+request tells you what that is, leave the move out rather than fill it with filler.
 
 The standard theme's tokens, for reference when choosing literal colours that must match it:
 

@@ -2,6 +2,21 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
+import {
+  lintHtmlContentHeight,
+  BARE_QUERY_DATA_BINDING,
+  lintChartDataShape,
+  lintEmbeddedBindingSyntax,
+  lintHtmlRootSurface,
+  lintOversizedWidths,
+  lintUnguardedComponentRefs,
+  lintUnguardedSelectionText,
+  lintTableColumnsShape,
+  lintTextFormat,
+  lintUntriggeredDataQueries,
+} from './renderReadiness.js';
+import { bindingReferences } from './bindingReferences.js';
+import { lintBindingSyntax } from './bindingSyntax.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
@@ -864,6 +879,46 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   const props = spec.properties ?? {};
   const label = spec.name ?? spec.type ?? 'component';
 
+  // Outline ignores backgroundColor; surface-colored primary-button text is not remapped
+  // by Button.jsx. Warn, rather than rewrite: a deliberately dark parent can be valid.
+  if (spec.type === 'Button' && propVal(spec.styles ?? {}, 'type') === 'outline') {
+    const textColor = propVal(spec.styles ?? {}, 'textColor') ??
+      getComponentSchema('Button')?.styles.find((style) => style.key === 'textColor')?.default;
+    if (textColor === 'var(--cc-surface1-surface)') {
+      warnings.push(
+        `Button "${label}": outline background is transparent even when backgroundColor is set. ` +
+          'Surface-colored text can disappear against the page or card. Set textColor to a contrasting ' +
+          'token such as var(--cc-primary-text), and check iconColor/loaderColor against the actual parent; ' +
+          'retain surface-colored text only when the parent provides sufficient contrast.'
+      );
+    }
+  }
+
+  // NumberInput's persisted defaults contain these legacy property keys, but its current
+  // renderer reads bounds only from validation. Empty defaults must remain repair-compatible.
+  if (spec.type === 'NumberInput') {
+    for (const key of ['minValue', 'maxValue']) {
+      const value = propVal(props, key);
+      if (value == null || (typeof value === 'string' && value.trim() === '')) continue;
+      errors.push(
+        `NumberInput "${label}": properties.${key} is ignored by the renderer. ` +
+          `Move the limit to top-level validation.${key}: {value: ...} and clear the legacy property. ` +
+          'Gate standalone submit actions on field validity and the intended numeric range; truthiness accepts negative values.'
+      );
+    }
+  }
+
+  errors.push(...lintBindingSyntax(props, `Component "${label}".properties`));
+  errors.push(...lintBindingSyntax(spec.styles, `Component "${label}".styles`));
+  // These boolean controls are not text templates. A malformed expression plus stray prose can
+  // silently become a truthy string and disable/hide an otherwise working primary action.
+  for (const key of ['disabledState', 'loadingState', 'visibility', 'collapseWhenHidden']) {
+    const path = `Component "${label}".properties.${key}`;
+    for (const error of lintBindingSyntax(props[key], path, true)) {
+      if (!errors.includes(error)) errors.push(error);
+    }
+  }
+
   if (spec.slotName !== undefined) {
     if (!(COMPONENT_SLOT_NAMES as readonly string[]).includes(spec.slotName)) {
       errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
@@ -1228,8 +1283,19 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
   }
 
+  // Text holding markdown in the default html format renders the markdown literally.
+  errors.push(...lintTextFormat(spec));
+  errors.push(...lintHtmlContentHeight(spec));
+  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintUnguardedComponentRefs(spec));
+  errors.push(...lintEmbeddedBindingSyntax(spec));
+  errors.push(...lintChartDataShape(spec));
+  errors.push(...lintUnguardedSelectionText(spec));
+
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
+    // A stringified columns array crashes the Table component; check it before the shape-dependent lints.
+    errors.push(...lintTableColumnsShape(spec));
     const data = propVal(props, 'data');
     const selector = propVal(props, 'dataSourceSelector');
     const autogen = propVal(props, 'autogenerateColumns');
@@ -1347,6 +1413,20 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         const deprecatedReplacement =
           typeof c?.columnType === 'string' ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : undefined;
+        // columnSize is a pixel width, not a flex weight or canvas grid span. Tiny positive
+        // values collapse ordinary text/date columns to the renderer's minimum width.
+        // Ignore hidden columns and non-literal values rather than guessing their runtime intent.
+        if (
+          c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}' &&
+          typeof c.columnSize === 'number' && c.columnSize > 0 && c.columnSize < 16 &&
+          ['string', 'text', 'number', 'datepicker', 'button'].includes(String(c.columnType))
+        ) {
+          errors.push(
+            `Table "${label}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} ` +
+              'is in pixels, not proportional weights or grid columns. Use a readable pixel width ' +
+              '(for example 240 for a name, 140 for a date), or omit columnSize for the default.'
+          );
+        }
         if (deprecatedReplacement) {
           errors.push(
             `Table "${label}" column[${i}] "${String(c?.key ?? c?.name ?? '')}" uses deprecated ` +
@@ -1695,6 +1775,29 @@ export function lintRenderedGeometry(components: LintComponent[]): string[] {
   ];
 }
 
+// Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
+const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'Modal', 'Icon']);
+const MIN_RENDERABLE_HEIGHT = 24;
+
+/** A model that mistakes the pixel grid for row units authors 14px headers, 10px inputs and 1px
+ *  modals; every other lint passes and the app renders as a row of slivers. Measured on one Grok 4.5
+ *  build: four pages, every header, KPI strip and input under 16px, no lint error. Below 24px
+ *  nothing but a divider can show its content, so this is an error, not a warning. */
+export function lintUnrenderableHeights(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const c of components) {
+    if (!c.type || THIN_BY_DESIGN.has(c.type)) continue;
+    const height = c.layouts?.desktop?.height;
+    if (typeof height !== 'number' || height >= MIN_RENDERABLE_HEIGHT) continue;
+    errors.push(
+      `${c.type} "${c.name ?? c.id ?? '?'}": desktop height ${height}px cannot render its content; heights are ` +
+        `pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, ` +
+        'KPI strips 120+, tables 300+).'
+    );
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -1707,6 +1810,9 @@ export function lintComponents(components: LintComponent[]): LintResult {
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
+  errors.push(...lintUnrenderableHeights(components));
+  errors.push(...lintOversizedWidths(components));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -1863,6 +1969,119 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
+  // Result-shape mismatch. ToolJet DB `sql_execution` returns data as {results: rows}; every other
+  // ToolJet DB operation (list_rows, joins) returns the rows array itself. Observed live (Luna max,
+  // 2026-09-06): the catalog hint for SQL reads was applied to two list_rows queries, so both
+  // Maintenance tables read `queries.q.data.results`, got undefined, and showed No data with no error.
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? '');
+    const bad = new Set<string>();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.results\b/g)) {
+      const query = queryByName.get(m[1]!);
+      if (!query || query.kind !== 'tooljetdb') continue;
+      const operation = recordValue(query.options)?.operation;
+      if (operation === 'sql_execution' || operation === undefined) continue;
+      bad.add(m[1]!);
+    }
+    for (const name of bad) {
+      const operation = String(recordValue(queryByName.get(name)?.options)?.operation);
+      errors.push(
+        `${component.type ?? 'Component'} "${component.name ?? component.id}": reads queries.${name}.data.results, but "${name}" is a ` +
+          `ToolJet DB ${operation} query whose data is the rows array itself; only sql_execution returns {results: rows}. ` +
+          `Bind queries.${name}.data instead, or the component shows No data.`
+      );
+    }
+  }
+
+  // The mirror image: a ToolJet DB sql_execution query returns {results: rows}, so a data-bound component
+  // reading `queries.q.data` gets an object, not rows, and shows No data. Observed live (Nordlicht
+  // benchmark, 2026-09-07): Haiku wrote seven SQL queries and bound every table and KPI to `.data`;
+  // all four pages rendered empty although the seeds and the queries were fine.
+  for (const component of allComponents) {
+    if (!['Table', 'ListView', 'Chart', 'Kanban', 'Statistics', 'Text', 'Html'].includes(component.type ?? '')) continue;
+    const blob = JSON.stringify(component.properties ?? '');
+    const bad = new Set<string>();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data(?![\w?]*\.results)\b/g)) {
+      const query = queryByName.get(m[1]!);
+      if (!query || query.kind !== 'tooljetdb') continue;
+      if (recordValue(query.options)?.operation !== 'sql_execution') continue;
+      if (blob.includes(`queries.${m[1]}.data.results`) || blob.includes(`queries.${m[1]}?.data?.results`) || blob.includes(`queries.${m[1]}.data?.results`)) continue;
+      bad.add(m[1]!);
+    }
+    for (const name of bad) {
+      errors.push(
+        `${component.type} "${component.name ?? component.id}": reads queries.${name}.data, but "${name}" is a ToolJet DB sql_execution ` +
+          `query whose data is {results: rows}. Bind queries.${name}.data.results (or data.results[0].<column> for a single value), ` +
+          'or the component shows No data.'
+      );
+    }
+  }
+
+  // ServiceNow unwraps the REST `result` envelope: without a transformation, queries.q.data is the rows
+  // array (or the record). Observed live (model-guide benchmark, 2026-09-07): Luna max,
+  // Luna high and Gemini Pro bound every incident list to data.result from memory of the raw REST API and
+  // rendered empty queues although the queries returned 16 to 40 incidents.
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? '');
+    const bad = new Set<string>();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.result\b/g)) {
+      const query = queryByName.get(m[1]!);
+      if (!query || query.kind !== 'servicenow') continue;
+      // Transformations replace query.data and may deliberately add a result field.
+      if (isTruthyBinding(propVal(recordValue(query.options), 'enableTransformation'))) continue;
+      bad.add(m[1]!);
+    }
+    for (const name of bad) {
+      errors.push(
+        `${component.type ?? 'Component'} "${component.name ?? component.id}": reads queries.${name}.data.result, but "${name}" is a ` +
+          'ServiceNow query and the plugin already unwraps the REST result envelope: queries.<q>.data is the records array ' +
+          `(or the record for get/create/update). Bind queries.${name}.data instead, or the component shows No data.`
+      );
+    }
+  }
+
+  // A query referenced by bare name. Observed live (Haiku, Helix benchmark 2026-09-07): `jobsWaitingLongest.data`
+  // instead of `queries.jobsWaitingLongest.data`, which is an undefined identifier at runtime, so the table
+  // showed No data while the query itself was fine. Component references are excluded by the lookbehind
+  // (they always follow a dot or bracket).
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? '');
+    const bare = new Set<string>();
+    for (const name of queryByName.keys()) {
+      if (!name || !/^[A-Za-z_$][\w$]*$/.test(name)) continue;
+      const pattern = new RegExp(`(?<![\\w$.\\]'"])${name.replace(/\$/g, '\\$')}\\??\\.(data|rawData|isLoading)\\b`);
+      if (pattern.test(blob)) bare.add(name);
+    }
+    for (const name of bare) {
+      errors.push(
+        `${component.type ?? 'Component'} "${component.name ?? component.id}": reads ${name}.data by bare name; queries are referenced as ` +
+          `queries.${name}.data. A bare name is undefined at runtime and the component shows No data.`
+      );
+    }
+  }
+
+  // A Chart bound straight to query rows plots nothing unless the query itself returns x and y.
+  // Observed live (Nordlicht benchmark, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
+  // returning {order_date, orders_count} and the "orders per day" chart drew an empty axis.
+  for (const component of allComponents) {
+    if (component.type !== 'Chart') continue;
+    const props = component.properties ?? {};
+    if (isTruthyBinding(propVal(props, 'plotFromJson'))) continue;
+    const data = propVal(props, 'data');
+    const m = typeof data === 'string' ? data.trim().match(BARE_QUERY_DATA_BINDING) : null;
+    if (!m) continue;
+    const query = queryByName.get(m[1]!);
+    if (!query || query.kind === 'runjs' || query.kind === 'runpy') continue;
+    const options = recordValue(query.options);
+    const sql = typeof options?.query === 'string' ? options.query : typeof (recordValue(options?.sql_execution))?.sqlQuery === 'string' ? String(recordValue(options?.sql_execution)?.sqlQuery) : '';
+    if (sql && /\bas\s+["'`]?x["'`]?\b/i.test(sql) && /\bas\s+["'`]?y["'`]?\b/i.test(sql)) continue;
+    errors.push(
+      `Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query.kind ?? 'datasource'} query ` +
+        'that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. ' +
+        `Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`
+    );
+  }
+
   // Dangling event references.
   for (const e of summary.events) {
     const name = e.name ?? e.id;
@@ -1884,6 +2103,23 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   // Bindings to non-existent queries/components + re-run per-component render lints.
+  const bindingSources = [
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
+    ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event })),
+  ];
+  for (const source of bindingSources) {
+    const seen = new Set<string>();
+    for (const ref of bindingReferences(source.value)) {
+      const names = ref.namespace === 'components' ? componentNames : queryNames;
+      const key = `${ref.namespace}.${ref.name}`;
+      if (!names.has(ref.name) && !seen.has(key)) {
+        seen.add(key);
+        errors.push(`${source.label} references ${key}, but no ${ref.namespace === 'components' ? 'component' : 'query'} ` +
+          `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
+      }
+    }
+  }
   for (const c of allComponents) {
     const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
     for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
@@ -1980,10 +2216,72 @@ export function validateAppStructure(summary: AppSummary): LintResult {
 
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
+    errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
+    errors.push(...lintOversizedWidths(p.components as LintComponent[]));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }
+  warnings.push(...lintInnerPageBands(summary));
+  // Data-bound components whose query nothing runs render No data forever.
+  const readiness = lintUntriggeredDataQueries(summary);
+  errors.push(...readiness.errors);
+  warnings.push(...readiness.warnings);
 
   return { errors: uniq(errors), warnings: uniq(warnings) };
+}
+
+/* Relative luminance of a CSS hex colour (0 = black, 1 = white); NaN for anything that is not hex. */
+function hexLuminance(hex: string): number {
+  const raw = hex.replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return NaN;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** True when an Html block's ROOT element paints a dark or brand-filled background: a flat dark hex,
+ *  a gradient with a dark stop, or the primary brand token. Only the root's inline style counts, so a
+ *  light card that merely contains a dark badge is not a band. */
+export function htmlRootHasDarkBackground(rawHtml: string): boolean {
+  const root = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
+  if (!root) return false;
+  const declaration = root[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
+  if (!declaration) return false;
+  const value = declaration[1];
+  if (/var\(--cc-primary-brand\)/i.test(value)) return true;
+  const hexes = value.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi) ?? [];
+  return hexes.some((hex) => hexLuminance(hex) < 0.35);
+}
+
+/** The skill's header treatments put a statement band (a dark or brand-filled header) on the home page
+ *  only; inner pages take a plain title, toolbar or masthead. Measured on two Sol builds with a stated
+ *  design brief, the second or third page still came back with a dark band the brief never chose, so
+ *  this names the drift at lint time. A warning, not an error: a brief can choose it deliberately. */
+export function lintInnerPageBands(summary: AppSummary): string[] {
+  const warnings: string[] = [];
+  const pages = summary.pages ?? [];
+  const explicitHome = pages.some((p) => p.handle === 'home' || p.name === 'Home' || p.index === 1);
+  pages.forEach((page, pageIndex) => {
+    const isHome =
+      page.handle === 'home' || page.name === 'Home' || page.index === 1 || (!explicitHome && pageIndex === 0);
+    if (isHome) return;
+    for (const component of page.components ?? []) {
+      if (component.type !== 'Html' || component.parent) continue;
+      const rawHtml = propVal((component as { properties?: Record<string, unknown> }).properties ?? {}, 'rawHtml');
+      if (typeof rawHtml !== 'string') continue;
+      const desktop = (component.layouts as { desktop?: { top?: number; height?: number; width?: number } } | undefined)
+        ?.desktop;
+      if (!desktop || (desktop.top ?? 0) > 60 || (desktop.height ?? 0) > 200 || (desktop.width ?? 0) < 20) continue;
+      if (!htmlRootHasDarkBackground(rawHtml)) continue;
+      warnings.push(
+        `Page "${page.name ?? page.id}": Html "${component.name ?? component.id}" is a dark or brand-filled header ` +
+          'band on a page that is not Home. The skill\'s header treatments put a statement band on the home page ' +
+          'only; inner pages take a plain title, toolbar or masthead. Keep it only if the design brief chose it ' +
+          'for this page deliberately.'
+      );
+    }
+  });
+  return warnings;
 }

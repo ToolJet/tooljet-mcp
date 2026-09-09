@@ -556,9 +556,9 @@ var require_codegen = __commonJS({
       }
     };
     var Label = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
@@ -566,14 +566,14 @@ var require_codegen = __commonJS({
       }
     };
     var Break = class extends Node {
-      constructor(label) {
+      constructor(label2) {
         super();
-        this.label = label;
+        this.label = label2;
         this.names = {};
       }
       render({ _n }) {
-        const label = this.label ? ` ${this.label}` : "";
-        return `break${label};` + _n;
+        const label2 = this.label ? ` ${this.label}` : "";
+        return `break${label2};` + _n;
       }
     };
     var Throw = class extends Node {
@@ -985,12 +985,12 @@ var require_codegen = __commonJS({
         return this._endBlockNode(For);
       }
       // `label` statement
-      label(label) {
-        return this._leafNode(new Label(label));
+      label(label2) {
+        return this._leafNode(new Label(label2));
       }
       // `break` statement
-      break(label) {
-        return this._leafNode(new Break(label));
+      break(label2) {
+        return this._leafNode(new Break(label2));
       }
       // `return` statement
       return(value) {
@@ -33532,6 +33532,1017 @@ function createAuth(config2, fetchImpl = fetch) {
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
+// dist/htmlHeight.js
+var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
+var INLINE_TAGS = /* @__PURE__ */ new Set([
+  "span",
+  "b",
+  "strong",
+  "i",
+  "em",
+  "a",
+  "small",
+  "code",
+  "u",
+  "s",
+  "sup",
+  "sub",
+  "abbr",
+  "time",
+  "mark",
+  "label",
+  "kbd",
+  "q",
+  "cite",
+  "var",
+  "bdi",
+  "font"
+]);
+var DEFAULT_FONT_SIZE = 14;
+var LINE_HEIGHT_FACTOR = 1.5;
+var GLYPH_WIDTH_FACTOR = 0.52;
+var TAG_DEFAULTS = {
+  h1: { fontSize: 32, marginBottom: 8 },
+  h2: { fontSize: 24, marginBottom: 8 },
+  h3: { fontSize: 20, marginBottom: 8 },
+  h4: { fontSize: 18, marginBottom: 8 },
+  h5: { fontSize: 16, marginBottom: 8 },
+  h6: { fontSize: 14, marginBottom: 8 },
+  p: { marginBottom: 16 },
+  ul: { marginBottom: 16 },
+  ol: { marginBottom: 16 },
+  hr: { marginTop: 16, marginBottom: 16 }
+};
+function stripHtmlBindings(raw) {
+  let repeats = false;
+  const trimmed = raw.trim();
+  const template = /^\{\{\s*`([\s\S]*)`\s*\}\}$/.exec(trimmed);
+  if (template) {
+    const body = template[1];
+    const html2 = replaceBalanced(body, "${", "}", (inner) => {
+      if (/\.map\s*\(/.test(inner)) {
+        repeats = true;
+        return "";
+      }
+      return "00";
+    });
+    return { html: html2, repeats };
+  }
+  const html = replaceBalanced(raw, "{{", "}}", (inner) => {
+    if (/\.map\s*\(/.test(inner)) {
+      repeats = true;
+      return "";
+    }
+    return "00";
+  });
+  return { html, repeats };
+}
+function replaceBalanced(src, open, close, fn) {
+  let out = "";
+  let i = 0;
+  while (i < src.length) {
+    const start = src.indexOf(open, i);
+    if (start < 0) {
+      out += src.slice(i);
+      break;
+    }
+    out += src.slice(i, start);
+    let depth = 0;
+    let j = start;
+    let end = -1;
+    while (j < src.length) {
+      if (src.startsWith(open, j)) {
+        depth += 1;
+        j += open.length;
+        continue;
+      }
+      if (src.startsWith(close, j)) {
+        depth -= 1;
+        if (depth === 0) {
+          end = j;
+          break;
+        }
+        j += close.length;
+        continue;
+      }
+      if (open === "${" && src[j] === "{")
+        depth += 1;
+      j += 1;
+    }
+    if (end < 0) {
+      out += src.slice(start);
+      break;
+    }
+    out += fn(src.slice(start + open.length, end));
+    i = end + close.length;
+  }
+  return out;
+}
+function parseStyle(text) {
+  const style = {};
+  if (!text)
+    return style;
+  for (const decl of text.split(";")) {
+    const idx = decl.indexOf(":");
+    if (idx < 0)
+      continue;
+    const key = decl.slice(0, idx).trim().toLowerCase();
+    const value = decl.slice(idx + 1).trim().replace(/\s*!important$/i, "");
+    if (key)
+      style[key] = value;
+  }
+  return style;
+}
+function parseAttrs(text) {
+  const attrs = {};
+  const re = /([a-zA-Z_:][-\w:.]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  let m;
+  while (m = re.exec(text)) {
+    attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? "";
+  }
+  return attrs;
+}
+function parseHtml(html) {
+  const root = { tag: "#root", style: {}, attrs: {}, children: [], text: "" };
+  const stack = [root];
+  const re = /<!--[\s\S]*?-->|<\/\s*([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^>]*?)?)\s*(\/?)>|([^<]+)|</g;
+  let m;
+  while (m = re.exec(html)) {
+    if (m[0].startsWith("<!--"))
+      continue;
+    if (m[1]) {
+      const tag = m[1].toLowerCase();
+      for (let k = stack.length - 1; k > 0; k -= 1) {
+        if (stack[k].tag === tag) {
+          stack.length = k;
+          break;
+        }
+      }
+      continue;
+    }
+    if (m[2]) {
+      const tag = m[2].toLowerCase();
+      if (tag === "style" || tag === "script") {
+        const close = html.indexOf(`</${tag}`, re.lastIndex);
+        if (close >= 0)
+          re.lastIndex = close;
+        continue;
+      }
+      const attrs = parseAttrs(m[3] ?? "");
+      const node = { tag, style: parseStyle(attrs.style), attrs, children: [], text: "" };
+      stack[stack.length - 1].children.push(node);
+      if (!VOID_TAGS.has(tag) && !m[4])
+        stack.push(node);
+      continue;
+    }
+    if (m[5] !== void 0) {
+      const text = decodeEntities(m[5]);
+      if (text.trim() || /\s/.test(text)) {
+        stack[stack.length - 1].children.push({ tag: "#text", style: {}, attrs: {}, children: [], text });
+      }
+    }
+  }
+  return root;
+}
+function decodeEntities(text) {
+  return text.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
+}
+function px(value, fontSize, base = 0) {
+  if (value === void 0)
+    return void 0;
+  const v = value.trim();
+  const m = /^(-?\d*\.?\d+)(px|em|rem|%|pt)?$/.exec(v);
+  if (!m)
+    return v === "0" ? 0 : void 0;
+  const n = parseFloat(m[1]);
+  switch (m[2]) {
+    case void 0:
+    case "px":
+      return n;
+    case "em":
+      return n * fontSize;
+    case "rem":
+      return n * 16;
+    case "pt":
+      return n * (4 / 3);
+    case "%":
+      return base ? n / 100 * base : void 0;
+    default:
+      return void 0;
+  }
+}
+function vertical(style, prop, fontSize) {
+  let top = 0;
+  let bottom = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      top = bottom = parts[0];
+    else if (parts.length === 2 || parts.length === 3) {
+      top = parts[0];
+      bottom = parts[2] ?? parts[0];
+    } else if (parts.length >= 4) {
+      top = parts[0];
+      bottom = parts[2];
+    }
+  }
+  const t = px(style[`${prop}-top`], fontSize);
+  const b = px(style[`${prop}-bottom`], fontSize);
+  if (t !== void 0)
+    top = t;
+  if (b !== void 0)
+    bottom = b;
+  return [top, bottom];
+}
+function horizontal(style, prop, fontSize) {
+  let left = 0;
+  let right = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      left = right = parts[0];
+    else if (parts.length === 2 || parts.length === 3)
+      left = right = parts[1];
+    else if (parts.length >= 4) {
+      right = parts[1];
+      left = parts[3];
+    }
+  }
+  const l = px(style[`${prop}-left`], fontSize);
+  const r = px(style[`${prop}-right`], fontSize);
+  if (l !== void 0)
+    left = l;
+  if (r !== void 0)
+    right = r;
+  return left + right;
+}
+function borderWidth(value) {
+  if (!value)
+    return 0;
+  if (/^(none|0)$/i.test(value.trim()))
+    return 0;
+  const m = /(\d*\.?\d+)px/.exec(value);
+  if (m)
+    return parseFloat(m[1]);
+  if (/\b(thin)\b/.test(value))
+    return 1;
+  if (/\b(medium)\b/.test(value))
+    return 3;
+  if (/\b(thick)\b/.test(value))
+    return 5;
+  return /\b(solid|dashed|dotted|double)\b/.test(value) ? 1 : 0;
+}
+function borders(style) {
+  const all = borderWidth(style.border);
+  const top = style["border-top"] !== void 0 ? borderWidth(style["border-top"]) : all;
+  const bottom = style["border-bottom"] !== void 0 ? borderWidth(style["border-bottom"]) : all;
+  const t = px(style["border-top-width"], 0);
+  const b = px(style["border-bottom-width"], 0);
+  return [t ?? top, b ?? bottom];
+}
+function gridColumns(value) {
+  if (!value)
+    return 1;
+  let count = 0;
+  const re = /repeat\(\s*(\d+|auto-fit|auto-fill)\s*,([^)]*)\)|[^\s,]+/g;
+  let m;
+  while (m = re.exec(value)) {
+    if (m[1]) {
+      const n = parseInt(m[1], 10);
+      const inner = (m[2] ?? "").trim().split(/\s+/).filter(Boolean).length || 1;
+      count += (Number.isFinite(n) ? n : 1) * inner;
+    } else
+      count += 1;
+  }
+  return Math.max(1, count);
+}
+function gapOf(style, axis, fontSize) {
+  const specific = px(style[`${axis}-gap`], fontSize);
+  if (specific !== void 0)
+    return specific;
+  const gap = style.gap ?? style["grid-gap"];
+  if (!gap)
+    return 0;
+  const parts = gap.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+  if (axis === "row")
+    return parts[0] ?? 0;
+  return parts[1] ?? parts[0] ?? 0;
+}
+function isInline(node) {
+  if (node.tag === "#text")
+    return true;
+  const display = node.style.display;
+  if (display) {
+    if (/^inline(?!-block|-flex|-grid)/.test(display))
+      return true;
+    return false;
+  }
+  return INLINE_TAGS.has(node.tag);
+}
+function isHidden(node) {
+  return node.style.display === "none" || node.style.visibility === "hidden";
+}
+function contextFor(node, parent) {
+  const defaults = TAG_DEFAULTS[node.tag];
+  let fontSize = px(node.style["font-size"], parent.fontSize) ?? defaults?.fontSize ?? parent.fontSize;
+  if (!fontSize || fontSize <= 0)
+    fontSize = parent.fontSize;
+  let lineHeight = parent.lineHeight;
+  const lh = node.style["line-height"];
+  if (lh !== void 0) {
+    const unitless = /^\d*\.?\d+$/.test(lh.trim());
+    const value = unitless ? parseFloat(lh) * fontSize : px(lh, fontSize);
+    if (value !== void 0)
+      lineHeight = value;
+    else if (lh.trim() === "normal")
+      lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  } else if (node.style["font-size"] || defaults?.fontSize || parent.lineHeight === 0) {
+    lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  }
+  return { fontSize, lineHeight, width: parent.width };
+}
+function inlineRunHeight(run, ctx) {
+  let maxLine = ctx.lineHeight;
+  const segments = [""];
+  const walk = (nodes, c) => {
+    for (const n of nodes) {
+      if (n.tag === "#text") {
+        segments[segments.length - 1] += n.text;
+      } else if (n.tag === "br") {
+        segments.push("");
+      } else if (n.tag === "img") {
+        const h = px(n.style.height, c.fontSize) ?? (n.attrs.height ? parseFloat(n.attrs.height) : void 0);
+        if (h)
+          maxLine = Math.max(maxLine, h);
+      } else {
+        const inner = contextFor(n, c);
+        const [pt, pb] = vertical(n.style, "padding", inner.fontSize);
+        maxLine = Math.max(maxLine, inner.lineHeight + pt + pb);
+        walk(n.children, inner);
+      }
+    }
+  };
+  walk(run, ctx);
+  let lines = 0;
+  for (const segment of segments) {
+    const text = segment.replace(/\s+/g, " ").trim();
+    if (!text) {
+      if (segments.length > 1)
+        lines += 1;
+      continue;
+    }
+    const textWidth = text.length * ctx.fontSize * GLYPH_WIDTH_FACTOR;
+    lines += Math.max(1, Math.ceil(textWidth / Math.max(ctx.width, 40)));
+  }
+  if (lines === 0)
+    return 0;
+  return lines * maxLine;
+}
+function blockHeight(node, parent) {
+  if (isHidden(node))
+    return 0;
+  const ctx = contextFor(node, parent);
+  const defaults = TAG_DEFAULTS[node.tag];
+  const [pt, pb] = vertical(node.style, "padding", ctx.fontSize);
+  const [bt, bb] = borders(node.style);
+  let [mt, mb] = vertical(node.style, "margin", ctx.fontSize);
+  if (node.style.margin === void 0 && node.style["margin-top"] === void 0 && defaults?.marginTop)
+    mt = defaults.marginTop;
+  if (node.style.margin === void 0 && node.style["margin-bottom"] === void 0 && defaults?.marginBottom)
+    mb = defaults.marginBottom;
+  const explicitWidth = px(node.style.width, ctx.fontSize, parent.width);
+  const innerWidth = Math.max(40, (explicitWidth ?? parent.width) - horizontal(node.style, "padding", ctx.fontSize));
+  const inner = { ...ctx, width: innerWidth };
+  let content;
+  if (node.tag === "hr")
+    content = 1;
+  else if (node.tag === "img")
+    content = px(node.style.height, ctx.fontSize) ?? 0;
+  else
+    content = childrenHeight(node, inner, px(node.style.height, ctx.fontSize) !== void 0);
+  const explicit = px(node.style.height, ctx.fontSize);
+  if (explicit !== void 0 && !/%|auto/.test(node.style.height ?? "")) {
+    const borderBox = node.style["box-sizing"] === "border-box";
+    const boxHeight = borderBox ? explicit : explicit + pt + pb + bt + bb;
+    const overflowHidden = /^(hidden|auto|scroll|clip)$/.test(node.style.overflow ?? node.style["overflow-y"] ?? "");
+    const full = content + pt + pb + bt + bb;
+    return (overflowHidden ? boxHeight : Math.max(boxHeight, full)) + mt + mb;
+  }
+  const minHeight = px(node.style["min-height"], ctx.fontSize);
+  let total = content + pt + pb + bt + bb;
+  if (minHeight !== void 0)
+    total = Math.max(total, node.style["box-sizing"] === "border-box" ? minHeight : minHeight + pt + pb);
+  return total + mt + mb;
+}
+function childrenHeight(node, ctx, pinned = false) {
+  const display = node.style.display ?? "";
+  const children = node.children.filter((c) => !isHidden(c));
+  if (/grid/.test(display))
+    return gridHeight(node, children, ctx);
+  if (/flex/.test(display))
+    return flexHeight(node, children, ctx, pinned);
+  if (node.tag === "tr")
+    return rowHeight(children, ctx);
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of children) {
+    if (isInline(child))
+      run.push(child);
+    else {
+      flush();
+      total += blockHeight(child, ctx);
+    }
+  }
+  flush();
+  return total;
+}
+function rowHeight(children, ctx) {
+  const cells = children.filter((c) => !isInline(c));
+  if (!cells.length)
+    return inlineRunHeight(children, ctx);
+  const width = Math.max(40, ctx.width / cells.length);
+  return Math.max(...cells.map((c) => blockHeight(c, { ...ctx, width })));
+}
+function gridHeight(node, children, ctx) {
+  const columns = gridColumns(node.style["grid-template-columns"]);
+  const rowGap = gapOf(node.style, "row", ctx.fontSize);
+  const colGap = gapOf(node.style, "column", ctx.fontSize);
+  const width = Math.max(40, (ctx.width - colGap * (columns - 1)) / columns);
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  let total = 0;
+  for (let i = 0; i < items.length; i += columns) {
+    const row = items.slice(i, i + columns);
+    total += Math.max(...row.map((c) => isInline(c) ? inlineRunHeight([c], { ...ctx, width }) : blockHeight(c, { ...ctx, width })));
+    if (i + columns < items.length)
+      total += rowGap;
+  }
+  return total;
+}
+function flexHeight(node, children, ctx, pinned = false) {
+  const direction = node.style["flex-direction"] ?? "row";
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  if (/column/.test(direction)) {
+    const gap2 = gapOf(node.style, "row", ctx.fontSize);
+    return items.reduce((sum, c, i) => sum + (isInline(c) ? inlineRunHeight([c], ctx) : blockHeight(c, ctx)) + (i ? gap2 : 0), 0);
+  }
+  const gap = gapOf(node.style, "column", ctx.fontSize);
+  const weights = items.map((c) => {
+    const flex = c.style.flex ?? c.style["flex-grow"];
+    const n = flex ? parseFloat(flex) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  });
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const free = ctx.width - gap * (items.length - 1);
+  const stretched = pinned && !/^(flex-start|center|flex-end|baseline|start|end)$/.test(node.style["align-items"] ?? "");
+  return Math.max(...items.map((c, i) => {
+    const explicit = px(c.style.width, ctx.fontSize, ctx.width);
+    const width = Math.max(40, explicit ?? free * weights[i] / totalWeight);
+    if (isInline(c))
+      return inlineRunHeight([c], { ...ctx, width });
+    if (!stretched)
+      return blockHeight(c, { ...ctx, width });
+    const inner = contextFor(c, { ...ctx, width });
+    const [pt] = vertical(c.style, "padding", inner.fontSize);
+    const [bt] = borders(c.style);
+    const [mt] = vertical(c.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, width - horizontal(c.style, "padding", inner.fontSize));
+    return mt + pt + bt + childrenHeight(c, { ...inner, width: innerWidth });
+  }));
+}
+function rootHeight(root, ctx) {
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of root.children.filter((c) => !isHidden(c))) {
+    if (isInline(child)) {
+      run.push(child);
+      continue;
+    }
+    flush();
+    const percentHeight = /%$/.test((child.style.height ?? "").trim());
+    if (!percentHeight) {
+      total += blockHeight(child, ctx);
+      continue;
+    }
+    const inner = contextFor(child, ctx);
+    const [pt] = vertical(child.style, "padding", inner.fontSize);
+    const [bt] = borders(child.style);
+    const [mt] = vertical(child.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, ctx.width - horizontal(child.style, "padding", inner.fontSize));
+    const content = childrenHeight(child, { ...inner, width: innerWidth }, true);
+    const display = child.style.display ?? "";
+    const column = /column/.test(child.style["flex-direction"] ?? "");
+    const centred = /flex|grid/.test(display) && !column && /center/.test(child.style["align-items"] ?? child.style["align-content"] ?? "") || /flex/.test(display) && column && /center/.test(child.style["justify-content"] ?? "");
+    total += mt + (centred ? content : pt + bt + content);
+  }
+  flush();
+  return total;
+}
+function estimateHtmlHeight(rawHtml, widthPx) {
+  const { html, repeats } = stripHtmlBindings(rawHtml);
+  if (!html.trim())
+    return null;
+  const root = parseHtml(html);
+  const ctx = { fontSize: DEFAULT_FONT_SIZE, lineHeight: DEFAULT_FONT_SIZE * LINE_HEIGHT_FACTOR, width: Math.max(40, widthPx) };
+  const height = rootHeight(root, ctx);
+  if (!Number.isFinite(height) || height <= 0)
+    return null;
+  return { height: Math.round(height), lowerBound: repeats };
+}
+
+// dist/renderReadiness.js
+var GRID_COLUMNS = 43;
+function propVal(props, key) {
+  const p = props?.[key];
+  return p && typeof p === "object" && "value" in p ? p.value : p;
+}
+function truthy(v) {
+  if (typeof v === "boolean")
+    return v;
+  if (typeof v !== "string")
+    return false;
+  const s = v.trim().replace(/^\{\{\s*/, "").replace(/\s*\}\}$/, "").toLowerCase();
+  return s === "true";
+}
+function label(c) {
+  return c.name ?? c.id ?? "?";
+}
+function lintTableColumnsShape(c) {
+  if (c.type !== "Table")
+    return [];
+  const columns = propVal(c.properties, "columns");
+  if (columns === void 0 || columns === null || Array.isArray(columns))
+    return [];
+  if (typeof columns === "string") {
+    let parsesToArray = false;
+    try {
+      parsesToArray = Array.isArray(JSON.parse(columns));
+    } catch {
+      parsesToArray = false;
+    }
+    return [
+      `Table "${label(c)}": properties.columns.value is a JSON string${parsesToArray ? " that happens to parse as an array" : ""}. ToolJet stores it as text and the Table crashes on render ("Something went wrong"). Pass the column objects as a real array value: columns: { value: [ { key, name, columnType, ... } ] }.`
+    ];
+  }
+  return [
+    `Table "${label(c)}": properties.columns.value must be an array of column objects, not ${typeof columns}.`
+  ];
+}
+var MARKDOWN_SIGNS = /(^|\n)\s*#{1,6}\s+\S|\*\*[^*\n]+\*\*|(^|\n)\s*[-*]\s+\S|\[[^\]\n]+\]\([^)\n]+\)|(^|\n)\s*\d+\.\s+\S/;
+function lintTextFormat(c) {
+  if (c.type !== "Text")
+    return [];
+  const text = propVal(c.properties, "text");
+  if (typeof text !== "string")
+    return [];
+  const format = propVal(c.properties, "textFormat");
+  const effective = typeof format === "string" && format ? format : "html";
+  if (effective === "markdown")
+    return [];
+  const literal3 = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  if (!MARKDOWN_SIGNS.test(literal3))
+    return [];
+  return [
+    `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
+  ];
+}
+var WIDTH_EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "Drawer"]);
+function lintOversizedWidths(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || WIDTH_EXEMPT.has(c.type))
+      continue;
+    const rect2 = c.layouts?.desktop ?? c.layout;
+    if (!rect2)
+      continue;
+    const width = typeof rect2.width === "number" ? rect2.width : void 0;
+    const left = typeof rect2.left === "number" ? rect2.left : 0;
+    if (width === void 0)
+      continue;
+    if (width > GRID_COLUMNS || left + width > GRID_COLUMNS) {
+      errors.push(`${c.type} "${label(c)}": desktop left ${left} + width ${width} exceeds ToolJet's ${GRID_COLUMNS}-column grid. Widths and lefts are grid columns, not pixels: a full-width row is left 2, width 39; a half is width 19; a quarter is width 9.`);
+    }
+  }
+  return errors;
+}
+function eventPayload(event) {
+  return event && typeof event === "object" ? event : void 0;
+}
+function queryTriggers(summary) {
+  const byId = new Map(summary.queries.map((q) => [q.id, q]));
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  const resolve4 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const triggers = /* @__PURE__ */ new Map();
+  for (const q of summary.queries) {
+    const options2 = q.options && typeof q.options === "object" ? q.options : {};
+    const automatic = truthy(propVal(options2, "runOnPageLoad")) || truthy(propVal(options2, "runOnDependencyChange"));
+    triggers.set(q.id, { automatic, manual: [] });
+  }
+  const chains = [];
+  for (const e of summary.events) {
+    const payload = eventPayload(e.event);
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const target = resolve4(payload.queryId ?? payload.queryName);
+    if (!target)
+      continue;
+    const entry = triggers.get(target.id);
+    if (!entry)
+      continue;
+    const trigger = String(payload.eventId ?? "");
+    if (e.target === "page" && trigger === "onPageLoad") {
+      entry.automatic = true;
+    } else if (e.target === "data_query" && trigger === "onDataQuerySuccess" && e.sourceId) {
+      chains.push([e.sourceId, target.id]);
+    } else {
+      entry.manual.push(`${e.target ?? "component"} ${trigger || "event"}`);
+    }
+  }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [sourceId, targetId] of chains) {
+      const source2 = triggers.get(sourceId);
+      const target = triggers.get(targetId);
+      if (source2?.automatic && target && !target.automatic) {
+        target.automatic = true;
+        changed = true;
+      }
+    }
+  }
+  return triggers;
+}
+var DATA_BOUND = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban"]);
+function lintUntriggeredDataQueries(summary) {
+  const errors = [];
+  const warnings = [];
+  if (!summary.queries.length)
+    return { errors, warnings };
+  const triggers = queryTriggers(summary);
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  for (const page of summary.pages) {
+    for (const c of page.components) {
+      if (!c.type || !DATA_BOUND.has(c.type))
+        continue;
+      const data = propVal(c.properties, "data");
+      if (typeof data !== "string")
+        continue;
+      const names = [...new Set([...data.matchAll(/\bqueries\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+      for (const name of names) {
+        const query = byName.get(name);
+        if (!query)
+          continue;
+        const t = triggers.get(query.id);
+        if (!t || t.automatic)
+          continue;
+        const who = `${c.type} "${c.name ?? c.id}"`;
+        if (t.manual.length) {
+          warnings.push(`${who} binds queries.${name}.data, but "${name}" only runs from ${[...new Set(t.manual)].join(", ")}, so the component is empty until then. If it should show data on open, set the query's runOnPageLoad: true or run it from the page's onPageLoad event.`);
+          continue;
+        }
+        const message = `${who} binds queries.${name}.data, but nothing runs "${name}": it has no runOnPageLoad, no page onPageLoad event, no success chain from a query that does, and no user event. It will show No data forever. Set the query's runOnPageLoad: true (or add a page onPageLoad run-query event).`;
+        if (c.type === "Table")
+          errors.push(message);
+        else
+          warnings.push(message);
+      }
+    }
+  }
+  return { errors, warnings };
+}
+var HTML_PX_PER_COLUMN = 32;
+var HTML_WIDGET_HEIGHT_LOSS = 4;
+var HTML_HEIGHT_TOLERANCE = 8;
+function suggestedHtmlHeight(c) {
+  if (c.type !== "Html")
+    return null;
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return null;
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return null;
+  const rect2 = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const width = typeof rect2?.width === "number" ? rect2.width : 39;
+  if (height === void 0)
+    return null;
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return null;
+  const overflow = estimate.height - (height - HTML_WIDGET_HEIGHT_LOSS);
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return null;
+  return { from: height, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
+}
+var SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
+function lintUnguardedSelectionText(c) {
+  if (c.type !== "Html" && c.type !== "Text")
+    return [];
+  const key = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key);
+  if (typeof value !== "string" || !value.includes("selectedRow"))
+    return [];
+  const bad = [];
+  for (const m of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const expr = m[1];
+    const read = expr.match(SELECTION_READ);
+    if (!read)
+      continue;
+    const hasFallback = /\?\?|\|\||\?[^.?][\s\S]*:/.test(expr);
+    if (!hasFallback)
+      bad.push(read[0]);
+  }
+  if (!bad.length)
+    return [];
+  return [
+    `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(", ")} without a fallback. Until a row is selected that value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') or wrap the panel in a ternary on components.table?.selectedRow.`
+  ];
+}
+function lintHtmlContentHeight(c) {
+  if (c.type !== "Html")
+    return [];
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const rect2 = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const width = typeof rect2?.width === "number" ? rect2.width : 39;
+  if (height === void 0)
+    return [];
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return [];
+  const usable = height - HTML_WIDGET_HEIGHT_LOSS;
+  const overflow = estimate.height - usable;
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return [];
+  const suggested = Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10;
+  return [
+    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
+  ];
+}
+var SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
+function lintHtmlRootSurface(c) {
+  if (c.type !== "Html")
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const { html } = stripHtmlBindings(raw);
+  const tree = parseHtml(html);
+  const roots = tree.children.filter((n) => n.tag !== "#text" || n.text.trim());
+  const who = `Html "${label(c)}"`;
+  const parented = Boolean(c.parent || c.parentRef);
+  const surface = parented ? "var(--cc-surface1-surface)" : "var(--cc-appBackground-surface)";
+  const template = `<div style="height:100%;box-sizing:border-box;margin:0;background:${surface}"> ...your markup... </div>`;
+  const why = "ToolJet's Html widget paints its box white underneath the markup, so on a tinted canvas anything the root does not cover shows as a white edge.";
+  if (roots.length !== 1 || roots[0].tag === "#text") {
+    return [
+      `${who}: rawHtml has ${roots.length} top-level nodes. ${why} Wrap everything in one root element: ${template}`
+    ];
+  }
+  const root = roots[0];
+  const style = root.style;
+  const problems = [];
+  const dynamic = truthy(propVal(c.properties, "dynamicHeight"));
+  const heightValue = (style.height ?? style["min-height"] ?? "").trim();
+  if (!dynamic && heightValue !== "100%") {
+    problems.push(heightValue ? `its height is "${heightValue}" instead of 100%, so the rest of the box stays white` : "it has no height:100%, so the box below the content stays white");
+  }
+  const background = (style.background ?? style["background-color"] ?? "").trim();
+  if (!background || /^(transparent|none|inherit|initial|unset)$/i.test(background)) {
+    problems.push(`it paints no background of its own, so the widget's white shows through; use ${surface}` + (parented ? " (or the surface2 token for a tinted rail)" : ""));
+  } else if (parented ? !SURFACE_TOKENS.test(background) : !/var\(--cc-appBackground-surface\)/.test(background)) {
+    problems.push(`its background is "${background.slice(0, 60)}" rather than the surface it sits on (${surface}); a tint, gradient or literal colour belongs on a child card so the root still matches the canvas around it`);
+  }
+  const radius = (style["border-radius"] ?? "").trim();
+  if (radius && !/^0(px)?$/.test(radius)) {
+    problems.push(`it has border-radius ${radius}, and the corners outside the curve show the widget's white`);
+  }
+  const margin = (style.margin ?? "").trim();
+  if (margin && !/^0(px)?(\s+0(px)?){0,3}$/.test(margin)) {
+    problems.push(`it has margin ${margin}, which leaves a white gap around it`);
+  }
+  const width = (style.width ?? "").trim();
+  if (width && !/^(100%|auto)$/.test(width)) {
+    problems.push(`its width is "${width}", which leaves white at the sides`);
+  }
+  if (!problems.length)
+    return [];
+  return [
+    `${who}: the root element ${problems.join("; ")}. ${why} Make the root a plain full-bleed box and move the card (tint, gradient, radius, padding, shadow) into a child element: ${template}`
+  ];
+}
+var DATA_BOUND_FOR_REFS = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"]);
+var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)\2\s*\])(\??\.)(value|selectedRow|selectedRowId|selectedRows|isValid|searchText|selectedOptionLabel|checked|filteredData|text)\b/g;
+function chartExpressionSurface(source2) {
+  const stack = [];
+  let quote2 = "";
+  let text = "";
+  let lastGroupStart = -1;
+  for (let i = 0; i < source2.length; i++) {
+    const ch = source2[i];
+    if (quote2) {
+      if (ch === "\\")
+        i++;
+      else if (ch === quote2)
+        quote2 = "";
+      continue;
+    }
+    if (ch === "/" || ch === "`")
+      return void 0;
+    if (ch === "'" || ch === '"') {
+      quote2 = ch;
+      if (!stack.length)
+        text += "?";
+      continue;
+    }
+    if ("([{".includes(ch)) {
+      if (!stack.length) {
+        text += ch;
+        lastGroupStart = i;
+      }
+      stack.push(ch);
+    } else if (")]}".includes(ch)) {
+      if (stack.pop() !== { ")": "(", "]": "[", "}": "{" }[ch])
+        return void 0;
+      if (!stack.length)
+        text += ch;
+    } else if (!stack.length)
+      text += ch;
+  }
+  return quote2 || stack.length ? void 0 : { text, lastGroupStart };
+}
+function finalChartPointKeys(value) {
+  const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
+  if (!binding)
+    return void 0;
+  const expression = binding[1].trim();
+  const surface = chartExpressionSurface(expression);
+  if (!surface || !/^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*|\s*\(\s*\)|\s*\[\s*\])*\s*\.\s*map\s*\(\s*\)$/.test(surface.text.trim()))
+    return void 0;
+  const callback = expression.slice(surface.lastGroupStart + 1, -1).trim();
+  const callbackSurface = chartExpressionSurface(callback);
+  if (!callbackSurface || !/^(?:[A-Za-z_$][\w$]*|\(\s*\))\s*=>\s*\(\s*\)$/.test(callbackSurface.text.trim()))
+    return void 0;
+  const object3 = callback.slice(callbackSurface.lastGroupStart + 1, -1).trim();
+  if (!object3.startsWith("{") || !object3.endsWith("}"))
+    return void 0;
+  const properties = chartExpressionSurface(object3.slice(1, -1));
+  if (!properties)
+    return void 0;
+  const keys = [];
+  for (const property of properties.text.split(",")) {
+    if (!property.trim())
+      continue;
+    const key = /^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/.exec(property);
+    if (!key)
+      return void 0;
+    keys.push(key[1]);
+  }
+  return keys;
+}
+var BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
+function lintChartDataShape(c) {
+  if (c.type !== "Chart")
+    return [];
+  const props = c.properties ?? {};
+  if (truthy(propVal(props, "plotFromJson")))
+    return [];
+  const value = propVal(props, "data");
+  if (typeof value !== "string" || !value.includes("{{"))
+    return [];
+  const keys = finalChartPointKeys(value);
+  if (!keys || keys.includes("x") && keys.includes("y"))
+    return [];
+  return [
+    `Chart "${label(c)}": data maps rows to {${keys.join(", ")}} but the Chart plots [{x, y}] only; any other key names draw an empty plot with no error. Name the category x and the number y.`
+  ];
+}
+var EMBEDDED_BINDING = /\{\{([\s\S]*?)\}\}/g;
+var BACKSLASH_QUOTE = /\\["']/;
+function lintEmbeddedBindingSyntax(c) {
+  if (c.type !== "Html" && c.type !== "Text")
+    return [];
+  const key = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key);
+  if (typeof value !== "string" || !value.includes("{{"))
+    return [];
+  const errors = [];
+  for (const m of value.matchAll(EMBEDDED_BINDING)) {
+    const expr = m[1];
+    if (expr.includes("{{"))
+      continue;
+    let message = "";
+    try {
+      new Function(`return (
+${expr}
+);`);
+      continue;
+    } catch (error51) {
+      if (!(error51 instanceof SyntaxError))
+        continue;
+      message = error51.message;
+    }
+    const balanced = (expr.match(/\{/g) ?? []).length === (expr.match(/\}/g) ?? []).length;
+    const escaped = BACKSLASH_QUOTE.test(expr);
+    if (!balanced && !escaped)
+      continue;
+    const snippet = expr.length > 90 ? `${expr.slice(0, 90)}\u2026` : expr;
+    errors.push(`${c.type} "${label(c)}": ${key} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` + (escaped ? `Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or 'Cancelled', not \\"Cancelled\\". ` : "") + "A failed binding renders as nothing, which leaves the card or line blank.");
+  }
+  return errors;
+}
+function lintUnguardedComponentRefs(c) {
+  if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type))
+    return [];
+  const props = c.properties ?? {};
+  const keys = c.type === "Html" ? ["rawHtml"] : c.type === "Text" ? ["text"] : ["data"];
+  const errors = [];
+  for (const key of keys) {
+    const value = propVal(props, key);
+    if (typeof value !== "string" || !value.includes("components"))
+      continue;
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of value.matchAll(COMPONENT_REF)) {
+      if (m[4] === "?.")
+        continue;
+      const name = m[1] ?? m[3];
+      bad.add(m[1] ? `components.${name}.${m[5]}` : `components['${name}'].${m[5]}`);
+    }
+    if (!bad.size)
+      continue;
+    const fixes = [...bad].map((ref) => `${ref.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
+    errors.push(`${c.type} "${label(c)}": ${key} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
+  }
+  return errors;
+}
+
+// dist/bindingReferences.js
+function bindingReferences(value) {
+  if (Array.isArray(value))
+    return value.flatMap(bindingReferences);
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap(bindingReferences);
+  if (typeof value !== "string")
+    return [];
+  const refs2 = [];
+  for (const binding of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const tokens = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*|(?<![\w$.])(components|queries)\s*(?:\?\.)?\s*(?:\.\s*([A-Za-z_$][\w$]*)|\[\s*(['"])([^'"\n]+)\3\s*\])|(?<![\w$.])(components|queries)\?\.\s*([A-Za-z_$][\w$]*)/g;
+    for (const match of binding[1].matchAll(tokens)) {
+      const namespace = match[1] || match[5];
+      const name = match[2] || match[4] || match[6];
+      if (namespace && name)
+        refs2.push({ namespace, name });
+    }
+  }
+  return refs2;
+}
+
+// dist/bindingSyntax.js
+function lintBindingSyntax(value, path, wholeValueRequired = false) {
+  if (Array.isArray(value))
+    return value.flatMap((child, index) => lintBindingSyntax(child, `${path}[${index}]`, wholeValueRequired));
+  if (value && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, child]) => lintBindingSyntax(child, `${path}.${key}`, wholeValueRequired));
+  }
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match) {
+    return wholeValueRequired && value.includes("{{") ? [`${path}: expected one whole-value JavaScript binding, without text before or after {{...}}; this property is not an interpolated text field.`] : [];
+  }
+  if (!wholeValueRequired && (match[1].includes("{{") || match[1].includes("}}")))
+    return [];
+  try {
+    new Function(`return (
+${match[1]}
+);`);
+    return [];
+  } catch (error51) {
+    if (!(error51 instanceof SyntaxError))
+      return [];
+    return [`${path}: invalid JavaScript binding syntax (${error51.message}). Fix the expression before saving; a failed binding can render as empty data. This check does not execute the expression.`];
+  }
+}
+
 // dist/catalog.js
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -33712,7 +34723,7 @@ var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]
 var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
 var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
 var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
-function propVal(props, key) {
+function propVal2(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
@@ -33822,7 +34833,7 @@ function explicitlyProjectsObjectData(value) {
   return (directObject || returnedObject) && !expression.includes("...");
 }
 function visibilityExpression(component) {
-  const value = propVal(component.properties, "visibility");
+  const value = propVal2(component.properties, "visibility");
   if (typeof value !== "string")
     return void 0;
   const trimmed = value.trim();
@@ -33864,8 +34875,8 @@ function rowsStateExpression(value) {
   return void 0;
 }
 function mutuallyExclusiveVisibility(a, b) {
-  const aVisibility = propVal(a.properties, "visibility");
-  const bVisibility = propVal(b.properties, "visibility");
+  const aVisibility = propVal2(a.properties, "visibility");
+  const bVisibility = propVal2(b.properties, "visibility");
   if (isFalseBinding(aVisibility) || isFalseBinding(bVisibility))
     return true;
   const aExpression = visibilityExpression(a);
@@ -33912,7 +34923,7 @@ function differsFromCatalogDefault(type, key, value) {
   return defaultValue === void 0 || JSON.stringify(value) !== JSON.stringify(defaultValue);
 }
 function catalogValue(type, entries, key, section = "properties") {
-  const authored = propVal(entries, key);
+  const authored = propVal2(entries, key);
   if (authored !== void 0)
     return authored;
   return getComponentSchema(type)?.[section].find((entry) => entry.key === key)?.default;
@@ -34024,11 +35035,11 @@ function renderedHeight(component, rect2) {
   const authored = layout?.height ?? 0;
   if (!TOP_ALIGNED_INPUT_TYPES.has(component.type ?? ""))
     return authored;
-  if (propVal(component.styles, "alignment") !== "top")
+  if (propVal2(component.styles, "alignment") !== "top")
     return authored;
-  const labelType = propVal(component.properties, "labelType");
-  const label = propVal(component.properties, "label");
-  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label === void 0 || (typeof label === "string" ? label.trim().length > 0 : Boolean(label));
+  const labelType = propVal2(component.properties, "labelType");
+  const label2 = propVal2(component.properties, "label");
+  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label2 === void 0 || (typeof label2 === "string" ? label2.trim().length > 0 : Boolean(label2));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
 function lintStandardSingleLineInputHeight(component) {
@@ -34043,26 +35054,26 @@ function lintStandardSingleLineInputHeight(component) {
     layouts.push(["desktop", component.layouts.desktop]);
   if (component.layouts?.mobile)
     layouts.push(["mobile", component.layouts.mobile]);
-  const label = component.name ?? component.type ?? "component";
+  const label2 = component.name ?? component.type ?? "component";
   return layouts.flatMap(([layoutName, layout]) => {
     const authoredHeight = layout.height;
     if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
       return [];
     return [
-      `${component.type} "${label}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+      `${component.type} "${label2}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
     ];
   });
 }
 function minimumTextHeight(component) {
   if (component.type !== "Text")
     return void 0;
-  const dynamicHeight = propVal(component.properties, "dynamicHeight");
+  const dynamicHeight = propVal2(component.properties, "dynamicHeight");
   if (isTruthyBinding(dynamicHeight))
     return void 0;
   if (typeof dynamicHeight === "string" && /\{\{/.test(dynamicHeight) && !isFalseBinding(dynamicHeight))
     return void 0;
-  const textSizeValue = propVal(component.styles, "textSize");
-  const lineHeightValue = propVal(component.styles, "lineHeight");
+  const textSizeValue = propVal2(component.styles, "textSize");
+  const lineHeightValue = propVal2(component.styles, "lineHeight");
   const textSize = textSizeValue === void 0 ? 14 : optionalStaticNumber(textSizeValue);
   const lineHeight = lineHeightValue === void 0 ? 1.5 : optionalStaticNumber(lineHeightValue);
   if (textSize === void 0 || lineHeight === void 0)
@@ -34158,7 +35169,7 @@ function lintKanbanInteractions(components) {
     const key = componentKey(board);
     if (!key)
       continue;
-    const openModal = propVal(board.properties, "openModalOnCardClick");
+    const openModal = propVal2(board.properties, "openModalOnCardClick");
     const nativeModalEnabled = openModal === void 0 || isTruthyBinding(openModal);
     if (!nativeModalEnabled)
       continue;
@@ -34184,7 +35195,7 @@ function lintListviewChildren(components) {
   }
   for (const [parentId, children] of childrenByParent) {
     const parent = refs2.get(parentId);
-    if (propVal(parent.properties, "mode") !== "grid")
+    if (propVal2(parent.properties, "mode") !== "grid")
       continue;
     for (const child of children) {
       const rect2 = child.layouts?.desktop ?? child.layout;
@@ -34207,7 +35218,7 @@ function lintListviewChildren(components) {
     const parent = refs2.get(parentPlacement(child)?.parentId ?? "");
     if (parent?.type !== "Listview")
       continue;
-    const rawHtml = propVal(child.properties, "rawHtml");
+    const rawHtml = propVal2(child.properties, "rawHtml");
     if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
       continue;
     if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
@@ -34258,7 +35269,7 @@ function lintOperationalViewport(components) {
     return [];
   const warnings = [];
   for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
-    if (propVal(button.styles, "type") !== "primary")
+    if (propVal2(button.styles, "type") !== "primary")
       continue;
     const rect2 = button.layouts?.desktop ?? button.layout;
     if (!rect2)
@@ -34315,35 +35326,58 @@ function lintComponentSpec(spec) {
   const errors = [];
   const warnings = [];
   const props = spec.properties ?? {};
-  const label = spec.name ?? spec.type ?? "component";
+  const label2 = spec.name ?? spec.type ?? "component";
+  if (spec.type === "Button" && propVal2(spec.styles ?? {}, "type") === "outline") {
+    const textColor = propVal2(spec.styles ?? {}, "textColor") ?? getComponentSchema("Button")?.styles.find((style) => style.key === "textColor")?.default;
+    if (textColor === "var(--cc-surface1-surface)") {
+      warnings.push(`Button "${label2}": outline background is transparent even when backgroundColor is set. Surface-colored text can disappear against the page or card. Set textColor to a contrasting token such as var(--cc-primary-text), and check iconColor/loaderColor against the actual parent; retain surface-colored text only when the parent provides sufficient contrast.`);
+    }
+  }
+  if (spec.type === "NumberInput") {
+    for (const key of ["minValue", "maxValue"]) {
+      const value = propVal2(props, key);
+      if (value == null || typeof value === "string" && value.trim() === "")
+        continue;
+      errors.push(`NumberInput "${label2}": properties.${key} is ignored by the renderer. Move the limit to top-level validation.${key}: {value: ...} and clear the legacy property. Gate standalone submit actions on field validity and the intended numeric range; truthiness accepts negative values.`);
+    }
+  }
+  errors.push(...lintBindingSyntax(props, `Component "${label2}".properties`));
+  errors.push(...lintBindingSyntax(spec.styles, `Component "${label2}".styles`));
+  for (const key of ["disabledState", "loadingState", "visibility", "collapseWhenHidden"]) {
+    const path = `Component "${label2}".properties.${key}`;
+    for (const error51 of lintBindingSyntax(props[key], path, true)) {
+      if (!errors.includes(error51))
+        errors.push(error51);
+    }
+  }
   if (spec.slotName !== void 0) {
     if (!COMPONENT_SLOT_NAMES.includes(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
+      errors.push(`Component "${label2}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
     }
     if (!spec.parentRef && !spec.parent) {
-      errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
+      errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
     }
   }
   const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
   if (misplaced.length) {
-    errors.push(`Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
+    errors.push(`Component "${label2}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      errors.push(`Component "${label}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label2}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
   if (!spec.type) {
-    errors.push(`Component "${label}": type is required.`);
+    errors.push(`Component "${label2}": type is required.`);
   } else if (!componentSchema) {
     const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
-    errors.push(`Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+    errors.push(`Component "${label2}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
-      warnings.push(`Component "${label}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
+      warnings.push(`Component "${label2}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
     }
   }
   for (const [sectionName, authored, entries] of [
@@ -34362,121 +35396,121 @@ function lintComponentSpec(spec) {
       const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
       const suggestion = alias ?? nearestCatalogKey(key, knownKeys);
       if (suggestion) {
-        errors.push(`Component "${label}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
+        errors.push(`Component "${label2}": "${key}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
       } else {
-        warnings.push(`Component "${label}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
+        warnings.push(`Component "${label2}": unknown ${sectionName} key "${key}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
       }
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length)
         continue;
-      const value = propVal(authored, entry.key);
+      const value = propVal2(authored, entry.key);
       if (value === void 0 || isDynamicBinding(value))
         continue;
       if (!entry.allowedValues.some((allowed) => Object.is(allowed, value))) {
-        errors.push(`Component "${label}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
+        errors.push(`Component "${label2}": unsupported ${sectionName} value ${JSON.stringify(value)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
       }
     }
   }
   if (spec.type === "Chart") {
-    const title = propVal(props, "title");
+    const title = propVal2(props, "title");
     if (title === void 0) {
-      warnings.push(`Chart "${label}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
+      warnings.push(`Chart "${label2}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
     } else if (typeof title === "string" && title.trim() !== "") {
-      warnings.push(`Chart "${label}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
+      warnings.push(`Chart "${label2}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
     }
-    const plotFromJson = propVal(props, "plotFromJson");
-    const jsonDescription = propVal(props, "jsonDescription");
+    const plotFromJson = propVal2(props, "plotFromJson");
+    const jsonDescription = propVal2(props, "jsonDescription");
     if (isTruthyBinding(plotFromJson)) {
       if (jsonDescription === void 0) {
-        errors.push(`Chart "${label}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
+        errors.push(`Chart "${label2}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
       } else if (isDynamicBinding(jsonDescription)) {
-        warnings.push(`Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
+        warnings.push(`Chart "${label2}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.`);
       } else {
         let parsed = jsonDescription;
         if (typeof jsonDescription === "string") {
           try {
             parsed = JSON.parse(jsonDescription);
           } catch {
-            errors.push(`Chart "${label}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
+            errors.push(`Chart "${label2}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
             parsed = void 0;
           }
         }
         if (parsed !== void 0) {
           const description = recordValue(parsed);
           if (!description || !Array.isArray(description.data) || description.data.length === 0) {
-            errors.push(`Chart "${label}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
+            errors.push(`Chart "${label2}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
           }
         }
       }
     }
   }
-  if (spec.type === "Html" && nestedMapInValue(propVal(props, "rawHtml"))) {
-    warnings.push(`Html "${label}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
+  if (spec.type === "Html" && nestedMapInValue(propVal2(props, "rawHtml"))) {
+    warnings.push(`Html "${label2}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
   }
   if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
-    warnings.push(`Component "${label}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
+    warnings.push(`Component "${label2}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
   }
   if (spec.type === "Statistics") {
-    const secondaryValue = propVal(props, "secondaryValue");
+    const secondaryValue = propVal2(props, "secondaryValue");
     if (typeof secondaryValue === "string" && !secondaryValue.includes("{{") && /[A-Za-z]/.test(secondaryValue)) {
-      warnings.push(`Statistics "${label}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
+      warnings.push(`Statistics "${label2}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
     }
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
-    const secondaryHidden = isTruthyBinding(propVal(props, "hideSecondary"));
+    const secondaryHidden = isTruthyBinding(propVal2(props, "hideSecondary"));
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
-      warnings.push(`Statistics "${label}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
+      warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
     }
     const iconName = catalogValue("Statistics", props, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal(props, "iconVisibility") !== false && propVal(props, "iconVisibility") !== "{{false}}";
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props, "iconVisibility") !== false && propVal2(props, "iconVisibility") !== "{{false}}";
     const valueFontPx = optionalStaticNumber(catalogValue("Statistics", props, "primaryValueSize"));
     const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
-      errors.push(`Statistics "${label}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
+      errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
     const primaryLabel = catalogValue("Statistics", props, "primaryValueLabel");
     if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)) {
-      warnings.push(`Statistics "${label}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
+      warnings.push(`Statistics "${label2}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
     }
   }
   if (spec.type === "DropdownV2") {
-    const advanced = propVal(props, "advanced");
-    const schema = propVal(props, "schema");
-    const options2 = propVal(props, "options");
+    const advanced = propVal2(props, "advanced");
+    const schema = propVal2(props, "schema");
+    const options2 = propVal2(props, "options");
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
     const customOptions = differsFromCatalogDefault("DropdownV2", "options", options2);
     if (customOptions && !Array.isArray(options2)) {
-      errors.push(`DropdownV2 "${label}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
+      errors.push(`DropdownV2 "${label2}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
     } else if (Array.isArray(options2)) {
       const malformedIndexes = options2.flatMap((option, index) => {
         const entry = recordValue(option);
         return entry && "label" in entry && "value" in entry ? [] : [index];
       });
       if (malformedIndexes.length) {
-        errors.push(`DropdownV2 "${label}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
+        errors.push(`DropdownV2 "${label2}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
       }
     }
     if (customSchema && customOptions) {
-      warnings.push(`DropdownV2 "${label}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label2}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
     }
     if (customSchema && (advanced === void 0 || isFalseBinding(advanced))) {
-      warnings.push(`DropdownV2 "${label}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
+      warnings.push(`DropdownV2 "${label2}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
     }
     if (customOptions && isTruthyBinding(advanced)) {
-      warnings.push(`DropdownV2 "${label}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label2}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
     }
   }
   if (spec.type === "DatePickerV2") {
-    const defaultValue = propVal(props, "defaultValue");
+    const defaultValue = propVal2(props, "defaultValue");
     const demoDefault = getComponentSchema("DatePickerV2")?.properties.find((property) => property.key === "defaultValue")?.default;
     if (defaultValue === void 0 || JSON.stringify(defaultValue) === JSON.stringify(demoDefault)) {
-      warnings.push(`DatePickerV2 "${label}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
+      warnings.push(`DatePickerV2 "${label2}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
     }
   }
   if (spec.type === "KeyValuePair") {
-    const data = propVal(props, "data");
-    const fields = propVal(props, "fields");
+    const data = propVal2(props, "data");
+    const fields = propVal2(props, "fields");
     if (data !== void 0 && Array.isArray(fields) && fields.length > 0) {
       const declaredKeys = new Set(fields.flatMap((field) => {
         const key = recordValue(field)?.key;
@@ -34485,7 +35519,7 @@ function lintComponentSpec(spec) {
       const staticData = recordValue(data);
       const undeclaredKeys = staticData ? Object.keys(staticData).filter((key) => !declaredKeys.has(key)) : [];
       if (undeclaredKeys.length > 0 || !staticData && !explicitlyProjectsObjectData(data)) {
-        warnings.push(`KeyValuePair "${label}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
+        warnings.push(`KeyValuePair "${label2}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
       }
     }
     if (Array.isArray(fields) && fields.length > 0) {
@@ -34499,7 +35533,7 @@ function lintComponentSpec(spec) {
           }
         }
       }
-      const deletionHistoryValue = propVal(props, "fieldDeletionHistory");
+      const deletionHistoryValue = propVal2(props, "fieldDeletionHistory");
       const deletionHistory = new Set(Array.isArray(deletionHistoryValue) ? deletionHistoryValue.filter((key) => typeof key === "string") : []);
       const hasCustomField = fields.some((field) => {
         const id = recordValue(field)?.id;
@@ -34511,21 +35545,29 @@ function lintComponentSpec(spec) {
         return key && deletionHistory.has(key) ? [key] : [];
       }) : [];
       if (contradictoryDemoKeys.length) {
-        warnings.push(`KeyValuePair "${label}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
+        warnings.push(`KeyValuePair "${label2}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
       }
       fields.forEach((field, index) => {
         const entry = recordValue(field);
         if (entry?.fieldType === "string" && (looksDateLikeField(entry.key) || looksDateLikeField(entry.name))) {
-          warnings.push(`KeyValuePair "${label}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`KeyValuePair "${label2}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
       });
     }
   }
+  errors.push(...lintTextFormat(spec));
+  errors.push(...lintHtmlContentHeight(spec));
+  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintUnguardedComponentRefs(spec));
+  errors.push(...lintEmbeddedBindingSyntax(spec));
+  errors.push(...lintChartDataShape(spec));
+  errors.push(...lintUnguardedSelectionText(spec));
   if (spec.type === "Table") {
-    const data = propVal(props, "data");
-    const selector = propVal(props, "dataSourceSelector");
-    const autogen = propVal(props, "autogenerateColumns");
-    const columns = propVal(props, "columns");
+    errors.push(...lintTableColumnsShape(spec));
+    const data = propVal2(props, "data");
+    const selector = propVal2(props, "dataSourceSelector");
+    const autogen = propVal2(props, "autogenerateColumns");
+    const columns = propVal2(props, "columns");
     const hasColumns = Array.isArray(columns);
     const projectedDataKeys = projectedTableDataKeys(data);
     const projectsDataKeys = projectedDataKeys !== void 0;
@@ -34537,25 +35579,25 @@ function lintComponentSpec(spec) {
     const serverSide = catalogValue("Table", props, "serverSidePagination");
     const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props, "serverSideRowsPerPage") : catalogValue("Table", props, "rowsPerPage"));
     if (statementBodyMapInValue(data)) {
-      errors.push(`Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
+      errors.push(`Table "${label2}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(contentWrap) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
-      const rowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const rowHeight2 = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
       const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < chromeHeight + rowHeight) {
-        errors.push(`Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight}px.`);
+      const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
+      if (desktopHeight < chromeHeight + rowHeight2) {
+        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight2}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
+        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {
-      warnings.push(`Table "${label}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
+      warnings.push(`Table "${label2}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
     }
     if (data !== void 0 && !isTruthyBinding(autogen) && !hasColumns) {
-      warnings.push(`Table "${label}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
+      warnings.push(`Table "${label2}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
     }
     if (hasColumns) {
       const columnKeys = /* @__PURE__ */ new Map();
@@ -34569,47 +35611,50 @@ function lintComponentSpec(spec) {
       });
       for (const [key, indexes] of columnKeys) {
         if (indexes.length > 1) {
-          errors.push(`Table "${label}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
+          errors.push(`Table "${label2}": duplicate column key "${key}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
         }
       }
       if (isTruthyBinding(autogen) && projectedDataKeys) {
         const undeclaredKeys = projectedDataKeys.filter((key) => !columnKeys.has(key));
         if (undeclaredKeys.length) {
-          warnings.push(`Table "${label}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
+          warnings.push(`Table "${label2}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
         }
       }
       if (isTruthyBinding(autogen) && !projectsDataKeys) {
-        warnings.push(`Table "${label}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
+        warnings.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
       }
       columns.forEach((col, i) => {
         const c = col;
         for (const req of ["name", "key"]) {
           if (c == null || c[req] === void 0) {
-            warnings.push(`Table "${label}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
+            warnings.push(`Table "${label2}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
           }
         }
         const deprecatedReplacement = typeof c?.columnType === "string" ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : void 0;
+        if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0 && c.columnSize < 16 && ["string", "text", "number", "datepicker", "button"].includes(String(c.columnType))) {
+          errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is in pixels, not proportional weights or grid columns. Use a readable pixel width (for example 240 for a name, 140 for a date), or omit columnSize for the default.`);
+        }
         if (deprecatedReplacement) {
-          errors.push(`Table "${label}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
+          errors.push(`Table "${label2}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
         }
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
-          warnings.push(`Table "${label}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
+          warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
         if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
-          warnings.push(`Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
           if (!Array.isArray(buttons) || buttons.length === 0) {
-            warnings.push(`Table "${label}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
+            warnings.push(`Table "${label2}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
           } else {
             const ids = /* @__PURE__ */ new Set();
             buttons.forEach((button, buttonIndex) => {
               const id = button?.id;
               if (typeof id !== "string" || id.length === 0) {
-                warnings.push(`Table "${label}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
+                warnings.push(`Table "${label2}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
               } else if (ids.has(id)) {
-                warnings.push(`Table "${label}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
+                warnings.push(`Table "${label2}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
               } else {
                 ids.add(id);
               }
@@ -34620,33 +35665,33 @@ function lintComponentSpec(spec) {
       const visibleColumns = columns.map((column) => column).filter((column) => column && column.columnVisibility !== false && column.columnVisibility !== "{{false}}");
       const rawHeaderColumns = visibleColumns.map((column) => String(column.name ?? column.key ?? "").trim()).filter((header) => header && (looksRawFieldHeader(header) || looksInternalIdField(header)));
       if (rawHeaderColumns.length) {
-        warnings.push(`Table "${label}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
+        warnings.push(`Table "${label2}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
       }
       if (visibleColumns.length > TABLE_VISIBLE_COLUMN_WARN) {
-        warnings.push(`Table "${label}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
+        warnings.push(`Table "${label2}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
       }
     }
-    const legacyActions = propVal(props, "actions");
+    const legacyActions = propVal2(props, "actions");
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
-      warnings.push(`Table "${label}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
+      warnings.push(`Table "${label2}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
     }
-    if (isTruthyBinding(propVal(props, "serverSidePagination"))) {
-      if (propVal(props, "serverSideRowsPerPage") === void 0) {
-        warnings.push(`Table "${label}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
+    if (isTruthyBinding(propVal2(props, "serverSidePagination"))) {
+      if (propVal2(props, "serverSideRowsPerPage") === void 0) {
+        warnings.push(`Table "${label2}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
       }
-      if (propVal(props, "totalRecords") === void 0) {
-        warnings.push(`Table "${label}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
+      if (propVal2(props, "totalRecords") === void 0) {
+        warnings.push(`Table "${label2}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
       }
     }
   }
   if (spec.type === "Form") {
-    const mode = propVal(props, "generateFormFrom");
-    const schemaValue = propVal(props, "newJsonSchema");
+    const mode = propVal2(props, "generateFormFrom");
+    const schemaValue = propVal2(props, "newJsonSchema");
     if (mode === "jsonSchema" && schemaValue === void 0) {
-      warnings.push(`Form "${label}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
+      warnings.push(`Form "${label2}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
     }
-    if (mode === "rawJson" && propVal(props, "JSONData") === void 0) {
-      warnings.push(`Form "${label}": generateFormFrom is "rawJson" but JSONData is missing.`);
+    if (mode === "rawJson" && propVal2(props, "JSONData") === void 0) {
+      warnings.push(`Form "${label2}": generateFormFrom is "rawJson" but JSONData is missing.`);
     }
     const fields = recordValue(recordValue(schemaValue)?.properties);
     if (mode === "jsonSchema" && fields) {
@@ -34657,21 +35702,21 @@ function lintComponentSpec(spec) {
           continue;
         const type = field.type;
         if (typeof type !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(type)) {
-          errors.push(`Form "${label}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
+          errors.push(`Form "${label2}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
           continue;
         }
         if (type === "filepicker") {
-          errors.push(`Form "${label}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
+          errors.push(`Form "${label2}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
         }
         if (type === "datepicker" && (field.value === null || field.value === void 0)) {
-          warnings.push(`Form "${label}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
+          warnings.push(`Form "${label2}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
         }
         if (["dropdown", "multiselect"].includes(type)) {
           if ("options" in field) {
-            errors.push(`Form "${label}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
+            errors.push(`Form "${label2}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
           }
           if (!("values" in field) || !("displayValues" in field)) {
-            warnings.push(`Form "${label}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
+            warnings.push(`Form "${label2}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
           }
         }
         if (type !== "filepicker" && !SAFE_GENERATED_FORM_FIELD_TYPE_SET.has(type)) {
@@ -34679,19 +35724,19 @@ function lintComponentSpec(spec) {
         }
         const validation = recordValue(field.validation);
         if ("required" in field || validation?.required !== void 0) {
-          warnings.push(`Form "${label}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
+          warnings.push(`Form "${label2}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
         }
       }
       if (standaloneRequiredFields.length > 0) {
-        errors.push(`Form "${label}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
+        errors.push(`Form "${label2}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
       }
     }
   }
   if (FORM_INPUT_TYPES.has(spec.type ?? "")) {
-    const align = propVal(spec.styles, "alignment");
+    const align = propVal2(spec.styles, "alignment");
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
     if ((align === void 0 || align === "side") && typeof width === "number" && width <= NARROW_SIDE_LABEL_COLS) {
-      warnings.push(`${spec.type} "${label}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
+      warnings.push(`${spec.type} "${label2}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
     }
   }
   return { errors, warnings };
@@ -34729,9 +35774,9 @@ function isTitleLikeText(component) {
   if (top > 100)
     return false;
   const name = component.name ?? "";
-  const text = propVal(component.properties, "text");
-  const fontWeight = propVal(component.styles, "fontWeight");
-  const textSize = optionalStaticNumber(propVal(component.styles, "textSize"));
+  const text = propVal2(component.properties, "text");
+  const fontWeight = propVal2(component.styles, "fontWeight");
+  const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
   return /(?:title|heading|header)/i.test(name) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
 }
 function lintModalChildren(components) {
@@ -34749,7 +35794,7 @@ function lintModalChildren(components) {
   for (const child of bodyChildren) {
     if (!FORM_INPUT_TYPES.has(child.type ?? ""))
       continue;
-    const align = propVal(child.styles, "alignment");
+    const align = propVal2(child.styles, "alignment");
     if (align === void 0 || align === "side") {
       warnings.push(`${child.type} "${child.name ?? child.type}": modal form child uses a SIDE-aligned label \u2014 set styles.alignment.value = "top" so the control gets the full field width.`);
     }
@@ -34779,7 +35824,7 @@ function lintModalChildren(components) {
     if (!key)
       continue;
     const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key);
-    if (modal.type === "ModalV2" && !isFalseBinding(propVal(modal.properties, "showHeader"))) {
+    if (modal.type === "ModalV2" && !isFalseBinding(propVal2(modal.properties, "showHeader"))) {
       const headerChildren = modalChildren.filter((child) => {
         const placement = parentPlacement(child);
         return placement?.parentId === key && placement.slotName === "header";
@@ -34798,10 +35843,10 @@ function lintModalChildren(components) {
     if (!childBottoms.length)
       continue;
     const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
-    const modalHeight = staticNumber(propVal(modal.properties, "modalHeight"), 400);
+    const modalHeight = staticNumber(propVal2(modal.properties, "modalHeight"), 400);
     const isV2 = modal.type === "ModalV2";
-    const headerHeight = !isV2 || isFalseBinding(propVal(modal.properties, "showHeader")) ? 0 : staticNumber(propVal(modal.properties, "headerHeight"), 80);
-    const footerHeight = !isV2 || isFalseBinding(propVal(modal.properties, "showFooter")) ? 0 : staticNumber(propVal(modal.properties, "footerHeight"), 80);
+    const headerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showHeader")) ? 0 : staticNumber(propVal2(modal.properties, "headerHeight"), 80);
+    const footerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showFooter")) ? 0 : staticNumber(propVal2(modal.properties, "footerHeight"), 80);
     const bottomSlack = 20;
     const requiredHeight = lowest.bottom + headerHeight + footerHeight + bottomSlack;
     if (modalHeight < requiredHeight) {
@@ -34820,6 +35865,20 @@ function lintRenderedGeometry(components) {
     ...lintCanvasSideGutter(components)
   ];
 }
+var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "Modal", "Icon"]);
+var MIN_RENDERABLE_HEIGHT = 24;
+function lintUnrenderableHeights(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || THIN_BY_DESIGN.has(c.type))
+      continue;
+    const height = c.layouts?.desktop?.height;
+    if (typeof height !== "number" || height >= MIN_RENDERABLE_HEIGHT)
+      continue;
+    errors.push(`${c.type} "${c.name ?? c.id ?? "?"}": desktop height ${height}px cannot render its content; heights are pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, KPI strips 120+, tables 300+).`);
+  }
+  return errors;
+}
 function lintComponents(components) {
   const errors = [];
   const warnings = [];
@@ -34831,6 +35890,10 @@ function lintComponents(components) {
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintUnusableTextGeometry(components));
+  errors.push(...lintUnrenderableHeights(components));
+  errors.push(...lintOversizedWidths(components));
+  for (const c of components)
+    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   warnings.push(...lintRenderedGeometry(components));
   warnings.push(...lintKanbanInteractions(components));
@@ -34877,7 +35940,7 @@ function validateAppStructure(summary) {
   }
   const homePage = summary.pages.find((page) => page.handle === "home" || page.name === "Home");
   if (homePage) {
-    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
+    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal2(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
     for (const event of summary.events) {
       if (event.target !== "page" || event.sourceId !== homePage.id)
         continue;
@@ -34892,7 +35955,7 @@ function validateAppStructure(summary) {
   for (const query of summary.queries.filter((candidate) => candidate.kind === "runjs")) {
     const options2 = recordValue(query.options);
     const code = options2?.code;
-    if (typeof code !== "string" || !isTruthyBinding(propVal(options2, "runOnDependencyChange")))
+    if (typeof code !== "string" || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
       continue;
     const referencedNames = [...new Set([...code.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     if (!referencedNames.length)
@@ -34921,7 +35984,7 @@ function validateAppStructure(summary) {
     const options2 = recordValue(query.options);
     if (!options2)
       continue;
-    const automatic = isTruthyBinding(propVal(options2, "runOnPageLoad")) || isTruthyBinding(propVal(options2, "runOnDependencyChange"));
+    const automatic = isTruthyBinding(propVal2(options2, "runOnPageLoad")) || isTruthyBinding(propVal2(options2, "runOnDependencyChange"));
     if (!automatic)
       continue;
     const blob = JSON.stringify(options2);
@@ -34934,6 +35997,90 @@ function validateAppStructure(summary) {
       warnings.push(`Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ${missing.map((name) => `queries.${name}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
     }
   }
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? "");
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.results\b/g)) {
+      const query = queryByName.get(m[1]);
+      if (!query || query.kind !== "tooljetdb")
+        continue;
+      const operation = recordValue(query.options)?.operation;
+      if (operation === "sql_execution" || operation === void 0)
+        continue;
+      bad.add(m[1]);
+    }
+    for (const name of bad) {
+      const operation = String(recordValue(queryByName.get(name)?.options)?.operation);
+      errors.push(`${component.type ?? "Component"} "${component.name ?? component.id}": reads queries.${name}.data.results, but "${name}" is a ToolJet DB ${operation} query whose data is the rows array itself; only sql_execution returns {results: rows}. Bind queries.${name}.data instead, or the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    if (!["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"].includes(component.type ?? ""))
+      continue;
+    const blob = JSON.stringify(component.properties ?? "");
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data(?![\w?]*\.results)\b/g)) {
+      const query = queryByName.get(m[1]);
+      if (!query || query.kind !== "tooljetdb")
+        continue;
+      if (recordValue(query.options)?.operation !== "sql_execution")
+        continue;
+      if (blob.includes(`queries.${m[1]}.data.results`) || blob.includes(`queries.${m[1]}?.data?.results`) || blob.includes(`queries.${m[1]}.data?.results`))
+        continue;
+      bad.add(m[1]);
+    }
+    for (const name of bad) {
+      errors.push(`${component.type} "${component.name ?? component.id}": reads queries.${name}.data, but "${name}" is a ToolJet DB sql_execution query whose data is {results: rows}. Bind queries.${name}.data.results (or data.results[0].<column> for a single value), or the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? "");
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.result\b/g)) {
+      const query = queryByName.get(m[1]);
+      if (!query || query.kind !== "servicenow")
+        continue;
+      if (isTruthyBinding(propVal2(recordValue(query.options), "enableTransformation")))
+        continue;
+      bad.add(m[1]);
+    }
+    for (const name of bad) {
+      errors.push(`${component.type ?? "Component"} "${component.name ?? component.id}": reads queries.${name}.data.result, but "${name}" is a ServiceNow query and the plugin already unwraps the REST result envelope: queries.<q>.data is the records array (or the record for get/create/update). Bind queries.${name}.data instead, or the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    const blob = JSON.stringify(component.properties ?? "");
+    const bare = /* @__PURE__ */ new Set();
+    for (const name of queryByName.keys()) {
+      if (!name || !/^[A-Za-z_$][\w$]*$/.test(name))
+        continue;
+      const pattern = new RegExp(`(?<![\\w$.\\]'"])${name.replace(/\$/g, "\\$")}\\??\\.(data|rawData|isLoading)\\b`);
+      if (pattern.test(blob))
+        bare.add(name);
+    }
+    for (const name of bare) {
+      errors.push(`${component.type ?? "Component"} "${component.name ?? component.id}": reads ${name}.data by bare name; queries are referenced as queries.${name}.data. A bare name is undefined at runtime and the component shows No data.`);
+    }
+  }
+  for (const component of allComponents) {
+    if (component.type !== "Chart")
+      continue;
+    const props = component.properties ?? {};
+    if (isTruthyBinding(propVal2(props, "plotFromJson")))
+      continue;
+    const data = propVal2(props, "data");
+    const m = typeof data === "string" ? data.trim().match(BARE_QUERY_DATA_BINDING) : null;
+    if (!m)
+      continue;
+    const query = queryByName.get(m[1]);
+    if (!query || query.kind === "runjs" || query.kind === "runpy")
+      continue;
+    const options2 = recordValue(query.options);
+    const sql = typeof options2?.query === "string" ? options2.query : typeof recordValue(options2?.sql_execution)?.sqlQuery === "string" ? String(recordValue(options2?.sql_execution)?.sqlQuery) : "";
+    if (sql && /\bas\s+["'`]?x["'`]?\b/i.test(sql) && /\bas\s+["'`]?y["'`]?\b/i.test(sql))
+      continue;
+    errors.push(`Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query.kind ?? "datasource"} query that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`);
+  }
   for (const e of summary.events) {
     const name = e.name ?? e.id;
     const validSources = e.target === "data_query" ? queryIds : e.target === "page" ? pageIds : e.target === "component" || e.target === "table_column" || e.target === "table_action" ? componentIds : /* @__PURE__ */ new Set([...componentIds, ...queryIds, ...pageIds]);
@@ -34943,6 +36090,22 @@ function validateAppStructure(summary) {
     const ev = e.event ?? {};
     if (ev.actionId === "run-query" && typeof ev.queryId === "string" && !queryIds.has(ev.queryId)) {
       errors.push(`Event "${name}" runs a query (${ev.queryId}) that no longer exists.`);
+    }
+  }
+  const bindingSources = [
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
+    ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event }))
+  ];
+  for (const source2 of bindingSources) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const ref of bindingReferences(source2.value)) {
+      const names = ref.namespace === "components" ? componentNames : queryNames;
+      const key = `${ref.namespace}.${ref.name}`;
+      if (!names.has(ref.name) && !seen.has(key)) {
+        seen.add(key);
+        errors.push(`${source2.label} references ${key}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
+      }
     }
   }
   for (const c of allComponents) {
@@ -34982,12 +36145,12 @@ function validateAppStructure(summary) {
   }
   for (const table of allComponents.filter((component) => component.type === "Table")) {
     const triggers = eventsBySource.get(table.id) ?? /* @__PURE__ */ new Set();
-    const dataBinding = JSON.stringify(propVal(table.properties, "data") ?? "");
+    const dataBinding = JSON.stringify(propVal2(table.properties, "data") ?? "");
     const boundDataQueries = [...new Set([...dataBinding.matchAll(/queries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const hasReactiveDataQuery = (stateName) => boundDataQueries.some((queryName) => {
       const query = queryByName.get(queryName);
       const options2 = recordValue(query?.options);
-      if (!options2 || !isTruthyBinding(propVal(options2, "runOnDependencyChange")))
+      if (!options2 || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
         return false;
       return typeof table.name === "string" && JSON.stringify(options2).includes(`components.${table.name}.${stateName}`);
     });
@@ -34998,12 +36161,12 @@ function validateAppStructure(summary) {
       ["serverSideFilter", "onFilterChanged", "filters"]
     ];
     for (const [property, trigger, stateName] of requirements) {
-      if (isTruthyBinding(propVal(table.properties, property)) && !triggers.has(trigger) && !hasReactiveDataQuery(stateName)) {
+      if (isTruthyBinding(propVal2(table.properties, property)) && !triggers.has(trigger) && !hasReactiveDataQuery(stateName)) {
         warnings.push(`Table "${table.name ?? table.id}": ${property} is enabled but no ${trigger} event refreshes its data query and no runOnDependencyChange data query is bound to components.${table.name ?? "<table>"}.${stateName}.`);
       }
     }
     const tableColumnRefs = new Set(summary.events.filter((event) => event.sourceId === table.id && event.target === "table_column").map((event) => event.event?.ref).filter((ref) => typeof ref === "string"));
-    const columns = propVal(table.properties, "columns");
+    const columns = propVal2(table.properties, "columns");
     if (Array.isArray(columns)) {
       columns.forEach((column, columnIndex) => {
         const col = column;
@@ -35028,11 +36191,76 @@ function validateAppStructure(summary) {
   }
   for (const p of summary.pages) {
     errors.push(...lintUnusableTextGeometry(p.components));
+    errors.push(...lintUnrenderableHeights(p.components));
+    errors.push(...lintOversizedWidths(p.components));
+    for (const c of p.components)
+      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components));
     warnings.push(...lintRenderedGeometry(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
+  warnings.push(...lintInnerPageBands(summary));
+  const readiness = lintUntriggeredDataQueries(summary);
+  errors.push(...readiness.errors);
+  warnings.push(...readiness.warnings);
   return { errors: uniq(errors), warnings: uniq(warnings) };
+}
+function hexLuminance(hex3) {
+  const raw = hex3.replace("#", "");
+  const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full))
+    return NaN;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function htmlRootHasDarkBackground(rawHtml) {
+  const root = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
+  if (!root)
+    return false;
+  const declaration = root[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
+  if (!declaration)
+    return false;
+  const value = declaration[1];
+  if (/var\(--cc-primary-brand\)/i.test(value))
+    return true;
+  const hexes = value.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi) ?? [];
+  return hexes.some((hex3) => hexLuminance(hex3) < 0.35);
+}
+function lintInnerPageBands(summary) {
+  const warnings = [];
+  const pages = summary.pages ?? [];
+  const explicitHome = pages.some((p) => p.handle === "home" || p.name === "Home" || p.index === 1);
+  pages.forEach((page, pageIndex) => {
+    const isHome = page.handle === "home" || page.name === "Home" || page.index === 1 || !explicitHome && pageIndex === 0;
+    if (isHome)
+      return;
+    for (const component of page.components ?? []) {
+      if (component.type !== "Html" || component.parent)
+        continue;
+      const rawHtml = propVal2(component.properties ?? {}, "rawHtml");
+      if (typeof rawHtml !== "string")
+        continue;
+      const desktop = component.layouts?.desktop;
+      if (!desktop || (desktop.top ?? 0) > 60 || (desktop.height ?? 0) > 200 || (desktop.width ?? 0) < 20)
+        continue;
+      if (!htmlRootHasDarkBackground(rawHtml))
+        continue;
+      warnings.push(`Page "${page.name ?? page.id}": Html "${component.name ?? component.id}" is a dark or brand-filled header band on a page that is not Home. The skill's header treatments put a statement band on the home page only; inner pages take a plain title, toolbar or masthead. Keep it only if the design brief chose it for this page deliberately.`);
+    }
+  });
+  return warnings;
+}
+
+// dist/strictEntry.js
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue2) => issue2.code === "unrecognized_keys" ? issue2.keys.map(describeUnknown).join(" ") : void 0
+  });
+}
+function hasNonEmptyDefinition(definition) {
+  if (!definition)
+    return false;
+  return Object.values(definition).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
 }
 
 // dist/tableValidation.js
@@ -35334,12 +36562,20 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+function condenseErrorBody(detail, limit = 600) {
+  const text = String(detail ?? "");
+  if (/<!doctype html|<html[\s>]/i.test(text)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(text)?.[1]?.trim();
+    return `${title || "HTML error page"} (HTML error page from the proxy, markup omitted)`;
+  }
+  return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
+}
 var ToolJetHttpError = class extends Error {
   status;
   method;
   detail;
   constructor(status, method, detail) {
-    super(`ToolJet ${method} failed (${status}): ${detail}`);
+    super(`ToolJet ${method} failed (${status}): ${condenseErrorBody(detail)}`);
     this.status = status;
     this.method = method;
     this.detail = detail;
@@ -35487,6 +36723,7 @@ function createClient(auth, config2) {
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
+      ...def.validation !== void 0 ? { validation: def.validation } : {},
       others: def.others,
       ...persistedParent ? { parent: persistedParent } : {},
       ...decodedParent && decodedParent.slotName !== "body" ? { slot_name: decodedParent.slotName } : {}
@@ -35672,11 +36909,18 @@ function createClient(auth, config2) {
     return auth.switchWorkspace(workspaceId);
   }
   async function createApp(name) {
-    const createRes = await auth.authedFetch("/api/apps", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type: "front-end" })
-    });
+    let createRes;
+    let finalName = name;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      finalName = attempt === 1 ? name : `${name} ${attempt}`;
+      createRes = await auth.authedFetch("/api/apps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: finalName, type: "front-end" })
+      });
+      if (createRes.status !== 409)
+        break;
+    }
     await assertOk(createRes, "createApp");
     const created = await createRes.json();
     const app = await getApp(created.id);
@@ -35795,13 +37039,13 @@ function createClient(auth, config2) {
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
     return completed;
-    async function persistFieldForPage(pageId, field, value, label) {
+    async function persistFieldForPage(pageId, field, value, label2) {
       const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, diff: { [field]: value } })
       });
-      await assertOk(r, label);
+      await assertOk(r, label2);
     }
   }
   async function createPage(params) {
@@ -36116,19 +37360,39 @@ function createClient(auth, config2) {
     });
   }
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
+  const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
+  const UNKNOWN_INSERT_OUTCOME = "Insert outcome unknown: the row may already have been inserted. Verify persisted rows before retrying; do not replay the whole batch.";
   async function insertRowViaProxy(tableId, row) {
-    for (let attempt = 0; ; attempt += 1) {
-      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(row)
-      });
-      if (res.ok || attempt >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
+    let schemaWaits = 0;
+    for (; ; ) {
+      let res;
+      try {
+        res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(row),
+          signal: AbortSignal.timeout(INSERT_ATTEMPT_TIMEOUT_MS)
+        });
+      } catch (error51) {
+        throw new Error(`ToolJet insertRows request failed (${error51 instanceof Error ? error51.name : "transport error"}). ${UNKNOWN_INSERT_OUTCOME}`);
+      }
+      if (res.ok)
+        return res;
+      if (res.status === 408 || res.status >= 500) {
+        const body2 = await res.text().catch(() => "Response body unavailable");
+        const error51 = new ToolJetHttpError(res.status, "insertRows", body2);
+        error51.message += ` ${UNKNOWN_INSERT_OUTCOME}`;
+        throw error51;
+      }
+      if (res.status !== 400 && res.status !== 404)
+        return res;
+      if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
         return res;
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[attempt]));
+      await new Promise((resolve4) => setTimeout(resolve4, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      schemaWaits += 1;
     }
   }
   async function insertRows(params) {
@@ -36289,8 +37553,11 @@ function createClient(auth, config2) {
   async function updateComponents(params) {
     const diff = {};
     for (const u of params.updates) {
-      const hasDef = !!u.definition && Object.keys(u.definition).length > 0;
+      const hasDef = hasNonEmptyDefinition(u.definition);
       const hasRaw = u.name !== void 0 || u.parent !== void 0 || u.slotName !== void 0;
+      if (!hasDef && !hasRaw) {
+        throw new Error(`updateComponents "${u.componentId}": nothing to update. Provide a non-empty definition (properties/styles/validation/others) or a name/parent change.`);
+      }
       if (hasDef && hasRaw) {
         throw new Error(`updateComponents "${u.componentId}": set EITHER definition (properties/styles/\u2026) OR name/parent/slotName in one entry \u2014 ToolJet applies only one path. Split into two update calls.`);
       }
@@ -36332,6 +37599,9 @@ function createClient(auth, config2) {
   async function updateLayouts(params) {
     const diff = {};
     for (const l of params.layouts) {
+      if (!l.desktop && !l.mobile && l.parent === void 0) {
+        throw new Error(`updateLayouts "${l.componentId}": nothing to update. Provide desktop and/or mobile rects, or a parent change.`);
+      }
       const entry = {
         layouts: {
           ...l.desktop ? { desktop: l.desktop } : {},
@@ -36673,7 +37943,7 @@ function createAppTool(client) {
         const result = { ...created, theme: { mode: "workspace_default" } };
         if (choice === "workspace_default")
           return ok(result);
-        const label = typeof choice === "object" ? choice.name : choice;
+        const label2 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
           await client.updateAppSettings({
@@ -36686,7 +37956,7 @@ function createAppTool(client) {
         } catch (themeErr) {
           result.theme = {
             mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+            warning: `Could not apply theme "${label2}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
           };
         }
         return ok(result);
@@ -36748,6 +38018,49 @@ function projectAppSettings(snapshot2) {
 function pageSettingProperties(snapshot2) {
   return asRecord(asRecord(snapshot2.page_settings).properties);
 }
+function projectJavascriptRuntime(snapshot2) {
+  const global2 = snapshot2.global_settings ?? {};
+  const raw = asRecord(global2.libraries).javascript;
+  const entries = Array.isArray(raw) ? raw : [];
+  const script = asRecord(global2.preloadedScript).javascript;
+  return {
+    configuration_state: raw === void 0 || Array.isArray(raw) && !raw.length ? "not_configured" : Array.isArray(raw) ? "configured" : "unknown",
+    total: Array.isArray(raw) ? raw.length : raw === void 0 ? 0 : null,
+    truncated: entries.length > 32,
+    libraries: entries.slice(0, 32).map((value) => {
+      const lib = asRecord(value);
+      let sourceUrl = null;
+      let redacted = false;
+      let https = false;
+      try {
+        if (typeof lib.url === "string" && lib.url.length <= 4096) {
+          const url2 = new URL(lib.url);
+          if (url2.protocol === "https:" || url2.protocol === "http:") {
+            https = url2.protocol === "https:";
+            redacted = Boolean(url2.username || url2.password || url2.search || url2.hash);
+            url2.username = "";
+            url2.password = "";
+            url2.search = "";
+            url2.hash = "";
+            sourceUrl = url2.toString();
+          }
+        }
+      } catch {
+      }
+      return {
+        name: typeof lib.name === "string" ? lib.name.slice(0, 128) : null,
+        enabled: typeof lib.enabled === "boolean" ? lib.enabled : null,
+        source_url: sourceUrl,
+        url_valid: sourceUrl !== null,
+        url_redacted: redacted,
+        https
+      };
+    }),
+    preloaded_script_present: typeof script === "string" ? Boolean(script.trim()) : null,
+    runtime_verified: false,
+    guidance: "Configuration is not proof of successful loading, export names, worker/CSP compatibility, or deployment support. In ToolJet versions with the native library loader, enabled HTTPS UMD/IIFE library exports are passed to RunJS as lexical parameters by their configured names, not guaranteed globalThis properties. Do not redeclare those parameter names with const/let. Preloaded script exports may add or override names; their code is intentionally omitted here. This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration."
+  };
+}
 
 // dist/tools/getAppSettings.js
 function getAppSettingsTool(client) {
@@ -36758,14 +38071,19 @@ function getAppSettingsTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "Read the current editing version's compact app-wide visual settings: canvas background/width/mode, selected theme, header/logo/title, and navigation visibility/layout. Use before update_app_settings; this omits theme definitions and other large raw app data.",
+    description: "Read the current editing version's compact app-wide visual settings: canvas background/width/mode, selected theme, header/logo/title, and navigation visibility/layout. Use before update_app_settings; this omits theme definitions and other large raw app data. Set include_libraries for bounded, read-only JavaScript library configuration and RunJS scope guidance before authoring library-dependent queries; this never loads or executes code.",
     inputSchema: {
       app_id: external_exports.string().min(1),
-      version_id: external_exports.string().min(1)
+      version_id: external_exports.string().min(1),
+      include_libraries: external_exports.boolean().optional().describe("Inspect stored JavaScript dependencies, not runtime readiness. Omitted by default.")
     },
     async handler(args) {
       try {
-        return ok(projectAppSettings(await client.getAppSettings(args.app_id, args.version_id)));
+        const snapshot2 = await client.getAppSettings(args.app_id, args.version_id);
+        return ok({
+          ...projectAppSettings(snapshot2),
+          ...args.include_libraries ? { javascript_runtime: projectJavascriptRuntime(snapshot2) } : {}
+        });
       } catch (error51) {
         return fail(error51);
       }
@@ -36812,9 +38130,9 @@ function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
   const mismatches = [];
-  const expectEqual = (label, actual, expected) => {
+  const expectEqual = (label2, actual, expected) => {
     if (actual !== expected)
-      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
+      mismatches.push(`${label2} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -37073,7 +38391,26 @@ function createTablesTool(client) {
         const errors = validateTableBatch(tables);
         if (errors.length)
           return fail(new Error(errors.join(" ")));
-        return ok({ tables: await client.createTables({ tables }) });
+        const warnings = [];
+        const taken = new Set((await client.listTables()).map((table) => table.table_name.toLowerCase()));
+        for (const table of tables) {
+          if (!taken.has(table.tableName.toLowerCase())) {
+            taken.add(table.tableName.toLowerCase());
+            continue;
+          }
+          const oldName = table.tableName;
+          let candidate = oldName;
+          for (let n = 2; taken.has(candidate.toLowerCase()); n++)
+            candidate = `${oldName.slice(0, 31 - `_${n}`.length)}_${n}`;
+          table.tableName = candidate;
+          taken.add(candidate.toLowerCase());
+          for (const other of tables)
+            for (const fk of other.foreignKeys ?? [])
+              if (fk.referencedTable === oldName)
+                fk.referencedTable = candidate;
+          warnings.push(`Table "${oldName}" already exists in this workspace; created "${candidate}" instead (foreign keys updated). Use the returned name.`);
+        }
+        return ok({ tables: await client.createTables({ tables }), ...warnings.length ? { warnings } : {} });
       } catch (error51) {
         return fail(error51);
       }
@@ -37882,9 +39219,9 @@ var DIALECTS = {
   bigquery: { quote: "backtick", limit: "limit" },
   oracledb: { quote: "double", limit: "fetch" }
 };
-function assertIdentifier(identifier, label) {
+function assertIdentifier(identifier, label2) {
   if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+    throw new Error(`${label2} contains unsupported or unsafe identifier characters.`);
   }
 }
 function quote(kind, identifier) {
@@ -38318,6 +39655,7 @@ var COMPONENT_FIELDS = [
   "layouts",
   "properties",
   "styles",
+  "validation",
   "others",
   "parent"
 ];
@@ -38327,15 +39665,15 @@ var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts.desktop", "pare
 var STRUCTURE_QUERY_FIELDS = ["id", "name", "kind", "data_source_id"];
 var STRUCTURE_EVENT_FIELDS = ["id", "name", "sourceId", "target"];
 var UNSAFE_PATH_SEGMENTS = /* @__PURE__ */ new Set(["__proto__", "prototype", "constructor"]);
-function validatePaths(paths, roots, label) {
+function validatePaths(paths, roots, label2) {
   const allowedRoots = new Set(roots);
   for (const path of paths) {
     const segments = path.split(".");
     if (!path || segments.some((segment) => !segment || UNSAFE_PATH_SEGMENTS.has(segment))) {
-      throw new Error(`${label} contains an invalid path: "${path}".`);
+      throw new Error(`${label2} contains an invalid path: "${path}".`);
     }
     if (!allowedRoots.has(segments[0])) {
-      throw new Error(`${label} path "${path}" must start with one of: ${roots.join(", ")}.`);
+      throw new Error(`${label2} path "${path}" must start with one of: ${roots.join(", ")}.`);
     }
   }
 }
@@ -38431,7 +39769,7 @@ function getAppSummaryTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
+    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
       sections: external_exports.array(external_exports.enum(["pages", "queries", "events"])).optional(),
@@ -38456,6 +39794,23 @@ function getAppSummaryTool(client) {
     },
     async handler(args) {
       try {
+        for (const key of [
+          "page_ids",
+          "page_names",
+          "page_handles",
+          "component_ids",
+          "component_names",
+          "component_types",
+          "query_ids",
+          "query_names",
+          "query_kinds",
+          "event_ids",
+          "event_source_ids"
+        ]) {
+          if (args[key]?.some((value) => !value.trim() || value === "*" || value === "00000000-0000-0000-0000-000000000000")) {
+            throw new Error(`${key} contains a placeholder, not an exact selector. Omit unused filters entirely; wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.`);
+          }
+        }
         const summary = await client.getAppSummary(args.app_id);
         return ok(selectAppSummary(summary, {
           sections: args.sections,
@@ -38494,7 +39849,7 @@ function getComponentTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "Fetch ONE placed component by id \u2014 its actual bound values only: { id, name, type, page_id, layouts, properties, styles, others }. Cheaper than get_app_summary when you only need to inspect or diff a single component before update_component.",
+    description: "Fetch ONE placed component by id \u2014 its actual bound values only: { id, name, type, page_id, layouts, properties, styles, validation, others }. Includes actual native input validation. Cheaper than get_app_summary when you only need to inspect or diff a single component before update_component.",
     inputSchema: {
       app_id: external_exports.string(),
       component_id: external_exports.string()
@@ -38558,7 +39913,7 @@ var ACTION_IDS = /* @__PURE__ */ new Set([
   "set-localstorage-value",
   "scroll-component-into-view"
 ]);
-function propVal2(properties, key) {
+function propVal3(properties, key) {
   const value = properties?.[key];
   return value && typeof value === "object" && "value" in value ? value.value : value;
 }
@@ -38579,7 +39934,7 @@ function validateTableColumnRef(source2, ref) {
     return `Table Button-column ref "${ref}" is malformed.`;
   const columnRef = ref.slice(0, separator);
   const buttonId = ref.slice(separator + 2);
-  const columns = propVal2(source2.properties, "columns");
+  const columns = propVal3(source2.properties, "columns");
   if (!Array.isArray(columns))
     return `Table "${source2.name ?? source2.id}" has no explicit columns array for ref "${ref}".`;
   const column = columns.find((candidate) => {
@@ -38623,53 +39978,115 @@ function validateEvents(summary, events, options2 = {}) {
   const queries = new Set(summary.queries.map((query) => query.id));
   const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
+  const pageOfComponent = new Map(summary.pages.flatMap((page) => page.components.map((c) => [c.id, page.id])));
+  const pageName = new Map(summary.pages.map((page) => [page.id, page.name ?? page.handle ?? page.id]));
+  const queryTriggerPages = /* @__PURE__ */ new Map();
+  const noteTrigger = (queryId, pageId) => {
+    if (!queryId)
+      return;
+    const set2 = queryTriggerPages.get(queryId) ?? /* @__PURE__ */ new Set();
+    set2.add(pageId ?? "*");
+    queryTriggerPages.set(queryId, set2);
+  };
+  for (const query of summary.queries) {
+    const opts = query.options && typeof query.options === "object" ? query.options : {};
+    const onLoad = opts.runOnPageLoad;
+    const raw = onLoad && typeof onLoad === "object" ? onLoad.value : onLoad;
+    if (raw === true || String(raw ?? "").replace(/[{}\s]/g, "").toLowerCase() === "true")
+      noteTrigger(query.id, void 0);
+  }
+  for (const persisted of summary.events ?? []) {
+    const payload = persisted.event && typeof persisted.event === "object" ? persisted.event : void 0;
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const queryId = String(payload.queryId ?? "");
+    if (persisted.target === "page")
+      noteTrigger(queryId, persisted.sourceId);
+    else if (persisted.target === "component" && persisted.sourceId)
+      noteTrigger(queryId, pageOfComponent.get(persisted.sourceId));
+  }
+  for (const event of events) {
+    if (event.action?.actionId !== "run-query")
+      continue;
+    const queryId = String(event.action.queryId ?? "");
+    if (event.sourceType === "page")
+      noteTrigger(queryId, event.sourceId);
+    else if (event.sourceType === "component" || event.sourceType === "table_column")
+      noteTrigger(queryId, pageOfComponent.get(event.sourceId));
+  }
+  const pageScopedTarget = (action) => {
+    const id = action.actionId;
+    if (id === "set-table-page")
+      return typeof action.table === "string" ? action.table : void 0;
+    if (id === "control-component" || id === "scroll-component-into-view")
+      return typeof action.componentId === "string" ? action.componentId : void 0;
+    if (id === "show-modal" || id === "close-modal")
+      return typeof action.modal === "string" ? action.modal : void 0;
+    return void 0;
+  };
   events.forEach((event, index) => {
-    const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
+    const label2 = event.name ? `Event "${event.name}"` : `Event[${index}]`;
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: component source "${event.sourceId}" does not exist.`);
       else if (source2.type) {
         const schema = getComponentSchema(source2.type);
         const validTriggers = schema?.events?.map((item) => item.id) ?? [];
         if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
+          errors.push(`${label2}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
         }
-        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal2(source2.properties, "openModalOnCardClick"))) {
-          errors.push(`${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
+        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick"))) {
+          errors.push(`${label2}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, or remove this handler and use a separate supported detail flow.`);
         }
       }
     } else if (event.sourceType === "data_query") {
       if (!queries.has(event.sourceId))
-        errors.push(`${label}: query source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: query source "${event.sourceId}" does not exist.`);
       if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
-        errors.push(`${label}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
+        errors.push(`${label2}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
       }
     } else if (event.sourceType === "page") {
       if (!pages.has(event.sourceId))
-        errors.push(`${label}: page source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: page source "${event.sourceId}" does not exist.`);
       if (event.trigger !== "onPageLoad")
-        errors.push(`${label}: page trigger must be onPageLoad, not "${event.trigger}".`);
+        errors.push(`${label2}: page trigger must be onPageLoad, not "${event.trigger}".`);
     } else if (event.sourceType === "table_column") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label}: Table source "${event.sourceId}" does not exist.`);
+        errors.push(`${label2}: Table source "${event.sourceId}" does not exist.`);
       else if (source2.type !== "Table")
-        errors.push(`${label}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
+        errors.push(`${label2}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
       else {
         if (event.trigger !== "onClick")
-          errors.push(`${label}: Table Button-column trigger must be onClick.`);
+          errors.push(`${label2}: Table Button-column trigger must be onClick.`);
         const refError = validateTableColumnRef(source2, event.ref);
         if (refError)
-          errors.push(`${label}: ${refError}`);
+          errors.push(`${label2}: ${refError}`);
       }
     } else if (event.sourceType === "table_action") {
-      errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
+      errors.push(`${label2}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
     }
     const actionId = event.action.actionId;
     if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
-      errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
+      errors.push(`${label2}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
+    }
+    const targetId = pageScopedTarget(event.action);
+    const targetPage = targetId ? pageOfComponent.get(targetId) : void 0;
+    if (targetId && targetPage) {
+      const targetLabel = `${components.get(targetId)?.type ?? "component"} "${components.get(targetId)?.name ?? targetId}" on page "${pageName.get(targetPage)}"`;
+      const sourcePage = event.sourceType === "page" ? event.sourceId : event.sourceType === "component" || event.sourceType === "table_column" ? pageOfComponent.get(event.sourceId) : void 0;
+      if (sourcePage && sourcePage !== targetPage) {
+        errors.push(`${label2}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action only reaches components on the page that is open; on another page the target is not mounted and the action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a component there), or drop it: switch-page mounts that page fresh.`);
+      } else if (event.sourceType === "data_query") {
+        const triggerPages = queryTriggerPages.get(event.sourceId);
+        const elsewhere = triggerPages ? [...triggerPages].filter((page) => page !== targetPage) : [];
+        if (elsewhere.length) {
+          const where = elsewhere.includes("*") ? "on every page load (runOnPageLoad)" : `from page "${elsewhere.map((p) => pageName.get(p) ?? p).join('", "')}"`;
+          errors.push(`${label2}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, where that component is not mounted, so the success handler fails at runtime. Move the action to page "${pageName.get(targetPage)}" (its onPageLoad, or the filter's own event there), or run the query only from that page.`);
+        }
+      }
     }
     if (actionId === "run-query") {
       let queryId = event.action.queryId;
@@ -38677,19 +40094,19 @@ function validateEvents(summary, events, options2 = {}) {
         const resolution = resolveRef2(summary.queries, queryId, "Query", "in this app");
         if (resolution.ok) {
           if (resolution.warning)
-            warnings.push(`${label}: ${resolution.warning}`);
+            warnings.push(`${label2}: ${resolution.warning}`);
           queryId = resolution.target.id;
           event.action.queryId = queryId;
         }
       }
       if (typeof queryId !== "string" || !queries.has(queryId)) {
         const available = summary.queries.map((q) => `${q.name ?? "(unnamed)"}=${q.id}`).join(", ");
-        errors.push(`${label}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
+        errors.push(`${label2}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
       } else if (event.sourceType === "component" && event.trigger === "onClick") {
         const source2 = components.get(event.sourceId);
         const query = queryById.get(queryId);
         if (source2?.type === "Button" && query && isMutationQuery(query)) {
-          const disabled = propVal2(source2.properties, "disabledState");
+          const disabled = propVal3(source2.properties, "disabledState");
           const guarded = typeof disabled === "string" && disabled.includes("{{") && /isloading/i.test(disabled);
           if (!guarded) {
             warnings.push(`Button "${source2.name ?? source2.id}" runs the mutation query "${query.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`);
@@ -38700,47 +40117,47 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "switch-page") {
       const pageId = event.action.pageId;
       if (typeof pageId !== "string" || !pages.has(pageId)) {
-        errors.push(`${label}: switch-page target "${String(pageId)}" does not exist.`);
+        errors.push(`${label2}: switch-page target "${String(pageId)}" does not exist.`);
       }
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
       const target = typeof modal === "string" ? components.get(modal) : void 0;
       if (!target) {
-        errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
+        errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
       } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
-        errors.push(`${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
+        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
       const target = typeof componentId === "string" ? components.get(componentId) : void 0;
       if (!target) {
-        errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
+        errors.push(`${label2}: control-component target "${String(componentId)}" does not exist.`);
       } else {
         const handle = event.action.componentSpecificActionHandle;
         const schema = target.type ? getComponentSchema(target.type) : null;
         const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
         if (!nonEmptyString(handle)) {
-          errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
+          errors.push(`${label2}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
-            errors.push(`${label}: componentSpecificActionParams must be an array.`);
+            errors.push(`${label2}: componentSpecificActionParams must be an array.`);
           } else if (Array.isArray(params)) {
             const supplied = new Set(params.flatMap((param) => isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []));
             if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
-              errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
+              errors.push(`${label2}: every componentSpecificActionParams entry requires a string handle.`);
             }
             const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
             const missing = requiredHandles.filter((required3) => !supplied.has(required3));
             if (missing.length) {
-              errors.push(`${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
+              errors.push(`${label2}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
             }
           } else if ((componentAction.params?.length ?? 0) > 0) {
-            errors.push(`${label}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
+            errors.push(`${label2}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
           }
         }
       }
@@ -38748,48 +40165,48 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "scroll-component-into-view") {
       const componentId = event.action.componentId;
       if (typeof componentId !== "string" || !components.has(componentId)) {
-        errors.push(`${label}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
+        errors.push(`${label2}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
       }
     }
     if (actionId === "show-alert") {
       if (!nonEmptyString(event.action.message))
-        errors.push(`${label}: show-alert requires a non-empty message.`);
+        errors.push(`${label2}: show-alert requires a non-empty message.`);
       if (!["success", "info", "warning", "error"].includes(String(event.action.alertType))) {
-        errors.push(`${label}: show-alert alertType must be success, info, warning, or error.`);
+        errors.push(`${label2}: show-alert alertType must be success, info, warning, or error.`);
       }
     }
     if (["set-custom-variable", "set-page-variable", "set-localstorage-value"].includes(actionId)) {
       if (!nonEmptyString(event.action.key))
-        errors.push(`${label}: ${actionId} requires a non-empty key.`);
+        errors.push(`${label2}: ${actionId} requires a non-empty key.`);
       if (!Object.prototype.hasOwnProperty.call(event.action, "value"))
-        errors.push(`${label}: ${actionId} requires value.`);
+        errors.push(`${label2}: ${actionId} requires value.`);
     }
     if (actionId === "unset-custom-variable" && !nonEmptyString(event.action.key)) {
-      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
+      errors.push(`${label2}: unset-custom-variable requires a non-empty key.`);
     }
     if (actionId === "open-webpage" && !nonEmptyString(event.action.url)) {
-      errors.push(`${label}: open-webpage requires a non-empty url.`);
+      errors.push(`${label2}: open-webpage requires a non-empty url.`);
     }
     if (actionId === "copy-to-clipboard" && !Object.prototype.hasOwnProperty.call(event.action, "contentToCopy")) {
-      errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
+      errors.push(`${label2}: copy-to-clipboard requires contentToCopy.`);
     }
     if (actionId === "set-table-page") {
       const tableId = event.action.table;
       const table = typeof tableId === "string" ? components.get(tableId) : void 0;
       if (!table) {
-        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
+        errors.push(`${label2}: set-table-page Table target "${String(tableId)}" does not exist.`);
       } else if (table.type !== "Table") {
-        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
+        errors.push(`${label2}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
       }
       const pageIndex = event.action.pageIndex;
       if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
-        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
+        errors.push(`${label2}: set-table-page requires a numeric value or binding in pageIndex.`);
       }
     }
     if (actionId === "generate-file") {
       const format = ["fileType", "type", "format", "extension"].map((key) => event.action[key]).find((value) => typeof value === "string");
       if (format && /\bpdf\b/i.test(format)) {
-        warnings.push(`${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
+        warnings.push(`${label2}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
       }
     }
   });
@@ -38826,13 +40243,30 @@ function validateEvents(summary, events, options2 = {}) {
   });
   for (const chain of chains.values()) {
     chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
+    chain.forEach(({ event }, index) => {
+      if (event.action.actionId !== "control-component" || !["selectOption", "selectOptions", "setText", "setValue"].includes(String(event.action.componentSpecificActionHandle)))
+        return;
+      let child = components.get(String(event.action.componentId));
+      const visited = /* @__PURE__ */ new Set();
+      while (child?.parent && !visited.has(child.id)) {
+        visited.add(child.id);
+        const parent = components.get(decodeComponentParent(child.parent).parentId);
+        if (!parent)
+          break;
+        if (parent.type === "ModalV2" && chain.slice(index + 1).some(({ event: later2 }) => later2.action.actionId === "show-modal" && later2.action.modal === parent.id)) {
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" before show-modal. Closed modal children are not mounted; these values can be lost. Bind input defaults to the selected record, or initialize after the modal opens.`);
+          break;
+        }
+        child = parent;
+      }
+    });
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
     if (navigationIndex === -1 || navigationIndex === chain.length - 1)
       continue;
     const navigation = chain[navigationIndex];
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
-    errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
+    const label2 = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
+    errors.push(`${label2}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
@@ -39729,7 +41163,7 @@ function validateQueryOptions(kind, options2) {
   if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
     const filtersPath = `${operation}.where_filters`;
     const filters = valueAtPath(options2, filtersPath);
-    if (isObject2(filters)) {
+    if (isObject2(filters) || Array.isArray(filters)) {
       const usable = Object.entries(filters).filter(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
       if (usable.length === 0) {
         const example = Object.keys(filters)[0];
@@ -39745,6 +41179,57 @@ function validateQueryOptions(kind, options2) {
         path: filtersPath,
         message: `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.`
       });
+    }
+  }
+  if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
+    const filters = valueAtPath(options2, `${operation}.where_filters`);
+    if (isObject2(filters) || Array.isArray(filters)) {
+      for (const [mapKey, rawClause] of Object.entries(filters)) {
+        const aliases = {
+          equals: "eq",
+          equal: "eq",
+          "==": "eq",
+          "===": "eq",
+          "=": "eq",
+          not_equals: "neq",
+          notEquals: "neq",
+          "!=": "neq",
+          "!==": "neq",
+          "<>": "neq",
+          greater_than: "gt",
+          greaterThan: "gt",
+          ">": "gt",
+          greater_than_or_equal: "gte",
+          ">=": "gte",
+          less_than: "lt",
+          lessThan: "lt",
+          "<": "lt",
+          less_than_or_equal: "lte",
+          "<=": "lte"
+        };
+        if (isObject2(rawClause) && typeof rawClause.operator === "string" && Object.hasOwn(aliases, rawClause.operator)) {
+          errors.push({
+            code: "invalid_tooljetdb_filter_operator",
+            path: `${operation}.where_filters.${mapKey}.operator`,
+            message: `ToolJet DB filter operator "${rawClause.operator}" is not a PostgREST builder operator. Use "${aliases[rawClause.operator]}" for this comparison; keep the same column and value. The query was not automatically rewritten. Fetch the datasource operation contract if unsure.`
+          });
+        }
+        if (!isObject2(rawClause) || rawClause.operator !== "eq")
+          continue;
+        const column = typeof rawClause.column === "string" ? rawClause.column : "";
+        const value = typeof rawClause.value === "string" ? rawClause.value : "";
+        const dateLikeColumn = /(^|_)(date|day|time|at|on)$|_date_|timestamp/i.test(column);
+        const dayValue = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) || /format\(\s*['"]YYYY-MM-DD['"]\s*\)/.test(value);
+        if (!dayValue && !dateLikeColumn)
+          continue;
+        if (!dayValue && !/moment\(|new Date|Date\.now/.test(value))
+          continue;
+        warnings.push({
+          code: "date_equality_filter",
+          path: `${operation}.where_filters.${mapKey}`,
+          message: `ToolJet DB ${operation} filter "${column}" uses "eq" against a calendar day. Date and timestamp columns come back as full ISO timestamps ("2026-09-04T00:00:00+00:00"), so equality with "YYYY-MM-DD" matches no rows and the table shows "No data" with no error. Filter a day as a range instead: one clause "gte" the day at 00:00 and one "lt" the next day, or store the day in a text column seeded as YYYY-MM-DD when this build creates the table.`
+        });
+      }
     }
   }
   if (kind === "tooljetdb" && operation === "list_rows") {
@@ -39830,14 +41315,14 @@ function validatePersistedAppSummary(summary) {
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const query of summary.queries) {
-    const label = `Query "${query.name ?? query.id}"`;
+    const label2 = `Query "${query.name ?? query.id}"`;
     if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
-      warnings.push(`${label}: kind/options are unavailable, so its datasource contract was not validated.`);
+      warnings.push(`${label2}: kind/options are unavailable, so its datasource contract was not validated.`);
       continue;
     }
     const validation = validateQueryOptions(query.kind, query.options);
-    errors.push(...issueMessages(validation.errors, label));
-    warnings.push(...issueMessages(validation.warnings, label));
+    errors.push(...issueMessages(validation.errors, label2));
+    warnings.push(...issueMessages(validation.warnings, label2));
   }
   return {
     ok: errors.length === 0,
@@ -40049,12 +41534,12 @@ function alertEvent(queryId, queryName, trigger, alert, defaultType) {
     name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
   };
 }
-function unique(values, label, sourceName, warnings) {
+function unique(values, label2, sourceName, warnings) {
   const seen = /* @__PURE__ */ new Set();
   const result = [];
   for (const value of values) {
     if (seen.has(value)) {
-      warnings.push(`Query "${sourceName}" lifecycle listed ${label} "${value}" more than once; duplicate ignored.`);
+      warnings.push(`Query "${sourceName}" lifecycle listed ${label2} "${value}" more than once; duplicate ignored.`);
       continue;
     }
     seen.add(value);
@@ -40232,8 +41717,21 @@ function normalizeComponentSpec(component, options2 = {}) {
     stylePatch[key] = stylesValue[key];
     normalizedSections.styles.value = stylesValue;
   };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key) => {
+    if (knownPropertyKeys?.has(key))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
   for (const key of Object.keys(properties)) {
-    const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
     const belongsInStyles = canonical !== "styles" && STYLE_KEYS_IN_PROPERTIES.has(canonical);
     if (!aliasTarget && !belongsInStyles)
@@ -40335,8 +41833,8 @@ function normalizeComponentSpec(component, options2 = {}) {
     }
   }
   if (options2.stripUnknownKeys) {
-    const schema = getComponentSchema(component.type);
-    if (schema) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
       const sections = [
         ["properties", properties],
         ["styles", normalizedSections.styles.value]
@@ -40344,7 +41842,7 @@ function normalizeComponentSpec(component, options2 = {}) {
       for (const [section, sectionValue] of sections) {
         if (!sectionValue)
           continue;
-        const knownKeys = (schema[section] ?? []).map((entry) => entry.key);
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
         for (const key of Object.keys(sectionValue)) {
           if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
             continue;
@@ -40394,7 +41892,7 @@ function normalizeComponentSpec(component, options2 = {}) {
 // dist/layoutNormalization.js
 function normalizePlannedLayouts(component) {
   const warnings = [];
-  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const label2 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
   const targets = [];
   if (component.layout)
     targets.push(["layout", component.layout]);
@@ -40413,10 +41911,10 @@ function normalizePlannedLayouts(component) {
       continue;
     if (textMinimum !== void 0 && rect2.height < textMinimum) {
       fixed.set(name, { ...rect2, height: textMinimum });
-      warnings.push(`${label}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
+      warnings.push(`${label2}: raised ${name} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
     } else if (compactHeight !== void 0 && rect2.height > compactHeight) {
       fixed.set(name, { ...rect2, height: compactHeight });
-      warnings.push(`${label}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+      warnings.push(`${label2}: lowered ${name} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
     }
   }
   if (!fixed.size)
@@ -40586,6 +42084,8 @@ function lintPlannedApp(spec, existingSummary) {
     if (existingQueryNames.has(query.name))
       errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
+    if (ref !== query.name)
+      registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
     let options2 = query.options;
     if (!query.kind) {
@@ -40786,10 +42286,11 @@ function lintPlannedApp(spec, existingSummary) {
   const structure = validateAppStructure(summary);
   errors.push(...structure.errors);
   warnings.push(...structure.warnings);
+  const deduped = dropUnprefixedDuplicates(errors);
   return {
-    ok: unique2(errors).length === 0,
-    errors: unique2(errors),
-    warnings: unique2(warnings),
+    ok: deduped.length === 0,
+    errors: deduped,
+    warnings: dropUnprefixedDuplicates(warnings),
     checked,
     not_checked: [
       "server acceptance of writes or external datasource connectivity",
@@ -40827,18 +42328,23 @@ function sourceMap(sourceType, components, queries, pages) {
     return pages;
   return components;
 }
-function resolveAction(raw, queries, pages, components, errors, label) {
-  const { target_ref: targetRef, ...action } = raw;
+function resolveAction(raw, queries, pages, components, errors, label2) {
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
+  if (Object.values(action).some((value) => typeof value === "string" && /^planned-(query|page|component):/.test(value))) {
+    errors.push(`${label2}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    return action;
+  }
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string") {
-    errors.push(`${label} target_ref must be a string.`);
+    errors.push(`${label2} target_ref must be a string.`);
     return action;
   }
   const actionId = action.actionId;
   const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
   if (!target) {
-    errors.push(`${label} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
+    errors.push(`${label2} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
   if (actionId === "run-query")
@@ -40854,22 +42360,22 @@ function resolveAction(raw, queries, pages, components, errors, label) {
     return { ...action, table: target.id };
   return action;
 }
-function resolveRefs(refs2, map2, errors, label) {
+function resolveRefs(refs2, map2, errors, label2) {
   return refs2?.flatMap((ref) => {
     const value = map2.get(ref);
     if (!value) {
-      errors.push(`${label} ref "${ref}" does not exist.`);
+      errors.push(`${label2} ref "${ref}" does not exist.`);
       return [];
     }
     return [value.id];
   });
 }
-function resolveRef3(ref, map2, errors, label) {
+function resolveRef3(ref, map2, errors, label2) {
   if (!ref)
     return void 0;
   const value = map2.get(ref);
   if (!value) {
-    errors.push(`${label} ref "${ref}" does not exist.`);
+    errors.push(`${label2} ref "${ref}" does not exist.`);
     return void 0;
   }
   return value.id;
@@ -40879,6 +42385,11 @@ function slug(value) {
 }
 function unique2(values) {
   return [...new Set(values)];
+}
+function dropUnprefixedDuplicates(values) {
+  const distinct = unique2(values);
+  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
+  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
 
 // dist/componentBatch.js
@@ -40924,6 +42435,17 @@ function prepareComponentBatch(inputs) {
     const geometry = normalizePlannedLayouts(definition.component);
     return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
   });
+  const heightFixes = [];
+  for (const result of normalized2) {
+    const component = result.component;
+    const fix = suggestedHtmlHeight(component);
+    if (!fix)
+      continue;
+    for (const rect2 of [component.layout, component.layouts?.desktop])
+      if (rect2 && typeof rect2.height === "number")
+        rect2.height = fix.to;
+    heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
+  }
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
@@ -40941,6 +42463,7 @@ function prepareComponentBatch(inputs) {
       ...normalized2.flatMap((item) => item.warnings),
       ...expanded.warnings,
       ...lint.warnings,
+      ...heightFixes,
       ...lateListviewChildWarnings
     ]
   };
@@ -41056,7 +42579,51 @@ function consumeAppPlan(planToken) {
   return plan;
 }
 
+// dist/tableQueryCompatibility.js
+function updateRowsCompatibilityWarning(kind, options2, tableName, columns) {
+  if (kind !== "tooljetdb" || options2.operation !== "update_rows" || !columns?.length)
+    return;
+  if (columns.includes("id"))
+    return;
+  return `Table "${tableName}" has no id column, but this query uses update_rows. ToolJet deployments that append order=id to the PATCH will fail even when the filter uses the correct custom primary key. For a new schema, prefer the automatically generated serial id and keep the business reference as a separate unique column. For an existing schema, inspect the primary key and the bulk_update_with_primary_key contract. Use that operation only if it preserves the requested targeting: never drop expected-state, ownership, tenant, or other where_filters to convert the query. If extra predicates are required, use a supported conditional-write operation or report the capability gap. Do not recreate existing tables or execute a mutation just to test compatibility.`;
+}
+async function inspectUpdateCompatibility(client, queries) {
+  const targets = queries.filter((query) => query.kind === "tooljetdb" && query.options.operation === "update_rows");
+  if (!targets.length)
+    return [];
+  let tables;
+  try {
+    tables = await client.listTables();
+  } catch {
+    return ["update_rows primary-key compatibility was not checked: table metadata could not be read."];
+  }
+  const checks = /* @__PURE__ */ new Map();
+  return (await Promise.all(targets.map(async (query) => {
+    const tableId = query.options.table_id;
+    if (typeof tableId !== "string" || tableId.includes("{{")) {
+      return `Query "${query.name}": update_rows primary-key compatibility was not checked for a dynamic or missing table_id.`;
+    }
+    if (!checks.has(tableId))
+      checks.set(tableId, (async () => {
+        const table = tables.find((item) => item.id === tableId);
+        if (!table)
+          return "update_rows primary-key compatibility was not checked: table_id was not found in workspace metadata.";
+        try {
+          const schema = await client.getTableSchema(table.table_name);
+          if (!schema.length)
+            return `Table "${table.table_name}": update_rows primary-key compatibility was not checked because its schema was empty.`;
+          return updateRowsCompatibilityWarning("tooljetdb", query.options, table.table_name, schema.map((column) => column.name));
+        } catch {
+          return `Table "${table.table_name}": update_rows primary-key compatibility was not checked because its schema could not be read.`;
+        }
+      })());
+    const warning = await checks.get(tableId);
+    return warning ? `Query "${query.name}": ${warning}` : void 0;
+  }))).filter((warning) => !!warning);
+}
+
 // dist/tools/lintAppSpec.js
+var TABLE_NAME_MAX = 31;
 function unique3(values) {
   return [...new Set(values)];
 }
@@ -41078,7 +42645,7 @@ function lintAppSpecTool(client) {
         }
         const preflightErrors = [];
         const preflightWarnings = [];
-        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref));
+        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
@@ -41089,10 +42656,43 @@ function lintAppSpecTool(client) {
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
-          if (tableIds.has(key))
-            preflightErrors.push(`Planned table "${table.table_name}" already exists.`);
-          else
+          if (tableIds.has(key)) {
+            const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
+            if (hasSql) {
+              preflightErrors.push(`Planned table "${table.table_name}" already exists and this plan contains SQL queries. Rename the planned table and update all SQL references, seed data, table_ref and foreign keys together, then lint again. To reuse the existing table, remove it from tables instead.`);
+              continue;
+            }
+            const oldName = table.table_name;
+            const newName = nextTableName(oldName, tableIds);
+            table.table_name = newName;
+            for (const seed of args.seed_data ?? [])
+              if (seed.table_name === oldName)
+                seed.table_name = newName;
+            for (const query of args.queries ?? [])
+              if (query.table_ref === oldName)
+                query.table_ref = newName;
+            for (const other of args.tables ?? []) {
+              for (const fk of other.foreign_keys ?? []) {
+                const ref = fk;
+                for (const field of ["referencedTable", "referenced_table", "references_table"]) {
+                  if (ref[field] === oldName)
+                    ref[field] = newName;
+                }
+              }
+            }
+            preflightWarnings.push(`Planned table "${oldName}" already exists in this workspace, so it is created as "${newName}"; seed data, table_ref and foreign keys were updated to match. To reuse the existing table instead, drop it from tables and point queries at it with table_ref.`);
+            tableIds.set(newName.toLowerCase(), `planned-table:${newName}`);
+          } else
             tableIds.set(key, `planned-table:${table.table_name}`);
+        }
+        preflightWarnings.push(...autoFitHtmlHeights(args));
+        if (existingSummary) {
+          const plannedNames = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
+          const createsPages = (args.pages ?? []).some((page) => !existingSummary.pages.some((existing) => existing.name?.toLowerCase() === page.name.toLowerCase() || page.name === "Home" && existing.handle === "home"));
+          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames.has(page.name.toLowerCase()));
+          if (createsPages && abandoned.length) {
+            preflightErrors.push(`App already has ${abandoned.length} empty page(s) this plan does not touch: ${abandoned.map((page) => `"${page.name}"`).join(", ")}. Build on them (use the exact existing name in pages[]) or delete them with delete_page before creating new pages, so the app does not end up with duplicates.`);
+          }
         }
         const plannedTables = new Map((args.tables ?? []).map((table) => [table.table_name.toLowerCase(), table]));
         for (const seed of args.seed_data ?? []) {
@@ -41140,6 +42740,13 @@ function lintAppSpecTool(client) {
               preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
             else
               options2.table_id = tableId;
+          } else if ((datasourceKind ?? query.kind) === "tooljetdb" && typeof options2.table_id === "string") {
+            const known = new Set(existingTables.map((table) => table.id));
+            if (!known.has(options2.table_id)) {
+              const prefix = options2.table_id.slice(0, 8);
+              const nearest = existingTables.filter((table) => table.id.startsWith(prefix)).map((table) => `${table.table_name} (${table.id})`);
+              preflightErrors.push(`Query "${query.name}": table_id "${options2.table_id}" is not a table in this workspace` + (nearest.length ? `; the closest id is ${nearest.join(", ")}` : "") + ". Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.");
+            }
           }
           return {
             clientRef: query.client_ref,
@@ -41149,6 +42756,33 @@ function lintAppSpecTool(client) {
             options: options2
           };
         });
+        const schemas = /* @__PURE__ */ new Map();
+        for (const table of args.tables ?? []) {
+          const columns = table.columns.map((column) => column.name);
+          if (!table.columns.some((column) => column.primaryKey))
+            columns.push("id");
+          schemas.set(`planned-table:${table.table_name}`, columns);
+        }
+        const updateTableIds = new Set(queries.filter((query) => query.kind === "tooljetdb" && query.options.operation === "update_rows" && typeof query.options.table_id === "string").map((query) => query.options.table_id));
+        await Promise.all([...updateTableIds].map(async (tableId) => {
+          if (schemas.has(tableId))
+            return;
+          const table = existingTables.find((item) => item.id === tableId);
+          if (!table)
+            return;
+          try {
+            schemas.set(tableId, (await client.getTableSchema(table.table_name)).map((column) => column.name));
+          } catch {
+            preflightWarnings.push(`Could not inspect update_rows target "${table.table_name}"; primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
+          }
+        }));
+        for (const query of queries) {
+          const tableId = query.options.table_id;
+          const tableName = existingTables.find((table) => table.id === tableId)?.table_name ?? (args.tables ?? []).find((table) => `planned-table:${table.table_name}` === tableId)?.table_name ?? tableId;
+          const warning = updateRowsCompatibilityWarning(query.kind, query.options, tableName, schemas.get(tableId));
+          if (warning)
+            preflightWarnings.push(`Query "${query.name}": ${warning}`);
+        }
         const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
@@ -41209,6 +42843,51 @@ function lintAppSpecTool(client) {
     }
   };
 }
+function nextTableName(name, taken) {
+  for (let n = 2; n < 100; n++) {
+    const suffix = `_${n}`;
+    const candidate = `${name.slice(0, Math.max(1, TABLE_NAME_MAX - suffix.length))}${suffix}`;
+    if (!taken.has(candidate.toLowerCase()))
+      return candidate;
+  }
+  return `${name.slice(0, TABLE_NAME_MAX - 7)}_${Date.now().toString(36).slice(-6)}`;
+}
+function autoFitHtmlHeights(args) {
+  const warnings = [];
+  for (const page of args.pages ?? []) {
+    const components = page.components ?? [];
+    for (const component of components) {
+      if (component.type !== "Html")
+        continue;
+      const rect2 = component.layouts?.desktop ?? component.layout;
+      if (!rect2 || typeof rect2.height !== "number" || typeof rect2.top !== "number")
+        continue;
+      const fix = suggestedHtmlHeight(component);
+      if (!fix)
+        continue;
+      const delta = fix.to - fix.from;
+      const oldBottom = rect2.top + fix.from;
+      const parentOf = (c) => c.parent_ref ?? c.parent ?? "";
+      const moved = [];
+      for (const sibling of components) {
+        if (sibling === component || parentOf(sibling) !== parentOf(component))
+          continue;
+        for (const r of [sibling.layout, sibling.layouts?.desktop, sibling.layouts?.mobile]) {
+          if (r && typeof r.top === "number" && r.top >= oldBottom - 4)
+            r.top += delta;
+        }
+        const r0 = sibling.layouts?.desktop ?? sibling.layout;
+        if (r0 && typeof r0.top === "number" && r0.top - delta >= oldBottom - 4)
+          moved.push(sibling.name ?? sibling.client_ref ?? "?");
+      }
+      for (const r of [component.layout, component.layouts?.desktop])
+        if (r && typeof r.height === "number")
+          r.height = fix.to;
+      warnings.push(`Page "${page.name}": Html "${component.name ?? component.client_ref ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px, so its height is now ${fix.to}px` + (moved.length ? ` and ${moved.length} component(s) below it moved down ${delta}px (${[...new Set(moved)].join(", ")})` : "") + ". The plan was applied with these values.");
+    }
+  }
+  return warnings;
+}
 
 // dist/tools/applyAppPhase.js
 function logicalRef(value) {
@@ -41222,7 +42901,8 @@ function sourceTarget(sourceType, ref, pages, queries, components) {
   return components.get(ref);
 }
 function resolveAction2(raw, pages, queries, components) {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string")
@@ -41244,20 +42924,20 @@ function resolveAction2(raw, pages, queries, components) {
     return { ...action, table: target.id };
   return action;
 }
-function refs(values, targets, label) {
+function refs(values, targets, label2) {
   return values?.map((ref) => {
     const target = targets.get(ref);
     if (!target)
-      throw new Error(`${label} ref "${ref}" does not exist.`);
+      throw new Error(`${label2} ref "${ref}" does not exist.`);
     return target.id;
   });
 }
-function oneRef(value, targets, label) {
+function oneRef(value, targets, label2) {
   if (!value)
     return void 0;
   const target = targets.get(value);
   if (!target)
-    throw new Error(`${label} ref "${value}" does not exist.`);
+    throw new Error(`${label2} ref "${value}" does not exist.`);
   return target.id;
 }
 function appliedSummary(applied) {
@@ -41307,6 +42987,7 @@ function applyAppPhaseTool(client) {
     async handler(args) {
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = "consume plan";
+      let createdPageIds = [];
       try {
         const stored = consumeAppPlan(args.plan_token);
         const spec = stored.spec;
@@ -41383,6 +43064,7 @@ function applyAppPhaseTool(client) {
         const createdPages = pageWrite.status === "fulfilled" ? pageWrite.value : completedPartialWrites(pageWrite.reason);
         applied.tables = createdTables.length;
         applied.pages = createdPages.length;
+        createdPageIds = createdPages.map((page) => page.page_id);
         const foundationFailures = [
           ...tableWrite.status === "rejected" ? [`tables: ${tableWrite.reason instanceof Error ? tableWrite.reason.message : String(tableWrite.reason)}`] : [],
           ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
@@ -41458,6 +43140,7 @@ function applyAppPhaseTool(client) {
           if (!created)
             throw new Error(`Could not resolve query "${query.name}" after creation.`);
           queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
+          queryTargets.set(query.name, { id: created.query_id, name: created.name });
         });
         stage = "create page components";
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
@@ -41567,7 +43250,37 @@ function applyAppPhaseTool(client) {
           validation
         });
       } catch (error51) {
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed and no resources were auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}`));
+        let recovery = "";
+        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;
+        if (onlyFoundation && createdPageIds.length) {
+          const removed = [];
+          for (const pageId of createdPageIds) {
+            try {
+              await client.deletePage({ appId: args.app_id, versionId: args.version_id, pageId });
+              removed.push(pageId);
+            } catch {
+            }
+          }
+          if (removed.length) {
+            applied.pages -= removed.length;
+            recovery += ` Removed the ${removed.length} empty page(s) this phase had created, so the next plan can recreate them under the same names.`;
+          }
+        }
+        if (Object.values(applied).some((count) => count > 0)) {
+          try {
+            const current = await client.getAppSummary(args.app_id);
+            recovery = " Persisted resources for targeted repair (do not recreate): " + JSON.stringify({
+              pages: current.pages.map((page) => ({
+                id: page.id,
+                name: page.name,
+                components: page.components.map((c) => ({ id: c.id, name: c.name }))
+              })),
+              queries: current.queries.map((q) => ({ id: q.id, name: q.name }))
+            }).slice(0, 12e3);
+          } catch {
+          }
+        }
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
       }
     }
   };
@@ -41665,12 +43378,12 @@ function addPagesTool(client) {
 }
 
 // dist/tools/updatePages.js
-var updateSchema = external_exports.object({
+var updateSchema = strictEntry({
   page_id: external_exports.string().min(1),
   name: external_exports.string().min(1).optional(),
   icon: external_exports.string().min(1).optional(),
   hidden: external_exports.boolean().optional().describe("Hide or show only this non-Home page in the generated navigation menu. This does not hide the whole menu; use update_app_settings.navigation_hidden for that.")
-});
+}, (key) => `Page update key "${key}" is not accepted; update_pages entries take page_id plus name, icon, hidden. App-level settings belong to update_app_settings.`);
 function updatePagesTool(client) {
   return {
     name: "update_pages",
@@ -41807,6 +43520,7 @@ function addQueryTool(client) {
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options: options2 }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
@@ -41878,6 +43592,11 @@ function addQueriesTool(client) {
           });
           return { query: { ...query, options: options2 }, kind: datasource.kind };
         });
+        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
+          name: query.name,
+          kind,
+          options: query.options
+        }))));
         const result = await client.createQueries({
           versionId: args.version_id,
           queries: resolved.map(({ query, kind }) => ({
@@ -42077,19 +43796,29 @@ function addComponentBatchesTool(client) {
 }
 
 // dist/tools/updateComponents.js
-var updateSchema2 = external_exports.object({
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
   component_id: external_exports.string(),
-  definition: external_exports.object({
-    properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-    others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-  }).optional(),
+  definition: definitionSchema.optional(),
   name: external_exports.string().optional(),
   parent: external_exports.string().optional(),
   slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
 });
 function updateComponentsTool(client) {
   return {
@@ -42100,7 +43829,7 @@ function updateComponentsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.",
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42118,6 +43847,7 @@ function updateComponentsTool(client) {
         const errors = [];
         const changedComponents = [];
         let placementChanged = false;
+        const layoutFixes = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
@@ -42131,6 +43861,10 @@ function updateComponentsTool(client) {
           const componentId = current.id;
           if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
             errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
             continue;
           }
           let parent = update.parent;
@@ -42169,6 +43903,13 @@ function updateComponentsTool(client) {
             parent: next.parent
           });
           const normalizedNext = { ...normalized2.component, id: current.id };
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
+          const desktopRect = current.layouts?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
+            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
+            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
+            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
+          }
           projected.set(current.id, normalizedNext);
           if (update.definition)
             changedComponents.push({ before: current, after: normalizedNext });
@@ -42217,6 +43958,9 @@ function updateComponentsTool(client) {
           pageId: args.page_id,
           updates: resolvedUpdates
         });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
         return fail(err);
@@ -42319,6 +44063,25 @@ function deleteComponentsTool(client) {
 
 // dist/tools/updateLayout.js
 var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var layoutEntrySchema = strictEntry({
+  component_id: external_exports.string(),
+  desktop: rect.optional(),
+  mobile: rect.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+}, (key) => {
+  if (RECT_KEYS.has(key)) {
+    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+  }
+  if (key === "definition" || key === "properties" || key === "styles") {
+    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+  }
+  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+});
 function updateLayoutTool(client) {
   return {
     name: "update_layout",
@@ -42333,13 +44096,7 @@ function updateLayoutTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      layouts: external_exports.array(external_exports.object({
-        component_id: external_exports.string(),
-        desktop: rect.optional(),
-        mobile: rect.optional(),
-        parent: external_exports.string().optional(),
-        slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
-      })).min(1)
+      layouts: external_exports.array(layoutEntrySchema).min(1)
     },
     async handler(args) {
       try {
@@ -42352,6 +44109,10 @@ function updateLayoutTool(client) {
         const resolveErrors = [];
         const resolvedIds = /* @__PURE__ */ new Map();
         for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
+            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
+            continue;
+          }
           if (resolvedIds.has(layout.component_id))
             continue;
           const resolution = resolveRef2(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
@@ -42638,6 +44399,7 @@ function updateQueryTool(client) {
         } else {
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
         }
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,
@@ -42753,6 +44515,17 @@ function deleteQueryTool(client) {
 
 // dist/tools/runQuery.js
 var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
+function queryResultBindingHint(query, result) {
+  const data = result.data;
+  const options2 = query.options;
+  if (result.status !== "ok" || query.kind !== "tooljetdb" || options2?.operation !== "sql_execution" || !data || !Array.isArray(data.results))
+    return void 0;
+  return {
+    rows_path: "data.results",
+    row_count: data.results.length,
+    guidance: "This ToolJet DB SQL read returned an object containing results. Bind row consumers to queries.<name>.data.results (or data?.results ?? []), not data.map/filter or data[0]. Other operations can return different shapes; preserve the actual returned contract."
+  };
+}
 function truncateRemoteResult(result) {
   if (!Object.prototype.hasOwnProperty.call(result, "data"))
     return { result };
@@ -42905,7 +44678,7 @@ function runQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: [...rows], ... } \u2014 HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: <datasource result>, ... }; data may be an array or an object (ToolJet DB SQL uses data.results). Inspect the actual shape before binding components. HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
     inputSchema: {
       query_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -42982,6 +44755,7 @@ function runQueryTool(client) {
           });
         }
         const failed = result.status === "failed";
+        const bindingHint = queryResultBindingHint(query, result);
         const recovery = failed ? failureRecovery(query, result) : void 0;
         const verification = failed ? failureVerification(query, result) : void 0;
         const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
@@ -42990,6 +44764,7 @@ function runQueryTool(client) {
           warnings.push(output.warning);
         return ok({
           ...output.result,
+          ...bindingHint ? { binding_hint: bindingHint } : {},
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
           ...recovery ? { recovery } : {},
@@ -43068,17 +44843,19 @@ function runQueriesTool(client) {
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const failed = result.status === "failed";
+            const bindingHint = queryResultBindingHint(query, result);
             const recovery = failed ? failureRecovery(query, result) : void 0;
             const verification = failed ? failureVerification(query, result) : void 0;
             const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
             const shaped = args.include_data === false ? (() => {
               const { data, ...rest } = result;
-              return Array.isArray(data) ? { ...rest, row_count: data.length } : rest;
+              return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
             })() : result;
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
               ...shaped,
+              ...bindingHint ? { binding_hint: bindingHint } : {},
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {},
               ...verification ? { verification } : {},
@@ -43142,16 +44919,16 @@ function updateEventsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: 'Edit existing event handlers (batch) \u2014 e.g. change an action or its params \u2014 instead of deleting and re-adding. For updateType "update" you MUST include `name` and the full `event` blob ({ eventId, actionId, ...params }) per entry (name becomes null if omitted). For "reorder" only `index` is used. Get event ids from list_events.',
+    description: 'Edit existing event handlers (batch) \u2014 e.g. change an action or its params \u2014 instead of deleting and re-adding. For updateType "update" you MUST include `name` and the full `event` blob ({ eventId, actionId, ...params }) per entry (name becomes null if omitted). For "reorder" only `index` is used. Get event ids from list_events. Outer event_id identifies the saved handler; inner event.eventId is its trigger name (for example "onClick"), NOT the saved handler id.',
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
-      events: external_exports.array(external_exports.object({
+      events: external_exports.array(strictEntry({
         event_id: external_exports.string(),
         name: external_exports.string().optional(),
         event: external_exports.record(external_exports.string(), external_exports.any()).optional(),
         index: external_exports.number().optional()
-      })).min(1),
+      }, (key) => `Event entry key "${key}" must be nested under \`event\` (the full { eventId, actionId, ...params } blob). Accepted entry keys are event_id, name, event, index.`)).min(1),
       update_type: external_exports.enum(["update", "reorder"]).optional()
     },
     async handler(args) {
@@ -43166,6 +44943,12 @@ function updateEventsTool(client) {
           const missing = args.events.filter((event) => !event.name || !event.event);
           if (missing.length) {
             return fail(new Error('update_events with update_type="update" requires name and the full event blob for every entry.'));
+          }
+          const confused = args.events.find((entry) => entry.event?.eventId === entry.event_id);
+          if (confused) {
+            const persisted = summary.events.find((entry) => entry.id === confused.event_id);
+            const trigger = persisted?.event?.eventId;
+            return fail(new Error(`Event "${confused.name}": event.eventId must be the trigger name, not the saved event id. Keep event_id="${confused.event_id}" at the outer level; the current inner trigger is ${JSON.stringify(trigger)}. Use that trigger unless intentionally changing it to another supported trigger. Do not put onClick in event.event.`));
           }
         } else if (args.events.some((event) => event.index === void 0)) {
           return fail(new Error('update_events with update_type="reorder" requires index for every entry.'));
@@ -43305,6 +45088,7 @@ function getRuntimeInfoTool(runtime) {
 }
 
 // dist/tools/manageTheme.js
+var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
 var colorPair = external_exports.object({
   light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
   dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
@@ -43353,9 +45137,9 @@ var themeDefinition = external_exports.object({
     }).strict()
   }).strict()
 }).strict();
-function requireValue(value, label) {
+function requireValue(value, label2) {
   if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
+    throw new Error(`manage_theme requires ${label2} for this action.`);
   return value;
 }
 async function readTheme(client, themeId) {
@@ -43415,12 +45199,26 @@ function manageThemeTool(client) {
               ]
             });
           }
-          const created = await client.createAppTheme({
-            name,
-            definition: requireValue(args.definition, "definition"),
-            isDefault: args.is_default ?? false
-          });
-          return ok({ theme: created });
+          try {
+            const created = await client.createAppTheme({
+              name,
+              definition: requireValue(args.definition, "definition"),
+              isDefault: args.is_default ?? false
+            });
+            return ok({ theme: created });
+          } catch (error51) {
+            if (error51 instanceof ToolJetHttpError && error51.status === 451) {
+              return ok({
+                theme: null,
+                licensed: false,
+                user_message: THEME_LICENCE_USER_MESSAGE,
+                warnings: [
+                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
+                ]
+              });
+            }
+            throw error51;
+          }
         }
         const themeId = requireValue(args.theme_id, "theme_id");
         await readTheme(client, themeId);
@@ -43449,9 +45247,9 @@ function manageThemeTool(client) {
 }
 
 // dist/tools/manageAppPermissions.js
-function requireValue2(value, label) {
+function requireValue2(value, label2) {
   if (value === void 0)
-    throw new Error(`${label} is required for this action.`);
+    throw new Error(`${label2} is required for this action.`);
   return value;
 }
 function findResource(summary, resourceType, resourceId) {
@@ -43622,9 +45420,9 @@ function listWorkspaceUsersTool(client) {
     }
   };
 }
-function required2(value, label) {
+function required2(value, label2) {
   if (!value)
-    throw new Error(`${label} is required for this action.`);
+    throw new Error(`${label2} is required for this action.`);
   return value;
 }
 function manageWorkspaceUsersTool(client) {

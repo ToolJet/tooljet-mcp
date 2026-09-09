@@ -111,6 +111,29 @@ describe('ToolJet DB maintenance tools', () => {
 });
 
 describe('update_components validation', () => {
+  it('blocks a malformed binding before persistence and permits repairing one', async () => {
+    const good = '{{(queries.loans.data || []).map(r => ({id:r.id}))}}';
+    const bad = '{{(queries.loans.data || []).map(r => ({id:r.id})) )}}';
+    for (const [before, after, blocked] of [[good, bad, true], [bad, good, false]] as const) {
+      const client = {
+        getAppSummary: vi.fn().mockResolvedValue({app_id:'app1', pages:[{id:'p1', components:[{
+          id:'c1', name:'loansTable', type:'Table', properties:{data:{value:before}}, styles:{},
+        }]}], queries:[], events:[]}),
+        updateComponents: vi.fn().mockResolvedValue({updated:1}),
+      } as unknown as ToolJetClient;
+      const result = await updateComponentsTool(client).handler({app_id:'app1',version_id:'v1',page_id:'p1',
+        updates:[{component_id:'c1',definition:{properties:{data:{value:after}}}}]});
+      if (blocked) {
+        expect(result.isError).toBe(true);
+        expect(result.content[0]!.text).toContain('invalid JavaScript binding syntax');
+        expect(client.updateComponents).not.toHaveBeenCalled();
+      } else {
+        expect(result.isError).not.toBe(true);
+        expect(client.updateComponents).toHaveBeenCalledTimes(1);
+      }
+    }
+  });
+
   it('refuses a style update that makes existing Text geometry unusable', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({
@@ -433,6 +456,23 @@ describe('update_layout geometry warnings', () => {
 });
 
 describe('update_events validation', () => {
+  it('explains saved handler identity versus trigger name before writing', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({app_id:'app1', pages:[{id:'p1',components:[{
+        id:'button1',name:'open',type:'Button',properties:{},
+      }]}], queries:[], events:[{id:'saved-event',name:'Open',sourceId:'button1',target:'component',
+        event:{eventId:'onClick',actionId:'show-alert',message:'Hi',alertType:'info'}}]}),
+      updateEvents: vi.fn(),
+    } as unknown as ToolJetClient;
+    const result = await updateEventsTool(client).handler({app_id:'app1',version_id:'v1',events:[{
+      event_id:'saved-event',name:'Open',event:{eventId:'saved-event',event:'onClick',actionId:'show-alert',message:'Hi'},
+    }]});
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('event.eventId must be the trigger name');
+    expect(result.content[0]!.text).toContain('current inner trigger is "onClick"');
+    expect(client.updateEvents).not.toHaveBeenCalled();
+  });
+
   it('accepts an update that keeps state-setting before the final navigation handler', async () => {
     const client = {
       getAppSummary: vi.fn().mockResolvedValue({

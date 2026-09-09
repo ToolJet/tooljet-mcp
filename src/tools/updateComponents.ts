@@ -1,3 +1,4 @@
+import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import {
@@ -15,23 +16,45 @@ import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } fr
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
+import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
 
-const updateSchema = z.object({
-  component_id: z.string(),
-  definition: z
-    .object({
-      properties: z.record(z.string(), z.any()).optional(),
-      styles: z.record(z.string(), z.any()).optional(),
-      validation: z.record(z.string(), z.any()).optional(),
-      general: z.record(z.string(), z.any()).optional(),
-      general_styles: z.record(z.string(), z.any()).optional(),
-      others: z.record(z.string(), z.any()).optional(),
-    })
-    .optional(),
-  name: z.string().optional(),
-  parent: z.string().optional(),
-  slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
-});
+const DEFINITION_SECTIONS = ['properties', 'styles', 'validation', 'general', 'general_styles', 'others'] as const;
+
+const definitionSchema = strictEntry(
+  {
+    properties: z.record(z.string(), z.any()).optional(),
+    styles: z.record(z.string(), z.any()).optional(),
+    validation: z.record(z.string(), z.any()).optional(),
+    general: z.record(z.string(), z.any()).optional(),
+    general_styles: z.record(z.string(), z.any()).optional(),
+    others: z.record(z.string(), z.any()).optional(),
+  },
+  (key) =>
+    key === 'layout' || key === 'layouts'
+      ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.`
+      : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join('/')}.`
+);
+
+// Unknown entry keys are rejected, never stripped: a stripped `properties` produced an empty diff
+// that ToolJet accepted with 200 and the tool reported as updated (see src/strictEntry.ts).
+const updateSchema = strictEntry(
+  {
+    component_id: z.string(),
+    definition: definitionSchema.optional(),
+    name: z.string().optional(),
+    parent: z.string().optional(),
+    slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+  },
+  (key) => {
+    if ((DEFINITION_SECTIONS as readonly string[]).includes(key)) {
+      return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+    }
+    if (key === 'layout' || key === 'layouts') {
+      return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+    }
+    return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
+  }
+);
 
 export function updateComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -49,7 +72,9 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
       'NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are ' +
       'REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, ' +
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +
-      'regions; omit parent to keep the current parent. Get component ids + current values from get_app_summary / get_component.',
+      'regions; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles ' +
+      'patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current ' +
+      'values from get_app_summary / get_component.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -77,6 +102,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const errors: string[] = [];
         const changedComponents: Array<{ before: LintComponent; after: LintComponent }> = [];
         let placementChanged = false;
+        const layoutFixes: Array<{ componentId: string; desktop: never }> = [];
         const resolvedUpdates: Array<{
           componentId: string;
           definition?: Record<string, unknown>;
@@ -102,6 +128,19 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           if (update.definition && (update.name !== undefined || update.parent !== undefined || update.slot_name !== undefined)) {
             errors.push(
               `Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`
+            );
+            continue;
+          }
+          // An entry with nothing to write must fail here. Letting it through produced an empty diff
+          // that ToolJet accepted with 200 and this tool reported as `updated`, so a model kept
+          // believing edits had landed when nothing was persisted.
+          if (
+            !hasNonEmptyDefinition(update.definition) &&
+            update.name === undefined && update.parent === undefined && update.slot_name === undefined
+          ) {
+            errors.push(
+              `Component "${update.component_id}": nothing to update. Send the changed leaves under definition ` +
+                '(properties/styles/validation/others) or a name/parent/slot_name change.'
             );
             continue;
           }
@@ -153,6 +192,18 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             parent: next.parent,
           });
           const normalizedNext = { ...normalized.component, id: current.id } as LintComponent;
+          // New markup that no longer fits its box: raise the box (a second, layout write) instead of
+          // rejecting the update. The plan and add paths do the same.
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext as never) : null;
+          const desktopRect = (current.layouts as { desktop?: Record<string, unknown> } | undefined)?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === 'number') {
+            normalizedNext.layouts = { ...(normalizedNext.layouts ?? {}), desktop: { ...(desktopRect as object), height: heightFix.to } } as LintComponent['layouts'];
+            layoutFixes.push({ componentId: current.id, desktop: { ...(desktopRect as object), height: heightFix.to } as never });
+            warnings.push(
+              `Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; ` +
+                `its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`
+            );
+          }
           projected.set(current.id, normalizedNext);
           if (update.definition) changedComponents.push({ before: current as LintComponent, after: normalizedNext });
           placementChanged ||= update.parent !== undefined || update.slot_name !== undefined;
@@ -209,6 +260,9 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           pageId: args.page_id,
           updates: resolvedUpdates,
         });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
         return fail(err);

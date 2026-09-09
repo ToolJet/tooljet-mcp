@@ -37,6 +37,7 @@ const COMPONENT_FIELDS = [
   'layouts',
   'properties',
   'styles',
+  'validation',
   'others',
   'parent',
 ] as const;

@@ -103,6 +103,22 @@ describe('createClient', () => {
       expect(result.home_page_id).toBe('page-first');
     });
 
+    it('retries a taken name with a counter instead of failing', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: '{"message":"This app name is already taken."}' }))
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: '{"message":"This app name is already taken."}' }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'app3' } }))
+        .mockResolvedValueOnce(
+          mockResponse({ status: 200, json: { id: 'app3', slug: 'app3', editing_version: { id: 'v1', name: 'v1' }, pages: [{ id: 'p1', name: 'Home' }] } })
+        );
+
+      const client = createClient(auth, config);
+      const result = await client.createApp('Nordlicht Order Desk');
+      expect(result.app_id).toBe('app3');
+      const names = auth.authedFetch.mock.calls.slice(0, 3).map(([, init]) => JSON.parse((init as RequestInit).body as string).name);
+      expect(names).toEqual(['Nordlicht Order Desk', 'Nordlicht Order Desk 2', 'Nordlicht Order Desk 3']);
+    });
+
     it('throws when the create call is non-2xx', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 500, text: 'boom' }));
 
@@ -1179,6 +1195,53 @@ describe('createClient', () => {
       expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual({ name: 'A' });
       expect(JSON.parse(auth.authedFetch.mock.calls[3][1].body)).toEqual({ name: 'B' });
       expect(result).toEqual({ processed_rows: 2 });
+    });
+
+    it('reports an uncertain insert without retrying a gateway timeout', async () => {
+      vi.useFakeTimers();
+      try {
+        const cloudflare = '<!DOCTYPE html><html><head><title>tooljet.ai | 524: A timeout occurred</title></head><body>…</body></html>';
+        auth.authedFetch
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+          .mockResolvedValueOnce(mockResponse({ status: 524, text: cloudflare }))
+          .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }] }));
+
+        const client = createClient(auth, config);
+        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] }).catch((error: Error) => error);
+        await vi.runAllTimersAsync();
+        const error = await pending;
+
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toMatch(/outcome unknown.*verify persisted rows/i);
+        expect(auth.authedFetch).toHaveBeenCalledTimes(3);
+        expect(auth.authedFetch.mock.calls[2][1].signal).toBeInstanceOf(AbortSignal);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('surfaces a persistent gateway timeout as one line, not the HTML page', async () => {
+      vi.useFakeTimers();
+      try {
+        const cloudflare = '<!DOCTYPE html><html><head><title>tooljet.ai | 524: A timeout occurred</title></head><body>' + 'x'.repeat(12000) + '</body></html>';
+        auth.authedFetch
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+          .mockResolvedValue(mockResponse({ status: 524, text: cloudflare }));
+
+        const client = createClient(auth, config);
+        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] }).catch((error: Error) => error);
+        await vi.runAllTimersAsync();
+        const error = (await pending) as Error;
+
+        expect(error.message).toContain('insertRows failed (524): tooljet.ai | 524: A timeout occurred (HTML error page from the proxy, markup omitted)');
+        expect(error.message).toContain('Insert outcome unknown');
+        expect(error.message.length).toBeLessThan(400);
+        expect(auth.authedFetch).toHaveBeenCalledTimes(3); // two reads and one insert; no gateway retries
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('rejects explicit values for a generated primary key before writing', async () => {

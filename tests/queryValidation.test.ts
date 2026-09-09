@@ -423,3 +423,95 @@ describe('unquoted SQL bindings', () => {
     expect(r.errors.some((x) => x.code === 'unquoted_sql_binding')).toBe(true);
   });
 });
+
+describe('tooljetdb date equality filters', () => {
+  const listRows = (clause: Record<string, unknown>) =>
+    validateQueryOptions('tooljetdb', {
+      operation: 'list_rows',
+      table_id: 't1',
+      list_rows: { limit: 100, where_filters: { '0': clause } },
+    });
+
+  it('warns when a day is compared with eq against a date column', () => {
+    const result = listRows({ column: 'arrival_date', operator: 'eq', value: "{{moment().format('YYYY-MM-DD')}}" });
+    const warning = result.warnings.find((w) => w.code === 'date_equality_filter');
+    expect(warning).toBeDefined();
+    expect(warning!.message).toContain('full ISO timestamps');
+  });
+
+  it('warns on a literal YYYY-MM-DD value whatever the column is called', () => {
+    const result = listRows({ column: 'visited', operator: 'eq', value: '2026-09-04' });
+    expect(result.warnings.some((w) => w.code === 'date_equality_filter')).toBe(true);
+  });
+
+  it('stays quiet for range filters and non-date equality', () => {
+    expect(listRows({ column: 'arrival_date', operator: 'gte', value: '2026-09-04' }).warnings.some((w) => w.code === 'date_equality_filter')).toBe(false);
+    expect(listRows({ column: 'status', operator: 'eq', value: 'Open' }).warnings.some((w) => w.code === 'date_equality_filter')).toBe(false);
+    expect(listRows({ column: 'created_at', operator: 'eq', value: '{{components.table1.selectedRow.created_at}}' }).warnings.some((w) => w.code === 'date_equality_filter')).toBe(false);
+  });
+});
+
+describe('ToolJet DB filter operator aliases', () => {
+  const options = (operation: string, operator: string) => ({
+    operation, table_id: 'synthetic-stock',
+    [operation]: {
+      limit: 30,
+      columns: { '0': { column: 'quantity', value: 7 } },
+      where_filters: { selected: { column: 'sku', operator, value: 'TS-ALP-004' } },
+    },
+  });
+
+  it.each(['list_rows', 'update_rows', 'delete_rows'])('validates array-form operators for %s without rewriting filters', operation => {
+    const original = { operation, table_id: 'synthetic-stock', [operation]: {
+      limit: 30, columns: { 0: { column: 'quantity', value: 14 } },
+      where_filters: [{ column: 'id', operator: '=', value: 4 }],
+    } };
+    const before = structuredClone(original);
+    const result = validateQueryOptions('tooljetdb', original);
+    expect(result.errors).toContainEqual(expect.objectContaining({
+      code: 'invalid_tooljetdb_filter_operator', path: `${operation}.where_filters.0.operator`,
+    }));
+    expect(original).toEqual(before);
+    original[operation].where_filters[0].operator = 'eq';
+    expect(validateQueryOptions('tooljetdb', original).errors).toEqual([]);
+  });
+
+  it.each(['update_rows', 'delete_rows'])('rejects unusable array-form targeting for %s', operation => {
+    for (const where_filters of [[], [{}], [{ column: 'id', value: 4 }], [null]]) {
+      const result = validateQueryOptions('tooljetdb', { operation, table_id: 'synthetic-stock', [operation]: {
+        columns: { 0: { column: 'quantity', value: 14 } }, where_filters,
+      } });
+      expect(result.errors).toContainEqual(expect.objectContaining({ code: 'malformed_where_filters' }));
+    }
+  });
+
+  it('applies date-equality warnings to array filters without rejecting an unfiltered read', () => {
+    const result = validateQueryOptions('tooljetdb', { operation: 'list_rows', table_id: 'synthetic-stock', list_rows: {
+      limit: 30, where_filters: [{ column: 'created_at', operator: 'eq', value: '2026-09-06' }],
+    } });
+    expect(result.warnings).toContainEqual(expect.objectContaining({ code: 'date_equality_filter' }));
+    expect(validateQueryOptions('tooljetdb', { operation: 'list_rows', table_id: 'synthetic-stock',
+      list_rows: { limit: 30, where_filters: [] },
+    }).errors).toEqual([]);
+  });
+
+  it.each(['list_rows', 'update_rows', 'delete_rows'])('blocks equals for %s without rewriting the target', (operation) => {
+    const original = options(operation, 'equals');
+    const before = JSON.stringify(original);
+    const result = validateQueryOptions('tooljetdb', original);
+    const error = result.errors.find((e) => e.code === 'invalid_tooljetdb_filter_operator');
+    expect(error?.path).toBe(`${operation}.where_filters.selected.operator`);
+    expect(error?.message).toContain('Use "eq"');
+    expect(JSON.stringify(original)).toBe(before);
+  });
+
+  it.each(['eq', 'neq', 'gte', 'in', 'is', 'contains', 'containedBy', 'rangeAdjacent', '{{components.operator.value}}'])('does not reject supported or runtime-dependent operator %s', (operator) => {
+    const result = validateQueryOptions('tooljetdb', options('list_rows', operator));
+    expect(result.errors.filter((e) => e.code === 'invalid_tooljetdb_filter_operator')).toEqual([]);
+  });
+
+  it('keeps another datasource contract separate', () => {
+    const result = validateQueryOptions('postgresql', options('update_rows', 'equals'));
+    expect(result.errors.filter((e) => e.code === 'invalid_tooljetdb_filter_operator')).toEqual([]);
+  });
+});

@@ -1,9 +1,76 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
+  it('warns when outline buttons inherit surface-colored text on a transparent background', () => {
+    for (const textColor of [undefined, {value: 'var(--cc-surface1-surface)'}]) {
+      const result = lintComponentSpec({name: 'reject', type: 'Button', styles: {
+        type: {value: 'outline'}, ...(textColor ? {textColor} : {}),
+      }});
+      expect(result.warnings.join(' ')).toContain('outline background is transparent');
+      expect(result.warnings.join(' ')).toContain('primary-text');
+    }
+  });
+
+  it('does not rewrite explicit outline colors or warn about primary button defaults', () => {
+    for (const styles of [{}, {type: {value: 'primary'}},
+      {type: {value: 'outline'}, textColor: {value: 'var(--cc-primary-text)'}},
+      {type: {value: 'outline'}, textColor: {value: '#ffffff'}},
+      {type: {value: '{{variables.variant}}'}}]) {
+      const spec = {name: 'action', type: 'Button', styles};
+      const before = JSON.stringify(spec);
+      expect(lintComponentSpec(spec).warnings.join(' ')).not.toContain('outline background is transparent');
+      expect(JSON.stringify(spec)).toBe(before);
+    }
+  });
+
+  it('rejects active NumberInput limits under properties, which the renderer ignores', () => {
+    for (const key of ['minValue', 'maxValue']) {
+      for (const value of [0, 1, -5, '1', '{{variables.limit}}']) {
+        const result = lintComponentSpec({ name: 'quantity', type: 'NumberInput', properties: { [key]: { value } } });
+        expect(result.errors.join(' ')).toContain(`properties.${key} is ignored`);
+        expect(result.errors.join(' ')).toContain(`validation.${key}`);
+      }
+    }
+  });
+
+  it('allows empty legacy numeric-limit defaults and does not infer limits for other widgets', () => {
+    for (const value of ['', null, undefined, '   ']) {
+      const result = lintComponentSpec({ name: 'quantity', type: 'NumberInput', properties: {
+        minValue: { value }, maxValue: { value },
+      } });
+      expect(result.errors.join(' ')).not.toContain('is ignored');
+    }
+    expect(lintComponentSpec({ type: 'NumberInput', properties: {} }).errors).toEqual([]);
+    expect(lintComponentSpec({ type: 'Slider', properties: { min: { value: 0 } } }).errors.join(' '))
+      .not.toContain('is ignored');
+  });
+
+  it('rejects tiny proportional-looking pixel widths on visible data columns', () => {
+    for (const columnType of ['string', 'text', 'number', 'datepicker', 'button']) {
+      const result = lintComponentSpec({name: 'equipment', type: 'Table', properties: {
+        columns: {value: [{id: 'name', key: 'name', name: 'Equipment', columnType, columnSize: 3}]},
+      }});
+      expect(result.errors.join(' ')).toMatch(/columnSize 3 is in pixels, not proportional weights/);
+    }
+  });
+
+  it('does not infer widths for hidden, dynamic, omitted, or legitimate narrow columns', () => {
+    for (const column of [
+      {columnSize: 1, columnVisibility: false},
+      {columnSize: 1, columnVisibility: '{{false}}'},
+      {columnSize: '{{variables.width}}'}, {}, {columnSize: 30}, {columnSize: 240},
+      {columnSize: 3, columnType: 'image'},
+    ]) {
+      const result = lintComponentSpec({name: 'equipment', type: 'Table', properties: {
+        columns: {value: [{id: 'name', key: 'name', name: 'Equipment', columnType: 'string', ...column}]},
+      }});
+      expect(result.errors.join(' ')).not.toContain('not proportional weights');
+    }
+  });
+
   it('blocks unknown component types and typo keys with spelling suggestions', () => {
     const unknownType = lintComponentSpec({ name: 'progress', type: 'CircularProgressbar', properties: {} });
     expect(unknownType.errors.join(' ')).toMatch(/unknown component type "CircularProgressbar".*CircularProgressBar/i);
@@ -1184,9 +1251,114 @@ describe('validateAppStructure', () => {
         ],
       },
     ],
-    queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: {} }],
+    queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true } }],
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
+
+  it('rejects a query referenced by bare name, the Haiku Helix case', () => {
+    const withBinding = (binding: string): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'jobsWaitingLongest', kind: 'tooljetdb', options: { operation: 'list_rows', runOnPageLoad: true } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{jobsWaitingLongest.data.slice(0, 5)}}'));
+    expect(wrong.errors.filter((e) => e.includes('by bare name'))).toHaveLength(1);
+    for (const ok of ['{{queries.jobsWaitingLongest.data}}', '{{queries.jobsWaitingLongest?.data ?? []}}', "{{components.jobsWaitingLongest.data}}"]) {
+      expect(validateAppStructure(withBinding(ok)).errors.filter((e) => e.includes('by bare name'))).toEqual([]);
+    }
+  });
+
+  it('rejects a bare .data binding on a ToolJet DB sql_execution query, the Haiku empty-app case', () => {
+    const withBinding = (binding: string, options: Record<string, unknown>): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true, ...options } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{queries.getRows.data}}', { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT * FROM orders LIMIT 50' } }));
+    expect(wrong.errors.filter((e) => e.includes('{results: rows}'))).toHaveLength(1);
+    for (const ok of [
+      withBinding('{{queries.getRows.data.results}}', { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT 1' } }),
+      withBinding('{{queries.getRows?.data?.results || []}}', { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT 1' } }),
+      withBinding('{{queries.getRows.data}}', { operation: 'list_rows' }),
+    ]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('{results: rows}'))).toEqual([]);
+    }
+  });
+
+  it('rejects a .data.result binding on a ServiceNow query, the Luna Halvard case', () => {
+    const withBinding = (binding: string, kind: string): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'incidents', kind, options: { operation: 'list_records', runOnPageLoad: true } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{queries.incidents.data && queries.incidents.data.result ? queries.incidents.data.result : []}}', 'servicenow'));
+    expect(wrong.errors.filter((e) => e.includes('unwraps the REST result envelope'))).toHaveLength(1);
+    expect(validateAppStructure(withBinding('{{queries.incidents?.data?.result ?? []}}', 'servicenow')).errors.filter((e) => e.includes('unwraps the REST'))).toHaveLength(1);
+    for (const ok of [withBinding('{{queries.incidents.data}}', 'servicenow'), withBinding('{{queries.incidents.data.result}}', 'restapi')]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('unwraps the REST'))).toEqual([]);
+    }
+  });
+
+  it.each([
+    { transformationLanguage: 'javascript', transformations: { javascript: 'return { result: data };' } },
+    { transformationLanguage: 'python', transformations: { python: 'return {"result": data}' } },
+    { transformationLanguage: 'javascript', transformation: 'return { result: data };' },
+  ])('allows transformed ServiceNow result bindings only while the transformation is enabled: %j', (transformation) => {
+    const summary: AppSummary = {
+      ...base,
+      pages: [{
+        id: 'p1', name: 'Home', components: [{
+          ...base.pages[0]!.components[0]!,
+          properties: {
+            ...base.pages[0]!.components[0]!.properties,
+            data: { value: '{{queries.loadHardware.data.result}}' },
+          },
+        }],
+      }],
+      queries: [{
+        id: 'q1', name: 'loadHardware', kind: 'servicenow',
+        options: { operation: 'list_records', runOnPageLoad: true, ...transformation, enableTransformation: true },
+      }],
+    };
+    expect(validateAppStructure(summary).errors.filter((e) => e.includes('unwraps the REST'))).toEqual([]);
+
+    summary.queries[0]!.options = { ...(summary.queries[0]!.options as Record<string, unknown>), enableTransformation: false };
+    expect(validateAppStructure(summary).errors.filter((e) => e.includes('unwraps the REST'))).toHaveLength(1);
+  });
+
+  it('rejects a Chart bound straight to non-x/y query rows and accepts RunJS or x/y SQL sources', () => {
+    const withChart = (binding: string, query: Record<string, unknown>): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ id: 'ch', name: 'ordersChart', type: 'Chart', properties: { type: { value: 'bar' }, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'byDay', ...query }],
+    });
+    const wrong = validateAppStructure(withChart('{{queries.byDay.data}}', { kind: 'tooljetdb', options: { operation: 'list_rows', runOnPageLoad: true, list_rows: { group_by: { order_date: ['order_date'] } } } }));
+    expect(wrong.errors.filter((e) => e.includes('plots [{x, y}] only'))).toHaveLength(1);
+    for (const ok of [
+      withChart('{{queries.byDay.data}}', { kind: 'runjs', options: { code: 'return rows.map(r => ({x: r.d, y: r.n}))' } }),
+      withChart('{{queries.byDay.data}}', { kind: 'postgresql', options: { query: 'SELECT day AS x, COUNT(*)::float AS y FROM orders GROUP BY day' } }),
+      withChart('{{queries.byDay.data.map(r => ({x: r.order_date, y: Number(r.orders_count)}))}}', { kind: 'tooljetdb', options: { operation: 'list_rows' } }),
+    ]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('plots [{x, y}]'))).toEqual([]);
+    }
+  });
+
+  it('rejects data.results on a ToolJet DB list_rows query and accepts it on sql_execution', () => {
+    const withBinding = (binding: string, options: Record<string, unknown>): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'getRows', kind: 'tooljetdb', options: { runOnPageLoad: true, ...options } }],
+    });
+    const wrong = validateAppStructure(withBinding("{{(queries.getRows?.data?.results || []).filter(r => r.status === 'AOG')}}", { operation: 'list_rows' }));
+    expect(wrong.errors.filter((e) => e.includes('data.results'))).toHaveLength(1);
+    expect(wrong.errors.find((e) => e.includes('data.results'))).toMatch(/list_rows query whose data is the rows array/);
+    for (const ok of [
+      withBinding('{{queries.getRows.data.results}}', { operation: 'sql_execution' }),
+      withBinding('{{queries.getRows.data}}', { operation: 'list_rows' }),
+    ]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('data.results'))).toEqual([]);
+    }
+  });
 
   it('reports persisted DropdownV2 character-object corruption as an error', () => {
     const corrupted: AppSummary = {
@@ -1589,5 +1761,23 @@ describe('validateAppStructure', () => {
     const warnings = validateAppStructure(app).warnings.join(' ');
     expect(warnings).toMatch(/overlap at rendered desktop size/);
     expect(warnings).toMatch(/modalHeight 200px but needs at least 274px/);
+  });
+});
+
+describe('lintUnrenderableHeights', () => {
+  const at = (type: string, name: string, height: number) =>
+    ({ type, name, properties: {}, layouts: { desktop: { top: 0, left: 2, width: 39, height } } }) as any;
+
+  it('rejects headers, strips and inputs authored in row units', () => {
+    const errors = lintUnrenderableHeights([at('Html', 'ovHeader', 14), at('Html', 'ovKpis', 16), at('TextInput', 'schDest', 10)]);
+    expect(errors).toHaveLength(3);
+    expect(errors[0]).toContain('desktop height 14px cannot render its content');
+    expect(errors[0]).toContain('not row units');
+  });
+
+  it('leaves dividers, modal shells and normal heights alone', () => {
+    expect(
+      lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
+    ).toEqual([]);
   });
 });
