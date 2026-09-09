@@ -36946,6 +36946,39 @@ function createClient(auth, config2) {
       datasources_url: datasourceManagementUrl(orgSlug)
     };
   }
+  async function createAppScopedSession(appId, email3, expiryMinutes) {
+    const accessToken = process.env.EXTERNAL_API_ACCESS_TOKEN?.trim();
+    if (!accessToken) {
+      throw new Error("EXTERNAL_API_ACCESS_TOKEN is not configured on this MCP server, so a render session cannot be minted. Skip the render check rather than reporting the app as broken.");
+    }
+    const post = async (path, body, headers) => {
+      const res = await fetch(`${config2.apiUrl}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers ?? {} },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        throw new Error(`ToolJet ${path} failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+      }
+      return await res.json();
+    };
+    const created = await post("/api/ext/users/personal-access-token", { email: email3, appSlug: appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes }, { Authorization: `Basic ${accessToken}` });
+    const pat = created.personalAccessToken;
+    if (typeof pat !== "string" || !pat) {
+      throw new Error("ToolJet did not return a personal access token for the render session.");
+    }
+    const session = await post("/api/ext/users/session", { appId, accessToken: pat });
+    const token = session.signedPat;
+    if (typeof token !== "string" || !token) {
+      throw new Error("ToolJet did not return a session for the render personal access token.");
+    }
+    const orgSlug = await auth.getOrganizationSlug();
+    return {
+      token,
+      expires_in_minutes: expiryMinutes,
+      url: `${config2.appUrl}/${orgSlug}/apps/${appId}`
+    };
+  }
   async function renameApp(appId, versionId, name) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
       method: "PUT",
@@ -37775,6 +37808,7 @@ function createClient(auth, config2) {
     updateWorkspaceUser,
     setWorkspaceUserArchived,
     createApp,
+    createAppScopedSession,
     renameApp,
     getApp,
     getAppSummary,
@@ -39857,6 +39891,32 @@ function getComponentTool(client) {
     async handler(args) {
       try {
         const result = await client.getComponent(args.app_id, args.component_id);
+        return ok(result);
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+
+// dist/tools/createRenderSession.js
+function createRenderSessionTool(client) {
+  return {
+    name: "create_render_session",
+    title: "Create Render Session",
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: true
+    },
+    description: "Mint a SHORT-LIVED browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, expires_in_minutes, url } \u2014 set `token` as the tj_auth_token cookie (or header) and navigate to `url`. The token is scoped to this app alone and cannot be used to read or write anything else. Requires EXTERNAL_API_ACCESS_TOKEN to be configured on this server; without it the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      email: external_exports.string().describe("The user the session belongs to; the render is seen as they would see it."),
+      expiry_minutes: external_exports.number().int().min(1).max(60).optional()
+    },
+    async handler(args) {
+      try {
+        const result = await client.createAppScopedSession(args.app_id, args.email, args.expiry_minutes ?? 15);
         return ok(result);
       } catch (err) {
         return fail(err);
@@ -45530,6 +45590,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
+    createRenderSessionTool(client),
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
