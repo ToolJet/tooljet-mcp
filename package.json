@@ -24,6 +24,7 @@
   "description": "MCP server and app-builder skill for ToolJet: build and modify ToolJet apps end to end through governed tools.",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -38043,20 +38043,112 @@
         "variants": [
           {
             "when": {},
-            "fields": {},
-            "required": []
+            "fields": {
+              "host": {
+                "type": "string",
+                "label": "Host override",
+                "description": "Base URL for the request, with no trailing slash. The OpenAPI datasource form has no host field, so this is almost always required: the plugin resolves `sourceOptions.host || host`, and with neither set the query fails with \"Invalid URL\". Take it from the spec's servers[0].url — inspect_datasource_schema returns it as `host`, and omits it when the spec only declares a relative server URL, in which case supply the real origin.",
+                "example": "https://api.example.com",
+                "path": "host"
+              },
+              "path": {
+                "type": "string",
+                "label": "Path",
+                "description": "The endpoint path template exactly as the spec writes it, placeholders included. Placeholders are substituted from params.path; one with no matching entry is sent literally.",
+                "example": "/pets/{petId}",
+                "path": "path"
+              },
+              "operation": {
+                "type": "string",
+                "label": "HTTP method",
+                "description": "Lowercase HTTP method for this endpoint. It is sent as the request method and decides whether a body is attached: params.request is used only when operation is not \"get\".",
+                "allowedValues": [
+                  "get",
+                  "post",
+                  "put",
+                  "patch",
+                  "delete",
+                  "head",
+                  "options"
+                ],
+                "example": "get",
+                "path": "operation"
+              },
+              "params": {
+                "type": "object",
+                "label": "Parameters",
+                "description": "The four parameter buckets, split by where each value goes in the request. Send all four every time, using {} for the ones you do not need: the plugin destructures every bucket and calls Object.entries(params.path) unguarded, so an omitted bucket fails the query with \"Cannot convert undefined or null to object\".",
+                "shape": {
+                  "request": "object",
+                  "query": "object",
+                  "header": "object",
+                  "path": "object"
+                },
+                "path": "params"
+              },
+              "params.request": {
+                "type": "object",
+                "label": "Request body",
+                "description": "JSON request body, sent only when operation is not \"get\"; pass {} when there is no body. String values that parse as JSON are parsed first, and empty-string entries are dropped before sending.",
+                "example": {
+                  "name": "Fluffy",
+                  "status": "available"
+                },
+                "path": "params.request"
+              },
+              "params.query": {
+                "type": "object",
+                "label": "Query parameters",
+                "description": "Appended as the URL query string; pass {} when the endpoint takes no query parameters.",
+                "example": {
+                  "status": "available",
+                  "limit": "20"
+                },
+                "path": "params.query"
+              },
+              "params.header": {
+                "type": "object",
+                "label": "Headers",
+                "description": "Per-request headers; pass {} when there are none. Authentication is configured on the datasource, so do not set an Authorization header here.",
+                "example": {
+                  "Accept": "application/json"
+                },
+                "path": "params.header"
+              },
+              "params.path": {
+                "type": "object",
+                "label": "Path parameters",
+                "description": "Values substituted into the {placeholders} in `path`; keys are the placeholder names without braces. Pass {} when the path has no placeholders — this bucket is read unguarded and must always be present.",
+                "example": {
+                  "petId": "42"
+                },
+                "path": "params.path"
+              }
+            },
+            "required": [
+              "host",
+              "operation",
+              "params.header",
+              "params.path",
+              "params.query",
+              "params.request",
+              "path"
+            ]
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
           "source": "remote-api",
-          "description": "The remote API/schema defines the query data; inspect a safe successful run or the API schema before binding nested fields."
+          "type": "object|array|string",
+          "description": "queries.<name>.data is the remote response body directly — parsed JSON object/array, or text. It is not normalized into rows, and the spec's declared response schema is not enforced at runtime. Inspect a successful run, or the endpoint's response schema via inspect_datasource_schema, before binding nested fields."
         }
       }
     },
     "properties": {},
-    "introspectionMethods": [],
+    "introspectionMethods": [
+      "listTables",
+      "getEndpointSchema"
+    ],
     "supportsTestConnection": false,
     "sources": [
       {
