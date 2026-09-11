@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -1225,6 +1225,82 @@ describe('lintComponents (batch)', () => {
     expect(errors).toEqual([]);
     expect(warnings.join(' ')).toMatch(/native title/);
     expect(warnings.join(' ')).toMatch(/overlap/);
+  });
+});
+
+describe('lintStatTileConsistency', () => {
+  const statPage = (id: string, name: string, height: number, valueSize: number, labelSize: number) => ({
+    id,
+    name,
+    components: [{
+      id: `${id}-tile`,
+      name: `${id}Tile`,
+      type: 'Statistics',
+      layouts: { desktop: { top: 0, left: 0, width: 18, height } },
+      properties: { primaryValueLabel: { value: 'Open' }, hideSecondary: { value: '{{true}}' } },
+      styles: { primaryValueSize: { value: `{{${valueSize}}}` }, primaryLabelSize: { value: `{{${labelSize}}}` } },
+    }],
+  });
+  const app = (pages: unknown[]): AppSummary =>
+    ({ app_id: 'a', pages, queries: [], events: [] } as unknown as AppSummary);
+
+  it('is quiet when every page uses the same tile height and type scale', () => {
+    expect(lintStatTileConsistency(app([
+      statPage('p1', 'Home', 130, 28, 13),
+      statPage('p2', 'Orders', 130, 28, 13),
+    ]))).toEqual([]);
+  });
+
+  it('flags tile heights that differ between pages', () => {
+    const w = lintStatTileConsistency(app([
+      statPage('p1', 'Home', 140, 28, 13),
+      statPage('p2', 'Orders', 120, 28, 13),
+    ])).join(' ');
+    expect(w).toMatch(/differ in height across pages/);
+    expect(w).toMatch(/Home: 140.*Orders: 120/);
+  });
+
+  it('flags value/label font sizes that differ between pages', () => {
+    expect(lintStatTileConsistency(app([
+      statPage('p1', 'Home', 130, 34, 14),
+      statPage('p2', 'Orders', 130, 22, 12),
+    ])).join(' ')).toMatch(/different value\/label font sizes across pages/);
+  });
+
+  it('ignores a single page and nested template tiles', () => {
+    expect(lintStatTileConsistency(app([statPage('p1', 'Home', 140, 28, 13)]))).toEqual([]);
+    const nested = app([
+      statPage('p1', 'Home', 130, 28, 13),
+      {
+        id: 'p2',
+        name: 'Orders',
+        components: [{
+          id: 'row-tile',
+          type: 'Statistics',
+          parent: 'listview1',
+          layouts: { desktop: { top: 0, left: 0, width: 18, height: 90 } },
+          styles: { primaryValueSize: { value: '{{18}}' }, primaryLabelSize: { value: '{{11}}' } },
+        }],
+      },
+    ]);
+    expect(lintStatTileConsistency(nested)).toEqual([]);
+  });
+
+  it('flags Html KPI strips of differing height and a mixed mechanism', () => {
+    const strip = (id: string, name: string, height: number) => ({
+      id,
+      name,
+      components: [{
+        id: `${id}-strip`,
+        type: 'Html',
+        layouts: { desktop: { top: 0, left: 0, width: 40, height } },
+        properties: { rawHtml: { value: '<div style="display:grid"><div><span style="font-size:12px">Open</span><span style="font-size:28px">7</span></div></div>' } },
+      }],
+    });
+    expect(lintStatTileConsistency(app([strip('p1', 'Home', 140), strip('p2', 'Orders', 120)])).join(' '))
+      .toMatch(/Html KPI strips differ in height across pages/);
+    expect(lintStatTileConsistency(app([strip('p1', 'Home', 140), statPage('p2', 'Orders', 140, 28, 13)])).join(' '))
+      .toMatch(/built two different ways in one app/);
   });
 });
 
