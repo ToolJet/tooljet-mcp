@@ -22,6 +22,8 @@ Data binding: set data.value=`{{queries.queryName.data}}` AND dataSourceSelector
 
 ToolJet Table data bindings can silently become `No data` when a `.map()` callback uses a statement body such as `map(row => { const value = ...; return {...}; })`. Use the expression-body form `map(row => ({...}))`, or pre-shape multi-statement logic in the datasource/RunJS query. This is narrower than the Html nested-map limitation: supported Table lookup joins inside an expression-body map remain valid.
 
+Chrome defaults for a data table on a designed page: `allowSelection:false` (removes the checkbox column and the pre-selected first row), `highlightSelectedRow:false`, `showAddNewRowButton:false`, `showDownloadButton:false`; `showFilterButton:false` when the page has its own filters row; keep `displaySearchBox` only when search is how the user gets in. Turn any of these back on only when the request asks for that behaviour. Format money, units, rates and dates in the data binding in one expression-body map (`$1,284.30`, `4,016`, `12.5%`, `08 Sep 2026`, durations as `2d 3h`), and render state columns (status, priority, SLA, receipt) as chips with `columnType:"html"`: `<span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:<tint>;color:<ink>">Open</span>`, tints and inks from one map (success `#DCFCE7`/`#166534`, warning `#FEF3C7`/`#92400E`, danger `#FEE2E2`/`#991B1B`, informational the accent at ~12% opacity with the accent as ink, neutral `#F3F4F6`/`#374151`). Never colour a whole row or cell.
+
 Valid `columnType` values are exactly: `string`, `number`, `text`, `datepicker`, `select`, `newMultiSelect`, `tagsV2`, `boolean`, `image`, `link`, `json`, `markdown`, `html`, `rating`, `button`. ToolJet still accepts eight older values but flags them as deprecated in the inspector, and some render an EMPTY cell so the table looks broken: use `string` not `default`, `newMultiSelect` not `badge`/`badges`/`multiselect`, `tagsV2` not `tags`, and `select` not `dropdown`/`radio`/`toggle`. `lint_app_spec` fails on the deprecated values.
 
 When a schema or bounded sample identifies a date/timestamp, do not leave its explicit column as `columnType:"string"` unless the user asked for the raw timestamp. Use `columnType:"datepicker"` with explicit Moment-style `dateFormat` and `parseDateFormat` matching the source; enable time only when it carries useful information.
@@ -29,6 +31,8 @@ When a schema or bounded sample identifies a date/timestamp, do not leave its ex
 ## Table row-action Button columns
 
 Modern per-row actions are **Button columns**, not the deprecated `properties.actions.value` configuration. The top-level `actions` returned by `get_component_catalog("Table")` are `control-component` runtime methods such as `setPage`/`selectRow`; they are unrelated to row buttons. For the machine-readable version, request `get_component_catalog({type:"Table",sections:["authoringHints"]})`.
+
+Row actions are quiet: the outline style below (surface background, primary text, default border), at most two per row. The page's one filled primary button (`var(--cc-primary-brand)`) lives in the toolbar or header, never repeated down a column; a destructive row action keeps the outline and takes `var(--cc-error-systemStatus)` as its label colour.
 
 Append a column like this to the Table's **complete** `properties.columns.value` array (updates replace arrays wholesale):
 
@@ -50,9 +54,9 @@ Append a column like this to the Table's **complete** `properties.columns.value`
     "loadingState": false,
     "buttonVisibility": true,
     "buttonType": "solid",
-    "buttonBackgroundColor": "var(--cc-primary-brand)",
-    "buttonLabelColor": "#FFFFFF",
-    "buttonBorderColor": "var(--cc-primary-brand)",
+    "buttonBackgroundColor": "var(--cc-surface1-surface)",
+    "buttonLabelColor": "var(--cc-primary-text)",
+    "buttonBorderColor": "var(--cc-default-border)",
     "buttonBorderRadius": "6",
     "buttonLoaderColor": "var(--cc-surface1-surface)",
     "buttonIconName": "IconHome2",
