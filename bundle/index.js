@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import{createRequire as __cr}from"module";const require=__cr(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -42797,7 +42798,7 @@ function lintComponentSpec(spec) {
     }
     const iconName = catalogValue("Statistics", props, "icon");
     const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props, "iconVisibility") !== false && propVal2(props, "iconVisibility") !== "{{false}}";
-    const valueFontPx = optionalStaticNumber(catalogValue("Statistics", props, "primaryValueSize"));
+    const valueFontPx = optionalStaticNumber(catalogValue("Statistics", spec.styles, "primaryValueSize", "styles"));
     const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
       errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
@@ -43233,6 +43234,64 @@ function lintComponents(components) {
   return { errors, warnings };
 }
 var uniq = (xs) => [...new Set(xs)];
+var KPI_STRIP_VALUE_FONT_MIN_PX = 20;
+function isHtmlKpiStrip(rawHtml) {
+  if (typeof rawHtml !== "string")
+    return false;
+  const html = rawHtml.replace(/\s+/g, "");
+  if (!/display:(grid|flex)/.test(html))
+    return false;
+  return [...html.matchAll(/font-size:(\d+)px/g)].some((m) => Number(m[1]) >= KPI_STRIP_VALUE_FONT_MIN_PX);
+}
+var distinct = (xs) => [...new Set(xs)];
+function lintStatTileConsistency(summary) {
+  const warnings = [];
+  const tiles = [];
+  const stripPages = /* @__PURE__ */ new Map();
+  for (const page of summary.pages) {
+    const pageName = page.name ?? page.id;
+    for (const component of page.components) {
+      if (component.parent)
+        continue;
+      const height = (component.layouts?.desktop ?? component.layout)?.height;
+      if (component.type === "Statistics") {
+        tiles.push({
+          page: pageName,
+          height: typeof height === "number" ? height : void 0,
+          valueSize: optionalStaticNumber(catalogValue("Statistics", component.styles, "primaryValueSize", "styles")),
+          labelSize: optionalStaticNumber(catalogValue("Statistics", component.styles, "primaryLabelSize", "styles"))
+        });
+      } else if (component.type === "Html" && typeof height === "number" && isHtmlKpiStrip(propVal2(component.properties, "rawHtml"))) {
+        stripPages.set(pageName, [...stripPages.get(pageName) ?? [], height]);
+      }
+    }
+  }
+  const tilePages = distinct(tiles.map((t) => t.page));
+  if (tilePages.length > 1) {
+    const heights = distinct(tiles.map((t) => t.height).filter((h) => h !== void 0));
+    if (heights.length > 1) {
+      const perPage = tilePages.map((page) => `${page}: ${distinct(tiles.filter((t) => t.page === page).map((t) => t.height)).join("/")}`).join("; ");
+      warnings.push(`Statistics tiles differ in height across pages (${perPage}). Pick one tile height for the app and reuse it on every page \u2014 a stat row that changes height from page to page reads as an unfinished app.`);
+    }
+    const typeScales = distinct(tiles.map((t) => `${t.valueSize ?? "?"}/${t.labelSize ?? "?"}`));
+    if (typeScales.length > 1) {
+      const perPage = tilePages.map((page) => `${page}: ${distinct(tiles.filter((t) => t.page === page).map((t) => `${t.valueSize ?? "?"}/${t.labelSize ?? "?"}`)).join(", ")}`).join("; ");
+      warnings.push(`Statistics tiles use different value/label font sizes across pages (${perPage}, as primaryValueSize/primaryLabelSize). Set one pair once and reuse it on every page so labels and figures match.`);
+    }
+  }
+  if (stripPages.size > 1) {
+    const stripHeights = distinct([...stripPages.values()].flat());
+    if (stripHeights.length > 1) {
+      const perPage = [...stripPages].map(([page, hs]) => `${page}: ${distinct(hs).join("/")}`).join("; ");
+      warnings.push(`Html KPI strips differ in height across pages (${perPage}). Use one strip height and one inline type scale (same label font-size, same value font-size) on every page.`);
+    }
+  }
+  const mechanismPages = distinct([...tilePages, ...stripPages.keys()]);
+  if (mechanismPages.length > 1 && tilePages.length > 0 && stripPages.size > 0) {
+    warnings.push(`Stat rows are built two different ways in one app (Statistics on ${tilePages.join(", ")}; Html KPI strip on ${[...stripPages.keys()].join(", ")}), so heights and label sizes cannot line up. Use the Html strip everywhere, and Statistics only where a tile must expose its value to other components.`);
+  }
+  return warnings;
+}
 function validateAppStructure(summary) {
   const errors = [];
   const warnings = [];
@@ -43536,6 +43595,7 @@ function validateAppStructure(summary) {
   const readiness = lintUntriggeredDataQueries(summary);
   errors.push(...readiness.errors);
   warnings.push(...readiness.warnings);
+  warnings.push(...lintStatTileConsistency(summary));
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }
 function hexLuminance(hex3) {
@@ -46435,6 +46495,104 @@ function specHost(spec) {
   }
   return void 0;
 }
+var SEARCH_STOPWORDS = /* @__PURE__ */ new Set([
+  "a",
+  "an",
+  "and",
+  "the",
+  "of",
+  "for",
+  "to",
+  "in",
+  "on",
+  "by",
+  "with",
+  "from",
+  "at",
+  "as",
+  "or",
+  "is",
+  "are",
+  "be",
+  "this",
+  "that",
+  "it",
+  "its",
+  "all",
+  "any",
+  "you",
+  "your",
+  "api",
+  "endpoint"
+]);
+function tokenize(text) {
+  return text.replace(/([a-z\d])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z\d]+/).filter((token) => token.length > 1 && !SEARCH_STOPWORDS.has(token)).map((token) => token.length > 3 && token.endsWith("s") && !token.endsWith("ss") ? token.slice(0, -1) : token);
+}
+var DESCRIPTION_WEIGHT = 0.2;
+var NAME_COVERAGE_BONUS = 4;
+function endpointFields(spec, endpoint) {
+  const operation = record2(record2(record2(spec.paths)?.[endpoint.path])?.[endpoint.method]) ?? {};
+  const tags = Array.isArray(operation.tags) ? operation.tags.map(String) : void 0;
+  return {
+    // The operation's own name, for coverage: its summary, else its operationId.
+    name: endpoint.summary || endpoint.operationId || "",
+    identity: `${endpoint.path} ${endpoint.method} ${endpoint.operationId ?? ""} ${endpoint.summary ?? ""} ${tags?.join(" ") ?? ""}`,
+    // Only the opening carries the topic; the rest is auth notes and changelog.
+    description: typeof operation.description === "string" ? operation.description.slice(0, 300) : "",
+    ...tags?.length ? { tags } : {}
+  };
+}
+function rankEndpoints(spec, endpoints, query) {
+  const queryTokens = [...new Set(tokenize(query))];
+  if (!queryTokens.length)
+    return [];
+  const phrase = query.trim().toLowerCase();
+  const documents = endpoints.map((endpoint) => {
+    const fields = endpointFields(spec, endpoint);
+    return {
+      endpoint,
+      identityText: fields.identity.toLowerCase(),
+      identity: new Set(tokenize(fields.identity)),
+      description: new Set(tokenize(fields.description)),
+      name: new Set(tokenize(fields.name)),
+      tags: fields.tags
+    };
+  });
+  const documentFrequency = /* @__PURE__ */ new Map();
+  for (const token of queryTokens) {
+    documentFrequency.set(token, documents.filter((document) => document.identity.has(token)).length);
+  }
+  const queryTokenSet = new Set(queryTokens);
+  const scored = documents.map(({ endpoint, identityText, identity, description, name, tags }) => {
+    let score = 0;
+    for (const token of queryTokens) {
+      const inIdentity = identity.has(token);
+      if (!inIdentity && !description.has(token))
+        continue;
+      const idf = Math.log(1 + documents.length / (1 + (documentFrequency.get(token) ?? 0)));
+      score += inIdentity ? idf : idf * DESCRIPTION_WEIGHT;
+    }
+    if (score > 0 && identityText.includes(phrase))
+      score += 10;
+    if (score > 0 && name.size) {
+      const covered = [...name].filter((token) => queryTokenSet.has(token)).length;
+      score += NAME_COVERAGE_BONUS * (covered / name.size);
+    }
+    if (score > 0 && endpoint.deprecated)
+      score -= 0.5;
+    return { ...endpoint, score, ...tags?.length ? { tags } : {} };
+  });
+  return scored.filter((entry) => entry.score > 0).sort((left, right) => right.score - left.score || left.path.localeCompare(right.path));
+}
+function endpointTagCounts(spec, endpoints) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const endpoint of endpoints) {
+    const tags = endpointFields(spec, endpoint).tags ?? ["untagged"];
+    for (const tag of tags)
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  return Object.fromEntries([...counts.entries()].sort((left, right) => right[1] - left[1]));
+}
 
 // dist/tools/inspectDatasourceSchema.js
 var requestSchema2 = external_exports.object({
@@ -46484,21 +46642,38 @@ function parseSpecCached(options2) {
 function openapiIntrospection(spec, request) {
   if (request.method === "listTables") {
     const endpoints = listEndpoints(spec);
-    const search = request.search?.toLowerCase();
-    const matched = search ? endpoints.filter((endpoint) => [endpoint.path, endpoint.operationId, endpoint.summary].some((field) => field?.toLowerCase().includes(search))) : endpoints;
+    const host2 = specHost(spec);
+    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
+    if (request.search) {
+      const ranked = rankEndpoints(spec, endpoints, request.search);
+      const limit2 = request.limit ?? 25;
+      return {
+        ...header,
+        search: request.search,
+        matched: ranked.length,
+        ...ranked.length > limit2 ? { returned: limit2 } : {},
+        // Ordered by relevance, not spec order: the caller should read from the top.
+        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
+        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
+      };
+    }
     const limit = request.limit ?? 200;
-    return {
-      total: endpoints.length,
-      ...specHost(spec) ? { host: specHost(spec) } : {},
-      ...search ? { search: request.search } : {},
-      ...matched.length > limit ? { truncated: true, returned: limit } : {},
-      endpoints: matched.slice(0, limit)
-    };
+    if (endpoints.length > limit) {
+      return {
+        ...header,
+        tags: endpointTagCounts(spec, endpoints),
+        returned: limit,
+        truncated: true,
+        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
+        endpoints: endpoints.slice(0, limit)
+      };
+    }
+    return { ...header, endpoints };
   }
   const path = request.table ?? (typeof request.args?.path === "string" ? request.args.path : void 0);
-  const method = typeof request.args?.operation === "string" ? request.args.operation : typeof request.args?.method === "string" ? request.args.method : void 0;
+  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key) => request.args?.[key]).find((value) => typeof value === "string" && !!value);
   if (!path || !method) {
-    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}).');
+    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
   }
   const result = endpointParameters(spec, path, method);
   if (!result.found) {
@@ -46766,8 +46941,8 @@ function literal2(value) {
 function source(kind, schema, table) {
   return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
 }
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
+function boundedSelect(kind, projection, from, limit, distinct2 = false) {
+  const prefix = `SELECT ${distinct2 ? "DISTINCT " : ""}`;
   if (DIALECTS[kind].limit === "top")
     return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
   if (DIALECTS[kind].limit === "fetch")
@@ -49956,9 +50131,9 @@ function unique2(values) {
   return [...new Set(values)];
 }
 function dropUnprefixedDuplicates(values) {
-  const distinct = unique2(values);
-  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
-  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
+  const distinct2 = unique2(values);
+  const stripped = new Set(distinct2.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct2[i]));
+  return distinct2.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
 
 // dist/componentBatch.js
@@ -52350,7 +52525,15 @@ function runQueryTool(client) {
 // dist/tools/runQueries.js
 function batchSafeRead(query) {
   const assessment = assessQueryRead(query);
-  return assessment.provenRead && assessment.directSafe && !assessment.selectStar ? { safe: true } : {
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar)
+    return { safe: true };
+  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
+    return {
+      safe: false,
+      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
+    };
+  }
+  return {
     safe: false,
     reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
   };
@@ -52365,7 +52548,7 @@ function runQueriesTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
+    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused \u2014 remote API reads (restapi, openapi, servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
     inputSchema: {
       query_ids: external_exports.array(external_exports.string()).min(1).max(10),
       version_id: external_exports.string(),
@@ -52403,7 +52586,7 @@ function runQueriesTool(client) {
           return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
         });
         if (unsafe.length) {
-          return fail(new Error(`run_queries refused non-proven reads before execution: ${unsafe.join("; ")}.`));
+          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? "a query" : "queries"} before execution: ${unsafe.join("; ")}`));
         }
         const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
         const queries = await Promise.all(args.query_ids.map(async (queryId) => {
