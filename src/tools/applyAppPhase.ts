@@ -38,7 +38,8 @@ function resolveAction(
   queries: Map<string, LogicalTarget>,
   components: Map<string, LogicalTarget>
 ): Record<string, unknown> {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === 'run-query' ? action.queryId ?? action.queryName : undefined);
   if (targetRef === undefined) return action;
   if (typeof targetRef !== 'string') throw new Error('Event action target_ref must be a string.');
   const actionId = String(action.actionId);
@@ -143,6 +144,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
     async handler(args: { app_id: string; version_id: string; plan_token: string }) {
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = 'consume plan';
+      let createdPageIds: string[] = [];
       try {
         const stored = consumeAppPlan(args.plan_token);
         const spec: AppPlanInput = stored.spec;
@@ -235,6 +237,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           : completedPartialWrites<{ page_id: string; name: string; index: number; icon?: string; hidden?: boolean }>(pageWrite.reason);
         applied.tables = createdTables.length;
         applied.pages = createdPages.length;
+        createdPageIds = createdPages.map((page) => page.page_id);
         const foundationFailures = [
           ...(tableWrite.status === 'rejected'
             ? [`tables: ${tableWrite.reason instanceof Error ? tableWrite.reason.message : String(tableWrite.reason)}`]
@@ -327,6 +330,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           const created = createdQueries[index];
           if (!created) throw new Error(`Could not resolve query "${query.name}" after creation.`);
           queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
+          queryTargets.set(query.name, { id: created.query_id, name: created.name });
         });
 
         stage = 'create page components';
@@ -446,10 +450,39 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           validation,
         });
       } catch (error) {
+        let recovery = '';
+        // A phase that died in its foundation stage leaves empty pages behind, and the next plan then
+        // recreates them under new names (Gemini Pro on the Nordlicht benchmark ended with nine pages, five
+        // empty). Pages with nothing on them are safe to remove; created tables stay, since seed rows may
+        // already be in them and the next plan can reuse them through table_ref.
+        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;
+        if (onlyFoundation && createdPageIds.length) {
+          const removed: string[] = [];
+          for (const pageId of createdPageIds) {
+            try {
+              await client.deletePage({ appId: args.app_id, versionId: args.version_id, pageId });
+              removed.push(pageId);
+            } catch { /* leave it for the recovery listing below */ }
+          }
+          if (removed.length) {
+            applied.pages -= removed.length;
+            recovery += ` Removed the ${removed.length} empty page(s) this phase had created, so the next plan can recreate them under the same names.`;
+          }
+        }
+        if (Object.values(applied).some((count) => count > 0)) {
+          try {
+            const current = await client.getAppSummary(args.app_id);
+            recovery = ' Persisted resources for targeted repair (do not recreate): ' + JSON.stringify({
+              pages: current.pages.map((page) => ({ id: page.id, name: page.name,
+                components: page.components.map((c) => ({ id: c.id, name: c.name })) })),
+              queries: current.queries.map((q) => ({ id: q.id, name: q.name })),
+            }).slice(0, 12000);
+          } catch { /* Preserve the original failure if even the recovery read is unavailable. */ }
+        }
         return fail(new Error(
           `apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. ` +
-            `The one-time plan token is consumed and no resources were auto-deleted. ` +
-            `${error instanceof Error ? error.message : String(error)}`
+            `The one-time plan token is consumed; nothing with content on it was auto-deleted. ` +
+            `${error instanceof Error ? error.message : String(error)}` + recovery
         ));
       }
     },

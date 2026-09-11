@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ToolJetClient } from '../tooljetClient.js';
+import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 import {
   LARGE_READ_ROW_THRESHOLD,
@@ -10,6 +10,21 @@ import {
 import { ok, fail, type ToolDef } from './types.js';
 
 const REMOTE_RESULT_MAX_JSON_CHARS = 30_000;
+
+/** Report an observed operation contract without flattening or executing additional reads. */
+export function queryResultBindingHint(query: QuerySummary, result: Record<string, unknown>) {
+  const data = result.data as { results?: unknown } | null | undefined;
+  const options = query.options as { operation?: unknown } | null | undefined;
+  if (result.status !== 'ok' || query.kind !== 'tooljetdb' ||
+      options?.operation !== 'sql_execution' || !data || !Array.isArray(data.results)) return undefined;
+  return {
+    rows_path: 'data.results',
+    row_count: data.results.length,
+    guidance: 'This ToolJet DB SQL read returned an object containing results. Bind row consumers to ' +
+      'queries.<name>.data.results (or data?.results ?? []), not data.map/filter or data[0]. ' +
+      'Other operations can return different shapes; preserve the actual returned contract.',
+  };
+}
 
 function truncateRemoteResult(result: Record<string, unknown>): {
   result: Record<string, unknown>;
@@ -204,7 +219,8 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
       'Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / ' +
       'distinct values (statuses, categories) before writing chart series, dropdown options, or filters. ' +
       'The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", ' +
-      'data: [...rows], ... } — HTTP is 200 even on failure, so CHECK `status` and read `message` on failure. ' +
+      'data: <datasource result>, ... }; data may be an array or an object (ToolJet DB SQL uses data.results). ' +
+      'Inspect the actual shape before binding components. HTTP is 200 even on failure, so CHECK `status` and read `message` on failure. ' +
       `Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static ` +
       `limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the ` +
       `observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. ` +
@@ -334,6 +350,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           });
         }
         const failed = result.status === 'failed';
+        const bindingHint = queryResultBindingHint(query, result as Record<string, unknown>);
         const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
         const verification = failed ? failureVerification(query, result as Record<string, unknown>) : undefined;
         const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
@@ -343,6 +360,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         if (output.warning) warnings.push(output.warning);
         return ok({
           ...output.result,
+          ...(bindingHint ? { binding_hint: bindingHint } : {}),
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
           ...(recovery ? { recovery } : {}),

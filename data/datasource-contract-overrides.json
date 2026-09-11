@@ -268,5 +268,61 @@
         ]
       }
     }
+  },
+  "servicenow": {
+    "response_groups": [
+      {
+        "operations": ["list_records"],
+        "response": {
+          "type": "array<object>",
+          "description": "The records themselves. The plugin unwraps ServiceNow's REST envelope, so queries.<q>.data IS the array; never bind queries.<q>.data.result. With sysparm_display_value=true, reference fields such as assignment_group, caller_id and assigned_to are objects { display_value, link }: bind <field>.display_value, or request sysparm_display_value=false to get sys_ids, or 'all' to get both."
+        }
+      },
+      {
+        "operations": ["get_record", "create_record", "update_record"],
+        "response": {
+          "type": "object",
+          "description": "The single record (ServiceNow's result object, unwrapped): bind queries.<q>.data.<field>, never data.result.<field>. Reference fields follow the same sysparm_display_value rule as list_records."
+        }
+      },
+      {
+        "operations": ["delete_record"],
+        "response": { "type": "object", "description": "Empty object on success (ServiceNow returns 204)." }
+      },
+      {
+        "operations": ["aggregate"],
+        "response": {
+          "type": "object",
+          "description": "ServiceNow stats result, unwrapped: data.stats.count (a string), data.stats.avg/sum/min/max keyed by field, or an array of { stats, groupby_fields } when sysparm_group_by is set."
+        }
+      },
+      {
+        "operations": ["list_tables", "get_table_schema", "get_field_choices"],
+        "response": { "type": "array<object>", "description": "Metadata rows, unwrapped from ServiceNow's result envelope." }
+      },
+      {
+        "operations": ["list_workflows", "list_flows"],
+        "response": { "type": "array<object>", "description": "Workflow or flow definitions, unwrapped." }
+      },
+      {
+        "operations": ["invoke_workflow"],
+        "response": {
+          "type": "object",
+          "description": "The MCP tools/call result, returned directly: queries.<q>.data.content contains the content blocks, and data.structuredContent may contain structured output when supplied by the workflow tool. Inspect the returned content before extracting workflow outputs; the plugin does not parse text blocks or expose outputs at data.outputs."
+        }
+      },
+      {
+        "operations": ["trigger_flow"],
+        "response": { "type": "object", "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs." }
+      }
+    ],
+    "operations": {
+      "list_records": {
+        "notes": [
+          "Bind tables to queries.<q>.data directly. The REST `result` wrapper does not exist in ToolJet: queries.<q>.data.result is undefined and the table shows No data.",
+          "Every read must set a sysparm_limit; use sysparm_query for filters (for example active=true^priorityIN1,2) and sysparm_fields to keep rows small."
+        ]
+      }
+    }
   }
 }

@@ -3,6 +3,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
+import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
 
 export function updateQueryTool(client: ToolJetClient): ToolDef {
   return {
@@ -93,6 +94,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           warnings.push('Query options were not contract-validated; pass app_id or kind on update_query.');
         }
 
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,

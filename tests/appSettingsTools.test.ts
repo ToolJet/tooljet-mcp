@@ -26,6 +26,49 @@ const before: AppSettingsSnapshot = {
 };
 
 describe('app settings tools', () => {
+  it('inspects library configuration only on request without loading code or exposing scripts', async () => {
+    const snapshot = { ...before, global_settings: { ...before.global_settings,
+      libraries: { javascript: [
+        { name: 'Tesseract', enabled: true, url: 'https://cdn.example/tesseract@5.1.1/dist/tesseract.min.js' },
+        { name: 'pdfjsLib', enabled: false, url: 'https://user:secret@cdn.example/pdf.js?token=private#secret' },
+      ] }, preloadedScript: { javascript: 'return { privateValue: "do-not-expose" };' } } };
+    const client = { getAppSettings: vi.fn().mockResolvedValue(snapshot) } as unknown as ToolJetClient;
+    const tool = getAppSettingsTool(client);
+    expect(textOf(await tool.handler({ app_id: 'app1', version_id: versionId }))).not.toHaveProperty('javascript_runtime');
+    const result = textOf(await tool.handler({ app_id: 'app1', version_id: versionId, include_libraries: true }));
+    expect(result.javascript_runtime).toMatchObject({ configuration_state: 'configured', total: 2,
+      truncated: false, preloaded_script_present: true, runtime_verified: false,
+      libraries: [
+        { name: 'Tesseract', enabled: true, source_url: 'https://cdn.example/tesseract@5.1.1/dist/tesseract.min.js', url_redacted: false },
+        { name: 'pdfjsLib', enabled: false, source_url: 'https://cdn.example/pdf.js', url_redacted: true },
+      ] });
+    expect(result.javascript_runtime.guidance).toMatch(/lexical.*not.*globalThis/);
+    expect(result.javascript_runtime.guidance).toMatch(/does not configure/);
+    expect(JSON.stringify(result)).not.toMatch(/do-not-expose|token=private|user:secret/);
+    expect(client.getAppSettings).toHaveBeenLastCalledWith('app1', versionId);
+  });
+
+  it('keeps missing and malformed library configuration distinct from runtime readiness', async () => {
+    for (const [value, expected] of [[undefined, 'not_configured'], [[], 'not_configured'], [{}, 'unknown']]) {
+      const client = { getAppSettings: vi.fn().mockResolvedValue({ ...before,
+        global_settings: { libraries: { javascript: value } } }) } as unknown as ToolJetClient;
+      const result = textOf(await getAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, include_libraries: true }));
+      expect(result.javascript_runtime.configuration_state).toBe(expected);
+      expect(result.javascript_runtime.runtime_verified).toBe(false);
+    }
+  });
+
+  it('bounds library inspection and does not copy unrecognized or malformed fields', async () => {
+    const client = { getAppSettings: vi.fn().mockResolvedValue({ ...before, global_settings: {
+      libraries: { javascript: Array.from({ length: 50 }, () => ({ name: 'lib', enabled: true, url: 'not-a-url', secret: 'hidden' })) },
+    } }) } as unknown as ToolJetClient;
+    const result = textOf(await getAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, include_libraries: true }));
+    expect(result.javascript_runtime).toMatchObject({ total: 50, truncated: true });
+    expect(result.javascript_runtime.libraries).toHaveLength(32);
+    expect(result.javascript_runtime.libraries[0]).toMatchObject({ source_url: null, url_valid: false });
+    expect(JSON.stringify(result.javascript_runtime)).not.toMatch(/not-a-url|hidden/);
+  });
+
   it('distinguishes the app header, whole navigation menu, and individual page visibility', () => {
     const tool = updateAppSettingsTool({} as ToolJetClient);
     expect(tool.description).toMatch(/hide_header controls the app header\/banner/i);

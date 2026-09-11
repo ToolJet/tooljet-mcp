@@ -1,3 +1,4 @@
+import { suggestedHtmlHeight, type ReadinessComponent } from './renderReadiness.js';
 import { z } from 'zod';
 import { COMPONENT_SLOT_NAMES } from './componentParent.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
@@ -60,6 +61,19 @@ export function prepareComponentBatch(inputs: ComponentInput[]): PreparedCompone
     const geometry = normalizePlannedLayouts(definition.component);
     return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
   });
+  // A short Html block is raised to the height its markup needs rather than rejected; the plan path does
+  // the same (and moves siblings). Here only the block itself changes, so the warning says to check below it.
+  const heightFixes: string[] = [];
+  for (const result of normalized) {
+    const component = result.component as ReadinessComponent;
+    const fix = suggestedHtmlHeight(component);
+    if (!fix) continue;
+    for (const rect of [component.layout, component.layouts?.desktop]) if (rect && typeof rect.height === 'number') rect.height = fix.to;
+    heightFixes.push(
+      `Html "${component.name ?? '?'}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. ` +
+        `Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`
+    );
+  }
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
   const lint = lintComponents(expanded.components);
   const lateListviewChildWarnings = requested.flatMap((component) =>
@@ -83,6 +97,7 @@ export function prepareComponentBatch(inputs: ComponentInput[]): PreparedCompone
       ...normalized.flatMap((item) => item.warnings),
       ...expanded.warnings,
       ...lint.warnings,
+      ...heightFixes,
       ...lateListviewChildWarnings,
     ],
   };

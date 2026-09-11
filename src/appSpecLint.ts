@@ -224,6 +224,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     const id = `planned-query:${index}:${ref}`;
     if (existingQueryNames.has(query.name)) errors.push(`App already has a query named "${query.name}".`);
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
+    if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
     // Repair a flat {column: value} tooljetdb write map before validating, so the phase this lint
     // hands to apply_app_phase persists the shape ToolJet actually reads. Without this, the plan
@@ -449,10 +450,14 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   errors.push(...structure.errors);
   warnings.push(...structure.warnings);
 
+  // The per-page component lint and the whole-app structure lint both run the render-readiness
+  // checks, so an Html height or root error arrived twice: once as `Page "Home": Html "X": …` and
+  // once as `Html "X": …`. Each copy is ~400 characters the model has to read; keep the page-prefixed one.
+  const deduped = dropUnprefixedDuplicates(errors);
   return {
-    ok: unique(errors).length === 0,
-    errors: unique(errors),
-    warnings: unique(warnings),
+    ok: deduped.length === 0,
+    errors: deduped,
+    warnings: dropUnprefixedDuplicates(warnings),
     checked,
     not_checked: [
       'server acceptance of writes or external datasource connectivity',
@@ -507,7 +512,12 @@ function resolveAction(
   errors: string[],
   label: string
 ): Record<string, unknown> {
-  const { target_ref: targetRef, ...action } = raw;
+  const { target_ref: explicitRef, ...action } = raw;
+  const targetRef = explicitRef ?? (action.actionId === 'run-query' ? action.queryId ?? action.queryName : undefined);
+  if (Object.values(action).some((value) => typeof value === 'string' && /^planned-(query|page|component):/.test(value))) {
+    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    return action;
+  }
   if (targetRef === undefined) return action;
   if (typeof targetRef !== 'string') {
     errors.push(`${label} target_ref must be a string.`);
@@ -573,4 +583,10 @@ function slug(value: string): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function dropUnprefixedDuplicates(values: string[]): string[] {
+  const distinct = unique(values);
+  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, '')).filter((value, i) => value !== distinct[i]));
+  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }

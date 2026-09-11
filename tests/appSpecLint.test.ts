@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
+import { lintPlannedApp } from '../src/appSpecLint.js';
 import { clearAppPlansForTests } from '../src/appPlanStore.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
@@ -10,10 +11,67 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 describe('lint_app_spec', () => {
   beforeEach(() => clearAppPlansForTests());
 
+  it('checks planned custom-key updates, includes implicit id, and leaves all predicates untouched', async () => {
+    const client = {
+      listTables: vi.fn().mockResolvedValue([]),
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', kind: 'tooljetdb' }]),
+      getTableSchema: vi.fn(),
+    } as unknown as ToolJetClient;
+    const options = { operation: 'update_rows', update_rows: {
+      columns: { 0: { column: 'state', value: 'Approved' } },
+      where_filters: { 0: { column: 'reference', operator: 'eq', value: 'R1' } },
+    } };
+    const before = structuredClone(options);
+    for (const primaryKey of [true, false]) {
+      const body = textOf(await lintAppSpecTool(client).handler({
+        version_id: 'v1',
+        tables: [{ table_name: 'requests', columns: [
+          { name: 'reference', type: 'string', primaryKey }, { name: 'state', type: 'string' },
+        ] }],
+        queries: [{ datasource_id: 'tjdb', name: 'save', table_ref: 'requests', options }],
+      }));
+      expect(body.ok).toBe(true);
+      expect(body.warnings.some((warning: string) => warning.includes('has no id column'))).toBe(primaryKey);
+    }
+    expect(client.getTableSchema).not.toHaveBeenCalled();
+    expect(options).toEqual(before);
+  });
+
+  it('inspects each existing update target once, not unrelated tables or list-only targets', async () => {
+    const client = {
+      listTables: vi.fn().mockResolvedValue([
+        { id: 't1', table_name: 'requests' }, { id: 't2', table_name: 'unrelated' },
+      ]),
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', kind: 'tooljetdb' }]),
+      getTableSchema: vi.fn().mockResolvedValue([{ name: 'request_id', isPrimaryKey: true }, { name: 'state' }]),
+    } as unknown as ToolJetClient;
+    const queries = ['approve', 'reject'].map(name => ({
+      datasource_id: 'tjdb', name, table_ref: 'requests', options: {
+        operation: 'update_rows', update_rows: {
+          columns: { 0: { column: 'state', value: name } },
+          where_filters: { 0: { column: 'request_id', operator: 'eq', value: 'R1' } },
+        },
+      },
+    }));
+    const body = textOf(await lintAppSpecTool(client).handler({ version_id: 'v1', queries }));
+    expect(body.ok).toBe(true);
+    expect(body.warnings.filter((warning: string) => warning.includes('has no id column'))).toHaveLength(2);
+    expect(client.getTableSchema).toHaveBeenCalledExactlyOnceWith('requests');
+    vi.mocked(client.getTableSchema).mockClear();
+    await lintAppSpecTool(client).handler({ version_id: 'v1', queries: [{
+      datasource_id: 'tjdb', name: 'list', table_ref: 'requests', options: { operation: 'list_rows', list_rows: {} },
+    }] });
+    expect(client.getTableSchema).not.toHaveBeenCalled();
+    vi.mocked(client.getTableSchema).mockRejectedValue(new Error('Unavailable'));
+    const failedRead = textOf(await lintAppSpecTool(client).handler({ version_id: 'v1', queries }));
+    expect(failedRead.warnings.join(' ')).toContain('primary-key compatibility was not checked');
+    expect(failedRead.warnings.join(' ')).not.toContain('has no id column');
+  });
+
   it('validates a complete planned flow through logical refs without writing', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'existing' }]),
     } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({
       version_id: 'v1',
@@ -58,7 +116,7 @@ describe('lint_app_spec', () => {
   it('turns an unseeded integer primary key into a serial key instead of failing the plan', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([]),
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'existing' }]),
     } as unknown as ToolJetClient;
     const tables = [{
       table_name: 'flights',
@@ -87,7 +145,7 @@ describe('lint_app_spec', () => {
   it('blocks oversized standard single-line fields before issuing a plan token', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([]),
-      listTables: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'existing' }]),
     } as unknown as ToolJetClient;
     const result = await lintAppSpecTool(client).handler({
       pages: [{
@@ -248,5 +306,185 @@ describe('lint_app_spec', () => {
     const result = await lintAppSpecTool({} as ToolJetClient).handler({});
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toMatch(/at least one table, seed_data batch, query, page, event, or lifecycle/i);
+  });
+});
+
+describe('lint_app_spec table_id preflight', () => {
+  it('rejects a ToolJet DB table_id that is not a workspace table and names the closest id', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+      listTables: vi.fn().mockResolvedValue([
+        { id: 'cea811cf-122a-43ee-af86-f04ee2bb2268', table_name: 'hub_aircraft' },
+        { id: '0a4470b8-481c-4fbe-96a1-34053e027cdf', table_name: 'hub_crew' },
+      ]),
+    } as unknown as ToolJetClient;
+    const result = await lintAppSpecTool(client).handler({
+      version_id: 'v1',
+      queries: [{
+        datasource_id: 'tjdb', name: 'maintenanceAircraft',
+        // the aircraft table's prefix fused with the crew table's tail, as Luna and Gemini Pro produced
+        options: { operation: 'list_rows', table_id: 'cea811cf-122a-43be-96a1-34053e027cdf', list_rows: { limit: 50 }, runOnPageLoad: true },
+      }],
+    });
+    const body = textOf(result);
+    expect(body.ok).toBe(false);
+    expect(body.errors.join(' ')).toMatch(/not a table in this workspace; the closest id is hub_aircraft \(cea811cf-122a-43ee-af86-f04ee2bb2268\)/);
+    expect(body.errors.join(' ')).toMatch(/Use table_ref/);
+  });
+
+  it('accepts a table_id that exists and never lists tables when no query names one', async () => {
+    const listTables = vi.fn().mockResolvedValue([{ id: 't9', table_name: 'flights' }]);
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+      listTables,
+    } as unknown as ToolJetClient;
+    const ok = await lintAppSpecTool(client).handler({
+      version_id: 'v1',
+      queries: [{ datasource_id: 'tjdb', name: 'flights', options: { operation: 'list_rows', table_id: 't9', list_rows: { limit: 25 }, runOnPageLoad: true } }],
+    });
+    expect(textOf(ok).ok).toBe(true);
+    expect(listTables).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('plan lint error de-duplication', () => {
+  it('reports an Html render error once, with its page prefix', () => {
+    const html = {
+      client_ref: 'hdr', name: 'OverviewHeader', type: 'Html',
+      properties: { rawHtml: { value: '<div style="height:100%;background:var(--cc-surface);padding:24px"><h1 style="font-size:32px;margin:0">Operations</h1><p style="margin:8px 0 0">Today</p><p style="margin:8px 0 0">More</p></div>' } },
+      layouts: { desktop: { left: 0, top: 0, width: 43, height: 60 } },
+    };
+    const result = lintPlannedApp({ pages: [{ client_ref: 'home', name: 'Home', icon: 'IconHome2', components: [html] }] } as any);
+    const heightErrors = result.errors.filter((e) => e.includes('its markup needs about'));
+    expect(heightErrors).toHaveLength(1);
+    expect(heightErrors[0]).toMatch(/^Page "Home": Html "OverviewHeader"/);
+  });
+});
+
+describe('plan preflight repairs', () => {
+  const client = () => ({
+    listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'ToolJet DB', kind: 'tooljetdb' }]),
+    listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'orders' }, { id: 't2', table_name: 'orders_2' }]),
+  }) as unknown as ToolJetClient;
+
+  it('renames a planned table that already exists and carries the name into seeds, table_ref and foreign keys', async () => {
+    const args = {
+      version_id: 'v1',
+      tables: [
+        { table_name: 'orders', columns: [{ name: 'id', type: 'serial', primaryKey: true }, { name: 'total', type: 'number' }] },
+        { table_name: 'order_items', columns: [{ name: 'order_id', type: 'integer' }], foreign_keys: [{ columns: ['order_id'], referencedTable: 'orders', referencedColumns: ['id'] }] },
+      ],
+      seed_data: [{ table_name: 'orders', rows: [{ total: 10 }] }],
+      queries: [{ client_ref: 'q', datasource_id: 'tjdb', name: 'list_orders', table_ref: 'orders', options: { operation: 'list_rows', list_rows: { limit: 50 } } }],
+      pages: [{ client_ref: 'home', name: 'Home', icon: 'IconHome2', components: [] }],
+    };
+    const result = await lintAppSpecTool(client()).handler(args as never);
+    const parsed = JSON.parse(result.content[0]!.text!);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.warnings.join(' ')).toMatch(/"orders" already exists in this workspace, so it is created as "orders_3"/);
+    expect(args.tables[0]!.table_name).toBe('orders_3');
+    expect(args.seed_data[0]!.table_name).toBe('orders_3');
+    expect(args.queries[0]!.table_ref).toBe('orders_3');
+    expect(args.tables[1]!.foreign_keys![0]!.referencedTable).toBe('orders_3');
+  });
+
+  it.each([
+    'SELECT id, total FROM orders LIMIT 10',
+    'UPDATE orders SET total = 20 WHERE id = 1',
+    'SELECT o.id FROM "orders" o JOIN order_items i ON i.order_id = o.id',
+    'SELECT i.order_id FROM order_items i JOIN orders o ON o.id = i.order_id',
+  ])('rejects a colliding table without silently redirecting SQL: %s', async (sql) => {
+    const args = {
+      version_id: 'v1',
+      tables: [{ table_name: 'orders', columns: [{ name: 'total', type: 'number' }] }],
+      seed_data: [{ table_name: 'orders', rows: [{ total: 10 }] }],
+      queries: [{ datasource_id: 'tjdb', name: 'orders_sql', table_ref: 'orders',
+        options: { operation: 'sql_execution', sql_execution: { sqlQuery: sql } } }],
+    };
+    const before = structuredClone(args);
+    const parsed = textOf(await lintAppSpecTool(client()).handler(args));
+    expect(parsed.ok).toBe(false);
+    expect(parsed.plan_token).toBeUndefined();
+    expect(parsed.errors.join(' ')).toContain('SQL');
+    expect(parsed.errors.join(' ')).toContain('Rename');
+    expect(args).toEqual(before);
+  });
+
+  it('accepts a revised SQL plan with a unique table name and consistent references', async () => {
+    const args = {
+      version_id: 'v1',
+      tables: [{ table_name: 'new_orders', columns: [{ name: 'total', type: 'number' }] }],
+      seed_data: [{ table_name: 'new_orders', rows: [{ total: 10 }] }],
+      queries: [{ datasource_id: 'tjdb', name: 'list_orders', table_ref: 'new_orders',
+        options: { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT total FROM new_orders LIMIT 10' } } }],
+    };
+    const parsed = textOf(await lintAppSpecTool(client()).handler(args));
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.plan_token).toEqual(expect.any(String));
+  });
+
+  it('also rejects a collision when the SQL query has no table_ref', async () => {
+    const args = {
+      version_id: 'v1',
+      tables: [{ table_name: 'orders', columns: [{ name: 'total', type: 'number' }] }],
+      queries: [{ datasource_id: 'tjdb', name: 'joined',
+        options: { operation: 'sql_execution', sql_execution: { sqlQuery: 'SELECT * FROM orders JOIN order_items ON orders.id = order_items.order_id' } } }],
+    };
+    const parsed = textOf(await lintAppSpecTool(client()).handler(args));
+    expect(parsed.ok).toBe(false);
+    expect(parsed.plan_token).toBeUndefined();
+    expect(args.tables[0].table_name).toBe('orders');
+  });
+
+  it('raises a short Html block to the height its markup needs and moves the components below it', async () => {
+    const args = {
+      version_id: 'v1',
+      pages: [{
+        client_ref: 'home', name: 'Home', icon: 'IconHome2',
+        components: [
+          { client_ref: 'hdr', name: 'header', type: 'Html', layout: { left: 0, top: 10, width: 43, height: 60 },
+            properties: { rawHtml: { value: '<div style="height:100%;background:var(--cc-surface);padding:24px"><h1 style="font-size:32px;margin:0">Orders</h1><p style="margin:8px 0 0">Line one</p><p style="margin:8px 0 0">Line two</p><p style="margin:8px 0 0">Line three</p></div>' } } },
+          { client_ref: 'tbl', name: 'orders', type: 'Table', layout: { left: 0, top: 80, width: 43, height: 400 },
+            properties: { data: { value: '{{[]}}' }, dataSourceSelector: { value: 'rawJson' }, autogenerateColumns: { value: true } } },
+          { client_ref: 'side', name: 'aside', type: 'Text', layout: { left: 30, top: 10, width: 10, height: 30 }, properties: { text: { value: 'Right of the header' } } },
+        ],
+      }],
+    };
+    const result = await lintAppSpecTool(client()).handler(args as never);
+    const parsed = JSON.parse(result.content[0]!.text!);
+    expect(parsed.errors.filter((e: string) => e.includes('its markup needs'))).toEqual([]);
+    const fixed = parsed.warnings.find((w: string) => w.includes('so its height is now'));
+    expect(fixed).toMatch(/Html "header" needed about \d+px .* was 60px, so its height is now (\d+)px and 1 component\(s\) below it moved down/);
+    const newHeight = args.pages[0]!.components[0]!.layout.height;
+    expect(newHeight).toBeGreaterThan(60);
+    expect(args.pages[0]!.components[1]!.layout.top).toBe(80 + newHeight - 60);
+    expect(args.pages[0]!.components[2]!.layout.top).toBe(10);
+  });
+});
+
+describe('empty-page reuse guard', () => {
+  it('refuses to create new pages while the app still has empty pages the plan ignores', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([]),
+      getAppSummary: vi.fn().mockResolvedValue({
+        app_id: 'app1', version_id: 'v1', events: [], queries: [],
+        pages: [
+          { id: 'home', name: 'Home', handle: 'home', components: [{ id: 'c', name: 'title', type: 'Text' }] },
+          { id: 'p2', name: 'Orders', handle: 'orders', components: [] },
+        ],
+      }),
+    } as unknown as ToolJetClient;
+    const shadowing = await lintAppSpecTool(client).handler({
+      app_id: 'app1', version_id: 'v1',
+      pages: [{ client_ref: 'od', name: 'Orders Desk', icon: 'IconList', components: [] }],
+    } as never);
+    expect(JSON.parse(shadowing.content[0]!.text!).errors.join(' ')).toMatch(/empty page\(s\) this plan does not touch: "Orders"/);
+    const reusing = await lintAppSpecTool(client).handler({
+      app_id: 'app1', version_id: 'v1',
+      pages: [{ client_ref: 'od', name: 'Orders', icon: 'IconList', components: [] }],
+    } as never);
+    expect(JSON.parse(reusing.content[0]!.text!).errors.filter((e: string) => e.includes('empty page'))).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead } from '../queryExecutionSafety.js';
-import { containsComponentBinding, failureRecovery, failureVerification, schemaNameHint } from './runQuery.js';
+import { containsComponentBinding, failureRecovery, failureVerification, schemaNameHint, queryResultBindingHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 
@@ -94,6 +94,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
           try {
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
             const failed = result.status === 'failed';
+            const bindingHint = queryResultBindingHint(query, result as Record<string, unknown>);
             const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
             const verification = failed ? failureVerification(query, result as Record<string, unknown>) : undefined;
             const schemaHint = failed ? await schemaNameHint(client, query, result as Record<string, unknown>) : undefined;
@@ -104,13 +105,15 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               args.include_data === false
                 ? (() => {
                     const { data, ...rest } = result as Record<string, unknown>;
-                    return Array.isArray(data) ? { ...rest, row_count: data.length } : rest;
+                    return Array.isArray(data) ? { ...rest, row_count: data.length }
+                      : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
                   })()
                 : result;
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
               ...shaped,
+              ...(bindingHint ? { binding_hint: bindingHint } : {}),
               ...(warnings.length ? { warnings } : {}),
               ...(recovery ? { recovery } : {}),
               ...(verification ? { verification } : {}),

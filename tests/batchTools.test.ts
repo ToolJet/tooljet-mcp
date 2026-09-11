@@ -1,3 +1,4 @@
+import { prepareComponentBatch } from '../src/componentBatch.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createTablesTool } from '../src/tools/createTables.js';
@@ -90,6 +91,7 @@ describe('batch authoring tools', () => {
 
   it('creates a dependency-validated table batch through one client call', async () => {
     const client = {
+      listTables: vi.fn().mockResolvedValue([]),
       createTables: vi.fn().mockResolvedValue([
         { table_id: 'p1', table_name: 'projects' },
         { table_id: 'c1', table_name: 'cases' },
@@ -186,5 +188,38 @@ describe('batch authoring tools', () => {
       order: ['p2', 'p1'],
     });
     expect(textOf(result)).toMatchObject({ updated_fields: 1, reordered: true });
+  });
+});
+
+describe('create_tables name collisions', () => {
+  it('suffixes a taken table name and rewrites the foreign keys that point at it', async () => {
+    const client = {
+      listTables: vi.fn().mockResolvedValue([{ id: 'x', table_name: 'projects' }, { id: 'y', table_name: 'projects_2' }]),
+      createTables: vi.fn().mockImplementation(async ({ tables }: { tables: Array<{ tableName: string }> }) => tables.map((t, i) => ({ table_id: `t${i}`, table_name: t.tableName }))),
+    } as unknown as ToolJetClient;
+    const result = await createTablesTool(client).handler({
+      tables: [
+        { table_name: 'projects', columns: [{ name: 'id', type: 'serial', primaryKey: true }] },
+        { table_name: 'cases', columns: [{ name: 'project_id', type: 'integer' }], foreign_keys: [{ columns: ['project_id'], referencedTable: 'projects', referencedColumns: ['id'] }] },
+      ],
+    });
+    const parsed = JSON.parse(result.content[0]!.text!);
+    expect(parsed.tables.map((t: { table_name: string }) => t.table_name)).toEqual(['projects_3', 'cases']);
+    expect(parsed.warnings[0]).toMatch(/created "projects_3" instead/);
+    const sent = (client.createTables as ReturnType<typeof vi.fn>).mock.calls[0]![0].tables;
+    expect(sent[1].foreignKeys[0].referencedTable).toBe('projects_3');
+  });
+});
+
+describe('add_components Html auto-fit', () => {
+  it('raises a short Html block instead of rejecting it', () => {
+    const prepared = prepareComponentBatch([{
+      client_ref: 'h', name: 'hdr', type: 'Html', layout: { left: 0, top: 0, width: 43, height: 40 },
+      properties: { rawHtml: { value: '<div style="height:100%;background:var(--cc-surface);padding:20px"><h2 style="margin:0;font-size:24px">Title</h2><p style="margin:6px 0 0">One</p><p style="margin:6px 0 0">Two</p></div>' } },
+    }] as never);
+    expect(prepared.errors.filter((e) => e.includes('its markup needs'))).toEqual([]);
+    expect(prepared.warnings.join(' ')).toMatch(/Html "hdr" needed about \d+px .* saved at \d+px/);
+    const first = prepared.components[0] as { layout?: { height?: number }; layouts?: { desktop?: { height?: number } } };
+    expect(first.layouts?.desktop?.height ?? first.layout?.height).toBeGreaterThan(40);
   });
 });

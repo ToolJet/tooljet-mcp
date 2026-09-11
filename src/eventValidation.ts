@@ -1,5 +1,6 @@
 import { getComponentSchema } from './catalog.js';
 import { resolveRef } from './refResolution.js';
+import { decodeComponentParent } from './componentParent.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 
 export interface EventValidationResult {
@@ -113,6 +114,44 @@ export function validateEvents(
   const queries = new Set(summary.queries.map((query) => query.id));
   const queryById = new Map(summary.queries.map((query) => [query.id, query]));
   const pages = new Set(summary.pages.map((page) => page.id));
+  const pageOfComponent = new Map(summary.pages.flatMap((page) => page.components.map((c) => [c.id, page.id] as const)));
+  const pageName = new Map(summary.pages.map((page) => [page.id, page.name ?? page.handle ?? page.id]));
+  // Which pages run a query on load: page onPageLoad run-query events (persisted and in this batch),
+  // component events on a page, and runOnPageLoad (which fires on every page). Used to reject a
+  // query-success action aimed at a component that may not be mounted when the query finishes.
+  const queryTriggerPages = new Map<string, Set<string>>(); // '*' = every page
+  const noteTrigger = (queryId: string | undefined, pageId: string | undefined) => {
+    if (!queryId) return;
+    const set = queryTriggerPages.get(queryId) ?? new Set<string>();
+    set.add(pageId ?? '*');
+    queryTriggerPages.set(queryId, set);
+  };
+  for (const query of summary.queries) {
+    const opts = (query.options && typeof query.options === 'object' ? query.options : {}) as Record<string, unknown>;
+    const onLoad = (opts.runOnPageLoad as { value?: unknown } | boolean | string | undefined);
+    const raw = onLoad && typeof onLoad === 'object' ? onLoad.value : onLoad;
+    if (raw === true || String(raw ?? '').replace(/[{}\s]/g, '').toLowerCase() === 'true') noteTrigger(query.id, undefined);
+  }
+  for (const persisted of summary.events ?? []) {
+    const payload = persisted.event && typeof persisted.event === 'object' ? (persisted.event as Record<string, unknown>) : undefined;
+    if (!payload || payload.actionId !== 'run-query') continue;
+    const queryId = String(payload.queryId ?? '');
+    if (persisted.target === 'page') noteTrigger(queryId, persisted.sourceId);
+    else if (persisted.target === 'component' && persisted.sourceId) noteTrigger(queryId, pageOfComponent.get(persisted.sourceId));
+  }
+  for (const event of events) {
+    if (event.action?.actionId !== 'run-query') continue;
+    const queryId = String(event.action.queryId ?? '');
+    if (event.sourceType === 'page') noteTrigger(queryId, event.sourceId);
+    else if (event.sourceType === 'component' || event.sourceType === 'table_column') noteTrigger(queryId, pageOfComponent.get(event.sourceId));
+  }
+  const pageScopedTarget = (action: Record<string, unknown>): string | undefined => {
+    const id = action.actionId;
+    if (id === 'set-table-page') return typeof action.table === 'string' ? action.table : undefined;
+    if (id === 'control-component' || id === 'scroll-component-into-view') return typeof action.componentId === 'string' ? action.componentId : undefined;
+    if (id === 'show-modal' || id === 'close-modal') return typeof action.modal === 'string' ? action.modal : undefined;
+    return undefined;
+  };
 
   events.forEach((event, index) => {
     const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
@@ -166,6 +205,40 @@ export function validateEvents(
     if (typeof actionId !== 'string' || !ACTION_IDS.has(actionId)) {
       errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
+    }
+    // A page-scoped action (set a Table page, control a component, open a modal) reaches only what is
+    // mounted: the components of the open page. Aimed at another page it fails at runtime with
+    // "exposedValue.setPage is not a function" (seen 2026-09-05 in a Sales Performance app whose
+    // page-load queries reset tables on three other pages).
+    const targetId = pageScopedTarget(event.action as Record<string, unknown>);
+    const targetPage = targetId ? pageOfComponent.get(targetId) : undefined;
+    if (targetId && targetPage) {
+      const targetLabel = `${components.get(targetId)?.type ?? 'component'} "${components.get(targetId)?.name ?? targetId}" on page "${pageName.get(targetPage)}"`;
+      const sourcePage =
+        event.sourceType === 'page'
+          ? event.sourceId
+          : event.sourceType === 'component' || event.sourceType === 'table_column'
+            ? pageOfComponent.get(event.sourceId)
+            : undefined;
+      if (sourcePage && sourcePage !== targetPage) {
+        errors.push(
+          `${label}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action ` +
+            'only reaches components on the page that is open; on another page the target is not mounted and the ' +
+            `action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a ` +
+            'component there), or drop it: switch-page mounts that page fresh.'
+        );
+      } else if (event.sourceType === 'data_query') {
+        const triggerPages = queryTriggerPages.get(event.sourceId);
+        const elsewhere = triggerPages ? [...triggerPages].filter((page) => page !== targetPage) : [];
+        if (elsewhere.length) {
+          const where = elsewhere.includes('*') ? 'on every page load (runOnPageLoad)' : `from page "${elsewhere.map((p) => pageName.get(p) ?? p).join('", "')}"`;
+          errors.push(
+            `${label}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, ` +
+              'where that component is not mounted, so the success handler fails at runtime. Move the action to ' +
+              `page "${pageName.get(targetPage)}" (its onPageLoad, or the filter\'s own event there), or run the query only from that page.`
+          );
+        }
+      }
     }
     if (actionId === 'run-query') {
       let queryId = event.action.queryId;
@@ -355,6 +428,27 @@ export function validateEvents(
   });
   for (const chain of chains.values()) {
     chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
+    // A closed ModalV2 unmounts its children. Imperative prefill before show-modal is lost
+    // when those controls mount with their defaults (observed in the Luna UI benchmark).
+    chain.forEach(({ event }, index) => {
+      if (event.action.actionId !== 'control-component' ||
+          !['selectOption', 'selectOptions', 'setText', 'setValue'].includes(String(event.action.componentSpecificActionHandle))) return;
+      let child = components.get(String(event.action.componentId));
+      const visited = new Set<string>();
+      while (child?.parent && !visited.has(child.id)) {
+        visited.add(child.id);
+        const parent = components.get(decodeComponentParent(child.parent).parentId);
+        if (!parent) break;
+        if (parent.type === 'ModalV2' && chain.slice(index + 1).some(({ event: later }) =>
+          later.action.actionId === 'show-modal' && later.action.modal === parent.id)) {
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" ` +
+            'before show-modal. Closed modal children are not mounted; these values can be lost. ' +
+            'Bind input defaults to the selected record, or initialize after the modal opens.');
+          break;
+        }
+        child = parent;
+      }
+    });
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === 'switch-page');
     if (navigationIndex === -1 || navigationIndex === chain.length - 1) continue;
     const navigation = chain[navigationIndex]!;

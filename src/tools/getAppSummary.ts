@@ -44,7 +44,7 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       'fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. ' +
       'Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never ' +
       'the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component' +
-      '(id/name/type/layouts/properties/styles/others/parent), query(id/name/kind/data_source_id/options), and ' +
+      '(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and ' +
       'event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false ' +
       'returns page metadata only.',
     inputSchema: {
@@ -71,6 +71,13 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: GetAppSummaryArgs) {
       try {
+        for (const key of ['page_ids', 'page_names', 'page_handles', 'component_ids', 'component_names',
+          'component_types', 'query_ids', 'query_names', 'query_kinds', 'event_ids', 'event_source_ids'] as const) {
+          if (args[key]?.some((value) => !value.trim() || value === '*' || value === '00000000-0000-0000-0000-000000000000')) {
+            throw new Error(`${key} contains a placeholder, not an exact selector. Omit unused filters entirely; ` +
+              'wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.');
+          }
+        }
         const summary = await client.getAppSummary(args.app_id);
         return ok(
           selectAppSummary(summary, {
