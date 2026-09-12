@@ -969,7 +969,7 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
   return { lines: parts.length, px, sizes };
 }
 
-const CHART_HOUSE_LAYOUT_KEYS = ['font', 'margin', 'paper_bgcolor'];
+const CHART_HOUSE_LAYOUT_KEYS = ['font', 'family', 'margin', 'paper_bgcolor'];
 
 /**
  * A native Chart renders Plotly's defaults: Verdana, grey grid, unlabeled bars, the rainbow pie. Navaneeth's
