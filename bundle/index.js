@@ -35430,6 +35430,26 @@ function lintChartHouseStyle(spec) {
       `Chart "${label2}": jsonDescription has no layout.${missing.join(", layout.")}; without the house layout the chart falls back to Plotly defaults. Add layout { font: {family, size, color}, margin, paper_bgcolor, plot_bgcolor } from references/ui-layout.md.`
     ];
   }
+  if (!description.includes("{{")) {
+    try {
+      const parsed = JSON.parse(description);
+      const traces = Array.isArray(parsed.data) ? parsed.data : [];
+      const dataless = traces.filter((trace) => {
+        const type = String(trace.type ?? "scatter");
+        if (type === "pie")
+          return !Array.isArray(trace.values) || trace.values.length === 0;
+        if (type === "heatmap")
+          return !Array.isArray(trace.z) || trace.z.length === 0;
+        return !Array.isArray(trace.y) || trace.y.length === 0;
+      });
+      if (dataless.length) {
+        return [
+          `Chart "${label2}": ${dataless.length} of ${traces.length} trace(s) carry no data (no x/y, values or z arrays), so the chart draws empty axes. Put the arrays in the trace, or build the whole { data, layout } object in a JavaScript query and bind jsonDescription to it.`
+        ];
+      }
+    } catch {
+    }
+  }
   return [];
 }
 function lintComponentSpec(spec) {
@@ -35759,6 +35779,17 @@ function lintComponentSpec(spec) {
         const c = col;
         return c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}";
       }).length;
+      const height = (spec.layouts?.desktop ?? spec.layout)?.height;
+      const perPage = optionalStaticNumber(propVal2(props, "rowsPerPage"));
+      const paginated = propVal2(props, "enablePagination");
+      if (typeof height === "number" && (paginated === void 0 || isTrueBinding(paginated)) && typeof perPage === "number" && perPage > 0) {
+        const wraps = isTrueBinding(propVal2(spec.styles, "contentWrap"));
+        const rowPx = wraps ? 60 : 45;
+        const needed = 33 + 57 + perPage * rowPx;
+        if (height < needed) {
+          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`);
+        }
+      }
       if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
         errors.push(`Table "${label2}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true (rows grow to fit) and keep long text columns at columnSize 180 or more.`);
       }
@@ -41564,7 +41595,8 @@ function auditScript() {
     const text = (el.innerText || "").trim();
     boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
-    if (textual && text.length === 0 && r.height > 30) {
+    const emptyStateByName = /empty|placeholder|no_?data|nothing/i.test(cy);
+    if (textual && text.length === 0 && r.height > 30 && !emptyStateByName) {
       findings.push({ kind: "empty_render", component: name, detail: `${Math.round(r.width)}x${Math.round(r.height)}px box renders no text (a multi-line binding or a broken expression)` });
     }
     const m = text.match(bad);
@@ -41624,6 +41656,17 @@ function auditScript() {
       }
       if (cut.length)
         findings.push({ kind: "clipped", component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
+      const body = el.querySelector('.table-responsive, .tbody, tbody, [class*="table-body"]');
+      const rows = body ? Array.from(body.querySelectorAll('tr, [role="row"], .tr')) : [];
+      if (body && rows.length) {
+        const bodyBottom = body.getBoundingClientRect().bottom;
+        const sliced = rows.filter((row) => {
+          const rr = row.getBoundingClientRect();
+          return rr.top < bodyBottom - 4 && rr.bottom > bodyBottom + 6 && (row.innerText || "").trim().length > 0;
+        });
+        if (sliced.length)
+          findings.push({ kind: "clipped", component: name, detail: `a row is sliced by the table's bottom edge; size the table to whole rows (header 40 + rows x row height + footer) or enable pagination` });
+      }
     }
   }
   for (let i = 0; i < boxes.length; i++) {
@@ -41679,6 +41722,12 @@ async function auditPages(pages, options2 = {}) {
       try {
         await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
         await page.waitForTimeout(options2.settleMs ?? 6e3);
+        await page.waitForFunction(() => {
+          const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+          const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+          return charts === 0 || plots >= charts;
+        }, void 0, { timeout: options2.chartWaitMs ?? 2e4 }).catch(() => void 0);
+        await page.waitForTimeout(1500);
         const landed = page.url();
         if (/\/login\b/.test(landed)) {
           reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: "the viewer redirected to sign-in; the page is not public and no viewer session was provided" }] });
