@@ -88,9 +88,9 @@ Read the request for cues, in this order of strength, and derive a theme when an
    that colour: Aloe or Sage → a muted green such as `#3F6B4A`; Indigo → `#3730A3`; Amber or Saffron → a dark
    `#B45309`), and the industry row below supplies only the neutrals, radii and accent logic. Never let a row's
    sample hex override a colour the name already states.
-3. **An industry or business type** — pick the archetype below. Its primary column is a starting point for a
-   customer whose name says nothing about colour, not a fixed value. Name the theme after the customer
-   ("Bernal Fire Pizza", "Northline Clinic").
+3. **An industry or business type** — pick one palette from the menu below. Its "leans toward" column is a
+   hint, not a lookup: the customer's name, industry and wording steer the choice, and similar prompts should
+   not land on the same row by reflex. Name the theme after the customer ("Bernal Fire Pizza", "Northline Clinic").
 4. **An audience or scale word** — "enterprise", "bank", "government", "startup", "kids" — shifts the archetype
    toward conservative or playful.
 
@@ -141,19 +141,29 @@ progress), links, and the highlighted figure in a KPI card. Buttons and inputs t
 For blue primaries the accent is the primary. For a near-black, brown or grey primary the accent is what gives
 the app a colour at all, so never leave it as the standard blue.
 
-| Cue in the request | Primary (light / dark) | Accent | Canvas | Radius | Notes |
+| Palette | Primary (light / dark) | Accent | Canvas | Radius | Leans toward |
 | --- | --- | --- | --- | --- | --- |
-| Large enterprise, bank, insurer, government, legal | `#1E40AF` / `#60A5FA` navy | `#1D4ED8` | `#F8FAFC` cool | 6 / 4 / 10 | Conservative, denser; nothing warm |
-| SaaS, developer tools, startup | `#2563EB` / `#3B82F6` (standard) | `#2563EB` | `#F9FAFB` | 8 / 6 / 12 | The standard theme already fits |
-| Healthcare, clinic, dental, pharmacy | `#0F766E` / `#2DD4BF` teal | `#0D9488` | `#F7FAFA` | 8 / 6 / 12 | Calm, clinical; success stays green |
-| Beauty, spa, salon, wellness, boutique | `#BE185D` / `#F472B6` rose or `#7C3AED` plum | `#DB2777` (rose) or `#8B5CF6` (plum) | `#FBF7F5` warm ivory | 12 / 8 / 16 | Softer corners, warm neutrals `#1F1A1C` ink |
-| Restaurant, pizza, bakery, café, bar | `#B91C1C` brick or `#C2410C` terracotta / `#F87171` | `#C2410C` | `#FAF7F2` warm | 10 / 6 / 14 | Warm ink `#1C1917`; keep error red darker `#991B1B` to stay distinct |
-| Consumer brand, soda, snacks, apparel, retail | The brand's own hue at full saturation, e.g. `#DC2626`→ use `#C81E1E` / `#F87171` | the same hue | `#FFFFFF` | 12 / 8 / 16 | Bolder primary is expected here; still one accent only |
-| Outdoors, sports, cycling, fitness | `#15803D` forest or `#0369A1` deep sky / lighter tints | `#0369A1` (with forest) or `#15803D` (with sky) | `#F8FAF8` | 8 / 6 / 12 | Success shifts to `#22C55E` so it differs from a green primary |
-| Logistics, manufacturing, field ops, energy | `#EA580C` safety orange or `#0E7490` steel / lighter tints | `#0E7490` (with orange) or `#EA580C` (with steel) | `#F8FAFC` | 6 / 4 / 10 | Warning shifts to `#B45309` if the primary is orange |
-| Finance, fintech, accounting | `#1D4ED8` royal or `#065F46` money green / lighter tints | `#1D4ED8` | `#F8FAFC` | 6 / 4 / 10 | Dense tables; keep borders `#E5E7EB` |
-| Education, kids, nonprofit, community | `#4F46E5` indigo or `#0891B2` cyan / lighter tints | `#0891B2` (with indigo) or `#4F46E5` (with cyan) | `#FAFAFF` | 12 / 8 / 16 | Friendlier corners; never garish |
-| Real estate, hospitality, luxury | `#1F2937` charcoal or `#78350F` bronze / `#D6D3D1` | `#B45309` bronze | `#FAF9F7` | 4 / 4 / 8 | Near-black primary is the one case where it reads as intended; the accent carries charts and states |
+| Ink | `#111827` / `#F9FAFB` | `#D97706` amber | `#FAFAF9` warm | 6 / 4 / 10 | Operations, manufacturing, logistics, field work, dense internal tools |
+| Slate | `#334155` / `#CBD5E1` | `#0EA5E9` sky | `#F8FAFC` cool | 6 / 4 / 10 | Real estate, architecture, professional services, reporting |
+| Navy | `#1E3A8A` / `#60A5FA` | `#2563EB` | `#F8FAFC` cool | 6 / 4 / 10 | Banks, insurers, government, legal, large enterprise |
+| Blue | `#2563EB` / `#3B82F6` | `#2563EB` | `#F9FAFB` | 8 / 6 / 12 | SaaS, developer tools, startups; the standard theme already fits |
+| Indigo | `#4F46E5` / `#818CF8` | `#6366F1` | `#FAFAFF` | 10 / 6 / 14 | Education, community, product and design teams, nonprofits |
+| Emerald | `#059669` / `#34D399` | `#10B981` | `#F7FAF8` | 8 / 6 / 12 | Healthcare, wellness, sustainability, agriculture; success stays green |
+| Graphite | `#292524` / `#E7E5E4` | `#C2410C` terracotta | `#FAF8F5` warm | 10 / 6 / 14 | Food, hospitality, retail, crafts, boutique brands: warm without being loud |
+
+Every row is a mid-to-deep colour on a near-white canvas: the palettes people see in well-made products in
+2026 and that nobody objects to. Nothing neon, pastel, muted teal, steel, purple, rose or brick as a primary;
+a bold brand colour enters only through cue 1 (the customer's own brand) or cue 2 (a colour in the name).
+The menu is deliberately without teal or steel: a muted teal primary on a large surface reads as dated admin
+software, and on 2026-09-12 nine of sixteen generated apps had landed on the same two teals because an
+industry lookup handed them out. When two rows fit, prefer the one the customer's own words point to; when
+nothing points anywhere, Ink for a dense staff tool and Blue for everything else.
+
+**Colour usage, whichever palette.** The primary appears in the one filled button per view, the active
+navigation item, focus rings, link text and the lead figure of a KPI strip. It never fills a KPI tile, a card
+background or a header band; every tile is the same white card with a hairline border. A filled statement
+band exists only for requests with feel words (the signature section below). Status chips take the tint map,
+charts take the accent series, and the rest of the page is neutrals.
 
 Build the definition from the standard theme in `data/default-theme.json`, override it with the row, the neutral
 set and the status rule above according to the use case, and pass it as
