@@ -1005,6 +1005,28 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
         'falls back to Plotly defaults. Add layout { font: {family, size, color}, margin, paper_bgcolor, plot_bgcolor } from references/ui-layout.md.',
     ];
   }
+  // A static description is parseable: every trace must carry its data. A bar with a colour and no x/y
+  // drew empty axes on a round-seven build (2026-09-12).
+  if (!description.includes('{{')) {
+    try {
+      const parsed = JSON.parse(description) as { data?: Array<Record<string, unknown>> };
+      const traces = Array.isArray(parsed.data) ? parsed.data : [];
+      const dataless = traces.filter((trace) => {
+        const type = String(trace.type ?? 'scatter');
+        if (type === 'pie') return !Array.isArray(trace.values) || trace.values.length === 0;
+        if (type === 'heatmap') return !Array.isArray(trace.z) || trace.z.length === 0;
+        return !Array.isArray(trace.y) || trace.y.length === 0;
+      });
+      if (dataless.length) {
+        return [
+          `Chart "${label}": ${dataless.length} of ${traces.length} trace(s) carry no data (no x/y, values or z arrays), so the chart draws empty axes. ` +
+            'Put the arrays in the trace, or build the whole { data, layout } object in a JavaScript query and bind jsonDescription to it.',
+        ];
+      }
+    } catch {
+      /* the JSON validity error is reported by lintChartDataShape */
+    }
+  }
   return [];
 }
 

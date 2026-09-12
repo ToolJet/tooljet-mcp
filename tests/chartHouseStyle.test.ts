@@ -18,4 +18,12 @@ describe('chart house style', () => {
     const r = lintComponentSpec({ type: 'Chart', name: 'pieChart', properties: { type: { value: 'pie' } } });
     expect(r.errors.some((e) => e.includes('rainbow'))).toBe(true);
   });
+  it('rejects a static trace that carries no data', () => {
+    const desc = JSON.stringify({ data: [{ type: 'bar', marker: { color: '#0369A1' } }], layout: { font: { family: 'IBM Plex Sans', size: 12, color: '#6B7280' }, margin: { l: 40, r: 16, t: 24, b: 40 }, paper_bgcolor: '#FFFFFF', plot_bgcolor: '#FFFFFF' } });
+    const r = lintChartHouseStyle({ type: 'Chart', name: 'metricsChart', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: desc } } });
+    expect(r).toHaveLength(1);
+    expect(r[0]).toContain('carry no data');
+    const good = JSON.stringify({ data: [{ type: 'bar', x: ['a'], y: [1] }], layout: { font: { family: 'IBM Plex Sans', size: 12, color: '#6B7280' }, margin: { l: 40, r: 16, t: 24, b: 40 }, paper_bgcolor: '#FFFFFF', plot_bgcolor: '#FFFFFF' } });
+    expect(lintChartHouseStyle({ type: 'Chart', name: 'c', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: good } } })).toEqual([]);
+  });
 });
