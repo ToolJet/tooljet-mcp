@@ -35366,7 +35366,18 @@ function lintRenderedText(spec) {
       errors.push(`Component "${label2}".properties.${key} has JavaScript outside a {{ }} binding (${outside}); it renders as source text. Wrap the whole expression in one {{ }} or move it into a query.`);
     }
   }
-  const itemsKey = CONTAINER_ITEMS[spec.type ?? ""];
+  if (spec.type === "Tabs") {
+    const dynamic = isTrueBinding(propVal2(props, "useDynamicOptions"));
+    const tabs = propVal2(props, "tabs");
+    const tabItems = propVal2(props, "tabItems");
+    const authoredItems = Array.isArray(tabItems) && tabItems.length > 0 && !tabItems.every((item) => /^Tab \d+$/.test(String(item?.title ?? "")));
+    if (dynamic && (tabs === void 0 || tabs === null || tabs === "")) {
+      errors.push(`Tabs "${label2}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
+    } else if (!dynamic && !authoredItems) {
+      errors.push(`Tabs "${label2}": ToolJet renders properties.tabItems (default "Tab 1 / Tab 2 / Tab 3") unless useDynamicOptions is true; ` + (tabs !== void 0 ? "the authored properties.tabs is ignored. " : "") + 'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.');
+    }
+  }
+  const itemsKey = spec.type === "Tabs" ? void 0 : CONTAINER_ITEMS[spec.type ?? ""];
   if (itemsKey) {
     const items = propVal2(props, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === "string" && items.includes("{{");
@@ -35391,6 +35402,36 @@ function estimateTextHeight(text, baseSize) {
   const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
   return { lines: parts.length, px: px2, sizes };
 }
+var CHART_HOUSE_LAYOUT_KEYS = ["font", "margin", "paper_bgcolor"];
+function lintChartHouseStyle(spec) {
+  if (spec.type !== "Chart")
+    return [];
+  const label2 = spec.name ?? spec.type;
+  const props = spec.properties ?? {};
+  const fromJson = propVal2(props, "plotFromJson");
+  if (!isTrueBinding(fromJson)) {
+    const kind = String(propVal2(props, "type") ?? "bar");
+    return [
+      `Chart "${label2}": native type "${kind}" renders Plotly's defaults (Verdana labels, grey grid, flat unlabeled bars, the rainbow pie). Set properties.plotFromJson to "{{true}}" and write properties.jsonDescription as the house chart from references/ui-layout.md (accent series, value labels, theme font, transparent paper, weak-border grid).`
+    ];
+  }
+  const raw = propVal2(props, "jsonDescription");
+  const description = typeof raw === "string" ? raw : raw && typeof raw === "object" ? JSON.stringify(raw) : "";
+  if (!description.trim()) {
+    return [`Chart "${label2}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
+  }
+  if (!description.includes("layout") && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes("data"))
+    return [];
+  if (!description.includes("layout") && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description))
+    return [];
+  const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key) => !description.includes(key));
+  if (missing.length) {
+    return [
+      `Chart "${label2}": jsonDescription has no layout.${missing.join(", layout.")}; without the house layout the chart falls back to Plotly defaults. Add layout { font: {family, size, color}, margin, paper_bgcolor, plot_bgcolor } from references/ui-layout.md.`
+    ];
+  }
+  return [];
+}
 function lintComponentSpec(spec) {
   const errors = [];
   const warnings = [];
@@ -35413,6 +35454,7 @@ function lintComponentSpec(spec) {
   errors.push(...lintBindingSyntax(props, `Component "${label2}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label2}".styles`));
   errors.push(...lintRenderedText(spec));
+  errors.push(...lintChartHouseStyle(spec));
   if (spec.type === "Text") {
     const text = propVal2(props, "text");
     const height = (spec.layouts?.desktop ?? spec.layout)?.height;
@@ -35984,16 +36026,23 @@ function lintModalChildren(components) {
   }
   return warnings;
 }
-function lintRenderedGeometry(components) {
+function lintRenderedGeometryBlocking(components) {
   return [
     ...detectOverlaps(components),
     ...lintToolbarButtonAlignment(components),
     ...lintModalChildren(components),
-    ...lintListviewChildren(components),
+    ...lintListviewChildren(components)
+  ];
+}
+function lintRenderedGeometryAdvisory(components) {
+  return [
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components)
   ];
+}
+function lintRenderedGeometry(components) {
+  return [...lintRenderedGeometryBlocking(components), ...lintRenderedGeometryAdvisory(components)];
 }
 var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "Modal", "Icon"]);
 var MIN_RENDERABLE_HEIGHT = 24;
@@ -36025,7 +36074,8 @@ function lintComponents(components) {
   for (const c of components)
     errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
-  warnings.push(...lintRenderedGeometry(components));
+  errors.push(...lintRenderedGeometryBlocking(components));
+  warnings.push(...lintRenderedGeometryAdvisory(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
 }
@@ -36311,7 +36361,8 @@ function validateAppStructure(summary) {
     for (const c of p.components)
       errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components));
-    warnings.push(...lintRenderedGeometry(p.components));
+    errors.push(...lintRenderedGeometryBlocking(p.components));
+    warnings.push(...lintRenderedGeometryAdvisory(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
   }
   warnings.push(...lintInnerPageBands(summary));
@@ -41530,6 +41581,18 @@ function auditScript() {
         clippedHere = true;
       }
     }
+    if (/^Chart:/.test(name)) {
+      const tick = el.querySelector(".xtick text, .ytick text, .legendtext");
+      const family = tick ? getComputedStyle(tick).fontFamily.toLowerCase() : "";
+      if (family.includes("open sans") || family.includes("verdana")) {
+        findings.push({ kind: "placeholder_text", component: name, detail: "chart uses Plotly default styling (Open Sans/Verdana labels); draw it with plotFromJson and the house layout" });
+      }
+      const slices = Array.from(el.querySelectorAll(".slice path, .pie path"));
+      const fills = new Set(slices.map((n) => (n.getAttribute("style") || "").match(/fill:\s*([^;]+)/)?.[1] ?? n.getAttribute("fill") ?? "").filter(Boolean));
+      if (fills.has("rgb(31, 119, 180)") && fills.has("rgb(255, 127, 14)")) {
+        findings.push({ kind: "placeholder_text", component: name, detail: "pie chart uses Plotly default rainbow colours; use the theme series palette" });
+      }
+    }
     if (!clippedHere && /^Table:/.test(name)) {
       const cut = [];
       for (const cell of Array.from(el.querySelectorAll('td, [role="cell"], .td'))) {
@@ -44014,7 +44077,12 @@ function addComponentsTool(client) {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (page) {
           const existing = page.components;
-          pageWarnings.push(...introducedLintFindings(lintRenderedGeometry(existing), lintRenderedGeometry([...existing, ...prepared.components])));
+          const combined = [...existing, ...prepared.components];
+          const introducedErrors = introducedLintFindings(lintRenderedGeometryBlocking(existing), lintRenderedGeometryBlocking(combined));
+          if (introducedErrors.length) {
+            return fail(new Error("The batch would land on components already on the page: " + introducedErrors.join(" ")));
+          }
+          pageWarnings.push(...introducedLintFindings(lintRenderedGeometryAdvisory(existing), lintRenderedGeometryAdvisory(combined)));
         }
       } catch {
       }

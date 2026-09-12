@@ -156,8 +156,13 @@ Every primary and accent reads as text on white at 4.5:1 or better (the accents 
 a bold brand colour enters only through cue 1 (the customer's own brand) or cue 2 (a colour in the name).
 The menu is deliberately without teal or steel: a muted teal primary on a large surface reads as dated admin
 software, and on 2026-09-12 nine of sixteen generated apps had landed on the same two teals because an
-industry lookup handed them out. When two rows fit, prefer the one the customer's own words point to; when
-nothing points anywhere, Ink for a dense staff tool and Blue for everything else.
+industry lookup handed them out. When two rows fit, prefer the one the customer's own words point to. When nothing points anywhere, the
+kind of tool decides, and the answer is not Ink by reflex (seven of ten apps in one round came out Ink):
+a warehouse, production, dispatch or field tool is Ink; an admin console, developer or IT tool is Slate;
+finance, insurance, legal or public sector is Navy; a CRM, help desk, ticketing or any SaaS-shaped tool is
+Blue; education, community or a personal tool such as a to-do list is Indigo; health, wellness, food safety
+or agriculture is Emerald; food, hospitality, retail or crafts is Graphite. Never invent a customer name or
+brand to justify a colour: a prompt with no customer gets the menu row for its kind of tool, nothing more.
 
 **Beyond the menu: how to build a palette from what the prompt gives.** The menu is the fallback; a prompt that
 names a brand colour, a material, a place, a mood or an audience deserves its own palette, built the same way
