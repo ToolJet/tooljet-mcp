@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { lintRenderedGeometry, type LintComponent } from '../lint.js';
+import { introducedLintFindings } from '../lint.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -42,6 +44,23 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
     }) {
       const prepared = prepareComponentBatch(args.components);
       if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
+      // Geometry against the page as it already is, not the batch alone: a targeted add that lands on top
+      // of an existing table (a modal's buttons placed at root, a caption over a register) passed here
+      // unremarked in the 2026-09-12 review because only the new components were checked together.
+      const pageWarnings: string[] = [];
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (page) {
+          const existing = page.components as LintComponent[];
+          pageWarnings.push(...introducedLintFindings(
+            lintRenderedGeometry(existing),
+            lintRenderedGeometry([...existing, ...(prepared.components as LintComponent[])])
+          ));
+        }
+      } catch {
+        // The write does not depend on this read; a summary failure only costs the page-level check.
+      }
       try {
         const result = await client.createComponents({
           appId: args.app_id,
@@ -51,7 +70,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         });
         return ok({
           components: result,
-          warnings: prepared.warnings,
+          warnings: [...prepared.warnings, ...pageWarnings],
         });
       } catch (err) {
         return fail(err);
