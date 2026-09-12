@@ -71,6 +71,10 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
       if (family.includes('open sans') || family.includes('verdana')) {
         findings.push({ kind: 'placeholder_text', component: name, detail: 'chart uses Plotly default styling (Open Sans/Verdana labels); draw it with plotFromJson and the house layout' });
       }
+      const traces = el.querySelectorAll('.trace, .bars path, .slice, .scatterlayer path, .heatmaplayer image').length;
+      if (el.querySelector('.js-plotly-plot, .plot-container') && traces === 0) {
+        findings.push({ kind: 'empty_render', component: name, detail: 'chart has axes but no data trace; the query feeding it returned the wrong shape (a chart needs {data:[...], layout:{...}})' });
+      }
       const slices = Array.from(el.querySelectorAll('.slice path, .pie path')) as SVGElement[];
       const fills = new Set(slices.map((n) => (n.getAttribute('style') || '').match(/fill:\s*([^;]+)/)?.[1] ?? n.getAttribute('fill') ?? '').filter(Boolean));
       if (fills.has('rgb(31, 119, 180)') && fills.has('rgb(255, 127, 14)')) {

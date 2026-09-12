@@ -1,6 +1,6 @@
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { validateEvents } from './eventValidation.js';
-import { lintComponents, validateAppStructure } from './lint.js';
+import { lintComponents, validateAppStructure, type LintComponent } from './lint.js';
 import { issueMessages, normalizeQueryOptions, validateQueryOptions } from './queryValidation.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
@@ -50,6 +50,42 @@ export interface PlannedLifecycle {
   failureAlert?: LifecycleAlert;
   successActions?: Array<Record<string, unknown>>;
   failureActions?: Array<Record<string, unknown>>;
+}
+
+const CHART_QUERY_BINDING = /^\s*\{\{\s*queries\.([A-Za-z_$][\w$]*)\.data\s*\}\}\s*$/;
+
+/**
+ * A Chart whose jsonDescription is a bare query binding renders whatever that query returns. On 2026-09-12
+ * five of six charts on a sales dashboard drew empty axes because their JavaScript queries returned arrays
+ * of points instead of { data, layout }. The query's code must build the whole chart object with the house
+ * layout; the check is textual (the linter cannot run the query).
+ */
+export function lintQueryFedCharts(components: LintComponent[], queries: PlannedQuery[]): string[] {
+  const errors: string[] = [];
+  for (const component of components) {
+    if (component.type !== 'Chart') continue;
+    const raw = component.properties?.jsonDescription as { value?: unknown } | string | undefined;
+    const description = typeof raw === 'string' ? raw : raw && typeof raw === 'object' && 'value' in raw ? String(raw.value ?? '') : '';
+    const match = CHART_QUERY_BINDING.exec(description);
+    if (!match) continue;
+    const query = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
+    if (!query) continue; // an existing query the plan does not carry; validate_app covers persisted apps
+    const code = String((query.options as Record<string, unknown>)?.code ?? '');
+    const label = component.name ?? 'Chart';
+    if (!code.trim()) {
+      errors.push(`Chart "${label}" is bound to query "${query.name}", which has no JavaScript code to build the chart object.`);
+      continue;
+    }
+    const missing = ['data', 'layout', 'font', 'margin', 'paper_bgcolor'].filter((key) => !code.includes(key));
+    if (missing.length) {
+      errors.push(
+        `Chart "${label}" is bound to query "${query.name}", whose code never mentions ${missing.join(', ')}: a query feeding a chart ` +
+          'must return the whole { data: [trace], layout: { font, margin, paper_bgcolor, plot_bgcolor, ... } } object from references/ui-layout.md. ' +
+          'A bare array of points draws empty axes in Plotly\'s default font.'
+      );
+    }
+  }
+  return errors;
 }
 
 export interface PlannedAppSpec {
@@ -300,6 +336,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     warnings.push(...expansion.warnings);
     const componentLint = lintComponents(expansion.components);
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
+    errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
 
     const localRefs = new Map<string, string>();
