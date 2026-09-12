@@ -1,0 +1,169 @@
+import { z } from 'zod';
+import type { ToolJetClient } from '../tooljetClient.js';
+import { ok, fail, type ToolDef } from './types.js';
+
+/**
+ * Render audit: open a page in a headless browser and report what static checks cannot see. Built from
+ * the 2026-09-12 review of 224 generated pages, where 81 were broken and the largest classes (clipped text,
+ * overlapping components, empty Html blocks, "undefined" in cells, placeholder items) were invisible to the
+ * linter. Needs `playwright-core` and a Chrome; without them the tool says so instead of guessing.
+ */
+
+export interface RenderFinding {
+  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'unreachable';
+  component: string;
+  detail: string;
+}
+
+export interface PageRenderReport {
+  page: string;
+  url: string;
+  widgets: number;
+  findings: RenderFinding[];
+}
+
+/** Runs inside the page: the same walk as the campaign's audit script, over ToolJet's widget containers. */
+function auditScript(): { widgets: number; findings: RenderFinding[] } {
+  const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]')) as HTMLElement[];
+  const boxes: Array<{ name: string; x: number; y: number; w: number; h: number }> = [];
+  const findings: RenderFinding[] = [];
+  const bad = /\bundefined\b|\bNaN\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{/;
+  for (const el of widgets) {
+    const r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) continue;
+    const cy = el.getAttribute('data-cy') || '';
+    const type = (el.className.toString().match(/_tooljet-([A-Za-z0-9]+)/) || [])[1] || '?';
+    const name = `${type}:${cy.replace('draggable-widget-', '')}`;
+    const text = (el.innerText || '').trim();
+    boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
+    const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
+    if (textual && text.length === 0 && r.height > 30) {
+      findings.push({ kind: 'empty_render', component: name, detail: `${Math.round(r.width)}x${Math.round(r.height)}px box renders no text (a multi-line binding or a broken expression)` });
+    }
+    const m = text.match(bad);
+    if (m) findings.push({ kind: 'placeholder_text', component: name, detail: `rendered text contains "${m[0]}"` });
+    for (const node of Array.from(el.querySelectorAll('*')) as HTMLElement[]) {
+      const cs = getComputedStyle(node);
+      const hidden = cs.overflow === 'hidden' || cs.overflowY === 'hidden';
+      if (hidden && node.scrollHeight > node.clientHeight + 6 && node.clientHeight > 12 && (node.innerText || '').trim().length > 0) {
+        findings.push({ kind: 'clipped', component: name, detail: `"${(node.innerText || '').trim().slice(0, 40)}" needs ${node.scrollHeight}px but has ${node.clientHeight}px` });
+        break;
+      }
+    }
+  }
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i];
+      const b = boxes[j];
+      if (a.name.startsWith('ModalV2:') || b.name.startsWith('ModalV2:')) continue;
+      if (a.name.split(':')[1] === b.name.split(':')[1]) continue; // a widget's inner container repeats its name
+      const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (ix > 8 && iy > 8) findings.push({ kind: 'overlap', component: `${a.name} and ${b.name}`, detail: `${Math.round(ix)}x${Math.round(iy)}px shared; move one` });
+    }
+  }
+  return { widgets: widgets.length, findings: findings.slice(0, 60) };
+}
+
+/**
+ * `playwright-core` is optional: resolved from node_modules when installed, otherwise from the directory
+ * named by MCP_RENDER_AUDIT_PLAYWRIGHT (a path to a playwright-core package). Bundles mark it external.
+ */
+async function loadPlaywright(): Promise<any | null> {
+  const explicit = process.env.MCP_RENDER_AUDIT_PLAYWRIGHT;
+  if (explicit) {
+    try {
+      const { pathToFileURL } = await import('node:url');
+      const { createRequire } = await import('node:module');
+      const req = createRequire(pathToFileURL(explicit.replace(/\/?$/, '/')).href);
+      return req(explicit);
+    } catch {
+      /* fall through to the normal resolution */
+    }
+  }
+  try {
+    const specifier = 'playwright-core'; // a variable so tsc does not require the optional package's types
+    return await import(specifier);
+  } catch {
+    return null;
+  }
+}
+
+export async function auditPages(
+  pages: Array<{ page: string; url: string }>,
+  options: { channel?: string; executablePath?: string; settleMs?: number } = {}
+): Promise<PageRenderReport[]> {
+  const pw = await loadPlaywright();
+  if (!pw) {
+    return pages.map((p) => ({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'playwright-core is not installed on the MCP host; the render audit cannot run' }] }));
+  }
+  const launch: Record<string, unknown> = { headless: true };
+  if (options.executablePath) launch.executablePath = options.executablePath;
+  else launch.channel = options.channel ?? 'chrome';
+  const browser = await pw.chromium.launch(launch);
+  const reports: PageRenderReport[] = [];
+  try {
+    for (const p of pages) {
+      const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+      const page = await ctx.newPage();
+      try {
+        await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await page.waitForTimeout(options.settleMs ?? 6000);
+        const landed: string = page.url();
+        if (/\/login\b/.test(landed)) {
+          reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'the viewer redirected to sign-in; the page is not public and no viewer session was provided' }] });
+          continue;
+        }
+        const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
+        reports.push({ page: p.page, url: p.url, widgets: result.widgets, findings: result.findings });
+      } catch (err) {
+        reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: `could not load the page: ${(err as Error).message}` }] });
+      } finally {
+        await ctx.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+  return reports;
+}
+
+export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => string): ToolDef {
+  return {
+    name: 'verify_page_render',
+    title: 'Verify Page Render',
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description:
+      'Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. ' +
+      'Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken ' +
+      'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
+      '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
+      'Run it once per page before the handoff and fix every finding; a page with findings is not finished. ' +
+      'The page must be reachable by the browser: a public app, or a viewer session configured on the MCP host. ' +
+      'Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
+    inputSchema: {
+      app_id: z.string(),
+      page_handle: z.string().optional().describe('one page handle; omit to audit every page'),
+      viewer_url: z.string().optional().describe('override the viewer origin (e.g. a tunnel) when the MCP host cannot reach the configured one'),
+    },
+    async handler(args: { app_id: string; page_handle?: string; viewer_url?: string }) {
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const pages = (summary.pages ?? []) as Array<{ handle?: string; name?: string }>;
+        const base = (args.viewer_url ?? viewerBase()).replace(/\/$/, '');
+        const targets = pages
+          .filter((p) => !args.page_handle || p.handle === args.page_handle)
+          .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}` }));
+        if (!targets.length) return fail(new Error(`no page ${args.page_handle ?? ''} in app ${args.app_id}`));
+        const reports = await auditPages(targets, {
+          channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
+          executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
+        });
+        const total = reports.reduce((n, r) => n + r.findings.length, 0);
+        return ok({ pages: reports, ok: total === 0, findings: total });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  };
+}

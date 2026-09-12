@@ -22,7 +22,7 @@ run('npm run build');
 mkdirSync(resolve(root, 'bundle'), { recursive: true });
 run(
   'npx --no-install esbuild dist/index.js --bundle --platform=node --format=esm ' +
-    '--outfile=bundle/index.js --legal-comments=none'
+    '--outfile=bundle/index.js --legal-comments=none --external:playwright-core'
 );
 
 // 2. Runtime catalogs and compatibility metadata live at `../data/*.json`. Assert they ship.
