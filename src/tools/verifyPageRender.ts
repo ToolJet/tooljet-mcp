@@ -138,7 +138,7 @@ async function loadPlaywright(): Promise<any | null> {
 
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
-  options: { channel?: string; executablePath?: string; settleMs?: number } = {}
+  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number } = {}
 ): Promise<PageRenderReport[]> {
   const pw = await loadPlaywright();
   if (!pw) {
@@ -156,6 +156,20 @@ export async function auditPages(
       try {
         await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await page.waitForTimeout(options.settleMs ?? 6000);
+        // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
+        // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
+        await page
+          .waitForFunction(
+            () => {
+              const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+              const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+              return charts === 0 || plots >= charts;
+            },
+            undefined,
+            { timeout: options.chartWaitMs ?? 20000 }
+          )
+          .catch(() => undefined);
+        await page.waitForTimeout(1500);
         const landed: string = page.url();
         if (/\/login\b/.test(landed)) {
           reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'the viewer redirected to sign-in; the page is not public and no viewer session was provided' }] });
