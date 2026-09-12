@@ -36,14 +36,15 @@ These decide whether a page reads as a product or as components on a canvas. The
 
 ## Render safety
 
-Static lint passes these; the customer sees them. Detail and the audit procedure: `references/qa.md`.
+Detail: `references/qa.md`.
 
 - **One line per binding.** A line break anywhere inside `{{ }}` makes the whole binding render empty. Multi-line logic goes in a JavaScript query; never a literal backslash-n or code outside its braces.
-- **Modal and form children are parented to the modal or form**, never placed at root at its coordinates. Read every `add_components` overlap warning and move the component before continuing.
-- **Navigation is the page menu** (`navigation_position`), never an `Html` sidebar with buttons layered on top.
-- **Items are authored, never defaulted**: `Tabs`, `Steps` and `Kanban` without items render "Tab 1 / Tab 2 / Tab 3" placeholders.
-- **Text fits its box**: tiles at least 110px tall, Kanban card text one line, wide tables full width with long text columns at `columnSize` 180 or more, bindings naming only returned fields.
-- **Audit every page as rendered before the handoff** with `verify_page_render` (or the checks in `references/qa.md` when it is unavailable) and fix everything it names. An unaudited page is not finished.
+- **Modal and form children are parented to the modal or form**, never placed at root at its coordinates. Act on every `add_components` overlap warning.
+- **Navigation is the page menu** (`navigation_position`), never an `Html` sidebar with buttons on it.
+- **Items are authored, never defaulted**: `Tabs`, `Steps` and `Kanban` without items render placeholders.
+- **Text fits its box**: tiles at least 110px tall, Kanban card text one line, long text columns at `columnSize` 180 or more, bindings naming only returned fields.
+- **Toolbar buttons align with the field box**: a top-labelled input renders its label in its first 20px, so the row's button sits at the inputs' top + 20, height 40.
+- **Audit every page as rendered before the handoff** with `verify_page_render` (or the `references/qa.md` checks when it is unavailable) and fix everything it names; an unaudited page is not finished.
 
 ## Datasource repair handoff
 

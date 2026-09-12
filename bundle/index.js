@@ -35822,6 +35822,38 @@ function detectOverlaps(components) {
   }
   return warnings;
 }
+var TOOLBAR_BUTTON_TYPES = /* @__PURE__ */ new Set(["Button", "ButtonGroup"]);
+function lintToolbarButtonAlignment(components) {
+  const errors = [];
+  const items = components.map((c) => ({ component: c, name: c.name ?? c.type ?? "?", r: c.layouts?.desktop ?? c.layout, parent: placementKey(c) })).filter((x) => !!x.r);
+  const grownInputs = items.filter((x) => renderedHeight(x.component, x.r) > (x.r.height ?? 0));
+  if (!grownInputs.length)
+    return errors;
+  for (const button of items) {
+    if (!button.component.type || !TOOLBAR_BUTTON_TYPES.has(button.component.type))
+      continue;
+    const bTop = button.r.top ?? 0;
+    const bBottom = bTop + (button.r.height ?? 0);
+    for (const input of grownInputs) {
+      if (input.parent !== button.parent)
+        continue;
+      const iTop = input.r.top ?? 0;
+      const labelBand = iTop + TOP_ALIGNMENT_HEIGHT_INCREMENT;
+      const boxBottom = iTop + renderedHeight(input.component, input.r);
+      if (bBottom <= iTop || bTop >= boxBottom)
+        continue;
+      const bLeft = button.r.left ?? 0, bRight = bLeft + (button.r.width ?? 0);
+      const iLeft = input.r.left ?? 0, iRight = iLeft + (input.r.width ?? 0);
+      if (bLeft < iRight && iLeft < bRight)
+        continue;
+      if (bTop >= labelBand)
+        continue;
+      errors.push(`Button "${button.name}" shares its row with the top-labelled input "${input.name}" but sits at top ${bTop}: the input's label renders in its first ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px and its field box from ${labelBand} to ${boxBottom}, so the button lands on the label band. Set the button's top to ${labelBand} (height ${Math.max(0, boxBottom - labelBand)}) so it aligns with the field, or give the inputs no label and a placeholder instead.`);
+      break;
+    }
+  }
+  return errors;
+}
 function isTitleLikeText(component) {
   if (component.type !== "Text")
     return false;
@@ -35913,6 +35945,7 @@ function lintModalChildren(components) {
 function lintRenderedGeometry(components) {
   return [
     ...detectOverlaps(components),
+    ...lintToolbarButtonAlignment(components),
     ...lintModalChildren(components),
     ...lintListviewChildren(components),
     ...lintOperationalViewport(components),
