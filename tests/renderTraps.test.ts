@@ -94,4 +94,12 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const withSearch = table({ displaySearchBox: { value: true } });
     expect(withSearch.errors.some((e) => e.includes('toolbar 56') && e.includes('446px'))).toBe(true);
   });
+
+  it('rejects an empty-state message with no visibility binding', () => {
+    const text = (extra: Record<string, unknown>) => lintComponents([{ type: 'Text', name: 'usersEmptyState', properties: { text: { value: 'Keine Nutzer gefunden.' }, ...extra }, layouts: { desktop: { top: 820, left: 2, width: 39, height: 30 } } }] as any);
+    expect(text({}).errors.some((e) => e.includes('no visibility binding'))).toBe(true);
+    expect(text({ visibility: { value: '{{(queries.getUsers.data || []).length === 0}}' } }).errors.some((e) => e.includes('no visibility binding'))).toBe(false);
+    const plain = lintComponents([{ type: 'Text', name: 'subtitle', properties: { text: { value: 'Health, service metrics and logs' } }, layouts: { desktop: { top: 80, left: 2, width: 39, height: 30 } } }] as any);
+    expect(plain.errors.some((e) => e.includes('no visibility binding'))).toBe(false);
+  });
 });

@@ -761,6 +761,25 @@ export function lintStatisticsRows(components: LintComponent[]): string[] {
   return errors;
 }
 
+/** An empty-state message ("No users found", "Keine Nutzer gefunden.") with no visibility binding shows
+ *  under a populated table (round nine, 2026-09-12). It must be bound to the data being empty. */
+const EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[uú]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[uü]gbar|trouv|encontrad|trovat)/i;
+export function lintUnboundEmptyState(spec: LintComponent): string[] {
+  if (spec.type !== 'Text' && spec.type !== 'Html') return [];
+  const key = spec.type === 'Html' ? 'rawHtml' : 'text';
+  const text = propVal(spec.properties ?? {}, key);
+  if (typeof text !== 'string' || text.includes('{{')) return [];
+  const name = spec.name ?? '';
+  if (!EMPTY_STATE_TEXT.test(text) && !/empty/i.test(name)) return [];
+  const visibility = propVal(spec.properties ?? {}, 'visibility') ?? propVal(spec.styles ?? {}, 'visibility');
+  if (typeof visibility === 'string' && visibility.includes('{{') && !/^\{\{\s*(true|false)\s*\}\}$/.test(visibility.trim())) return [];
+  return [
+    `${spec.type} "${name || spec.id || spec.type}": the empty-state message "${text.trim().slice(0, 40)}" has no visibility binding, so it shows ` +
+      'under a populated table. Bind visibility to the data being empty ({{(queries.<q>.data || []).length === 0}}), or drop the ' +
+      'component: a Table shows its own empty message.',
+  ];
+}
+
 /** A Button narrower than its label wraps the label onto two lines inside a 40px button (an "Add product"
  *  button at 3 columns, round eight). Root canvas only: nested canvases have a different column width. */
 export function lintButtonLabelWidth(spec: LintComponent): string[] {
@@ -2203,6 +2222,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
+    errors.push(...lintUnboundEmptyState(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
