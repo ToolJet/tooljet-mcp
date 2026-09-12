@@ -34,6 +34,17 @@ These decide whether a page reads as a product or as components on a canvas. The
 - **Table finish.** State columns (status, priority, SLA, receipt, stage) are `html` chips from the tint map in `references/ui-layout.md`; never a select column, bare text, or a tinted cell. Money in the request's locale with two decimals, dates as `08 Sep 2026`, durations as `2d 3h`, numbers right-aligned, the human field first, `allowSelection:false` and the other chrome off, eight to ten visible rows, exactly one neutral outline action per row when a row action is asked for, the page's single filled button in the toolbar. Chip and format bindings use `+` concatenation, never a template literal.
 - **Rhythm and states.** One radius, one shadow or one hairline border, 24px between sections and 16px between cards. Modal children live inside the modal. Every table has an empty message and a loading state; every mutation confirms with a toast. Twelve to twenty root components for one page: finish comes from formatting and colour discipline, not from more components.
 
+## Render safety
+
+Static lint passes these; the customer sees them. Detail and the audit procedure: `references/qa.md`.
+
+- **One line per binding.** A line break anywhere inside `{{ }}` makes the whole binding render empty. Multi-line logic goes in a JavaScript query; never a literal backslash-n or code outside its braces.
+- **Modal and form children are parented to the modal or form**, never placed at root at its coordinates. Read every `add_components` overlap warning and move the component before continuing.
+- **Navigation is the page menu** (`navigation_position`), never an `Html` sidebar with buttons layered on top.
+- **Items are authored, never defaulted**: `Tabs`, `Steps` and `Kanban` without items render "Tab 1 / Tab 2 / Tab 3" placeholders.
+- **Text fits its box**: tiles at least 110px tall, Kanban card text one line, wide tables full width with long text columns at `columnSize` 180 or more, bindings naming only returned fields.
+- **Audit every page as rendered before the handoff** with `verify_page_render` (or the checks in `references/qa.md` when it is unavailable) and fix everything it names. An unaudited page is not finished.
+
 ## Datasource repair handoff
 
 If an expected source is absent or a query returns a connection failure, explain the problem and use the returned `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the clickable link. Do not enter credentials, authorize OAuth, test, or save the connection for the user. Wait for them to confirm the repair, refresh datasource discovery, and retry at most one selected safe read. Read `references/datasources.md` for the full contract and large/billable-read safeguards.

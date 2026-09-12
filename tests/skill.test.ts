@@ -53,7 +53,8 @@ const designSection = section(uiAuthoring, '## Design — decide before you buil
 
 describe('generated skill — progressive disclosure', () => {
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
-    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_000);
+    // The finish and render-safety rules are always loaded on purpose (2026-09-12 review: 81 of 224 pages broken).
+    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_500);
     expect(skill).toContain('## Load only the references the phase needs');
     for (const name of [
       'workflows.md', 'ui-layout.md', 'tables.md', 'forms.md', 'events.md',
