@@ -1609,14 +1609,18 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       // pages carried a sliced row). Measured on the classic table: header 33px, footer 57px, rows 45px
       // unwrapped and up to about 100px when contentWrap grows them.
       const height = (spec.layouts?.desktop ?? spec.layout)?.height;
-      const perPage = optionalStaticNumber(propVal(props, 'rowsPerPage'));
+      // The catalog defaults are pagination on with ten rows per page; an unauthored table is sized for ten.
+      const authoredPerPage = optionalStaticNumber(propVal(props, 'rowsPerPage'));
+      const perPage = authoredPerPage ?? 10;
       const paginated = propVal(props, 'enablePagination');
       if (typeof height === 'number' && (paginated === undefined || isTrueBinding(paginated)) && typeof perPage === 'number' && perPage > 0) {
         const wraps = isTrueBinding(propVal(spec.styles, 'contentWrap'));
         const rowPx = wraps ? 60 : 45;
         const needed = 33 + 57 + perPage * rowPx;
         if (height < needed) {
-          errors.push(
+          // An authored page size that does not fit is an error; the catalog default is a warning, since
+          // the model may still set rowsPerPage in a later write.
+          (authoredPerPage === undefined ? warnings : errors).push(
             `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ', rows grow with contentWrap' : ''}) ` +
               `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`
           );

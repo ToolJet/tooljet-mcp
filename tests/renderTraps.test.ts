@@ -43,4 +43,8 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const ok = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 460 } } });
     expect(ok.errors.some((e) => e.includes('sliced'))).toBe(false);
   });
+  it('assumes the catalog default of ten rows per page when none is authored', () => {
+    const r = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: cols(4) } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 400 } } });
+    expect(r.warnings.some((e) => e.includes('10 rows per page') && e.includes('sliced'))).toBe(true);
+  });
 });
