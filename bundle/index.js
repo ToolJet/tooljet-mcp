@@ -34744,6 +34744,13 @@ var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]
 var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
 var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
 var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
+var CANVAS_COLUMN_PX = 28;
+var CONTENT_COLUMNS = 39;
+var TABLE_UNSIZED_COLUMN_MIN_PX = 100;
+var KANBAN_CARD_WIDTH_PX = 300;
+var KANBAN_CARD_CHILD_MIN_COLS = 30;
+var BUTTON_CHAR_PX = 7.5;
+var BUTTON_PADDING_PX = 32;
 function propVal2(props, key) {
   const p = props?.[key];
   return p && typeof p === "object" && "value" in p ? p.value : p;
@@ -35206,6 +35213,66 @@ function lintKanbanInteractions(components) {
   }
   return warnings;
 }
+function lintKanbanCardChildren(components) {
+  const errors = [];
+  for (const board of components.filter((component) => component.type === "Kanban")) {
+    const key = componentKey(board);
+    if (!key)
+      continue;
+    for (const child of components) {
+      if (parentPlacement(child)?.parentId !== key)
+        continue;
+      if (child.type !== "Text" && child.type !== "Html")
+        continue;
+      const width = (child.layouts?.desktop ?? child.layout)?.width;
+      if (typeof width !== "number" || width >= KANBAN_CARD_CHILD_MIN_COLS)
+        continue;
+      const px2 = Math.round(width / 43 * KANBAN_CARD_WIDTH_PX);
+      errors.push(`Kanban "${board.name ?? board.id ?? "Kanban"}" card child ${child.type} "${child.name ?? child.id ?? child.type}": width ${width} columns is about ${px2}px of the ${KANBAN_CARD_WIDTH_PX}px card (card children use the card's own 43-column grid), so a name or title is cut after a few characters. Use left 2, width 39 (title top 12, description top 44).`);
+    }
+  }
+  return errors;
+}
+function lintStatisticsRows(components) {
+  const errors = [];
+  const tiles = components.filter((component) => component.type === "Statistics" && !parentPlacement(component)?.parentId);
+  if (tiles.length < 2)
+    return errors;
+  const rect2 = (component) => component.layouts?.desktop ?? component.layout;
+  const rows = [];
+  for (const tile of [...tiles].sort((a, b) => (rect2(a)?.top ?? 0) - (rect2(b)?.top ?? 0))) {
+    const row = rows.find((candidate) => Math.abs((rect2(candidate[0])?.top ?? 0) - (rect2(tile)?.top ?? 0)) <= 6);
+    if (row)
+      row.push(tile);
+    else
+      rows.push([tile]);
+  }
+  for (const row of rows) {
+    const span = row.reduce((sum, tile) => sum + (rect2(tile)?.width ?? 0), 0);
+    if (span >= CONTENT_COLUMNS - 5)
+      continue;
+    const names = row.map((tile) => `"${tile.name ?? tile.id ?? "Statistics"}"`).join(", ");
+    errors.push(`Statistics row at top ${rect2(row[0])?.top ?? 0}px (${names}) spans ${span} of the ${CONTENT_COLUMNS} content columns and leaves an empty slot, so the KPI grid reads as broken. Put every figure in one full row of three or four tiles (width 13 or 9, hideSecondary true), or use the Html KPI strip from references/ui-layout.md.`);
+  }
+  return errors;
+}
+function lintButtonLabelWidth(spec) {
+  if (spec.type !== "Button" || parentPlacement(spec)?.parentId)
+    return [];
+  const text = propVal2(spec.properties ?? {}, "text");
+  if (typeof text !== "string" || text.includes("{{") || !text.trim())
+    return [];
+  const width = (spec.layouts?.desktop ?? spec.layout)?.width;
+  if (typeof width !== "number" || width <= 0)
+    return [];
+  const neededPx = Math.ceil(text.trim().length * BUTTON_CHAR_PX + BUTTON_PADDING_PX);
+  const px2 = Math.round(width * CANVAS_COLUMN_PX);
+  if (px2 >= neededPx)
+    return [];
+  return [
+    `Button "${spec.name ?? spec.id ?? "Button"}": the label "${text.trim()}" needs about ${neededPx}px but the button is ${width} columns, about ${px2}px, so the label wraps or is cut. Use at least ${Math.ceil(neededPx / CANVAS_COLUMN_PX)} columns.`
+  ];
+}
 function lintListviewChildren(components) {
   const warnings = [];
   const refs2 = new Map(components.flatMap((component) => {
@@ -35424,6 +35491,11 @@ function lintChartHouseStyle(spec) {
     return [];
   if (!description.includes("layout") && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description))
     return [];
+  if (/textposition\s*:\s*['"]outside['"]/.test(description) && !/cliponaxis\s*:\s*false/.test(description)) {
+    return [
+      `Chart "${label2}": a bar trace uses textposition 'outside' without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to every bar trace that places its text outside.`
+    ];
+  }
   const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key) => !description.includes(key));
   if (missing.length) {
     return [
@@ -35788,7 +35860,26 @@ function lintComponentSpec(spec) {
         const rowPx = wraps ? 60 : 45;
         const needed = 33 + 57 + perPage * rowPx;
         if (height < needed) {
-          (authoredPerPage === void 0 ? warnings : errors).push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`);
+          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`);
+        }
+      }
+      const tableWidth = (spec.layouts?.desktop ?? spec.layout)?.width;
+      if (typeof tableWidth === "number" && tableWidth > 0 && !parentPlacement(spec)?.parentId) {
+        const widthPx = Math.round(tableWidth * CANVAS_COLUMN_PX);
+        let sizedPx = 0;
+        let unsized = 0;
+        for (const col of columns) {
+          const c = col;
+          if (!c || c.columnVisibility === false || c.columnVisibility === "{{false}}")
+            continue;
+          if (typeof c.columnSize === "number" && c.columnSize >= 16)
+            sizedPx += c.columnSize;
+          else
+            unsized += 1;
+        }
+        const neededPx = sizedPx + unsized * TABLE_UNSIZED_COLUMN_MIN_PX;
+        if (neededPx > widthPx + 8) {
+          errors.push(`Table "${label2}": its ${visibleColumnCount} visible columns need about ${neededPx}px (the columnSize values plus ${TABLE_UNSIZED_COLUMN_MIN_PX}px per unsized column) but the table is ${tableWidth} columns wide, about ${widthPx}px on a laptop, so the last columns are cut off at the right edge. Show fewer columns (detail belongs in a side panel or modal), shrink the columnSize values, or widen the table.`);
         }
       }
       if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
@@ -36097,9 +36188,12 @@ function lintComponents(components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
+    errors.push(...lintButtonLabelWidth(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintKanbanCardChildren(components));
+  errors.push(...lintStatisticsRows(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
@@ -41175,9 +41269,29 @@ function interpolatedSqlBindingIssues(sql) {
     }
   ];
 }
+function runjsSyntaxError(code) {
+  try {
+    new Function(`return (async () => {
+${code}
+});`);
+    return void 0;
+  } catch (error51) {
+    return error51 instanceof SyntaxError ? error51.message : void 0;
+  }
+}
 function validateQueryOptions(kind, options2) {
   const errors = [];
   const warnings = tableStateWarnings(options2);
+  if (kind === "runjs" && typeof options2.code === "string" && options2.code.trim()) {
+    const syntax = runjsSyntaxError(options2.code);
+    if (syntax) {
+      errors.push({
+        code: "runjs_syntax_error",
+        path: "code",
+        message: `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; fix the code before writing it.`
+      });
+    }
+  }
   if (typeof options2.query === "string") {
     errors.push(...unquotedSqlBindingIssues(options2.query));
     warnings.push(...interpolatedSqlBindingIssues(options2.query));
@@ -41582,7 +41696,7 @@ function auditScript() {
   const boxes = [];
   const findings = [];
   const seenNames = /* @__PURE__ */ new Set();
-  const bad = /\bundefined\b|\bNaN\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{/;
+  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%/;
   for (const el of widgets) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4)
@@ -41638,6 +41752,24 @@ function auditScript() {
       if (fills.has("rgb(31, 119, 180)") && fills.has("rgb(255, 127, 14)")) {
         findings.push({ kind: "placeholder_text", component: name, detail: "pie chart uses Plotly default rainbow colours; use the theme series palette" });
       }
+      const drag = el.querySelector(".nsewdrag");
+      const dr = drag ? drag.getBoundingClientRect() : null;
+      if (dr) {
+        const cutLabels = Array.from(el.querySelectorAll(".bartext")).filter((t) => {
+          const tr = t.getBoundingClientRect();
+          if (tr.top >= dr.top - 1 && tr.right <= dr.right + 1)
+            return false;
+          let n = t.parentElement;
+          while (n && n !== el) {
+            if (n.getAttribute("clip-path"))
+              return true;
+            n = n.parentElement;
+          }
+          return false;
+        });
+        if (cutLabels.length)
+          findings.push({ kind: "clipped", component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || "").trim()}"); set cliponaxis:false on the bar trace` });
+      }
     }
     if (!clippedHere && /^Table:/.test(name)) {
       const cut = [];
@@ -41657,6 +41789,9 @@ function auditScript() {
       }
       if (cut.length)
         findings.push({ kind: "clipped", component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
+      const scroller = Array.from(el.querySelectorAll("*")).find((node) => node.scrollWidth > node.clientWidth + 12 && node.clientWidth > 200 && /table/i.test(node.className.toString()));
+      if (scroller)
+        findings.push({ kind: "clipped", component: name, detail: `columns overflow the table by ${scroller.scrollWidth - scroller.clientWidth}px to the right (the columnSize values exceed the table width); show fewer columns or shrink them` });
       const body = el.querySelector('.table-responsive, .tbody, tbody, [class*="table-body"]');
       const rows = body ? Array.from(body.querySelectorAll('tr, [role="row"], .tr')) : [];
       if (body && rows.length) {
@@ -41797,8 +41932,11 @@ function wrappedValues(keys, defaults) {
     return void 0;
   return Object.fromEntries(keys.map((key) => [key, { value: defaults[key] ?? "" }]));
 }
-function childLayout(child) {
+function childLayout(child, parentType, index) {
   const schema = getComponentSchema(child.componentName);
+  if (parentType === "Kanban" && child.componentName === "Text") {
+    return { top: index === 0 ? 12 : 44, left: 2, width: 39, height: child.layout?.height ?? 30 };
+  }
   return {
     top: child.layout?.top ?? 0,
     left: child.layout?.left ?? 0,
@@ -41846,7 +41984,7 @@ function materializeRequiredDefaultChildren(input) {
         type: child.componentName,
         properties: wrappedValues(child.properties, defaultValue) ?? {},
         styles: wrappedValues(child.styles, defaultValue),
-        layout: childLayout(child),
+        layout: childLayout(child, original.type, childIndex),
         parentRef: clientRef
       });
     });
@@ -42399,12 +42537,62 @@ function lintQueryFedCharts(components, queries) {
       errors.push(`Chart "${label2}" is bound to query "${query.name}", which has no JavaScript code to build the chart object.`);
       continue;
     }
+    if (/textposition\s*:\s*['"]outside['"]/.test(code) && !/cliponaxis\s*:\s*false/.test(code)) {
+      errors.push(`Chart "${label2}" is bound to query "${query.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
+    }
     const missing = ["data", "layout", "font", "margin", "paper_bgcolor"].filter((key) => !code.includes(key));
     if (missing.length) {
       errors.push(`Chart "${label2}" is bound to query "${query.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, margin, paper_bgcolor, plot_bgcolor, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
     }
   }
   return errors;
+}
+var QUERY_DATA_REF = /queries\.([A-Za-z_$][\w$]*)\.data\b/g;
+var isStaticTrue = (value) => value === true || value === "true" || value === "{{true}}";
+function lintRunjsLoadOrder(spec) {
+  const errors = [];
+  const warnings = [];
+  const queries = spec.queries ?? [];
+  const byRef = /* @__PURE__ */ new Map();
+  for (const query of queries) {
+    byRef.set(query.name, query);
+    if (query.clientRef)
+      byRef.set(query.clientRef, query);
+  }
+  const chained = /* @__PURE__ */ new Set();
+  for (const lifecycle of spec.lifecycles ?? []) {
+    for (const target of lifecycle.refreshQueryRefs ?? [])
+      chained.add(`${lifecycle.queryRef}->${target}`);
+  }
+  for (const event of spec.events ?? []) {
+    const action = event.action ?? {};
+    if (event.sourceType !== "data_query" || event.trigger !== "onDataQuerySuccess" || action.actionId !== "run-query")
+      continue;
+    const target = String(action.target_ref ?? action.queryName ?? action.queryId ?? "");
+    if (target)
+      chained.add(`${event.sourceRef}->${target}`);
+  }
+  const keysOf = (query) => [query.name, ...query.clientRef ? [query.clientRef] : []];
+  for (const query of queries) {
+    if (query.kind !== "runjs")
+      continue;
+    const code = String(query.options?.code ?? "");
+    if (!isStaticTrue(query.options?.runOnPageLoad))
+      continue;
+    const refs2 = new Set([...code.matchAll(QUERY_DATA_REF)].map((match) => match[1]));
+    for (const ref of refs2) {
+      const source2 = byRef.get(ref);
+      if (!source2 || source2 === query)
+        continue;
+      const isChained = keysOf(source2).some((from) => keysOf(query).some((to) => chained.has(`${from}->${to}`)));
+      if (isChained) {
+        warnings.push(`Query "${query.name}" is already run from "${source2.name}"'s success but also has runOnPageLoad on, so it runs twice and the first run reads queries.${ref}.data before it exists. Set runOnPageLoad to false.`);
+      } else {
+        errors.push(`Query "${query.name}" reads queries.${ref}.data and runs on page load, so it races "${source2.name}" and reads undefined on first load (the chart or table it feeds stays empty). Set runOnPageLoad to false and run it from "${source2.name}"'s success: a lifecycle { queryRef: "${source2.clientRef ?? source2.name}", refreshQueryRefs: ["${query.clientRef ?? query.name}"] } or an onDataQuerySuccess run-query event.`);
+      }
+    }
+  }
+  return { errors, warnings };
 }
 function lintChartNumericBindings(pages, queries) {
   const warnings = [];
@@ -42557,6 +42745,11 @@ function lintPlannedApp(spec, existingSummary) {
   const queries = [...existingQueries, ...plannedQueries];
   if (plannedQueries.length)
     checked.push("datasource query option contracts and duplicate logical query references");
+  {
+    const loadOrder = lintRunjsLoadOrder(spec);
+    errors.push(...loadOrder.errors);
+    warnings.push(...loadOrder.warnings);
+  }
   const pageRefs = /* @__PURE__ */ new Map();
   const componentRefs = /* @__PURE__ */ new Map();
   const pages = (existingSummary?.pages ?? []).map((page) => ({
