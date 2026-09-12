@@ -41489,6 +41489,7 @@ function auditScript() {
   const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]'));
   const boxes = [];
   const findings = [];
+  const seenNames = /* @__PURE__ */ new Set();
   const bad = /\bundefined\b|\bNaN\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{/;
   for (const el of widgets) {
     const r = el.getBoundingClientRect();
@@ -41497,6 +41498,9 @@ function auditScript() {
     const cy = el.getAttribute("data-cy") || "";
     const type = (el.className.toString().match(/_tooljet-([A-Za-z0-9]+)/) || [])[1] || "?";
     const name = `${type}:${cy.replace("draggable-widget-", "")}`;
+    if (seenNames.has(cy))
+      continue;
+    seenNames.add(cy);
     const text = (el.innerText || "").trim();
     boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
@@ -41518,7 +41522,7 @@ function auditScript() {
         break;
       }
     }
-    if (!clippedHere) {
+    if (!clippedHere && !/^(Table|Listview|Kanban|Container|Form|Tabs):/.test(name)) {
       const leaves = Array.from(el.querySelectorAll("*")).filter((n) => n.children.length === 0 && (n.textContent || "").trim());
       const overflow = Math.max(0, ...leaves.map((n) => n.getBoundingClientRect().bottom)) - (r.top + r.height);
       if (overflow > 4) {

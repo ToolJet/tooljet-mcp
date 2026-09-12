@@ -27,6 +27,7 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
   const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]')) as HTMLElement[];
   const boxes: Array<{ name: string; x: number; y: number; w: number; h: number }> = [];
   const findings: RenderFinding[] = [];
+  const seenNames = new Set<string>();
   const bad = /\bundefined\b|\bNaN\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{/;
   for (const el of widgets) {
     const r = el.getBoundingClientRect();
@@ -34,6 +35,8 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
     const cy = el.getAttribute('data-cy') || '';
     const type = (el.className.toString().match(/_tooljet-([A-Za-z0-9]+)/) || [])[1] || '?';
     const name = `${type}:${cy.replace('draggable-widget-', '')}`;
+    if (seenNames.has(cy)) continue; // a widget's inner container repeats its data-cy
+    seenNames.add(cy);
     const text = (el.innerText || '').trim();
     boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
@@ -53,8 +56,8 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
         break;
       }
     }
-    if (!clippedHere) {
-      // Text drawn past the widget's bottom edge: an Html header authored shorter than its lines.
+    if (!clippedHere && !/^(Table|Listview|Kanban|Container|Form|Tabs):/.test(name)) {
+      // Text drawn past the widget's bottom edge (scrolling widgets excluded: their rows scroll): an Html header authored shorter than its lines.
       const leaves = (Array.from(el.querySelectorAll('*')) as HTMLElement[]).filter((n) => n.children.length === 0 && (n.textContent || '').trim());
       const overflow = Math.max(0, ...leaves.map((n) => n.getBoundingClientRect().bottom)) - (r.top + r.height);
       if (overflow > 4) {
