@@ -31,10 +31,10 @@ describe('render traps found in the 2026-09-12 reviews', () => {
   it('warns when a multi-line Text is shorter than its lines', () => {
     const header = "<span style='font-size:12px;font-weight:600;'>MEDICAL CARD OPERATIONS</span><br><span style='font-size:22px;font-weight:700;'>Sales control centre</span>";
     const r = lintComponentSpec({ type: 'Text', name: 'dashTitle', properties: { text: { value: header } }, layouts: { desktop: { top: 40, left: 2, width: 39, height: 50 } } });
-    expect(r.warnings.some((w) => w.includes('2 lines') && w.includes('cut off') && w.includes('at least 60'))).toBe(true);
+    expect(r.errors.some((w) => w.includes('2 lines') && w.includes('cut off') && w.includes('at least 60'))).toBe(true);
     const tall = lintComponentSpec({ type: 'Text', name: 'dashTitle', properties: { text: { value: header } }, layouts: { desktop: { top: 40, left: 2, width: 39, height: 70 } } });
-    expect(tall.warnings.some((w) => w.includes('cut off'))).toBe(false);
+    expect(tall.errors.some((w) => w.includes('cut off'))).toBe(false);
     const single = lintComponentSpec({ type: 'Text', name: 'title', properties: { text: { value: 'Today' } }, styles: { textSize: { value: 32 } }, layouts: { desktop: { top: 40, left: 2, width: 39, height: 50 } } });
-    expect(single.warnings.some((w) => w.includes('cut off'))).toBe(false);
+    expect(single.errors.some((w) => w.includes('cut off'))).toBe(false);
   });
 });

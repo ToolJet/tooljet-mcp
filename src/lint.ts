@@ -997,7 +997,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     if (typeof text === 'string' && typeof height === 'number') {
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
-        warnings.push(
+        errors.push(
           `Text "${label}": its ${needed.lines} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
             `${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`
         );

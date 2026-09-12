@@ -34934,6 +34934,11 @@ function looksInternalIdField(value) {
   const normalized2 = value.trim().toLowerCase();
   return /^id$/.test(normalized2) || /_id$/.test(normalized2) || /(?:^|_)uuid$/.test(normalized2);
 }
+function isTrueBinding(v) {
+  if (v === true)
+    return true;
+  return typeof v === "string" && /^\s*(\{\{\s*true\s*\}\}|true)\s*$/i.test(v);
+}
 function isFalseBinding(v) {
   return v === false || v === "{{false}}" || v === "false";
 }
@@ -35376,6 +35381,16 @@ function expressionOutsideBinding(value) {
   const match = outside.match(/'\s*\+\s*(?:moment|queries|components|globals|variables|page|new Date)\b[^\n]{0,40}|\b(?:moment|queries|components)\.[A-Za-z_]+\([^\n]{0,30}|\+\s*'[^']{0,30}'\s*\+/);
   return match ? JSON.stringify(match[0].trim().slice(0, 60)) : null;
 }
+var WRAP_REQUIRED_COLUMNS = 5;
+function estimateTextHeight(text, baseSize) {
+  const parts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i).map((part) => part.replace(/<[^>]+>/g, "").trim() === "" ? null : part).filter((part) => part !== null);
+  const sizes = parts.map((part) => {
+    const found = [...part.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((m) => Number(m[1]));
+    return found.length ? Math.max(...found) : baseSize;
+  });
+  const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
+  return { lines: parts.length, px: px2, sizes };
+}
 function lintComponentSpec(spec) {
   const errors = [];
   const warnings = [];
@@ -35398,6 +35413,26 @@ function lintComponentSpec(spec) {
   errors.push(...lintBindingSyntax(props, `Component "${label2}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label2}".styles`));
   errors.push(...lintRenderedText(spec));
+  if (spec.type === "Text") {
+    const text = propVal2(props, "text");
+    const height = (spec.layouts?.desktop ?? spec.layout)?.height;
+    if (typeof text === "string" && typeof height === "number") {
+      const needed = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
+      if (needed.lines > 1 && needed.px > height + 6) {
+        errors.push(`Text "${label2}": its ${needed.lines} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
+      }
+    }
+  }
+  if (spec.type === "ModalV2" && !isFalseBinding(propVal2(props, "useDefaultButton"))) {
+    const top = (spec.layouts?.desktop ?? spec.layout)?.top;
+    errors.push(`ModalV2 "${label2}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger button at the modal's own coordinates${typeof top === "number" ? ` (top ${top})` : ""} as a stray block on the page. Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.`);
+  }
+  if ((spec.type === "DropdownV2" || spec.type === "MultiselectV2") && !differsFromCatalogDefault(spec.type, "placeholder", propVal2(props, "placeholder"))) {
+    const labelText = propVal2(props, "label");
+    if (typeof labelText === "string" && labelText.trim()) {
+      warnings.push(`${spec.type} "${label2}": placeholder is the catalog default, so the control reads "Select" until a value is chosen. Set properties.placeholder to the neutral choice for "${labelText.trim()}" (for example "All ${labelText.trim().toLowerCase()}") or give it a default value.`);
+    }
+  }
   for (const key of ["disabledState", "loadingState", "visibility", "collapseWhenHidden"]) {
     const path = `Component "${label2}".properties.${key}`;
     for (const error51 of lintBindingSyntax(props[key], path, true)) {
@@ -35677,6 +35712,13 @@ function lintComponentSpec(spec) {
       }
       if (isTruthyBinding(autogen) && !projectsDataKeys) {
         warnings.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
+      }
+      const visibleColumnCount = columns.filter((col) => {
+        const c = col;
+        return c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}";
+      }).length;
+      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
+        errors.push(`Table "${label2}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true (rows grow to fit) and keep long text columns at columnSize 180 or more.`);
       }
       columns.forEach((col, i) => {
         const c = col;
@@ -41464,13 +41506,44 @@ function auditScript() {
     const m = text.match(bad);
     if (m)
       findings.push({ kind: "placeholder_text", component: name, detail: `rendered text contains "${m[0]}"` });
-    for (const node of Array.from(el.querySelectorAll("*"))) {
+    let clippedHere = false;
+    for (const node of [el, ...Array.from(el.querySelectorAll("*"))]) {
       const cs = getComputedStyle(node);
-      const hidden = cs.overflow === "hidden" || cs.overflowY === "hidden";
-      if (hidden && node.scrollHeight > node.clientHeight + 6 && node.clientHeight > 12 && (node.innerText || "").trim().length > 0) {
+      const hidden = cs.overflow === "hidden" || cs.overflowY === "hidden" || cs.overflowX === "hidden";
+      if (!hidden || (node.innerText || "").trim().length === 0)
+        continue;
+      if (node.scrollHeight > node.clientHeight + 6 && node.clientHeight > 12) {
         findings.push({ kind: "clipped", component: name, detail: `"${(node.innerText || "").trim().slice(0, 40)}" needs ${node.scrollHeight}px but has ${node.clientHeight}px` });
+        clippedHere = true;
         break;
       }
+    }
+    if (!clippedHere) {
+      const leaves = Array.from(el.querySelectorAll("*")).filter((n) => n.children.length === 0 && (n.textContent || "").trim());
+      const overflow = Math.max(0, ...leaves.map((n) => n.getBoundingClientRect().bottom)) - (r.top + r.height);
+      if (overflow > 4) {
+        findings.push({ kind: "clipped", component: name, detail: `text runs ${Math.round(overflow)}px past the widget's bottom edge; the widget needs ${Math.round(r.height + overflow)}px` });
+        clippedHere = true;
+      }
+    }
+    if (!clippedHere && /^Table:/.test(name)) {
+      const cut = [];
+      for (const cell of Array.from(el.querySelectorAll('td, [role="cell"], .td'))) {
+        const text2 = (cell.innerText || "").trim();
+        if (!text2)
+          continue;
+        for (const node of [cell, ...Array.from(cell.querySelectorAll("*"))]) {
+          const cs = getComputedStyle(node);
+          if ((cs.overflow === "hidden" || cs.overflowX === "hidden") && cs.textOverflow !== "ellipsis" && node.scrollWidth > node.clientWidth + 4 && node.clientWidth > 20) {
+            cut.push(text2.slice(0, 24));
+            break;
+          }
+        }
+        if (cut.length >= 3)
+          break;
+      }
+      if (cut.length)
+        findings.push({ kind: "clipped", component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
     }
   }
   for (let i = 0; i < boxes.length; i++) {
