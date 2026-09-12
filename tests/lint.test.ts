@@ -188,7 +188,7 @@ describe('lintComponentSpec', () => {
       properties: {
         title: { value: '' },
         plotFromJson: { value: true },
-        jsonDescription: { value: JSON.stringify({ data: [{ x: ['A'], y: [1], type: 'bar' }] }) },
+        jsonDescription: { value: JSON.stringify({ data: [{ x: ['A'], y: [1], type: 'bar' }], layout: { font: { family: 'IBM Plex Sans', size: 12, color: '#6B7280' }, margin: { l: 36, r: 12, t: 8, b: 40 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' } }) },
       },
     });
     expect(valid.errors).toEqual([]);

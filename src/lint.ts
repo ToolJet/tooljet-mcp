@@ -969,6 +969,45 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
   return { lines: parts.length, px, sizes };
 }
 
+const CHART_HOUSE_LAYOUT_KEYS = ['font', 'margin', 'paper_bgcolor'];
+
+/**
+ * A native Chart renders Plotly's defaults: Verdana, grey grid, unlabeled bars, the rainbow pie. Navaneeth's
+ * verdict on 2026-09-12 after six rounds: "charts can be more impressive; these are basic". Every chart is
+ * therefore drawn through plotFromJson with the house layout (font, margins, transparent paper) so the
+ * chart sits in the theme like the rest of the page.
+ */
+export function lintChartHouseStyle(spec: LintComponent): string[] {
+  if (spec.type !== 'Chart') return [];
+  const label = spec.name ?? spec.type;
+  const props = spec.properties ?? {};
+  const fromJson = propVal(props, 'plotFromJson');
+  if (!isTrueBinding(fromJson)) {
+    const kind = String(propVal(props, 'type') ?? 'bar');
+    return [
+      `Chart "${label}": native type "${kind}" renders Plotly's defaults (Verdana labels, grey grid, flat unlabeled bars, ` +
+        'the rainbow pie). Set properties.plotFromJson to "{{true}}" and write properties.jsonDescription as the house ' +
+        'chart from references/ui-layout.md (accent series, value labels, theme font, transparent paper, weak-border grid).',
+    ];
+  }
+  const raw = propVal(props, 'jsonDescription');
+  const description = typeof raw === 'string' ? raw : raw && typeof raw === 'object' ? JSON.stringify(raw) : '';
+  if (!description.trim()) {
+    return [`Chart "${label}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
+  }
+  // A description that is only a binding to a query builds its layout elsewhere; the dynamic-mode warning covers it.
+  if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
+  if (!description.includes('layout') && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description)) return [];
+  const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key) => !description.includes(key));
+  if (missing.length) {
+    return [
+      `Chart "${label}": jsonDescription has no layout.${missing.join(', layout.')}; without the house layout the chart ` +
+        'falls back to Plotly defaults. Add layout { font: {family, size, color}, margin, paper_bgcolor, plot_bgcolor } from references/ui-layout.md.',
+    ];
+  }
+  return [];
+}
+
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -1007,6 +1046,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintBindingSyntax(props, `Component "${label}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label}".styles`));
   errors.push(...lintRenderedText(spec));
+  errors.push(...lintChartHouseStyle(spec));
 
   // A Text widget holding several lines (eyebrow <br> title, or block tags) in a box sized for one line
   // clips its last line: MedCard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.

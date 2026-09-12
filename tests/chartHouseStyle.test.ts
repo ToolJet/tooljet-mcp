@@ -1,0 +1,21 @@
+import { describe, expect, it } from 'vitest';
+import { lintChartHouseStyle, lintComponentSpec } from '../src/lint.js';
+
+describe('chart house style', () => {
+  it('rejects a native chart', () => {
+    const r = lintChartHouseStyle({ type: 'Chart', name: 'stageChart', properties: { type: { value: 'bar' }, data: { value: '[]' } } });
+    expect(r).toHaveLength(1);
+    expect(r[0]).toContain('Plotly');
+    expect(r[0]).toContain('plotFromJson');
+  });
+  it('requires the house layout keys in jsonDescription', () => {
+    const bare = lintChartHouseStyle({ type: 'Chart', name: 'c', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: "{{ {data:[{type:'bar',x:[1],y:[2]}], layout:{}} }}" } } });
+    expect(bare[0]).toContain('layout.font');
+    const ok = lintChartHouseStyle({ type: 'Chart', name: 'c', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: "{{ {data:[{type:'bar',x:[1],y:[2]}], layout:{font:{family:'IBM Plex Sans',size:12,color:'#6B7280'}, margin:{l:36,r:12,t:8,b:40}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)'}} }}" } } });
+    expect(ok).toEqual([]);
+  });
+  it('is part of the component spec lint', () => {
+    const r = lintComponentSpec({ type: 'Chart', name: 'pieChart', properties: { type: { value: 'pie' } } });
+    expect(r.errors.some((e) => e.includes('rainbow'))).toBe(true);
+  });
+});
