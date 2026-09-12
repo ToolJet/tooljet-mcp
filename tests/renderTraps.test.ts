@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lintComponentSpec } from '../src/lint.js';
+import { lintComponentSpec, lintComponents } from '../src/lint.js';
 
 const cols = (n: number, extra: Array<Record<string, unknown>> = []) =>
   [...Array.from({ length: n }, (_, i) => ({ name: `c${i}`, key: `c${i}`, columnType: 'string' })), ...extra];
@@ -45,6 +45,46 @@ describe('render traps found in the 2026-09-12 reviews', () => {
   });
   it('assumes the catalog default of ten rows per page when none is authored', () => {
     const r = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: cols(4) } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 400 } } });
-    expect(r.warnings.some((e) => e.includes('10 rows per page') && e.includes('sliced'))).toBe(true);
+    expect(r.errors.some((e) => e.includes('10 rows per page') && e.includes('sliced'))).toBe(true);
+  });
+
+  it('rejects a table whose columnSize values are wider than the table', () => {
+    const wide = cols(0, [['Vendor', 190], ['Code', 80], ['Category', 170], ['Region', 100], ['Location', 150], ['Primary contact', 220], ['Backup contact', 220], ['Terms', 90], ['Preferred', 100], ['Annual spend', 130]].map(([name, columnSize]) => ({ name, key: name, columnType: 'string', columnSize })));
+    const r = lintComponentSpec({ type: 'Table', name: 'vendorsTable', properties: { columns: { value: wide }, rowsPerPage: { value: 10 } }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 330, left: 2, width: 39, height: 690 } } });
+    expect(r.errors.some((e) => e.includes('cut off at the right edge') && e.includes('1450px'))).toBe(true);
+    const fits = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: wide.slice(0, 5) }, rowsPerPage: { value: 10 } }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 330, left: 2, width: 39, height: 690 } } });
+    expect(fits.errors.some((e) => e.includes('cut off at the right edge'))).toBe(false);
+  });
+
+  it('rejects narrow Kanban card children', () => {
+    const board = { id: 'k1', type: 'Kanban', name: 'pipelineBoard', properties: {}, layouts: { desktop: { top: 172, left: 2, width: 39, height: 540 } } };
+    const title = { id: 't1', type: 'Text', name: 'pipelineBoardCardTitle', parent: 'k1', properties: { text: { value: '{{cardData.title}}' } }, layouts: { desktop: { top: 20, left: 0, width: 13.95, height: 30 } } };
+    const r = lintComponents([board, title] as any);
+    expect(r.errors.some((e) => e.includes('card child Text "pipelineBoardCardTitle"') && e.includes('97px'))).toBe(true);
+    const wide = lintComponents([board, { ...title, layouts: { desktop: { top: 12, left: 2, width: 39, height: 30 } } }] as any);
+    expect(wide.errors.some((e) => e.includes('card child'))).toBe(false);
+  });
+
+  it('rejects a Statistics row that leaves an empty slot', () => {
+    const tile = (name: string, top: number, left: number, width = 18) => ({ type: 'Statistics', name, properties: { primaryValueLabel: { value: name } }, layouts: { desktop: { top, left, width, height: 120 } } });
+    const r = lintComponents([tile('users', 130, 2), tile('endpoints', 130, 22), tile('services', 270, 2)] as any);
+    expect(r.errors.some((e) => e.includes('"services"') && e.includes('empty slot'))).toBe(true);
+    const full = lintComponents([tile('a', 130, 2, 13), tile('b', 130, 15, 13), tile('c', 130, 28, 13)] as any);
+    expect(full.errors.some((e) => e.includes('empty slot'))).toBe(false);
+  });
+
+  it('rejects a button narrower than its label', () => {
+    const r = lintComponentSpec({ type: 'Button', name: 'addProduct', properties: { text: { value: 'Add product' } }, layouts: { desktop: { top: 272, left: 38, width: 3, height: 40 } } });
+    const all = lintComponents([{ type: 'Button', name: 'addProduct', properties: { text: { value: 'Add product' } }, layouts: { desktop: { top: 272, left: 38, width: 3, height: 40 } } }] as any);
+    expect(all.errors.some((e) => e.includes('"Add product"') && e.includes('at least 5 columns'))).toBe(true);
+    expect(r.errors.length).toBeGreaterThanOrEqual(0);
+    const ok = lintComponents([{ type: 'Button', name: 'addProduct', properties: { text: { value: 'Add product' } }, layouts: { desktop: { top: 272, left: 36, width: 5, height: 40 } } }] as any);
+    expect(ok.errors.some((e) => e.includes('label wraps'))).toBe(false);
+  });
+
+  it('requires cliponaxis:false on bars with outside labels', () => {
+    const chart = (extra: string) => lintComponentSpec({ type: 'Chart', name: 'spend', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: `{{JSON.stringify({data:[{type:'bar',x:queries.q.data.map(r=>r.k),y:queries.q.data.map(r=>r.v),text:queries.q.data.map(r=>String(r.v)),textposition:'outside'${extra}}],layout:{margin:{l:36,r:12,t:8,b:40},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'IBM Plex Sans, sans-serif',size:12,color:'#6B7280'}}})}}` } } });
+    expect(chart('').errors.some((e) => e.includes('cliponaxis:false'))).toBe(true);
+    expect(chart(',cliponaxis:false').errors.some((e) => e.includes('cliponaxis:false'))).toBe(false);
   });
 });

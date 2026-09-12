@@ -1406,7 +1406,7 @@ describe('add_component tool', () => {
         autogenerateColumns: { value: false },
         columns: { value: [{ id: 'name', name: 'Name', key: 'name', columnType: 'string' }] },
       },
-      layout: { top: 0, left: 0, width: 20, height: 300 },
+      layout: { top: 0, left: 0, width: 20, height: 600 },
     });
 
     expect(client.createComponent).toHaveBeenCalledWith(expect.objectContaining({
@@ -1596,7 +1596,7 @@ describe('add_components tool', () => {
           columns: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }],
         },
         styles: { borderRadius: 10 },
-        layout: { top: 0, left: 0, width: 40, height: 400 },
+        layout: { top: 0, left: 0, width: 40, height: 600 },
       }],
     });
 
@@ -1641,7 +1641,7 @@ describe('add_components tool', () => {
           autogenerateColumns: { value: false },
           columns: { value: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }] },
         },
-        layout: { top: 0, left: 0, width: 40, height: 400 },
+        layout: { top: 0, left: 0, width: 40, height: 600 },
       }],
     });
 

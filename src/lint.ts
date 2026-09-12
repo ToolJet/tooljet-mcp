@@ -160,6 +160,15 @@ const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
 const DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
 const BOUNDED_OPERATIONAL_SURFACE_TYPES = new Set(['Table', 'Listview']);
 const MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
+// Root-canvas geometry on a laptop: the viewer canvas is the window minus the page rail, about 1200px on
+// a 1440 screen, so one of the 43 grid columns is about 28px. Nested canvases (Kanban cards, modals) differ.
+const CANVAS_COLUMN_PX = 28;
+const CONTENT_COLUMNS = 39;
+const TABLE_UNSIZED_COLUMN_MIN_PX = 100;
+const KANBAN_CARD_WIDTH_PX = 300;
+const KANBAN_CARD_CHILD_MIN_COLS = 30;
+const BUTTON_CHAR_PX = 7.5;
+const BUTTON_PADDING_PX = 32;
 
 interface Rect {
   top?: number;
@@ -703,6 +712,72 @@ export function lintKanbanInteractions(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** A Kanban card is its own 43-column canvas about 300px wide, so a title child at the catalog default of
+ *  14 columns is under 100px and cuts a customer name after a few characters (round eight, 2026-09-12). */
+export function lintKanbanCardChildren(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const board of components.filter((component) => component.type === 'Kanban')) {
+    const key = componentKey(board);
+    if (!key) continue;
+    for (const child of components) {
+      if (parentPlacement(child)?.parentId !== key) continue;
+      if (child.type !== 'Text' && child.type !== 'Html') continue;
+      const width = (child.layouts?.desktop ?? child.layout)?.width;
+      if (typeof width !== 'number' || width >= KANBAN_CARD_CHILD_MIN_COLS) continue;
+      const px = Math.round((width / 43) * KANBAN_CARD_WIDTH_PX);
+      errors.push(
+        `Kanban "${board.name ?? board.id ?? 'Kanban'}" card child ${child.type} "${child.name ?? child.id ?? child.type}": width ${width} columns ` +
+          `is about ${px}px of the ${KANBAN_CARD_WIDTH_PX}px card (card children use the card's own 43-column grid), so a name or title is cut ` +
+          'after a few characters. Use left 2, width 39 (title top 12, description top 44).'
+      );
+    }
+  }
+  return errors;
+}
+
+/** A row of Statistics tiles that leaves an empty slot (three tiles in a two-per-row grid) reads as a broken
+ *  grid; five of five pages of one round-eight app carried it. Every figure belongs in one full row. */
+export function lintStatisticsRows(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  const tiles = components.filter((component) => component.type === 'Statistics' && !parentPlacement(component)?.parentId);
+  if (tiles.length < 2) return errors;
+  const rect = (component: LintComponent) => component.layouts?.desktop ?? component.layout;
+  const rows: LintComponent[][] = [];
+  for (const tile of [...tiles].sort((a, b) => (rect(a)?.top ?? 0) - (rect(b)?.top ?? 0))) {
+    const row = rows.find((candidate) => Math.abs((rect(candidate[0])?.top ?? 0) - (rect(tile)?.top ?? 0)) <= 6);
+    if (row) row.push(tile);
+    else rows.push([tile]);
+  }
+  for (const row of rows) {
+    const span = row.reduce((sum, tile) => sum + (rect(tile)?.width ?? 0), 0);
+    if (span >= CONTENT_COLUMNS - 5) continue;
+    const names = row.map((tile) => `"${tile.name ?? tile.id ?? 'Statistics'}"`).join(', ');
+    errors.push(
+      `Statistics row at top ${rect(row[0])?.top ?? 0}px (${names}) spans ${span} of the ${CONTENT_COLUMNS} content columns and leaves an empty slot, ` +
+        'so the KPI grid reads as broken. Put every figure in one full row of three or four tiles (width 13 or 9, hideSecondary true), ' +
+        'or use the Html KPI strip from references/ui-layout.md.'
+    );
+  }
+  return errors;
+}
+
+/** A Button narrower than its label wraps the label onto two lines inside a 40px button (an "Add product"
+ *  button at 3 columns, round eight). Root canvas only: nested canvases have a different column width. */
+export function lintButtonLabelWidth(spec: LintComponent): string[] {
+  if (spec.type !== 'Button' || parentPlacement(spec)?.parentId) return [];
+  const text = propVal(spec.properties ?? {}, 'text');
+  if (typeof text !== 'string' || text.includes('{{') || !text.trim()) return [];
+  const width = (spec.layouts?.desktop ?? spec.layout)?.width;
+  if (typeof width !== 'number' || width <= 0) return [];
+  const neededPx = Math.ceil(text.trim().length * BUTTON_CHAR_PX + BUTTON_PADDING_PX);
+  const px = Math.round(width * CANVAS_COLUMN_PX);
+  if (px >= neededPx) return [];
+  return [
+    `Button "${spec.name ?? spec.id ?? 'Button'}": the label "${text.trim()}" needs about ${neededPx}px but the button is ${width} columns, ` +
+      `about ${px}px, so the label wraps or is cut. Use at least ${Math.ceil(neededPx / CANVAS_COLUMN_PX)} columns.`,
+  ];
+}
+
 /** Repeated Listview children use a fresh 43-column canvas inside every item. Also catch Html
  * roots whose copied pixel height exceeds the wrapper's actual inner height. */
 export function lintListviewChildren(components: LintComponent[]): string[] {
@@ -998,6 +1073,14 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
   // A description that is only a binding to a query builds its layout elsewhere; the dynamic-mode warning covers it.
   if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
   if (!description.includes('layout') && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description)) return [];
+  // Plotly clips bar text to the plot area unless the trace sets cliponaxis:false, so the tallest bar's
+  // outside label is cut in half (measured 2026-09-12: a bigger top margin does not help, cliponaxis does).
+  if (/textposition\s*:\s*['"]outside['"]/.test(description) && !/cliponaxis\s*:\s*false/.test(description)) {
+    return [
+      `Chart "${label}": a bar trace uses textposition 'outside' without cliponaxis:false, so the tallest bar's value label is ` +
+        'cut in half by the plot area. Add cliponaxis:false to every bar trace that places its text outside.',
+    ];
+  }
   const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key) => !description.includes(key));
   if (missing.length) {
     return [
@@ -1618,11 +1701,33 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         const rowPx = wraps ? 60 : 45;
         const needed = 33 + 57 + perPage * rowPx;
         if (height < needed) {
-          // An authored page size that does not fit is an error; the catalog default is a warning, since
-          // the model may still set rowsPerPage in a later write.
-          (authoredPerPage === undefined ? warnings : errors).push(
+          errors.push(
             `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ', rows grow with contentWrap' : ''}) ` +
               `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`
+          );
+        }
+      }
+      // Columns wider than the table: authored columnSize values are pixels, and whatever does not fit is cut
+      // at the right edge (round eight, 2026-09-12: four tables summed 955 to 1775px of columns inside 530 to
+      // 1090px of width and lost their last columns mid value). Root tables only; nested canvases differ.
+      const tableWidth = (spec.layouts?.desktop ?? spec.layout)?.width;
+      if (typeof tableWidth === 'number' && tableWidth > 0 && !parentPlacement(spec)?.parentId) {
+        const widthPx = Math.round(tableWidth * CANVAS_COLUMN_PX);
+        let sizedPx = 0;
+        let unsized = 0;
+        for (const col of columns as unknown[]) {
+          const c = col as Record<string, unknown> | null;
+          if (!c || c.columnVisibility === false || c.columnVisibility === '{{false}}') continue;
+          if (typeof c.columnSize === 'number' && c.columnSize >= 16) sizedPx += c.columnSize;
+          else unsized += 1;
+        }
+        const neededPx = sizedPx + unsized * TABLE_UNSIZED_COLUMN_MIN_PX;
+        if (neededPx > widthPx + 8) {
+          errors.push(
+            `Table "${label}": its ${visibleColumnCount} visible columns need about ${neededPx}px (the columnSize values plus ` +
+              `${TABLE_UNSIZED_COLUMN_MIN_PX}px per unsized column) but the table is ${tableWidth} columns wide, about ${widthPx}px on a laptop, ` +
+              'so the last columns are cut off at the right edge. Show fewer columns (detail belongs in a side panel or modal), ' +
+              'shrink the columnSize values, or widen the table.'
           );
         }
       }
@@ -2092,9 +2197,12 @@ export function lintComponents(components: LintComponent[]): LintResult {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
+    errors.push(...lintButtonLabelWidth(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintKanbanCardChildren(components));
+  errors.push(...lintStatisticsRows(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));

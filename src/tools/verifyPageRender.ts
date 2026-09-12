@@ -28,7 +28,8 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
   const boxes: Array<{ name: string; x: number; y: number; w: number; h: number }> = [];
   const findings: RenderFinding[] = [];
   const seenNames = new Set<string>();
-  const bad = /\bundefined\b|\bNaN\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{/;
+  // Raw formats a user notices at once: undefined/NaN/null, Invalid date, an ISO timestamp, a doubled percent sign.
+  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%/;
   for (const el of widgets) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4) continue;
@@ -82,6 +83,19 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
       if (fills.has('rgb(31, 119, 180)') && fills.has('rgb(255, 127, 14)')) {
         findings.push({ kind: 'placeholder_text', component: name, detail: 'pie chart uses Plotly default rainbow colours; use the theme series palette' });
       }
+      // Outside bar labels clipped to the plot area (cliponaxis true): the tallest bar's number is cut in half.
+      const drag = el.querySelector('.nsewdrag');
+      const dr = drag ? drag.getBoundingClientRect() : null;
+      if (dr) {
+        const cutLabels = (Array.from(el.querySelectorAll('.bartext')) as Element[]).filter((t) => {
+          const tr = t.getBoundingClientRect();
+          if (tr.top >= dr.top - 1 && tr.right <= dr.right + 1) return false;
+          let n: Element | null = t.parentElement;
+          while (n && n !== el) { if (n.getAttribute('clip-path')) return true; n = n.parentElement; }
+          return false;
+        });
+        if (cutLabels.length) findings.push({ kind: 'clipped', component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || '').trim()}"); set cliponaxis:false on the bar trace` });
+      }
     }
     if (!clippedHere && /^Table:/.test(name)) {
       const cut: string[] = [];
@@ -98,6 +112,9 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
         if (cut.length >= 3) break;
       }
       if (cut.length) findings.push({ kind: 'clipped', component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
+      // Columns wider than the table: the scroll container is wider than its box, so the last columns sit past the right edge.
+      const scroller = (Array.from(el.querySelectorAll('*')) as HTMLElement[]).find((node) => node.scrollWidth > node.clientWidth + 12 && node.clientWidth > 200 && /table/i.test(node.className.toString()));
+      if (scroller) findings.push({ kind: 'clipped', component: name, detail: `columns overflow the table by ${scroller.scrollWidth - scroller.clientWidth}px to the right (the columnSize values exceed the table width); show fewer columns or shrink them` });
       // The last visible row sliced by the table body's edge: the table height does not fit whole rows.
       const body = el.querySelector('.table-responsive, .tbody, tbody, [class*="table-body"]') as HTMLElement | null;
       const rows = body ? (Array.from(body.querySelectorAll('tr, [role="row"], .tr')) as HTMLElement[]) : [];

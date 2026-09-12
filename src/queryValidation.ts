@@ -212,9 +212,33 @@ function interpolatedSqlBindingIssues(sql: string): QueryValidationIssue[] {
   ];
 }
 
+/** Parse JavaScript query code the way ToolJet runs it (an async function body). Returns the syntax
+ *  error message, or undefined when it parses. A stray quote in a chart query (round eight, 2026-09-12)
+ *  failed the query silently and left the chart it fed as empty axes. */
+export function runjsSyntaxError(code: string): string | undefined {
+  try {
+    new Function(`return (async () => {\n${code}\n});`);
+    return undefined;
+  } catch (error) {
+    return error instanceof SyntaxError ? error.message : undefined;
+  }
+}
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
+    const syntax = runjsSyntaxError(options.code);
+    if (syntax) {
+      errors.push({
+        code: 'runjs_syntax_error',
+        path: 'code',
+        message:
+          `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; ` +
+          'fix the code before writing it.',
+      });
+    }
+  }
   if (typeof options.query === "string") {
     errors.push(...unquotedSqlBindingIssues(options.query));
     warnings.push(...interpolatedSqlBindingIssues(options.query));
