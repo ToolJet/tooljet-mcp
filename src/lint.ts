@@ -873,6 +873,61 @@ export function lintDesktopCanvasCoverage(components: LintComponent[]): string[]
 }
 
 /** Lint a single component spec (pre-write). */
+/** Text-bearing property keys whose value the customer reads on screen. */
+const RENDERED_TEXT_KEYS = ['text', 'rawHtml', 'label', 'title', 'placeholder', 'description', 'subtitle', 'primaryValue', 'secondaryValue'];
+
+/** Defaults a container ships with when its items were never authored; a customer sees them verbatim. */
+const CONTAINER_ITEMS: Record<string, string> = { Tabs: 'tabs', Steps: 'steps', Timeline: 'data' };
+
+/**
+ * What a customer would read as a bug in rendered text, caught before the write. Three shapes seen in the
+ * 2026-09-12 Luna campaign (224 pages reviewed): a literal backslash-n in a Text value ("TOTAL PRODUCTS\n8"
+ * on four KPI tiles), an expression written outside its braces so the source prints verbatim
+ * ("'+moment().format('DD MMM YYYY')+'" in a header), and a Tabs component left with its default
+ * "Tab 1 / Tab 2 / Tab 3" items next to hand-built content.
+ */
+export function lintRenderedText(spec: LintComponent): string[] {
+  const errors: string[] = [];
+  const label = spec.name ?? spec.type ?? 'component';
+  const props = spec.properties ?? {};
+  for (const key of RENDERED_TEXT_KEYS) {
+    const value = propVal(props, key);
+    if (typeof value !== 'string' || !value) continue;
+    if (value.includes('\\n')) {
+      errors.push(
+        `Component "${label}".properties.${key} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". ` +
+          'Use a real line break, <br> in Html, or separate components.'
+      );
+    }
+    const outside = expressionOutsideBinding(value);
+    if (outside) {
+      errors.push(
+        `Component "${label}".properties.${key} has JavaScript outside a {{ }} binding (${outside}); it renders as source text. ` +
+          'Wrap the whole expression in one {{ }} or move it into a query.'
+      );
+    }
+  }
+  const itemsKey = CONTAINER_ITEMS[spec.type ?? ''];
+  if (itemsKey) {
+    const items = propVal(props, itemsKey);
+    const authored = Array.isArray(items) ? items.length > 0 : typeof items === 'string' && items.includes('{{');
+    if (!authored) {
+      errors.push(
+        `${spec.type} "${label}" has no properties.${itemsKey}: it renders ToolJet's placeholder items ("Tab 1 / Tab 2 / Tab 3"). ` +
+          `Author ${itemsKey} with the real titles, or use a different component.`
+      );
+    }
+  }
+  return errors;
+}
+
+/** A snippet of code-looking text that sits outside every {{ }} span, or null. */
+export function expressionOutsideBinding(value: string): string | null {
+  const outside = value.replace(/\{\{[\s\S]*?\}\}/g, ' ');
+  const match = outside.match(/'\s*\+\s*(?:moment|queries|components|globals|variables|page|new Date)\b[^\n]{0,40}|\b(?:moment|queries|components)\.[A-Za-z_]+\([^\n]{0,30}|\+\s*'[^']{0,30}'\s*\+/);
+  return match ? JSON.stringify(match[0].trim().slice(0, 60)) : null;
+}
+
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -910,6 +965,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 
   errors.push(...lintBindingSyntax(props, `Component "${label}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label}".styles`));
+  errors.push(...lintRenderedText(spec));
   // These boolean controls are not text templates. A malformed expression plus stray prose can
   // silently become a truthy string and disable/hide an otherwise working primary action.
   for (const key of ['disabledState', 'loadingState', 'visibility', 'collapseWhenHidden']) {
