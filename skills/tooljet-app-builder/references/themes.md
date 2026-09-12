@@ -159,6 +159,35 @@ software, and on 2026-09-12 nine of sixteen generated apps had landed on the sam
 industry lookup handed them out. When two rows fit, prefer the one the customer's own words point to; when
 nothing points anywhere, Ink for a dense staff tool and Blue for everything else.
 
+**Beyond the menu: how to build a palette from what the prompt gives.** The menu is the fallback; a prompt that
+names a brand colour, a material, a place, a mood or an audience deserves its own palette, built the same way
+every row of the menu was built:
+
+1. **Primary**: one hue, mid-to-deep lightness (dark enough to carry white text at 4.5:1 contrast on a filled
+   button; roughly Tailwind's 600 to 800 step). Take it from the brand hex if given, from the named thing
+   otherwise (Sage → `#4D7C5B`, Cobalt → `#1E40AF`, Coral → `#C2410C` rather than a neon coral, Charcoal →
+   `#1F2937`, Forest → `#166534`, Cocoa → `#78350F`). Saturated brights, pastels, neon, muted teal and steel are
+   never a primary; if the customer's colour is one of those, keep it for the accent and pick the nearest deep
+   hue from the menu as the primary.
+2. **Accent**: the one place colour is allowed to be lively. On a dark or neutral primary (ink, slate, graphite,
+   charcoal) it is a warm complement (amber, terracotta, sky); on a coloured primary it is the primary itself or a
+   step lighter. Never a second unrelated hue.
+3. **Canvas and surfaces**: near-white, tinted 2 to 4 percent toward the primary's temperature (warm hues get
+   `#FAF8F5`-like canvases, cool hues `#F8FAFC`), cards pure white, a second surface one step darker, borders
+   one step darker again. Text is the primary's hue at near-black lightness, muted text the same hue at mid grey.
+4. **Status colours stay semantic**: success green, warning amber, error red, at the same lightness as the
+   primary so no one of them shouts. A brand whose primary is green or red keeps its status colours anyway and
+   shifts them slightly in hue so they stay distinguishable.
+5. **Chip tints** for tables: the status hue at very light lightness for the fill (`#DCFCE7`-like) and the
+   same hue at deep lightness for the ink (`#166534`-like); a neutral chip is the text hue at those two steps.
+6. **Check contrast** before writing the theme: primary on white and white on primary at least 4.5:1, muted text
+   on canvas at least 4.5:1, chip ink on chip tint at least 4.5:1, borders at least 1.5:1 against the canvas.
+   Never carry meaning by colour alone; a chip also has its label.
+
+Then read the prompt one more time: a mood word ("calm", "premium", "playful", "serious"), an audience
+("kids", "bank", "government") or a scale word shifts the primary's lightness and the radii, never the rules
+above. Say in the handoff which cue produced the palette so the customer can redirect in one line.
+
 **Colour usage, whichever palette.** The primary appears in the one filled button per view, the active
 navigation item, focus rings, link text and the lead figure of a KPI strip. It never fills a KPI tile, a card
 background or a header band; every tile is the same white card with a hairline border. A filled statement
