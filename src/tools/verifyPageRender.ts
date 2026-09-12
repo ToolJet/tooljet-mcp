@@ -98,6 +98,14 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
         if (cut.length >= 3) break;
       }
       if (cut.length) findings.push({ kind: 'clipped', component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
+      // The last visible row sliced by the table body's edge: the table height does not fit whole rows.
+      const body = el.querySelector('.table-responsive, .tbody, tbody, [class*="table-body"]') as HTMLElement | null;
+      const rows = body ? (Array.from(body.querySelectorAll('tr, [role="row"], .tr')) as HTMLElement[]) : [];
+      if (body && rows.length) {
+        const bodyBottom = body.getBoundingClientRect().bottom;
+        const sliced = rows.filter((row) => { const rr = row.getBoundingClientRect(); return rr.top < bodyBottom - 4 && rr.bottom > bodyBottom + 6 && (row.innerText || '').trim().length > 0; });
+        if (sliced.length) findings.push({ kind: 'clipped', component: name, detail: `a row is sliced by the table's bottom edge; size the table to whole rows (header 40 + rows x row height + footer) or enable pagination` });
+      }
     }
   }
   for (let i = 0; i < boxes.length; i++) {
