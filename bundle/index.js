@@ -37933,6 +37933,15 @@ function createClient(auth, config2) {
     return { deleted: true };
   }
   return {
+    async setAppPublic(appId, isPublic) {
+      const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/public`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app: { is_public: isPublic } })
+      });
+      if (!res.ok)
+        throw new Error(`could not set app ${appId} public=${isPublic}: ${res.status}`);
+    },
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
@@ -41587,6 +41596,10 @@ function auditScript() {
       if (family.includes("open sans") || family.includes("verdana")) {
         findings.push({ kind: "placeholder_text", component: name, detail: "chart uses Plotly default styling (Open Sans/Verdana labels); draw it with plotFromJson and the house layout" });
       }
+      const traces = el.querySelectorAll(".trace, .bars path, .slice, .scatterlayer path, .heatmaplayer image").length;
+      if (el.querySelector(".js-plotly-plot, .plot-container") && traces === 0) {
+        findings.push({ kind: "empty_render", component: name, detail: "chart has axes but no data trace; the query feeding it returned the wrong shape (a chart needs {data:[...], layout:{...}})" });
+      }
       const slices = Array.from(el.querySelectorAll(".slice path, .pie path"));
       const fills = new Set(slices.map((n) => (n.getAttribute("style") || "").match(/fill:\s*([^;]+)/)?.[1] ?? n.getAttribute("fill") ?? "").filter(Boolean));
       if (fills.has("rgb(31, 119, 180)") && fills.has("rgb(255, 127, 14)")) {
@@ -41703,10 +41716,20 @@ function verifyPageRenderTool(client, viewerBase) {
         const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}` }));
         if (!targets.length)
           return fail(new Error(`no page ${args.page_handle ?? ""} in app ${args.app_id}`));
-        const reports = await auditPages(targets, {
+        const options2 = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0
-        });
+        };
+        let reports = await auditPages(targets, options2);
+        const unreachable = reports.every((r) => r.findings.some((f) => f.kind === "unreachable" && /sign-in/.test(f.detail)));
+        if (unreachable && /^(1|true|yes)$/i.test(process.env.MCP_RENDER_AUDIT_MAKE_PUBLIC ?? "")) {
+          await client.setAppPublic(args.app_id, true);
+          try {
+            reports = await auditPages(targets, options2);
+          } finally {
+            await client.setAppPublic(args.app_id, false).catch(() => void 0);
+          }
+        }
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {
@@ -42306,6 +42329,33 @@ function containsNamedBinding(value, namespace, name) {
 }
 
 // dist/appSpecLint.js
+var CHART_QUERY_BINDING = /^\s*\{\{\s*queries\.([A-Za-z_$][\w$]*)\.data\s*\}\}\s*$/;
+function lintQueryFedCharts(components, queries) {
+  const errors = [];
+  for (const component of components) {
+    if (component.type !== "Chart")
+      continue;
+    const raw = component.properties?.jsonDescription;
+    const description = typeof raw === "string" ? raw : raw && typeof raw === "object" && "value" in raw ? String(raw.value ?? "") : "";
+    const match = CHART_QUERY_BINDING.exec(description);
+    if (!match)
+      continue;
+    const query = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
+    if (!query)
+      continue;
+    const code = String(query.options?.code ?? "");
+    const label2 = component.name ?? "Chart";
+    if (!code.trim()) {
+      errors.push(`Chart "${label2}" is bound to query "${query.name}", which has no JavaScript code to build the chart object.`);
+      continue;
+    }
+    const missing = ["data", "layout", "font", "margin", "paper_bgcolor"].filter((key) => !code.includes(key));
+    if (missing.length) {
+      errors.push(`Chart "${label2}" is bound to query "${query.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, margin, paper_bgcolor, plot_bgcolor, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
+    }
+  }
+  return errors;
+}
 function lintChartNumericBindings(pages, queries) {
   const warnings = [];
   const sqlByName = /* @__PURE__ */ new Map();
@@ -42502,6 +42552,7 @@ function lintPlannedApp(spec, existingSummary) {
     warnings.push(...expansion.warnings);
     const componentLint = lintComponents(expansion.components);
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
+    errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
     const localRefs = /* @__PURE__ */ new Map();
     for (const component of existingPage?.components ?? []) {
