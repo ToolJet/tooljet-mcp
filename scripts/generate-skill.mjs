@@ -912,6 +912,16 @@ Build only what ToolJet's real components, connected datasources, and MCP tools 
 5. Verify each completed page/primary flow using \`references/qa.md\`. Static validation does not prove runtime query behavior, rendering, or event delivery.
 6. Share \`editor_url\` while authoring. After the first meaningful page works, open \`viewer_url\` in the built-in browser when available and reuse that tab. Final handoff includes both links, what works, limitations, and a short tool-call-count efficiency note.
 
+## Finish rules for every page
+
+These decide whether a page reads as a product or as components on a canvas. They are short because they are not optional; the references carry the detail.
+
+- **Register first.** A staff tool (queue, desk, approvals, inventory, admin, ops) is quiet: plain title with a small-caps eyebrow and one right-aligned live fact, sans-serif, one accent, neutrals from the industry. Only a request with premium or customer-facing feel words gets a light masthead with a monogram and a serif display face. Never a dark gradient band, never the default blue-on-white; pass the palette to \`create_app\` as a theme.
+- **Header and KPI strip are single \`Html\` blocks.** The header sits at top 40. Three to five equal-height tiles, small-caps label, large value, one context line (a delta against the previous period when the data has dates), the lead tile filled with the accent and the rest plain; size tiles to the longest caption so nothing clips.
+- **The page's job comes second, above the fold at 1600 by 900.** On a queue, desk, agenda or register that is the table; on a monitoring page the charts the request names, side by side. Nothing the request did not name is added: no extra cards, banners, tips, next-step panels or secondary tables.
+- **Table finish.** State columns (status, priority, SLA, receipt, stage) are \`html\` chips from the tint map in \`references/ui-layout.md\`; never a select column, bare text, or a tinted cell. Money in the request's locale with two decimals, dates as \`08 Sep 2026\`, durations as \`2d 3h\`, numbers right-aligned, the human field first, \`allowSelection:false\` and the other chrome off, eight to ten visible rows, exactly one neutral outline action per row when a row action is asked for, the page's single filled button in the toolbar. Chip and format bindings use \`+\` concatenation, never a template literal.
+- **Rhythm and states.** One radius, one shadow or one hairline border, 24px between sections and 16px between cards. Modal children live inside the modal. Every table has an empty message and a loading state; every mutation confirms with a toast. Twelve to twenty root components for one page: finish comes from formatting and colour discipline, not from more components.
+
 ## Datasource repair handoff
 
 If an expected source is absent or a query returns a connection failure, explain the problem and use the returned \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the clickable link. Do not enter credentials, authorize OAuth, test, or save the connection for the user. Wait for them to confirm the repair, refresh datasource discovery, and retry at most one selected safe read. Read \`references/datasources.md\` for the full contract and large/billable-read safeguards.
