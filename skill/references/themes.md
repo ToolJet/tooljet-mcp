@@ -143,15 +143,15 @@ the app a colour at all, so never leave it as the standard blue.
 
 | Palette | Primary (light / dark) | Accent | Canvas | Radius | Leans toward |
 | --- | --- | --- | --- | --- | --- |
-| Ink | `#111827` / `#F9FAFB` | `#D97706` amber | `#FAFAF9` warm | 6 / 4 / 10 | Operations, manufacturing, logistics, field work, dense internal tools |
-| Slate | `#334155` / `#CBD5E1` | `#0EA5E9` sky | `#F8FAFC` cool | 6 / 4 / 10 | Real estate, architecture, professional services, reporting |
+| Ink | `#111827` / `#F9FAFB` | `#B45309` amber | `#FAFAF9` warm | 6 / 4 / 10 | Operations, manufacturing, logistics, field work, dense internal tools |
+| Slate | `#334155` / `#CBD5E1` | `#0369A1` sky | `#F8FAFC` cool | 6 / 4 / 10 | Real estate, architecture, professional services, reporting |
 | Navy | `#1E3A8A` / `#60A5FA` | `#2563EB` | `#F8FAFC` cool | 6 / 4 / 10 | Banks, insurers, government, legal, large enterprise |
 | Blue | `#2563EB` / `#3B82F6` | `#2563EB` | `#F9FAFB` | 8 / 6 / 12 | SaaS, developer tools, startups; the standard theme already fits |
 | Indigo | `#4F46E5` / `#818CF8` | `#6366F1` | `#FAFAFF` | 10 / 6 / 14 | Education, community, product and design teams, nonprofits |
-| Emerald | `#059669` / `#34D399` | `#10B981` | `#F7FAF8` | 8 / 6 / 12 | Healthcare, wellness, sustainability, agriculture; success stays green |
+| Emerald | `#047857` / `#34D399` | `#047857` | `#F7FAF8` | 8 / 6 / 12 | Healthcare, wellness, sustainability, agriculture; success stays green |
 | Graphite | `#292524` / `#E7E5E4` | `#C2410C` terracotta | `#FAF8F5` warm | 10 / 6 / 14 | Food, hospitality, retail, crafts, boutique brands: warm without being loud |
 
-Every row is a mid-to-deep colour on a near-white canvas: the palettes people see in well-made products in
+Every primary and accent reads as text on white at 4.5:1 or better (the accents also carry figures and links, so they are the 700 steps, not the brighter 500s that fail as text). Every row is a mid-to-deep colour on a near-white canvas: the palettes people see in well-made products in
 2026 and that nobody objects to. Nothing neon, pastel, muted teal, steel, purple, rose or brick as a primary;
 a bold brand colour enters only through cue 1 (the customer's own brand) or cue 2 (a colour in the name).
 The menu is deliberately without teal or steel: a muted teal primary on a large surface reads as dated admin
