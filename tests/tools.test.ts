@@ -1667,7 +1667,7 @@ describe('add_components tool', () => {
       components: [
         {
           client_ref: 'modal', name: 'createCase', type: 'ModalV2',
-          properties: { showHeader: { value: true }, showFooter: { value: false }, modalHeight: { value: 300 } },
+          properties: { showHeader: { value: true }, showFooter: { value: false }, modalHeight: { value: 300 }, useDefaultButton: { value: '{{false}}' } },
           layout: { top: 0, left: 0, width: 10, height: 40 },
         },
         {

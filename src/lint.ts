@@ -388,6 +388,11 @@ function looksInternalIdField(value: unknown): boolean {
   return /^id$/.test(normalized) || /_id$/.test(normalized) || /(?:^|_)uuid$/.test(normalized);
 }
 
+function isTrueBinding(v: unknown): boolean {
+  if (v === true) return true;
+  return typeof v === 'string' && /^\s*(\{\{\s*true\s*\}\}|true)\s*$/i.test(v);
+}
+
 function isFalseBinding(v: unknown): boolean {
   return v === false || v === '{{false}}' || v === 'false';
 }
@@ -928,6 +933,23 @@ export function expressionOutsideBinding(value: string): string | null {
   return match ? JSON.stringify(match[0].trim().slice(0, 60)) : null;
 }
 
+const WRAP_REQUIRED_COLUMNS = 5;
+
+/** Rough rendered height of a Text value: one entry per line (<br>, block tags, newlines), each the largest
+ *  inline font-size on that line at 1.5 line height (minimum 18px), plus the widget's padding. */
+export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[] } {
+  const parts = text
+    .split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i)
+    .map((part) => part.replace(/<[^>]+>/g, '').trim() === '' ? null : part)
+    .filter((part): part is string => part !== null);
+  const sizes = parts.map((part) => {
+    const found = [...part.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((m) => Number(m[1]));
+    return found.length ? Math.max(...found) : baseSize;
+  });
+  const px = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
+  return { lines: parts.length, px, sizes };
+}
+
 export function lintComponentSpec(spec: LintComponent): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -966,6 +988,44 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintBindingSyntax(props, `Component "${label}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label}".styles`));
   errors.push(...lintRenderedText(spec));
+
+  // A Text widget holding several lines (eyebrow <br> title, or block tags) in a box sized for one line
+  // clips its last line: MedCard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.
+  if (spec.type === 'Text') {
+    const text = propVal(props, 'text');
+    const height = (spec.layouts?.desktop ?? spec.layout)?.height;
+    if (typeof text === 'string' && typeof height === 'number') {
+      const needed = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14);
+      if (needed.lines > 1 && needed.px > height + 6) {
+        warnings.push(
+          `Text "${label}": its ${needed.lines} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
+            `${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`
+        );
+      }
+    }
+  }
+
+  // A ModalV2 keeps its catalog default useDefaultButton:true, so a "Launch Modal" trigger button renders at the
+  // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two Chainventory pages.
+  if (spec.type === 'ModalV2' && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
+    const top = (spec.layouts?.desktop ?? spec.layout)?.top;
+    errors.push(
+      `ModalV2 "${label}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger ` +
+        `button at the modal's own coordinates${typeof top === 'number' ? ` (top ${top})` : ''} as a stray block on the page. ` +
+        'Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.'
+    );
+  }
+
+  // A labelled filter dropdown left on the catalog placeholder renders "Select": reviewers read it as an unfinished control.
+  if ((spec.type === 'DropdownV2' || spec.type === 'MultiselectV2') && !differsFromCatalogDefault(spec.type, 'placeholder', propVal(props, 'placeholder'))) {
+    const labelText = propVal(props, 'label');
+    if (typeof labelText === 'string' && labelText.trim()) {
+      warnings.push(
+        `${spec.type} "${label}": placeholder is the catalog default, so the control reads "Select" until a value is chosen. ` +
+          `Set properties.placeholder to the neutral choice for "${labelText.trim()}" (for example "All ${labelText.trim().toLowerCase()}") or give it a default value.`
+      );
+    }
+  }
   // These boolean controls are not text templates. A malformed expression plus stray prose can
   // silently become a truthy string and disable/hide an otherwise working primary action.
   for (const key of ['disabledState', 'loadingState', 'visibility', 'collapseWhenHidden']) {
@@ -1455,6 +1515,20 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
             `ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; ` +
             `identity maps and object spreads are not safe projections. ` +
             `This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`
+        );
+      }
+      const visibleColumnCount = (columns as unknown[]).filter((col) => {
+        const c = col as Record<string, unknown> | null;
+        return c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}';
+      }).length;
+      // Cells cut mid value: a table splits its width across its columns, and ToolJet cuts any value wider
+      // than its cell with no ellipsis. On 2026-09-12, 11 of 27 reviewed pages had cut cells even with
+      // columnSize 180 to 360 set; turning styles.contentWrap on made every one of them wrap and audit clean.
+      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal(spec.styles, 'contentWrap'))) {
+        errors.push(
+          `Table "${label}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its ` +
+            'cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true ' +
+            '(rows grow to fit) and keep long text columns at columnSize 180 or more.'
         );
       }
       (columns as unknown[]).forEach((col, i) => {

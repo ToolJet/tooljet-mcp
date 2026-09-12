@@ -42,13 +42,41 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
     }
     const m = text.match(bad);
     if (m) findings.push({ kind: 'placeholder_text', component: name, detail: `rendered text contains "${m[0]}"` });
-    for (const node of Array.from(el.querySelectorAll('*')) as HTMLElement[]) {
+    let clippedHere = false;
+    for (const node of [el, ...(Array.from(el.querySelectorAll('*')) as HTMLElement[])]) {
       const cs = getComputedStyle(node);
-      const hidden = cs.overflow === 'hidden' || cs.overflowY === 'hidden';
-      if (hidden && node.scrollHeight > node.clientHeight + 6 && node.clientHeight > 12 && (node.innerText || '').trim().length > 0) {
+      const hidden = cs.overflow === 'hidden' || cs.overflowY === 'hidden' || cs.overflowX === 'hidden';
+      if (!hidden || (node.innerText || '').trim().length === 0) continue;
+      if (node.scrollHeight > node.clientHeight + 6 && node.clientHeight > 12) {
         findings.push({ kind: 'clipped', component: name, detail: `"${(node.innerText || '').trim().slice(0, 40)}" needs ${node.scrollHeight}px but has ${node.clientHeight}px` });
+        clippedHere = true;
         break;
       }
+    }
+    if (!clippedHere) {
+      // Text drawn past the widget's bottom edge: an Html header authored shorter than its lines.
+      const leaves = (Array.from(el.querySelectorAll('*')) as HTMLElement[]).filter((n) => n.children.length === 0 && (n.textContent || '').trim());
+      const overflow = Math.max(0, ...leaves.map((n) => n.getBoundingClientRect().bottom)) - (r.top + r.height);
+      if (overflow > 4) {
+        findings.push({ kind: 'clipped', component: name, detail: `text runs ${Math.round(overflow)}px past the widget's bottom edge; the widget needs ${Math.round(r.height + overflow)}px` });
+        clippedHere = true;
+      }
+    }
+    if (!clippedHere && /^Table:/.test(name)) {
+      const cut: string[] = [];
+      for (const cell of Array.from(el.querySelectorAll('td, [role="cell"], .td')) as HTMLElement[]) {
+        const text = (cell.innerText || '').trim();
+        if (!text) continue;
+        for (const node of [cell, ...(Array.from(cell.querySelectorAll('*')) as HTMLElement[])]) {
+          const cs = getComputedStyle(node);
+          if ((cs.overflow === 'hidden' || cs.overflowX === 'hidden') && cs.textOverflow !== 'ellipsis' && node.scrollWidth > node.clientWidth + 4 && node.clientWidth > 20) {
+            cut.push(text.slice(0, 24));
+            break;
+          }
+        }
+        if (cut.length >= 3) break;
+      }
+      if (cut.length) findings.push({ kind: 'clipped', component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
     }
   }
   for (let i = 0; i < boxes.length; i++) {
