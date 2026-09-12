@@ -202,10 +202,23 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           .filter((p) => !args.page_handle || p.handle === args.page_handle)
           .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}` }));
         if (!targets.length) return fail(new Error(`no page ${args.page_handle ?? ''} in app ${args.app_id}`));
-        const reports = await auditPages(targets, {
+        const options = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
-        });
+        };
+        let reports = await auditPages(targets, options);
+        // A private app redirects the headless browser to sign-in. When the deployment allows it
+        // (MCP_RENDER_AUDIT_MAKE_PUBLIC=1: local and CI builders, never a shared workspace), open the
+        // viewer for the audit and close it again afterwards.
+        const unreachable = reports.every((r) => r.findings.some((f) => f.kind === 'unreachable' && /sign-in/.test(f.detail)));
+        if (unreachable && /^(1|true|yes)$/i.test(process.env.MCP_RENDER_AUDIT_MAKE_PUBLIC ?? '')) {
+          await client.setAppPublic(args.app_id, true);
+          try {
+            reports = await auditPages(targets, options);
+          } finally {
+            await client.setAppPublic(args.app_id, false).catch(() => undefined);
+          }
+        }
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {

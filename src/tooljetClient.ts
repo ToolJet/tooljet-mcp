@@ -468,6 +468,8 @@ export interface QuerySummary {
 
 export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
+  /** Toggle the app's public viewer (PUT /api/apps/:id/public). Used by the render audit when allowed. */
+  setAppPublic(appId: string, isPublic: boolean): Promise<void>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
   listWorkspaceUsers(params?: {
@@ -2201,6 +2203,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    async setAppPublic(appId: string, isPublic: boolean): Promise<void> {
+      const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/public`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app: { is_public: isPublic } }),
+      });
+      if (!res.ok) throw new Error(`could not set app ${appId} public=${isPublic}: ${res.status}`);
+    },
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
