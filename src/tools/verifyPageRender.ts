@@ -40,7 +40,9 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
     const text = (el.innerText || '').trim();
     boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
-    if (textual && text.length === 0 && r.height > 30) {
+    // An empty-state block ("No products match") is empty by design while data exists; its name says so.
+    const emptyStateByName = /empty|placeholder|no_?data|nothing/i.test(cy);
+    if (textual && text.length === 0 && r.height > 30 && !emptyStateByName) {
       findings.push({ kind: 'empty_render', component: name, detail: `${Math.round(r.width)}x${Math.round(r.height)}px box renders no text (a multi-line binding or a broken expression)` });
     }
     const m = text.match(bad);
