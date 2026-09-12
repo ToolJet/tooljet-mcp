@@ -1605,6 +1605,23 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       // Cells cut mid value: a table splits its width across its columns, and ToolJet cuts any value wider
       // than its cell with no ellipsis. On 2026-09-12, 11 of 27 reviewed pages had cut cells even with
       // columnSize 180 to 360 set; turning styles.contentWrap on made every one of them wrap and audit clean.
+      // A table shorter than its page needs slices its last row at the bottom edge (14 of 32 round-seven
+      // pages carried a sliced row). Measured on the classic table: header 33px, footer 57px, rows 45px
+      // unwrapped and up to about 100px when contentWrap grows them.
+      const height = (spec.layouts?.desktop ?? spec.layout)?.height;
+      const perPage = optionalStaticNumber(propVal(props, 'rowsPerPage'));
+      const paginated = propVal(props, 'enablePagination');
+      if (typeof height === 'number' && (paginated === undefined || isTrueBinding(paginated)) && typeof perPage === 'number' && perPage > 0) {
+        const wraps = isTrueBinding(propVal(spec.styles, 'contentWrap'));
+        const rowPx = wraps ? 60 : 45;
+        const needed = 33 + 57 + perPage * rowPx;
+        if (height < needed) {
+          errors.push(
+            `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ', rows grow with contentWrap' : ''}) ` +
+              `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`
+          );
+        }
+      }
       if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal(spec.styles, 'contentWrap'))) {
         errors.push(
           `Table "${label}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its ` +

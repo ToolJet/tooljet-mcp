@@ -37,4 +37,10 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const single = lintComponentSpec({ type: 'Text', name: 'title', properties: { text: { value: 'Today' } }, styles: { textSize: { value: 32 } }, layouts: { desktop: { top: 40, left: 2, width: 39, height: 50 } } });
     expect(single.errors.some((w) => w.includes('cut off'))).toBe(false);
   });
+  it('rejects a table shorter than its rows per page', () => {
+    const r = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 400 } } });
+    expect(r.errors.some((e) => e.includes('sliced') && e.includes('rowsPerPage to'))).toBe(true);
+    const ok = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 460 } } });
+    expect(ok.errors.some((e) => e.includes('sliced'))).toBe(false);
+  });
 });
