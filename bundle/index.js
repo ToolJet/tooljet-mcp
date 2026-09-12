@@ -35402,7 +35402,7 @@ function estimateTextHeight(text, baseSize) {
   const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
   return { lines: parts.length, px: px2, sizes };
 }
-var CHART_HOUSE_LAYOUT_KEYS = ["font", "margin", "paper_bgcolor"];
+var CHART_HOUSE_LAYOUT_KEYS = ["font", "family", "margin", "paper_bgcolor"];
 function lintChartHouseStyle(spec) {
   if (spec.type !== "Chart")
     return [];
@@ -35780,14 +35780,15 @@ function lintComponentSpec(spec) {
         return c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}";
       }).length;
       const height = (spec.layouts?.desktop ?? spec.layout)?.height;
-      const perPage = optionalStaticNumber(propVal2(props, "rowsPerPage"));
+      const authoredPerPage = optionalStaticNumber(propVal2(props, "rowsPerPage"));
+      const perPage = authoredPerPage ?? 10;
       const paginated = propVal2(props, "enablePagination");
       if (typeof height === "number" && (paginated === void 0 || isTrueBinding(paginated)) && typeof perPage === "number" && perPage > 0) {
         const wraps = isTrueBinding(propVal2(spec.styles, "contentWrap"));
         const rowPx = wraps ? 60 : 45;
         const needed = 33 + 57 + perPage * rowPx;
         if (height < needed) {
-          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`);
+          (authoredPerPage === void 0 ? warnings : errors).push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`);
         }
       }
       if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
