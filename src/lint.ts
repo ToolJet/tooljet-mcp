@@ -1699,11 +1699,16 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       if (typeof height === 'number' && (paginated === undefined || isTrueBinding(paginated)) && typeof perPage === 'number' && perPage > 0) {
         const wraps = isTrueBinding(propVal(spec.styles, 'contentWrap'));
         const rowPx = wraps ? 60 : 45;
-        const needed = 33 + 57 + perPage * rowPx;
+        // A search box or any toolbar button adds a 56px toolbar above the header (three of four tables on
+        // the first round-nine app sliced a row for exactly this).
+        const toolbar = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
+          .some((key) => isTrueBinding(propVal(props, key)));
+        const toolbarPx = toolbar ? TABLE_TOOLBAR_HEIGHT_PX : 0;
+        const needed = 33 + 57 + toolbarPx + perPage * rowPx;
         if (height < needed) {
           errors.push(
-            `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ', rows grow with contentWrap' : ''}) ` +
-              `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`
+            `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${toolbar ? ' + toolbar 56 for the search box or buttons' : ''}${wraps ? ', rows grow with contentWrap' : ''}) ` +
+              `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90 - toolbarPx) / rowPx))}.`
           );
         }
       }

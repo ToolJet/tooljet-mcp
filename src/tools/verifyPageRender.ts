@@ -96,6 +96,10 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
         });
         if (cutLabels.length) findings.push({ kind: 'clipped', component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || '').trim()}"); set cliponaxis:false on the bar trace` });
       }
+      // Long category names: Plotly rotates the x ticks and they run past the chart's bottom edge.
+      const ticks = Array.from(el.querySelectorAll('.xaxislayer-above .xtick text, .xtick text')) as Element[];
+      const runOff = ticks.filter((t) => t.getBoundingClientRect().bottom > r.bottom - 2);
+      if (runOff.length) findings.push({ kind: 'clipped', component: name, detail: `${runOff.length} category label(s) run off the bottom of the chart (e.g. "${(runOff[0].textContent || '').trim().slice(0, 30)}"); shorten the categories or draw horizontal bars (orientation 'h')` });
     }
     if (!clippedHere && /^Table:/.test(name)) {
       const cut: string[] = [];

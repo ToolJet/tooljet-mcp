@@ -87,4 +87,11 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     expect(chart('').errors.some((e) => e.includes('cliponaxis:false'))).toBe(true);
     expect(chart(',cliponaxis:false').errors.some((e) => e.includes('cliponaxis:false'))).toBe(false);
   });
+
+  it('counts the search toolbar in the table height', () => {
+    const table = (extra: Record<string, unknown>) => lintComponentSpec({ type: 'Table', name: 'logs', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 5 }, ...extra }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 650, left: 22, width: 19, height: 390 } } });
+    expect(table({}).errors.some((e) => e.includes('sliced'))).toBe(false);
+    const withSearch = table({ displaySearchBox: { value: true } });
+    expect(withSearch.errors.some((e) => e.includes('toolbar 56') && e.includes('446px'))).toBe(true);
+  });
 });
