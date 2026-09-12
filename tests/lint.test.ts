@@ -1069,14 +1069,14 @@ describe('lintListviewChildren', () => {
   };
 
   it('warns when a repeated Html root copies the authored pixel height', () => {
-    const warnings = lintComponents([
+    const errors = lintComponents([
       parent,
       {
         name: 'fleetCard', type: 'Html', parentRef: 'fleet',
         properties: { rawHtml: { value: '<div style="height:170px; padding:12px">{{listItem.name}}</div>' } },
       },
-    ]).warnings.join(' ');
-    expect(warnings).toMatch(/repeated inside Listview.*fixed pixel CSS height.*scrollbar in every item.*height:100%.*box-sizing:border-box/i);
+    ]).errors.join(' ');
+    expect(errors).toMatch(/repeated inside Listview.*fixed pixel CSS height.*scrollbar in every item.*height:100%.*box-sizing:border-box/i);
   });
 
   it('accepts percentage sizing and ignores Html outside a Listview', () => {
@@ -1222,9 +1222,8 @@ describe('lintComponents (batch)', () => {
       { name: 'chart', type: 'Chart', properties: {}, layout: { top: 0, left: 0, width: 10, height: 10 } },
       { name: 'over', type: 'Text', properties: {}, layout: { top: 5, left: 5, width: 10, height: 30 } },
     ]);
-    expect(errors).toEqual([]);
+    expect(errors.join(' ')).toMatch(/overlap/);
     expect(warnings.join(' ')).toMatch(/native title/);
-    expect(warnings.join(' ')).toMatch(/overlap/);
   });
 });
 
@@ -1717,9 +1716,9 @@ describe('validateAppStructure', () => {
       }],
       events: [],
     };
-    const warnings = validateAppStructure(app).warnings.join(' ');
-    expect(warnings).toMatch(/overlap at rendered desktop size/);
-    expect(warnings).toMatch(/modalHeight 200px but needs at least 274px/);
+    const result = validateAppStructure(app);
+    expect(result.errors.join(' ')).toMatch(/overlap at rendered desktop size/);
+    expect(result.errors.join(' ')).toMatch(/modalHeight 200px but needs at least 274px/);
   });
 });
 

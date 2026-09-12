@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintRenderedText, expressionOutsideBinding } from '../src/lint.js';
+import { lintRenderedText, expressionOutsideBinding, lintComponentSpec } from '../src/lint.js';
 
 describe('rendered text that a customer would read as a bug', () => {
   it('rejects a literal backslash-n in a Text value', () => {
@@ -19,12 +19,28 @@ describe('rendered text that a customer would read as a bug', () => {
 
   it('rejects a Tabs component whose tabs were never authored', () => {
     expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: {} })).toHaveLength(1);
-    expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: { tabs: [{ title: 'Overview', id: '0' }] } })).toEqual([]);
-    expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: { tabs: '{{queries.sections.data}}' } })).toEqual([]);
+    // tabs alone is not enough: ToolJet reads tabs only with useDynamicOptions on
+    expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: { tabs: [{ title: 'Overview', id: '0' }] } })).toHaveLength(1);
+    expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: { tabs: [{ title: 'Overview', id: '0' }], useDynamicOptions: '{{true}}' } })).toEqual([]);
+    expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: { tabs: '{{queries.sections.data}}', useDynamicOptions: true } })).toEqual([]);
+    expect(lintRenderedText({ type: 'Tabs', name: 'docsNav', properties: { tabItems: [{ title: 'Overview', id: 't0' }] } })).toEqual([]);
   });
 
   it('leaves ordinary text alone', () => {
     expect(lintRenderedText({ type: 'Text', name: 't', properties: { text: "Today's production register" } })).toEqual([]);
     expect(lintRenderedText({ type: 'Html', name: 'h', properties: { rawHtml: '<div>{{(()=>{ return 1 + 2; })()}}</div>' } })).toEqual([]);
+  });
+});
+
+describe('Tabs item surfaces', () => {
+  it('rejects authored tabs when useDynamicOptions is off, and accepts either surface done right', () => {
+    const bad = lintComponentSpec({ type: 'Tabs', name: 'docsNav', properties: { tabs: { value: [{ id: 'a', title: 'Getting started' }] }, useDynamicOptions: { value: false } } });
+    expect(bad.errors.some((e: string) => e.includes('tabItems') && e.includes('ignored'))).toBe(true);
+    const dyn = lintComponentSpec({ type: 'Tabs', name: 'docsNav', properties: { tabs: { value: [{ id: 'a', title: 'Getting started' }] }, useDynamicOptions: { value: '{{true}}' } } });
+    expect(dyn.errors.some((e: string) => e.includes('Tab 1'))).toBe(false);
+    const stat = lintComponentSpec({ type: 'Tabs', name: 'docsNav', properties: { tabItems: { value: [{ id: 't0', title: 'Getting started' }, { id: 't1', title: 'Products' }] } } });
+    expect(stat.errors.some((e: string) => e.includes('Tab 1'))).toBe(false);
+    const defaults = lintComponentSpec({ type: 'Tabs', name: 'docsNav', properties: { tabItems: { value: [{ id: 't0', title: 'Tab 1' }, { id: 't1', title: 'Tab 2' }] } } });
+    expect(defaults.errors.some((e: string) => e.includes('Tab 1'))).toBe(true);
   });
 });

@@ -912,7 +912,26 @@ export function lintRenderedText(spec: LintComponent): string[] {
       );
     }
   }
-  const itemsKey = CONTAINER_ITEMS[spec.type ?? ''];
+  // Tabs has two item surfaces: static tabItems (the default "Tab 1 / Tab 2 / Tab 3") and dynamic tabs, read
+  // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three Chainventory
+  // pages on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
+  if (spec.type === 'Tabs') {
+    const dynamic = isTrueBinding(propVal(props, 'useDynamicOptions'));
+    const tabs = propVal(props, 'tabs');
+    const tabItems = propVal(props, 'tabItems');
+    const authoredItems = Array.isArray(tabItems) && tabItems.length > 0 &&
+      !tabItems.every((item) => /^Tab \d+$/.test(String((item as Record<string, unknown>)?.title ?? '')));
+    if (dynamic && (tabs === undefined || tabs === null || tabs === '')) {
+      errors.push(`Tabs "${label}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
+    } else if (!dynamic && !authoredItems) {
+      errors.push(
+        `Tabs "${label}": ToolJet renders properties.tabItems (default "Tab 1 / Tab 2 / Tab 3") unless useDynamicOptions is true; ` +
+          (tabs !== undefined ? 'the authored properties.tabs is ignored. ' : '') +
+          'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.'
+      );
+    }
+  }
+  const itemsKey = spec.type === 'Tabs' ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
   if (itemsKey) {
     const items = propVal(props, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === 'string' && items.includes('{{');
@@ -1934,16 +1953,29 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 }
 
 /** Geometry-only checks for a complete page after creates, property edits, or layout edits. */
-export function lintRenderedGeometry(components: LintComponent[]): string[] {
+/** Geometry a customer sees as broken: components on top of each other, a toolbar button on the label
+ *  band, modal or list children outside their parent. Filed as errors: on 2026-09-12 the same overlaps
+ *  shipped in every round while they were warnings, because a model reads a warning as optional. */
+export function lintRenderedGeometryBlocking(components: LintComponent[]): string[] {
   return [
     ...detectOverlaps(components),
     ...lintToolbarButtonAlignment(components),
     ...lintModalChildren(components),
     ...lintListviewChildren(components),
+  ];
+}
+
+/** Geometry advice: fold, canvas coverage, gutters. Warnings. */
+export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
+  return [
     ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
   ];
+}
+
+export function lintRenderedGeometry(components: LintComponent[]): string[] {
+  return [...lintRenderedGeometryBlocking(components), ...lintRenderedGeometryAdvisory(components)];
 }
 
 // Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
@@ -1985,7 +2017,8 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintOversizedWidths(components));
   for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
-  warnings.push(...lintRenderedGeometry(components));
+  errors.push(...lintRenderedGeometryBlocking(components));
+  warnings.push(...lintRenderedGeometryAdvisory(components));
   warnings.push(...lintKanbanInteractions(components));
   return { errors, warnings };
 }
@@ -2368,7 +2401,8 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
     for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
-    warnings.push(...lintRenderedGeometry(p.components as LintComponent[]));
+    errors.push(...lintRenderedGeometryBlocking(p.components as LintComponent[]));
+    warnings.push(...lintRenderedGeometryAdvisory(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
   }
   warnings.push(...lintInnerPageBands(summary));

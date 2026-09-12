@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { lintRenderedGeometry, type LintComponent } from '../lint.js';
+import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
 import { introducedLintFindings } from '../lint.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -53,10 +53,16 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (page) {
           const existing = page.components as LintComponent[];
-          pageWarnings.push(...introducedLintFindings(
-            lintRenderedGeometry(existing),
-            lintRenderedGeometry([...existing, ...(prepared.components as LintComponent[])])
-          ));
+          const combined = [...existing, ...(prepared.components as LintComponent[])];
+          const introducedErrors = introducedLintFindings(
+            lintRenderedGeometryBlocking(existing),
+            lintRenderedGeometryBlocking(combined)
+          );
+          if (introducedErrors.length) {
+            // A component landing on another is not written; the model moves it and calls again.
+            return fail(new Error('The batch would land on components already on the page: ' + introducedErrors.join(' ')));
+          }
+          pageWarnings.push(...introducedLintFindings(lintRenderedGeometryAdvisory(existing), lintRenderedGeometryAdvisory(combined)));
         }
       } catch {
         // The write does not depend on this read; a summary failure only costs the page-level check.
