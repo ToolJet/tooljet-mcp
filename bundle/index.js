@@ -42701,6 +42701,18 @@ function lintEmptyTabs(components) {
   }
   return errors;
 }
+var LABELLED_INPUT_TYPES = /* @__PURE__ */ new Set(["TextInput", "NumberInput", "TextArea", "PasswordInput", "EmailInput", "DatePickerV2", "DatetimePickerV2", "TimePicker", "DaterangePicker", "Checkbox", "ToggleSwitchV2", "RadioButtonV2", "FilePicker"]);
+function lintDefaultInputLabel(spec) {
+  if (!LABELLED_INPUT_TYPES.has(spec.type ?? ""))
+    return [];
+  const label2 = propVal2(spec.properties ?? {}, "label");
+  const text = typeof label2 === "string" ? label2.trim() : label2;
+  if (text !== void 0 && text !== "" && text !== "Label")
+    return [];
+  return [
+    `${spec.type} "${spec.name ?? spec.id ?? spec.type}": ${text === void 0 ? "no label" : "an empty label"} renders the catalog's literal "Label" caption above the box. Give it the field's name ("Search", "Warehouse name"); a search box is labelled Search.`
+  ];
+}
 var DISABLED_SURFACE_TYPES = /* @__PURE__ */ new Set(["Kanban", "Table", "Listview", "Chart", "Form", "Tabs", "Container"]);
 function lintStaticDisabledSurface(spec) {
   if (!DISABLED_SURFACE_TYPES.has(spec.type ?? ""))
@@ -42918,13 +42930,24 @@ function expressionOutsideBinding(value) {
 }
 var WRAP_REQUIRED_COLUMNS = 5;
 function estimateTextHeight(text, baseSize) {
-  const parts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i).map((part) => part.replace(/<[^>]+>/g, "").trim() === "" ? null : part).filter((part) => part !== null);
+  const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
+  const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
+  const parts = rawParts.map((part) => part.replace(/<[^>]+>/g, "").trim() === "" ? null : part).filter((part) => part !== null);
   const sizes = parts.map((part) => {
     const found = [...part.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((m) => Number(m[1]));
-    return found.length ? Math.max(...found) : baseSize;
+    if (found.length)
+      return Math.max(...found);
+    if (/<h1\b/i.test(part))
+      return baseSize * 2;
+    if (/<h2\b/i.test(part))
+      return baseSize * 1.5;
+    if (/<h3\b/i.test(part))
+      return baseSize * 1.17;
+    return baseSize;
   });
-  const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
-  return { lines: parts.length, px: px2, sizes };
+  const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
+  const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
+  return { lines: parts.length + blankLines, px: px2, sizes };
 }
 var CHART_HOUSE_LAYOUT_KEYS = ["font", "family"];
 var CHART_PADDING_MAX_PX = 24;
@@ -43676,6 +43699,7 @@ function lintComponents(components) {
     errors.push(...lintUnboundEmptyState(c));
     errors.push(...lintTableProjectionRender(c));
     errors.push(...lintStaticDisabledSurface(c));
+    errors.push(...lintDefaultInputLabel(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
