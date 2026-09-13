@@ -29,7 +29,8 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
   const findings: RenderFinding[] = [];
   const seenNames = new Set<string>();
   // Raw formats a user notices at once: undefined/NaN/null, Invalid date, an ISO timestamp, a doubled percent sign.
-  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%/;
+  // Also: adjacent separators from empty values ("· · plan"), and money with five or more digits and no grouping ("$ 989700").
+  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%|·\s*·|[$€£]\s?\d{5,}(?![,.]\d)/;
   for (const el of widgets) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4) continue;
@@ -106,6 +107,14 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
       for (const cell of Array.from(el.querySelectorAll('td, [role="cell"], .td')) as HTMLElement[]) {
         const text = (cell.innerText || '').trim();
         if (!text) continue;
+        // A non-wrapping chip or value wider than its cell is cut at the cell edge with no ellipsis.
+        const cellRect = cell.getBoundingClientRect();
+        const spill = (Array.from(cell.querySelectorAll('*')) as HTMLElement[]).find((node) => {
+          if (!(node.innerText || '').trim() || node.children.length > 0) return false;
+          const nr = node.getBoundingClientRect();
+          return nr.width > 0 && (nr.right > cellRect.right + 2 || nr.left < cellRect.left - 2);
+        });
+        if (spill) { cut.push(text.slice(0, 24)); if (cut.length >= 3) break; continue; }
         for (const node of [cell, ...(Array.from(cell.querySelectorAll('*')) as HTMLElement[])]) {
           const cs = getComputedStyle(node);
           if ((cs.overflow === 'hidden' || cs.overflowX === 'hidden') && cs.textOverflow !== 'ellipsis' && node.scrollWidth > node.clientWidth + 4 && node.clientWidth > 20) {

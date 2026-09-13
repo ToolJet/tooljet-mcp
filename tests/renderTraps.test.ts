@@ -109,4 +109,15 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const child = { id: 'c1', type: 'Text', name: 'aText', parent: 'tabs1-0', properties: { text: { value: 'Getting started' } }, layouts: { desktop: { top: 10, left: 2, width: 39, height: 30 } } };
     expect(lintComponents([tabs, child] as any).errors.some((e) => e.includes('no child components'))).toBe(false);
   });
+
+  it('rejects columns below the readable minimum width', () => {
+    const r = lintComponentSpec({ type: 'Table', name: 'renewals', properties: { columns: { value: [{ name: 'Contract value', key: 'value', columnType: 'string', columnSize: 110 }, { name: 'Status', key: 'status', columnType: 'html', columnSize: 110 }, { name: 'Days left', key: 'days', columnType: 'string', columnSize: 80 }, { name: 'Start', key: 'start', columnType: 'datepicker', columnSize: 85 }] }, rowsPerPage: { value: 5 } }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 400 } } });
+    const messages = r.errors.filter((e) => e.includes('readable minimum'));
+    expect(messages.some((e) => e.includes('"value"') && e.includes('130px'))).toBe(true);
+    expect(messages.some((e) => e.includes('"status"') && e.includes('130px'))).toBe(true);
+    expect(messages.some((e) => e.includes('"days"') && e.includes('120px'))).toBe(true);
+    expect(messages.some((e) => e.includes('"start"') && e.includes('110px'))).toBe(true);
+    const ok = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: [{ name: 'Vendor', key: 'vendor', columnType: 'string', columnSize: 180 }, { name: 'Amount', key: 'amount', columnType: 'string', columnSize: 130 }] }, rowsPerPage: { value: 5 } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 400 } } });
+    expect(ok.errors.some((e) => e.includes('readable minimum'))).toBe(false);
+  });
 });

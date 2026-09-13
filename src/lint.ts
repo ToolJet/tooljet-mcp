@@ -168,6 +168,16 @@ const TABLE_UNSIZED_COLUMN_MIN_PX = 100;
 const KANBAN_CARD_WIDTH_PX = 300;
 const KANBAN_CARD_CHILD_MIN_COLS = 30;
 const BUTTON_CHAR_PX = 7.5;
+// Readable column widths in pixels by column type; below these, values wrap mid word, money splits at the
+// decimal point and status chips are cut ("Waiting on Custor", round nine 2026-09-12).
+const TABLE_COLUMN_MIN_PX: Record<string, number> = {
+  string: 120, text: 120, number: 80, datepicker: 110, html: 130, button: 90, badge: 110, badges: 130, tags: 130,
+  link: 120, boolean: 70, toggle: 70, image: 60, select: 110, multiselect: 130, radio: 110, dropdown: 110,
+};
+const TABLE_COLUMN_MONEY_MIN_PX = 130;
+const TABLE_COLUMN_NAME_MIN_PX = 150;
+const MONEY_COLUMN_NAME = /value|amount|price|total|cost|spend|revenue|budget|salary|fee/i;
+const NAME_COLUMN_NAME = /email|contact|customer|vendor|product|title|subject|description|address|category/i;
 const BUTTON_PADDING_PX = 32;
 
 interface Rect {
@@ -1811,6 +1821,19 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
               'is in pixels, not proportional weights or grid columns. Use a readable pixel width ' +
               '(for example 240 for a name, 140 for a date), or omit columnSize for the default.'
           );
+        } else if (c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}' && typeof c.columnSize === 'number' && c.columnSize > 0) {
+          const type = String(c.columnType ?? 'string');
+          const heading = `${String(c.name ?? '')} ${String(c.key ?? '')}`;
+          const base = TABLE_COLUMN_MIN_PX[type] ?? 100;
+          const minimum = ['string', 'text', 'html', 'number'].includes(type)
+            ? Math.max(base, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0)
+            : base;
+          if (c.columnSize < minimum) {
+            errors.push(
+              `Table "${label}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column ` +
+                '(values wrap mid word, money splits at the decimal point, status chips are cut). Use at least the minimum; if the columns no longer fit the table, show fewer of them.'
+            );
+          }
         }
         if (deprecatedReplacement) {
           errors.push(
