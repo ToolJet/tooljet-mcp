@@ -140,6 +140,76 @@
       }
     }
   },
+  "openapi": {
+    "notes": [
+      "The OpenAPI plugin ships an empty operations.json, so nothing is harvested and the whole request contract is curated here. Field paths and semantics are read from the plugin's run() and its QueryOptions type.",
+      "There is one operation per endpoint in the spec: `operation` is the HTTP method, not a plugin operation name. Discover paths, methods and their parameters with inspect_datasource_schema.",
+      "getEndpointSchema returns a ready `query_options` skeleton with the host filled in and all four param buckets present. Copy it and fill the buckets rather than assembling options by hand."
+    ],
+    "introspection_methods": ["listTables", "getEndpointSchema"],
+    "operations": {
+      "default": {
+        "required": ["host", "path", "operation", "params.request", "params.query", "params.header", "params.path"],
+        "fields": {
+          "host": {
+            "type": "string",
+            "label": "Host override",
+            "description": "Base URL for the request, with no trailing slash. The OpenAPI datasource form has no host field, so this is almost always required: the plugin resolves `sourceOptions.host || host`, and with neither set the query fails with \"Invalid URL\". Take it from the spec's servers[0].url — inspect_datasource_schema returns it as `host`, and omits it when the spec only declares a relative server URL, in which case supply the real origin.",
+            "example": "https://api.example.com"
+          },
+          "path": {
+            "type": "string",
+            "label": "Path",
+            "description": "The endpoint path template exactly as the spec writes it, placeholders included. Placeholders are substituted from params.path; one with no matching entry is sent literally.",
+            "example": "/pets/{petId}"
+          },
+          "operation": {
+            "type": "string",
+            "label": "HTTP method",
+            "description": "Lowercase HTTP method for this endpoint. It is sent as the request method and decides whether a body is attached: params.request is used only when operation is not \"get\".",
+            "allowedValues": ["get", "post", "put", "patch", "delete", "head", "options"],
+            "example": "get"
+          },
+          "params": {
+            "type": "object",
+            "label": "Parameters",
+            "description": "The four parameter buckets, split by where each value goes in the request. Send all four every time, using {} for the ones you do not need: the plugin destructures every bucket and calls Object.entries(params.path) unguarded, so an omitted bucket fails the query with \"Cannot convert undefined or null to object\".",
+            "shape": { "request": "object", "query": "object", "header": "object", "path": "object" }
+          },
+          "params.request": {
+            "type": "object",
+            "label": "Request body",
+            "description": "JSON request body, sent only when operation is not \"get\"; pass {} when there is no body. String values that parse as JSON are parsed first, and empty-string entries are dropped before sending.",
+            "example": { "name": "Fluffy", "status": "available" }
+          },
+          "params.query": {
+            "type": "object",
+            "label": "Query parameters",
+            "description": "Appended as the URL query string; pass {} when the endpoint takes no query parameters.",
+            "example": { "status": "available", "limit": "20" }
+          },
+          "params.header": {
+            "type": "object",
+            "label": "Headers",
+            "description": "Per-request headers; pass {} when there are none. Authentication is configured on the datasource, so do not set an Authorization header here.",
+            "example": { "Accept": "application/json" }
+          },
+          "params.path": {
+            "type": "object",
+            "label": "Path parameters",
+            "description": "Values substituted into the {placeholders} in `path`; keys are the placeholder names without braces. Pass {} when the path has no placeholders — this bucket is read unguarded and must always be present.",
+            "example": { "petId": "42" }
+          }
+        },
+        "response": {
+          "type": "object|array|string",
+          "status": "runtime-dependent",
+          "source": "remote-api",
+          "description": "queries.<name>.data is the remote response body directly — parsed JSON object/array, or text. It is not normalized into rows, and the spec's declared response schema is not enforced at runtime. Inspect a successful run, or the endpoint's response schema via inspect_datasource_schema, before binding nested fields."
+        }
+      }
+    }
+  },
   "postgresql": {
     "response_groups": [
       {
@@ -265,6 +335,62 @@
         "notes": [
           "The map keys inside where_filters, aggregates, and group_by are caller-chosen stable ids. For order_filters, use the same stable value for the outer map key and the clause's inner id; a mismatch can silently disable sorting.",
           "For generic server-side tables, bind limit/offset/filter values to the Table but keep these datasource-specific record shapes in the query contract."
+        ]
+      }
+    }
+  },
+  "servicenow": {
+    "response_groups": [
+      {
+        "operations": ["list_records"],
+        "response": {
+          "type": "array<object>",
+          "description": "The records themselves. The plugin unwraps ServiceNow's REST envelope, so queries.<q>.data IS the array; never bind queries.<q>.data.result. With sysparm_display_value=true, reference fields such as assignment_group, caller_id and assigned_to are objects { display_value, link }: bind <field>.display_value, or request sysparm_display_value=false to get sys_ids, or 'all' to get both."
+        }
+      },
+      {
+        "operations": ["get_record", "create_record", "update_record"],
+        "response": {
+          "type": "object",
+          "description": "The single record (ServiceNow's result object, unwrapped): bind queries.<q>.data.<field>, never data.result.<field>. Reference fields follow the same sysparm_display_value rule as list_records."
+        }
+      },
+      {
+        "operations": ["delete_record"],
+        "response": { "type": "object", "description": "Empty object on success (ServiceNow returns 204)." }
+      },
+      {
+        "operations": ["aggregate"],
+        "response": {
+          "type": "object",
+          "description": "ServiceNow stats result, unwrapped: data.stats.count (a string), data.stats.avg/sum/min/max keyed by field, or an array of { stats, groupby_fields } when sysparm_group_by is set."
+        }
+      },
+      {
+        "operations": ["list_tables", "get_table_schema", "get_field_choices"],
+        "response": { "type": "array<object>", "description": "Metadata rows, unwrapped from ServiceNow's result envelope." }
+      },
+      {
+        "operations": ["list_workflows", "list_flows"],
+        "response": { "type": "array<object>", "description": "Workflow or flow definitions, unwrapped." }
+      },
+      {
+        "operations": ["invoke_workflow"],
+        "response": {
+          "type": "object",
+          "description": "The MCP tools/call result, returned directly: queries.<q>.data.content contains the content blocks, and data.structuredContent may contain structured output when supplied by the workflow tool. Inspect the returned content before extracting workflow outputs; the plugin does not parse text blocks or expose outputs at data.outputs."
+        }
+      },
+      {
+        "operations": ["trigger_flow"],
+        "response": { "type": "object", "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs." }
+      }
+    ],
+    "operations": {
+      "list_records": {
+        "notes": [
+          "Bind tables to queries.<q>.data directly. The REST `result` wrapper does not exist in ToolJet: queries.<q>.data.result is undefined and the table shows No data.",
+          "Every read must set a sysparm_limit; use sysparm_query for filters (for example active=true^priorityIN1,2) and sysparm_fields to keep rows small."
         ]
       }
     }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -1231,6 +1231,82 @@ describe('lintComponents (batch)', () => {
   });
 });
 
+describe('lintStatTileConsistency', () => {
+  const statPage = (id: string, name: string, height: number, valueSize: number, labelSize: number) => ({
+    id,
+    name,
+    components: [{
+      id: `${id}-tile`,
+      name: `${id}Tile`,
+      type: 'Statistics',
+      layouts: { desktop: { top: 0, left: 0, width: 18, height } },
+      properties: { primaryValueLabel: { value: 'Open' }, hideSecondary: { value: '{{true}}' } },
+      styles: { primaryValueSize: { value: `{{${valueSize}}}` }, primaryLabelSize: { value: `{{${labelSize}}}` } },
+    }],
+  });
+  const app = (pages: unknown[]): AppSummary =>
+    ({ app_id: 'a', pages, queries: [], events: [] } as unknown as AppSummary);
+
+  it('is quiet when every page uses the same tile height and type scale', () => {
+    expect(lintStatTileConsistency(app([
+      statPage('p1', 'Home', 130, 28, 13),
+      statPage('p2', 'Orders', 130, 28, 13),
+    ]))).toEqual([]);
+  });
+
+  it('flags tile heights that differ between pages', () => {
+    const w = lintStatTileConsistency(app([
+      statPage('p1', 'Home', 140, 28, 13),
+      statPage('p2', 'Orders', 120, 28, 13),
+    ])).join(' ');
+    expect(w).toMatch(/differ in height across pages/);
+    expect(w).toMatch(/Home: 140.*Orders: 120/);
+  });
+
+  it('flags value/label font sizes that differ between pages', () => {
+    expect(lintStatTileConsistency(app([
+      statPage('p1', 'Home', 130, 34, 14),
+      statPage('p2', 'Orders', 130, 22, 12),
+    ])).join(' ')).toMatch(/different value\/label font sizes across pages/);
+  });
+
+  it('ignores a single page and nested template tiles', () => {
+    expect(lintStatTileConsistency(app([statPage('p1', 'Home', 140, 28, 13)]))).toEqual([]);
+    const nested = app([
+      statPage('p1', 'Home', 130, 28, 13),
+      {
+        id: 'p2',
+        name: 'Orders',
+        components: [{
+          id: 'row-tile',
+          type: 'Statistics',
+          parent: 'listview1',
+          layouts: { desktop: { top: 0, left: 0, width: 18, height: 90 } },
+          styles: { primaryValueSize: { value: '{{18}}' }, primaryLabelSize: { value: '{{11}}' } },
+        }],
+      },
+    ]);
+    expect(lintStatTileConsistency(nested)).toEqual([]);
+  });
+
+  it('flags Html KPI strips of differing height and a mixed mechanism', () => {
+    const strip = (id: string, name: string, height: number) => ({
+      id,
+      name,
+      components: [{
+        id: `${id}-strip`,
+        type: 'Html',
+        layouts: { desktop: { top: 0, left: 0, width: 40, height } },
+        properties: { rawHtml: { value: '<div style="display:grid"><div><span style="font-size:12px">Open</span><span style="font-size:28px">7</span></div></div>' } },
+      }],
+    });
+    expect(lintStatTileConsistency(app([strip('p1', 'Home', 140), strip('p2', 'Orders', 120)])).join(' '))
+      .toMatch(/Html KPI strips differ in height across pages/);
+    expect(lintStatTileConsistency(app([strip('p1', 'Home', 140), statPage('p2', 'Orders', 140, 28, 13)])).join(' '))
+      .toMatch(/built two different ways in one app/);
+  });
+});
+
 describe('validateAppStructure', () => {
   const base: AppSummary = {
     app_id: 'app1',
@@ -1286,6 +1362,47 @@ describe('validateAppStructure', () => {
     ]) {
       expect(validateAppStructure(ok).errors.filter((e) => e.includes('{results: rows}'))).toEqual([]);
     }
+  });
+
+  it('rejects a .data.result binding on a ServiceNow query, the Luna Halvard case', () => {
+    const withBinding = (binding: string, kind: string): AppSummary => ({
+      ...base,
+      pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
+      queries: [{ id: 'q1', name: 'incidents', kind, options: { operation: 'list_records', runOnPageLoad: true } }],
+    });
+    const wrong = validateAppStructure(withBinding('{{queries.incidents.data && queries.incidents.data.result ? queries.incidents.data.result : []}}', 'servicenow'));
+    expect(wrong.errors.filter((e) => e.includes('unwraps the REST result envelope'))).toHaveLength(1);
+    expect(validateAppStructure(withBinding('{{queries.incidents?.data?.result ?? []}}', 'servicenow')).errors.filter((e) => e.includes('unwraps the REST'))).toHaveLength(1);
+    for (const ok of [withBinding('{{queries.incidents.data}}', 'servicenow'), withBinding('{{queries.incidents.data.result}}', 'restapi')]) {
+      expect(validateAppStructure(ok).errors.filter((e) => e.includes('unwraps the REST'))).toEqual([]);
+    }
+  });
+
+  it.each([
+    { transformationLanguage: 'javascript', transformations: { javascript: 'return { result: data };' } },
+    { transformationLanguage: 'python', transformations: { python: 'return {"result": data}' } },
+    { transformationLanguage: 'javascript', transformation: 'return { result: data };' },
+  ])('allows transformed ServiceNow result bindings only while the transformation is enabled: %j', (transformation) => {
+    const summary: AppSummary = {
+      ...base,
+      pages: [{
+        id: 'p1', name: 'Home', components: [{
+          ...base.pages[0]!.components[0]!,
+          properties: {
+            ...base.pages[0]!.components[0]!.properties,
+            data: { value: '{{queries.loadHardware.data.result}}' },
+          },
+        }],
+      }],
+      queries: [{
+        id: 'q1', name: 'loadHardware', kind: 'servicenow',
+        options: { operation: 'list_records', runOnPageLoad: true, ...transformation, enableTransformation: true },
+      }],
+    };
+    expect(validateAppStructure(summary).errors.filter((e) => e.includes('unwraps the REST'))).toEqual([]);
+
+    summary.queries[0]!.options = { ...(summary.queries[0]!.options as Record<string, unknown>), enableTransformation: false };
+    expect(validateAppStructure(summary).errors.filter((e) => e.includes('unwraps the REST'))).toHaveLength(1);
   });
 
   it('rejects a Chart bound straight to non-x/y query rows and accepts RunJS or x/y SQL sources', () => {

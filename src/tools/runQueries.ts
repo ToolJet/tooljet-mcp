@@ -5,18 +5,36 @@ import { containsComponentBinding, failureRecovery, failureVerification, schemaN
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 
-/** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query. */
+/** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query.
+ *
+ *  A refusal here has to say what to do next, not just what went wrong. A query that IS a proven
+ *  read but needs the user's approval (every remote API — restapi, servicenow, influxdb, openapi)
+ *  is refused by this tool for a reason that reads like a verdict, so the caller concludes the
+ *  query is unrunnable and retries the same tool instead of moving to singular run_query. Measured
+ *  on real builds: two consecutive OpenAPI builds spent 15 attempts here and shipped apps whose
+ *  components were bound to queries that had never once executed. */
 export function batchSafeRead(query: QuerySummary): { safe: boolean; reason?: string } {
   const assessment = assessQueryRead(query);
-  return assessment.provenRead && assessment.directSafe && !assessment.selectStar
-    ? { safe: true }
-    : {
-        safe: false,
-        reason: assessment.reason ??
-          (assessment.requiresCountPreflight
-            ? 'read requires a count-first preflight through singular run_query'
-            : 'query is not a proven bounded read'),
-      };
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) return { safe: true };
+
+  // Proven read, held back only for confirmation: name the tool that can run it.
+  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
+    return {
+      safe: false,
+      reason:
+        `${assessment.reason ?? 'remote read'} run_queries cannot run remote reads at all. Use singular ` +
+        'run_query for this one: tell the user which saved query will run, and once they approve, call ' +
+        'run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.',
+    };
+  }
+
+  return {
+    safe: false,
+    reason: assessment.reason ??
+      (assessment.requiresCountPreflight
+        ? 'read requires a count-first preflight through singular run_query'
+        : 'query is not a proven bounded read'),
+  };
 }
 
 export function runQueriesTool(client: ToolJetClient): ToolDef {
@@ -33,7 +51,9 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
       'Run 1–10 already-created, proven read-only queries concurrently and return ordered per-query ' +
       'results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or ' +
       'one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, ' +
-      'RunJS, paid/remote API operations, and unknown kinds are refused. Metadata and the environment are ' +
+      'RunJS, paid/remote API operations, and unknown kinds are refused — remote API reads (restapi, openapi, '+
+      'servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. '+
+      'Metadata and the environment are ' +
       'loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure ' +
       'does not hide other read results. Pass include_data:false to only confirm each query runs — the ' +
       'result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. ' +
@@ -82,7 +102,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
           return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
         });
         if (unsafe.length) {
-          return fail(new Error(`run_queries refused non-proven reads before execution: ${unsafe.join('; ')}.`));
+          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? 'a query' : 'queries'} before execution: ${unsafe.join('; ')}`));
         }
 
         const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();

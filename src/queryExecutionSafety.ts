@@ -128,6 +128,46 @@ function assessServiceNow(options: Record<string, unknown>, datasourceId?: strin
     reason: 'ServiceNow list_records reads remote data and consumes API quota.' };
 }
 
+/* OpenAPI, split by HTTP method.
+
+   Without this, every openapi query fell through to "no proven read classifier" and was refused
+   before execution, so the agent could not run a single query to check its own work and finished
+   with an app whose components were bound to nothing. Same failure ServiceNow had.
+
+   Only GET is a proven read: the other methods are declared by the spec to change remote state.
+   Reads are never directSafe, exactly as REST GET is not — they cross into a remote system, consume
+   quota, and can return data the user did not expect to expose. */
+function assessOpenapi(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const identity = { datasourceKind: 'openapi', ...(datasourceId ? { datasourceId } : {}) };
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity,
+  });
+
+  // `operation` is the HTTP method for this kind, not a plugin operation name.
+  const method = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+  if (method !== 'get') {
+    return refuse(`OpenAPI method ${method ?? '<missing>'} is not a proven read; only GET queries can be previewed.`);
+  }
+
+  const path = typeof options.path === 'string' ? options.path.trim() : '';
+  if (!path || containsBinding(path)) {
+    return refuse('OpenAPI preview requires a non-empty static path; dynamic endpoints must be verified in the viewer.');
+  }
+  if (containsBinding(options.params) || containsBinding(options.host)) {
+    return refuse('OpenAPI preview requires static host and parameters; binding-dependent requests must be verified in the viewer.');
+  }
+
+  const host = typeof options.host === 'string' ? options.host.trim() : '';
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, requiresRemoteReadConfirmation: true,
+    source: { kind: 'remote_endpoint', value: `${host}${path}` },
+    reason: 'OpenAPI GET may expose remote data, consume quota, or return an unbounded payload.',
+    ...identity,
+  };
+}
+
 function assessRestGet(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
   const identity = { datasourceKind: 'restapi', ...(datasourceId ? { datasourceId } : {}) };
   const method = typeof options.method === 'string' ? options.method.toLowerCase() : undefined;
@@ -385,6 +425,7 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
 
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
+  if (kind === 'openapi') return assessOpenapi(options, datasourceId);
 
   if (kind === 'servicenow') return assessServiceNow(options, datasourceId);
 

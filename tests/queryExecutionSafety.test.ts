@@ -5,6 +5,7 @@ import {
   extractRowCount,
   sameReadSource,
 } from '../src/queryExecutionSafety.js';
+import { batchSafeRead } from '../src/tools/runQueries.js';
 
 describe('query execution safety', () => {
   it('allows bounded explicit-column SQL and refuses SELECT star even with a limit', () => {
@@ -185,5 +186,55 @@ describe('query execution safety', () => {
     expect(extractRowCount({ status: 'ok', data: [{ total: '2400' }] })).toBe(2400);
     expect(extractRowCount({ status: 'ok', data: [{ total: 20, other: 2 }] })).toBeUndefined();
     expect(extractRowCount({ status: 'failed', data: [{ total: 20 }] })).toBeUndefined();
+  });
+});
+
+describe('openapi read classification', () => {
+  const q = (options: Record<string, unknown>) =>
+    assessQueryRead({ id: 'q1', name: 'q', kind: 'openapi', options } as any);
+
+  it('treats a static GET as a proven remote read needing confirmation', () => {
+    const a = q({ host: 'https://httpbin.org', path: '/json', operation: 'get', params: {} });
+    expect(a.provenRead).toBe(true);
+    expect(a.directSafe).toBe(false);
+    expect(a.requiresRemoteReadConfirmation).toBe(true);
+    expect(a.source).toEqual({ kind: 'remote_endpoint', value: 'https://httpbin.org/json' });
+  });
+
+  it('refuses every non-GET method', () => {
+    for (const operation of ['post', 'put', 'patch', 'delete']) {
+      expect(q({ host: 'https://x.com', path: '/a', operation }).provenRead).toBe(false);
+    }
+  });
+
+  it('refuses a missing or dynamic path, and dynamic params', () => {
+    expect(q({ host: 'https://x.com', operation: 'get' }).provenRead).toBe(false);
+    expect(q({ host: 'https://x.com', path: '/a/{{v}}', operation: 'get' }).provenRead).toBe(false);
+    expect(q({ host: 'https://x.com', path: '/a', operation: 'get',
+               params: { query: { s: '{{textinput1.value}}' } } }).provenRead).toBe(false);
+  });
+});
+
+describe('batch refusal messages point at the tool that can run the query', () => {
+  const query = (kind: string, options: Record<string, unknown>) =>
+    ({ id: 'q1', name: 'q', kind, options }) as any;
+
+  it('tells the caller to use singular run_query for a confirmable remote read', () => {
+    for (const q of [
+      query('openapi', { host: 'https://httpbin.org', path: '/json', operation: 'get', params: {} }),
+      query('restapi', { method: 'get', url: 'https://api.example.com/things' }),
+      query('servicenow', { operation: 'list_records', table: 'incident' }),
+    ]) {
+      const verdict = batchSafeRead(q);
+      expect(verdict.safe).toBe(false);
+      expect(verdict.reason).toContain('run_query');
+      expect(verdict.reason).toContain('user_confirmed_remote_read:true');
+    }
+  });
+
+  it('does not offer that path for something that is not a read at all', () => {
+    const verdict = batchSafeRead(query('openapi', { host: 'https://x.com', path: '/a', operation: 'post' }));
+    expect(verdict.safe).toBe(false);
+    expect(verdict.reason).not.toContain('user_confirmed_remote_read');
   });
 });

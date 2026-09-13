@@ -604,7 +604,9 @@ describe('run_queries tool', () => {
       query_ids: ['delete'], version_id: 'v1',
     });
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/refused non-proven reads.*delete_rows/i);
+    expect(result.content[0]!.text).toMatch(/refused .*delete_rows.*not a proven bounded read/i);
+    // A write must not be offered the confirmed-remote-read escape hatch.
+    expect(result.content[0]!.text).not.toMatch(/user_confirmed_remote_read/);
     expect(client.getDevelopmentEnvironmentId).not.toHaveBeenCalled();
     expect(client.runQuery).not.toHaveBeenCalled();
   });
