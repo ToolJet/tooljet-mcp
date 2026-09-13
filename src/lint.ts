@@ -1812,19 +1812,29 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       const authoredPerPage = optionalStaticNumber(propVal(props, 'rowsPerPage'));
       const perPage = authoredPerPage ?? 10;
       const paginated = propVal(props, 'enablePagination');
+      const wrapsForRows = isTrueBinding(propVal(spec.styles, 'contentWrap'));
+      // Pagination off renders every row inside the box behind an inner scrollbar, so the last visible row is
+      // always sliced unless the box is tall enough for the whole set (round ten, 2026-09-12).
+      if (typeof height === 'number' && paginated !== undefined && !isTrueBinding(paginated) && height < 33 + 57 + 10 * (wrapsForRows ? 60 : 45)) {
+        errors.push(
+          `Table "${label}": enablePagination is off, so every row renders inside the ${height}px box behind an inner scrollbar and the last visible row is ` +
+            'sliced. Keep pagination on with rowsPerPage sized to the height (rows x 45, or x 60 with contentWrap, plus 90 and a 56px toolbar when a search box or button is on).'
+        );
+      }
       if (typeof height === 'number' && (paginated === undefined || isTrueBinding(paginated)) && typeof perPage === 'number' && perPage > 0) {
-        const wraps = isTrueBinding(propVal(spec.styles, 'contentWrap'));
+        const wraps = wrapsForRows;
         const rowPx = wraps ? 60 : 45;
         // A search box or any toolbar button adds a 56px toolbar above the header (three of four tables on
         // the first round-nine app sliced a row for exactly this).
         const toolbar = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
           .some((key) => isTrueBinding(propVal(props, key)));
         const toolbarPx = toolbar ? TABLE_TOOLBAR_HEIGHT_PX : 0;
-        const needed = 33 + 57 + toolbarPx + perPage * rowPx;
+        // 16px of slack: wrapped rows measured 57 to 66px, and a table sized to the byte slices its last row by a few px.
+        const needed = 33 + 57 + toolbarPx + perPage * rowPx + 16;
         if (height < needed) {
           errors.push(
-            `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${toolbar ? ' + toolbar 56 for the search box or buttons' : ''}${wraps ? ', rows grow with contentWrap' : ''}) ` +
-              `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90 - toolbarPx) / rowPx))}.`
+            `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57 + 16 slack${toolbar ? ' + toolbar 56 for the search box or buttons' : ''}${wraps ? ', rows grow with contentWrap' : ''}) ` +
+              `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 106 - toolbarPx) / rowPx))}.`
           );
         }
       }

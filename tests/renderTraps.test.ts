@@ -40,7 +40,7 @@ describe('render traps found in the 2026-09-12 reviews', () => {
   it('rejects a table shorter than its rows per page', () => {
     const r = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 400 } } });
     expect(r.errors.some((e) => e.includes('sliced') && e.includes('rowsPerPage to'))).toBe(true);
-    const ok = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 460 } } });
+    const ok = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 470 } } });
     expect(ok.errors.some((e) => e.includes('sliced'))).toBe(false);
   });
   it('assumes the catalog default of ten rows per page when none is authored', () => {
@@ -89,10 +89,10 @@ describe('render traps found in the 2026-09-12 reviews', () => {
   });
 
   it('counts the search toolbar in the table height', () => {
-    const table = (extra: Record<string, unknown>) => lintComponentSpec({ type: 'Table', name: 'logs', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 5 }, ...extra }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 650, left: 22, width: 19, height: 390 } } });
+    const table = (extra: Record<string, unknown>) => lintComponentSpec({ type: 'Table', name: 'logs', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 5 }, ...extra }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 650, left: 22, width: 19, height: 410 } } });
     expect(table({}).errors.some((e) => e.includes('sliced'))).toBe(false);
     const withSearch = table({ displaySearchBox: { value: true } });
-    expect(withSearch.errors.some((e) => e.includes('toolbar 56') && e.includes('446px'))).toBe(true);
+    expect(withSearch.errors.some((e) => e.includes('toolbar 56') && e.includes('462px'))).toBe(true);
   });
 
   it('rejects an empty-state message with no visibility binding', () => {
@@ -128,5 +128,12 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const fixed = binding.replace("+{\"Aktiv\":\"#DCFCE7\",\"Eingeladen\":\"#DBEAFE\",\"Deaktiviert\":\"#FEE2E2\"}[r.status]||'#F3F4F6'+", "+({\"Aktiv\":\"#DCFCE7\",\"Eingeladen\":\"#DBEAFE\",\"Deaktiviert\":\"#FEE2E2\"}[r.status]||'#F3F4F6')+").replace("+{\"Aktiv\":\"#166534\",\"Eingeladen\":\"#1E40AF\",\"Deaktiviert\":\"#991B1B\"}[r.status]||'#374151'+", "+({\"Aktiv\":\"#166534\",\"Eingeladen\":\"#1E40AF\",\"Deaktiviert\":\"#991B1B\"}[r.status]||'#374151')+");
     expect(fixed).not.toBe(binding);
     expect(table(fixed).errors.some((e) => e.includes('broken markup'))).toBe(false);
+  });
+
+  it('rejects pagination off on a table shorter than ten rows', () => {
+    const r = lintComponentSpec({ type: 'Table', name: 'productsTable', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 10 }, enablePagination: { value: '{{false}}' } }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 500 } } });
+    expect(r.errors.some((e) => e.includes('enablePagination is off'))).toBe(true);
+    const tall = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{false}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 560 } } });
+    expect(tall.errors.some((e) => e.includes('enablePagination is off'))).toBe(false);
   });
 });

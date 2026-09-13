@@ -99,6 +99,9 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
       }
       // A plot area much smaller than the chart box: styles.padding left at the default 50 or "default".
       if (dr && r.height > 120 && dr.height < r.height * 0.55) findings.push({ kind: 'clipped', component: name, detail: `plot area is ${Math.round(dr.height)}px of a ${Math.round(r.height)}px chart (styles.padding is the Plotly margin on every side; set it to 16)` });
+      // Bar value labels left as raw numbers ("103745") next to a formatted KPI.
+      const rawLabels = (Array.from(el.querySelectorAll('.bartext')) as Element[]).filter((t) => /^\d{5,}(\.\d+)?$/.test((t.textContent || '').trim()));
+      if (rawLabels.length) findings.push({ kind: 'placeholder_text', component: name, detail: `bar value labels are unformatted numbers (e.g. "${(rawLabels[0].textContent || '').trim()}"); format them with toLocaleString and the unit` });
       // Long category names: Plotly rotates the x ticks and they run past the chart's bottom edge.
       const ticks = Array.from(el.querySelectorAll('.xaxislayer-above .xtick text, .xtick text')) as Element[];
       const runOff = ticks.filter((t) => t.getBoundingClientRect().bottom > r.bottom - 2);
