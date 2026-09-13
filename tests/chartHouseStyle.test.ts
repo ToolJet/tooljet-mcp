@@ -35,4 +35,11 @@ describe('chart house style', () => {
     const ok = lintChartHouseStyle({ type: 'Chart', name: 'c', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: desc } }, styles: { padding: { value: 16 } } });
     expect(ok).toEqual([]);
   });
+  it('rejects data set to a mapped list of points', () => {
+    const bad = "{{JSON.stringify({data:queries.q_sales.data.map(r=>({x:r.sale_month,y:Number(r.sale_amount)})),layout:{font:{family:'Inter',size:12,color:'#64748B'}}})}}";
+    const r = lintChartHouseStyle({ type: 'Chart', name: 'd_sales', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: bad } }, styles: { padding: { value: 16 } } });
+    expect(r[0]).toContain('list of points');
+    const good = "{{JSON.stringify({data:[{type:'bar',x:queries.q_sales.data.map(r=>r.sale_month),y:queries.q_sales.data.map(r=>Number(r.sale_amount)),cliponaxis:false}],layout:{font:{family:'Inter',size:12,color:'#64748B'}}})}}";
+    expect(lintChartHouseStyle({ type: 'Chart', name: 'd_sales', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: good } }, styles: { padding: { value: 16 } } })).toEqual([]);
+  });
 });

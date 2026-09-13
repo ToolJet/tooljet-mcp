@@ -1202,6 +1202,14 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
   // A description that is only a binding to a query builds its layout elsewhere; the dynamic-mode warning covers it.
   if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
   if (!description.includes('layout') && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description)) return [];
+  // `data:` set to a mapped list of points ({x, y} per row) instead of a list of traces draws empty axes:
+  // three charts on a 2026-09-12 MedCard build. Plotly wants data: [{ type, x: [...], y: [...] }].
+  if (/\bdata\s*:\s*\(?\s*queries\.[\w.$]+\.data\b[^,;]*?\)?\s*\.map\(/.test(description)) {
+    return [
+      `Chart "${label}": jsonDescription sets data to rows.map(r => ({x, y})), a list of points, so Plotly draws empty axes. ` +
+        "data is a list of traces: [{ type: 'bar', x: rows.map(r => r.label), y: rows.map(r => r.value), ... }].",
+    ];
+  }
   // Plotly clips bar text to the plot area unless the trace sets cliponaxis:false, so the tallest bar's
   // outside label is cut in half (measured 2026-09-12: a bigger top margin does not help, cliponaxis does).
   if (/textposition\s*:\s*['"]outside['"]/.test(description) && !/cliponaxis\s*:\s*false/.test(description)) {
