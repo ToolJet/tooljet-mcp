@@ -49699,6 +49699,17 @@ function auditScript() {
         if (cutLabels.length)
           findings.push({ kind: "clipped", component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || "").trim()}"); set cliponaxis:false on the bar trace` });
       }
+      const plotEl = el.querySelector(".js-plotly-plot");
+      for (const trace of plotEl?.data ?? []) {
+        if ((trace.type ?? "scatter") !== "bar" || !Array.isArray(trace.x))
+          continue;
+        const seen = /* @__PURE__ */ new Set();
+        const dup = trace.x.map(String).find((v) => seen.has(v) ? true : (seen.add(v), false));
+        if (dup !== void 0) {
+          findings.push({ kind: "placeholder_text", component: name, detail: `category "${dup}" appears more than once in a bar trace, so its bars stack and read as one taller bar; aggregate the rows per category in the query` });
+          break;
+        }
+      }
       if (dr && r.height > 120 && dr.height < r.height * 0.55)
         findings.push({ kind: "clipped", component: name, detail: `plot area is ${Math.round(dr.height)}px of a ${Math.round(r.height)}px chart (styles.padding is the Plotly margin on every side; set it to 16)` });
       const rawLabels = Array.from(el.querySelectorAll(".bartext")).filter((t) => /^\d{5,}(\.\d+)?$/.test((t.textContent || "").trim()));
