@@ -82,11 +82,11 @@ export function lintQueryFedCharts(components: LintComponent[], queries: Planned
           'tallest bar\'s value label is cut in half by the plot area. Add cliponaxis:false to the trace.'
       );
     }
-    const missing = ['data', 'layout', 'font', 'margin', 'paper_bgcolor'].filter((key) => !code.includes(key));
+    const missing = ['data', 'layout', 'font'].filter((key) => !code.includes(key));
     if (missing.length) {
       errors.push(
         `Chart "${label}" is bound to query "${query.name}", whose code never mentions ${missing.join(', ')}: a query feeding a chart ` +
-          'must return the whole { data: [trace], layout: { font, margin, paper_bgcolor, plot_bgcolor, ... } } object from references/ui-layout.md. ' +
+          'must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. ' +
           'A bare array of points draws empty axes in Plotly\'s default font.'
       );
     }

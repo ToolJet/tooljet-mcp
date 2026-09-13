@@ -1143,7 +1143,10 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
   return { lines: parts.length, px, sizes };
 }
 
-const CHART_HOUSE_LAYOUT_KEYS = ['font', 'family', 'margin', 'paper_bgcolor'];
+// The Chart wrapper (Chart.jsx) spreads layout first, then overrides paper/plot backgrounds from the component's
+// backgroundColor and the margin from styles.padding on all four sides; layout.margin and the bgcolors are ignored.
+const CHART_HOUSE_LAYOUT_KEYS = ['font', 'family'];
+const CHART_PADDING_MAX_PX = 24;
 
 /**
  * A native Chart renders Plotly's defaults: Verdana, grey grid, unlabeled bars, the rainbow pie. Navaneeth's
@@ -1169,6 +1172,18 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
   if (!description.trim()) {
     return [`Chart "${label}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
   }
+  // styles.padding is the Plotly margin on all four sides. The catalog default 50 spends 100 of a 290px chart on
+  // margins, and the string "default" hands Plotly its own 80/100 margins: two round-ten charts drew in 114px
+  // of a 300px tile. Axis tick labels get their room from automargin, so a small padding is safe.
+  const padding = propVal(spec.styles ?? {}, 'padding');
+  const paddingPx = typeof padding === 'number' ? padding : typeof padding === 'string' && /^\s*\d+\s*$/.test(padding) ? Number(padding) : undefined;
+  if (paddingPx === undefined || paddingPx > CHART_PADDING_MAX_PX) {
+    return [
+      `Chart "${label}": styles.padding ${padding === undefined ? 'is unset (catalog default 50)' : `is ${JSON.stringify(padding)}`}; the wrapper uses it as the Plotly margin ` +
+        `on all four sides and ignores layout.margin, so the plot shrinks to a band in the middle of the tile. Set styles.padding to 16 (at most ${CHART_PADDING_MAX_PX}); ` +
+        'the axes add their own room for tick labels.',
+    ];
+  }
   // A description that is only a binding to a query builds its layout elsewhere; the dynamic-mode warning covers it.
   if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
   if (!description.includes('layout') && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description)) return [];
@@ -1184,7 +1199,7 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
   if (missing.length) {
     return [
       `Chart "${label}": jsonDescription has no layout.${missing.join(', layout.')}; without the house layout the chart ` +
-        'falls back to Plotly defaults. Add layout { font: {family, size, color}, margin, paper_bgcolor, plot_bgcolor } from references/ui-layout.md.',
+        'falls back to Plotly defaults. Add layout { font: {family, size, color} } and the axis settings from references/ui-layout.md.',
     ];
   }
   // A static description is parseable: every trace must carry its data. A bar with a colour and no x/y

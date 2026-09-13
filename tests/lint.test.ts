@@ -156,6 +156,7 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: '{{true}}' },
         jsonDescription: { value: '{not valid json}' },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(invalid.errors.join(' ')).toMatch(/valid JSON.*non-empty data array.*empty chart/is);
 
@@ -167,6 +168,7 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: true },
         jsonDescription: { value: { data: [] } },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(empty.errors.join(' ')).toMatch(/must contain a non-empty data array/i);
 
@@ -178,6 +180,7 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: '{{true}}' },
         jsonDescription: { value: '{{queries.chartData.data}}' },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(dynamic.errors).toEqual([]);
     expect(dynamic.warnings.join(' ')).toMatch(/cannot be evaluated statically.*simple type \+ data.*browser-verify/is);
@@ -190,6 +193,7 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: true },
         jsonDescription: { value: JSON.stringify({ data: [{ x: ['A'], y: [1], type: 'bar' }], layout: { font: { family: 'IBM Plex Sans', size: 12, color: '#6B7280' }, margin: { l: 36, r: 12, t: 8, b: 40 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' } }) },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(valid.errors).toEqual([]);
   });

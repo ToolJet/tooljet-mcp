@@ -83,7 +83,7 @@ describe('render traps found in the 2026-09-12 reviews', () => {
   });
 
   it('requires cliponaxis:false on bars with outside labels', () => {
-    const chart = (extra: string) => lintComponentSpec({ type: 'Chart', name: 'spend', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: `{{JSON.stringify({data:[{type:'bar',x:queries.q.data.map(r=>r.k),y:queries.q.data.map(r=>r.v),text:queries.q.data.map(r=>String(r.v)),textposition:'outside'${extra}}],layout:{margin:{l:36,r:12,t:8,b:40},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'IBM Plex Sans, sans-serif',size:12,color:'#6B7280'}}})}}` } } });
+    const chart = (extra: string) => lintComponentSpec({ type: 'Chart', name: 'spend', properties: { plotFromJson: { value: '{{true}}' }, jsonDescription: { value: `{{JSON.stringify({data:[{type:'bar',x:queries.q.data.map(r=>r.k),y:queries.q.data.map(r=>r.v),text:queries.q.data.map(r=>String(r.v)),textposition:'outside'${extra}}],layout:{margin:{l:36,r:12,t:8,b:40},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'IBM Plex Sans, sans-serif',size:12,color:'#6B7280'}}})}}` } }, styles: { padding: { value: 16 } } });
     expect(chart('').errors.some((e) => e.includes('cliponaxis:false'))).toBe(true);
     expect(chart(',cliponaxis:false').errors.some((e) => e.includes('cliponaxis:false'))).toBe(false);
   });
