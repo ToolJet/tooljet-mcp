@@ -25,7 +25,7 @@ export interface PageRenderReport {
 /** Runs inside the page: the same walk as the campaign's audit script, over ToolJet's widget containers. */
 function auditScript(): { widgets: number; findings: RenderFinding[] } {
   const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]')) as HTMLElement[];
-  const boxes: Array<{ name: string; x: number; y: number; w: number; h: number }> = [];
+  const boxes: Array<{ name: string; x: number; y: number; w: number; h: number; el: HTMLElement }> = [];
   const findings: RenderFinding[] = [];
   const seenNames = new Set<string>();
   // Raw formats a user notices at once: undefined/NaN/null, Invalid date, an ISO timestamp, a doubled percent sign.
@@ -40,7 +40,7 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
     if (seenNames.has(cy)) continue; // a widget's inner container repeats its data-cy
     seenNames.add(cy);
     const text = (el.innerText || '').trim();
-    boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
+    boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height, el });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
     // An empty-state block ("No products match") is empty by design while data exists; its name says so.
     const emptyStateByName = /empty|placeholder|no_?data|nothing/i.test(cy);
@@ -149,6 +149,7 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
       const b = boxes[j];
       if (a.name.startsWith('ModalV2:') || b.name.startsWith('ModalV2:')) continue;
       if (a.name.split(':')[1] === b.name.split(':')[1]) continue; // a widget's inner container repeats its name
+      if (a.el.contains(b.el) || b.el.contains(a.el)) continue; // a child inside its parent (a Kanban card, a modal body) is not an overlap
       const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
       const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
       if (ix > 8 && iy > 8) findings.push({ kind: 'overlap', component: `${a.name} and ${b.name}`, detail: `${Math.round(ix)}x${Math.round(iy)}px shared; move one` });

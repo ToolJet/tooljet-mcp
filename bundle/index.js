@@ -35367,6 +35367,18 @@ function lintEmptyTabs(components) {
   }
   return errors;
 }
+var DISABLED_SURFACE_TYPES = /* @__PURE__ */ new Set(["Kanban", "Table", "Listview", "Chart", "Form", "Tabs", "Container"]);
+function lintStaticDisabledSurface(spec) {
+  if (!DISABLED_SURFACE_TYPES.has(spec.type ?? ""))
+    return [];
+  const value = propVal2(spec.styles ?? {}, "disabledState") ?? propVal2(spec.properties ?? {}, "disabledState");
+  const staticTrue = value === true || typeof value === "string" && /^\s*(\{\{\s*true\s*\}\}|true)\s*$/.test(value);
+  if (!staticTrue)
+    return [];
+  return [
+    `${spec.type} "${spec.name ?? spec.id ?? spec.type}": disabledState is a static true, so the whole component renders faded and inert and reads as broken. For a read-only surface leave disabledState off and turn the editing affordances off instead (a Kanban: no add-card, no card modal; a Table: allowSelection false, no row actions).`
+  ];
+}
 function lintButtonLabelWidth(spec) {
   if (spec.type !== "Button" || parentPlacement(spec)?.parentId)
     return [];
@@ -36324,6 +36336,7 @@ function lintComponents(components) {
     errors.push(...lintButtonLabelWidth(c));
     errors.push(...lintUnboundEmptyState(c));
     errors.push(...lintTableProjectionRender(c));
+    errors.push(...lintStaticDisabledSurface(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
@@ -41844,7 +41857,7 @@ function auditScript() {
       continue;
     seenNames.add(cy);
     const text = (el.innerText || "").trim();
-    boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height });
+    boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height, el });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
     const emptyStateByName = /empty|placeholder|no_?data|nothing/i.test(cy);
     if (textual && text.length === 0 && r.height > 30 && !emptyStateByName) {
@@ -41970,6 +41983,8 @@ function auditScript() {
       if (a.name.startsWith("ModalV2:") || b.name.startsWith("ModalV2:"))
         continue;
       if (a.name.split(":")[1] === b.name.split(":")[1])
+        continue;
+      if (a.el.contains(b.el) || b.el.contains(a.el))
         continue;
       const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
       const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
