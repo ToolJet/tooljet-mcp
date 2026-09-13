@@ -138,6 +138,11 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
         if (cut.length >= 3) break;
       }
       if (cut.length) findings.push({ kind: 'clipped', component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
+      // Headers ToolJet generated for itself: the raw field name, snake_case and lowercase.
+      const rawHeaders = (Array.from(el.querySelectorAll('th, [role="columnheader"], .th')) as HTMLElement[])
+        .map((h) => (h.innerText || '').trim())
+        .filter((text) => /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(text));
+      if (rawHeaders.length) findings.push({ kind: 'placeholder_text', component: name, detail: `${rawHeaders.length} column header(s) are raw field names (e.g. "${rawHeaders[0]}"); author the columns with readable names instead of letting ToolJet generate them` });
       // Columns wider than the table: the scroll container is wider than its box, so the last columns sit past the right edge.
       const scroller = (Array.from(el.querySelectorAll('*')) as HTMLElement[]).find((node) => node.scrollWidth > node.clientWidth + 12 && node.clientWidth > 200 && /table/i.test(node.className.toString()));
       if (scroller) findings.push({ kind: 'clipped', component: name, detail: `columns overflow the table by ${scroller.scrollWidth - scroller.clientWidth}px to the right (the columnSize values exceed the table width); show fewer columns or shrink them` });

@@ -1173,7 +1173,7 @@ describe('get_app_summary tool', () => {
             type: 'Table',
             layouts: { desktop: { top: 10, left: 2, width: 40, height: 300 } },
             properties: {
-              data: { value: '{{queries.listOrders.data}}' },
+              data: { value: '{{queries.listOrders.data.map(r => ({name: r.name}))}}' },
               columns: { value: [{ key: 'id' }, { key: 'status' }] },
             },
             styles: { borderRadius: { value: 8 } },
@@ -1251,7 +1251,7 @@ describe('get_app_summary tool', () => {
             {
               id: 'c1',
               name: 'ordersTable',
-              properties: { data: { value: '{{queries.listOrders.data}}' } },
+              properties: { data: { value: '{{queries.listOrders.data.map(r => ({name: r.name}))}}' } },
               styles: { borderRadius: { value: 8 } },
             },
           ],
@@ -1450,7 +1450,7 @@ describe('add_component tool', () => {
     const tool = addComponentTool(client as unknown as ToolJetClient);
     // lint-clean Table (rawJson + autogenerateColumns) so no warnings are attached
     const properties = {
-      data: { value: '{{queries.getUsers.data}}' },
+      data: { value: '{{queries.getUsers.data.map(r => ({name: r.name}))}}' },
       dataSourceSelector: { value: 'rawJson' },
       autogenerateColumns: { value: true },
     };
@@ -1495,7 +1495,7 @@ describe('add_component tool', () => {
       page_id: 'p1',
       name: 't',
       type: 'Table',
-      properties: { data: { value: '{{queries.q.data}}' } },
+      properties: { data: { value: '{{queries.q.data.map(r => ({name: r.name}))}}' } },
       layout: { top: 0, left: 0, width: 10, height: 300 },
     });
     expect(client.createComponent).toHaveBeenCalled(); // not blocked
