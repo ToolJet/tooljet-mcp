@@ -120,4 +120,13 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const ok = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: [{ name: 'Vendor', key: 'vendor', columnType: 'string', columnSize: 180 }, { name: 'Amount', key: 'amount', columnType: 'string', columnSize: 130 }] }, rowsPerPage: { value: 5 } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 400 } } });
     expect(ok.errors.some((e) => e.includes('readable minimum'))).toBe(false);
   });
+
+  it('rejects a projection whose chip markup short-circuits at an || fallback', () => {
+    const binding = String.raw`{{queries.opscc_users_list.data.map(r => ({id:r.id,name:r.name,email:r.email,role:r.role,status:'<'+'span style="display:inline-block;white-space:nowrap;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:'+{"Aktiv":"#DCFCE7","Eingeladen":"#DBEAFE","Deaktiviert":"#FEE2E2"}[r.status]||'#F3F4F6'+';color:'+{"Aktiv":"#166534","Eingeladen":"#1E40AF","Deaktiviert":"#991B1B"}[r.status]||'#374151'+'">'+r.status+'<'+'/span>',last_login_at:r.last_login_at}))}}`;
+    const table = (data: string) => lintComponents([{ type: 'Table', name: 'usersTable', properties: { data: { value: data }, columns: { value: [{ name: 'Name', key: 'name', columnType: 'string', columnSize: 160 }, { name: 'Status', key: 'status', columnType: 'html', columnSize: 140 }] }, rowsPerPage: { value: 5 } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 400 } } }] as any);
+    expect(table(binding).errors.some((e) => e.includes('column "status"') && e.includes('broken markup'))).toBe(true);
+    const fixed = binding.replace("+{\"Aktiv\":\"#DCFCE7\",\"Eingeladen\":\"#DBEAFE\",\"Deaktiviert\":\"#FEE2E2\"}[r.status]||'#F3F4F6'+", "+({\"Aktiv\":\"#DCFCE7\",\"Eingeladen\":\"#DBEAFE\",\"Deaktiviert\":\"#FEE2E2\"}[r.status]||'#F3F4F6')+").replace("+{\"Aktiv\":\"#166534\",\"Eingeladen\":\"#1E40AF\",\"Deaktiviert\":\"#991B1B\"}[r.status]||'#374151'+", "+({\"Aktiv\":\"#166534\",\"Eingeladen\":\"#1E40AF\",\"Deaktiviert\":\"#991B1B\"}[r.status]||'#374151')+");
+    expect(fixed).not.toBe(binding);
+    expect(table(fixed).errors.some((e) => e.includes('broken markup'))).toBe(false);
+  });
 });

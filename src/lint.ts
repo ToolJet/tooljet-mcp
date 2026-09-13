@@ -15,6 +15,7 @@ import {
   lintTextFormat,
   lintUntriggeredDataQueries,
 } from './renderReadiness.js';
+import { runInNewContext } from 'node:vm';
 import { bindingReferences } from './bindingReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
@@ -767,6 +768,53 @@ export function lintStatisticsRows(components: LintComponent[]): string[] {
         'so the KPI grid reads as broken. Put every figure in one full row of three or four tiles (width 13 or 9, hideSecondary true), ' +
         'or use the Html KPI strip from references/ui-layout.md.'
     );
+  }
+  return errors;
+}
+
+/** Evaluate a Table data projection against one sample row (every field returns its own name) and check
+ *  what each column would render. Round ten (2026-09-12): `'...background:' + lookup[r.status] || '#EEE' + '">' + r.status + '</span>'`
+ *  short-circuited at the `||` and every status cell rendered an unterminated tag, so four of four pages had a
+ *  blank Status column. Runs in a fresh VM context with a timeout; anything that throws is left to runtime. */
+export function lintTableProjectionRender(spec: LintComponent): string[] {
+  if (spec.type !== 'Table') return [];
+  const props = spec.properties ?? {};
+  const data = propVal(props, 'data');
+  if (typeof data !== 'string') return [];
+  const trimmed = data.trim();
+  if (!trimmed.startsWith('{{') || !trimmed.endsWith('}}') || !trimmed.includes('.map(')) return [];
+  const expression = trimmed.slice(2, -2);
+  if (expression.includes('}}') || expression.includes('{{')) return [];
+  const columns = propVal(props, 'columns');
+  if (!Array.isArray(columns)) return [];
+  const label = spec.name ?? spec.type;
+  const row = new Proxy({}, { get: (_target, key) => (typeof key === 'string' ? key : undefined) });
+  const anyData = new Proxy({}, { get: () => ({ data: [row] }) });
+  let first: unknown;
+  try {
+    const fn = runInNewContext(`(function (queries, components, globals, variables, page, moment) { return (\n${expression}\n); })`, {}, { timeout: 100 }) as (...args: unknown[]) => unknown;
+    const sample = fn(anyData, anyData, {}, {}, { variables: {} }, () => ({ format: () => '' }));
+    if (!Array.isArray(sample) || !sample.length) return [];
+    first = sample[0];
+  } catch {
+    return [];
+  }
+  if (!first || typeof first !== 'object') return [];
+  const errors: string[] = [];
+  for (const col of columns as Array<Record<string, unknown>>) {
+    if (!col || col.columnVisibility === false || col.columnVisibility === '{{false}}') continue;
+    const key = String(col.key ?? col.name ?? '');
+    const value = (first as Record<string, unknown>)[key];
+    if (typeof value !== 'string' || !value.includes('<')) continue;
+    const opens = (value.match(/<([a-z][a-z0-9]*)\b[^>]*>/gi) ?? []).length;
+    const closes = (value.match(/<\/[a-z][a-z0-9]*\s*>/gi) ?? []).length;
+    const unterminated = /<[a-z][a-z0-9]*\b[^>]*$/i.test(value);
+    if (unterminated || opens !== closes) {
+      errors.push(
+        `Table "${label}" column "${key}": the data projection renders broken markup for this cell (${JSON.stringify(value.slice(0, 80))}), so the column shows blank. ` +
+          'Usually an || fallback applied to a concatenation (a + lookup[x] || b + ...) that short-circuits: wrap the lookup and its fallback in parentheses, (lookup[x] || fallback).'
+      );
+    }
   }
   return errors;
 }
@@ -2270,6 +2318,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     errors.push(...lintUnboundEmptyState(c));
+    errors.push(...lintTableProjectionRender(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
