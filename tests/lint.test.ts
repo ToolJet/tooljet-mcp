@@ -557,7 +557,7 @@ describe('lintComponentSpec', () => {
         columns: { value: [{ name: 'Request', key: 'request_number' }] },
       },
     });
-    expect(r.warnings.join(' ')).toMatch(/append undeclared datasource fields.*Project the Table data binding/);
+    expect(r.errors.join(' ')).toMatch(/append undeclared datasource fields.*Project the Table data binding/);
   });
 
   it('accepts explicit Table columns when the data binding projects only intended keys', () => {
@@ -737,7 +737,7 @@ describe('lintComponentSpec', () => {
         autogenerateColumns: { value: true },
         columns: { value: [{ name: 'Request', key: 'request' }] },
       },
-    }).warnings.join(' ');
+    }).errors.join(' ');
 
     expect(warningsFor('{{queries.requests.data.map(r => r)}}')).toMatch(/identity maps and object spreads/);
     expect(warningsFor('{{queries.requests.data.map(r => ({...r,request:r.request_number}))}}'))

@@ -780,6 +780,28 @@ export function lintUnboundEmptyState(spec: LintComponent): string[] {
   ];
 }
 
+/** A Tabs component with no child components renders its tab strip over an empty box (a 490px white
+ *  panel on a round-nine docs page). Tab content is children placed with parent_ref and the tab's slot. */
+export function lintEmptyTabs(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const tabs of components.filter((component) => component.type === 'Tabs')) {
+    const key = componentKey(tabs);
+    if (!key) continue;
+    // Tab children carry the tab index in their parent id ("<tabs>-0"), which the slot decoder leaves intact.
+    const children = components.filter((component) => {
+      const parentId = parentPlacement(component)?.parentId;
+      return parentId === key || (typeof parentId === 'string' && new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}-\\d+$`).test(parentId));
+    });
+    if (children.length) continue;
+    const height = (tabs.layouts?.desktop ?? tabs.layout)?.height;
+    errors.push(
+      `Tabs "${tabs.name ?? tabs.id ?? 'Tabs'}" has no child components, so it renders its tab strip over an empty ${height ?? ''}px box. ` +
+        'Give every tab its content (Text, Html, Table) as children with parent_ref and the tab\'s slot, or replace the Tabs with a plain panel.'
+    );
+  }
+  return errors;
+}
+
 /** A Button narrower than its label wraps the label onto two lines inside a 40px button (an "Add product"
  *  button at 3 columns, round eight). Root canvas only: nested canvases have a different column width. */
 export function lintButtonLabelWidth(spec: LintComponent): string[] {
@@ -1692,10 +1714,12 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           );
         }
       }
-      if (isTruthyBinding(autogen) && !projectsDataKeys) {
-        warnings.push(
+      if (isTruthyBinding(autogen) && !projectsDataKeys && data !== undefined) {
+        // An error, not a warning: on 2026-09-12 nine of thirteen pages of one app showed raw snake_case
+        // columns (member_id, tx_type, order_index) because the bindings were bare query references.
+        errors.push(
           `Table "${label}": has an explicit columns array but autogenerateColumns is still true — ` +
-            `ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; ` +
+            `ToolJet will append undeclared datasource fields (often technical IDs) as raw snake_case columns. Project the Table data binding to a new object with only intended keys (.map(r => ({...}))); ` +
             `identity maps and object spreads are not safe projections. ` +
             `This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`
         );
@@ -2228,6 +2252,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintComponentSlots(components));
   errors.push(...lintKanbanCardChildren(components));
   errors.push(...lintStatisticsRows(components));
+  errors.push(...lintEmptyTabs(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));

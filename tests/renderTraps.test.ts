@@ -102,4 +102,11 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const plain = lintComponents([{ type: 'Text', name: 'subtitle', properties: { text: { value: 'Health, service metrics and logs' } }, layouts: { desktop: { top: 80, left: 2, width: 39, height: 30 } } }] as any);
     expect(plain.errors.some((e) => e.includes('no visibility binding'))).toBe(false);
   });
+
+  it('rejects a Tabs component with no children', () => {
+    const tabs = { id: 'tabs1', type: 'Tabs', name: 'docsTabs', properties: { tabItems: { value: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }] } }, layouts: { desktop: { top: 120, left: 2, width: 12, height: 490 } } };
+    expect(lintComponents([tabs] as any).errors.some((e) => e.includes('no child components'))).toBe(true);
+    const child = { id: 'c1', type: 'Text', name: 'aText', parent: 'tabs1-0', properties: { text: { value: 'Getting started' } }, layouts: { desktop: { top: 10, left: 2, width: 39, height: 30 } } };
+    expect(lintComponents([tabs, child] as any).errors.some((e) => e.includes('no child components'))).toBe(false);
+  });
 });
