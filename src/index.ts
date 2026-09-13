@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createServer, type Server } from 'node:http';
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -7,6 +7,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
+import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
 import {
   allowedApiOrigins,
   ALLOWED_API_ORIGINS_VAR,
@@ -60,19 +61,100 @@ export function createGatewayHttpServer(): GatewayHttpServer {
      x-tooljet-url rather than silently writing into this process's static TOOLJET_URL. */
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '');
 
-  const httpServer = createServer(async (req, res) => {
-    // The bearer token authenticates the CALLER (that it is the trusted AI shim). The identity
-    // headers below say which user it is acting for. Checked first: an unauthenticated caller must
-    // never be able to name a user.
-    if (gatewayMode && !checkBearerToken(req.headers.authorization, sharedToken as string)) {
-      res.writeHead(401, { 'Content-Type': 'text/plain' }).end('Unauthorized');
+  /** POST mints a build token for the caller's own session; DELETE revokes one. Authorised by the
+   *  mint secret, and the minted identity comes from this request's own headers, so a caller can only
+   *  name the user it could already act as. Absent secret means the route does not exist. */
+  const handleBuildTokenRequest = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const secret = mintSecret();
+    const json = (status: number, body: unknown): void => {
+      res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));
+    };
+    if (!secret) {
+      json(404, { error: 'Not found' });
+      return;
+    }
+    if (!mintAuthorized(req.headers.authorization, secret)) {
+      json(401, { error: 'Build tokens require the mint secret as a bearer.' });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      const token = req.headers['x-tooljet-build-token'];
+      json(200, { revoked: revokeBuildToken(Array.isArray(token) ? token[0] : token) });
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.setHeader('allow', 'POST, DELETE');
+      json(405, { error: 'Method not allowed' });
       return;
     }
 
     let identity: RequestIdentity | undefined;
     try {
+      identity = await identityFromHeaders(req.headers, { allowPat: false });
+    } catch (err) {
+      json(400, { error: err instanceof Error ? err.message : 'Invalid identity headers' });
+      return;
+    }
+    if (!identity?.sessionToken || !identity.workspaceId) {
+      json(400, {
+        error: `A build token names a signed-in user: send ${SESSION_TOKEN_HEADER} with x-tooljet-workspace-id.`,
+      });
+      return;
+    }
+
+    let ttlMs: number | undefined;
+    try {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      if (chunks.length) {
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { ttl_seconds?: number };
+        if (typeof body?.ttl_seconds === 'number') ttlMs = body.ttl_seconds * 1000;
+      }
+    } catch {
+      /* no body, or not JSON: the default TTL applies */
+    }
+
+    const minted = mintBuildToken(identity, ttlMs);
+    json(200, { token: minted.token, expires_at: new Date(minted.expiresAt).toISOString() });
+  };
+
+  const httpServer = createServer(async (req, res) => {
+    const requestPath = new URL(req.url ?? '/', 'http://localhost').pathname;
+    const bearer = bearerValue(req.headers.authorization);
+
+    /* Exchange a caller's own session for a token that names one build. A hosted harness holds the
+       MCP connection itself and cannot carry identity headers (a service-origin transport rejects
+       them), so this is how the acting user reaches us through it — see src/buildTokens.ts. The
+       route authenticates itself with the mint secret, so it sits ahead of the caller gate. */
+    if (requestPath === '/build-token') {
+      await handleBuildTokenRequest(req, res);
+      return;
+    }
+
+    /* A build token authenticates the caller AND names the user, so it stands in for the shared
+       token. Unknown or expired is refused outright: falling through would silently downgrade the
+       request to the server's own credential and mis-attribute every write it makes. */
+    let buildIdentity: RequestIdentity | undefined;
+    if (isBuildToken(bearer)) {
+      buildIdentity = resolveBuildToken(bearer);
+      if (!buildIdentity) {
+        res.writeHead(401, { 'Content-Type': 'text/plain' }).end('Build token is unknown or expired.');
+        return;
+      }
+    }
+
+    // The bearer token authenticates the CALLER (that it is the trusted AI shim). The identity
+    // headers below say which user it is acting for. Checked first: an unauthenticated caller must
+    // never be able to name a user.
+    if (gatewayMode && !buildIdentity && !checkBearerToken(req.headers.authorization, sharedToken as string)) {
+      res.writeHead(401, { 'Content-Type': 'text/plain' }).end('Unauthorized');
+      return;
+    }
+
+    let identity: RequestIdentity | undefined = buildIdentity;
+    try {
       // Gateway mode serves every user, so only a ToolJet-minted session may name the actor.
-      identity = await identityFromHeaders(req.headers, { allowPat: !gatewayMode });
+      if (!identity) identity = await identityFromHeaders(req.headers, { allowPat: !gatewayMode });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Invalid identity headers';
       res.writeHead(400, { 'Content-Type': 'text/plain' }).end(message);
@@ -83,7 +165,6 @@ export function createGatewayHttpServer(): GatewayHttpServer {
       // Accept the PAT from Authorization as well as its own header: clients that cannot set
       // arbitrary headers can almost always set a bearer token. In gateway mode Authorization is
       // already spoken for by the shared token, which is why this is direct-mode only.
-      const bearer = bearerValue(req.headers.authorization);
       if (bearer) identity = { pat: bearer };
     }
 
