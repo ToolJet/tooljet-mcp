@@ -860,6 +860,21 @@ export function lintEmptyTabs(components: LintComponent[]): string[] {
   return errors;
 }
 
+/** A data surface with a static disabledState renders faded and inert: a Sol build (2026-09-12) set it on a
+ *  read-only Kanban and the whole board looked greyed out. Read-only is a property choice, not disabled. */
+const DISABLED_SURFACE_TYPES = new Set(['Kanban', 'Table', 'Listview', 'Chart', 'Form', 'Tabs', 'Container']);
+export function lintStaticDisabledSurface(spec: LintComponent): string[] {
+  if (!DISABLED_SURFACE_TYPES.has(spec.type ?? '')) return [];
+  const value = propVal(spec.styles ?? {}, 'disabledState') ?? propVal(spec.properties ?? {}, 'disabledState');
+  const staticTrue = value === true || (typeof value === 'string' && /^\s*(\{\{\s*true\s*\}\}|true)\s*$/.test(value));
+  if (!staticTrue) return [];
+  return [
+    `${spec.type} "${spec.name ?? spec.id ?? spec.type}": disabledState is a static true, so the whole component renders faded and inert and ` +
+      'reads as broken. For a read-only surface leave disabledState off and turn the editing affordances off instead ' +
+      '(a Kanban: no add-card, no card modal; a Table: allowSelection false, no row actions).',
+  ];
+}
+
 /** A Button narrower than its label wraps the label onto two lines inside a 40px button (an "Add product"
  *  button at 3 columns, round eight). Root canvas only: nested canvases have a different column width. */
 export function lintButtonLabelWidth(spec: LintComponent): string[] {
@@ -2344,6 +2359,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...lintButtonLabelWidth(c));
     errors.push(...lintUnboundEmptyState(c));
     errors.push(...lintTableProjectionRender(c));
+    errors.push(...lintStaticDisabledSurface(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));

@@ -136,4 +136,11 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const tall = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{false}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 560 } } });
     expect(tall.errors.some((e) => e.includes('enablePagination is off'))).toBe(false);
   });
+
+  it('rejects a static disabledState on a data surface', () => {
+    const board = (styles: Record<string, unknown>) => lintComponents([{ type: 'Kanban', name: 'workshopBoard', properties: {}, styles, layouts: { desktop: { top: 220, left: 2, width: 39, height: 520 } } }] as any);
+    expect(board({ disabledState: { value: '{{true}}' } }).errors.some((e) => e.includes('faded and inert'))).toBe(true);
+    expect(board({ disabledState: { value: '{{queries.q.isLoading}}' } }).errors.some((e) => e.includes('faded and inert'))).toBe(false);
+    expect(board({}).errors.some((e) => e.includes('faded and inert'))).toBe(false);
+  });
 });
