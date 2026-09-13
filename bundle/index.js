@@ -34495,6 +34495,9 @@ function lintUnguardedComponentRefs(c) {
   return errors;
 }
 
+// dist/lint.js
+import { runInNewContext } from "node:vm";
+
 // dist/bindingReferences.js
 function bindingReferences(value) {
   if (Array.isArray(value))
@@ -34750,6 +34753,29 @@ var TABLE_UNSIZED_COLUMN_MIN_PX = 100;
 var KANBAN_CARD_WIDTH_PX = 300;
 var KANBAN_CARD_CHILD_MIN_COLS = 30;
 var BUTTON_CHAR_PX = 7.5;
+var TABLE_COLUMN_MIN_PX = {
+  string: 120,
+  text: 120,
+  number: 80,
+  datepicker: 110,
+  html: 130,
+  button: 90,
+  badge: 110,
+  badges: 130,
+  tags: 130,
+  link: 120,
+  boolean: 70,
+  toggle: 70,
+  image: 60,
+  select: 110,
+  multiselect: 130,
+  radio: 110,
+  dropdown: 110
+};
+var TABLE_COLUMN_MONEY_MIN_PX = 130;
+var TABLE_COLUMN_NAME_MIN_PX = 150;
+var MONEY_COLUMN_NAME = /value|amount|price|total|cost|spend|revenue|budget|salary|fee/i;
+var NAME_COLUMN_NAME = /email|contact|customer|vendor|product|title|subject|description|address|category/i;
 var BUTTON_PADDING_PX = 32;
 function propVal2(props, key) {
   const p = props?.[key];
@@ -35256,6 +35282,56 @@ function lintStatisticsRows(components) {
   }
   return errors;
 }
+function lintTableProjectionRender(spec) {
+  if (spec.type !== "Table")
+    return [];
+  const props = spec.properties ?? {};
+  const data = propVal2(props, "data");
+  if (typeof data !== "string")
+    return [];
+  const trimmed = data.trim();
+  if (!trimmed.startsWith("{{") || !trimmed.endsWith("}}") || !trimmed.includes(".map("))
+    return [];
+  const expression = trimmed.slice(2, -2);
+  if (expression.includes("}}") || expression.includes("{{"))
+    return [];
+  const columns = propVal2(props, "columns");
+  if (!Array.isArray(columns))
+    return [];
+  const label2 = spec.name ?? spec.type;
+  const row = new Proxy({}, { get: (_target, key) => typeof key === "string" ? key : void 0 });
+  const anyData = new Proxy({}, { get: () => ({ data: [row] }) });
+  let first;
+  try {
+    const fn = runInNewContext(`(function (queries, components, globals, variables, page, moment) { return (
+${expression}
+); })`, {}, { timeout: 100 });
+    const sample = fn(anyData, anyData, {}, {}, { variables: {} }, () => ({ format: () => "" }));
+    if (!Array.isArray(sample) || !sample.length)
+      return [];
+    first = sample[0];
+  } catch {
+    return [];
+  }
+  if (!first || typeof first !== "object")
+    return [];
+  const errors = [];
+  for (const col of columns) {
+    if (!col || col.columnVisibility === false || col.columnVisibility === "{{false}}")
+      continue;
+    const key = String(col.key ?? col.name ?? "");
+    const value = first[key];
+    if (typeof value !== "string" || !value.includes("<"))
+      continue;
+    const opens = (value.match(/<([a-z][a-z0-9]*)\b[^>]*>/gi) ?? []).length;
+    const closes = (value.match(/<\/[a-z][a-z0-9]*\s*>/gi) ?? []).length;
+    const unterminated = /<[a-z][a-z0-9]*\b[^>]*$/i.test(value);
+    if (unterminated || opens !== closes) {
+      errors.push(`Table "${label2}" column "${key}": the data projection renders broken markup for this cell (${JSON.stringify(value.slice(0, 80))}), so the column shows blank. Usually an || fallback applied to a concatenation (a + lookup[x] || b + ...) that short-circuits: wrap the lookup and its fallback in parentheses, (lookup[x] || fallback).`);
+    }
+  }
+  return errors;
+}
 var EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[uú]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[uü]gbar|trouv|encontrad|trovat)/i;
 function lintUnboundEmptyState(spec) {
   if (spec.type !== "Text" && spec.type !== "Html")
@@ -35504,7 +35580,8 @@ function estimateTextHeight(text, baseSize) {
   const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
   return { lines: parts.length, px: px2, sizes };
 }
-var CHART_HOUSE_LAYOUT_KEYS = ["font", "family", "margin", "paper_bgcolor"];
+var CHART_HOUSE_LAYOUT_KEYS = ["font", "family"];
+var CHART_PADDING_MAX_PX = 24;
 function lintChartHouseStyle(spec) {
   if (spec.type !== "Chart")
     return [];
@@ -35522,6 +35599,13 @@ function lintChartHouseStyle(spec) {
   if (!description.trim()) {
     return [`Chart "${label2}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
   }
+  const padding = propVal2(spec.styles ?? {}, "padding");
+  const paddingPx = typeof padding === "number" ? padding : typeof padding === "string" && /^\s*\d+\s*$/.test(padding) ? Number(padding) : void 0;
+  if (paddingPx === void 0 || paddingPx > CHART_PADDING_MAX_PX) {
+    return [
+      `Chart "${label2}": styles.padding ${padding === void 0 ? "is unset (catalog default 50)" : `is ${JSON.stringify(padding)}`}; the wrapper uses it as the Plotly margin on all four sides and ignores layout.margin, so the plot shrinks to a band in the middle of the tile. Set styles.padding to 16 (at most ${CHART_PADDING_MAX_PX}); the axes add their own room for tick labels.`
+    ];
+  }
   if (!description.includes("layout") && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes("data"))
     return [];
   if (!description.includes("layout") && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description))
@@ -35534,7 +35618,7 @@ function lintChartHouseStyle(spec) {
   const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key) => !description.includes(key));
   if (missing.length) {
     return [
-      `Chart "${label2}": jsonDescription has no layout.${missing.join(", layout.")}; without the house layout the chart falls back to Plotly defaults. Add layout { font: {family, size, color}, margin, paper_bgcolor, plot_bgcolor } from references/ui-layout.md.`
+      `Chart "${label2}": jsonDescription has no layout.${missing.join(", layout.")}; without the house layout the chart falls back to Plotly defaults. Add layout { font: {family, size, color} } and the axis settings from references/ui-layout.md.`
     ];
   }
   if (!description.includes("{{")) {
@@ -35890,14 +35974,18 @@ function lintComponentSpec(spec) {
       const authoredPerPage = optionalStaticNumber(propVal2(props, "rowsPerPage"));
       const perPage = authoredPerPage ?? 10;
       const paginated = propVal2(props, "enablePagination");
+      const wrapsForRows = isTrueBinding(propVal2(spec.styles, "contentWrap"));
+      if (typeof height === "number" && paginated !== void 0 && !isTrueBinding(paginated) && height < 33 + 57 + 10 * (wrapsForRows ? 60 : 45)) {
+        errors.push(`Table "${label2}": enablePagination is off, so every row renders inside the ${height}px box behind an inner scrollbar and the last visible row is sliced. Keep pagination on with rowsPerPage sized to the height (rows x 45, or x 60 with contentWrap, plus 90 and a 56px toolbar when a search box or button is on).`);
+      }
       if (typeof height === "number" && (paginated === void 0 || isTrueBinding(paginated)) && typeof perPage === "number" && perPage > 0) {
-        const wraps = isTrueBinding(propVal2(spec.styles, "contentWrap"));
+        const wraps = wrapsForRows;
         const rowPx = wraps ? 60 : 45;
         const toolbar = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key) => isTrueBinding(propVal2(props, key)));
         const toolbarPx = toolbar ? TABLE_TOOLBAR_HEIGHT_PX : 0;
-        const needed = 33 + 57 + toolbarPx + perPage * rowPx;
+        const needed = 33 + 57 + toolbarPx + perPage * rowPx + 16;
         if (height < needed) {
-          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${toolbar ? " + toolbar 56 for the search box or buttons" : ""}${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90 - toolbarPx) / rowPx))}.`);
+          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57 + 16 slack${toolbar ? " + toolbar 56 for the search box or buttons" : ""}${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 106 - toolbarPx) / rowPx))}.`);
         }
       }
       const tableWidth = (spec.layouts?.desktop ?? spec.layout)?.width;
@@ -35932,6 +36020,14 @@ function lintComponentSpec(spec) {
         const deprecatedReplacement = typeof c?.columnType === "string" ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : void 0;
         if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0 && c.columnSize < 16 && ["string", "text", "number", "datepicker", "button"].includes(String(c.columnType))) {
           errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is in pixels, not proportional weights or grid columns. Use a readable pixel width (for example 240 for a name, 140 for a date), or omit columnSize for the default.`);
+        } else if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0) {
+          const type = String(c.columnType ?? "string");
+          const heading = `${String(c.name ?? "")} ${String(c.key ?? "")}`;
+          const base = TABLE_COLUMN_MIN_PX[type] ?? 100;
+          const minimum = ["string", "text", "html", "number"].includes(type) ? Math.max(base, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0) : base;
+          if (c.columnSize < minimum) {
+            errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column (values wrap mid word, money splits at the decimal point, status chips are cut). Use at least the minimum; if the columns no longer fit the table, show fewer of them.`);
+          }
         }
         if (deprecatedReplacement) {
           errors.push(`Table "${label2}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
@@ -36227,6 +36323,7 @@ function lintComponents(components) {
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     errors.push(...lintUnboundEmptyState(c));
+    errors.push(...lintTableProjectionRender(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
@@ -41735,7 +41832,7 @@ function auditScript() {
   const boxes = [];
   const findings = [];
   const seenNames = /* @__PURE__ */ new Set();
-  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%/;
+  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%|·\s*·|[$€£]\s?\d{5,}(?![,.]\d)/;
   for (const el of widgets) {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4)
@@ -41809,6 +41906,11 @@ function auditScript() {
         if (cutLabels.length)
           findings.push({ kind: "clipped", component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || "").trim()}"); set cliponaxis:false on the bar trace` });
       }
+      if (dr && r.height > 120 && dr.height < r.height * 0.55)
+        findings.push({ kind: "clipped", component: name, detail: `plot area is ${Math.round(dr.height)}px of a ${Math.round(r.height)}px chart (styles.padding is the Plotly margin on every side; set it to 16)` });
+      const rawLabels = Array.from(el.querySelectorAll(".bartext")).filter((t) => /^\d{5,}(\.\d+)?$/.test((t.textContent || "").trim()));
+      if (rawLabels.length)
+        findings.push({ kind: "placeholder_text", component: name, detail: `bar value labels are unformatted numbers (e.g. "${(rawLabels[0].textContent || "").trim()}"); format them with toLocaleString and the unit` });
       const ticks = Array.from(el.querySelectorAll(".xaxislayer-above .xtick text, .xtick text"));
       const runOff = ticks.filter((t) => t.getBoundingClientRect().bottom > r.bottom - 2);
       if (runOff.length)
@@ -41820,6 +41922,19 @@ function auditScript() {
         const text2 = (cell.innerText || "").trim();
         if (!text2)
           continue;
+        const cellRect = cell.getBoundingClientRect();
+        const spill = Array.from(cell.querySelectorAll("*")).find((node) => {
+          if (!(node.innerText || "").trim() || node.children.length > 0)
+            return false;
+          const nr = node.getBoundingClientRect();
+          return nr.width > 0 && (nr.right > cellRect.right + 2 || nr.left < cellRect.left - 2);
+        });
+        if (spill) {
+          cut.push(text2.slice(0, 24));
+          if (cut.length >= 3)
+            break;
+          continue;
+        }
         for (const node of [cell, ...Array.from(cell.querySelectorAll("*"))]) {
           const cs = getComputedStyle(node);
           if ((cs.overflow === "hidden" || cs.overflowX === "hidden") && cs.textOverflow !== "ellipsis" && node.scrollWidth > node.clientWidth + 4 && node.clientWidth > 20) {
@@ -42583,9 +42698,9 @@ function lintQueryFedCharts(components, queries) {
     if (/textposition\s*:\s*['"]outside['"]/.test(code) && !/cliponaxis\s*:\s*false/.test(code)) {
       errors.push(`Chart "${label2}" is bound to query "${query.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
     }
-    const missing = ["data", "layout", "font", "margin", "paper_bgcolor"].filter((key) => !code.includes(key));
+    const missing = ["data", "layout", "font"].filter((key) => !code.includes(key));
     if (missing.length) {
-      errors.push(`Chart "${label2}" is bound to query "${query.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, margin, paper_bgcolor, plot_bgcolor, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
+      errors.push(`Chart "${label2}" is bound to query "${query.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
     }
   }
   return errors;
