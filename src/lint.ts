@@ -1146,16 +1146,25 @@ const WRAP_REQUIRED_COLUMNS = 5;
 /** Rough rendered height of a Text value: one entry per line (<br>, block tags, newlines), each the largest
  *  inline font-size on that line at 1.5 line height (minimum 18px), plus the widget's padding. */
 export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[] } {
-  const parts = text
-    .split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i)
+  // Blank lines from a doubled <br> still take space (about half a line each).
+  const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
+  const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
+  const parts = rawParts
     .map((part) => part.replace(/<[^>]+>/g, '').trim() === '' ? null : part)
     .filter((part): part is string => part !== null);
+  // Heading and paragraph tags carry the browser's own font size and margins: measured on a
+  // 2026-09-12 round, an h1 + p + small header at 90px needed 98, and its dashboard variant 119.
   const sizes = parts.map((part) => {
     const found = [...part.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((m) => Number(m[1]));
-    return found.length ? Math.max(...found) : baseSize;
+    if (found.length) return Math.max(...found);
+    if (/<h1\b/i.test(part)) return baseSize * 2;
+    if (/<h2\b/i.test(part)) return baseSize * 1.5;
+    if (/<h3\b/i.test(part)) return baseSize * 1.17;
+    return baseSize;
   });
-  const px = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + 6);
-  return { lines: parts.length, px, sizes };
+  const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
+  const px = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
+  return { lines: parts.length + blankLines, px, sizes };
 }
 
 // The Chart wrapper (Chart.jsx) spreads layout first, then overrides paper/plot backgrounds from the component's

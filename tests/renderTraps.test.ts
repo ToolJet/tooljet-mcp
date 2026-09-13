@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lintComponentSpec, lintComponents } from '../src/lint.js';
+import { lintComponentSpec, lintComponents, estimateTextHeight } from '../src/lint.js';
 
 const cols = (n: number, extra: Array<Record<string, unknown>> = []) =>
   [...Array.from({ length: n }, (_, i) => ({ name: `c${i}`, key: `c${i}`, columnType: 'string' })), ...extra];
@@ -142,5 +142,15 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     expect(board({ disabledState: { value: '{{true}}' } }).errors.some((e) => e.includes('faded and inert'))).toBe(true);
     expect(board({ disabledState: { value: '{{queries.q.isLoading}}' } }).errors.some((e) => e.includes('faded and inert'))).toBe(false);
     expect(board({}).errors.some((e) => e.includes('faded and inert'))).toBe(false);
+  });
+
+  it('estimates heading and paragraph markup with the browser margins it carries', () => {
+    const products = estimateTextHeight('<h1>Products</h1><p>Manage products and inventory levels.</p><small>Sample warehouse data</small>', 14);
+    expect(products.px).toBeGreaterThanOrEqual(98);
+    expect(products.px).toBeLessThan(130);
+    const dashboard = estimateTextHeight("<strong>CHAINVENTORY</strong> · Main Warehouse<br><h1>Dashboard</h1><p>Good afternoon.</p><small>Last updated just now</small>", 14);
+    expect(dashboard.px).toBeGreaterThanOrEqual(119);
+    const activity = estimateTextHeight('<strong>Recent activity</strong><br><br><strong>Inbound</strong> · Box · 12 units<br><small>Ana · 8 minutes ago</small><br><br><strong>Outbound</strong> · Tape · 4 units<br><small>Ben · 20 minutes ago</small>', 14);
+    expect(activity.px).toBeGreaterThanOrEqual(125);
   });
 });
