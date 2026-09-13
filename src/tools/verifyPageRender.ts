@@ -184,7 +184,7 @@ async function loadPlaywright(): Promise<any | null> {
 
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
-  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number } = {}
+  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number } = {}
 ): Promise<PageRenderReport[]> {
   const pw = await loadPlaywright();
   if (!pw) {
@@ -194,41 +194,53 @@ export async function auditPages(
   if (options.executablePath) launch.executablePath = options.executablePath;
   else launch.channel = options.channel ?? 'chrome';
   const browser = await pw.chromium.launch(launch);
-  const reports: PageRenderReport[] = [];
-  try {
-    for (const p of pages) {
-      const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
-      const page = await ctx.newPage();
-      try {
-        await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await page.waitForTimeout(options.settleMs ?? 6000);
-        // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
-        // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
-        await page
-          .waitForFunction(
-            () => {
-              const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
-              const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
-              return charts === 0 || plots >= charts;
-            },
-            undefined,
-            { timeout: options.chartWaitMs ?? 20000 }
-          )
-          .catch(() => undefined);
-        await page.waitForTimeout(1500);
-        const landed: string = page.url();
-        if (/\/login\b/.test(landed)) {
-          reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'the viewer redirected to sign-in; the page is not public and no viewer session was provided' }] });
-          continue;
-        }
-        const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
-        reports.push({ page: p.page, url: p.url, widgets: result.widgets, findings: result.findings });
-      } catch (err) {
-        reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: `could not load the page: ${(err as Error).message}` }] });
-      } finally {
-        await ctx.close();
+  // Pages are audited a few at a time in their own contexts: a 13-page app took over three minutes
+  // sequentially (settle 6s + chart wait per page) and tripped the harness's 60s tool timeout.
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, pages.length || 1));
+  const reports: PageRenderReport[] = new Array(pages.length);
+  const auditOne = async (index: number): Promise<void> => {
+    const p = pages[index];
+    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const page = await ctx.newPage();
+    try {
+      await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(options.settleMs ?? 6000);
+      // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
+      // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
+      await page
+        .waitForFunction(
+          () => {
+            const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+            const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+            return charts === 0 || plots >= charts;
+          },
+          undefined,
+          { timeout: options.chartWaitMs ?? 20000 }
+        )
+        .catch(() => undefined);
+      await page.waitForTimeout(1500);
+      const landed: string = page.url();
+      if (/\/login\b/.test(landed)) {
+        reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'the viewer redirected to sign-in; the page is not reachable without a session (a private app)' }] };
+        return;
       }
+      const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
+      reports[index] = { page: p.page, url: p.url, widgets: result.widgets, findings: result.findings };
+    } catch (err) {
+      reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: `could not load the page: ${(err as Error).message}` }] };
+    } finally {
+      await ctx.close();
     }
+  };
+  try {
+    let next = 0;
+    const workers = Array.from({ length: concurrency }, async () => {
+      while (next < pages.length) {
+        const index = next++;
+        await auditOne(index);
+      }
+    });
+    await Promise.all(workers);
   } finally {
     await browser.close();
   }
