@@ -6,6 +6,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer } from './server.js';
 import { identityFromHeaders, type RequestIdentity } from './config.js';
 import { bearerValue } from './httpAuth.js';
+import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
 
 const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
 
@@ -108,12 +109,24 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
       return;
     }
 
-    // Same fallback as the bundle's direct HTTP mode: a client that cannot set arbitrary headers can
-    // still send its PAT as a bearer. Kept identical so the two HTTP entry points do not disagree
-    // about what authenticates a request.
+    // A build token is the bearer a hosted harness carries: it names the user who started the build,
+    // and it is the only way that identity can travel when the harness (not us) holds the connection
+    // and the platform forbids custom headers. Resolved before the PAT fallback so a token is never
+    // mistaken for a PAT belonging to whoever presented it.
     if (!identity) {
       const bearer = bearerValue(req.headers.authorization);
-      if (bearer) identity = { pat: bearer };
+      if (isBuildToken(bearer)) {
+        identity = resolveBuildToken(bearer);
+        if (!identity) {
+          writeError(res, 401, 'Build token is unknown or expired.');
+          return;
+        }
+      } else if (bearer) {
+        // Same fallback as the bundle's direct HTTP mode: a client that cannot set arbitrary headers
+        // can still send its PAT as a bearer. Kept identical so the two HTTP entry points do not
+        // disagree about what authenticates a request.
+        identity = { pat: bearer };
+      }
     }
 
     const mcpServer = serverFactory(identity);
@@ -133,6 +146,59 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
 
     await mcpServer.connect(transport);
     await transport.handleRequest(req, res, body);
+  };
+
+  /** Mint (POST) or revoke (DELETE) a build token. Authorised by the shared mint secret, and the
+   *  minted identity is read from this request's own headers, so a caller can only name the user it
+   *  could already act as. Absent secret means the feature is off and the route does not exist. */
+  const handleBuildToken = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const secret = mintSecret();
+    if (!secret) {
+      writeJson(res, 404, { error: 'Not found' });
+      return;
+    }
+    if (!mintAuthorized(req.headers.authorization, secret)) {
+      writeJson(res, 401, { error: 'Build tokens require the mint secret as a bearer.' });
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      const token = bearerValue(req.headers['x-tooljet-build-token'] as string | undefined)
+        ?? (req.headers['x-tooljet-build-token'] as string | undefined);
+      writeJson(res, 200, { revoked: revokeBuildToken(token) });
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.setHeader('allow', 'POST, DELETE');
+      writeJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
+
+    let identity: RequestIdentity | undefined;
+    try {
+      identity = await identityFromHeaders(req.headers, { allowPat: false });
+    } catch (error) {
+      writeJson(res, 400, { error: error instanceof Error ? error.message : 'Invalid identity headers' });
+      return;
+    }
+    if (!identity?.sessionToken || !identity.workspaceId) {
+      writeJson(res, 400, {
+        error: 'A build token names a signed-in user: send x-tooljet-session with x-tooljet-workspace-id.',
+      });
+      return;
+    }
+
+    let ttlMs: number | undefined;
+    try {
+      const body = (await readJsonBody(req, maxBodyBytes)) as { ttl_seconds?: number } | undefined;
+      if (body && typeof body.ttl_seconds === 'number') ttlMs = body.ttl_seconds * 1000;
+    } catch {
+      /* no body is fine; the default TTL applies */
+    }
+
+    const minted = mintBuildToken(identity, ttlMs);
+    writeJson(res, 200, { token: minted.token, expires_at: new Date(minted.expiresAt).toISOString() });
   };
 
   const handleSessionRequest = async (
@@ -156,6 +222,11 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
 
       if (requestUrl.pathname === '/health' && req.method === 'GET') {
         writeJson(res, 200, { status: 'ok', transport: 'streamable-http' });
+        return;
+      }
+
+      if (requestUrl.pathname === '/build-token') {
+        await handleBuildToken(req, res);
         return;
       }
 
