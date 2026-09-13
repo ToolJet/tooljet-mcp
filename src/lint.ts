@@ -860,6 +860,20 @@ export function lintEmptyTabs(components: LintComponent[]): string[] {
   return errors;
 }
 
+/** ToolJet renders the catalog's literal "Label" caption when an input's label is missing or an empty
+ *  string (round eleven, 2026-09-12: five search boxes captioned "Label"). A real caption is required. */
+const LABELLED_INPUT_TYPES = new Set(['TextInput', 'NumberInput', 'TextArea', 'PasswordInput', 'EmailInput', 'DatePickerV2', 'DatetimePickerV2', 'TimePicker', 'DaterangePicker', 'Checkbox', 'ToggleSwitchV2', 'RadioButtonV2', 'FilePicker']);
+export function lintDefaultInputLabel(spec: LintComponent): string[] {
+  if (!LABELLED_INPUT_TYPES.has(spec.type ?? '')) return [];
+  const label = propVal(spec.properties ?? {}, 'label');
+  const text = typeof label === 'string' ? label.trim() : label;
+  if (text !== undefined && text !== '' && text !== 'Label') return [];
+  return [
+    `${spec.type} "${spec.name ?? spec.id ?? spec.type}": ${text === undefined ? 'no label' : 'an empty label'} renders the catalog's literal "Label" caption ` +
+      'above the box. Give it the field\'s name ("Search", "Warehouse name"); a search box is labelled Search.',
+  ];
+}
+
 /** A data surface with a static disabledState renders faded and inert: a Sol build (2026-09-12) set it on a
  *  read-only Kanban and the whole board looked greyed out. Read-only is a property choice, not disabled. */
 const DISABLED_SURFACE_TYPES = new Set(['Kanban', 'Table', 'Listview', 'Chart', 'Form', 'Tabs', 'Container']);
@@ -2379,6 +2393,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...lintUnboundEmptyState(c));
     errors.push(...lintTableProjectionRender(c));
     errors.push(...lintStaticDisabledSurface(c));
+    errors.push(...lintDefaultInputLabel(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));

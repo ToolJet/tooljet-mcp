@@ -153,4 +153,12 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const activity = estimateTextHeight('<strong>Recent activity</strong><br><br><strong>Inbound</strong> · Box · 12 units<br><small>Ana · 8 minutes ago</small><br><br><strong>Outbound</strong> · Tape · 4 units<br><small>Ben · 20 minutes ago</small>', 14);
     expect(activity.px).toBeGreaterThanOrEqual(125);
   });
+
+  it('rejects an input whose label is empty or the catalog default', () => {
+    const input = (label?: string) => lintComponents([{ type: 'TextInput', name: 'MemberSearch', properties: { ...(label === undefined ? {} : { label: { value: label } }), placeholder: { value: 'Search members...' } }, layouts: { desktop: { top: 120, left: 2, width: 18, height: 60 } } }] as any);
+    expect(input('').errors.some((e) => e.includes('literal "Label"'))).toBe(true);
+    expect(input('Label').errors.some((e) => e.includes('literal "Label"'))).toBe(true);
+    expect(input().errors.some((e) => e.includes('literal "Label"'))).toBe(true);
+    expect(input('Search').errors.some((e) => e.includes('literal "Label"'))).toBe(false);
+  });
 });

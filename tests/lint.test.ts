@@ -1205,9 +1205,9 @@ describe('lintComponents (batch)', () => {
 
   it('accepts catalog-default single-line heights and does not restrict multiline TextArea height', () => {
     const result = lintComponents([
-      { name: 'title', type: 'TextInput', layout: { top: 0, left: 0, width: 20, height: 40 } },
+      { name: 'title', type: 'TextInput', properties: { label: { value: 'Title' } }, layout: { top: 0, left: 0, width: 20, height: 40 } },
       { name: 'status', type: 'DropdownV2', layout: { top: 70, left: 0, width: 20, height: 40 } },
-      { name: 'description', type: 'TextArea', layout: { top: 140, left: 0, width: 20, height: 180 } },
+      { name: 'description', type: 'TextArea', properties: { label: { value: 'Description' } }, layout: { top: 140, left: 0, width: 20, height: 180 } },
     ]);
 
     expect(result.errors).toEqual([]);
