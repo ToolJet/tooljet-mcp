@@ -35256,6 +35256,41 @@ function lintStatisticsRows(components) {
   }
   return errors;
 }
+var EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[uú]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[uü]gbar|trouv|encontrad|trovat)/i;
+function lintUnboundEmptyState(spec) {
+  if (spec.type !== "Text" && spec.type !== "Html")
+    return [];
+  const key = spec.type === "Html" ? "rawHtml" : "text";
+  const text = propVal2(spec.properties ?? {}, key);
+  if (typeof text !== "string" || text.includes("{{"))
+    return [];
+  const name = spec.name ?? "";
+  if (!EMPTY_STATE_TEXT.test(text) && !/empty/i.test(name))
+    return [];
+  const visibility = propVal2(spec.properties ?? {}, "visibility") ?? propVal2(spec.styles ?? {}, "visibility");
+  if (typeof visibility === "string" && visibility.includes("{{") && !/^\{\{\s*(true|false)\s*\}\}$/.test(visibility.trim()))
+    return [];
+  return [
+    `${spec.type} "${name || spec.id || spec.type}": the empty-state message "${text.trim().slice(0, 40)}" has no visibility binding, so it shows under a populated table. Bind visibility to the data being empty ({{(queries.<q>.data || []).length === 0}}), or drop the component: a Table shows its own empty message.`
+  ];
+}
+function lintEmptyTabs(components) {
+  const errors = [];
+  for (const tabs of components.filter((component) => component.type === "Tabs")) {
+    const key = componentKey(tabs);
+    if (!key)
+      continue;
+    const children = components.filter((component) => {
+      const parentId = parentPlacement(component)?.parentId;
+      return parentId === key || typeof parentId === "string" && new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}-\\d+$`).test(parentId);
+    });
+    if (children.length)
+      continue;
+    const height = (tabs.layouts?.desktop ?? tabs.layout)?.height;
+    errors.push(`Tabs "${tabs.name ?? tabs.id ?? "Tabs"}" has no child components, so it renders its tab strip over an empty ${height ?? ""}px box. Give every tab its content (Text, Html, Table) as children with parent_ref and the tab's slot, or replace the Tabs with a plain panel.`);
+  }
+  return errors;
+}
 function lintButtonLabelWidth(spec) {
   if (spec.type !== "Button" || parentPlacement(spec)?.parentId)
     return [];
@@ -35844,8 +35879,8 @@ function lintComponentSpec(spec) {
           warnings.push(`Table "${label2}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
         }
       }
-      if (isTruthyBinding(autogen) && !projectsDataKeys) {
-        warnings.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs). Project the Table data binding to a new object with only intended keys; identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
+      if (isTruthyBinding(autogen) && !projectsDataKeys && data !== void 0) {
+        errors.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs) as raw snake_case columns. Project the Table data binding to a new object with only intended keys (.map(r => ({...}))); identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
       }
       const visibleColumnCount = columns.filter((col) => {
         const c = col;
@@ -35858,9 +35893,11 @@ function lintComponentSpec(spec) {
       if (typeof height === "number" && (paginated === void 0 || isTrueBinding(paginated)) && typeof perPage === "number" && perPage > 0) {
         const wraps = isTrueBinding(propVal2(spec.styles, "contentWrap"));
         const rowPx = wraps ? 60 : 45;
-        const needed = 33 + 57 + perPage * rowPx;
+        const toolbar = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key) => isTrueBinding(propVal2(props, key)));
+        const toolbarPx = toolbar ? TABLE_TOOLBAR_HEIGHT_PX : 0;
+        const needed = 33 + 57 + toolbarPx + perPage * rowPx;
         if (height < needed) {
-          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90) / rowPx))}.`);
+          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57${toolbar ? " + toolbar 56 for the search box or buttons" : ""}${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 90 - toolbarPx) / rowPx))}.`);
         }
       }
       const tableWidth = (spec.layouts?.desktop ?? spec.layout)?.width;
@@ -36189,11 +36226,13 @@ function lintComponents(components) {
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
+    errors.push(...lintUnboundEmptyState(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
   errors.push(...lintKanbanCardChildren(components));
   errors.push(...lintStatisticsRows(components));
+  errors.push(...lintEmptyTabs(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
@@ -41770,6 +41809,10 @@ function auditScript() {
         if (cutLabels.length)
           findings.push({ kind: "clipped", component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || "").trim()}"); set cliponaxis:false on the bar trace` });
       }
+      const ticks = Array.from(el.querySelectorAll(".xaxislayer-above .xtick text, .xtick text"));
+      const runOff = ticks.filter((t) => t.getBoundingClientRect().bottom > r.bottom - 2);
+      if (runOff.length)
+        findings.push({ kind: "clipped", component: name, detail: `${runOff.length} category label(s) run off the bottom of the chart (e.g. "${(runOff[0].textContent || "").trim().slice(0, 30)}"); shorten the categories or draw horizontal bars (orientation 'h')` });
     }
     if (!clippedHere && /^Table:/.test(name)) {
       const cut = [];
