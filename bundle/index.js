@@ -42956,6 +42956,11 @@ function lintChartHouseStyle(spec) {
     return [];
   if (!description.includes("layout") && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description))
     return [];
+  if (/\bdata\s*:\s*\(?\s*queries\.[\w.$]+\.data\b[^,;]*?\)?\s*\.map\(/.test(description)) {
+    return [
+      `Chart "${label2}": jsonDescription sets data to rows.map(r => ({x, y})), a list of points, so Plotly draws empty axes. data is a list of traces: [{ type: 'bar', x: rows.map(r => r.label), y: rows.map(r => r.value), ... }].`
+    ];
+  }
   if (/textposition\s*:\s*['"]outside['"]/.test(description) && !/cliponaxis\s*:\s*false/.test(description)) {
     return [
       `Chart "${label2}": a bar trace uses textposition 'outside' without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to every bar trace that places its text outside.`
@@ -46138,6 +46143,8 @@ function listDatasourcesTool(client) {
 }
 
 // dist/tools/listTables.js
+var DEFAULT_LIMIT = 100;
+var MAX_LIMIT = 500;
 function listTablesTool(client) {
   return {
     name: "list_tables",
@@ -46146,11 +46153,25 @@ function listTablesTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List the ToolJet-DB tables in the workspace as [{ id, table_name }]. A ToolJet-DB (tooljetdb) query's options require the table's `id` as `table_id` (NOT the table name) \u2014 call this to resolve a table name to its id before add_query.",
-    inputSchema: {},
-    async handler() {
+    description: "List the ToolJet-DB tables in the workspace as { tables: [{ id, table_name }], total, shown }. A ToolJet-DB (tooljetdb) query's options require the table's `id` as `table_id` (NOT the table name) \u2014 call this to resolve a table name to its id before add_query. Pass `search` (a case-insensitive substring, usually the app's table prefix) so a busy workspace does not return hundreds of unrelated tables; at most `limit` rows come back (default 100).",
+    inputSchema: {
+      search: external_exports.string().optional(),
+      limit: external_exports.number().int().min(1).max(MAX_LIMIT).optional()
+    },
+    async handler(args) {
       try {
-        const result = await client.listTables();
+        const all = await client.listTables();
+        const needle = (args.search ?? "").trim().toLowerCase();
+        const matched = needle ? all.filter((t) => String(t.table_name ?? "").toLowerCase().includes(needle)) : all;
+        const limit = args.limit ?? DEFAULT_LIMIT;
+        const tables = matched.slice(0, limit);
+        const result = { tables, total: matched.length, shown: tables.length };
+        if (matched.length > tables.length) {
+          result.hint = `${matched.length - tables.length} more tables match; pass search with the app's table prefix or a larger limit.`;
+        }
+        if (!needle && all.length > limit) {
+          result.hint = `${all.length} tables in the workspace, ${tables.length} shown; pass search (the app's table prefix) to find yours.`;
+        }
         return ok(result);
       } catch (err) {
         return fail(err);
@@ -49782,33 +49803,43 @@ async function auditPages(pages, options2 = {}) {
   else
     launch.channel = options2.channel ?? "chrome";
   const browser = await pw.chromium.launch(launch);
-  const reports = [];
-  try {
-    for (const p of pages) {
-      const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
-      const page = await ctx.newPage();
-      try {
-        await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
-        await page.waitForTimeout(options2.settleMs ?? 6e3);
-        await page.waitForFunction(() => {
-          const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
-          const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
-          return charts === 0 || plots >= charts;
-        }, void 0, { timeout: options2.chartWaitMs ?? 2e4 }).catch(() => void 0);
-        await page.waitForTimeout(1500);
-        const landed = page.url();
-        if (/\/login\b/.test(landed)) {
-          reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: "the viewer redirected to sign-in; the page is not public and no viewer session was provided" }] });
-          continue;
-        }
-        const result = await page.evaluate(auditScript);
-        reports.push({ page: p.page, url: p.url, widgets: result.widgets, findings: result.findings });
-      } catch (err) {
-        reports.push({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: `could not load the page: ${err.message}` }] });
-      } finally {
-        await ctx.close();
+  const concurrency = Math.max(1, Math.min(options2.concurrency ?? 4, pages.length || 1));
+  const reports = new Array(pages.length);
+  const auditOne = async (index) => {
+    const p = pages[index];
+    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const page = await ctx.newPage();
+    try {
+      await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
+      await page.waitForTimeout(options2.settleMs ?? 6e3);
+      await page.waitForFunction(() => {
+        const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+        const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+        return charts === 0 || plots >= charts;
+      }, void 0, { timeout: options2.chartWaitMs ?? 2e4 }).catch(() => void 0);
+      await page.waitForTimeout(1500);
+      const landed = page.url();
+      if (/\/login\b/.test(landed)) {
+        reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: "the viewer redirected to sign-in; the page is not reachable without a session (a private app)" }] };
+        return;
       }
+      const result = await page.evaluate(auditScript);
+      reports[index] = { page: p.page, url: p.url, widgets: result.widgets, findings: result.findings };
+    } catch (err) {
+      reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: `could not load the page: ${err.message}` }] };
+    } finally {
+      await ctx.close();
     }
+  };
+  try {
+    let next = 0;
+    const workers = Array.from({ length: concurrency }, async () => {
+      while (next < pages.length) {
+        const index = next++;
+        await auditOne(index);
+      }
+    });
+    await Promise.all(workers);
   } finally {
     await browser.close();
   }
