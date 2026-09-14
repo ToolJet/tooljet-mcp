@@ -54,3 +54,58 @@ describe('datasource operation selection', () => {
     expect(message).toMatch(/sp_operation/);
   });
 });
+
+describe('spec-driven datasource spec references', () => {
+  const specDriven = () => getDatasourceCatalog()
+    .map((source) => getDatasourceQuerySchema(source.kind)!)
+    .filter((schema) => schema.operationSelection?.mode === 'remote-spec');
+
+  it('records a spec reference for every spec-driven kind', () => {
+    // ToolJet spells the pointer `spec_url` on older plugins and `specUrl` on newer ones, and its
+    // value is a single reference or a {label: reference} map; reading only string `spec_url` left
+    // 10 of the 14 kinds claiming a spec drives them without saying which spec.
+    for (const schema of specDriven()) {
+      expect(schema.operationSelection!.specs, schema.kind).toBeDefined();
+      expect(schema.operationSelection!.specs!.length, schema.kind).toBeGreaterThan(0);
+    }
+  });
+
+  it('resolves multi-spec kinds declared under either key spelling', () => {
+    // fedex/ups use snake_case + a dict; hubspot/xero use camelCase + a dict.
+    const counts = Object.fromEntries(
+      ['fedex', 'ups', 'hubspot', 'xero', 'microsoft_graph', 'aftership'].map((kind) =>
+        [kind, getDatasourceQuerySchema(kind)!.operationSelection!.specs!.length]
+      )
+    );
+    expect(counts).toEqual({ fedex: 13, ups: 7, hubspot: 35, xero: 11, microsoft_graph: 7, aftership: 3 });
+    expect(getDatasourceQuerySchema('hubspot')!.operationSelection!.specs![0]!.label).toBeTruthy();
+  });
+
+  it('separates specs bundled in the ToolJet repo from ones fetched from the vendor', () => {
+    const bundled = specDriven().filter((schema) =>
+      schema.operationSelection!.specs!.every((spec) => spec.location === 'bundled'));
+    expect(bundled).toHaveLength(13);
+
+    const stripe = getDatasourceQuerySchema('stripe')!.operationSelection!;
+    expect(stripe.specs).toEqual([expect.objectContaining({ location: 'remote' })]);
+    expect(stripe.specUrl).toMatch(/^https:/);
+  });
+
+  it('gives every bundled spec a resolved repo path', () => {
+    for (const schema of specDriven()) {
+      for (const spec of schema.operationSelection!.specs!) {
+        if (spec.location !== 'bundled') continue;
+        expect(spec.unresolved, `${schema.kind} ${spec.ref}`).toBeUndefined();
+        expect(spec.path, `${schema.kind} ${spec.ref}`)
+          .toMatch(/^marketplace\/plugins\/[^/]+\/openapi-specs\/.+\.(json|ya?ml)$/);
+      }
+    }
+  });
+
+  it('does not describe a bundled spec as remote', () => {
+    expect(getDatasourceQuerySchema('hubspot')!.operationSelection!.description)
+      .not.toMatch(/remote API spec/);
+    expect(getDatasourceQuerySchema('stripe')!.operationSelection!.description)
+      .toMatch(/remote API spec/);
+  });
+});

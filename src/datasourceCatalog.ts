@@ -30,8 +30,24 @@ export interface DatasourceOperationSelection {
   values?: string[];
   /** Query-option key holding the spec-driven operation (`remote-spec`). */
   field?: string;
+  /** Present only when the kind's single spec is fetched from the vendor. Prefer `specs`. */
   specUrl?: string;
+  /** Every OpenAPI spec the kind selects operations from. `bundled` specs ship inside the ToolJet
+   *  repo at `path` and are served by the ToolJet server at GET /plugins/specs/<plugin>/<name>;
+   *  `remote` ones are fetched from `ref` at query-authoring time. */
+  specs?: DatasourceSpecRef[];
   description?: string;
+}
+
+export interface DatasourceSpecRef {
+  /** Plugin-supplied group name when a kind declares several specs (HubSpot "Blog Posts"). */
+  label?: string;
+  ref: string;
+  location: 'bundled' | 'remote';
+  plugin?: string;
+  name?: string;
+  /** ToolJet-repo-relative path, extension included. Absent only for an unresolved reference. */
+  path?: string;
 }
 
 export interface DatasourceFieldContract {

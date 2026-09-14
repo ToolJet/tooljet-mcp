@@ -166,14 +166,58 @@ function compileContracts(properties) {
 // remote OpenAPI spec (stripe, gmail, hubspot — the `react-component-api-endpoint` field types), or
 // the harvest simply failed to find the selector. Publishing the reason keeps the third case loud.
 const REMOTE_SPEC_FIELD_TYPE = /^react-component-api-endpoint/;
+// ToolJet spells the spec pointer both ways — `spec_url` on the older plugins, `specUrl` on the
+// newer ones — and its value is either one reference or a {label: reference} map of several.
+// Reading only `spec_url`, and only as a string, left 10 of the 14 spec-driven kinds pointing
+// nowhere.
+const SPEC_URL_KEYS = ['spec_url', 'specUrl'];
+// `@spec/<plugin>/<stem>` is a spec shipped inside the ToolJet repo at
+// marketplace/plugins/<plugin>/openapi-specs/<stem>.(json|yaml), served by the ToolJet server at
+// GET /plugins/specs/<plugin>/<stem>. Anything else is a URL the client fetches from the vendor.
+const BUNDLED_SPEC_PREFIX = '@spec/';
+
+function normalizeSpecRefs(raw) {
+  if (typeof raw === 'string') return raw ? [{ ref: raw }] : [];
+  if (!isObject(raw)) return [];
+  return Object.entries(raw)
+    .filter(([, ref]) => typeof ref === 'string' && ref)
+    .map(([label, ref]) => ({ label, ref }));
+}
+
+const SPEC_EXTENSIONS = ['.json', '.yaml', '.yml'];
+
+function describeSpecRef({ label, ref }) {
+  if (!ref.startsWith(BUNDLED_SPEC_PREFIX)) {
+    return { ...(label ? { label } : {}), ref, location: 'remote' };
+  }
+  const [plugin, name] = ref.slice(BUNDLED_SPEC_PREFIX.length).split('/');
+  const base = plugin && name ? `marketplace/plugins/${plugin}/openapi-specs/${name}` : undefined;
+  // A `@spec/` reference that resolves to nothing is a rename in ToolJet, not a valid catalog
+  // entry; record the miss so the harvest can fail rather than publish a dead pointer.
+  const extension = base
+    ? SPEC_EXTENSIONS.find((candidate) => existsSync(resolve(TOOLJET, base + candidate)))
+    : undefined;
+  return {
+    ...(label ? { label } : {}),
+    ref,
+    location: 'bundled',
+    ...(plugin && name ? { plugin, name } : {}),
+    ...(extension ? { path: base + extension } : { unresolved: true }),
+  };
+}
 
 function findRemoteSpecField(container, found = []) {
   for (const value of Object.values(container || {})) {
     if (!isObject(value)) continue;
     if (typeof value.key === 'string' && REMOTE_SPEC_FIELD_TYPE.test(String(value.type || ''))) {
+      const key = SPEC_URL_KEYS.find((candidate) => value[candidate] !== undefined);
+      const specs = normalizeSpecRefs(key ? value[key] : undefined).map(describeSpecRef);
       found.push({
         field: typeof value.parse_key === 'string' ? value.parse_key : value.key,
-        ...(typeof value.spec_url === 'string' ? { specUrl: value.spec_url } : {}),
+        ...(specs.length ? { specs } : {}),
+        // A single remote reference keeps its old flat shape; every caller that only wanted a URL
+        // to show the user still finds one.
+        ...(specs.length === 1 && specs[0].location === 'remote' ? { specUrl: specs[0].ref } : {}),
       });
     }
     findRemoteSpecField(value, found);
@@ -199,10 +243,15 @@ function operationSelection(properties, contracts) {
     return {
       mode: 'remote-spec',
       ...remote,
-      description:
-        'The operation list is served by the remote API spec at query-authoring time, not by the ' +
-        'ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource ' +
-        'in ToolJet or the spec itself before authoring a query.',
+      // The mode name is kept until the catalog decides how to present bundled specs; the
+      // description must not meanwhile claim a spec is remote when it ships in the ToolJet repo.
+      description: (remote.specs || []).some((spec) => spec.location === 'bundled')
+        ? 'The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet ' +
+          'plugin rather than being declared in operations.json. They are not enumerated in this ' +
+          'catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query.'
+        : 'The operation list is served by the remote API spec at query-authoring time, not by the ' +
+          'ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource ' +
+          'in ToolJet or the spec itself before authoring a query.',
     };
   }
   return {
@@ -359,8 +408,10 @@ for (const collection of pluginCollections) {
   // one that still looks like a successful run. Fail instead.
   if (!existsSync(collection.dir)) {
     throw new Error(
-      `ToolJet ${collection.name} plugins not found at ${collection.dir}. ` +
-      'Set TOOLJET_ROOT to a ToolJet checkout before regenerating the catalog.'
+      `ToolJet ${collection.name} plugins not found at ${collection.dir}.\n` +
+      `TOOLJET_ROOT resolved to ${TOOLJET}${process.env.TOOLJET_ROOT ? '' : ' (default: ../ToolJet)'}, ` +
+      'which has no plugins directory. Point it at a ToolJet checkout:\n' +
+      '  TOOLJET_ROOT=/path/to/ToolJet node scripts/generate-datasource-catalog.mjs'
     );
   }
   for (const packageName of readdirSync(collection.dir)) {
@@ -598,6 +649,18 @@ if (testConnectionSupported < 50) {
   throw new Error(
     `Only ${testConnectionSupported} kinds report testConnection; the source scan almost certainly failed. ` +
     'Expected ~67. Check that plugin entry files are still lib/index.ts.'
+  );
+}
+
+const unresolvedSpecs = Object.values(schemas).flatMap((schema) =>
+  (schema.operationSelection?.specs || [])
+    .filter((spec) => spec.unresolved)
+    .map((spec) => `${schema.kind} -> ${spec.ref}`)
+);
+if (unresolvedSpecs.length) {
+  throw new Error(
+    `${unresolvedSpecs.length} @spec reference(s) resolve to no file under ${TOOLJET}: ` +
+    `${unresolvedSpecs.join(', ')}.`
   );
 }
 

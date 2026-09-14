@@ -12,6 +12,7 @@ export function buildDatasourceCoverage(schemas) {
   const remoteSpecKinds = [];
   const singleFormKinds = [];
   const unexplainedDefaultOnlyKinds = [];
+  const specDrivenKindsWithoutSpecRef = [];
   const kindsWithoutContracts = [];
   const knownResponseKinds = new Set();
   const opaqueEndpointKinds = new Set();
@@ -29,7 +30,12 @@ export function buildDatasourceCoverage(schemas) {
       // in a remote API spec, or there is a single unnamed form) and a bug when it does not.
       defaultOnlyKinds.push(kind);
       const mode = schema.operationSelection?.mode;
-      if (mode === 'remote-spec') remoteSpecKinds.push(kind);
+      if (mode === 'remote-spec') {
+        remoteSpecKinds.push(kind);
+        // A spec-driven kind whose spec pointer is missing tells the agent "the operations live in
+        // a spec" without saying which — strictly worse than saying nothing.
+        if (!(schema.operationSelection.specs || []).length) specDrivenKindsWithoutSpecRef.push(kind);
+      }
       else if (mode === 'single') singleFormKinds.push(kind);
       else unexplainedDefaultOnlyKinds.push(kind);
     }
@@ -78,6 +84,7 @@ export function buildDatasourceCoverage(schemas) {
     remote_spec_operation_kinds: remoteSpecKinds,
     single_form_kinds: singleFormKinds,
     unexplained_default_only_kinds: unexplainedDefaultOnlyKinds,
+    spec_driven_kinds_without_spec_ref: specDrivenKindsWithoutSpecRef,
     response_contracts: {
       total: contractCount,
       ...responses,
@@ -102,6 +109,7 @@ function metrics(coverage) {
     kinds_without_contracts: coverage.kinds_without_contracts.length,
     kinds_with_named_operations: coverage.kinds_with_named_operations,
     unexplained_default_only_kinds: coverage.unexplained_default_only_kinds.length,
+    spec_driven_kinds_without_spec_ref: coverage.spec_driven_kinds_without_spec_ref.length,
     opaque_endpoint_kinds: coverage.opaque_endpoint_kinds.length,
     kinds_with_test_connection_flag: coverage.kinds_with_test_connection_flag,
     kinds_supporting_test_connection: coverage.kinds_supporting_test_connection,
@@ -150,7 +158,8 @@ function checkCoverage() {
     `Operations: ${coverage.kinds_with_named_operations} kinds enumerate them, ` +
     `${coverage.remote_spec_operation_kinds.length} defer to a remote spec, ` +
     `${coverage.single_form_kinds.length} have a single form, ` +
-    `${coverage.unexplained_default_only_kinds.length} unexplained.`
+    `${coverage.unexplained_default_only_kinds.length} unexplained; ` +
+    `${coverage.spec_driven_kinds_without_spec_ref.length} spec-driven without a spec reference.`
   );
   if (failures.length) {
     failures.forEach((failure) => console.error(`- ${failure}`));

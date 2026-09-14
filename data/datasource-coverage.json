@@ -57,6 +57,7 @@
     "spanner"
   ],
   "unexplained_default_only_kinds": [],
+  "spec_driven_kinds_without_spec_ref": [],
   "response_contracts": {
     "total": 489,
     "known": 77,

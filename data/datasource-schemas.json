@@ -9,7 +9,33 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "aftership_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "label": "Shipping",
+          "ref": "@spec/aftership/shipping",
+          "location": "bundled",
+          "plugin": "aftership",
+          "name": "shipping",
+          "path": "marketplace/plugins/aftership/openapi-specs/shipping.json"
+        },
+        {
+          "label": "Tracking",
+          "ref": "@spec/aftership/tracking",
+          "location": "bundled",
+          "plugin": "aftership",
+          "name": "tracking",
+          "path": "marketplace/plugins/aftership/openapi-specs/tracking.json"
+        },
+        {
+          "label": "Returns",
+          "ref": "@spec/aftership/returns",
+          "location": "bundled",
+          "plugin": "aftership",
+          "name": "returns",
+          "path": "marketplace/plugins/aftership/openapi-specs/returns.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -11218,8 +11244,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "clickup_operation",
-      "specUrl": "@spec/clickup/clickup",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/clickup/clickup",
+          "location": "bundled",
+          "plugin": "clickup",
+          "name": "clickup",
+          "path": "marketplace/plugins/clickup/openapi-specs/clickup.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -12178,7 +12212,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "confluence_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/confluence/confluence_v2",
+          "location": "bundled",
+          "plugin": "confluence",
+          "name": "confluence_v2",
+          "path": "marketplace/plugins/confluence/openapi-specs/confluence_v2.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -15925,8 +15968,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "easypost_operation",
-      "specUrl": "@spec/easypost/easypost",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/easypost/easypost",
+          "location": "bundled",
+          "plugin": "easypost",
+          "name": "easypost",
+          "path": "marketplace/plugins/easypost/openapi-specs/easypost.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -17393,7 +17444,113 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "fedex_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "label": "Address Validation",
+          "ref": "@spec/fedex/address-validation",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "address-validation",
+          "path": "marketplace/plugins/fedex/openapi-specs/address-validation.json"
+        },
+        {
+          "label": "Ground End of Day Close",
+          "ref": "@spec/fedex/ground-end-of-day-close",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "ground-end-of-day-close",
+          "path": "marketplace/plugins/fedex/openapi-specs/ground-end-of-day-close.json"
+        },
+        {
+          "label": "Ship Consolidation",
+          "ref": "@spec/fedex/ship-consolidation",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "ship-consolidation",
+          "path": "marketplace/plugins/fedex/openapi-specs/ship-consolidation.json"
+        },
+        {
+          "label": "Open Ship",
+          "ref": "@spec/fedex/open-ship",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "open-ship",
+          "path": "marketplace/plugins/fedex/openapi-specs/open-ship.json"
+        },
+        {
+          "label": "Pickup Request",
+          "ref": "@spec/fedex/pickup-request",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "pickup-request",
+          "path": "marketplace/plugins/fedex/openapi-specs/pickup-request.json"
+        },
+        {
+          "label": "Postal Code Validation",
+          "ref": "@spec/fedex/postal-code-validation",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "postal-code-validation",
+          "path": "marketplace/plugins/fedex/openapi-specs/postal-code-validation.json"
+        },
+        {
+          "label": "Rates and Transit Times",
+          "ref": "@spec/fedex/rates-and-transit-times",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "rates-and-transit-times",
+          "path": "marketplace/plugins/fedex/openapi-specs/rates-and-transit-times.json"
+        },
+        {
+          "label": "Ship",
+          "ref": "@spec/fedex/ship",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "ship",
+          "path": "marketplace/plugins/fedex/openapi-specs/ship.json"
+        },
+        {
+          "label": "Tracking (Basic Integrated Visibility)",
+          "ref": "@spec/fedex/tracking-basic-integrated-visibility-",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "tracking-basic-integrated-visibility-",
+          "path": "marketplace/plugins/fedex/openapi-specs/tracking-basic-integrated-visibility-.json"
+        },
+        {
+          "label": "Trade Documents Upload",
+          "ref": "@spec/fedex/trade-documents-upload",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "trade-documents-upload",
+          "path": "marketplace/plugins/fedex/openapi-specs/trade-documents-upload.json"
+        },
+        {
+          "label": "FedEx Location Search",
+          "ref": "@spec/fedex/fedex-location-search",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "fedex-location-search",
+          "path": "marketplace/plugins/fedex/openapi-specs/fedex-location-search.json"
+        },
+        {
+          "label": "Freight LTL",
+          "ref": "@spec/fedex/freight-ltl",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "freight-ltl",
+          "path": "marketplace/plugins/fedex/openapi-specs/freight-ltl.json"
+        },
+        {
+          "label": "Service Availability",
+          "ref": "@spec/fedex/service-availability",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "service-availability",
+          "path": "marketplace/plugins/fedex/openapi-specs/service-availability.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -20444,8 +20601,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "gmail_operation",
-      "specUrl": "@spec/gmail/gmail",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/gmail/gmail",
+          "location": "bundled",
+          "plugin": "gmail",
+          "name": "gmail",
+          "path": "marketplace/plugins/gmail/openapi-specs/gmail.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -20499,7 +20664,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "google_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/googlecalendar/googlecalendar",
+          "location": "bundled",
+          "plugin": "googlecalendar",
+          "name": "googlecalendar",
+          "path": "marketplace/plugins/googlecalendar/openapi-specs/googlecalendar.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -23838,7 +24012,289 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "hubspot_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "label": "WebHooks",
+          "ref": "@spec/hubspot/webhooks",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "webhooks",
+          "path": "marketplace/plugins/hubspot/openapi-specs/webhooks.json"
+        },
+        {
+          "label": "Subscriptions",
+          "ref": "@spec/hubspot/subscriptions",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "subscriptions",
+          "path": "marketplace/plugins/hubspot/openapi-specs/subscriptions.json"
+        },
+        {
+          "label": "Oauth Service",
+          "ref": "@spec/hubspot/oauth-service",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "oauth-service",
+          "path": "marketplace/plugins/hubspot/openapi-specs/oauth-service.json"
+        },
+        {
+          "label": "Domains",
+          "ref": "@spec/hubspot/domains",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "domains",
+          "path": "marketplace/plugins/hubspot/openapi-specs/domains.json"
+        },
+        {
+          "label": "Blog Posts",
+          "ref": "@spec/hubspot/blog-posts",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "blog-posts",
+          "path": "marketplace/plugins/hubspot/openapi-specs/blog-posts.json"
+        },
+        {
+          "label": "Blog Authors",
+          "ref": "@spec/hubspot/blog-authors",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "blog-authors",
+          "path": "marketplace/plugins/hubspot/openapi-specs/blog-authors.json"
+        },
+        {
+          "label": "Url Redirects",
+          "ref": "@spec/hubspot/url-redirects",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "url-redirects",
+          "path": "marketplace/plugins/hubspot/openapi-specs/url-redirects.json"
+        },
+        {
+          "label": "Performance",
+          "ref": "@spec/hubspot/performance",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "performance",
+          "path": "marketplace/plugins/hubspot/openapi-specs/performance.json"
+        },
+        {
+          "label": "HubDB",
+          "ref": "@spec/hubspot/hubdb",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "hubdb",
+          "path": "marketplace/plugins/hubspot/openapi-specs/hubdb.json"
+        },
+        {
+          "label": "Blog Tags",
+          "ref": "@spec/hubspot/blog-tags",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "blog-tags",
+          "path": "marketplace/plugins/hubspot/openapi-specs/blog-tags.json"
+        },
+        {
+          "label": "Audit Logs",
+          "ref": "@spec/hubspot/audit-logs",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "audit-logs",
+          "path": "marketplace/plugins/hubspot/openapi-specs/audit-logs.json"
+        },
+        {
+          "label": "Site Search",
+          "ref": "@spec/hubspot/site-search",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "site-search",
+          "path": "marketplace/plugins/hubspot/openapi-specs/site-search.json"
+        },
+        {
+          "label": "Transactional Email",
+          "ref": "@spec/hubspot/transactional-email",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "transactional-email",
+          "path": "marketplace/plugins/hubspot/openapi-specs/transactional-email.json"
+        },
+        {
+          "label": "Custom Workflow Actions",
+          "ref": "@spec/hubspot/custom-workflow-actions",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "custom-workflow-actions",
+          "path": "marketplace/plugins/hubspot/openapi-specs/custom-workflow-actions.json"
+        },
+        {
+          "label": "Files",
+          "ref": "@spec/hubspot/files",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "files",
+          "path": "marketplace/plugins/hubspot/openapi-specs/files.json"
+        },
+        {
+          "label": "Visitor Identification",
+          "ref": "@spec/hubspot/visitor-identification",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "visitor-identification",
+          "path": "marketplace/plugins/hubspot/openapi-specs/visitor-identification.json"
+        },
+        {
+          "label": "Cards",
+          "ref": "@spec/hubspot/cards",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "cards",
+          "path": "marketplace/plugins/hubspot/openapi-specs/cards.json"
+        },
+        {
+          "label": "Products",
+          "ref": "@spec/hubspot/products",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "products",
+          "path": "marketplace/plugins/hubspot/openapi-specs/products.json"
+        },
+        {
+          "label": "Pipelines",
+          "ref": "@spec/hubspot/pipelines",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "pipelines",
+          "path": "marketplace/plugins/hubspot/openapi-specs/pipelines.json"
+        },
+        {
+          "label": "Companies",
+          "ref": "@spec/hubspot/companies",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "companies",
+          "path": "marketplace/plugins/hubspot/openapi-specs/companies.json"
+        },
+        {
+          "label": "Calling",
+          "ref": "@spec/hubspot/calling",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "calling",
+          "path": "marketplace/plugins/hubspot/openapi-specs/calling.json"
+        },
+        {
+          "label": "Quotes",
+          "ref": "@spec/hubspot/quotes",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "quotes",
+          "path": "marketplace/plugins/hubspot/openapi-specs/quotes.json"
+        },
+        {
+          "label": "Deals",
+          "ref": "@spec/hubspot/deals",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "deals",
+          "path": "marketplace/plugins/hubspot/openapi-specs/deals.json"
+        },
+        {
+          "label": "Imports",
+          "ref": "@spec/hubspot/imports",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "imports",
+          "path": "marketplace/plugins/hubspot/openapi-specs/imports.json"
+        },
+        {
+          "label": "Schemas",
+          "ref": "@spec/hubspot/schemas",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "schemas",
+          "path": "marketplace/plugins/hubspot/openapi-specs/schemas.json"
+        },
+        {
+          "label": "Properties",
+          "ref": "@spec/hubspot/properties",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "properties",
+          "path": "marketplace/plugins/hubspot/openapi-specs/properties.json"
+        },
+        {
+          "label": "Associations",
+          "ref": "@spec/hubspot/associations",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "associations",
+          "path": "marketplace/plugins/hubspot/openapi-specs/associations.json"
+        },
+        {
+          "label": "Owners",
+          "ref": "@spec/hubspot/owners",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "owners",
+          "path": "marketplace/plugins/hubspot/openapi-specs/owners.json"
+        },
+        {
+          "label": "Timeline",
+          "ref": "@spec/hubspot/timeline",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "timeline",
+          "path": "marketplace/plugins/hubspot/openapi-specs/timeline.json"
+        },
+        {
+          "label": "Contacts",
+          "ref": "@spec/hubspot/contacts",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "contacts",
+          "path": "marketplace/plugins/hubspot/openapi-specs/contacts.json"
+        },
+        {
+          "label": "Feedback Submissions",
+          "ref": "@spec/hubspot/feedback-submissions",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "feedback-submissions",
+          "path": "marketplace/plugins/hubspot/openapi-specs/feedback-submissions.json"
+        },
+        {
+          "label": "Objects",
+          "ref": "@spec/hubspot/objects",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "objects",
+          "path": "marketplace/plugins/hubspot/openapi-specs/objects.json"
+        },
+        {
+          "label": "Video Conference",
+          "ref": "@spec/hubspot/video-conference",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "video-conference",
+          "path": "marketplace/plugins/hubspot/openapi-specs/video-conference.json"
+        },
+        {
+          "label": "Tickets",
+          "ref": "@spec/hubspot/tickets",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "tickets",
+          "path": "marketplace/plugins/hubspot/openapi-specs/tickets.json"
+        },
+        {
+          "label": "Line Items",
+          "ref": "@spec/hubspot/line-items",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "line-items",
+          "path": "marketplace/plugins/hubspot/openapi-specs/line-items.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -25059,7 +25515,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "intercom_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/intercom/intercom",
+          "location": "bundled",
+          "plugin": "intercom",
+          "name": "intercom",
+          "path": "marketplace/plugins/intercom/openapi-specs/intercom.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -28132,7 +28597,65 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "ms_graph_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "label": "Outlook",
+          "ref": "@spec/microsoft_graph/outlook",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "outlook",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/outlook.json"
+        },
+        {
+          "label": "Calendar",
+          "ref": "@spec/microsoft_graph/calendar",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "calendar",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/calendar.json"
+        },
+        {
+          "label": "Users",
+          "ref": "@spec/microsoft_graph/users",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "users",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/users.json"
+        },
+        {
+          "label": "Teams",
+          "ref": "@spec/microsoft_graph/teams",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "teams",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/teams.yaml"
+        },
+        {
+          "label": "OneDrive",
+          "ref": "@spec/microsoft_graph/onedrive",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "onedrive",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/onedrive.json"
+        },
+        {
+          "label": "SharePoint",
+          "ref": "@spec/microsoft_graph/sharepoint",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "sharepoint",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/sharepoint.json"
+        },
+        {
+          "label": "OneNote",
+          "ref": "@spec/microsoft_graph/onenote",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "onenote",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/onenote.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -44734,7 +45257,16 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "quickbooks_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "ref": "@spec/quickbooks/accounting",
+          "location": "bundled",
+          "plugin": "quickbooks",
+          "name": "accounting",
+          "path": "marketplace/plugins/quickbooks/openapi-specs/accounting.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -52728,6 +53260,12 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "stripe_operation",
+      "specs": [
+        {
+          "ref": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
+          "location": "remote"
+        }
+      ],
       "specUrl": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
       "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
     },
@@ -54961,7 +55499,65 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "ups_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "label": "Shipping",
+          "ref": "@spec/ups/shipping",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "shipping",
+          "path": "marketplace/plugins/ups/openapi-specs/shipping.yaml"
+        },
+        {
+          "label": "Rating",
+          "ref": "@spec/ups/rating",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "rating",
+          "path": "marketplace/plugins/ups/openapi-specs/rating.yaml"
+        },
+        {
+          "label": "Tracking",
+          "ref": "@spec/ups/tracking",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "tracking",
+          "path": "marketplace/plugins/ups/openapi-specs/tracking.yaml"
+        },
+        {
+          "label": "Address_Validation",
+          "ref": "@spec/ups/address-validation",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "address-validation",
+          "path": "marketplace/plugins/ups/openapi-specs/address-validation.yaml"
+        },
+        {
+          "label": "Time_In_Transit",
+          "ref": "@spec/ups/time-in-transit",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "time-in-transit",
+          "path": "marketplace/plugins/ups/openapi-specs/time-in-transit.yaml"
+        },
+        {
+          "label": "Pickup",
+          "ref": "@spec/ups/pickup",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "pickup",
+          "path": "marketplace/plugins/ups/openapi-specs/pickup.yaml"
+        },
+        {
+          "label": "Paperless_Invoice",
+          "ref": "@spec/ups/paperless-invoice",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "paperless-invoice",
+          "path": "marketplace/plugins/ups/openapi-specs/paperless-invoice.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
@@ -58933,7 +59529,97 @@
     "operationSelection": {
       "mode": "remote-spec",
       "field": "xero_operation",
-      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+      "specs": [
+        {
+          "label": "Accounts",
+          "ref": "@spec/xero/accounts",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "accounts",
+          "path": "marketplace/plugins/xero/openapi-specs/accounts.yaml"
+        },
+        {
+          "label": "Finance",
+          "ref": "@spec/xero/finance",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "finance",
+          "path": "marketplace/plugins/xero/openapi-specs/finance.yaml"
+        },
+        {
+          "label": "identity",
+          "ref": "@spec/xero/identity",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "identity",
+          "path": "marketplace/plugins/xero/openapi-specs/identity.yaml"
+        },
+        {
+          "label": "BankFeeds",
+          "ref": "@spec/xero/bankfeeds",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "bankfeeds",
+          "path": "marketplace/plugins/xero/openapi-specs/bankfeeds.yaml"
+        },
+        {
+          "label": "AppStore",
+          "ref": "@spec/xero/appstore",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "appstore",
+          "path": "marketplace/plugins/xero/openapi-specs/appstore.yaml"
+        },
+        {
+          "label": "Assets",
+          "ref": "@spec/xero/assets",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "assets",
+          "path": "marketplace/plugins/xero/openapi-specs/assets.yaml"
+        },
+        {
+          "label": "PayrollAu",
+          "ref": "@spec/xero/payrollau",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrollau",
+          "path": "marketplace/plugins/xero/openapi-specs/payrollau.yaml"
+        },
+        {
+          "label": "PayrollUk",
+          "ref": "@spec/xero/payrolluk",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrolluk",
+          "path": "marketplace/plugins/xero/openapi-specs/payrolluk.yaml"
+        },
+        {
+          "label": "PayrollNz",
+          "ref": "@spec/xero/payrollnz",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrollnz",
+          "path": "marketplace/plugins/xero/openapi-specs/payrollnz.yaml"
+        },
+        {
+          "label": "Projects",
+          "ref": "@spec/xero/projects",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "projects",
+          "path": "marketplace/plugins/xero/openapi-specs/projects.yaml"
+        },
+        {
+          "label": "Files",
+          "ref": "@spec/xero/files",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "files",
+          "path": "marketplace/plugins/xero/openapi-specs/files.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
     },
     "contracts": {
       "default": {
