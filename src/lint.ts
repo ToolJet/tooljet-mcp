@@ -2,6 +2,7 @@
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
 import type { AppSummary } from './tooljetClient.js';
+import { parseExpression } from '@babel/parser';
 import {
   lintHtmlContentHeight,
   BARE_QUERY_DATA_BINDING,
@@ -16,6 +17,9 @@ import {
   lintUntriggeredDataQueries,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { lintComponentStateBindings } from './componentStateBindings.js';
+import { pageIconError } from './pageIcons.js';
+import { runjsQueryReferences } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -89,6 +93,11 @@ const DEPRECATED_TABLE_COLUMN_TYPES: Record<string, string> = {
   toggle: 'select',
   multiselect: 'newMultiSelect',
 };
+
+const VALID_TABLE_COLUMN_TYPES = new Set([
+  'string', 'number', 'text', 'datepicker', 'select', 'newMultiSelect', 'tagsV2',
+  'boolean', 'image', 'link', 'json', 'markdown', 'html', 'rating', 'button',
+]);
 
 /** Form inputs that carry a label \`alignment\` style ('side' default / 'top'). A narrow one with a
  *  side label wastes most of its width on the label — warn and suggest top alignment. */
@@ -444,6 +453,29 @@ function nestedMapInValue(value: unknown): boolean {
   return false;
 }
 
+/** The projection checker only certifies arrow-object projections. Explain unsupported function
+ * callbacks directly instead of sending the model into column/autogeneration repair loops.
+ * Parse without executing; quoted examples and unrelated callbacks must not trigger this hint. */
+function functionStyleTableMap(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const binding = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!binding) return false;
+  let root: unknown;
+  try { root = parseExpression(binding[1]!); } catch { return false; }
+  const visit = (value: unknown): boolean => {
+    if (Array.isArray(value)) return value.some(visit);
+    if (!value || typeof value !== 'object') return false;
+    const node = value as Record<string, any>;
+    const callee = node.callee;
+    if (['CallExpression', 'OptionalCallExpression'].includes(node.type) &&
+        callee && ['MemberExpression', 'OptionalMemberExpression'].includes(callee.type) &&
+        (callee.computed ? callee.property?.value === 'map' : callee.property?.name === 'map') &&
+        node.arguments?.[0]?.type === 'FunctionExpression') return true;
+    return Object.values(node).some(visit);
+  };
+  return visit(root);
+}
+
 function statementBodyMapInValue(value: unknown): boolean {
   if (typeof value === 'string') {
     return value.includes('{{') && /\.map\s*\(\s*(?:async\s+)?(?:[A-Za-z_$][\w$]*|\([^)]*\))\s*=>\s*\{/.test(value);
@@ -738,15 +770,14 @@ export function lintKanbanCardChildren(components: LintComponent[]): string[] {
       errors.push(
         `Kanban "${board.name ?? board.id ?? 'Kanban'}" card child ${child.type} "${child.name ?? child.id ?? child.type}": width ${width} columns ` +
           `is about ${px}px of the ${KANBAN_CARD_WIDTH_PX}px card (card children use the card's own 43-column grid), so a name or title is cut ` +
-          'after a few characters. Use left 2, width 39 (title top 12, description top 44).'
+          'after a few characters. For long titles prefer left 2, width 39; short badges or metadata may stay compact after checking their actual text.'
       );
     }
   }
   return errors;
 }
 
-/** A row of Statistics tiles that leaves an empty slot (three tiles in a two-per-row grid) reads as a broken
- *  grid; five of five pages of one round-eight app carried it. Every figure belongs in one full row. */
+/** Spare space can be a composition defect or a deliberate neighboring region. Advisory only. */
 export function lintStatisticsRows(components: LintComponent[]): string[] {
   const errors: string[] = [];
   const tiles = components.filter((component) => component.type === 'Statistics' && !parentPlacement(component)?.parentId);
@@ -764,8 +795,8 @@ export function lintStatisticsRows(components: LintComponent[]): string[] {
     const names = row.map((tile) => `"${tile.name ?? tile.id ?? 'Statistics'}"`).join(', ');
     errors.push(
       `Statistics row at top ${rect(row[0])?.top ?? 0}px (${names}) spans ${span} of the ${CONTENT_COLUMNS} content columns and leaves an empty slot, ` +
-        'so the KPI grid reads as broken. Put every figure in one full row of three or four tiles (width 13 or 9, hideSecondary true), ' +
-        'or use the Html KPI strip from references/ui-layout.md.'
+        'which may be intentional beside another region. Check hierarchy and alignment; widen/rebalance an accidental gap, ' +
+        'but retain deliberate compact or multi-row groups when the content is readable.'
     );
   }
   return errors;
@@ -1230,23 +1261,23 @@ const CHART_HOUSE_LAYOUT_KEYS = ['font', 'family'];
 const CHART_PADDING_MAX_PX = 24;
 
 /**
- * A native Chart renders Plotly's defaults: Verdana, grey grid, unlabeled bars, the rainbow pie. Navaneeth's
- * verdict on 2026-09-12 after six rounds: "charts can be more impressive; these are basic". Every chart is
- * therefore drawn through plotFromJson with the house layout (font, margins, transparent paper) so the
- * chart sits in the theme like the rest of the page.
+ * Return render/data failures; send presentation heuristics to warnings. JSON mode gives finer theme
+ * control, but native rendering, inherited fonts and deliberate margins are valid design choices.
+ * A style warning must not short-circuit the subsequent data/label safety checks.
  */
-export function lintChartHouseStyle(spec: LintComponent): string[] {
+export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []): string[] {
   if (spec.type !== 'Chart') return [];
   const label = spec.name ?? spec.type;
   const props = spec.properties ?? {};
   const fromJson = propVal(props, 'plotFromJson');
   if (!isTrueBinding(fromJson)) {
     const kind = String(propVal(props, 'type') ?? 'bar');
-    return [
+    warnings.push(
       `Chart "${label}": native type "${kind}" renders Plotly's defaults (Verdana labels, grey grid, flat unlabeled bars, ` +
         'the rainbow pie). Set properties.plotFromJson to "{{true}}" and write properties.jsonDescription as the house ' +
-        'chart from references/ui-layout.md (accent series, value labels, theme font, transparent paper, weak-border grid).',
-    ];
+        'chart from references/ui-layout.md for finer control, or retain native rendering when its themed presentation is verified.',
+    );
+    return [];
   }
   const raw = propVal(props, 'jsonDescription');
   const description = typeof raw === 'string' ? raw : raw && typeof raw === 'object' ? JSON.stringify(raw) : '';
@@ -1259,11 +1290,11 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
   const padding = propVal(spec.styles ?? {}, 'padding');
   const paddingPx = typeof padding === 'number' ? padding : typeof padding === 'string' && /^\s*\d+\s*$/.test(padding) ? Number(padding) : undefined;
   if (paddingPx === undefined || paddingPx > CHART_PADDING_MAX_PX) {
-    return [
+    warnings.push(
       `Chart "${label}": styles.padding ${padding === undefined ? 'is unset (catalog default 50)' : `is ${JSON.stringify(padding)}`}; the wrapper uses it as the Plotly margin ` +
-        `on all four sides and ignores layout.margin, so the plot shrinks to a band in the middle of the tile. Set styles.padding to 16 (at most ${CHART_PADDING_MAX_PX}); ` +
-        'the axes add their own room for tick labels.',
-    ];
+        `on all four sides and ignores layout.margin, which can shrink the plot. Start with styles.padding 16 (usually at most ${CHART_PADDING_MAX_PX}); ` +
+        'the axes add their own room for tick labels. Keep a larger margin only when labels need it and verify the rendered plot.',
+    );
   }
   // A description that is only a binding to a query builds its layout elsewhere; the dynamic-mode warning covers it.
   if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
@@ -1286,10 +1317,10 @@ export function lintChartHouseStyle(spec: LintComponent): string[] {
   }
   const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key) => !description.includes(key));
   if (missing.length) {
-    return [
+    warnings.push(
       `Chart "${label}": jsonDescription has no layout.${missing.join(', layout.')}; without the house layout the chart ` +
-        'falls back to Plotly defaults. Add layout { font: {family, size, color} } and the axis settings from references/ui-layout.md.',
-    ];
+        'falls back to Plotly defaults. Prefer explicit theme typography; retain inherited defaults only after verifying the result.',
+    );
   }
   // A static description is parseable: every trace must carry its data. A bar with a colour and no x/y
   // drew empty axes on a round-seven build (2026-09-12).
@@ -1354,7 +1385,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintBindingSyntax(props, `Component "${label}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label}".styles`));
   errors.push(...lintRenderedText(spec));
-  errors.push(...lintChartHouseStyle(spec));
+  errors.push(...lintChartHouseStyle(spec, warnings));
 
   // A Text widget holding several lines (eyebrow <br> title, or block tags) in a box sized for one line
   // clips its last line: MedCard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.
@@ -1398,6 +1429,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   for (const key of ['disabledState', 'loadingState', 'visibility', 'collapseWhenHidden']) {
     const path = `Component "${label}".properties.${key}`;
     for (const error of lintBindingSyntax(props[key], path, true)) {
+      if (!errors.includes(error)) errors.push(error);
+    }
+  }
+  // Dropdown schemas are arrays, not interpolated prose. In particular, do not skip malformed
+  // nested {{ }} expressions as the generic mixed-text binding check deliberately does.
+  if (['DropdownV2', 'MultiselectV2'].includes(spec.type ?? '') && isTruthyBinding(propVal(props, 'advanced'))) {
+    for (const error of lintBindingSyntax(props.schema, `Component "${label}".properties.schema`, true)) {
       if (!errors.includes(error)) errors.push(error);
     }
   }
@@ -1515,8 +1553,9 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         );
       } else if (isDynamicBinding(jsonDescription)) {
         warnings.push(
-          `Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. Prefer simple type + data mode ` +
-            'unless advanced Plotly configuration is required, and browser-verify that the evaluated chart has at least one trace.'
+          `Chart "${label}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. This is a verification gap, ` +
+            'not evidence of a broken chart. Preserve the authored chart configuration; browser-verify that the evaluated chart ' +
+            'has at least one trace. Without runtime evidence, report the gap rather than switching chart modes just to clear this warning.'
         );
       } else {
         let parsed: unknown = jsonDescription;
@@ -1682,6 +1721,31 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 
   if (spec.type === 'DatePickerV2') {
     const defaultValue = propVal(props, 'defaultValue');
+    const dateFormat = catalogValue('DatePickerV2', props, 'dateFormat');
+    const literal = typeof defaultValue === 'string'
+      ? defaultValue.trim().replace(/^\{\{\s*(['"])([^'"]+)\1\s*\}\}$/, '$2')
+      : undefined;
+    // Reject the observed year-last misparse, not every spelling that differs from ISO.
+    // Moment also accepts numeric year-first formats such as YYYY-M-D and YYYY/MM/DD.
+    const yearLastFormat = typeof dateFormat === 'string' &&
+      /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(dateFormat);
+    if (literal && /^\d{4}-\d{2}-\d{2}$/.test(literal) && yearLastFormat) {
+      errors.push(
+        `DatePickerV2 "${label}": ISO defaultValue "${literal}" does not match dateFormat "${dateFormat}". ` +
+        'ToolJet parses the default with dateFormat, not as ISO automatically. Use dateFormat:"YYYY-MM-DD" ' +
+        'or format the default into the selected display format; otherwise the initial day can silently change.'
+      );
+    }
+    if (typeof defaultValue === 'string' && defaultValue.includes('{{') &&
+        typeof dateFormat === 'string' && !dateFormat.includes('{{')) {
+      const formats = [...defaultValue.matchAll(/\.format\(\s*(['"])([^'"]+)\1\s*\)/g)].map((m) => m[2]);
+      if (formats.length === 1 && formats[0] !== dateFormat) {
+        warnings.push(
+          `DatePickerV2 "${label}": defaultValue formats as "${formats[0]}" but dateFormat is "${dateFormat}". ` +
+          'Check the evaluated default: the parser and display share dateFormat. Match them before authoring dependent queries.'
+        );
+      }
+    }
     const demoDefault = getComponentSchema('DatePickerV2')?.properties.find(
       (property) => property.key === 'defaultValue'
     )?.default;
@@ -1799,7 +1863,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         ? catalogValue('Table', props, 'serverSideRowsPerPage')
         : catalogValue('Table', props, 'rowsPerPage')
     );
-    if (statementBodyMapInValue(data)) {
+    if (functionStyleTableMap(data)) {
+      errors.push(
+        `Table "${label}": the projection checker cannot certify a function-style .map() callback. ` +
+          'Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. ' +
+          'Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.'
+      );
+    } else if (statementBodyMapInValue(data)) {
       errors.push(
         `Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ` +
           'ToolJet can silently evaluate this binding as no data. Use an expression body such as ' +
@@ -1995,6 +2065,14 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         const deprecatedReplacement =
           typeof c?.columnType === 'string' ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : undefined;
+        if (c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}' &&
+            typeof c.header === 'string' && c.header.trim() && !c.header.includes('{{') &&
+            c.header !== c.name) {
+          errors.push(
+            `Table "${label}" column[${i}] "${String(c.key ?? c.name ?? '')}": header is ignored by ToolJet. ` +
+            'Put the intended display label in name, keep the source field in key, and remove header.'
+          );
+        }
         // columnSize is a pixel width, not a flex weight or canvas grid span. Tiny positive
         // values collapse ordinary text/date columns to the renderer's minimum width.
         // Ignore hidden columns and non-literal values rather than guessing their runtime intent.
@@ -2027,6 +2105,15 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
             `Table "${label}" column[${i}] "${String(c?.key ?? c?.name ?? '')}" uses deprecated ` +
               `columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some ` +
               `deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`
+          );
+        }
+        if (typeof c?.columnType === 'string' && !c.columnType.startsWith('{{') &&
+            !deprecatedReplacement && !VALID_TABLE_COLUMN_TYPES.has(c.columnType)) {
+          errors.push(
+            `Table "${label}" column[${i}] "${String(c.key ?? c.name)}" has unsupported columnType:"${c.columnType}". ` +
+            (c.columnType === 'date' || c.columnType === 'datetime'
+              ? 'Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source; unknown types fall back to raw text.'
+              : `Use a supported type: ${[...VALID_TABLE_COLUMN_TYPES].join(', ')}.`)
           );
         }
         if (c && c.headerCasing !== undefined && !VALID_HEADER_CASING.has(c.headerCasing as string)) {
@@ -2463,8 +2550,8 @@ export function lintComponents(components: LintComponent[]): LintResult {
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
-  errors.push(...lintKanbanCardChildren(components));
-  errors.push(...lintStatisticsRows(components));
+  warnings.push(...lintKanbanCardChildren(components));
+  warnings.push(...lintStatisticsRows(components));
   errors.push(...lintEmptyTabs(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
@@ -2535,8 +2622,8 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
         .map((page) => `${page}: ${distinct(tiles.filter((t) => t.page === page).map((t) => t.height)).join('/')}`)
         .join('; ');
       warnings.push(
-        `Statistics tiles differ in height across pages (${perPage}). Pick one tile height for the app and ` +
-          'reuse it on every page — a stat row that changes height from page to page reads as an unfinished app.'
+        `Statistics tiles differ in height across pages (${perPage}). Compare equivalent visual roles for ` +
+          'accidental drift; overview and detail metrics may intentionally differ. Do not normalize all pages automatically.'
       );
     }
     const typeScales = distinct(tiles.map((t) => `${t.valueSize ?? '?'}/${t.labelSize ?? '?'}`));
@@ -2551,7 +2638,7 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
         .join('; ');
       warnings.push(
         `Statistics tiles use different value/label font sizes across pages (${perPage}, as primaryValueSize/` +
-          'primaryLabelSize). Set one pair once and reuse it on every page so labels and figures match.'
+          'primaryLabelSize). Check equivalent roles for consistency; intentional emphasis and compact detail metrics may use different scales.'
       );
     }
   }
@@ -2561,8 +2648,8 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
     if (stripHeights.length > 1) {
       const perPage = [...stripPages].map(([page, hs]) => `${page}: ${distinct(hs).join('/')}`).join('; ');
       warnings.push(
-        `Html KPI strips differ in height across pages (${perPage}). Use one strip height and one inline type ` +
-          'scale (same label font-size, same value font-size) on every page.'
+        `Html KPI strips differ in height across pages (${perPage}). Check whether their roles and content differ ` +
+          'before changing them; different page jobs do not require equal heights or type scales.'
       );
     }
   }
@@ -2571,8 +2658,8 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
   if (mechanismPages.length > 1 && tilePages.length > 0 && stripPages.size > 0) {
     warnings.push(
       `Stat rows are built two different ways in one app (Statistics on ${tilePages.join(', ')}; Html KPI strip on ` +
-        `${[...stripPages.keys()].join(', ')}), so heights and label sizes cannot line up. Use the Html strip ` +
-        'everywhere, and Statistics only where a tile must expose its value to other components.'
+        `${[...stripPages.keys()].join(', ')}). Both mechanisms are valid; compare equivalent roles for ` +
+        'visual consistency without replacing components or adding metrics merely to make pages identical.'
     );
   }
 
@@ -2597,12 +2684,18 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   for (const p of summary.pages) {
     // ToolJet renders IconHome2 for the native Home page even when its stored icon is empty. API
     // summaries are not guaranteed to return pages in creation order, so identify Home by its
-    // stable handle/name rather than array position. Every other icon-less page falls back to
-    // IconFile, which makes multi-page sidebar navigation look unfinished.
+    // stable handle/name rather than array position. Other icon-less pages also receive a
+    // generic fallback, which makes multi-page sidebar navigation look unfinished.
     const isNativeHome = p.handle === 'home' || p.name === 'Home';
+    // Saved legacy mistakes are visible but do not block unrelated functional repairs.
+    // New/planned icons and icon writes are rejected before persistence.
+    if (p.icon) {
+      const iconError = pageIconError(p.icon);
+      if (iconError) warnings.push(`Page "${p.name ?? p.id}": ${iconError}`);
+    }
     if (!isNativeHome && !p.icon) {
       warnings.push(
-        `Page "${p.name ?? p.id}" has no icon — set a relevant Tabler icon so the left sidebar does not use generic IconFile.`
+        `Page "${p.name ?? p.id}" has no icon — set a relevant Tabler export so the left sidebar does not use a generic fallback icon.`
       );
     }
     const counts = new Map<string, number>();
@@ -2664,8 +2757,16 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   for (const query of summary.queries.filter((candidate) => candidate.kind === 'runjs')) {
     const options = recordValue(query.options);
     const code = options?.code;
-    if (typeof code !== 'string' || !isTruthyBinding(propVal(options, 'runOnDependencyChange'))) continue;
-    const referencedNames = [...new Set([...code.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]!))];
+    if (typeof code !== 'string') continue;
+    const referencedNames = runjsQueryReferences(code);
+    for (const name of referencedNames) {
+      if (!queryNames.has(name)) errors.push(
+        `RunJS query "${query.name ?? query.id}" references queries[${JSON.stringify(name)}], but no query is named ` +
+          `${JSON.stringify(name)}. Names are case-sensitive; use the persisted query name exactly (bracket notation for spaces). ` +
+          'An empty-array fallback can hide this mistake and make a populated dashboard show zero records.'
+      );
+    }
+    if (!isTruthyBinding(propVal(options, 'runOnDependencyChange'))) continue;
     if (!referencedNames.length) continue;
     const explicitlyChained = new Set(
       summary.events.flatMap((event) => {
@@ -2867,6 +2968,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event })),
   ];
   for (const source of bindingSources) {
+    errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;

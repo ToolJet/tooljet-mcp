@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
 import { lintPlannedApp } from '../src/appSpecLint.js';
-import { clearAppPlansForTests } from '../src/appPlanStore.js';
+import { clearAppPlansForTests, consumeAppPlan } from '../src/appPlanStore.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
   return JSON.parse(result.content[0]!.text);
@@ -10,6 +10,58 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 
 describe('lint_app_spec', () => {
   beforeEach(() => clearAppPlansForTests());
+
+  it('resolves an exact unique datasource name within the version and pins the ID in the plan', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]),
+    } as unknown as ToolJetClient;
+    const query = { datasource_name: 'runjsdefault', name: 'transform', options: { code: 'return 1;' } };
+    const body = textOf(await lintAppSpecTool(client).handler({ version_id: 'v1', queries: [query] }));
+    expect(body.ok).toBe(true);
+    expect(client.listDatasources).toHaveBeenCalledExactlyOnceWith('v1');
+    expect(consumeAppPlan(body.plan_token).spec.queries).toEqual([
+      { datasource_id: 'js-source', name: 'transform', options: { code: 'return 1;' } },
+    ]);
+    expect(query).toHaveProperty('datasource_name', 'runjsdefault');
+    expect(query).not.toHaveProperty('datasource_id');
+  });
+
+  it.each([
+    ['missing selector', {}, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]],
+    ['two selectors', { datasource_id: 'js-source', datasource_name: 'runjsdefault' }, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]],
+    ['unknown name', { datasource_name: 'other' }, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]],
+    ['case mismatch', { datasource_name: 'RunJsDefault' }, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]],
+    ['empty name', { datasource_name: '' }, [{ id: 'js-source', name: '', kind: 'runjs' }]],
+    ['ambiguous name', { datasource_name: 'runjsdefault' }, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }, { id: 'other', name: 'runjsdefault', kind: 'runjs' }]],
+    ['spliced ID is not repaired', { datasource_id: 'js-spliced' }, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]],
+    ['kind mismatch', { datasource_name: 'runjsdefault', kind: 'tooljetdb' }, [{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]],
+  ])('refuses %s without issuing a plan token', async (_label, selector, sources) => {
+    const client = { listDatasources: vi.fn().mockResolvedValue(sources) } as unknown as ToolJetClient;
+    const body = textOf(await lintAppSpecTool(client).handler({
+      version_id: 'v1', queries: [{ ...selector, name: 'transform', options: { code: 'return 1;' } }],
+    }));
+    expect(body.ok).toBe(false);
+    expect(body.plan_token).toBeUndefined();
+  });
+
+  it('resolves a planned table by table_name, never a table alias', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'tjdb', name: 'tooljetdbdefault', kind: 'tooljetdb' }]),
+      listTables: vi.fn().mockResolvedValue([]),
+    } as unknown as ToolJetClient;
+    const args = {
+      version_id: 'v1', tables: [{ table_name: 'actual_jobs', columns: [{ name: 'job', type: 'varchar' }] }],
+      queries: [{ datasource_name: 'tooljetdbdefault', name: 'listJobs', table_ref: 'jobs_alias',
+        options: { operation: 'list_rows', list_rows: { limit: 20 } } }],
+    };
+    const bad = textOf(await lintAppSpecTool(client).handler(args));
+    expect(bad.ok).toBe(false);
+    expect(bad.errors.join(' ')).toContain('actual table_name');
+    args.queries[0]!.table_ref = 'actual_jobs';
+    const good = textOf(await lintAppSpecTool(client).handler(args));
+    expect(good.ok).toBe(true);
+    expect(consumeAppPlan(good.plan_token).spec.queries?.[0]?.datasource_id).toBe('tjdb');
+  });
 
   it('checks planned custom-key updates, includes implicit id, and leaves all predicates untouched', async () => {
     const client = {

@@ -56,21 +56,25 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     expect(fits.errors.some((e) => e.includes('cut off at the right edge'))).toBe(false);
   });
 
-  it('rejects narrow Kanban card children', () => {
+  it('warns about narrow Kanban titles without blocking compact card content', () => {
     const board = { id: 'k1', type: 'Kanban', name: 'pipelineBoard', properties: {}, layouts: { desktop: { top: 172, left: 2, width: 39, height: 540 } } };
     const title = { id: 't1', type: 'Text', name: 'pipelineBoardCardTitle', parent: 'k1', properties: { text: { value: '{{cardData.title}}' } }, layouts: { desktop: { top: 20, left: 0, width: 13.95, height: 30 } } };
     const r = lintComponents([board, title] as any);
-    expect(r.errors.some((e) => e.includes('card child Text "pipelineBoardCardTitle"') && e.includes('97px'))).toBe(true);
+    expect(r.warnings.some((e) => e.includes('card child Text "pipelineBoardCardTitle"') && e.includes('97px'))).toBe(true);
     const wide = lintComponents([board, { ...title, layouts: { desktop: { top: 12, left: 2, width: 39, height: 30 } } }] as any);
-    expect(wide.errors.some((e) => e.includes('card child'))).toBe(false);
+    expect(wide.warnings.some((e) => e.includes('card child'))).toBe(false);
+    expect(r.errors.some((e) => e.includes('card child'))).toBe(false);
+    const badge = lintComponents([board, { ...title, name: 'priorityBadge', properties: { text: { value: 'P1' } }, layouts: { desktop: { top: 12, left: 2, width: 8, height: 30 } } }] as any);
+    expect(badge.errors.some((e) => e.includes('card child'))).toBe(false);
   });
 
-  it('rejects a Statistics row that leaves an empty slot', () => {
+  it('warns about sparse Statistics rows without forcing full-width KPI strips', () => {
     const tile = (name: string, top: number, left: number, width = 18) => ({ type: 'Statistics', name, properties: { primaryValueLabel: { value: name } }, layouts: { desktop: { top, left, width, height: 120 } } });
     const r = lintComponents([tile('users', 130, 2), tile('endpoints', 130, 22), tile('services', 270, 2)] as any);
-    expect(r.errors.some((e) => e.includes('"services"') && e.includes('empty slot'))).toBe(true);
+    expect(r.warnings.some((e) => e.includes('"services"') && e.includes('empty slot'))).toBe(true);
     const full = lintComponents([tile('a', 130, 2, 13), tile('b', 130, 15, 13), tile('c', 130, 28, 13)] as any);
-    expect(full.errors.some((e) => e.includes('empty slot'))).toBe(false);
+    expect(full.warnings.some((e) => e.includes('empty slot'))).toBe(false);
+    expect(r.errors.some((e) => e.includes('empty slot'))).toBe(false);
   });
 
   it('rejects a button narrower than its label', () => {

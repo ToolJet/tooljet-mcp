@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
@@ -296,7 +297,7 @@ export interface CreatePageParams {
   appId: string;
   versionId: string;
   name: string;
-  /** Tabler icon name, e.g. "IconLayoutDashboard". Defaults to ToolJet's "IconFile" if omitted. */
+  /** Exact Tabler export, e.g. "IconLayoutDashboard". ToolJet renders a generic fallback if omitted. */
   icon?: string;
   /** Hide the page from the auto-generated sidebar nav (still reachable via switch-page). For detail/sub-pages. */
   hidden?: boolean;
@@ -1123,6 +1124,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createPages(params: CreatePagesParams): Promise<CreatePageResult[]> {
+    // Validate every supplied icon before reads/writes: direct/hybrid callers can bypass Zod.
+    for (const page of params.pages) {
+      if (page.icon !== undefined) assertPageIcon(page.icon, `Page "${page.name}"`);
+    }
     // Page order = append after existing pages. Precompute ids/indexes and create the batch concurrently.
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
@@ -1247,6 +1252,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   async function updatePages(params: UpdatePagesParams): Promise<UpdatePagesResult> {
     const updates = params.updates ?? [];
+    for (const update of updates) {
+      if (update.icon !== undefined) assertPageIcon(update.icon, `Page "${update.pageId}"`);
+    }
     const order = params.order;
     if (!updates.length && !order) {
       throw new Error('ToolJet updatePages failed: provide at least one page update or a complete page order.');

@@ -4,6 +4,28 @@ import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
+  it('rejects an ignored Table header label without rewriting the field mapping', () => {
+    const spec = { type: 'Table', name: 'jobs', properties: { columns: { value: [
+      { name: 'total', key: 'total', header: 'Jobs in period', columnType: 'number' },
+    ] } } };
+    const before = JSON.stringify(spec);
+    expect(lintComponentSpec(spec).errors.join(' ')).toContain('header is ignored by ToolJet');
+    expect(JSON.stringify(spec)).toBe(before);
+  });
+
+  it('preserves legitimate Table labels, redundant metadata and hidden or dynamic header metadata', () => {
+    for (const column of [
+      { name: 'Jobs in period', key: 'total' },
+      { name: 'Jobs in period', key: 'total', header: 'Jobs in period' },
+      { name: 'id', key: 'id', header: 'Internal id', columnVisibility: false },
+      { name: 'total', key: 'total', header: '{{variables.label}}' },
+      { name: 'total', key: 'total', header: '' },
+    ]) {
+      expect(lintComponentSpec({ type: 'Table', properties: { columns: { value: [column] } } })
+        .errors.join(' ')).not.toContain('header is ignored');
+    }
+  });
+
   it('warns when outline buttons inherit surface-colored text on a transparent background', () => {
     for (const textColor of [undefined, {value: 'var(--cc-surface1-surface)'}]) {
       const result = lintComponentSpec({name: 'reject', type: 'Button', styles: {
@@ -144,7 +166,7 @@ describe('lintComponentSpec', () => {
     expect(lintComponentSpec({ name: 'c', type: 'Chart', properties: { title: { value: 'Sales' } } }).warnings.join(' '))
       .toMatch(/can clip at dashboard sizes/);
     expect(lintComponentSpec({ name: 'c', type: 'Chart', properties: { title: { value: '' } } }).warnings)
-      .toEqual([]);
+      .not.toEqual(expect.arrayContaining([expect.stringMatching(/can clip at dashboard sizes/)]));
   });
 
   it('validates static Plotly JSON and flags dynamic advanced mode for browser verification', () => {
@@ -183,7 +205,9 @@ describe('lintComponentSpec', () => {
       styles: { padding: { value: 16 } },
     });
     expect(dynamic.errors).toEqual([]);
-    expect(dynamic.warnings.join(' ')).toMatch(/cannot be evaluated statically.*simple type \+ data.*browser-verify/is);
+    expect(dynamic.warnings.join(' ')).toMatch(/cannot be evaluated statically.*verification gap.*browser-verify/is);
+    expect(dynamic.warnings.join(' ')).toContain('Preserve the authored chart configuration');
+    expect(dynamic.warnings.join(' ')).not.toContain('Prefer simple type + data');
 
     const valid = lintComponentSpec({
       name: 'validChart',
@@ -211,7 +235,7 @@ describe('lintComponentSpec', () => {
       name: 'groupedChart',
       type: 'Chart',
       properties: { title: { value: '' }, data: { value: nested } },
-    }).warnings).toEqual([]);
+    }).warnings.join(' ')).not.toMatch(/map\(\) inside another/);
 
     const tableLookupJoin = '{{queries.orders.data.map(order => ({...order, owner:(queries.users.data || []).filter(user => user.id === order.owner_id)[0]}))}}';
     expect(lintComponentSpec({
@@ -514,6 +538,26 @@ describe('lintComponentSpec', () => {
     expect(r.errors.join(' ')).not.toMatch(/deprecated columnType/);
   });
 
+  it.each(['date', 'datetime', 'currency', 'typo'])('rejects unsupported Table column type %s', (columnType) => {
+    const result = lintComponentSpec({
+      name: 'bookings', type: 'Table',
+      properties: { columns: { value: [{name: 'Arrival', key: 'arrival', columnType}] } },
+    });
+    expect(result.errors.join(' ')).toContain(`unsupported columnType:"${columnType}"`);
+    if (columnType === 'date' || columnType === 'datetime') {
+      expect(result.errors.join(' ')).toContain('columnType:"datepicker"');
+    }
+  });
+
+  it('accepts supported datepicker and intentionally dynamic column types', () => {
+    for (const columnType of ['datepicker', '{{variables.columnType}}']) {
+      const result = lintComponentSpec({name: 'bookings', type: 'Table', properties: {
+        columns: {value: [{name: 'Arrival', key: 'arrival', columnType, dateFormat: 'DD MMM YYYY'}]},
+      }});
+      expect(result.errors.join(' ')).not.toContain('unsupported columnType');
+    }
+  });
+
   it('errors when Table column keys are duplicated because ToolJet keeps only the last one', () => {
     const result = lintComponentSpec({
       name: 'tickets',
@@ -602,6 +646,30 @@ describe('lintComponentSpec', () => {
       },
     });
     expect(supported.errors).toEqual([]);
+  });
+
+  it('gives an actionable repair for function-style Table projections without weakening key checks', () => {
+    const check = (data: string) => lintComponentSpec({
+      name: 'probeTable', type: 'Table',
+      properties: {
+        data: { value: data }, dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        columns: { value: [{ name: 'Claim', key: 'claim_ref', columnType: 'string', columnSize: 180, autogenerated: false }] },
+      },
+    }).errors;
+    for (const callback of [
+      'function(r){return {claim_ref:r.claim_ref};}',
+      'function project(r){return {claim_ref:r.claim_ref};}',
+    ]) {
+      const errors = check('{{(queries.probeQuery.data || []).map(' + callback + ')}}');
+      expect(errors[0]).toMatch(/cannot certify a function-style.*Rewrite map\(function/);
+    }
+    expect(check('{{(queries.probeQuery.data || []).map(r => ({claim_ref:r.claim_ref}))}}')).toEqual([]);
+    // Guidance-looking strings are data, not executable callbacks.
+    expect(check('{{queries.probeQuery.data.map(r => ({claim_ref:".map(function(r){return r;})"}))}}')
+      .join(' ')).not.toContain('function-style');
+    expect(check('{{queries.probeQuery.data.map(r => ({...r}))}}').join(' ')).toMatch(/object spreads/);
+    // The adjacent projected-key test separately checks that undeclared-key warnings remain intact.
   });
 
   it('warns when projected Table keys can still leak through autogeneration', () => {
@@ -1799,7 +1867,7 @@ describe('validateAppStructure', () => {
       ],
     };
     const warnings = validateAppStructure(app).warnings.join(' ');
-    expect(warnings).toMatch(/Page "Customers" has no icon.*left sidebar.*IconFile/);
+    expect(warnings).toMatch(/Page "Customers" has no icon.*left sidebar.*generic fallback icon/);
     expect(warnings).not.toMatch(/Page "Home" has no icon/);
     expect(warnings).not.toMatch(/Page "Reports" has no icon/);
   });

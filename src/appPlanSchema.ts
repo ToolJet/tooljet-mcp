@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { componentInputSchema } from './componentBatch.js';
+import { pageIconSchema } from './pageIcons.js';
 
 const foreignKeyAction = z.enum(['RESTRICT', 'NO ACTION', 'CASCADE', 'SET NULL', 'SET DEFAULT']);
 const foreignKeySchema = z.object({
@@ -29,17 +30,18 @@ export const plannedSeedSchema = z.object({
 });
 export const plannedQuerySchema = z.object({
   client_ref: z.string().optional(),
-  datasource_id: z.string(),
+  datasource_id: z.string().optional().describe('Exact id returned by list_datasources(version_id). Provide this OR datasource_name, not both.'),
+  datasource_name: z.string().optional().describe('Exact, case-sensitive unique name returned by list_datasources(version_id). Alternative to datasource_id; resolved and pinned to that id at lint time.'),
   name: z.string(),
   kind: z.string().optional(),
   /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
-  table_ref: z.string().optional(),
+  table_ref: z.string().optional().describe('Actual table_name of a planned or existing ToolJet DB table, not a client_ref, alias, or UUID.'),
   options: z.record(z.string(), z.any()),
 });
 export const plannedPageSchema = z.object({
   client_ref: z.string().optional(),
   name: z.string(),
-  icon: z.string().min(1),
+  icon: pageIconSchema,
   hidden: z.boolean().optional(),
   components: z.array(componentInputSchema).optional(),
 });

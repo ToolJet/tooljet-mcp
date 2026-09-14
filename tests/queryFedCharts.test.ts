@@ -21,4 +21,9 @@ describe('query-fed charts', () => {
   it('ignores charts bound to queries outside the plan', () => {
     expect(lintQueryFedCharts([chart('c', 'existing')], [])).toEqual([]);
   });
+  it('accepts structurally valid charts with inherited typography', () => {
+    expect(lintQueryFedCharts([chart('Comparison', 'q_chart')], [
+      { name: 'q_chart', kind: 'runjs', options: { code: "return {data:[{type:'bar',x:['Actual','Target'],y:[95,100]}],layout:{showlegend:false}};" } },
+    ])).toEqual([]);
+  });
 });

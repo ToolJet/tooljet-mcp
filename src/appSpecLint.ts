@@ -8,6 +8,7 @@ import { encodeComponentParent } from './componentParent.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import { containsNamedBinding } from './referenceSafety.js';
+import { pageIconError } from './pageIcons.js';
 import type {
   AppSummary,
   ComponentSpec,
@@ -82,7 +83,7 @@ export function lintQueryFedCharts(components: LintComponent[], queries: Planned
           'tallest bar\'s value label is cut in half by the plot area. Add cliponaxis:false to the trace.'
       );
     }
-    const missing = ['data', 'layout', 'font'].filter((key) => !code.includes(key));
+    const missing = ['data', 'layout'].filter((key) => !code.includes(key));
     if (missing.length) {
       errors.push(
         `Chart "${label}" is bound to query "${query.name}", whose code never mentions ${missing.join(', ')}: a query feeding a chart ` +
@@ -392,7 +393,8 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     );
     const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
-    if (!plannedPage.icon.trim()) errors.push(`Page "${plannedPage.name}" needs a sidebar icon.`);
+    const iconError = pageIconError(plannedPage.icon);
+    if (iconError) errors.push(`Page "${plannedPage.name}": ${iconError}`);
 
     const normalized = (plannedPage.components ?? []).map((component) => {
       const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });

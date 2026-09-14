@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
-import { createAppTool } from '../src/tools/createApp.js';
+import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
+import { z } from 'zod';
 import { listDatasourcesTool } from '../src/tools/listDatasources.js';
 import { getComponentCatalogTool } from '../src/tools/getComponentCatalog.js';
 import { getAppTool } from '../src/tools/getApp.js';
@@ -137,7 +138,7 @@ describe('create_app tool', () => {
     client.listAppThemes.mockResolvedValue([{ id: 'theme-std', name: 'ToolJet Modern', definition: {} }]);
     client.createAppTheme.mockResolvedValue({ id: 'theme-pizza', name: 'Bernal Fire Pizza theme', definition: {} });
     client.updateAppSettings.mockResolvedValue(undefined);
-    const definition = { brand: { colors: { primary: { light: '#B91C1C', dark: '#F87171' } } } };
+    const definition = { ...loadStandardTheme().definition, brand: { colors: { primary: { light: '#B91C1C', dark: '#F87171' } } } };
 
     const result = await createAppTool(client as unknown as ToolJetClient).handler({
       name: 'Pizza Ops',
@@ -177,6 +178,26 @@ describe('create_app tool', () => {
     expect(body.theme.warning).toContain('licence required');
   });
 
+  it('rejects font-only and incomplete derived palettes before creating any resources', async () => {
+    for (const definition of [{ text: { font: 'Inter' } }, { brand: { colors: { primary: { light: '#AA7788' } } } }]) {
+      const client = makeClient();
+      const tool = createAppTool(client as unknown as ToolJetClient);
+      const args = { name: 'Appointments', theme: { name: 'Warm Ivory Rose', definition } };
+      expect(z.object(tool.inputSchema).safeParse(args).success).toBe(false);
+      expect((await tool.handler(args)).isError).toBe(true);
+      expect(client.createApp).not.toHaveBeenCalled();
+      expect(client.createAppTheme).not.toHaveBeenCalled();
+    }
+  });
+
+  it('accepts a complete derived theme and existing-theme choices through the MCP schema', () => {
+    const tool = createAppTool(makeClient() as unknown as ToolJetClient);
+    const { name, definition } = loadStandardTheme();
+    for (const theme of ['workspace_default', 'Customer palette', { name, definition }]) {
+      expect(z.object(tool.inputSchema).safeParse({ name: 'Appointments', theme }).success).toBe(true);
+    }
+  });
+
   it('returns isError with an Error: message when the client throws', async () => {
     const client = makeClient();
     client.createApp.mockRejectedValue(new Error('boom'));
@@ -191,6 +212,16 @@ describe('create_app tool', () => {
 });
 
 describe('list_datasources tool', () => {
+  it.each(['', '   ', '\t\n'])('rejects an empty version without a deployment request: %j', async (version_id) => {
+    const client = makeClient();
+    const tool = listDatasourcesTool(client as unknown as ToolJetClient);
+    expect(tool.inputSchema.version_id.safeParse(version_id).success).toBe(false);
+    const result = await tool.handler({ version_id });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('create_app first');
+    expect(client.listDatasources).not.toHaveBeenCalled();
+  });
+
   it('calls client.listDatasources with version_id and returns the result', async () => {
     const client = makeClient();
     const datasources = [{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }];
