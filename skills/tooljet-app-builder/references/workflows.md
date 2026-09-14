@@ -164,6 +164,22 @@ The gotchas that most often break a build, inlined so you don't miss them:
 
 ToolJet plugins are wrappers, so upstream API knowledge can be actively misleading (for example, a plugin may accept `prompt` even when the vendor API accepts `messages`). Fetch the exact operation contract by datasource id; heed MCP's missing/unknown/misplaced-key warnings; and treat only a successful result as runtime confirmation. A vendor 4xx/429 proves the request reached an upstream layer, **not** that every option was accepted. If a generated contract is genuinely incomplete, inspect its `raw` section and make at most one minimal, user-approved safe probe—never a billable or mutating probe. Report the gap instead of cycling through guesses.
 
+## One call, not five
+
+Every tool call costs far more than the work it does. Measured 2026-09-13: `list_datasources` executes in 4 ms and `get_component_catalog` in 5 ms, while the round trip carrying the answer back to you runs 2.4–3.8 s. The heaviest read, `get_app_summary`, is 163 ms of work inside that same envelope. A build's cost tracks **how many times you ask**, not how much you ask for.
+
+Ask for everything the phase needs, in one call:
+
+- **Catalogs and schemas take lists.** `get_component_catalog` accepts `types` and `requests`; `get_datasource_query_schema` accepts `requests`. Name every component and query shape the phase needs in ONE call instead of fetching one, reading it, then fetching the next.
+- **Writes take collections.** `add_components`, `add_pages`, `add_queries`, `add_events`, `add_query_lifecycles`, `create_tables`, `insert_rows_batch` and `update_components` each take an array; `add_component_batches` takes whole pages at once.
+- **Many queries at once.** `run_queries` takes `query_ids` — prefer it over repeating `run_query`.
+
+Two limits. Never batch across a barrier: `lint_app_spec` must complete before the write it authorises, and its `plan_token` is single use. And never fetch speculatively to save a later call — a large result you do not read costs context on every turn that follows, which is the more expensive mistake.
+
+Plan the phase, work out what it needs, ask once, write once.
+
+**One exception, and it is the write that actually fails.** Seeding data and creating queries is the stage `apply_app_phase` fails at in practice — five of five observed partial failures landed there, across two models. A partial apply consumes its one-time plan token and leaves whatever had already persisted, so the bigger the batch, the more work a failure at that stage costs. Keep seed rows and query creation in their own phase rather than folding them into the same apply as pages and components: batching saves seconds, and losing a large apply there costs minutes. When one does fail, read the reported completed resources and repair in place — never replay the batch.
+
 ## Build guidance
 
 - Always `create_app` first; thread `app_id` / `version_id` / `home_page_id` into later calls.
