@@ -40,9 +40,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/content-type/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/content-type/index.js
 var require_content_type = __commonJS({
-  "node_modules/content-type/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/content-type/index.js"(exports) {
     "use strict";
     var PARAM_REGEXP = /; *([!#$%&'*+.^_`|~0-9A-Za-z-]+) *= *("(?:[\u000b\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\u000b\u0020-\u00ff])*"|[!#$%&'*+.^_`|~0-9A-Za-z-]+) */g;
     var TEXT_REGEXP = /^[\u000b\u0020-\u007e\u0080-\u00ff]+$/;
@@ -144,9 +144,9 @@ var require_content_type = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/code.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/codegen/code.js
 var require_code = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/code.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/codegen/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.regexpCode = exports.getEsmExportName = exports.getProperty = exports.safeStringify = exports.stringify = exports.strConcat = exports.addCodeArg = exports.str = exports._ = exports.nil = exports._Code = exports.Name = exports.IDENTIFIER = exports._CodeOrName = void 0;
@@ -298,9 +298,9 @@ var require_code = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/scope.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/codegen/scope.js
 var require_scope = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
@@ -443,9 +443,9 @@ var require_scope = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/codegen/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/codegen/index.js
 var require_codegen = __commonJS({
-  "node_modules/ajv/dist/compile/codegen/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/codegen/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.or = exports.and = exports.not = exports.CodeGen = exports.operators = exports.varKinds = exports.ValueScopeName = exports.ValueScope = exports.Scope = exports.Name = exports.regexpCode = exports.stringify = exports.getProperty = exports.nil = exports.strConcat = exports.str = exports._ = void 0;
@@ -1163,9 +1163,9 @@ var require_codegen = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/util.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/util.js
 var require_util = __commonJS({
-  "node_modules/ajv/dist/compile/util.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/util.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.checkStrictMode = exports.getErrorPath = exports.Type = exports.useFunc = exports.setEvaluated = exports.evaluatedPropsToName = exports.mergeEvaluated = exports.eachItem = exports.unescapeJsonPointer = exports.escapeJsonPointer = exports.escapeFragment = exports.unescapeFragment = exports.schemaRefOrVal = exports.schemaHasRulesButRef = exports.schemaHasRules = exports.checkUnknownRules = exports.alwaysValidSchema = exports.toHash = void 0;
@@ -1330,9 +1330,9 @@ var require_util = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/names.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/names.js
 var require_names = __commonJS({
-  "node_modules/ajv/dist/compile/names.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/names.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -1369,9 +1369,9 @@ var require_names = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/errors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/errors.js
 var require_errors = __commonJS({
-  "node_modules/ajv/dist/compile/errors.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/errors.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendErrors = exports.resetErrorsCount = exports.reportExtraError = exports.reportError = exports.keyword$DataError = exports.keywordError = void 0;
@@ -1491,9 +1491,9 @@ var require_errors = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/boolSchema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/boolSchema.js
 var require_boolSchema = __commonJS({
-  "node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.boolOrEmptySchema = exports.topBoolOrEmptySchema = void 0;
@@ -1542,9 +1542,9 @@ var require_boolSchema = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/rules.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/rules.js
 var require_rules = __commonJS({
-  "node_modules/ajv/dist/compile/rules.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/rules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getRules = exports.isJSONType = void 0;
@@ -1573,9 +1573,9 @@ var require_rules = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/applicability.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/applicability.js
 var require_applicability = __commonJS({
-  "node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.shouldUseRule = exports.shouldUseGroup = exports.schemaHasRulesForType = void 0;
@@ -1596,9 +1596,9 @@ var require_applicability = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/dataType.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/dataType.js
 var require_dataType = __commonJS({
-  "node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.reportTypeError = exports.checkDataTypes = exports.checkDataType = exports.coerceAndCheckDataType = exports.getJSONTypes = exports.getSchemaTypes = exports.DataType = void 0;
@@ -1780,9 +1780,9 @@ var require_dataType = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/defaults.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/defaults.js
 var require_defaults = __commonJS({
-  "node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.assignDefaults = void 0;
@@ -1817,9 +1817,9 @@ var require_defaults = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/code.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/code.js
 var require_code2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/code.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateUnion = exports.validateArray = exports.usePattern = exports.callValidateCode = exports.schemaProperties = exports.allSchemaProperties = exports.noPropertyInData = exports.propertyInData = exports.isOwnProperty = exports.hasPropFunc = exports.reportMissingProp = exports.checkMissingProp = exports.checkReportMissingProp = void 0;
@@ -1950,9 +1950,9 @@ var require_code2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/keyword.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/keyword.js
 var require_keyword = __commonJS({
-  "node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateKeywordUsage = exports.validSchemaType = exports.funcKeywordCode = exports.macroKeywordCode = void 0;
@@ -2068,9 +2068,9 @@ var require_keyword = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/subschema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/subschema.js
 var require_subschema = __commonJS({
-  "node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendSubschemaMode = exports.extendSubschemaData = exports.getSubschema = void 0;
@@ -2151,9 +2151,9 @@ var require_subschema = __commonJS({
   }
 });
 
-// node_modules/fast-deep-equal/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-deep-equal/index.js
 var require_fast_deep_equal = __commonJS({
-  "node_modules/fast-deep-equal/index.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
     module.exports = function equal(a, b) {
       if (a === b) return true;
@@ -2186,9 +2186,9 @@ var require_fast_deep_equal = __commonJS({
   }
 });
 
-// node_modules/json-schema-traverse/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse = __commonJS({
-  "node_modules/json-schema-traverse/index.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/json-schema-traverse/index.js"(exports, module) {
     "use strict";
     var traverse = module.exports = function(schema, opts, cb) {
       if (typeof opts == "function") {
@@ -2274,9 +2274,9 @@ var require_json_schema_traverse = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/resolve.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/resolve.js
 var require_resolve = __commonJS({
-  "node_modules/ajv/dist/compile/resolve.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/resolve.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getSchemaRefs = exports.resolveUrl = exports.normalizeId = exports._getFullPath = exports.getFullPath = exports.inlineRef = void 0;
@@ -2430,9 +2430,9 @@ var require_resolve = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/validate/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/index.js
 var require_validate = __commonJS({
-  "node_modules/ajv/dist/compile/validate/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/validate/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getData = exports.KeywordCxt = exports.validateFunctionCode = void 0;
@@ -2938,9 +2938,9 @@ var require_validate = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/validation_error.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/validation_error.js
 var require_validation_error = __commonJS({
-  "node_modules/ajv/dist/runtime/validation_error.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/validation_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ValidationError = class extends Error {
@@ -2954,9 +2954,9 @@ var require_validation_error = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/ref_error.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/ref_error.js
 var require_ref_error = __commonJS({
-  "node_modules/ajv/dist/compile/ref_error.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/ref_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var resolve_1 = require_resolve();
@@ -2971,9 +2971,9 @@ var require_ref_error = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/compile/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/index.js
 var require_compile = __commonJS({
-  "node_modules/ajv/dist/compile/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/compile/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.resolveSchema = exports.getCompilingSchema = exports.resolveRef = exports.compileSchema = exports.SchemaEnv = void 0;
@@ -3195,9 +3195,9 @@ var require_compile = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/refs/data.json
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/refs/data.json
 var require_data = __commonJS({
-  "node_modules/ajv/dist/refs/data.json"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/refs/data.json"(exports, module) {
     module.exports = {
       $id: "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#",
       description: "Meta-schema for $data reference (JSON AnySchema extension proposal)",
@@ -3214,9 +3214,9 @@ var require_data = __commonJS({
   }
 });
 
-// node_modules/fast-uri/lib/utils.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-uri/lib/utils.js
 var require_utils = __commonJS({
-  "node_modules/fast-uri/lib/utils.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-uri/lib/utils.js"(exports, module) {
     "use strict";
     var isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu);
     var isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u);
@@ -3527,9 +3527,9 @@ var require_utils = __commonJS({
   }
 });
 
-// node_modules/fast-uri/lib/schemes.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-uri/lib/schemes.js
 var require_schemes = __commonJS({
-  "node_modules/fast-uri/lib/schemes.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-uri/lib/schemes.js"(exports, module) {
     "use strict";
     var { isUUID } = require_utils();
     var URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu;
@@ -3737,9 +3737,9 @@ var require_schemes = __commonJS({
   }
 });
 
-// node_modules/fast-uri/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-uri/index.js
 var require_fast_uri = __commonJS({
-  "node_modules/fast-uri/index.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/fast-uri/index.js"(exports, module) {
     "use strict";
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
@@ -4049,9 +4049,9 @@ var require_fast_uri = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/uri.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/uri.js
 var require_uri = __commonJS({
-  "node_modules/ajv/dist/runtime/uri.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/uri.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var uri = require_fast_uri();
@@ -4060,9 +4060,9 @@ var require_uri = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/core.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/core.js
 var require_core = __commonJS({
-  "node_modules/ajv/dist/core.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/core.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
@@ -4671,9 +4671,9 @@ var require_core = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/id.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/core/id.js
 var require_id = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var def = {
@@ -4686,9 +4686,9 @@ var require_id = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/ref.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/core/ref.js
 var require_ref = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.callRef = exports.getValidate = void 0;
@@ -4808,9 +4808,9 @@ var require_ref = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/core/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/core/index.js
 var require_core2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var id_1 = require_id();
@@ -4829,9 +4829,9 @@ var require_core2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitNumber.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitNumber.js
 var require_limitNumber = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4861,9 +4861,9 @@ var require_limitNumber = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/multipleOf.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/multipleOf.js
 var require_multipleOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4889,9 +4889,9 @@ var require_multipleOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/ucs2length.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
-  "node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function ucs2length(str) {
@@ -4915,9 +4915,9 @@ var require_ucs2length = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitLength.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitLength.js
 var require_limitLength = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -4947,9 +4947,9 @@ var require_limitLength = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/pattern.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/pattern.js
 var require_pattern = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -4984,9 +4984,9 @@ var require_pattern = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitProperties.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitProperties.js
 var require_limitProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5013,9 +5013,9 @@ var require_limitProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/required.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/required.js
 var require_required = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5095,9 +5095,9 @@ var require_required = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/limitItems.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitItems.js
 var require_limitItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5124,9 +5124,9 @@ var require_limitItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/runtime/equal.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/equal.js
 var require_equal = __commonJS({
-  "node_modules/ajv/dist/runtime/equal.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var equal = require_fast_deep_equal();
@@ -5135,9 +5135,9 @@ var require_equal = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
 var require_uniqueItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var dataType_1 = require_dataType();
@@ -5202,9 +5202,9 @@ var require_uniqueItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/const.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/const.js
 var require_const = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5231,9 +5231,9 @@ var require_const = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/enum.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/enum.js
 var require_enum = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5280,9 +5280,9 @@ var require_enum = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/validation/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/index.js
 var require_validation = __commonJS({
-  "node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var limitNumber_1 = require_limitNumber();
@@ -5318,9 +5318,9 @@ var require_validation = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
 var require_additionalItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateAdditionalItems = void 0;
@@ -5371,9 +5371,9 @@ var require_additionalItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/items.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/items.js
 var require_items = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateTuple = void 0;
@@ -5428,9 +5428,9 @@ var require_items = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
 var require_prefixItems = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var items_1 = require_items();
@@ -5445,9 +5445,9 @@ var require_prefixItems = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/items2020.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/items2020.js
 var require_items2020 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5480,9 +5480,9 @@ var require_items2020 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/contains.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/contains.js
 var require_contains = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5574,9 +5574,9 @@ var require_contains = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/dependencies.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/dependencies.js
 var require_dependencies = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateSchemaDeps = exports.validatePropertyDeps = exports.error = void 0;
@@ -5668,9 +5668,9 @@ var require_dependencies = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
 var require_propertyNames = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5711,9 +5711,9 @@ var require_propertyNames = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
 var require_additionalProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5817,9 +5817,9 @@ var require_additionalProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/properties.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/properties.js
 var require_properties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var validate_1 = require_validate();
@@ -5875,9 +5875,9 @@ var require_properties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
 var require_patternProperties = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5949,9 +5949,9 @@ var require_patternProperties = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/not.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/not.js
 var require_not = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -5980,9 +5980,9 @@ var require_not = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/anyOf.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/anyOf.js
 var require_anyOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5997,9 +5997,9 @@ var require_anyOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/oneOf.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/oneOf.js
 var require_oneOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6055,9 +6055,9 @@ var require_oneOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/allOf.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/allOf.js
 var require_allOf = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6082,9 +6082,9 @@ var require_allOf = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/if.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/if.js
 var require_if = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6151,9 +6151,9 @@ var require_if = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/thenElse.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/thenElse.js
 var require_thenElse = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6169,9 +6169,9 @@ var require_thenElse = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/applicator/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/index.js
 var require_applicator = __commonJS({
-  "node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var additionalItems_1 = require_additionalItems();
@@ -6217,9 +6217,9 @@ var require_applicator = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/format/format.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/format/format.js
 var require_format = __commonJS({
-  "node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6307,9 +6307,9 @@ var require_format = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/format/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/format/index.js
 var require_format2 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var format_1 = require_format();
@@ -6318,9 +6318,9 @@ var require_format2 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/metadata.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/metadata.js
 var require_metadata = __commonJS({
-  "node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.contentVocabulary = exports.metadataVocabulary = void 0;
@@ -6341,9 +6341,9 @@ var require_metadata = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/draft7.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/draft7.js
 var require_draft7 = __commonJS({
-  "node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var core_1 = require_core2();
@@ -6363,9 +6363,9 @@ var require_draft7 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/discriminator/types.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/discriminator/types.js
 var require_types = __commonJS({
-  "node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DiscrError = void 0;
@@ -6377,9 +6377,9 @@ var require_types = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/vocabularies/discriminator/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/discriminator/index.js
 var require_discriminator = __commonJS({
-  "node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6482,9 +6482,9 @@ var require_discriminator = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/refs/json-schema-draft-07.json
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/refs/json-schema-draft-07.json
 var require_json_schema_draft_07 = __commonJS({
-  "node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
     module.exports = {
       $schema: "http://json-schema.org/draft-07/schema#",
       $id: "http://json-schema.org/draft-07/schema#",
@@ -6639,9 +6639,9 @@ var require_json_schema_draft_07 = __commonJS({
   }
 });
 
-// node_modules/ajv/dist/ajv.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/ajv.js
 var require_ajv = __commonJS({
-  "node_modules/ajv/dist/ajv.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv/dist/ajv.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv = void 0;
@@ -6709,9 +6709,9 @@ var require_ajv = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/formats.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv-formats/dist/formats.js
 var require_formats = __commonJS({
-  "node_modules/ajv-formats/dist/formats.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv-formats/dist/formats.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatNames = exports.fastFormats = exports.fullFormats = void 0;
@@ -6912,9 +6912,9 @@ var require_formats = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/limit.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv-formats/dist/limit.js
 var require_limit = __commonJS({
-  "node_modules/ajv-formats/dist/limit.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv-formats/dist/limit.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatLimitDefinition = void 0;
@@ -6984,9 +6984,9 @@ var require_limit = __commonJS({
   }
 });
 
-// node_modules/ajv-formats/dist/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv-formats/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/ajv-formats/dist/index.js"(exports, module) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/ajv-formats/dist/index.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var formats_1 = require_formats();
@@ -7026,9 +7026,9 @@ var require_dist = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/identity.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/identity.js
 var require_identity = __commonJS({
-  "node_modules/yaml/dist/nodes/identity.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/identity.js"(exports) {
     "use strict";
     var ALIAS = /* @__PURE__ */ Symbol.for("yaml.alias");
     var DOC = /* @__PURE__ */ Symbol.for("yaml.document");
@@ -7083,9 +7083,9 @@ var require_identity = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/visit.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/visit.js
 var require_visit = __commonJS({
-  "node_modules/yaml/dist/visit.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/visit.js"(exports) {
     "use strict";
     var identity = require_identity();
     var BREAK = /* @__PURE__ */ Symbol("break visit");
@@ -7241,9 +7241,9 @@ var require_visit = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/doc/directives.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/directives.js
 var require_directives = __commonJS({
-  "node_modules/yaml/dist/doc/directives.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/directives.js"(exports) {
     "use strict";
     var identity = require_identity();
     var visit = require_visit();
@@ -7412,9 +7412,9 @@ var require_directives = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/doc/anchors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/anchors.js
 var require_anchors = __commonJS({
-  "node_modules/yaml/dist/doc/anchors.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/anchors.js"(exports) {
     "use strict";
     var identity = require_identity();
     var visit = require_visit();
@@ -7482,9 +7482,9 @@ var require_anchors = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/doc/applyReviver.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/applyReviver.js
 var require_applyReviver = __commonJS({
-  "node_modules/yaml/dist/doc/applyReviver.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/applyReviver.js"(exports) {
     "use strict";
     function applyReviver(reviver, obj, key, val) {
       if (val && typeof val === "object") {
@@ -7532,9 +7532,9 @@ var require_applyReviver = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/toJS.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/toJS.js
 var require_toJS = __commonJS({
-  "node_modules/yaml/dist/nodes/toJS.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/toJS.js"(exports) {
     "use strict";
     var identity = require_identity();
     function toJS(value, arg, ctx) {
@@ -7562,9 +7562,9 @@ var require_toJS = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/Node.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Node.js
 var require_Node = __commonJS({
-  "node_modules/yaml/dist/nodes/Node.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Node.js"(exports) {
     "use strict";
     var applyReviver = require_applyReviver();
     var identity = require_identity();
@@ -7603,9 +7603,9 @@ var require_Node = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/Alias.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Alias.js
 var require_Alias = __commonJS({
-  "node_modules/yaml/dist/nodes/Alias.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Alias.js"(exports) {
     "use strict";
     var anchors = require_anchors();
     var visit = require_visit();
@@ -7719,9 +7719,9 @@ var require_Alias = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/Scalar.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Scalar.js
 var require_Scalar = __commonJS({
-  "node_modules/yaml/dist/nodes/Scalar.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Scalar.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Node = require_Node();
@@ -7749,9 +7749,9 @@ var require_Scalar = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/doc/createNode.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/createNode.js
 var require_createNode = __commonJS({
-  "node_modules/yaml/dist/doc/createNode.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/createNode.js"(exports) {
     "use strict";
     var Alias = require_Alias();
     var identity = require_identity();
@@ -7824,9 +7824,9 @@ var require_createNode = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/Collection.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Collection.js
 var require_Collection = __commonJS({
-  "node_modules/yaml/dist/nodes/Collection.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Collection.js"(exports) {
     "use strict";
     var createNode = require_createNode();
     var identity = require_identity();
@@ -7967,9 +7967,9 @@ var require_Collection = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/stringify/stringifyComment.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyComment.js
 var require_stringifyComment = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
     "use strict";
     var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
     function indentComment(comment, indent) {
@@ -7984,9 +7984,9 @@ var require_stringifyComment = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/stringify/foldFlowLines.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/foldFlowLines.js
 var require_foldFlowLines = __commonJS({
-  "node_modules/yaml/dist/stringify/foldFlowLines.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/foldFlowLines.js"(exports) {
     "use strict";
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
@@ -8120,9 +8120,9 @@ ${indent}${text.slice(fold + 1, end2)}`;
   }
 });
 
-// node_modules/yaml/dist/stringify/stringifyString.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyString.js
 var require_stringifyString = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyString.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyString.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var foldFlowLines = require_foldFlowLines();
@@ -8403,9 +8403,9 @@ ${indent}`);
   }
 });
 
-// node_modules/yaml/dist/stringify/stringify.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringify.js
 var require_stringify = __commonJS({
-  "node_modules/yaml/dist/stringify/stringify.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringify.js"(exports) {
     "use strict";
     var anchors = require_anchors();
     var identity = require_identity();
@@ -8527,9 +8527,9 @@ ${ctx.indent}${str}`;
   }
 });
 
-// node_modules/yaml/dist/stringify/stringifyPair.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyPair.js
 var require_stringifyPair = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
@@ -8660,9 +8660,9 @@ ${ctx.indent}`;
   }
 });
 
-// node_modules/yaml/dist/log.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/log.js
 var require_log = __commonJS({
-  "node_modules/yaml/dist/log.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/log.js"(exports) {
     "use strict";
     var node_process = __require("process");
     function debug(logLevel, ...messages) {
@@ -8682,9 +8682,9 @@ var require_log = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/merge.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/merge.js
 var require_merge = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
@@ -8742,9 +8742,9 @@ var require_merge = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/addPairToJSMap.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/addPairToJSMap.js
 var require_addPairToJSMap = __commonJS({
-  "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
     "use strict";
     var log = require_log();
     var merge2 = require_merge();
@@ -8806,9 +8806,9 @@ var require_addPairToJSMap = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/Pair.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Pair.js
 var require_Pair = __commonJS({
-  "node_modules/yaml/dist/nodes/Pair.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/Pair.js"(exports) {
     "use strict";
     var createNode = require_createNode();
     var stringifyPair = require_stringifyPair();
@@ -8846,9 +8846,9 @@ var require_Pair = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/stringify/stringifyCollection.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyCollection.js
 var require_stringifyCollection = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
     var identity = require_identity();
     var stringify = require_stringify();
@@ -8997,9 +8997,9 @@ ${indent}${end}`;
   }
 });
 
-// node_modules/yaml/dist/nodes/YAMLMap.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/YAMLMap.js
 var require_YAMLMap = __commonJS({
-  "node_modules/yaml/dist/nodes/YAMLMap.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/YAMLMap.js"(exports) {
     "use strict";
     var stringifyCollection = require_stringifyCollection();
     var addPairToJSMap = require_addPairToJSMap();
@@ -9141,9 +9141,9 @@ var require_YAMLMap = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/common/map.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/map.js
 var require_map = __commonJS({
-  "node_modules/yaml/dist/schema/common/map.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/map.js"(exports) {
     "use strict";
     var identity = require_identity();
     var YAMLMap = require_YAMLMap();
@@ -9163,9 +9163,9 @@ var require_map = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/nodes/YAMLSeq.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/YAMLSeq.js
 var require_YAMLSeq = __commonJS({
-  "node_modules/yaml/dist/nodes/YAMLSeq.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/nodes/YAMLSeq.js"(exports) {
     "use strict";
     var createNode = require_createNode();
     var stringifyCollection = require_stringifyCollection();
@@ -9279,9 +9279,9 @@ var require_YAMLSeq = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/common/seq.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/seq.js
 var require_seq = __commonJS({
-  "node_modules/yaml/dist/schema/common/seq.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/seq.js"(exports) {
     "use strict";
     var identity = require_identity();
     var YAMLSeq = require_YAMLSeq();
@@ -9301,9 +9301,9 @@ var require_seq = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/common/string.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/string.js
 var require_string = __commonJS({
-  "node_modules/yaml/dist/schema/common/string.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/string.js"(exports) {
     "use strict";
     var stringifyString = require_stringifyString();
     var string4 = {
@@ -9320,9 +9320,9 @@ var require_string = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/common/null.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/null.js
 var require_null = __commonJS({
-  "node_modules/yaml/dist/schema/common/null.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/common/null.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var nullTag = {
@@ -9338,9 +9338,9 @@ var require_null = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/core/bool.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/bool.js
 var require_bool = __commonJS({
-  "node_modules/yaml/dist/schema/core/bool.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/bool.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var boolTag = {
@@ -9362,9 +9362,9 @@ var require_bool = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/stringify/stringifyNumber.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyNumber.js
 var require_stringifyNumber = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyNumber.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyNumber.js"(exports) {
     "use strict";
     function stringifyNumber({ format, minFractionDigits, tag, value }) {
       if (typeof value === "bigint")
@@ -9389,9 +9389,9 @@ var require_stringifyNumber = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/core/float.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/float.js
 var require_float = __commonJS({
-  "node_modules/yaml/dist/schema/core/float.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/float.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var stringifyNumber = require_stringifyNumber();
@@ -9435,9 +9435,9 @@ var require_float = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/core/int.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/int.js
 var require_int = __commonJS({
-  "node_modules/yaml/dist/schema/core/int.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/int.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
@@ -9480,9 +9480,9 @@ var require_int = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/core/schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/schema.js
 var require_schema = __commonJS({
-  "node_modules/yaml/dist/schema/core/schema.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/core/schema.js"(exports) {
     "use strict";
     var map2 = require_map();
     var _null4 = require_null();
@@ -9508,9 +9508,9 @@ var require_schema = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/json/schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/json/schema.js
 var require_schema2 = __commonJS({
-  "node_modules/yaml/dist/schema/json/schema.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/json/schema.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var map2 = require_map();
@@ -9575,9 +9575,9 @@ var require_schema2 = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/binary.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/binary.js
 var require_binary = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/binary.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/binary.js"(exports) {
     "use strict";
     var node_buffer = __require("buffer");
     var Scalar = require_Scalar();
@@ -9641,9 +9641,9 @@ var require_binary = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/pairs.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/pairs.js
 var require_pairs = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Pair = require_Pair();
@@ -9719,9 +9719,9 @@ ${cn.comment}` : item.comment;
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/omap.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/omap.js
 var require_omap = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
     "use strict";
     var identity = require_identity();
     var toJS = require_toJS();
@@ -9797,9 +9797,9 @@ var require_omap = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/bool.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/bool.js
 var require_bool2 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/bool.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/bool.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     function boolStringify({ value, source: source2 }, ctx) {
@@ -9829,9 +9829,9 @@ var require_bool2 = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/float.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/float.js
 var require_float2 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/float.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/float.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var stringifyNumber = require_stringifyNumber();
@@ -9878,9 +9878,9 @@ var require_float2 = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/int.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/int.js
 var require_int2 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/int.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/int.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
@@ -9957,9 +9957,9 @@ var require_int2 = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/set.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/set.js
 var require_set = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Pair = require_Pair();
@@ -10046,9 +10046,9 @@ var require_set = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
 var require_timestamp = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     function parseSexagesimal(str, asBigInt) {
@@ -10134,9 +10134,9 @@ var require_timestamp = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/yaml-1.1/schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/schema.js
 var require_schema3 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/schema.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/yaml-1.1/schema.js"(exports) {
     "use strict";
     var map2 = require_map();
     var _null4 = require_null();
@@ -10178,9 +10178,9 @@ var require_schema3 = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/tags.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/tags.js
 var require_tags = __commonJS({
-  "node_modules/yaml/dist/schema/tags.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/tags.js"(exports) {
     "use strict";
     var map2 = require_map();
     var _null4 = require_null();
@@ -10272,9 +10272,9 @@ var require_tags = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/schema/Schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/Schema.js
 var require_Schema = __commonJS({
-  "node_modules/yaml/dist/schema/Schema.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/schema/Schema.js"(exports) {
     "use strict";
     var identity = require_identity();
     var map2 = require_map();
@@ -10304,9 +10304,9 @@ var require_Schema = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/stringify/stringifyDocument.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyDocument.js
 var require_stringifyDocument = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
     var identity = require_identity();
     var stringify = require_stringify();
@@ -10384,9 +10384,9 @@ var require_stringifyDocument = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/doc/Document.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/Document.js
 var require_Document = __commonJS({
-  "node_modules/yaml/dist/doc/Document.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/doc/Document.js"(exports) {
     "use strict";
     var Alias = require_Alias();
     var Collection = require_Collection();
@@ -10693,9 +10693,9 @@ var require_Document = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/errors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/errors.js
 var require_errors2 = __commonJS({
-  "node_modules/yaml/dist/errors.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/errors.js"(exports) {
     "use strict";
     var YAMLError = class extends Error {
       constructor(name, pos, code, message) {
@@ -10758,9 +10758,9 @@ ${pointer}
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-props.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-props.js
 var require_resolve_props = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-props.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-props.js"(exports) {
     "use strict";
     function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
       let spaceBefore = false;
@@ -10892,9 +10892,9 @@ var require_resolve_props = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/util-contains-newline.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-contains-newline.js
 var require_util_contains_newline = __commonJS({
-  "node_modules/yaml/dist/compose/util-contains-newline.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-contains-newline.js"(exports) {
     "use strict";
     function containsNewline(key) {
       if (!key)
@@ -10934,9 +10934,9 @@ var require_util_contains_newline = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/util-flow-indent-check.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-flow-indent-check.js
 var require_util_flow_indent_check = __commonJS({
-  "node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
     "use strict";
     var utilContainsNewline = require_util_contains_newline();
     function flowIndentCheck(indent, fc, onError) {
@@ -10952,9 +10952,9 @@ var require_util_flow_indent_check = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/util-map-includes.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-map-includes.js
 var require_util_map_includes = __commonJS({
-  "node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
     "use strict";
     var identity = require_identity();
     function mapIncludes(ctx, items, search) {
@@ -10968,9 +10968,9 @@ var require_util_map_includes = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-block-map.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-block-map.js
 var require_resolve_block_map = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-block-map.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-block-map.js"(exports) {
     "use strict";
     var Pair = require_Pair();
     var YAMLMap = require_YAMLMap();
@@ -11076,9 +11076,9 @@ var require_resolve_block_map = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-block-seq.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-block-seq.js
 var require_resolve_block_seq = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-block-seq.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-block-seq.js"(exports) {
     "use strict";
     var YAMLSeq = require_YAMLSeq();
     var resolveProps = require_resolve_props();
@@ -11127,9 +11127,9 @@ var require_resolve_block_seq = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-end.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-end.js
 var require_resolve_end = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-end.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-end.js"(exports) {
     "use strict";
     function resolveEnd(end, offset, reqSpace, onError) {
       let comment = "";
@@ -11170,9 +11170,9 @@ var require_resolve_end = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-flow-collection.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-flow-collection.js
 var require_resolve_flow_collection = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Pair = require_Pair();
@@ -11364,9 +11364,9 @@ var require_resolve_flow_collection = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/compose-collection.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-collection.js
 var require_compose_collection = __commonJS({
-  "node_modules/yaml/dist/compose/compose-collection.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-collection.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
@@ -11429,9 +11429,9 @@ var require_compose_collection = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-block-scalar.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-block-scalar.js
 var require_resolve_block_scalar = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     function resolveBlockScalar(ctx, scalar, onError) {
@@ -11612,9 +11612,9 @@ var require_resolve_block_scalar = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/resolve-flow-scalar.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-flow-scalar.js
 var require_resolve_flow_scalar = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-flow-scalar.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/resolve-flow-scalar.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var resolveEnd = require_resolve_end();
@@ -11832,9 +11832,9 @@ var require_resolve_flow_scalar = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/compose-scalar.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-scalar.js
 var require_compose_scalar = __commonJS({
-  "node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
@@ -11913,9 +11913,9 @@ var require_compose_scalar = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/util-empty-scalar-position.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-empty-scalar-position.js
 var require_util_empty_scalar_position = __commonJS({
-  "node_modules/yaml/dist/compose/util-empty-scalar-position.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/util-empty-scalar-position.js"(exports) {
     "use strict";
     function emptyScalarPosition(offset, before, pos) {
       if (before) {
@@ -11943,9 +11943,9 @@ var require_util_empty_scalar_position = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/compose-node.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-node.js
 var require_compose_node = __commonJS({
-  "node_modules/yaml/dist/compose/compose-node.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-node.js"(exports) {
     "use strict";
     var Alias = require_Alias();
     var identity = require_identity();
@@ -12049,9 +12049,9 @@ var require_compose_node = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/compose-doc.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-doc.js
 var require_compose_doc = __commonJS({
-  "node_modules/yaml/dist/compose/compose-doc.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/compose-doc.js"(exports) {
     "use strict";
     var Document = require_Document();
     var composeNode = require_compose_node();
@@ -12092,9 +12092,9 @@ var require_compose_doc = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/compose/composer.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/composer.js
 var require_composer = __commonJS({
-  "node_modules/yaml/dist/compose/composer.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/compose/composer.js"(exports) {
     "use strict";
     var node_process = __require("process");
     var directives = require_directives();
@@ -12300,9 +12300,9 @@ ${end.comment}` : end.comment;
   }
 });
 
-// node_modules/yaml/dist/parse/cst-scalar.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst-scalar.js
 var require_cst_scalar = __commonJS({
-  "node_modules/yaml/dist/parse/cst-scalar.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst-scalar.js"(exports) {
     "use strict";
     var resolveBlockScalar = require_resolve_block_scalar();
     var resolveFlowScalar = require_resolve_flow_scalar();
@@ -12485,9 +12485,9 @@ var require_cst_scalar = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/parse/cst-stringify.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst-stringify.js
 var require_cst_stringify = __commonJS({
-  "node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
     "use strict";
     var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
     function stringifyToken(token) {
@@ -12546,9 +12546,9 @@ var require_cst_stringify = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/parse/cst-visit.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst-visit.js
 var require_cst_visit = __commonJS({
-  "node_modules/yaml/dist/parse/cst-visit.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst-visit.js"(exports) {
     "use strict";
     var BREAK = /* @__PURE__ */ Symbol("break visit");
     var SKIP = /* @__PURE__ */ Symbol("skip children");
@@ -12608,9 +12608,9 @@ var require_cst_visit = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/parse/cst.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst.js
 var require_cst = __commonJS({
-  "node_modules/yaml/dist/parse/cst.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/cst.js"(exports) {
     "use strict";
     var cstScalar = require_cst_scalar();
     var cstStringify = require_cst_stringify();
@@ -12710,9 +12710,9 @@ var require_cst = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/parse/lexer.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/lexer.js
 var require_lexer = __commonJS({
-  "node_modules/yaml/dist/parse/lexer.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/lexer.js"(exports) {
     "use strict";
     var cst = require_cst();
     function isEmpty(ch) {
@@ -13299,9 +13299,9 @@ var require_lexer = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/parse/line-counter.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/line-counter.js
 var require_line_counter = __commonJS({
-  "node_modules/yaml/dist/parse/line-counter.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/line-counter.js"(exports) {
     "use strict";
     var LineCounter = class {
       constructor() {
@@ -13330,9 +13330,9 @@ var require_line_counter = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/parse/parser.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/parser.js
 var require_parser = __commonJS({
-  "node_modules/yaml/dist/parse/parser.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/parse/parser.js"(exports) {
     "use strict";
     var node_process = __require("process");
     var cst = require_cst();
@@ -14204,9 +14204,9 @@ var require_parser = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/public-api.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/public-api.js
 var require_public_api = __commonJS({
-  "node_modules/yaml/dist/public-api.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/public-api.js"(exports) {
     "use strict";
     var composer = require_composer();
     var Document = require_Document();
@@ -14301,9 +14301,9 @@ var require_public_api = __commonJS({
   }
 });
 
-// node_modules/yaml/dist/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/index.js
 var require_dist2 = __commonJS({
-  "node_modules/yaml/dist/index.js"(exports) {
+  "../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/yaml/dist/index.js"(exports) {
     "use strict";
     var composer = require_composer();
     var Document = require_Document();
@@ -14358,10 +14358,10 @@ import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
 
-// node_modules/zod/v4/classic/external.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
   $brand: () => $brand,
@@ -14604,7 +14604,7 @@ __export(external_exports, {
   xor: () => xor
 });
 
-// node_modules/zod/v4/core/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/index.js
 var core_exports2 = {};
 __export(core_exports2, {
   $ZodAny: () => $ZodAny,
@@ -14883,7 +14883,7 @@ __export(core_exports2, {
   version: () => version
 });
 
-// node_modules/zod/v4/core/core.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/core.js
 var _a;
 var NEVER = /* @__PURE__ */ Object.freeze({
   status: "aborted"
@@ -14960,7 +14960,7 @@ function config(newConfig) {
   return globalConfig;
 }
 
-// node_modules/zod/v4/core/util.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
   BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
@@ -15656,7 +15656,7 @@ var Class = class {
   }
 };
 
-// node_modules/zod/v4/core/errors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/errors.js
 var initializer = (inst, def) => {
   inst.name = "$ZodError";
   Object.defineProperty(inst, "_zod", {
@@ -15795,7 +15795,7 @@ function prettifyError(error51) {
   return lines.join("\n");
 }
 
-// node_modules/zod/v4/core/parse.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/parse.js
 var _parse = (_Err) => (schema, value, _ctx, _params) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
   const result = schema._zod.run({ value, issues: [] }, ctx);
@@ -15883,7 +15883,7 @@ var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
-// node_modules/zod/v4/core/regexes.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/regexes.js
 var regexes_exports = {};
 __export(regexes_exports, {
   base64: () => base64,
@@ -16042,7 +16042,7 @@ var sha512_hex = /^[0-9a-fA-F]{128}$/;
 var sha512_base64 = /* @__PURE__ */ fixedBase64(86, "==");
 var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
-// node_modules/zod/v4/core/checks.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a3;
   inst._zod ?? (inst._zod = {});
@@ -16590,7 +16590,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// node_modules/zod/v4/core/doc.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/doc.js
 var Doc = class {
   constructor(args = []) {
     this.content = [];
@@ -16626,14 +16626,14 @@ var Doc = class {
   }
 };
 
-// node_modules/zod/v4/core/versions.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 4,
   patch: 3
 };
 
-// node_modules/zod/v4/core/schemas.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a3;
   inst ?? (inst = {});
@@ -18726,7 +18726,7 @@ function handleRefineResult(result, payload, input, inst) {
   }
 }
 
-// node_modules/zod/v4/locales/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/index.js
 var locales_exports = {};
 __export(locales_exports, {
   ar: () => ar_default,
@@ -18783,7 +18783,7 @@ __export(locales_exports, {
   zhTW: () => zh_TW_default
 });
 
-// node_modules/zod/v4/locales/ar.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ar.js
 var error = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0641", verb: "\u0623\u0646 \u064A\u062D\u0648\u064A" },
@@ -18890,7 +18890,7 @@ function ar_default() {
   };
 }
 
-// node_modules/zod/v4/locales/az.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/az.js
 var error2 = () => {
   const Sizable = {
     string: { unit: "simvol", verb: "olmal\u0131d\u0131r" },
@@ -18996,7 +18996,7 @@ function az_default() {
   };
 }
 
-// node_modules/zod/v4/locales/be.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/be.js
 function getBelarusianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -19153,7 +19153,7 @@ function be_default() {
   };
 }
 
-// node_modules/zod/v4/locales/bg.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/bg.js
 var error4 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0430", verb: "\u0434\u0430 \u0441\u044A\u0434\u044A\u0440\u0436\u0430" },
@@ -19274,7 +19274,7 @@ function bg_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ca.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ca.js
 var error5 = () => {
   const Sizable = {
     string: { unit: "car\xE0cters", verb: "contenir" },
@@ -19383,7 +19383,7 @@ function ca_default() {
   };
 }
 
-// node_modules/zod/v4/locales/cs.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/cs.js
 var error6 = () => {
   const Sizable = {
     string: { unit: "znak\u016F", verb: "m\xEDt" },
@@ -19495,7 +19495,7 @@ function cs_default() {
   };
 }
 
-// node_modules/zod/v4/locales/da.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/da.js
 var error7 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "havde" },
@@ -19611,7 +19611,7 @@ function da_default() {
   };
 }
 
-// node_modules/zod/v4/locales/de.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/de.js
 var error8 = () => {
   const Sizable = {
     string: { unit: "Zeichen", verb: "zu haben" },
@@ -19720,7 +19720,7 @@ function de_default() {
   };
 }
 
-// node_modules/zod/v4/locales/el.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/el.js
 var error9 = () => {
   const Sizable = {
     string: { unit: "\u03C7\u03B1\u03C1\u03B1\u03BA\u03C4\u03AE\u03C1\u03B5\u03C2", verb: "\u03BD\u03B1 \u03AD\u03C7\u03B5\u03B9" },
@@ -19830,7 +19830,7 @@ function el_default() {
   };
 }
 
-// node_modules/zod/v4/locales/en.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/en.js
 var error10 = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -19943,7 +19943,7 @@ function en_default() {
   };
 }
 
-// node_modules/zod/v4/locales/eo.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/eo.js
 var error11 = () => {
   const Sizable = {
     string: { unit: "karaktrojn", verb: "havi" },
@@ -20053,7 +20053,7 @@ function eo_default() {
   };
 }
 
-// node_modules/zod/v4/locales/es.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/es.js
 var error12 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "tener" },
@@ -20186,7 +20186,7 @@ function es_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fa.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/fa.js
 var error13 = () => {
   const Sizable = {
     string: { unit: "\u06A9\u0627\u0631\u0627\u06A9\u062A\u0631", verb: "\u062F\u0627\u0634\u062A\u0647 \u0628\u0627\u0634\u062F" },
@@ -20301,7 +20301,7 @@ function fa_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fi.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/fi.js
 var error14 = () => {
   const Sizable = {
     string: { unit: "merkki\xE4", subject: "merkkijonon" },
@@ -20414,7 +20414,7 @@ function fi_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fr.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/fr.js
 var error15 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -20540,7 +20540,7 @@ function fr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/fr-CA.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/fr-CA.js
 var error16 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -20648,7 +20648,7 @@ function fr_CA_default() {
   };
 }
 
-// node_modules/zod/v4/locales/he.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/he.js
 var error17 = () => {
   const TypeNames = {
     string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA", gender: "f" },
@@ -20843,7 +20843,7 @@ function he_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hr.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/hr.js
 var error18 = () => {
   const Sizable = {
     string: { unit: "znakova", verb: "imati" },
@@ -20966,7 +20966,7 @@ function hr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hu.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/hu.js
 var error19 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "legyen" },
@@ -21075,7 +21075,7 @@ function hu_default() {
   };
 }
 
-// node_modules/zod/v4/locales/hy.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/hy.js
 function getArmenianPlural(count, one, many) {
   return Math.abs(count) === 1 ? one : many;
 }
@@ -21223,7 +21223,7 @@ function hy_default() {
   };
 }
 
-// node_modules/zod/v4/locales/id.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/id.js
 var error21 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "memiliki" },
@@ -21330,7 +21330,7 @@ function id_default() {
   };
 }
 
-// node_modules/zod/v4/locales/is.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/is.js
 var error22 = () => {
   const Sizable = {
     string: { unit: "stafi", verb: "a\xF0 hafa" },
@@ -21440,7 +21440,7 @@ function is_default() {
   };
 }
 
-// node_modules/zod/v4/locales/it.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/it.js
 var error23 = () => {
   const Sizable = {
     string: { unit: "caratteri", verb: "avere" },
@@ -21549,7 +21549,7 @@ function it_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ja.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ja.js
 var error24 = () => {
   const Sizable = {
     string: { unit: "\u6587\u5B57", verb: "\u3067\u3042\u308B" },
@@ -21657,7 +21657,7 @@ function ja_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ka.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ka.js
 var error25 = () => {
   const Sizable = {
     string: { unit: "\u10E1\u10D8\u10DB\u10D1\u10DD\u10DA\u10DD", verb: "\u10E3\u10DC\u10D3\u10D0 \u10E8\u10D4\u10D8\u10EA\u10D0\u10D5\u10D3\u10D4\u10E1" },
@@ -21770,7 +21770,7 @@ function ka_default() {
   };
 }
 
-// node_modules/zod/v4/locales/km.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/km.js
 var error26 = () => {
   const Sizable = {
     string: { unit: "\u178F\u17BD\u17A2\u1780\u17D2\u179F\u179A", verb: "\u1782\u17BD\u179A\u1798\u17B6\u1793" },
@@ -21881,12 +21881,12 @@ function km_default() {
   };
 }
 
-// node_modules/zod/v4/locales/kh.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/kh.js
 function kh_default() {
   return km_default();
 }
 
-// node_modules/zod/v4/locales/ko.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ko.js
 var error27 = () => {
   const Sizable = {
     string: { unit: "\uBB38\uC790", verb: "to have" },
@@ -21998,7 +21998,7 @@ function ko_default() {
   };
 }
 
-// node_modules/zod/v4/locales/lt.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/lt.js
 var capitalizeFirstCharacter = (text) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
@@ -22202,7 +22202,7 @@ function lt_default() {
   };
 }
 
-// node_modules/zod/v4/locales/mk.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/mk.js
 var error29 = () => {
   const Sizable = {
     string: { unit: "\u0437\u043D\u0430\u0446\u0438", verb: "\u0434\u0430 \u0438\u043C\u0430\u0430\u0442" },
@@ -22312,7 +22312,7 @@ function mk_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ms.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ms.js
 var error30 = () => {
   const Sizable = {
     string: { unit: "aksara", verb: "mempunyai" },
@@ -22420,7 +22420,7 @@ function ms_default() {
   };
 }
 
-// node_modules/zod/v4/locales/nl.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/nl.js
 var error31 = () => {
   const Sizable = {
     string: { unit: "tekens", verb: "heeft" },
@@ -22531,7 +22531,7 @@ function nl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/no.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/no.js
 var error32 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "\xE5 ha" },
@@ -22640,7 +22640,7 @@ function no_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ota.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ota.js
 var error33 = () => {
   const Sizable = {
     string: { unit: "harf", verb: "olmal\u0131d\u0131r" },
@@ -22750,7 +22750,7 @@ function ota_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ps.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ps.js
 var error34 = () => {
   const Sizable = {
     string: { unit: "\u062A\u0648\u06A9\u064A", verb: "\u0648\u0644\u0631\u064A" },
@@ -22865,7 +22865,7 @@ function ps_default() {
   };
 }
 
-// node_modules/zod/v4/locales/pl.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/pl.js
 var error35 = () => {
   const Sizable = {
     string: { unit: "znak\xF3w", verb: "mie\u0107" },
@@ -22975,7 +22975,7 @@ function pl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/pt.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/pt.js
 var error36 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "ter" },
@@ -23084,7 +23084,7 @@ function pt_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ro.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ro.js
 var error37 = () => {
   const Sizable = {
     string: { unit: "caractere", verb: "s\u0103 aib\u0103" },
@@ -23204,7 +23204,7 @@ function ro_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ru.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ru.js
 function getRussianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -23361,7 +23361,7 @@ function ru_default() {
   };
 }
 
-// node_modules/zod/v4/locales/sl.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/sl.js
 var error39 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "imeti" },
@@ -23471,7 +23471,7 @@ function sl_default() {
   };
 }
 
-// node_modules/zod/v4/locales/sv.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/sv.js
 var error40 = () => {
   const Sizable = {
     string: { unit: "tecken", verb: "att ha" },
@@ -23582,7 +23582,7 @@ function sv_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ta.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ta.js
 var error41 = () => {
   const Sizable = {
     string: { unit: "\u0B8E\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BCD\u0B95\u0BB3\u0BCD", verb: "\u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BBF\u0BB0\u0BC1\u0B95\u0BCD\u0B95 \u0BB5\u0BC7\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD" },
@@ -23693,7 +23693,7 @@ function ta_default() {
   };
 }
 
-// node_modules/zod/v4/locales/th.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/th.js
 var error42 = () => {
   const Sizable = {
     string: { unit: "\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23", verb: "\u0E04\u0E27\u0E23\u0E21\u0E35" },
@@ -23804,7 +23804,7 @@ function th_default() {
   };
 }
 
-// node_modules/zod/v4/locales/tr.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/tr.js
 var error43 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "olmal\u0131" },
@@ -23910,7 +23910,7 @@ function tr_default() {
   };
 }
 
-// node_modules/zod/v4/locales/uk.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/uk.js
 var error44 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0456\u0432", verb: "\u043C\u0430\u0442\u0438\u043C\u0435" },
@@ -24019,12 +24019,12 @@ function uk_default() {
   };
 }
 
-// node_modules/zod/v4/locales/ua.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ua.js
 function ua_default() {
   return uk_default();
 }
 
-// node_modules/zod/v4/locales/ur.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/ur.js
 var error45 = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0648\u0641", verb: "\u06C1\u0648\u0646\u0627" },
@@ -24135,7 +24135,7 @@ function ur_default() {
   };
 }
 
-// node_modules/zod/v4/locales/uz.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/uz.js
 var error46 = () => {
   const Sizable = {
     string: { unit: "belgi", verb: "bo\u2018lishi kerak" },
@@ -24246,7 +24246,7 @@ function uz_default() {
   };
 }
 
-// node_modules/zod/v4/locales/vi.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/vi.js
 var error47 = () => {
   const Sizable = {
     string: { unit: "k\xFD t\u1EF1", verb: "c\xF3" },
@@ -24355,7 +24355,7 @@ function vi_default() {
   };
 }
 
-// node_modules/zod/v4/locales/zh-CN.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/zh-CN.js
 var error48 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u7B26", verb: "\u5305\u542B" },
@@ -24465,7 +24465,7 @@ function zh_CN_default() {
   };
 }
 
-// node_modules/zod/v4/locales/zh-TW.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/zh-TW.js
 var error49 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u5143", verb: "\u64C1\u6709" },
@@ -24573,7 +24573,7 @@ function zh_TW_default() {
   };
 }
 
-// node_modules/zod/v4/locales/yo.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/locales/yo.js
 var error50 = () => {
   const Sizable = {
     string: { unit: "\xE0mi", verb: "n\xED" },
@@ -24681,7 +24681,7 @@ function yo_default() {
   };
 }
 
-// node_modules/zod/v4/core/registries.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -24731,7 +24731,7 @@ function registry() {
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
 
-// node_modules/zod/v4/core/api.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/api.js
 // @__NO_SIDE_EFFECTS__
 function _string(Class2, params) {
   return new Class2({
@@ -25770,7 +25770,7 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
   return inst;
 }
 
-// node_modules/zod/v4/core/to-json-schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
   let target = params?.target ?? "draft-2020-12";
   if (target === "draft-4")
@@ -26129,7 +26129,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   return finalize(ctx, schema);
 };
 
-// node_modules/zod/v4/core/json-schema-processors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/json-schema-processors.js
 var formatMap = {
   guid: "uuid",
   url: "uri",
@@ -26673,7 +26673,7 @@ function toJSONSchema(input, params) {
   return finalize(ctx, input);
 }
 
-// node_modules/zod/v4/core/json-schema-generator.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/json-schema-generator.js
 var JSONSchemaGenerator = class {
   /** @deprecated Access via ctx instead */
   get metadataRegistry() {
@@ -26748,10 +26748,10 @@ var JSONSchemaGenerator = class {
   }
 };
 
-// node_modules/zod/v4/core/json-schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/core/json-schema.js
 var json_schema_exports = {};
 
-// node_modules/zod/v4/classic/schemas.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/schemas.js
 var schemas_exports2 = {};
 __export(schemas_exports2, {
   ZodAny: () => ZodAny,
@@ -26922,7 +26922,7 @@ __export(schemas_exports2, {
   xor: () => xor
 });
 
-// node_modules/zod/v4/classic/checks.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/checks.js
 var checks_exports2 = {};
 __export(checks_exports2, {
   endsWith: () => _endsWith,
@@ -26956,7 +26956,7 @@ __export(checks_exports2, {
   uppercase: () => _uppercase
 });
 
-// node_modules/zod/v4/classic/iso.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/iso.js
 var iso_exports = {};
 __export(iso_exports, {
   ZodISODate: () => ZodISODate,
@@ -26997,7 +26997,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// node_modules/zod/v4/classic/errors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/errors.js
 var initializer2 = (inst, issues) => {
   $ZodError.init(inst, issues);
   inst.name = "ZodError";
@@ -27037,7 +27037,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, {
   Parent: Error
 });
 
-// node_modules/zod/v4/classic/parse.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse2 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -27051,7 +27051,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// node_modules/zod/v4/classic/schemas.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/schemas.js
 var _installedGroups = /* @__PURE__ */ new WeakMap();
 function _installLazyMethods(inst, group, methods) {
   const proto = Object.getPrototypeOf(inst);
@@ -28341,7 +28341,7 @@ function preprocess(fn, schema) {
   });
 }
 
-// node_modules/zod/v4/classic/compat.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/compat.js
 var ZodIssueCode = {
   invalid_type: "invalid_type",
   too_big: "too_big",
@@ -28367,7 +28367,7 @@ var ZodFirstPartyTypeKind;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind3) {
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
 
-// node_modules/zod/v4/classic/from-json-schema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/from-json-schema.js
 var z = {
   ...schemas_exports2,
   ...checks_exports2,
@@ -28847,7 +28847,7 @@ function fromJSONSchema(schema, params) {
   return convertSchema(normalized2, ctx);
 }
 
-// node_modules/zod/v4/classic/coerce.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/coerce.js
 var coerce_exports = {};
 __export(coerce_exports, {
   bigint: () => bigint3,
@@ -28872,10 +28872,10 @@ function date4(params) {
   return _coercedDate(ZodDate, params);
 }
 
-// node_modules/zod/v4/classic/external.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/classic/external.js
 config(en_default());
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
 var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var DEFAULT_NEGOTIATED_PROTOCOL_VERSION = "2025-03-26";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
@@ -30408,7 +30408,7 @@ var UrlElicitationRequiredError = class extends McpError {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
   constructor(options2) {
@@ -30445,7 +30445,7 @@ function serializeMessage(message) {
   return JSON.stringify(message) + "\n";
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 var StdioServerTransport = class {
   constructor(_stdin = process3.stdin, _stdout = process3.stdout, options2) {
     this._stdin = _stdin;
@@ -30512,14 +30512,14 @@ var StdioServerTransport = class {
   }
 };
 
-// node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
 var X_ALREADY_SENT = "x-hono-already-sent";
 
-// node_modules/@hono/node-server/dist/index.mjs
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@hono/node-server/dist/index.mjs
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
 
-// node_modules/hono/dist/helper/websocket/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/hono/dist/helper/websocket/index.js
 var defineWebSocketHelper = (handler) => {
   return ((...args) => {
     if (typeof args[0] === "function") {
@@ -30545,7 +30545,7 @@ var defineWebSocketHelper = (handler) => {
   });
 };
 
-// node_modules/@hono/node-server/dist/index.mjs
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@hono/node-server/dist/index.mjs
 var RequestError = class extends Error {
   constructor(message, options2) {
     super(message, options2);
@@ -31690,7 +31690,7 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   return new Response();
 });
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/mediaType.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/mediaType.js
 var import_content_type = __toESM(require_content_type(), 1);
 function mediaTypeEssence(header) {
   if (!header) {
@@ -31713,7 +31713,7 @@ function isJsonContentType(header) {
   return mediaTypeEssence(header) === "application/json";
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/sseKeepAlive.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sseKeepAlive.js
 var DEFAULT_SSE_KEEP_ALIVE_MS = 15e3;
 var MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
 function armSseKeepAlive(intervalMs, onTick) {
@@ -31725,7 +31725,7 @@ function armSseKeepAlive(intervalMs, onTick) {
   return timer;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/webStandardStreamableHttp.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/webStandardStreamableHttp.js
 var WebStandardStreamableHTTPServerTransport = class {
   constructor(options2 = {}) {
     this._started = false;
@@ -32457,7 +32457,7 @@ data:
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/streamableHttp.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/streamableHttp.js
 var StreamableHTTPServerTransport = class {
   constructor(options2 = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
@@ -32559,7 +32559,7 @@ var StreamableHTTPServerTransport = class {
   }
 };
 
-// node_modules/zod/v3/helpers/util.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
   util2.assertEqual = (_) => {
@@ -32693,7 +32693,7 @@ var getParsedType2 = (data) => {
   }
 };
 
-// node_modules/zod/v3/ZodError.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/ZodError.js
 var ZodIssueCode2 = util.arrayToEnum([
   "invalid_type",
   "invalid_literal",
@@ -32807,7 +32807,7 @@ ZodError2.create = (issues) => {
   return error51;
 };
 
-// node_modules/zod/v3/locales/en.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/locales/en.js
 var errorMap = (issue2, _ctx) => {
   let message;
   switch (issue2.code) {
@@ -32910,13 +32910,13 @@ var errorMap = (issue2, _ctx) => {
 };
 var en_default2 = errorMap;
 
-// node_modules/zod/v3/errors.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default2;
 function getErrorMap2() {
   return overrideErrorMap;
 }
 
-// node_modules/zod/v3/helpers/parseUtil.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
   const { data, path, errorMaps, issueData } = params;
   const fullPath = [...path, ...issueData.path || []];
@@ -33025,14 +33025,14 @@ var isDirty = (x) => x.status === "dirty";
 var isValid = (x) => x.status === "valid";
 var isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-// node_modules/zod/v3/helpers/errorUtil.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil;
 (function(errorUtil2) {
   errorUtil2.errToObj = (message) => typeof message === "string" ? { message } : message || {};
   errorUtil2.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil || (errorUtil = {}));
 
-// node_modules/zod/v3/types.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
   constructor(parent, value, path, key) {
     this._cachedPath = [];
@@ -36435,7 +36435,7 @@ var nullableType = ZodNullable2.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
 
-// node_modules/zod/v4/mini/schemas.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod/v4/mini/schemas.js
 var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
   if (!inst._zod)
     throw new Error("Uninitialized schema in ZodMiniType.");
@@ -36481,7 +36481,7 @@ function object2(shape, params) {
   return new ZodMiniObject(def);
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
 function isZ4Schema(s) {
   const schema = s;
   return !!schema._zod;
@@ -36641,12 +36641,12 @@ function getLiteralValue(schema) {
   return void 0;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
 function isTerminal(status) {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 
-// node_modules/zod-to-json-schema/dist/esm/Options.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/Options.js
 var ignoreOverride = /* @__PURE__ */ Symbol("Let zodToJsonSchema decide on which parser to use");
 var defaultOptions = {
   name: void 0,
@@ -36680,7 +36680,7 @@ var getDefaultOptions = (options2) => typeof options2 === "string" ? {
   ...options2
 };
 
-// node_modules/zod-to-json-schema/dist/esm/Refs.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/Refs.js
 var getRefs = (options2) => {
   const _options = getDefaultOptions(options2);
   const currentPath = _options.name !== void 0 ? [..._options.basePath, _options.definitionPath, _options.name] : _options.basePath;
@@ -36701,7 +36701,7 @@ var getRefs = (options2) => {
   };
 };
 
-// node_modules/zod-to-json-schema/dist/esm/errorMessages.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/errorMessages.js
 function addErrorMessage(res, key, errorMessage, refs2) {
   if (!refs2?.errorMessages)
     return;
@@ -36717,7 +36717,7 @@ function setResponseValueAndErrors(res, key, value, errorMessage, refs2) {
   addErrorMessage(res, key, errorMessage, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
 var getRelativePath = (pathA, pathB) => {
   let i = 0;
   for (; i < pathA.length && i < pathB.length; i++) {
@@ -36727,7 +36727,7 @@ var getRelativePath = (pathA, pathB) => {
   return [(pathA.length - i).toString(), ...pathB.slice(i)].join("/");
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/any.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/any.js
 function parseAnyDef(refs2) {
   if (refs2.target !== "openAi") {
     return {};
@@ -36743,7 +36743,7 @@ function parseAnyDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/array.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/array.js
 function parseArrayDef(def, refs2) {
   const res = {
     type: "array"
@@ -36767,7 +36767,7 @@ function parseArrayDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
 function parseBigintDef(def, refs2) {
   const res = {
     type: "integer",
@@ -36813,24 +36813,24 @@ function parseBigintDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
 function parseBooleanDef() {
   return {
     type: "boolean"
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
 function parseBrandedDef(_def, refs2) {
   return parseDef(_def.type._def, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
 var parseCatchDef = (def, refs2) => {
   return parseDef(def.innerType._def, refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/date.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/date.js
 function parseDateDef(def, refs2, overrideDateStrategy) {
   const strategy = overrideDateStrategy ?? refs2.dateStrategy;
   if (Array.isArray(strategy)) {
@@ -36889,7 +36889,7 @@ var integerDateParser = (def, refs2) => {
   return res;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/default.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/default.js
 function parseDefaultDef(_def, refs2) {
   return {
     ...parseDef(_def.innerType._def, refs2),
@@ -36897,12 +36897,12 @@ function parseDefaultDef(_def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
 function parseEffectsDef(_def, refs2) {
   return refs2.effectStrategy === "input" ? parseDef(_def.schema._def, refs2) : parseAnyDef(refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
 function parseEnumDef(def) {
   return {
     type: "string",
@@ -36910,7 +36910,7 @@ function parseEnumDef(def) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
 var isJsonSchema7AllOfType = (type) => {
   if ("type" in type && type.type === "string")
     return false;
@@ -36952,7 +36952,7 @@ function parseIntersectionDef(def, refs2) {
   } : void 0;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
 function parseLiteralDef(def, refs2) {
   const parsedType2 = typeof def.value;
   if (parsedType2 !== "bigint" && parsedType2 !== "number" && parsedType2 !== "boolean" && parsedType2 !== "string") {
@@ -36972,7 +36972,7 @@ function parseLiteralDef(def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/string.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/string.js
 var emojiRegex2 = void 0;
 var zodPatterns = {
   /**
@@ -37297,7 +37297,7 @@ function stringifyRegExpWithFlags(regex, refs2) {
   return pattern;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/record.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/record.js
 function parseRecordDef(def, refs2) {
   if (refs2.target === "openAi") {
     console.warn("Warning: OpenAI may not support records in schemas! Try an array of key-value pairs instead.");
@@ -37349,7 +37349,7 @@ function parseRecordDef(def, refs2) {
   return schema;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/map.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/map.js
 function parseMapDef(def, refs2) {
   if (refs2.mapStrategy === "record") {
     return parseRecordDef(def, refs2);
@@ -37374,7 +37374,7 @@ function parseMapDef(def, refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object3 = def.values;
   const actualKeys = Object.keys(def.values).filter((key) => {
@@ -37388,7 +37388,7 @@ function parseNativeEnumDef(def) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/never.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/never.js
 function parseNeverDef(refs2) {
   return refs2.target === "openAi" ? void 0 : {
     not: parseAnyDef({
@@ -37398,7 +37398,7 @@ function parseNeverDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/null.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/null.js
 function parseNullDef(refs2) {
   return refs2.target === "openApi3" ? {
     enum: ["null"],
@@ -37408,7 +37408,7 @@ function parseNullDef(refs2) {
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/union.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/union.js
 var primitiveMappings = {
   ZodString: "string",
   ZodNumber: "number",
@@ -37476,7 +37476,7 @@ var asAnyOf = (def, refs2) => {
   return anyOf.length ? { anyOf } : void 0;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
 function parseNullableDef(def, refs2) {
   if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) && (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
     if (refs2.target === "openApi3") {
@@ -37508,7 +37508,7 @@ function parseNullableDef(def, refs2) {
   return base && { anyOf: [base, { type: "null" }] };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/number.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/number.js
 function parseNumberDef(def, refs2) {
   const res = {
     type: "number"
@@ -37557,7 +37557,7 @@ function parseNumberDef(def, refs2) {
   return res;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/object.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/object.js
 function parseObjectDef(def, refs2) {
   const forceOptionalIntoNullable = refs2.target === "openAi";
   const result = {
@@ -37627,7 +37627,7 @@ function safeIsOptional(schema) {
   }
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
 var parseOptionalDef = (def, refs2) => {
   if (refs2.currentPath.toString() === refs2.propertyPath?.toString()) {
     return parseDef(def.innerType._def, refs2);
@@ -37646,7 +37646,7 @@ var parseOptionalDef = (def, refs2) => {
   } : parseAnyDef(refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
 var parsePipelineDef = (def, refs2) => {
   if (refs2.pipeStrategy === "input") {
     return parseDef(def.in._def, refs2);
@@ -37666,12 +37666,12 @@ var parsePipelineDef = (def, refs2) => {
   };
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
 function parsePromiseDef(def, refs2) {
   return parseDef(def.type._def, refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/set.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/set.js
 function parseSetDef(def, refs2) {
   const items = parseDef(def.valueType._def, {
     ...refs2,
@@ -37691,7 +37691,7 @@ function parseSetDef(def, refs2) {
   return schema;
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
 function parseTupleDef(def, refs2) {
   if (def.rest) {
     return {
@@ -37719,24 +37719,24 @@ function parseTupleDef(def, refs2) {
   }
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
 function parseUndefinedDef(refs2) {
   return {
     not: parseAnyDef(refs2)
   };
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
 function parseUnknownDef(refs2) {
   return parseAnyDef(refs2);
 }
 
-// node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
 var parseReadonlyDef = (def, refs2) => {
   return parseDef(def.innerType._def, refs2);
 };
 
-// node_modules/zod-to-json-schema/dist/esm/selectParser.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/selectParser.js
 var selectParser = (def, typeName, refs2) => {
   switch (typeName) {
     case ZodFirstPartyTypeKind2.ZodString:
@@ -37812,7 +37812,7 @@ var selectParser = (def, typeName, refs2) => {
   }
 };
 
-// node_modules/zod-to-json-schema/dist/esm/parseDef.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/parseDef.js
 function parseDef(def, refs2, forceResolution = false) {
   const seenItem = refs2.seen.get(def);
   if (refs2.override) {
@@ -37868,7 +37868,7 @@ var addMeta = (def, refs2, jsonSchema) => {
   return jsonSchema;
 };
 
-// node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
 var zodToJsonSchema = (schema, options2) => {
   const refs2 = getRefs(options2);
   let definitions = typeof options2 === "object" && options2.definitions ? Object.entries(options2.definitions).reduce((acc, [name2, schema2]) => ({
@@ -37930,7 +37930,7 @@ var zodToJsonSchema = (schema, options2) => {
   return combined;
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
 function mapMiniTarget(t) {
   if (!t)
     return "draft-7";
@@ -37972,7 +37972,7 @@ function parseWithCompat(schema, data) {
   return result.data;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
 var DEFAULT_REQUEST_TIMEOUT_MSEC = 6e4;
 var Protocol = class {
   constructor(_options) {
@@ -38926,7 +38926,7 @@ function mergeCapabilities(base, additional) {
   return result;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
 var import_ajv = __toESM(require_ajv(), 1);
 var import_ajv_formats = __toESM(require_dist(), 1);
 function createDefaultAjvInstance() {
@@ -38994,7 +38994,7 @@ var AjvJsonSchemaValidator = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
 var ExperimentalServerTasks = class {
   constructor(_server) {
     this._server = _server;
@@ -39207,7 +39207,7 @@ var ExperimentalServerTasks = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
 function assertToolsCallTaskCapability(requests, method, entityName) {
   if (!requests) {
     throw new Error(`${entityName} does not support task creation (required for ${method})`);
@@ -39242,7 +39242,7 @@ function assertClientRequestTaskCapability(requests, method, entityName) {
   }
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
 var Server = class extends Protocol {
   /**
    * Initializes this server with the given name and version information.
@@ -39613,7 +39613,7 @@ var Server = class extends Protocol {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
 var COMPLETABLE_SYMBOL = /* @__PURE__ */ Symbol.for("mcp.completable");
 function isCompletable(schema) {
   return !!schema && typeof schema === "object" && COMPLETABLE_SYMBOL in schema;
@@ -39627,7 +39627,7 @@ var McpZodTypeKind;
   McpZodTypeKind2["Completable"] = "McpCompletable";
 })(McpZodTypeKind || (McpZodTypeKind = {}));
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
 var TOOL_NAME_REGEX = /^[A-Za-z0-9._-]{1,128}$/;
 function validateToolName(name) {
   const warnings = [];
@@ -39685,7 +39685,7 @@ function validateAndWarnToolName(name) {
   return result.isValid;
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
 var ExperimentalMcpServerTasks = class {
   constructor(_mcpServer) {
     this._mcpServer = _mcpServer;
@@ -39700,7 +39700,7 @@ var ExperimentalMcpServerTasks = class {
   }
 };
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
+// ../../../../../../../Users/shaurya/Documents/Code/mcp-v2/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
 var McpServer = class {
   constructor(serverInfo, options2) {
     this._registeredResources = {};
@@ -43936,6 +43936,41 @@ function isCanonicalStaticBooleanBinding(value, expected) {
 }
 
 // dist/tooljetClient.js
+var WORKSPACE_PERMISSION_KEYS = [
+  "appCreate",
+  "appDelete",
+  "moduleCreate",
+  "moduleDelete",
+  "workflowCreate",
+  "workflowDelete",
+  "folderCRUD",
+  "orgConstantCRUD",
+  "tjdbCRUD",
+  "dataSourceCreate",
+  "dataSourceDelete",
+  "appPromote",
+  "appRelease"
+];
+var WORKSPACE_ACCESS_KEYS = [
+  "canEdit",
+  "canView",
+  "hideFromDashboard",
+  "canAccessDevelopment",
+  "canAccessStaging",
+  "canAccessProduction",
+  "canAccessReleased",
+  "canConfigure",
+  "canUse"
+];
+function workspaceAccessKeys(type) {
+  if (type === "data_source")
+    return ["canConfigure", "canUse"];
+  if (type === "module")
+    return ["canEdit", "canView", "hideFromDashboard"];
+  if (type === "workflow")
+    return ["canEdit", "canView"];
+  return WORKSPACE_ACCESS_KEYS.filter((key) => !["canConfigure", "canUse"].includes(key));
+}
 var PartialWriteError = class extends Error {
   completed;
   failures;
@@ -44067,12 +44102,86 @@ function createClient(auth, config2) {
     if (!value || typeof value.id !== "string" || typeof value.name !== "string" || !["default", "custom"].includes(value.type)) {
       throw new Error("Unexpected workspace group response.");
     }
+    const permissions = booleanFields(value, WORKSPACE_PERMISSION_KEYS);
     return {
       id: value.id,
       name: value.name,
       type: value.type,
-      ...typeof value.disabled === "boolean" ? { disabled: value.disabled } : {}
+      ...typeof value.disabled === "boolean" ? { disabled: value.disabled } : {},
+      ...Object.keys(permissions).length ? { permissions } : {}
     };
+  }
+  function booleanFields(value, keys) {
+    return Object.fromEntries(keys.filter((key) => typeof value?.[key] === "boolean").map((key) => [key, value[key]]));
+  }
+  async function updateWorkspaceGroupPermissions(groupId, permissions, allowRoleChange = false) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...permissions, allowRoleChange })
+    });
+    await assertOk(res, "updateWorkspaceGroupPermissions");
+  }
+  async function duplicateWorkspaceGroup(groupId, options2) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/duplicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options2)
+    });
+    await assertOk(res, "duplicateWorkspaceGroup");
+    const created = await res.json();
+    if (typeof created?.id !== "string")
+      throw new Error("Unexpected duplicated group response.");
+    return getWorkspaceGroup(created.id);
+  }
+  async function listWorkspaceGroupResources(type) {
+    const res = await auth.authedFetch(`${groupPath}/granular-permissions/addable-${type === "data_source" ? "data-sources" : "apps"}`);
+    await assertOk(res, "listWorkspaceGroupResources");
+    const items = await res.json();
+    if (!Array.isArray(items))
+      throw new Error("Unexpected group resources response.");
+    const appType = { app: "front-end", module: "module", workflow: "workflow" };
+    return items.filter((item) => type === "data_source" || item.type === appType[type]).map((item) => {
+      if (typeof item.id !== "string" || typeof item.name !== "string")
+        throw new Error("Unexpected group resource.");
+      return { id: item.id, name: item.name };
+    });
+  }
+  async function listWorkspaceGroupAccess(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/granular-permissions`);
+    await assertOk(res, "listWorkspaceGroupAccess");
+    const items = await res.json();
+    if (!Array.isArray(items))
+      throw new Error("Unexpected granular permissions response.");
+    return items.map((item) => {
+      if (typeof item.id !== "string" || typeof item.name !== "string" || typeof item.isAll !== "boolean" || !["app", "module", "workflow", "data_source"].includes(item.type))
+        throw new Error("Unexpected granular permission.");
+      const ds = item.type === "data_source";
+      const detail = ds ? item.dataSourcesGroupPermission : item.appsGroupPermissions;
+      return {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        is_all: item.isAll,
+        actions: booleanFields(detail, workspaceAccessKeys(item.type)),
+        resources: (detail?.[ds ? "groupDataSources" : "groupApps"] ?? []).map((link) => {
+          const resource = link[ds ? "dataSource" : "app"];
+          if (!resource || typeof resource.id !== "string" || typeof resource.name !== "string" || typeof link.id !== "string") {
+            throw new Error("Unexpected granular permission resource.");
+          }
+          return { id: resource.id, name: resource.name, membership_id: link.id };
+        })
+      };
+    });
+  }
+  async function writeWorkspaceGroupAccess(method, groupId, type, ruleId, body) {
+    const route = type === "app" ? "app" : "data-source";
+    const path = method === "POST" ? `${groupId}/granular-permissions/${route}` : `granular-permissions/${route}/${ruleId}`;
+    const res = await auth.authedFetch(`${groupPath}/${path}`, {
+      method,
+      ...body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}
+    });
+    await assertOk(res, "writeWorkspaceGroupAccess");
   }
   async function listWorkspaceGroups() {
     const res = await auth.authedFetch(groupPath);
@@ -45243,6 +45352,11 @@ function createClient(auth, config2) {
     renameWorkspaceGroup,
     deleteWorkspaceGroup,
     removeWorkspaceGroupMember,
+    updateWorkspaceGroupPermissions,
+    duplicateWorkspaceGroup,
+    listWorkspaceGroupAccess,
+    listWorkspaceGroupResources,
+    writeWorkspaceGroupAccess,
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
@@ -45312,20 +45426,32 @@ function fail(err) {
 
 // dist/tools/workspaceGroupManagement.js
 function listWorkspaceGroupsTool(client) {
-  const schema = external_exports.object({ group_id: external_exports.string().uuid().optional() }).strict();
+  const schema = external_exports.object({
+    group_id: external_exports.string().uuid().optional(),
+    include_permissions: external_exports.boolean().optional(),
+    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
+  }).strict();
   return {
     name: "list_workspace_groups",
     title: "List Workspace Groups",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: "List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use exact returned ids for group changes. Requires ToolJet admin permissions.",
+    description: "List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
         const args = schema.parse(input);
+        if (args.include_permissions && !args.group_id)
+          throw new Error("group_id is required with include_permissions.");
+        const resources = args.resource_type ? { resources: await client.listWorkspaceGroupResources(args.resource_type) } : {};
         if (!args.group_id)
-          return ok({ groups: await client.listWorkspaceGroups() });
+          return ok({ ...args.resource_type ? {} : { groups: await client.listWorkspaceGroups() }, ...resources });
         const group = await client.getWorkspaceGroup(args.group_id);
-        return ok({ group, members: await client.listWorkspaceGroupMembers(args.group_id) });
+        return ok({
+          group,
+          members: await client.listWorkspaceGroupMembers(args.group_id),
+          ...resources,
+          ...args.include_permissions ? { access_rules: await client.listWorkspaceGroupAccess(args.group_id) } : {}
+        });
       } catch (error51) {
         return fail(error51);
       }
@@ -45334,17 +45460,35 @@ function listWorkspaceGroupsTool(client) {
 }
 function manageWorkspaceGroupsTool(client) {
   const schema = external_exports.object({
-    action: external_exports.enum(["create", "rename", "delete", "remove_member"]),
+    action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
     group_id: external_exports.string().uuid().optional(),
     name: external_exports.string().trim().min(1).max(50).optional(),
     group_user_id: external_exports.string().uuid().optional(),
-    confirm: external_exports.boolean().optional()
+    confirm: external_exports.boolean().optional(),
+    permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
+    copy: external_exports.object({
+      permissions: external_exports.boolean().optional(),
+      members: external_exports.boolean().optional(),
+      apps: external_exports.boolean().optional(),
+      modules: external_exports.boolean().optional(),
+      workflows: external_exports.boolean().optional(),
+      data_sources: external_exports.boolean().optional()
+    }).strict().optional(),
+    rule_id: external_exports.string().uuid().optional(),
+    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
+    access: external_exports.object({
+      name: external_exports.string().trim().min(1).max(255).optional(),
+      is_all: external_exports.boolean().optional(),
+      actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
+      resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional()
+    }).strict().optional(),
+    allow_role_change: external_exports.boolean().optional()
   }).strict();
   return {
     name: "manage_workspace_groups",
     title: "Manage Workspace Groups",
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
-    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. Default role groups cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
+    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and copy flags (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -45360,11 +45504,104 @@ function manageWorkspaceGroupsTool(client) {
         if (args.action === "remove_member" !== (args.group_user_id !== void 0)) {
           throw new Error(args.action === "remove_member" ? "group_user_id is required." : "group_user_id must be omitted.");
         }
+        const expected = {
+          duplicate: ["copy"],
+          update_permissions: ["permissions", "allow_role_change"],
+          create_access: ["resource_type", "access"],
+          update_access: ["rule_id", "access", "allow_role_change", "resource_type"],
+          delete_access: ["rule_id", "resource_type"]
+        };
+        for (const key of ["copy", "permissions", "resource_type", "access", "rule_id", "allow_role_change"]) {
+          if (args[key] !== void 0 && !expected[args.action]?.includes(key))
+            throw new Error(`${key} must be omitted for ${args.action}.`);
+        }
+        for (const key of expected[args.action] ?? []) {
+          if (key !== "allow_role_change" && !(key === "resource_type" && args.action !== "create_access") && args[key] === void 0)
+            throw new Error(`${key} is required.`);
+        }
+        if (args.permissions && !Object.keys(args.permissions).length)
+          throw new Error("permissions must contain at least one switch.");
+        if (args.access && !Object.keys(args.access).length)
+          throw new Error("access must contain at least one change.");
         if (args.action === "create")
           return ok({ group: await client.createWorkspaceGroup(args.name) });
         const group = await client.getWorkspaceGroup(args.group_id);
-        if (group.type !== "custom")
+        const permissionAction = ["update_permissions", "create_access", "update_access", "delete_access"].includes(args.action);
+        if (group.type !== "custom" && args.action !== "duplicate" && !(permissionAction && group.name !== "admin")) {
           throw new Error("Only custom groups can be changed with this tool.");
+        }
+        if (args.action === "duplicate") {
+          const copy = args.copy;
+          return ok({ group: await client.duplicateWorkspaceGroup(group.id, {
+            addPermission: copy.permissions ?? false,
+            addUsers: copy.members ?? false,
+            addApps: copy.apps ?? false,
+            addModules: copy.modules ?? false,
+            addWorkflows: copy.workflows ?? false,
+            addDataSource: copy.data_sources ?? false
+          }) });
+        }
+        if (args.action === "update_permissions") {
+          await client.updateWorkspaceGroupPermissions(group.id, args.permissions, args.allow_role_change);
+          return ok({ group: await client.getWorkspaceGroup(group.id), updated: true });
+        }
+        if (["create_access", "update_access", "delete_access"].includes(args.action)) {
+          const rules = await client.listWorkspaceGroupAccess(group.id);
+          const rule = args.rule_id ? rules.find((item) => item.id === args.rule_id) : void 0;
+          if (args.rule_id && !rule)
+            throw new Error("Access rule not found in this group. Read include_permissions:true again.");
+          if (rule && args.resource_type && args.resource_type !== rule.type)
+            throw new Error("resource_type does not match this access rule.");
+          const type = rule?.type ?? args.resource_type;
+          if (args.action === "delete_access") {
+            await client.writeWorkspaceGroupAccess("DELETE", group.id, type, rule.id);
+            return ok({ group_id: group.id, name: group.name, rule_id: rule.id, rule_name: rule.name, deleted: true });
+          }
+          const access = args.access;
+          const creating = args.action === "create_access";
+          if (creating && (!access.name || access.is_all === void 0 || !access.actions)) {
+            throw new Error("create_access requires access.name, is_all and actions.");
+          }
+          const actionKeys = workspaceAccessKeys(type);
+          if (access.actions && (!Object.keys(access.actions).length || Object.keys(access.actions).some((key) => !actionKeys.includes(key)))) {
+            throw new Error(`Invalid actions for ${type}. Use ${actionKeys.join(", ")}.`);
+          }
+          const all = access.is_all ?? rule.is_all;
+          const selected = access.resource_ids ?? (all ? [] : rule?.resources.map((item) => item.id) ?? []);
+          if (new Set(selected).size !== selected.length || all && selected.length || !all && !selected.length) {
+            throw new Error("Use unique resource_ids for a selected-resource rule; omit them or use [] for is_all:true.");
+          }
+          if (access.resource_ids || creating || rule?.is_all && !all) {
+            const available = await client.listWorkspaceGroupResources(type);
+            if (selected.some((id) => !available.some((item) => item.id === id)))
+              throw new Error("Resource not found in this workspace/resource type.");
+          }
+          const resourceKey = type === "data_source" ? "dataSourceId" : "appId";
+          const actions = { ...creating ? Object.fromEntries(actionKeys.map((key) => [key, false])) : rule.actions, ...access.actions };
+          if (creating) {
+            await client.writeWorkspaceGroupAccess("POST", group.id, type, void 0, {
+              name: access.name,
+              type,
+              groupId: group.id,
+              isAll: all,
+              createResourcePermissionObject: {
+                ...type === "data_source" ? { action: actions } : actions,
+                resourcesToAdd: selected.map((id) => ({ [resourceKey]: id }))
+              }
+            });
+          } else {
+            const current = rule.resources;
+            await client.writeWorkspaceGroupAccess("PUT", group.id, type, rule.id, {
+              ...access.name !== void 0 ? { name: access.name } : {},
+              isAll: all,
+              actions,
+              resourcesToAdd: selected.filter((id) => !current.some((item) => item.id === id)).map((id) => ({ [resourceKey]: id })),
+              resourcesToDelete: current.filter((item) => !selected.includes(item.id)).map((item) => ({ id: item.membership_id })),
+              allowRoleChange: args.allow_role_change ?? false
+            });
+          }
+          return ok({ group_id: group.id, name: group.name, access_rules: await client.listWorkspaceGroupAccess(group.id) });
+        }
         if (args.action === "rename") {
           await client.renameWorkspaceGroup(group.id, args.name);
           return ok({ group_id: group.id, name: args.name, renamed: true });

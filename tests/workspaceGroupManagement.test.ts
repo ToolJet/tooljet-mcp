@@ -4,6 +4,11 @@ import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from '../src/tools
 
 const groupId = '10000000-0000-4000-8000-000000000001';
 const membershipId = '20000000-0000-4000-8000-000000000002';
+const resourceId = '30000000-0000-4000-8000-000000000003';
+const ruleId = '40000000-0000-4000-8000-000000000004';
+const rule = { id: ruleId, name: 'Inventory readers', type: 'app', is_all: false,
+  actions: { canView: true, canEdit: false, canAccessReleased: true },
+  resources: [{ id: resourceId, name: 'Inventory', membership_id: membershipId }] };
 const group = { id: groupId, name: 'Field Operations', type: 'custom' };
 function fixture() {
   const mock = {
@@ -14,6 +19,11 @@ function fixture() {
     renameWorkspaceGroup: vi.fn(),
     deleteWorkspaceGroup: vi.fn(),
     removeWorkspaceGroupMember: vi.fn(),
+    updateWorkspaceGroupPermissions: vi.fn(),
+    duplicateWorkspaceGroup: vi.fn().mockResolvedValue({ ...group, name: 'Field Operations copy' }),
+    listWorkspaceGroupAccess: vi.fn().mockResolvedValue([rule]),
+    listWorkspaceGroupResources: vi.fn().mockResolvedValue([{ id: resourceId, name: 'Inventory' }]),
+    writeWorkspaceGroupAccess: vi.fn(),
   };
   const client = mock as unknown as ToolJetClient;
   return { mock, read: listWorkspaceGroupsTool(client), write: manageWorkspaceGroupsTool(client) };
@@ -99,5 +109,143 @@ describe('workspace group management', () => {
     const { write, mock } = fixture();
     expect((await write.handler({ ...input, confirm: true })).isError).toBe(true);
     for (const method of Object.values(mock)) expect(method).not.toHaveBeenCalled();
+  });
+});
+
+const accessOperations = [
+  { action: 'duplicate', group_id: groupId, copy: { permissions: true, apps: true } },
+  { action: 'update_permissions', group_id: groupId, permissions: { appCreate: true, appDelete: false } },
+  { action: 'create_access', group_id: groupId, resource_type: 'app',
+    access: { name: 'Inventory readers', is_all: false, actions: { canView: true }, resource_ids: [resourceId] } },
+  { action: 'update_access', group_id: groupId, rule_id: ruleId, access: { actions: { canEdit: true } } },
+  { action: 'delete_access', group_id: groupId, rule_id: ruleId },
+];
+
+describe('workspace group permissions and duplication', () => {
+  it.each(accessOperations)('requires explicit confirmation for $action', async operation => {
+    const { write, mock } = fixture();
+    expect((await write.handler(operation)).isError).toBe(true);
+    for (const method of Object.values(mock)) expect(method).not.toHaveBeenCalled();
+  });
+  it.each(accessOperations)('executes $action', async operation => {
+    const { write } = fixture();
+    expect((await write.handler({ ...operation, confirm: true })).isError).not.toBe(true);
+  });
+  it('reads rules and selectable resources without exposing mutations', async () => {
+    const { read, mock } = fixture();
+    const result = JSON.parse((await read.handler({ group_id: groupId, include_permissions: true, resource_type: 'app' })).content[0]!.text);
+    expect(result.access_rules).toEqual([rule]);
+    expect(result.resources).toEqual([{ id: resourceId, name: 'Inventory' }]);
+    expect(mock.listWorkspaceGroupAccess).toHaveBeenCalledWith(groupId);
+    expect((await read.handler({ include_permissions: true })).isError).toBe(true);
+  });
+  it('copies only the selected categories', async () => {
+    const { write, mock } = fixture();
+    await write.handler({ ...accessOperations[0], confirm: true });
+    expect(mock.duplicateWorkspaceGroup).toHaveBeenCalledWith(groupId, {
+      addPermission: true, addApps: true, addUsers: false, addModules: false, addWorkflows: false, addDataSource: false,
+    });
+  });
+  it('updates only supplied switches and does not authorize role changes implicitly', async () => {
+    const { write, mock } = fixture();
+    await write.handler({ ...accessOperations[1], confirm: true });
+    expect(mock.updateWorkspaceGroupPermissions).toHaveBeenCalledWith(groupId, { appCreate: true, appDelete: false }, undefined);
+  });
+  it('preserves unmentioned actions and resource memberships', async () => {
+    const { write, mock } = fixture();
+    await write.handler({ ...accessOperations[3], confirm: true });
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('PUT', groupId, 'app', ruleId, {
+      isAll: false, actions: { canView: true, canEdit: true, canAccessReleased: true },
+      resourcesToAdd: [], resourcesToDelete: [], allowRoleChange: false,
+    });
+  });
+  it('uses exact relation IDs when replacing the resource selection', async () => {
+    const { write, mock } = fixture();
+    await write.handler({ ...accessOperations[3], access: { is_all: true }, confirm: true });
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('PUT', groupId, 'app', ruleId, expect.objectContaining({
+      isAll: true, resourcesToAdd: [], resourcesToDelete: [{ id: membershipId }],
+    }));
+  });
+  it.each(['app', 'module', 'workflow', 'data_source'])('creates %s access using the API shape', async type => {
+    const { write, mock } = fixture();
+    const actions = type === 'data_source' ? { canUse: true } : { canView: true };
+    const expectedActions = type === 'data_source' ? { canUse: true, canConfigure: false } : type === 'app'
+      ? { canEdit: false, canView: true, hideFromDashboard: false, canAccessDevelopment: false,
+          canAccessStaging: false, canAccessProduction: false, canAccessReleased: false } : { canEdit: false, canView: true, ...(type === 'module' ? { hideFromDashboard: false } : {}) };
+    const result = await write.handler({ ...accessOperations[2], resource_type: type,
+      access: { name: 'Resource viewers', is_all: false, actions, resource_ids: [resourceId] }, confirm: true });
+    expect(result.isError).not.toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('POST', groupId, type, undefined, {
+      name: 'Resource viewers', type, groupId, isAll: false,
+      createResourcePermissionObject: { ...(type === 'data_source' ? { action: expectedActions } : expectedActions),
+        resourcesToAdd: [{ [type === 'data_source' ? 'dataSourceId' : 'appId']: resourceId }] },
+    });
+  });
+  it.each(['update_access', 'delete_access'])('rejects a rule from a different group for %s', async action => {
+    const { write, mock } = fixture();
+    mock.listWorkspaceGroupAccess.mockResolvedValue([]);
+    const result = await write.handler({ action, group_id: groupId, rule_id: ruleId,
+      ...(action === 'update_access' ? { access: { name: 'Other' } } : {}), confirm: true });
+    expect(result.isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+  it('rejects resources not in the current workspace and resource type', async () => {
+    const { write, mock } = fixture();
+    mock.listWorkspaceGroupResources.mockResolvedValue([]);
+    expect((await write.handler({ ...accessOperations[2], confirm: true })).isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+  it.each(accessOperations.slice(1))('protects default Admin permissions for $action', async operation => {
+    const { write, mock } = fixture();
+    mock.getWorkspaceGroup.mockResolvedValue({ ...group, name: 'admin', type: 'default' });
+    expect((await write.handler({ ...operation, confirm: true })).isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+    expect(mock.updateWorkspaceGroupPermissions).not.toHaveBeenCalled();
+  });
+  it('allows default Builder permission updates subject to backend authorization', async () => {
+    const { write, mock } = fixture();
+    mock.getWorkspaceGroup.mockResolvedValue({ ...group, name: 'builder', type: 'default' });
+    expect((await write.handler({ ...accessOperations[1], confirm: true })).isError).not.toBe(true);
+    mock.updateWorkspaceGroupPermissions.mockRejectedValueOnce(new Error('License does not permit this change'));
+    expect((await write.handler({ ...accessOperations[1], confirm: true })).content[0]!.text).toContain('License');
+  });
+  it.each([
+    { ...accessOperations[1], permissions: {} },
+    { ...accessOperations[1], permissions: { guessedPermission: true } },
+    { ...accessOperations[0], copy: { unknown: true } },
+    { ...accessOperations[2], access: { name: 'Invalid', is_all: false, actions: { canView: true }, resource_ids: [] } },
+    { ...accessOperations[2], access: { name: 'Invalid', is_all: true, actions: { canView: true }, resource_ids: [resourceId] } },
+    { ...accessOperations[2], access: { name: 'Invalid', is_all: false, actions: { canView: true }, resource_ids: [resourceId, resourceId] } },
+    { ...accessOperations[2], access: { name: 'Invalid', is_all: true, actions: { canUse: true } } },
+    { ...accessOperations[2], allow_role_change: true },
+    { ...accessOperations[3], access: {} },
+    { ...accessOperations[4], access: { name: 'Ignored' } },
+  ])('rejects invalid permission payloads: %j', async operation => {
+    const { write, mock } = fixture();
+    expect((await write.handler({ ...operation, confirm: true })).isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+    expect(mock.updateWorkspaceGroupPermissions).not.toHaveBeenCalled();
+    expect(mock.duplicateWorkspaceGroup).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('access resource-type selectors', () => {
+  it('accepts a redundant matching type without requiring a second action', async () => {
+    const { write, mock } = fixture();
+    expect((await write.handler({ ...accessOperations[3], resource_type: 'app', confirm: true })).isError).not.toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledTimes(1);
+  });
+  it('rejects a conflicting type without writing', async () => {
+    const { write, mock } = fixture();
+    expect((await write.handler({ ...accessOperations[3], resource_type: 'data_source', confirm: true })).isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+  it('supports the module dashboard visibility switch', async () => {
+    const { write, mock } = fixture();
+    mock.listWorkspaceGroupAccess.mockResolvedValue([{ ...rule, type: 'module' }]);
+    expect((await write.handler({ ...accessOperations[3], access: { actions: { hideFromDashboard: true } }, confirm: true })).isError).not.toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('PUT', groupId, 'module', ruleId,
+      expect.objectContaining({ actions: expect.objectContaining({ hideFromDashboard: true }) }));
   });
 });

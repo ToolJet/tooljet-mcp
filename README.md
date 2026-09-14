@@ -166,8 +166,8 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
 | `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |
 | `list_workspace_users(...)` | List/search workspace users with pagination and status filtering through PAT auth |
-| `list_workspace_groups(...)` | List groups, or members of a group with exact membership IDs |
-| `manage_workspace_groups(...)` | Create/rename/delete custom groups or remove members; requires confirmation and ToolJet admin permissions |
+| `list_workspace_groups(...)` | List groups/members; read permission switches and granular rules with `include_permissions:true`; discover selectable resources with `resource_type` |
+| `manage_workspace_groups(...)` | Create/rename/delete/duplicate groups, remove members, update permission switches, and create/update/delete granular access; requires confirmation and ToolJet admin permissions |
 | `manage_workspace_users(...)` | Invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
@@ -187,6 +187,11 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
+
+Group management stays within the PAT workspace. `manage_workspace_groups` supports `create`, `rename`, `delete`, `remove_member`, `duplicate`, `update_permissions`, `create_access`, `update_access`, and `delete_access`. Read groups and membership IDs with `list_workspace_groups`; add `group_id` and `include_permissions:true` for permission switches and granular rule IDs. Use `resource_type` (`app`, `module`, `workflow`, or `data_source`) to discover selectable resources.
+
+Permission updates change only supplied switches. New granular rules disable omitted action switches; updates preserve unmentioned actions. `access.resource_ids` replaces the selected resources, while `access.is_all:true` includes all current and future resources of that type. Duplication copies only the selected `copy` categories. Role-changing updates require explicit `allow_role_change:true` and remain subject to ToolJet's authorization and license checks. Default Admin permissions and default role group names/memberships are protected. Existing `manage_workspace_users` adds members to custom groups.
+
 
 Workspace theme creation and management are exposed through `manage_theme`; applying a theme to an app remains part
 of `update_app_settings`. The definition structure and token-backed styling guidance are documented in

@@ -73,11 +73,36 @@ export interface WorkspaceUser {
   [key: string]: unknown;
 }
 
+export const WORKSPACE_PERMISSION_KEYS = [
+  'appCreate', 'appDelete', 'moduleCreate', 'moduleDelete', 'workflowCreate', 'workflowDelete',
+  'folderCRUD', 'orgConstantCRUD', 'tjdbCRUD', 'dataSourceCreate', 'dataSourceDelete', 'appPromote', 'appRelease',
+] as const;
+export const WORKSPACE_ACCESS_KEYS = [
+  'canEdit', 'canView', 'hideFromDashboard', 'canAccessDevelopment', 'canAccessStaging',
+  'canAccessProduction', 'canAccessReleased', 'canConfigure', 'canUse',
+] as const;
+export type WorkspaceResourceType = 'app' | 'module' | 'workflow' | 'data_source';
+export function workspaceAccessKeys(type: WorkspaceResourceType): readonly string[] {
+  if (type === 'data_source') return ['canConfigure', 'canUse'];
+  if (type === 'module') return ['canEdit', 'canView', 'hideFromDashboard'];
+  if (type === 'workflow') return ['canEdit', 'canView'];
+  return WORKSPACE_ACCESS_KEYS.filter(key => !['canConfigure', 'canUse'].includes(key));
+}
+export interface WorkspaceAccessRule {
+  id: string;
+  name: string;
+  type: WorkspaceResourceType;
+  is_all: boolean;
+  actions: Record<string, boolean>;
+  resources: Array<{ id: string; name: string; membership_id: string }>;
+}
+
 export interface WorkspaceGroup {
   id: string;
   name: string;
   type: 'default' | 'custom';
   disabled?: boolean;
+  permissions?: Record<string, boolean>;
 }
 
 export interface WorkspaceGroupMember {
@@ -497,6 +522,12 @@ export interface ToolJetClient {
   renameWorkspaceGroup(groupId: string, name: string): Promise<void>;
   deleteWorkspaceGroup(groupId: string): Promise<void>;
   removeWorkspaceGroupMember(groupUserId: string): Promise<void>;
+  updateWorkspaceGroupPermissions(groupId: string, permissions: Record<string, boolean>, allowRoleChange?: boolean): Promise<void>;
+  duplicateWorkspaceGroup(groupId: string, options: Record<string, boolean>): Promise<WorkspaceGroup>;
+  listWorkspaceGroupAccess(groupId: string): Promise<WorkspaceAccessRule[]>;
+  listWorkspaceGroupResources(type: WorkspaceResourceType): Promise<Array<{ id: string; name: string }>>;
+  writeWorkspaceGroupAccess(method: 'POST' | 'PUT' | 'DELETE', groupId: string, type: WorkspaceResourceType,
+    ruleId?: string, body?: Record<string, unknown>): Promise<void>;
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
@@ -767,8 +798,75 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         !['default', 'custom'].includes(value.type)) {
       throw new Error('Unexpected workspace group response.');
     }
+    const permissions = booleanFields(value, WORKSPACE_PERMISSION_KEYS);
     return { id: value.id, name: value.name, type: value.type,
-      ...(typeof value.disabled === 'boolean' ? { disabled: value.disabled } : {}) };
+      ...(typeof value.disabled === 'boolean' ? { disabled: value.disabled } : {}),
+      ...(Object.keys(permissions).length ? { permissions } : {}) };
+
+  }
+
+  function booleanFields(value: any, keys: readonly string[]): Record<string, boolean> {
+    return Object.fromEntries(keys.filter(key => typeof value?.[key] === 'boolean').map(key => [key, value[key]]));
+  }
+
+  async function updateWorkspaceGroupPermissions(groupId: string, permissions: Record<string, boolean>, allowRoleChange = false) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}`, { method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...permissions, allowRoleChange }) });
+    await assertOk(res, 'updateWorkspaceGroupPermissions');
+  }
+
+  async function duplicateWorkspaceGroup(groupId: string, options: Record<string, boolean>): Promise<WorkspaceGroup> {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/duplicate`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options) });
+    await assertOk(res, 'duplicateWorkspaceGroup');
+    const created = await res.json();
+    if (typeof created?.id !== 'string') throw new Error('Unexpected duplicated group response.');
+    return getWorkspaceGroup(created.id);
+  }
+
+  async function listWorkspaceGroupResources(type: WorkspaceResourceType): Promise<Array<{ id: string; name: string }>> {
+    const res = await auth.authedFetch(`${groupPath}/granular-permissions/addable-${type === 'data_source' ? 'data-sources' : 'apps'}`);
+    await assertOk(res, 'listWorkspaceGroupResources');
+    const items = await res.json();
+    if (!Array.isArray(items)) throw new Error('Unexpected group resources response.');
+    const appType = { app: 'front-end', module: 'module', workflow: 'workflow' };
+    return items.filter(item => type === 'data_source' || item.type === appType[type])
+      .map(item => {
+        if (typeof item.id !== 'string' || typeof item.name !== 'string') throw new Error('Unexpected group resource.');
+        return { id: item.id, name: item.name };
+      });
+  }
+
+  async function listWorkspaceGroupAccess(groupId: string): Promise<WorkspaceAccessRule[]> {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/granular-permissions`);
+    await assertOk(res, 'listWorkspaceGroupAccess');
+    const items = await res.json();
+    if (!Array.isArray(items)) throw new Error('Unexpected granular permissions response.');
+    return items.map(item => {
+      if (typeof item.id !== 'string' || typeof item.name !== 'string' || typeof item.isAll !== 'boolean' ||
+          !['app', 'module', 'workflow', 'data_source'].includes(item.type)) throw new Error('Unexpected granular permission.');
+      const ds = item.type === 'data_source';
+      const detail = ds ? item.dataSourcesGroupPermission : item.appsGroupPermissions;
+      return { id: item.id, name: item.name, type: item.type, is_all: item.isAll,
+        actions: booleanFields(detail, workspaceAccessKeys(item.type)),
+        resources: (detail?.[ds ? 'groupDataSources' : 'groupApps'] ?? []).map((link: any) => {
+          const resource = link[ds ? 'dataSource' : 'app'];
+          if (!resource || typeof resource.id !== 'string' || typeof resource.name !== 'string' || typeof link.id !== 'string') {
+            throw new Error('Unexpected granular permission resource.');
+          }
+          return { id: resource.id, name: resource.name, membership_id: link.id };
+        }) };
+    });
+  }
+
+  async function writeWorkspaceGroupAccess(method: 'POST' | 'PUT' | 'DELETE', groupId: string,
+    type: WorkspaceResourceType, ruleId?: string, body?: Record<string, unknown>): Promise<void> {
+    // The UI routes workflow/module payloads through the data-source endpoint as well.
+    const route = type === 'app' ? 'app' : 'data-source';
+    const path = method === 'POST' ? `${groupId}/granular-permissions/${route}` : `granular-permissions/${route}/${ruleId}`;
+    const res = await auth.authedFetch(`${groupPath}/${path}`, { method,
+      ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
+    await assertOk(res, 'writeWorkspaceGroupAccess');
   }
 
   async function listWorkspaceGroups(): Promise<WorkspaceGroup[]> {
@@ -2301,6 +2399,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     renameWorkspaceGroup,
     deleteWorkspaceGroup,
     removeWorkspaceGroupMember,
+    updateWorkspaceGroupPermissions,
+    duplicateWorkspaceGroup,
+    listWorkspaceGroupAccess,
+    listWorkspaceGroupResources,
+    writeWorkspaceGroupAccess,
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
