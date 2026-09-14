@@ -4,6 +4,8 @@ Read this when wiring component, query, page, or Table-column events, and for mu
 
 ## Interactivity — wire events so the app DOES things (not just displays)
 
+- **Raw record → display → save:** keep source codes/IDs unchanged and put formatted labels or HTML in separate display keys. Detail views should resolve the current raw row by id, or preserve all raw fields they consume. After a successful save, refresh the source and reconcile the selected snapshot from a verified mutation response or refreshed read; refreshing only the Table leaves snapshot-bound details stale. Never update success state when the mutation failed. For paginated data, fetch the selected record if it is not in the current page.
+
 Components and queries alone make a *static* app. Use `add_events` for component, query, page, and Table Button-column behavior: `{ source_id, source_type, trigger, ref?, action }`. `component_id` is a backward-compatible shorthand for `source_type: "component"`.
 
 **Triggers:** component triggers come from `get_component_catalog(type).events` (Button `onClick`; Table `onPageChanged`/`onSearch`/`onSort`/`onFilterChanged`/`onBulkUpdate`; Form `onSubmit`/`onInvalid`). A Table Button-column click uses `source_type:"table_column"`, `trigger:"onClick"`, and `ref:"<column key or name>::<button id>"`. Query lifecycle triggers are `onDataQuerySuccess` and `onDataQueryFailure` with `source_type: "data_query"`. Page load is `onPageLoad` with `source_type: "page"`.

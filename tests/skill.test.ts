@@ -27,6 +27,21 @@ const both = guidance;
 // Unescape them so anchor comparisons match the rendered skill text.
 const generator = readFileSync(resolve(root, 'scripts/generate-skill.mjs'), 'utf8').replace(/\\`/g, '`');
 
+it('keeps raw source codes and refreshed detail-state guidance in both packages and the generator', () => {
+  for (const host of ['skill', 'skills/tooljet-app-builder']) {
+    const workflow = readFileSync(resolve(root, host, 'references/workflows.md'), 'utf8');
+    const event = readFileSync(resolve(root, host, 'references/events.md'), 'utf8');
+    const sourceRule = workflow.split('\n').find(line => line.startsWith('- Before authoring status-dependent'));
+    const detailRule = event.split('\n').find(line => line.startsWith('- **Raw record → display → save:**'));
+    expect(sourceRule).toContain('already-needed approved bounded read');
+    expect(detailRule).toContain('separate display keys');
+    expect(detailRule).toContain('reconcile the selected snapshot');
+    expect(detailRule).toContain('Never update success state when the mutation failed');
+    expect(generator).toContain(sourceRule!);
+    expect(generator).toContain(detailRule!);
+  }
+});
+
 it('publishes source-backed Kanban persistence paths from maintained local rules', () => {
   const rules = JSON.parse(readFileSync(resolve(root, 'data/component-binding-rules.json'), 'utf8'));
   expect(Object.keys(rules)).toHaveLength(22);
@@ -130,12 +145,12 @@ describe('generated skill — design decision framework', () => {
     }
   });
 
-  it('requires a dominant region/action, distinct-question components, and an internal critique', () => {
-    expect(designSection).toMatch(/one dominant region and at most one dominant action/i);
+  it('requires task-fit hierarchy without action quotas', () => {
+    expect(designSection).toMatch(/work and action hierarchy clear/i);
     expect(designSection).toMatch(/distinct user question/i);
-    expect(designSection).toMatch(/internal design critique/i);
-    // the critique enumerates its lenses
-    for (const lens of ['hierarchy', 'redundancy', 'density']) {
+    expect(designSection).toMatch(/internal check/i);
+    // The prompt retains task-fit criteria, not a compulsory composition.
+    for (const lens of ['hierarchy', 'decision', 'density']) {
       expect(designSection.toLowerCase()).toContain(lens);
     }
   });
@@ -492,7 +507,7 @@ describe('generated skill — information architecture & phasing (the crowded-pa
   it('requires planning information architecture (pages) before components', () => {
     expect(guidance).toMatch(/information architecture BEFORE any component/i);
     expect(guidance).toMatch(/name a PRODUCT, not a single page/i);
-    expect(guidance).toMatch(/one overview page \+ one focused page per major job/i);
+    expect(guidance).toMatch(/add an overview when it helps users orient or compare/i);
     expect(guidance).toMatch(/Map every capability to exactly ONE page/i);
   });
 
@@ -593,7 +608,7 @@ describe('generated skill is synchronized with the generator', () => {
     '## Workspace — confirm which one first',
     'page mode',
     'Monitor',
-    'internal design critique',
+    'internal check',
     'Chart.title` empty',
     'headerCasing: "none"',
     'Table row-action Button columns',
