@@ -10,7 +10,7 @@
 // The bundle is built from the tsc output (dist/), NOT src/, so the NodeNext `.js` import
 // specifiers resolve to real files (esbuild can't map `./foo.js` → `foo.ts` on its own).
 import { execSync, spawnSync } from 'node:child_process';
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,13 +22,21 @@ run('npm run build');
 mkdirSync(resolve(root, 'bundle'), { recursive: true });
 run(
   'npx --no-install esbuild dist/index.js --bundle --platform=node --format=esm ' +
-    '--outfile=bundle/index.js --legal-comments=none ' +
+    // Isolated builds may share node_modules via a symlink. Keep module labels relative
+    // to this checkout instead of embedding the dependency directory's physical path.
+    '--outfile=bundle/index.js --legal-comments=none --preserve-symlinks ' +
     // An ESM bundle has no `require`, so a CommonJS dependency calling require('process') (the
     // `yaml` parser does) dies at import time with "Dynamic require ... is not supported" — the
     // whole server fails to boot, and no unit test sees it because tests import src/, not this.
     // Defining require via createRequire gives those calls a real one.
     '--banner:js=\'import{createRequire as __cr}from"module";const require=__cr(import.meta.url);\''
 );
+
+// Reject home-directory and temporary-checkout paths before the artifact can be shipped.
+const bundle = readFileSync(resolve(root, 'bundle/index.js'), 'utf8');
+if (/(?:\/(?:Users|home)\/[^/\s"']+\/|\/(?:private\/)?(?:tmp|var\/folders)\/|[A-Za-z]:[\\/]+Users[\\/])/i.test(bundle)) {
+  throw new Error('build-plugin: generated bundle contains a machine-specific path. Check dependency symlinks and build inputs.');
+}
 
 // 2. Runtime catalogs and compatibility metadata live at `../data/*.json`. Assert they ship.
 for (const f of ['component-schemas.json', 'component-compatibility.json', 'datasource-schemas.json', 'default-theme.json']) {
