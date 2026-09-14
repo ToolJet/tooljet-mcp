@@ -291,19 +291,12 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
         };
-        let reports = await auditPages(targets, options);
-        // A private app redirects the headless browser to sign-in. When the deployment allows it
-        // (MCP_RENDER_AUDIT_MAKE_PUBLIC=1: local and CI builders, never a shared workspace), open the
-        // viewer for the audit and close it again afterwards.
-        const unreachable = reports.every((r) => r.findings.some((f) => f.kind === 'unreachable' && /sign-in/.test(f.detail)));
-        if (unreachable && /^(1|true|yes)$/i.test(process.env.MCP_RENDER_AUDIT_MAKE_PUBLIC ?? '')) {
-          await client.setAppPublic(args.app_id, true);
-          try {
-            reports = await auditPages(targets, options);
-          } finally {
-            await client.setAppPublic(args.app_id, false).catch(() => undefined);
-          }
-        }
+        const reports = await auditPages(targets, options);
+        // A private app redirects the headless browser to sign-in, and this audit will NOT publish it
+        // to get around that. Making someone's app world-readable is not a diagnostic step: the window
+        // is not ours to choose, the restore is a best-effort call that can fail, and a failure leaves
+        // the app public with nothing to notice it. An unreachable page is reported as unreachable and
+        // the operator gives the audit a viewer session instead.
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {

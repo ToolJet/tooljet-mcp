@@ -15,7 +15,6 @@ import {
   lintTextFormat,
   lintUntriggeredDataQueries,
 } from './renderReadiness.js';
-import { runInNewContext } from 'node:vm';
 import { bindingReferences } from './bindingReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
@@ -772,10 +771,20 @@ export function lintStatisticsRows(components: LintComponent[]): string[] {
   return errors;
 }
 
-/** Evaluate a Table data projection against one sample row (every field returns its own name) and check
- *  what each column would render. Round ten (2026-09-12): `'...background:' + lookup[r.status] || '#EEE' + '">' + r.status + '</span>'`
- *  short-circuited at the `||` and every status cell rendered an unterminated tag, so four of four pages had a
- *  blank Status column. Runs in a fresh VM context with a timeout; anything that throws is left to runtime. */
+/** Find the short-circuit that blanks a Table column, WITHOUT executing the projection.
+ *
+ *  Round ten (2026-09-12): `'...background:' + lookup[r.status] || '#EEE' + '">' + r.status + '</span>'`
+ *  binds as `('...' + lookup[r.status]) || ('#EEE' + ...)`, so when the lookup hits the left side wins
+ *  and every cell renders an unterminated tag. Four of four pages had a blank Status column.
+ *
+ *  This used to evaluate the expression in a Node `vm` context against a proxy row. That was a
+ *  mistake: `vm` is explicitly not a security boundary, host objects passed in as proxies give the
+ *  guest a path back out through constructor chains (a probe reached `process.version`), and the
+ *  `timeout` only bounds compilation, not the later call. A linter that runs model-authored code
+ *  inside the MCP server is a remote code execution surface, and no timeout makes that acceptable.
+ *
+ *  The defect is syntactic, so detect it syntactically: a `||` that sits inside a string concatenation
+ *  without parentheses around the fallback. That is the whole bug, and it needs no interpreter. */
 export function lintTableProjectionRender(spec: LintComponent): string[] {
   if (spec.type !== 'Table') return [];
   const props = spec.properties ?? {};
@@ -783,45 +792,79 @@ export function lintTableProjectionRender(spec: LintComponent): string[] {
   if (typeof data !== 'string') return [];
   const trimmed = data.trim();
   if (!trimmed.startsWith('{{') || !trimmed.endsWith('}}') || !trimmed.includes('.map(')) return [];
-  const expression = trimmed.slice(2, -2);
-  if (expression.includes('}}') || expression.includes('{{')) return [];
-  const columns = propVal(props, 'columns');
-  if (!Array.isArray(columns)) return [];
   const label = spec.name ?? spec.type;
-  const row = new Proxy({}, { get: (_target, key) => (typeof key === 'string' ? key : undefined) });
-  const anyData = new Proxy({}, { get: () => ({ data: [row] }) });
-  let first: unknown;
-  try {
-    const fn = runInNewContext(`(function (queries, components, globals, variables, page, moment) { return (\n${expression}\n); })`, {}, { timeout: 100 }) as (...args: unknown[]) => unknown;
-    const sample = fn(anyData, anyData, {}, {}, { variables: {} }, () => ({ format: () => '' }));
-    if (!Array.isArray(sample) || !sample.length) return [];
-    first = sample[0];
-  } catch {
-    return [];
-  }
-  if (!first || typeof first !== 'object') return [];
   const errors: string[] = [];
-  for (const col of columns as Array<Record<string, unknown>>) {
-    if (!col || col.columnVisibility === false || col.columnVisibility === '{{false}}') continue;
-    const key = String(col.key ?? col.name ?? '');
-    const value = (first as Record<string, unknown>)[key];
-    if (typeof value !== 'string' || !value.includes('<')) continue;
-    const opens = (value.match(/<([a-z][a-z0-9]*)\b[^>]*>/gi) ?? []).length;
-    const closes = (value.match(/<\/[a-z][a-z0-9]*\s*>/gi) ?? []).length;
-    const unterminated = /<[a-z][a-z0-9]*\b[^>]*$/i.test(value);
-    if (unterminated || opens !== closes) {
-      errors.push(
-        `Table "${label}" column "${key}": the data projection renders broken markup for this cell (${JSON.stringify(value.slice(0, 80))}), so the column shows blank. ` +
-          'Usually an || fallback applied to a concatenation (a + lookup[x] || b + ...) that short-circuits: wrap the lookup and its fallback in parentheses, (lookup[x] || fallback).'
-      );
+
+  // Scan the projection for `... + <expr> || <expr> + ...`: an unparenthesised || with concatenation
+  // on at least one side. Depth tracking keeps it from firing on a || already wrapped in parentheses,
+  // which is the correct form and must stay silent.
+  const body = trimmed.slice(2, -2);
+  // A copy with every string literal blanked out. Property names are read from THIS, because the
+  // markup being concatenated is full of CSS like `background:` and the nearest `x:` inside a string
+  // is not the column being built.
+  const masked = (() => {
+    const out = body.split('');
+    for (let i = 0; i < out.length; i += 1) {
+      const q = out[i];
+      if (q !== '"' && q !== "'" && q !== '`') continue;
+      let j = i + 1;
+      while (j < out.length && out[j] !== q) {
+        if (out[j] === '\\') { out[j] = ' '; j += 1; }
+        if (j < out.length) out[j] = ' ';
+        j += 1;
+      }
+      out[i] = ' ';
+      if (j < out.length) out[j] = ' ';
+      i = j;
     }
+    return out.join('');
+  })();
+  // The question is not "is this || at the top level" — inside .map(r => ({...})) nothing is. It is
+  // "was this || wrapped in parentheses of its own". Walk back from the || to the nearest + that
+  // concatenates it; if an unclosed ( was opened in between, the fallback is grouped and the binding
+  // is correct. That is exactly the difference between the broken and fixed forms of this bug.
+  for (let i = 0; i < body.length - 1; i += 1) {
+    const ch = body[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const quote = ch;
+      i += 1;
+      while (i < body.length && body[i] !== quote) i += body[i] === '\\' ? 2 : 1;
+      continue;
+    }
+    if (ch !== '|' || body[i + 1] !== '|') continue;
+
+    let grouped = false;
+    let concatenated = false;
+    let open = 0;
+    for (let j = i - 1; j >= 0; j -= 1) {
+      const c = body[j];
+      if (c === ')' || c === ']' || c === '}') open -= 1;
+      else if (c === '(' || c === '[' || c === '{') {
+        open += 1;
+        if (open > 0) { grouped = true; break; }  // an unclosed opener: the || sits inside a group
+      } else if (c === '+' && open === 0) { concatenated = true; break; }
+    }
+    if (grouped || !concatenated) continue;
+    // And something is concatenated onto the fallback on the right, which is what makes it swallow
+    // the rest of the markup rather than merely defaulting a value.
+    if (!/^\s*[^;,)\]}]*\+/.test(body.slice(i + 2, i + 160))) continue;
+
+    const keys = masked.slice(0, i).match(/([A-Za-z_$][\w$]*)\s*:/g);
+    const key = keys?.length ? keys[keys.length - 1].replace(/\s*:$/, '') : '';
+    errors.push(
+      `Table "${label}"${key ? ` column "${key}"` : ''}: the data projection renders broken markup for this cell. ` +
+        'An unparenthesised || inside a string concatenation binds as (a + lookup) || (fallback + rest) and ' +
+        'short-circuits, so the cell emits an unterminated tag and the column shows blank. ' +
+        'Wrap the lookup and its fallback together: (lookup[x] || fallback).'
+    );
+    break;
   }
   return errors;
 }
 
 /** An empty-state message ("No users found", "Keine Nutzer gefunden.") with no visibility binding shows
  *  under a populated table (round nine, 2026-09-12). It must be bound to the data being empty. */
-const EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[uú]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[uü]gbar|trouv|encontrad|trovat)/i;
+const EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[u\u00fa]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[u\u00fc]gbar|trouv|encontrad|trovat)/i;
 export function lintUnboundEmptyState(spec: LintComponent): string[] {
   if (spec.type !== 'Text' && spec.type !== 'Html') return [];
   const key = spec.type === 'Html' ? 'rawHtml' : 'text';

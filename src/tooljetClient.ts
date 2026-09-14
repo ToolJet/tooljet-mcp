@@ -466,10 +466,13 @@ export interface QuerySummary {
   options?: unknown;
 }
 
+/* There is deliberately no setAppPublic here. Publishing an app makes it world-readable, and nothing
+   this server does is worth that: the render audit used to flip it to reach a private page and flip it
+   back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
+   An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
   /** Toggle the app's public viewer (PUT /api/apps/:id/public). Used by the render audit when allowed. */
-  setAppPublic(appId: string, isPublic: boolean): Promise<void>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
   listWorkspaceUsers(params?: {
@@ -1670,7 +1673,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw error;
       }
       // Only retry explicit schema-cache rejections, where PostgREST did not execute the insert.
-      if (res.status !== 400 && res.status !== 404) return res;
+      // The BODY is the discriminator, not the status: ToolJet's proxy wraps PGRST205 as a 409, so
+      // gating on 400/404 meant this retry never ran for the case it was written for. Measured
+      // 2026-09-14: six partial applies across two models, every one "failed during seed data and
+      // create queries" with the table created and zero rows seeded, all carrying PGRST205 in a 409.
+      // A 409 is normally a real conflict (duplicate key), which is why the body check stays: only a
+      // response that actually names the schema cache is retried.
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
@@ -2203,14 +2211,6 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
-    async setAppPublic(appId: string, isPublic: boolean): Promise<void> {
-      const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/public`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app: { is_public: isPublic } }),
-      });
-      if (!res.ok) throw new Error(`could not set app ${appId} public=${isPublic}: ${res.status}`);
-    },
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,

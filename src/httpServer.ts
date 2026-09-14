@@ -13,6 +13,9 @@ const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
 interface Session {
   server: McpServer;
   transport: StreamableHTTPServerTransport;
+  /** The build token this session was opened with, when it was opened with one. Kept so every later
+   *  request can re-check it: identity is bound at initialize, but a token's VALIDITY is not. */
+  buildToken?: string;
 }
 
 export interface HttpMcpServerOptions {
@@ -88,6 +91,17 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     const existingSession = sessionId ? sessions.get(sessionId) : undefined;
 
     if (existingSession) {
+      /* A build token is checked on EVERY request, not only at initialize. Binding identity once and
+         trusting the session id thereafter meant revocation did nothing to a session already open:
+         revoke, then call a tool on that session, and it still ran. Revocation has to end access at
+         the moment it happens or it is not revocation. Only build-token sessions are re-checked —
+         a PAT or a session-token identity has no server-side lifetime to consult. */
+      if (existingSession.buildToken && !resolveBuildToken(existingSession.buildToken)) {
+        sessions.delete(sessionId as string);
+        await existingSession.transport.close?.().catch(() => {});
+        writeError(res, 401, 'Build token revoked or expired');
+        return;
+      }
       await existingSession.transport.handleRequest(req, res, body);
       return;
     }
@@ -113,6 +127,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     // and it is the only way that identity can travel when the harness (not us) holds the connection
     // and the platform forbids custom headers. Resolved before the PAT fallback so a token is never
     // mistaken for a PAT belonging to whoever presented it.
+    let sessionBuildToken: string | undefined;
     if (!identity) {
       const bearer = bearerValue(req.headers.authorization);
       if (isBuildToken(bearer)) {
@@ -121,6 +136,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
           writeError(res, 401, 'Build token is unknown or expired.');
           return;
         }
+        sessionBuildToken = bearer; // re-checked on every later request, see handlePost above
       } else if (bearer) {
         // Same fallback as the bundle's direct HTTP mode: a client that cannot set arbitrary headers
         // can still send its PAT as a bearer. Kept identical so the two HTTP entry points do not
@@ -135,7 +151,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (newSessionId) => {
-        sessions.set(newSessionId, { server: mcpServer, transport });
+        sessions.set(newSessionId, { server: mcpServer, transport, buildToken: sessionBuildToken });
       },
     });
 

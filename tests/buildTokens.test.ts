@@ -172,4 +172,44 @@ describe('build tokens', () => {
     expect(response.status).toBe(401);
     expect(seen.length).toBe(0);
   });
+
+  it('revocation ends a session that is already open', async () => {
+    // Identity is bound at initialize, but a token's VALIDITY is not: checking only at initialize
+    // meant revoke-then-call still ran the tool on an open session, which is not revocation at all.
+    const base = await start();
+    const { token } = mintBuildToken({ sessionToken: SESSION, workspaceId: WORKSPACE });
+    const opened = await initializeWithBearer(base, token);
+    expect(opened.status).toBe(200);
+    const sessionId = opened.headers.get('mcp-session-id');
+    expect(sessionId).toBeTruthy();
+
+    const call = () => fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+        'mcp-session-id': sessionId as string,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }),
+    });
+
+    expect((await call()).status).toBe(200);
+    expect(revokeBuildToken(token)).toBe(true);
+    const afterRevoke = await call();
+    expect(afterRevoke.status).toBe(401);
+  });
+});
+
+describe('app visibility', () => {
+  it('the client offers no way to publish an app', async () => {
+    // Strict, and enforced by absence rather than by a flag: the render audit used to flip an app
+    // public to reach a private page and flip it back, so a failed restore left it world-readable
+    // with nothing watching. Visibility belongs to the owner, changed in the product.
+    const client = await import('../src/tooljetClient.js');
+    const source = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('../src/tools/verifyPageRender.ts', import.meta.url), 'utf8'));
+    expect(Object.keys(client)).not.toContain('setAppPublic');
+    expect(source).not.toMatch(/setAppPublic|is_public/);
+    expect(source).not.toMatch(/MAKE_PUBLIC/);
+  });
 });
