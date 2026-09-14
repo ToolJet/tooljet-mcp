@@ -41829,9 +41829,6 @@ function lintUnguardedComponentRefs(c) {
   return errors;
 }
 
-// dist/lint.js
-import { runInNewContext } from "node:vm";
-
 // dist/bindingReferences.js
 function bindingReferences(value) {
   if (Array.isArray(value))
@@ -42626,47 +42623,73 @@ function lintTableProjectionRender(spec) {
   const trimmed = data.trim();
   if (!trimmed.startsWith("{{") || !trimmed.endsWith("}}") || !trimmed.includes(".map("))
     return [];
-  const expression = trimmed.slice(2, -2);
-  if (expression.includes("}}") || expression.includes("{{"))
-    return [];
-  const columns = propVal2(props, "columns");
-  if (!Array.isArray(columns))
-    return [];
   const label2 = spec.name ?? spec.type;
-  const row = new Proxy({}, { get: (_target, key) => typeof key === "string" ? key : void 0 });
-  const anyData = new Proxy({}, { get: () => ({ data: [row] }) });
-  let first;
-  try {
-    const fn = runInNewContext(`(function (queries, components, globals, variables, page, moment) { return (
-${expression}
-); })`, {}, { timeout: 100 });
-    const sample = fn(anyData, anyData, {}, {}, { variables: {} }, () => ({ format: () => "" }));
-    if (!Array.isArray(sample) || !sample.length)
-      return [];
-    first = sample[0];
-  } catch {
-    return [];
-  }
-  if (!first || typeof first !== "object")
-    return [];
   const errors = [];
-  for (const col of columns) {
-    if (!col || col.columnVisibility === false || col.columnVisibility === "{{false}}")
-      continue;
-    const key = String(col.key ?? col.name ?? "");
-    const value = first[key];
-    if (typeof value !== "string" || !value.includes("<"))
-      continue;
-    const opens = (value.match(/<([a-z][a-z0-9]*)\b[^>]*>/gi) ?? []).length;
-    const closes = (value.match(/<\/[a-z][a-z0-9]*\s*>/gi) ?? []).length;
-    const unterminated = /<[a-z][a-z0-9]*\b[^>]*$/i.test(value);
-    if (unterminated || opens !== closes) {
-      errors.push(`Table "${label2}" column "${key}": the data projection renders broken markup for this cell (${JSON.stringify(value.slice(0, 80))}), so the column shows blank. Usually an || fallback applied to a concatenation (a + lookup[x] || b + ...) that short-circuits: wrap the lookup and its fallback in parentheses, (lookup[x] || fallback).`);
+  const body = trimmed.slice(2, -2);
+  const masked = (() => {
+    const out = body.split("");
+    for (let i = 0; i < out.length; i += 1) {
+      const q = out[i];
+      if (q !== '"' && q !== "'" && q !== "`")
+        continue;
+      let j = i + 1;
+      while (j < out.length && out[j] !== q) {
+        if (out[j] === "\\") {
+          out[j] = " ";
+          j += 1;
+        }
+        if (j < out.length)
+          out[j] = " ";
+        j += 1;
+      }
+      out[i] = " ";
+      if (j < out.length)
+        out[j] = " ";
+      i = j;
     }
+    return out.join("");
+  })();
+  for (let i = 0; i < body.length - 1; i += 1) {
+    const ch = body[i];
+    if (ch === '"' || ch === "'" || ch === "`") {
+      const quote2 = ch;
+      i += 1;
+      while (i < body.length && body[i] !== quote2)
+        i += body[i] === "\\" ? 2 : 1;
+      continue;
+    }
+    if (ch !== "|" || body[i + 1] !== "|")
+      continue;
+    let grouped = false;
+    let concatenated = false;
+    let open = 0;
+    for (let j = i - 1; j >= 0; j -= 1) {
+      const c = body[j];
+      if (c === ")" || c === "]" || c === "}")
+        open -= 1;
+      else if (c === "(" || c === "[" || c === "{") {
+        open += 1;
+        if (open > 0) {
+          grouped = true;
+          break;
+        }
+      } else if (c === "+" && open === 0) {
+        concatenated = true;
+        break;
+      }
+    }
+    if (grouped || !concatenated)
+      continue;
+    if (!/^\s*[^;,)\]}]*\+/.test(body.slice(i + 2, i + 160)))
+      continue;
+    const keys = masked.slice(0, i).match(/([A-Za-z_$][\w$]*)\s*:/g);
+    const key = keys?.length ? keys[keys.length - 1].replace(/\s*:$/, "") : "";
+    errors.push(`Table "${label2}"${key ? ` column "${key}"` : ""}: the data projection renders broken markup for this cell. An unparenthesised || inside a string concatenation binds as (a + lookup) || (fallback + rest) and short-circuits, so the cell emits an unterminated tag and the column shows blank. Wrap the lookup and its fallback together: (lookup[x] || fallback).`);
+    break;
   }
   return errors;
 }
-var EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[uú]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[uü]gbar|trouv|encontrad|trovat)/i;
+var EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[u\u00fa]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[u\u00fc]gbar|trouv|encontrad|trovat)/i;
 function lintUnboundEmptyState(spec) {
   if (spec.type !== "Text" && spec.type !== "Html")
     return [];
@@ -45272,8 +45295,6 @@ function createClient(auth, config2) {
         error51.message += ` ${UNKNOWN_INSERT_OUTCOME}`;
         throw error51;
       }
-      if (res.status !== 400 && res.status !== 404)
-        return res;
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length)
         return res;
       const body = await res.clone().text().catch(() => "");
@@ -45655,15 +45676,6 @@ function createClient(auth, config2) {
     return { deleted: true };
   }
   return {
-    async setAppPublic(appId, isPublic) {
-      const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/public`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ app: { is_public: isPublic } })
-      });
-      if (!res.ok)
-        throw new Error(`could not set app ${appId} public=${isPublic}: ${res.status}`);
-    },
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
@@ -49916,16 +49928,7 @@ function verifyPageRenderTool(client, viewerBase) {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0
         };
-        let reports = await auditPages(targets, options2);
-        const unreachable = reports.every((r) => r.findings.some((f) => f.kind === "unreachable" && /sign-in/.test(f.detail)));
-        if (unreachable && /^(1|true|yes)$/i.test(process.env.MCP_RENDER_AUDIT_MAKE_PUBLIC ?? "")) {
-          await client.setAppPublic(args.app_id, true);
-          try {
-            reports = await auditPages(targets, options2);
-          } finally {
-            await client.setAppPublic(args.app_id, false).catch(() => void 0);
-          }
-        }
+        const reports = await auditPages(targets, options2);
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {
