@@ -8,6 +8,16 @@ function fixture(body: unknown) {
 }
 
 describe('group permission API client', () => {
+  it.each(['app', 'module', 'workflow', 'data_source'])('returns synthetic %s plan permissions without inventing writable IDs', async type => {
+    const ds = type === 'data_source';
+    const { client } = fixture([{ name: 'Plan access', type, isAll: true,
+      [ds ? 'dataSourcesGroupPermission' : 'appsGroupPermissions']: ds ? { canUse: true } : { canView: true } }]);
+    const [rule] = await client.listWorkspaceGroupAccess('g');
+    expect(rule).toMatchObject({ name: 'Plan access', type, is_all: true, read_only: true,
+      actions: ds ? { canUse: true } : { canView: true }, resources: [] });
+    expect(rule.id).toBeUndefined();
+    expect(rule.read_only_reason).toContain('license/plan');
+  });
   it('projects only permission switches from group details', async () => {
     const { client } = fixture({ group: { id: 'g', name: 'Logistics', type: 'custom', appCreate: false,
       appDelete: true, organizationId: 'private', unknown: 'private' } });

@@ -89,7 +89,9 @@ export function workspaceAccessKeys(type: WorkspaceResourceType): readonly strin
   return WORKSPACE_ACCESS_KEYS.filter(key => !['canConfigure', 'canUse'].includes(key));
 }
 export interface WorkspaceAccessRule {
-  id: string;
+  id?: string;
+  read_only?: boolean;
+  read_only_reason?: string;
   name: string;
   type: WorkspaceResourceType;
   is_all: boolean;
@@ -843,11 +845,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const items = await res.json();
     if (!Array.isArray(items)) throw new Error('Unexpected granular permissions response.');
     return items.map(item => {
-      if (typeof item.id !== 'string' || typeof item.name !== 'string' || typeof item.isAll !== 'boolean' ||
+      if (!item || (item.id != null && typeof item.id !== 'string') || typeof item.name !== 'string' || typeof item.isAll !== 'boolean' ||
           !['app', 'module', 'workflow', 'data_source'].includes(item.type)) throw new Error('Unexpected granular permission.');
+      // Restricted plans return synthetic, all-resource rules without persisted IDs.
+      // Expose their effective permissions, but never invent an ID usable for a mutation.
+      const synthetic = item.id == null;
+      if (synthetic && !item.isAll) throw new Error('Unexpected granular permission without a persisted ID.');
       const ds = item.type === 'data_source';
       const detail = ds ? item.dataSourcesGroupPermission : item.appsGroupPermissions;
-      return { id: item.id, name: item.name, type: item.type, is_all: item.isAll,
+      return { ...(synthetic ? { read_only: true,
+          read_only_reason: 'These effective permissions are supplied by the current license/plan and cannot be edited.' } : { id: item.id }),
+        name: item.name, type: item.type, is_all: item.isAll,
         actions: booleanFields(detail, workspaceAccessKeys(item.type)),
         resources: (detail?.[ds ? 'groupDataSources' : 'groupApps'] ?? []).map((link: any) => {
           const resource = link[ds ? 'dataSource' : 'app'];

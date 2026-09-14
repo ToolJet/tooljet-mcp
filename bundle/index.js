@@ -44154,12 +44154,18 @@ function createClient(auth, config2) {
     if (!Array.isArray(items))
       throw new Error("Unexpected granular permissions response.");
     return items.map((item) => {
-      if (typeof item.id !== "string" || typeof item.name !== "string" || typeof item.isAll !== "boolean" || !["app", "module", "workflow", "data_source"].includes(item.type))
+      if (!item || item.id != null && typeof item.id !== "string" || typeof item.name !== "string" || typeof item.isAll !== "boolean" || !["app", "module", "workflow", "data_source"].includes(item.type))
         throw new Error("Unexpected granular permission.");
+      const synthetic = item.id == null;
+      if (synthetic && !item.isAll)
+        throw new Error("Unexpected granular permission without a persisted ID.");
       const ds = item.type === "data_source";
       const detail = ds ? item.dataSourcesGroupPermission : item.appsGroupPermissions;
       return {
-        id: item.id,
+        ...synthetic ? {
+          read_only: true,
+          read_only_reason: "These effective permissions are supplied by the current license/plan and cannot be edited."
+        } : { id: item.id },
         name: item.name,
         type: item.type,
         is_all: item.isAll,
@@ -45488,7 +45494,7 @@ function manageWorkspaceGroupsTool(client) {
     name: "manage_workspace_groups",
     title: "Manage Workspace Groups",
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
-    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and copy flags (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
+    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -45526,12 +45532,16 @@ function manageWorkspaceGroupsTool(client) {
         if (args.action === "create")
           return ok({ group: await client.createWorkspaceGroup(args.name) });
         const group = await client.getWorkspaceGroup(args.group_id);
+        if (group.disabled === true)
+          throw new Error(`Group "${group.name}" is read-only under the current license/plan.`);
         const permissionAction = ["update_permissions", "create_access", "update_access", "delete_access"].includes(args.action);
         if (group.type !== "custom" && args.action !== "duplicate" && !(permissionAction && group.name !== "admin")) {
           throw new Error("Only custom groups can be changed with this tool.");
         }
         if (args.action === "duplicate") {
           const copy = args.copy;
+          if (!Object.values(copy).some((value) => value === true))
+            throw new Error("Select at least one category to duplicate.");
           return ok({ group: await client.duplicateWorkspaceGroup(group.id, {
             addPermission: copy.permissions ?? false,
             addUsers: copy.members ?? false,
@@ -45550,6 +45560,8 @@ function manageWorkspaceGroupsTool(client) {
           const rule = args.rule_id ? rules.find((item) => item.id === args.rule_id) : void 0;
           if (args.rule_id && !rule)
             throw new Error("Access rule not found in this group. Read include_permissions:true again.");
+          if (rule?.read_only)
+            throw new Error(rule.read_only_reason || "This access rule is read-only under the current license/plan.");
           if (rule && args.resource_type && args.resource_type !== rule.type)
             throw new Error("resource_type does not match this access rule.");
           const type = rule?.type ?? args.resource_type;
@@ -45578,6 +45590,13 @@ function manageWorkspaceGroupsTool(client) {
           }
           const resourceKey = type === "data_source" ? "dataSourceId" : "appId";
           const actions = { ...creating ? Object.fromEntries(actionKeys.map((key) => [key, false])) : rule.actions, ...access.actions };
+          const [primary, secondary] = type === "data_source" ? ["canConfigure", "canUse"] : ["canEdit", "canView"];
+          if (access.actions?.[primary] === true && access.actions?.[secondary] === void 0)
+            actions[secondary] = false;
+          if (access.actions?.[secondary] === true && access.actions?.[primary] === void 0)
+            actions[primary] = false;
+          if (actions[primary] && actions[secondary])
+            throw new Error(`${primary} and ${secondary} cannot both be enabled.`);
           if (creating) {
             await client.writeWorkspaceGroupAccess("POST", group.id, type, void 0, {
               name: access.name,

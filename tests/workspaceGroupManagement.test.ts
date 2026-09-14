@@ -151,11 +151,11 @@ describe('workspace group permissions and duplication', () => {
     await write.handler({ ...accessOperations[1], confirm: true });
     expect(mock.updateWorkspaceGroupPermissions).toHaveBeenCalledWith(groupId, { appCreate: true, appDelete: false }, undefined);
   });
-  it('preserves unmentioned actions and resource memberships', async () => {
+  it('preserves unrelated actions and memberships while switching the exclusive permission', async () => {
     const { write, mock } = fixture();
     await write.handler({ ...accessOperations[3], confirm: true });
     expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('PUT', groupId, 'app', ruleId, {
-      isAll: false, actions: { canView: true, canEdit: true, canAccessReleased: true },
+      isAll: false, actions: { canView: false, canEdit: true, canAccessReleased: true },
       resourcesToAdd: [], resourcesToDelete: [], allowRoleChange: false,
     });
   });
@@ -225,6 +225,56 @@ describe('workspace group permissions and duplication', () => {
     expect((await write.handler({ ...operation, confirm: true })).isError).toBe(true);
     expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
     expect(mock.updateWorkspaceGroupPermissions).not.toHaveBeenCalled();
+    expect(mock.duplicateWorkspaceGroup).not.toHaveBeenCalled();
+  });
+});
+
+describe('review regressions', () => {
+  it.each(['app', 'module', 'workflow', 'data_source'])('round-trips partial %s permission downgrades and upgrades', async type => {
+    const { write, read, mock } = fixture();
+    const [higher, lower] = type === 'data_source' ? ['canConfigure', 'canUse'] : ['canEdit', 'canView'];
+    let saved = { ...rule, type, actions: { [higher]: true, [lower]: false } };
+    mock.listWorkspaceGroupAccess.mockImplementation(async () => [saved]);
+    mock.writeWorkspaceGroupAccess.mockImplementation(async (_method, _group, _type, _id, body) => {
+      const actions = { ...body.actions };
+      // The app backend gives edit priority if both flags are supplied; data sources save verbatim.
+      if (type !== 'data_source' && actions.canEdit) actions.canView = false;
+      saved = { ...saved, actions };
+    });
+    for (const enabled of [lower, higher]) {
+      const result = await write.handler({ action: 'update_access', group_id: groupId, rule_id: ruleId,
+        access: { actions: { [enabled]: true } }, confirm: true });
+      expect(result.isError).not.toBe(true);
+      const snapshot = JSON.parse((await read.handler({ group_id: groupId, include_permissions: true })).content[0]!.text);
+      expect(snapshot.access_rules[0].actions).toEqual({ [higher]: enabled === higher, [lower]: enabled === lower });
+    }
+  });
+  it.each(['app', 'module', 'workflow', 'data_source'])('rejects conflicting %s actions on create and update', async type => {
+    const { write, mock } = fixture();
+    mock.listWorkspaceGroupAccess.mockResolvedValue([{ ...rule, type }]);
+    const actions = type === 'data_source' ? { canConfigure: true, canUse: true } : { canEdit: true, canView: true };
+    for (const action of ['create_access', 'update_access']) {
+      const result = await write.handler({ action, group_id: groupId, resource_type: type,
+        ...(action === 'update_access' ? { rule_id: ruleId } : {}),
+        access: { name: 'Conflicting rule', is_all: true, actions }, confirm: true });
+      expect(result.isError).toBe(true);
+      expect(result.content[0]!.text).toContain('cannot both be enabled');
+    }
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+  it.each([...operations.slice(1), ...accessOperations])('blocks disabled groups for $action', async operation => {
+    const { write, mock } = fixture();
+    mock.getWorkspaceGroup.mockResolvedValue({ ...group, disabled: true });
+    const result = await write.handler({ ...operation, confirm: true });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('license/plan');
+    for (const [name, method] of Object.entries(mock)) if (name !== 'getWorkspaceGroup') expect(method).not.toHaveBeenCalled();
+  });
+  it.each([{}, { permissions: false, members: false }])('rejects duplication with no selected category: %j', async copy => {
+    const { write, mock } = fixture();
+    const result = await write.handler({ action: 'duplicate', group_id: groupId, copy, confirm: true });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('at least one category');
     expect(mock.duplicateWorkspaceGroup).not.toHaveBeenCalled();
   });
 });

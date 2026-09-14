@@ -59,7 +59,7 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
       'group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from ' +
       'list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group ' +
       'removes its memberships and permissions. ' +
-      'duplicate needs group_id and copy flags (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ' +
+      'duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ' +
       'ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). ' +
       'create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; ' +
       'update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. ' +
@@ -67,6 +67,8 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
       'access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. ' +
       'On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. ' +
       'Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. ' +
+      'canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. ' +
+      'Disabled groups and read_only rules are not editable under the current license/plan. ' +
       'allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. ' +
       'Admin permissions cannot be changed; default group names/memberships cannot be changed here. ' +
       'To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.',
@@ -100,12 +102,14 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
 
         // Read through the workspace-scoped endpoint before every mutation; never act on a guessed id.
         const group = await client.getWorkspaceGroup(args.group_id!);
+        if (group.disabled === true) throw new Error(`Group "${group.name}" is read-only under the current license/plan.`);
         const permissionAction = ['update_permissions', 'create_access', 'update_access', 'delete_access'].includes(args.action);
         if (group.type !== 'custom' && args.action !== 'duplicate' && !(permissionAction && group.name !== 'admin')) {
           throw new Error('Only custom groups can be changed with this tool.');
         }
         if (args.action === 'duplicate') {
           const copy = args.copy!;
+          if (!Object.values(copy).some(value => value === true)) throw new Error('Select at least one category to duplicate.');
           return ok({ group: await client.duplicateWorkspaceGroup(group.id, { addPermission: copy.permissions ?? false,
             addUsers: copy.members ?? false, addApps: copy.apps ?? false, addModules: copy.modules ?? false,
             addWorkflows: copy.workflows ?? false, addDataSource: copy.data_sources ?? false }) });
@@ -118,6 +122,7 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
           const rules = await client.listWorkspaceGroupAccess(group.id);
           const rule = args.rule_id ? rules.find(item => item.id === args.rule_id) : undefined;
           if (args.rule_id && !rule) throw new Error('Access rule not found in this group. Read include_permissions:true again.');
+          if (rule?.read_only) throw new Error(rule.read_only_reason || 'This access rule is read-only under the current license/plan.');
           if (rule && args.resource_type && args.resource_type !== rule.type) throw new Error('resource_type does not match this access rule.');
           const type = (rule?.type ?? args.resource_type)!;
           if (args.action === 'delete_access') {
@@ -144,6 +149,10 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
           }
           const resourceKey = type === 'data_source' ? 'dataSourceId' : 'appId';
           const actions = { ...(creating ? Object.fromEntries(actionKeys.map(key => [key, false])) : rule!.actions), ...access.actions };
+          const [primary, secondary] = type === 'data_source' ? ['canConfigure', 'canUse'] : ['canEdit', 'canView'];
+          if (access.actions?.[primary] === true && access.actions?.[secondary] === undefined) actions[secondary] = false;
+          if (access.actions?.[secondary] === true && access.actions?.[primary] === undefined) actions[primary] = false;
+          if (actions[primary] && actions[secondary]) throw new Error(`${primary} and ${secondary} cannot both be enabled.`);
           if (creating) {
             await client.writeWorkspaceGroupAccess('POST', group.id, type, undefined, { name: access.name, type,
               groupId: group.id, isAll: all, createResourcePermissionObject: {
