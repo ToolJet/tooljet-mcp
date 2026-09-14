@@ -44062,6 +44062,78 @@ function createClient(auth, config2) {
     await assertOk(res, "listWorkspaceUsers");
     return await res.json();
   }
+  const groupPath = "/api/v2/group-permissions";
+  function workspaceGroup(value) {
+    if (!value || typeof value.id !== "string" || typeof value.name !== "string" || !["default", "custom"].includes(value.type)) {
+      throw new Error("Unexpected workspace group response.");
+    }
+    return {
+      id: value.id,
+      name: value.name,
+      type: value.type,
+      ...typeof value.disabled === "boolean" ? { disabled: value.disabled } : {}
+    };
+  }
+  async function listWorkspaceGroups() {
+    const res = await auth.authedFetch(groupPath);
+    await assertOk(res, "listWorkspaceGroups");
+    const data = await res.json();
+    if (!Array.isArray(data.groupPermissions))
+      throw new Error("Unexpected workspace groups response.");
+    return data.groupPermissions.map(workspaceGroup);
+  }
+  async function getWorkspaceGroup(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`);
+    await assertOk(res, "getWorkspaceGroup");
+    return workspaceGroup((await res.json()).group);
+  }
+  async function listWorkspaceGroupMembers(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}/users`);
+    await assertOk(res, "listWorkspaceGroupMembers");
+    const data = await res.json();
+    if (!Array.isArray(data))
+      throw new Error("Unexpected workspace group members response.");
+    return data.map((entry) => {
+      if (typeof entry?.id !== "string" || typeof entry?.userId !== "string") {
+        throw new Error("Unexpected workspace group member response.");
+      }
+      return {
+        group_user_id: entry.id,
+        user_id: entry.userId,
+        email: entry.user?.email,
+        first_name: entry.user?.firstName,
+        last_name: entry.user?.lastName
+      };
+    });
+  }
+  async function createWorkspaceGroup(name) {
+    const res = await auth.authedFetch(groupPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    await assertOk(res, "createWorkspaceGroup");
+    const created = await res.json();
+    if (typeof created?.id !== "string")
+      throw new Error("Create group response did not include an id.");
+    return getWorkspaceGroup(created.id);
+  }
+  async function renameWorkspaceGroup(groupId, name) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    await assertOk(res, "renameWorkspaceGroup");
+  }
+  async function deleteWorkspaceGroup(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, { method: "DELETE" });
+    await assertOk(res, "deleteWorkspaceGroup");
+  }
+  async function removeWorkspaceGroupMember(groupUserId) {
+    const res = await auth.authedFetch(`${groupPath}/users/${encodeURIComponent(groupUserId)}`, { method: "DELETE" });
+    await assertOk(res, "removeWorkspaceGroupMember");
+  }
   async function inviteWorkspaceUser(params) {
     const res = await auth.authedFetch("/api/organization-users", {
       method: "POST",
@@ -45164,6 +45236,13 @@ function createClient(auth, config2) {
     useWorkspace,
     listWorkspaceApps,
     listWorkspaceUsers,
+    listWorkspaceGroups,
+    getWorkspaceGroup,
+    listWorkspaceGroupMembers,
+    createWorkspaceGroup,
+    renameWorkspaceGroup,
+    deleteWorkspaceGroup,
+    removeWorkspaceGroupMember,
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
@@ -45229,6 +45308,82 @@ function ok(value) {
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
   return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+}
+
+// dist/tools/workspaceGroupManagement.js
+function listWorkspaceGroupsTool(client) {
+  const schema = external_exports.object({ group_id: external_exports.string().uuid().optional() }).strict();
+  return {
+    name: "list_workspace_groups",
+    title: "List Workspace Groups",
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description: "List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use exact returned ids for group changes. Requires ToolJet admin permissions.",
+    inputSchema: schema.shape,
+    async handler(input) {
+      try {
+        const args = schema.parse(input);
+        if (!args.group_id)
+          return ok({ groups: await client.listWorkspaceGroups() });
+        const group = await client.getWorkspaceGroup(args.group_id);
+        return ok({ group, members: await client.listWorkspaceGroupMembers(args.group_id) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function manageWorkspaceGroupsTool(client) {
+  const schema = external_exports.object({
+    action: external_exports.enum(["create", "rename", "delete", "remove_member"]),
+    group_id: external_exports.string().uuid().optional(),
+    name: external_exports.string().trim().min(1).max(50).optional(),
+    group_user_id: external_exports.string().uuid().optional(),
+    confirm: external_exports.boolean().optional()
+  }).strict();
+  return {
+    name: "manage_workspace_groups",
+    title: "Manage Workspace Groups",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. Default role groups cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
+    inputSchema: schema.shape,
+    async handler(input) {
+      try {
+        const args = schema.parse(input);
+        if (args.confirm !== true)
+          throw new Error(`${args.action} requires confirm:true after reviewing the exact change.`);
+        const needsName = args.action === "create" || args.action === "rename";
+        if (needsName !== (args.name !== void 0))
+          throw new Error(needsName ? "name is required." : "name must be omitted.");
+        if (args.action !== "create" !== (args.group_id !== void 0)) {
+          throw new Error(args.action === "create" ? "group_id must be omitted for create." : "group_id is required.");
+        }
+        if (args.action === "remove_member" !== (args.group_user_id !== void 0)) {
+          throw new Error(args.action === "remove_member" ? "group_user_id is required." : "group_user_id must be omitted.");
+        }
+        if (args.action === "create")
+          return ok({ group: await client.createWorkspaceGroup(args.name) });
+        const group = await client.getWorkspaceGroup(args.group_id);
+        if (group.type !== "custom")
+          throw new Error("Only custom groups can be changed with this tool.");
+        if (args.action === "rename") {
+          await client.renameWorkspaceGroup(group.id, args.name);
+          return ok({ group_id: group.id, name: args.name, renamed: true });
+        }
+        if (args.action === "delete") {
+          await client.deleteWorkspaceGroup(group.id);
+          return ok({ group_id: group.id, name: group.name, deleted: true });
+        }
+        const members = await client.listWorkspaceGroupMembers(group.id);
+        if (!members.some((member) => member.group_user_id === args.group_user_id)) {
+          throw new Error("Membership not found in this group. Use list_workspace_groups with group_id for current member ids.");
+        }
+        await client.removeWorkspaceGroupMember(args.group_user_id);
+        return ok({ group_id: group.id, group_user_id: args.group_user_id, removed: true });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
 }
 
 // dist/tools/listWorkspaces.js
@@ -53188,7 +53343,7 @@ function manageWorkspaceUsersTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups, change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
+    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups (use manage_workspace_groups), change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
     inputSchema: {
       action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
       organization_user_id: external_exports.string().uuid().optional(),
@@ -53258,6 +53413,8 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     listWorkspaceAppsTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
+    listWorkspaceGroupsTool(client),
+    manageWorkspaceGroupsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),

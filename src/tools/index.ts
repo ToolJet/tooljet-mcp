@@ -1,3 +1,4 @@
+import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -91,6 +92,8 @@ export function registerTools(
     listWorkspaceAppsTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
+    listWorkspaceGroupsTool(client),
+    manageWorkspaceGroupsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),

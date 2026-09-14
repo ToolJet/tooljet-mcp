@@ -166,6 +166,8 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
 | `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |
 | `list_workspace_users(...)` | List/search workspace users with pagination and status filtering through PAT auth |
+| `list_workspace_groups(...)` | List groups, or members of a group with exact membership IDs |
+| `manage_workspace_groups(...)` | Create/rename/delete custom groups or remove members; requires confirmation and ToolJet admin permissions |
 | `manage_workspace_users(...)` | Invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |

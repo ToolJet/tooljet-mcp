@@ -73,6 +73,21 @@ export interface WorkspaceUser {
   [key: string]: unknown;
 }
 
+export interface WorkspaceGroup {
+  id: string;
+  name: string;
+  type: 'default' | 'custom';
+  disabled?: boolean;
+}
+
+export interface WorkspaceGroupMember {
+  group_user_id: string;
+  user_id: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export interface WorkspaceUsersPage {
   meta: { total_pages: number; total_count: number; current_page: number };
   users: WorkspaceUser[];
@@ -475,6 +490,13 @@ export interface ToolJetClient {
     searchText?: string;
     status?: WorkspaceUserStatus;
   }): Promise<WorkspaceUsersPage>;
+  listWorkspaceGroups(): Promise<WorkspaceGroup[]>;
+  getWorkspaceGroup(groupId: string): Promise<WorkspaceGroup>;
+  listWorkspaceGroupMembers(groupId: string): Promise<WorkspaceGroupMember[]>;
+  createWorkspaceGroup(name: string): Promise<WorkspaceGroup>;
+  renameWorkspaceGroup(groupId: string, name: string): Promise<void>;
+  deleteWorkspaceGroup(groupId: string): Promise<void>;
+  removeWorkspaceGroupMember(groupUserId: string): Promise<void>;
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
@@ -736,6 +758,73 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/organization-users?${query}`);
     await assertOk(res, 'listWorkspaceUsers');
     return (await res.json()) as WorkspaceUsersPage;
+  }
+
+  const groupPath = '/api/v2/group-permissions';
+
+  function workspaceGroup(value: any): WorkspaceGroup {
+    if (!value || typeof value.id !== 'string' || typeof value.name !== 'string' ||
+        !['default', 'custom'].includes(value.type)) {
+      throw new Error('Unexpected workspace group response.');
+    }
+    return { id: value.id, name: value.name, type: value.type,
+      ...(typeof value.disabled === 'boolean' ? { disabled: value.disabled } : {}) };
+  }
+
+  async function listWorkspaceGroups(): Promise<WorkspaceGroup[]> {
+    const res = await auth.authedFetch(groupPath);
+    await assertOk(res, 'listWorkspaceGroups');
+    const data = await res.json();
+    if (!Array.isArray(data.groupPermissions)) throw new Error('Unexpected workspace groups response.');
+    return data.groupPermissions.map(workspaceGroup);
+  }
+
+  async function getWorkspaceGroup(groupId: string): Promise<WorkspaceGroup> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`);
+    await assertOk(res, 'getWorkspaceGroup');
+    return workspaceGroup((await res.json()).group);
+  }
+
+  async function listWorkspaceGroupMembers(groupId: string): Promise<WorkspaceGroupMember[]> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}/users`);
+    await assertOk(res, 'listWorkspaceGroupMembers');
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('Unexpected workspace group members response.');
+    return data.map((entry: any) => {
+      if (typeof entry?.id !== 'string' || typeof entry?.userId !== 'string') {
+        throw new Error('Unexpected workspace group member response.');
+      }
+      return { group_user_id: entry.id, user_id: entry.userId,
+        email: entry.user?.email, first_name: entry.user?.firstName, last_name: entry.user?.lastName };
+    });
+  }
+
+  async function createWorkspaceGroup(name: string): Promise<WorkspaceGroup> {
+    const res = await auth.authedFetch(groupPath, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    });
+    await assertOk(res, 'createWorkspaceGroup');
+    // TypeORM's insert response omits the database-default group type. Read the persisted entity.
+    const created = await res.json();
+    if (typeof created?.id !== 'string') throw new Error('Create group response did not include an id.');
+    return getWorkspaceGroup(created.id);
+  }
+
+  async function renameWorkspaceGroup(groupId: string, name: string): Promise<void> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    });
+    await assertOk(res, 'renameWorkspaceGroup');
+  }
+
+  async function deleteWorkspaceGroup(groupId: string): Promise<void> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, { method: 'DELETE' });
+    await assertOk(res, 'deleteWorkspaceGroup');
+  }
+
+  async function removeWorkspaceGroupMember(groupUserId: string): Promise<void> {
+    const res = await auth.authedFetch(`${groupPath}/users/${encodeURIComponent(groupUserId)}`, { method: 'DELETE' });
+    await assertOk(res, 'removeWorkspaceGroupMember');
   }
 
   async function inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void> {
@@ -2205,6 +2294,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     useWorkspace,
     listWorkspaceApps,
     listWorkspaceUsers,
+    listWorkspaceGroups,
+    getWorkspaceGroup,
+    listWorkspaceGroupMembers,
+    createWorkspaceGroup,
+    renameWorkspaceGroup,
+    deleteWorkspaceGroup,
+    removeWorkspaceGroupMember,
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
