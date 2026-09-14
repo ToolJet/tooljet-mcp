@@ -9,6 +9,9 @@ const sortedObject = (value) =>
 
 export function buildDatasourceCoverage(schemas) {
   const defaultOnlyKinds = [];
+  const remoteSpecKinds = [];
+  const singleFormKinds = [];
+  const unexplainedDefaultOnlyKinds = [];
   const kindsWithoutContracts = [];
   const knownResponseKinds = new Set();
   const opaqueEndpointKinds = new Set();
@@ -21,7 +24,15 @@ export function buildDatasourceCoverage(schemas) {
 
   for (const [kind, schema] of Object.entries(schemas).sort(([left], [right]) => left.localeCompare(right))) {
     if ((schema.operations || []).length > 0) namedOperationKinds += 1;
-    else defaultOnlyKinds.push(kind);
+    else {
+      // A kind with no named operations is fine when the catalog says why (the operation set lives
+      // in a remote API spec, or there is a single unnamed form) and a bug when it does not.
+      defaultOnlyKinds.push(kind);
+      const mode = schema.operationSelection?.mode;
+      if (mode === 'remote-spec') remoteSpecKinds.push(kind);
+      else if (mode === 'single') singleFormKinds.push(kind);
+      else unexplainedDefaultOnlyKinds.push(kind);
+    }
 
     // Counted as a floor, not a target: a regenerate that drops the flag leaves every kind
     // undefined, which test_datasource_connection treats as "unknown, call and find out" — the
@@ -64,6 +75,9 @@ export function buildDatasourceCoverage(schemas) {
     contract_count: contractCount,
     kinds_with_named_operations: namedOperationKinds,
     default_only_kinds: defaultOnlyKinds,
+    remote_spec_operation_kinds: remoteSpecKinds,
+    single_form_kinds: singleFormKinds,
+    unexplained_default_only_kinds: unexplainedDefaultOnlyKinds,
     response_contracts: {
       total: contractCount,
       ...responses,
@@ -86,6 +100,8 @@ function metrics(coverage) {
     response_contracts_present: coverage.contract_count - coverage.response_contracts.missing,
     missing_response_contracts: coverage.response_contracts.missing,
     kinds_without_contracts: coverage.kinds_without_contracts.length,
+    kinds_with_named_operations: coverage.kinds_with_named_operations,
+    unexplained_default_only_kinds: coverage.unexplained_default_only_kinds.length,
     opaque_endpoint_kinds: coverage.opaque_endpoint_kinds.length,
     kinds_with_test_connection_flag: coverage.kinds_with_test_connection_flag,
     kinds_supporting_test_connection: coverage.kinds_supporting_test_connection,
@@ -129,6 +145,12 @@ function checkCoverage() {
     `Datasource coverage: ${coverage.datasource_kinds} kinds, ${coverage.contract_count} contracts; ` +
     `${response.known} known, ${response.runtime_dependent} runtime-dependent, ${response.unknown} unknown responses; ` +
     `${coverage.opaque_endpoint_kinds.length} opaque endpoint kinds.`
+  );
+  console.log(
+    `Operations: ${coverage.kinds_with_named_operations} kinds enumerate them, ` +
+    `${coverage.remote_spec_operation_kinds.length} defer to a remote spec, ` +
+    `${coverage.single_form_kinds.length} have a single form, ` +
+    `${coverage.unexplained_default_only_kinds.length} unexplained.`
   );
   if (failures.length) {
     failures.forEach((failure) => console.error(`- ${failure}`));

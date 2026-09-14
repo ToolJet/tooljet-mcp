@@ -71,10 +71,18 @@ function branchSelector(container) {
       .filter((item) => typeof item === 'string' && isObject(container[item]));
     if (matchingValues.length) candidates.push({ field: value, matchingValues });
   }
-  const priority = { operation: 0, mode: 1, model: 2 };
+  // Marketplace wrappers name the operation selector after themselves (`sp_operation`,
+  // `operation_collection`), so rank by shape rather than by an exact key list.
+  const rank = (key) => {
+    if (key === 'operation') return 0;
+    if (/(^|_)operation(_|$)/.test(key)) return 1;
+    if (key === 'mode') return 2;
+    if (key === 'model') return 3;
+    return 10;
+  };
   candidates.sort((left, right) => {
-    const lp = priority[left.field.key] ?? 10;
-    const rp = priority[right.field.key] ?? 10;
+    const lp = rank(left.field.key);
+    const rp = rank(right.field.key);
     return lp - rp || right.matchingValues.length - left.matchingValues.length;
   });
   return candidates[0] || null;
@@ -127,8 +135,15 @@ function compactVariants(leaves) {
   });
 }
 
+// `when` preserves selection order, outermost branch first. Kinds that select on `operation`/`mode`
+// keep their existing contract names; the rest — sharepoint's `sp_operation`, weaviate's
+// `data_type` + `operation_<type>`, n8n's `method` — used to collapse into a single `default`
+// contract, which reported them as having no operations and validated every field loosely.
 function operationForLeaf(leaf) {
-  return leaf.when.operation || leaf.when.mode || 'default';
+  if (leaf.when.operation) return leaf.when.operation;
+  if (leaf.when.mode) return leaf.when.mode;
+  const values = Object.values(leaf.when);
+  return values.length ? values.join('.') : 'default';
 }
 
 function compileContracts(properties) {
@@ -144,6 +159,56 @@ function compileContracts(properties) {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([operation, leaves]) => [operation, { operation, variants: compactVariants(leaves) }])
   );
+}
+
+// An empty `operations` list has three very different causes, and a bare [] cannot tell them apart:
+// the kind has one unnamed form (redis, smtp, runjs), or its operation is chosen at runtime from a
+// remote OpenAPI spec (stripe, gmail, hubspot — the `react-component-api-endpoint` field types), or
+// the harvest simply failed to find the selector. Publishing the reason keeps the third case loud.
+const REMOTE_SPEC_FIELD_TYPE = /^react-component-api-endpoint/;
+
+function findRemoteSpecField(container, found = []) {
+  for (const value of Object.values(container || {})) {
+    if (!isObject(value)) continue;
+    if (typeof value.key === 'string' && REMOTE_SPEC_FIELD_TYPE.test(String(value.type || ''))) {
+      found.push({
+        field: typeof value.parse_key === 'string' ? value.parse_key : value.key,
+        ...(typeof value.spec_url === 'string' ? { specUrl: value.spec_url } : {}),
+      });
+    }
+    findRemoteSpecField(value, found);
+  }
+  return found[0] || null;
+}
+
+function operationSelection(properties, contracts) {
+  const named = Object.keys(contracts).filter((operation) => operation !== 'default');
+  if (named.length) {
+    // A nested selection (weaviate: data_type then operation_<type>) names its contract by joining
+    // the branch values, so report every option key a caller has to set, not just the outermost.
+    const fields = [];
+    for (const contract of named.map((operation) => contracts[operation])) {
+      for (const variant of contract.variants) {
+        for (const key of Object.keys(variant.when)) if (!fields.includes(key)) fields.push(key);
+      }
+    }
+    return { mode: 'enumerated', fields, values: named.slice().sort() };
+  }
+  const remote = findRemoteSpecField(properties);
+  if (remote) {
+    return {
+      mode: 'remote-spec',
+      ...remote,
+      description:
+        'The operation list is served by the remote API spec at query-authoring time, not by the ' +
+        'ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource ' +
+        'in ToolJet or the spec itself before authoring a query.',
+    };
+  }
+  return {
+    mode: 'single',
+    description: 'This kind has a single query form; author it against the `default` contract.',
+  };
 }
 
 function introspectionMethods(properties) {
@@ -322,6 +387,7 @@ for (const collection of pluginCollections) {
       continue;
     }
     const operations = Object.keys(contracts).filter((operation) => operation !== 'default');
+    const selection = operationSelection(properties, contracts);
     schemas[source.kind] = {
       kind: source.kind,
       name: source.name || querySchema.title || source.kind,
@@ -329,6 +395,7 @@ for (const collection of pluginCollections) {
       description: querySchema.description,
       defaults: overrides[source.kind]?.defaults || querySchema.defaults || {},
       operations,
+      operationSelection: selection,
       contracts,
       properties,
       // Scraped from operations.json `invokeMethod` keys, which openapi's empty file cannot supply
@@ -469,18 +536,21 @@ const staticSchemas = {
     description: 'Built-in HTTP query. Pagination is defined by the remote API, not ToolJet.',
     defaults: { method: 'get', url: '', url_params: [], headers: [], cookies: [], body: [], raw_body: null, json_body: null, body_toggle: false, retry_network_errors: null },
     operations: Object.keys(restContracts), contracts: restContracts,
+    operationSelection: { mode: 'enumerated', fields: ['method'], values: Object.keys(restContracts).sort() },
     properties: Object.fromEntries(commonRestFields.map((item) => [item.path, item])),
     paginationStrategies: ['offset', 'page', 'cursor/token'], introspectionMethods: [], supportsTestConnection: false,
     sources: [{ collection: 'static', package: 'restapi' }],
   },
   runjs: {
     kind: 'runjs', name: 'Run JavaScript', type: 'static', defaults: { code: '', parameters: [] }, operations: [],
+    operationSelection: { mode: 'single', description: 'This kind has a single query form; author it against the `default` contract.' },
     contracts: { default: oneVariant('default', [field('code', 'string'), field('parameters', 'array')], ['code']) },
     properties: { code: { type: 'string', description: 'JavaScript body. Return the query result.' }, parameters: { type: 'array' } },
     introspectionMethods: [], supportsTestConnection: false, sources: [{ collection: 'static', package: 'runjs' }],
   },
   runpy: {
     kind: 'runpy', name: 'Run Python', type: 'static', defaults: { code: '' }, operations: [],
+    operationSelection: { mode: 'single', description: 'This kind has a single query form; author it against the `default` contract.' },
     contracts: { default: oneVariant('default', [field('code', 'string')], ['code']) },
     properties: { code: { type: 'string', description: 'Python body. Return the query result.' } },
     introspectionMethods: [], supportsTestConnection: false, sources: [{ collection: 'static', package: 'runpy' }],
@@ -489,6 +559,7 @@ const staticSchemas = {
     kind: 'tooljetdb', name: 'ToolJet Database', type: 'database',
     description: 'Built-in ToolJet Database GUI/SQL query options.', defaults: { operation: '' },
     operations: Object.keys(tooljetContracts), contracts: tooljetContracts,
+    operationSelection: { mode: 'enumerated', fields: ['operation'], values: Object.keys(tooljetContracts).sort() },
     properties: {
       operation: { type: 'string' }, table_id: { type: 'string' },
       list_rows: { type: 'object', fields: { where_filters: tooljetWhereFilters, order_filters: tooljetOrderFilters, aggregates: tooljetAggregates, group_by: tooljetGroupBy, limit: { type: 'number|binding' }, offset: { type: 'number|binding' } } },
@@ -530,6 +601,11 @@ if (testConnectionSupported < 50) {
   );
 }
 
+const missingSelection = Object.keys(schemas).filter((kind) => !schemas[kind].operationSelection?.mode);
+if (missingSelection.length) {
+  throw new Error(`operationSelection missing on: ${missingSelection.join(', ')}.`);
+}
+
 const sorted = sortedObject(schemas);
 mkdirSync(resolve(root, 'data'), { recursive: true });
 writeFileSync(resolve(root, 'data/datasource-schemas.json'), JSON.stringify(sorted, null, 2) + '\n');
@@ -542,6 +618,13 @@ console.log(
 console.log(
   `Response coverage: ${coverage.response_contracts.known}/${coverage.contract_count} known; ` +
   `${coverage.response_contracts.runtime_dependent} runtime-dependent; ${coverage.response_contracts.unknown} unknown.`
+);
+const byMode = {};
+for (const schema of Object.values(sorted)) {
+  byMode[schema.operationSelection.mode] = (byMode[schema.operationSelection.mode] || 0) + 1;
+}
+console.log(
+  `Operation selection: ${Object.entries(byMode).sort().map(([mode, count]) => `${mode} ${count}`).join(', ')}.`
 );
 console.log(
   `Connection tests: ${testConnectionSupported}/${Object.keys(sorted).length} kinds implement testConnection; ` +

@@ -10,6 +10,9 @@ export interface DatasourceQuerySchema {
   description?: string;
   defaults: Record<string, unknown>;
   operations: string[];
+  /** Why `operations` looks the way it does. An empty list means `remote-spec` (the operation set
+   *  lives in the remote API spec) or `single` (one unnamed query form) — never "unsupported". */
+  operationSelection?: DatasourceOperationSelection;
   properties: Record<string, unknown>;
   contracts: Record<string, DatasourceOperationContract>;
   introspectionMethods?: string[];
@@ -18,6 +21,17 @@ export interface DatasourceQuerySchema {
   supportsTestConnection?: boolean;
   sources?: Array<{ collection: string; package: string }>;
   paginationStrategies?: string[];
+}
+
+export interface DatasourceOperationSelection {
+  mode: 'enumerated' | 'remote-spec' | 'single';
+  /** Query-option keys that select the operation (`enumerated`). */
+  fields?: string[];
+  values?: string[];
+  /** Query-option key holding the spec-driven operation (`remote-spec`). */
+  field?: string;
+  specUrl?: string;
+  description?: string;
 }
 
 export interface DatasourceFieldContract {
@@ -135,6 +149,7 @@ export function selectDatasourceQuerySchema(
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
+      ...(schema.operationSelection ? { operation_selection: schema.operationSelection } : {}),
       ...(typeof schema.supportsTestConnection === 'boolean'
         ? { supports_test_connection: schema.supportsTestConnection }
         : {}),

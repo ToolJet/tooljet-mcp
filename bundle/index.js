@@ -46245,6 +46245,7 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
+      ...schema.operationSelection ? { operation_selection: schema.operationSelection } : {},
       ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
     });
     if (!options2.operation) {
@@ -48699,6 +48700,17 @@ function valueAtPath(source2, path) {
   }
   return cursor;
 }
+function describeOperationSelection(schema) {
+  const selection = schema.operationSelection;
+  if (schema.operations.length) {
+    const fields = selection?.fields?.length ? selection.fields.join(" + ") : "operation";
+    return `Set ${fields}. Valid operations: ${schema.operations.join(", ")}.`;
+  }
+  if (selection?.mode === "remote-spec") {
+    return `This kind takes its operation from the remote API spec${selection.specUrl ? ` (${selection.specUrl})` : ""}, not from a fixed list; set ${selection.field ?? "the operation field"} to an operation id from that spec.`;
+  }
+  return "This kind has a single unnamed query form; author it against the default contract.";
+}
 function operationFromOptions(options2, contracts, defaults) {
   const operation = options2.operation ?? defaults.operation;
   if (typeof operation === "string" && operation) {
@@ -48902,12 +48914,13 @@ function validateQueryOptions(kind, options2) {
     });
     return { kind, schemaFound: false, errors, warnings };
   }
+  const operationHint = describeOperationSelection(schema);
   const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: "missing_operation",
       path: schema.contracts.sql ? "mode" : "operation",
-      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(", ") || "default"}.`
+      message: `Datasource "${kind}" needs an operation/mode. ${operationHint}`
     });
     return { kind, schemaFound: true, errors, warnings };
   }
@@ -48916,7 +48929,7 @@ function validateQueryOptions(kind, options2) {
     errors.push({
       code: "invalid_operation",
       path: typeof options2.operation === "string" ? "operation" : "mode",
-      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(", ")}.`
+      message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }
