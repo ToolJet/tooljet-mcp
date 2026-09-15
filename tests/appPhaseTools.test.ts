@@ -1,3 +1,4 @@
+import { TableQuotaError } from '../src/tableQuotaError.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PartialWriteError } from '../src/tooljetClient.js';
 import type { AppSummary, EventSpec, ToolJetClient } from '../src/tooljetClient.js';
@@ -164,6 +165,31 @@ describe('plan token + apply_app_phase', () => {
     expect(body.ok).toBe(true);
     expect(body.errors).toEqual([]);
     expect(body.warnings.join(' ')).toMatch(/primary key "id".*created as "serial"/i);
+  });
+
+  it('preserves the table quota code and saved table through phase failure recovery', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({ app_id: 'museum-app', version_id: 'museum-version',
+        pages: [], queries: [], events: [] }),
+      listTables: vi.fn().mockResolvedValue([]),
+      listDatasources: vi.fn().mockResolvedValue([]),
+      createTables: vi.fn().mockRejectedValue(new PartialWriteError('createTables', [
+        { table_id: 'saved-exhibit', table_name: 'exhibits' },
+      ], ['galleries: quota reached'], new TableQuotaError())),
+    } as unknown as ToolJetClient;
+    const lint = await lintAppSpecTool(client).handler({
+      version_id: 'museum-version',
+      tables: ['exhibits', 'galleries'].map(table_name => ({ table_name,
+        columns: [{ name: 'label', type: 'string' }] })),
+    });
+    const result = await applyAppPhaseTool(client).handler({
+      app_id: 'museum-app', version_id: 'museum-version', plan_token: textOf(lint).plan_token,
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result).error).toMatchObject({ code: 'TJDB_TABLE_LIMIT_REACHED', retryable: false });
+    expect(textOf(result).error.details).toContain('tables=1');
+    expect(textOf(result).error.details).toContain('saved-exhibit');
+    expect(client.createTables).toHaveBeenCalledOnce();
   });
 
   it('reports partial page persistence instead of claiming the failed batch wrote nothing', async () => {
