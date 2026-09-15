@@ -203,7 +203,7 @@ describe('update_pages strict entries', () => {
   it('still accepts name/icon/hidden updates', () => {
     expect(parseArgs(tool, {
       app_id: 'a', version_id: 'v',
-      updates: [{ page_id: 'p1', name: 'Overview', icon: 'home', hidden: false }],
+      updates: [{ page_id: 'p1', name: 'Overview', icon: 'IconHome2', hidden: false }],
     }).success).toBe(true);
   });
 });

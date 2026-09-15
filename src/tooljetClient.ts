@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
@@ -296,7 +297,7 @@ export interface CreatePageParams {
   appId: string;
   versionId: string;
   name: string;
-  /** Tabler icon name, e.g. "IconLayoutDashboard". Defaults to ToolJet's "IconFile" if omitted. */
+  /** Exact Tabler export, e.g. "IconLayoutDashboard". ToolJet renders a generic fallback if omitted. */
   icon?: string;
   /** Hide the page from the auto-generated sidebar nav (still reachable via switch-page). For detail/sub-pages. */
   hidden?: boolean;
@@ -466,8 +467,13 @@ export interface QuerySummary {
   options?: unknown;
 }
 
+/* There is deliberately no setAppPublic here. Publishing an app makes it world-readable, and nothing
+   this server does is worth that: the render audit used to flip it to reach a private page and flip it
+   back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
+   An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
   listWorkspaces(): Promise<Workspace[]>;
+  /** Toggle the app's public viewer (PUT /api/apps/:id/public). Used by the render audit when allowed. */
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
   listWorkspaceUsers(params?: {
@@ -1118,6 +1124,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createPages(params: CreatePagesParams): Promise<CreatePageResult[]> {
+    // Validate every supplied icon before reads/writes: direct/hybrid callers can bypass Zod.
+    for (const page of params.pages) {
+      if (page.icon !== undefined) assertPageIcon(page.icon, `Page "${page.name}"`);
+    }
     // Page order = append after existing pages. Precompute ids/indexes and create the batch concurrently.
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
@@ -1242,6 +1252,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   async function updatePages(params: UpdatePagesParams): Promise<UpdatePagesResult> {
     const updates = params.updates ?? [];
+    for (const update of updates) {
+      if (update.icon !== undefined) assertPageIcon(update.icon, `Page "${update.pageId}"`);
+    }
     const order = params.order;
     if (!updates.length && !order) {
       throw new Error('ToolJet updatePages failed: provide at least one page update or a complete page order.');
@@ -1668,7 +1681,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw error;
       }
       // Only retry explicit schema-cache rejections, where PostgREST did not execute the insert.
-      if (res.status !== 400 && res.status !== 404) return res;
+      // The BODY is the discriminator, not the status: ToolJet's proxy wraps PGRST205 as a 409, so
+      // gating on 400/404 meant this retry never ran for the case it was written for. Measured
+      // 2026-09-14: six partial applies across two models, every one "failed during seed data and
+      // create queries" with the table created and zero rows seeded, all carrying PGRST205 in a 409.
+      // A 409 is normally a real conflict (duplicate key), which is why the body check stays: only a
+      // response that actually names the schema cache is retried.
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { themeDefinition } from './manageTheme.js';
 
 interface StandardThemeFile {
   name: string;
@@ -31,9 +32,9 @@ export function loadStandardTheme(): StandardThemeFile {
 
 /** A theme derived from the request (brand, industry, audience): created once per workspace by name, then applied. */
 const derivedThemeSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  definition: z.record(z.string(), z.any()),
-});
+  name: z.string().trim().min(5).max(100),
+  definition: themeDefinition,
+}).strict();
 type DerivedTheme = z.infer<typeof derivedThemeSchema>;
 
 export type CreateAppThemeChoice = 'standard' | 'workspace_default' | string | DerivedTheme;
@@ -55,7 +56,7 @@ export interface CreateAppToolResult extends CreateAppResult {
  */
 async function resolveTheme(client: ToolJetClient, choice: CreateAppThemeChoice): Promise<AppTheme> {
   const themes = await client.listAppThemes();
-  const wanted: DerivedTheme | undefined =
+  const wanted: StandardThemeFile | DerivedTheme | undefined =
     choice === 'standard' ? loadStandardTheme() : typeof choice === 'object' ? choice : undefined;
   if (wanted) {
     const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
@@ -80,8 +81,9 @@ export function createAppTool(client: ToolJetClient): ToolDef {
     description:
       'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, ' +
       'home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), ' +
-      'and the theme that was applied. Decide the theme before calling: when the request names a brand, an industry ' +
-      'or a customer type, derive a theme (see references/themes.md) and pass theme:{name, definition}; it is created ' +
+      'and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, ' +
+      'industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, ' +
+      'text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created ' +
       'once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral ' +
       'greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the ' +
       'workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. ' +
@@ -93,6 +95,9 @@ export function createAppTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: { name: string; theme?: string | DerivedTheme }) {
       try {
+        // Internal callers can bypass MCP input validation. Reject incomplete themes before creating
+        // even an empty app; a theme name alone does not prove that its requested palette was applied.
+        if (typeof args.theme === 'object') derivedThemeSchema.parse(args.theme);
         const created = await client.createApp(args.name);
         const choice: CreateAppThemeChoice = args.theme ?? 'standard';
         const result: CreateAppToolResult = { ...created, theme: { mode: 'workspace_default' } };

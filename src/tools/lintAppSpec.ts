@@ -24,7 +24,9 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
       'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
       'values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ' +
-      'ToolJet DB table into options.table_id. Set app_name when the target app should be renamed in the same governed phase. ' +
+      'ToolJet DB table by its actual table_name into options.table_id (not a client_ref or alias). For each query use either ' +
+      'the exact datasource_id or the exact unique datasource_name from list_datasources(version_id); names are pinned to IDs ' +
+      'during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. ' +
       'For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
       'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
       'Treat this call as an awaited barrier; it never mutates ToolJet.',
@@ -167,11 +169,27 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           ? await client.listDatasources(args.version_id)
           : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        const queries = (args.queries ?? []).map((query) => {
-          const datasourceKind = datasourceKinds.get(query.datasource_id);
-          if (args.version_id && !datasourceKind) {
-            preflightErrors.push(`Query "${query.name}" datasource "${query.datasource_id}" is not available.`);
+        const resolvedQueryIds = new Map<number, string>();
+        const queries = (args.queries ?? []).map((query, index) => {
+          let datasourceId = query.datasource_id;
+          const hasId = query.datasource_id !== undefined;
+          const hasName = query.datasource_name !== undefined;
+          if (hasId === hasName) {
+            preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
+          } else if (hasName) {
+            const matches = datasources.filter(source => source.name === query.datasource_name);
+            if (!query.datasource_name || matches.length !== 1) {
+              preflightErrors.push(
+                `Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version ` +
+                `(found ${matches.length}). Use the exact name or id returned by list_datasources(version_id).`
+              );
+            } else datasourceId = matches[0]!.id;
           }
+          const datasourceKind = datasourceKinds.get(datasourceId ?? '');
+          if (args.version_id && !datasourceKind) {
+            preflightErrors.push(`Query "${query.name}" datasource "${datasourceId ?? query.datasource_name ?? ''}" is not available.`);
+          }
+          if (datasourceId && datasourceKind) resolvedQueryIds.set(index, datasourceId);
           if (query.kind && datasourceKind && query.kind !== datasourceKind) {
             preflightErrors.push(
               `Query "${query.name}" kind "${query.kind}" does not match datasource kind "${datasourceKind}".`
@@ -180,7 +198,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           const options = structuredClone(query.options);
           if (query.table_ref) {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
-            if (!tableId) preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
+            if (!tableId) preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}". Use the actual table_name from tables[] or list_tables, not a client_ref, alias, or UUID.`);
             else options.table_id = tableId;
           } else if ((datasourceKind ?? query.kind) === 'tooljetdb' && typeof options.table_id === 'string') {
             // A raw table_id must be one of this workspace's tables. Small models splice UUIDs when they
@@ -200,7 +218,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           }
           return {
             clientRef: query.client_ref,
-            datasourceId: query.datasource_id,
+            datasourceId: datasourceId ?? '',
             name: query.name,
             kind: datasourceKind ?? query.kind,
             options,
@@ -294,7 +312,14 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           errors: unique([...preflightErrors, ...lint.errors]),
           warnings: unique([...preflightWarnings, ...lint.warnings]),
         };
-        return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
+        if (!result.ok) return ok(result);
+        // Store the concrete ID, not a name to re-resolve at apply. A rename or duplicate created
+        // after lint must never silently retarget the authorized phase to another datasource.
+        const resolvedSpec: AppPlanInput = { ...args, queries: args.queries?.map((query, index) => {
+          const { datasource_name: _name, ...rest } = query;
+          return { ...rest, datasource_id: resolvedQueryIds.get(index)! };
+        }) };
+        return ok({ ...result, ...storeAppPlan(resolvedSpec, result) });
       } catch (error) {
         return fail(error);
       }

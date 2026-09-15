@@ -17,6 +17,7 @@ describe('sync-skill', () => {
     tempRoots.push(tempRoot);
     const codexHome = join(tempRoot, 'codex');
     const claudeHome = join(tempRoot, 'claude');
+    const grokHome = join(tempRoot, 'grok');
 
     execFileSync(process.execPath, [
       resolve(root, 'scripts/sync-skill.mjs'),
@@ -24,13 +25,14 @@ describe('sync-skill', () => {
       '--skip-generate',
     ], {
       cwd: root,
-      env: { ...process.env, CODEX_HOME: codexHome, CLAUDE_HOME: claudeHome },
+      env: { ...process.env, CODEX_HOME: codexHome, CLAUDE_HOME: claudeHome, GROK_HOME: grokHome },
     });
 
     const expected = readFileSync(resolve(root, 'skill/SKILL.md'), 'utf8');
     expect(readFileSync(join(codexHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
     expect(readFileSync(join(claudeHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
-    const references = readdirSync(resolve(root, 'skill/references')).sort();
+    expect(readFileSync(join(grokHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
+    const references = readdirSync(resolve(root, 'skill/references')).filter((name) => name.endsWith('.md')).sort();
     for (const name of references) {
       const expectedReference = readFileSync(resolve(root, 'skill/references', name), 'utf8');
       expect(readFileSync(join(codexHome, 'skills/tooljet-app-builder/references', name), 'utf8')).toBe(expectedReference);
