@@ -479,6 +479,12 @@ export interface ToolJetClient {
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
+  /** A short-lived, app-scoped browser session. See createAppScopedSession for why it exists. */
+  createAppScopedSession(
+    appId: string,
+    email: string,
+    expiryMinutes: number
+  ): Promise<{ token: string; expires_in_minutes: number; url: string }>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
@@ -1093,6 +1099,68 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       editor_url: editorUrl,
       viewer_url: viewerUrl,
       datasources_url: datasourceManagementUrl(orgSlug),
+    };
+  }
+
+  /* A browser-usable session for ONE app.
+   *
+   * Two calls against ToolJet's external API: create an app-scoped PAT, then trade it for a session.
+   * The result is signed by the same signer as a cookie login, so a browser accepts it as
+   * tj_auth_token — unlike the workspace session this server builds with, which is PAT-derived and
+   * which PatScopeInterceptor bars from the endpoints the frontend needs to boot.
+   *
+   * EXTERNAL_API_ACCESS_TOKEN is an instance-wide secret (it can mint for any user and any app), so
+   * it is read here, in the deployment that already owns it, and never handed to a caller. What
+   * leaves this function is only a short-lived token for the one app that was asked about.
+   */
+  async function createAppScopedSession(
+    appId: string,
+    email: string,
+    expiryMinutes: number
+  ): Promise<{ token: string; expires_in_minutes: number; url: string }> {
+    const accessToken = process.env.EXTERNAL_API_ACCESS_TOKEN?.trim();
+    if (!accessToken) {
+      throw new Error(
+        'EXTERNAL_API_ACCESS_TOKEN is not configured on this MCP server, so a render session cannot ' +
+          'be minted. Skip the render check rather than reporting the app as broken.'
+      );
+    }
+
+    const post = async (path: string, body: unknown, headers?: Record<string, string>) => {
+      const res = await fetch(`${config.apiUrl}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        throw new Error(`ToolJet ${path} failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+      }
+      return (await res.json()) as Record<string, unknown>;
+    };
+
+    const created = await post(
+      '/api/ext/users/personal-access-token',
+      { email, appSlug: appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes },
+      { Authorization: `Basic ${accessToken}` }
+    );
+    const pat = created.personalAccessToken;
+    if (typeof pat !== 'string' || !pat) {
+      throw new Error('ToolJet did not return a personal access token for the render session.');
+    }
+
+    const session = await post('/api/ext/users/session', { appId, accessToken: pat });
+    const token = session.signedPat;
+    if (typeof token !== 'string' || !token) {
+      throw new Error('ToolJet did not return a session for the render personal access token.');
+    }
+
+    // The editor route, not the viewer one: /applications/<id> serves an unreleased app as
+    // "app not available", while the editor renders the current version.
+    const orgSlug = await auth.getOrganizationSlug();
+    return {
+      token,
+      expires_in_minutes: expiryMinutes,
+      url: `${config.appUrl}/${orgSlug}/apps/${appId}`,
     };
   }
 
@@ -2209,6 +2277,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updateWorkspaceUser,
     setWorkspaceUserArchived,
     createApp,
+    createAppScopedSession,
     renameApp,
     getApp,
     getAppSummary,
