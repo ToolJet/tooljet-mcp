@@ -1,3 +1,4 @@
+import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
 import type { AppPlanInput } from '../appPlanSchema.js';
 import { consumeAppPlan } from '../appPlanStore.js';
@@ -246,7 +247,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`]
             : []),
         ];
-        if (foundationFailures.length) throw new Error(foundationFailures.join(' | '));
+        if (foundationFailures.length) throw new Error(foundationFailures.join(' | '), {
+          cause: tableWrite.status === 'rejected' ? tableQuotaError(tableWrite.reason) : undefined,
+        });
 
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables) tableIds.set(table.table_name.toLowerCase(), table.table_id);
@@ -482,7 +485,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         return fail(new Error(
           `apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. ` +
             `The one-time plan token is consumed; nothing with content on it was auto-deleted. ` +
-            `${error instanceof Error ? error.message : String(error)}` + recovery
+            `${error instanceof Error ? error.message : String(error)}` + recovery,
+          { cause: error }
         ));
       }
     },

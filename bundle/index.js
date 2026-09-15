@@ -40863,6 +40863,27 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
 }
 
+// dist/tableQuotaError.js
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error51) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error51 instanceof Error && !seen.has(error51)) {
+    if (error51 instanceof TableQuotaError)
+      return error51;
+    seen.add(error51);
+    error51 = error51.cause;
+  }
+  return void 0;
+}
+
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
@@ -43939,8 +43960,8 @@ function isCanonicalStaticBooleanBinding(value, expected) {
 var PartialWriteError = class extends Error {
   completed;
   failures;
-  constructor(operation, completed, failures) {
-    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`);
+  constructor(operation, completed, failures, cause) {
+    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`, { cause });
     this.name = "PartialWriteError";
     this.completed = completed;
     this.failures = failures;
@@ -43985,7 +44006,10 @@ function pageHiddenNeedsUpdate(page, expected) {
 }
 async function assertOk(res, method) {
   if (!res.ok) {
-    throw new ToolJetHttpError(res.status, method, await res.text());
+    const detail = await res.text();
+    if (method === "createTable" && res.status === 451)
+      throw new TableQuotaError();
+    throw new ToolJetHttpError(res.status, method, detail);
   }
 }
 var TYPE_ALIASES = {
@@ -44677,16 +44701,21 @@ function createClient(auth, config2) {
     const levels = tableCreationLevels(params.tables);
     const created = [];
     for (const level of levels) {
-      const settled = await Promise.allSettled(level.map((table) => createTable(table)));
-      const failures = [];
-      settled.forEach((result, index) => {
-        if (result.status === "fulfilled")
-          created.push(result.value);
-        else
-          failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      });
-      if (failures.length) {
-        throw new PartialWriteError("createTables", created, failures);
+      for (let start = 0; start < level.length; start += 4) {
+        const batch = level.slice(start, start + 4);
+        const settled = await Promise.allSettled(batch.map((table) => createTable(table)));
+        const failures = [];
+        let quota;
+        settled.forEach((result, index) => {
+          if (result.status === "fulfilled")
+            created.push(result.value);
+          else {
+            quota ??= tableQuotaError(result.reason);
+            failures.push(`${batch[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+          }
+        });
+        if (failures.length)
+          throw new PartialWriteError("createTables", created, failures, quota);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -45228,7 +45257,15 @@ function ok(value) {
 }
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
-  return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+  const quota = tableQuotaError(err);
+  const text = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text }], isError: true };
 }
 
 // dist/tools/listWorkspaces.js
@@ -45772,7 +45809,7 @@ function createTablesTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created concurrently. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
+    description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created in batches of at most four; a failed batch stops further creation. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
     inputSchema: { tables: external_exports.array(tableSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -50959,7 +50996,9 @@ function applyAppPhaseTool(client) {
           ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
         ];
         if (foundationFailures.length)
-          throw new Error(foundationFailures.join(" | "));
+          throw new Error(foundationFailures.join(" | "), {
+            cause: tableWrite.status === "rejected" ? tableQuotaError(tableWrite.reason) : void 0
+          });
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables)
           tableIds.set(table.table_name.toLowerCase(), table.table_id);
@@ -51169,7 +51208,7 @@ function applyAppPhaseTool(client) {
           } catch {
           }
         }
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery, { cause: error51 }));
       }
     }
   };
