@@ -77,7 +77,7 @@ a revoked customer can stay allowed up to 60 s (`gatewayOriginCache`, `GATEWAY_C
 
 ### Tools
 
-56 tool definitions in `src/tools/index.ts` `registerTools`. The singular create tools
+55 tool definitions in `src/tools/index.ts` `registerTools`. The singular create tools
 (`create_table`, `insert_rows`, `add_page`, `add_query`, `add_component`) are hidden unless
 `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=1` — agents get the batch versions
 (`LEGACY_SINGULAR_CREATE_TOOL_NAMES`).
