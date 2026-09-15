@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
+import { introducedLintFindings } from '../lint.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -42,6 +44,32 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
     }) {
       const prepared = prepareComponentBatch(args.components);
       if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
+      // Geometry against the page as it already is, not the batch alone: a targeted add that lands on top
+      // of an existing table (a modal's buttons placed at root, a caption over a register) passed here
+      // unremarked in the 2026-09-12 review because only the new components were checked together.
+      const pageWarnings: string[] = [];
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        if (summary.version_id && summary.version_id !== args.version_id) {
+          return fail(new Error('Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components.'));
+        }
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (page) {
+          const existing = page.components as LintComponent[];
+          const combined = [...existing, ...(prepared.components as LintComponent[])];
+          const introducedErrors = introducedLintFindings(
+            lintRenderedGeometryBlocking(existing),
+            lintRenderedGeometryBlocking(combined)
+          );
+          if (introducedErrors.length) {
+            // A component landing on another is not written; the model moves it and calls again.
+            return fail(new Error('The batch would land on components already on the page: ' + introducedErrors.join(' ')));
+          }
+          pageWarnings.push(...introducedLintFindings(lintRenderedGeometryAdvisory(existing), lintRenderedGeometryAdvisory(combined)));
+        }
+      } catch {
+        pageWarnings.push('Existing-page geometry was not checked because the app summary was unavailable; verify the target page after this write.');
+      }
       try {
         const result = await client.createComponents({
           appId: args.app_id,
@@ -51,7 +79,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         });
         return ok({
           components: result,
-          warnings: prepared.warnings,
+          warnings: [...prepared.warnings, ...pageWarnings],
         });
       } catch (err) {
         return fail(err);

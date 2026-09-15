@@ -133,6 +133,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
               ...shaped,
+              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
               ...(bindingHint ? { binding_hint: bindingHint } : {}),
               ...(warnings.length ? { warnings } : {}),
               ...(recovery ? { recovery } : {}),

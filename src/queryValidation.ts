@@ -219,6 +219,18 @@ function interpolatedSqlBindingIssues(sql: string): QueryValidationIssue[] {
   ];
 }
 
+/** Parse JavaScript query code the way ToolJet runs it (an async function body). Returns the syntax
+ *  error message, or undefined when it parses. A stray quote in a chart query (round eight, 2026-09-12)
+ *  failed the query silently and left the chart it fed as empty axes. */
+export function runjsSyntaxError(code: string): string | undefined {
+  try {
+    new Function(`return (async () => {\n${code}\n});`);
+    return undefined;
+  } catch (error) {
+    return error instanceof SyntaxError ? error.message : undefined;
+  }
+}
+
 /* A transformation is three fields, not one. `transformations` / `transformation` carries the code,
    but ToolJet only runs it when `enableTransformation` is true and `transformationLanguage` names the
    language the code is under. Writing the code alone saves a transformation that never executes, and
@@ -286,6 +298,18 @@ function influxTransformWarnings(kind: string, options: Record<string, unknown>)
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
+    const syntax = runjsSyntaxError(options.code);
+    if (syntax) {
+      errors.push({
+        code: 'runjs_syntax_error',
+        path: 'code',
+        message:
+          `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; ` +
+          'fix the code before writing it.',
+      });
+    }
+  }
   warnings.push(...transformationWarnings(options));
   warnings.push(...influxTransformWarnings(kind, options));
   if (typeof options.query === "string") {

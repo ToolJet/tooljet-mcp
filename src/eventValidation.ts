@@ -1,6 +1,7 @@
 import { getComponentSchema } from './catalog.js';
 import { resolveRef } from './refResolution.js';
 import { decodeComponentParent } from './componentParent.js';
+import { lintComponentStateBindings } from './componentStateBindings.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 
 export interface EventValidationResult {
@@ -155,6 +156,7 @@ export function validateEvents(
 
   events.forEach((event, index) => {
     const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
+    errors.push(...lintComponentStateBindings(event.action, [...components.values()], label));
     if (event.sourceType === 'component') {
       const source = components.get(event.sourceId);
       if (!source) errors.push(`${label}: component source "${event.sourceId}" does not exist.`);

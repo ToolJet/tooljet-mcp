@@ -91,7 +91,7 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
     description:
       'Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive ' +
       'require confirm:true. Updates can change names/role and add existing custom groups; they cannot ' +
-      'remove groups, change passwords, manage other workspaces, or bypass the PAT owner\'s ToolJet permissions.',
+      'remove groups (use manage_workspace_groups), change passwords, manage other workspaces, or bypass the PAT owner\'s ToolJet permissions.',
     inputSchema: {
       action: z.enum(['invite', 'update', 'archive', 'unarchive']),
       organization_user_id: z.string().uuid().optional(),
