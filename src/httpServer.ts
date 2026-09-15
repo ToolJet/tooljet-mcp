@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
@@ -16,6 +16,10 @@ interface Session {
   /** The build token this session was opened with, when it was opened with one. Kept so every later
    *  request can re-check it: identity is bound at initialize, but a token's VALIDITY is not. */
   buildToken?: string;
+  credential: Buffer;
+  createdAt: number;
+  lastSeenAt: number;
+  closing?: boolean;
 }
 
 export interface HttpMcpServerOptions {
@@ -24,6 +28,11 @@ export interface HttpMcpServerOptions {
   serverFactory?: (identity?: RequestIdentity) => McpServer;
   /** Maximum accepted JSON request size. Defaults to 1 MiB. */
   maxBodyBytes?: number;
+  maxSessions?: number;
+  idleTimeoutMs?: number;
+  maxSessionAgeMs?: number;
+  sweepIntervalMs?: number;
+  now?: () => number;
 }
 
 export interface HttpMcpServer {
@@ -52,6 +61,18 @@ function getSessionId(req: IncomingMessage): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/** Do not keep another plaintext copy of credentials. Build-token identity always wins; otherwise
+ * bind both the acting-user headers and any bearer supplied at initialization. URL metadata is not
+ * identity and never changes the session's already-bound destination. */
+function credentialFingerprint(req: IncomingMessage): Buffer {
+  const bearer = bearerValue(req.headers.authorization);
+  const fields = isBuildToken(bearer) ? [bearer] : [
+    bearer ?? null, req.headers['x-tooljet-pat'] ?? null,
+    req.headers['x-tooljet-session'] ?? null, req.headers['x-tooljet-workspace-id'] ?? null,
+  ];
+  return createHash('sha256').update(JSON.stringify(fields)).digest();
+}
+
 async function readJsonBody(req: IncomingMessage, maxBodyBytes: number): Promise<unknown> {
   const chunks: Buffer[] = [];
   let totalBytes = 0;
@@ -75,6 +96,44 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
   const serverFactory = options.serverFactory ?? buildServer;
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   const sessions = new Map<string, Session>();
+  const now = options.now ?? Date.now;
+  const maxSessions = options.maxSessions ?? 256;
+  const idleTimeout = options.idleTimeoutMs ?? 30 * 60_000;
+  const maxAge = options.maxSessionAgeMs ?? 6 * 60 * 60_000;
+  let initializing = 0;
+  const closing = new Set<Promise<void>>();
+  const dispose = (id: string, session: Session): Promise<void> => {
+    if (session.closing) return Promise.resolve();
+    session.closing = true;
+    sessions.delete(id);
+    const task = (async () => {
+      await session.server.close().catch(() => {});
+      await session.transport.close().catch(() => {});
+    })();
+    closing.add(task);
+    void task.finally(() => closing.delete(task));
+    return task;
+  };
+  const expired = (session: Session): boolean => now() - session.lastSeenAt >= idleTimeout ||
+    now() - session.createdAt >= maxAge || Boolean(session.buildToken && !resolveBuildToken(session.buildToken));
+  const sweep = setInterval(() => {
+    for (const [id, session] of sessions) if (expired(session)) void dispose(id, session);
+  }, options.sweepIntervalMs ?? 60_000);
+  sweep.unref();
+
+  const authorizeSession = async (req: IncomingMessage, res: ServerResponse, id: string, session: Session): Promise<boolean> => {
+    if (expired(session)) {
+      await dispose(id, session);
+      writeError(res, 401, 'Session or build token revoked or expired');
+      return false;
+    }
+    if (!timingSafeEqual(session.credential, credentialFingerprint(req))) {
+      writeError(res, 401, 'Session credential does not match');
+      return false;
+    }
+    session.lastSeenAt = now();
+    return true;
+  };
 
   const handlePost = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     let body: unknown;
@@ -91,17 +150,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     const existingSession = sessionId ? sessions.get(sessionId) : undefined;
 
     if (existingSession) {
-      /* A build token is checked on EVERY request, not only at initialize. Binding identity once and
-         trusting the session id thereafter meant revocation did nothing to a session already open:
-         revoke, then call a tool on that session, and it still ran. Revocation has to end access at
-         the moment it happens or it is not revocation. Only build-token sessions are re-checked —
-         a PAT or a session-token identity has no server-side lifetime to consult. */
-      if (existingSession.buildToken && !resolveBuildToken(existingSession.buildToken)) {
-        sessions.delete(sessionId as string);
-        await existingSession.transport.close?.().catch(() => {});
-        writeError(res, 401, 'Build token revoked or expired');
-        return;
-      }
+      if (!await authorizeSession(req, res, sessionId!, existingSession)) return;
       await existingSession.transport.handleRequest(req, res, body);
       return;
     }
@@ -111,13 +160,23 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
       return;
     }
 
-    /* Identity is bound at initialize and belongs to the session from then on: one MCP session is
-       one build for one user, and later requests carry only the session id. NOTE this transport has
+    /* Identity is bound at initialize; every later request must carry the same credential, not just
+       the session id. NOTE this transport has
        no bearer gate of its own (src/http.ts binds it to loopback) — do not expose it off-box
        without one, or any local caller could name a user. */
     let identity: RequestIdentity | undefined;
+    let sessionBuildToken: string | undefined;
+    const bearer = bearerValue(req.headers.authorization);
+    if (isBuildToken(bearer)) {
+      identity = resolveBuildToken(bearer);
+      if (!identity) {
+        writeError(res, 401, 'Build token is unknown or expired.');
+        return;
+      }
+      sessionBuildToken = bearer;
+    }
     try {
-      identity = await identityFromHeaders(req.headers);
+      if (!identity) identity = await identityFromHeaders(req.headers);
     } catch (error) {
       writeError(res, 400, error instanceof Error ? error.message : 'Invalid identity headers');
       return;
@@ -127,41 +186,45 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     // and it is the only way that identity can travel when the harness (not us) holds the connection
     // and the platform forbids custom headers. Resolved before the PAT fallback so a token is never
     // mistaken for a PAT belonging to whoever presented it.
-    let sessionBuildToken: string | undefined;
-    if (!identity) {
-      const bearer = bearerValue(req.headers.authorization);
-      if (isBuildToken(bearer)) {
-        identity = resolveBuildToken(bearer);
-        if (!identity) {
-          writeError(res, 401, 'Build token is unknown or expired.');
-          return;
-        }
-        sessionBuildToken = bearer; // re-checked on every later request, see handlePost above
-      } else if (bearer) {
-        // Same fallback as the bundle's direct HTTP mode: a client that cannot set arbitrary headers
-        // can still send its PAT as a bearer. Kept identical so the two HTTP entry points do not
-        // disagree about what authenticates a request.
-        identity = { pat: bearer };
-      }
+    if (!identity?.pat && !identity?.sessionToken && bearer) {
+      // Same fallback as the bundle's direct HTTP mode.
+      identity = { ...identity, pat: bearer };
+    }
+    if (identity && !identity.pat && !identity.sessionToken) {
+      writeError(res, 401, 'URL metadata is not a user credential');
+      return;
     }
 
-    const mcpServer = serverFactory(identity);
-    let transport: StreamableHTTPServerTransport;
-
-    transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (newSessionId) => {
-        sessions.set(newSessionId, { server: mcpServer, transport, buildToken: sessionBuildToken });
-      },
-    });
-
-    transport.onclose = () => {
-      const closedSessionId = transport.sessionId;
-      if (closedSessionId) sessions.delete(closedSessionId);
-    };
-
-    await mcpServer.connect(transport);
-    await transport.handleRequest(req, res, body);
+    for (const [id, session] of sessions) if (expired(session)) await dispose(id, session);
+    if (sessions.size + initializing >= maxSessions) {
+      writeError(res, 503, 'MCP session capacity reached; retry later');
+      return;
+    }
+    initializing++;
+    let mcpServer: McpServer | undefined;
+    try {
+      mcpServer = serverFactory(identity);
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (newSessionId) => {
+          sessions.set(newSessionId, { server: mcpServer!, transport, buildToken: sessionBuildToken,
+            credential: credentialFingerprint(req), createdAt: now(), lastSeenAt: now() });
+        },
+      });
+      transport.onclose = () => {
+        const closedSessionId = transport.sessionId;
+        const session = closedSessionId ? sessions.get(closedSessionId) : undefined;
+        if (session) void dispose(closedSessionId!, session);
+      };
+      await mcpServer.connect(transport);
+      await transport.handleRequest(req, res, body);
+      if (!transport.sessionId) await mcpServer.close();
+    } catch (error) {
+      await mcpServer?.close().catch(() => {});
+      throw error;
+    } finally {
+      initializing--;
+    }
   };
 
   /** Mint (POST) or revoke (DELETE) a build token. Authorised by the shared mint secret, and the
@@ -181,7 +244,9 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     if (req.method === 'DELETE') {
       const token = bearerValue(req.headers['x-tooljet-build-token'] as string | undefined)
         ?? (req.headers['x-tooljet-build-token'] as string | undefined);
-      writeJson(res, 200, { revoked: revokeBuildToken(token) });
+      const revoked = revokeBuildToken(token);
+      for (const [id, session] of sessions) if (session.buildToken === token) await dispose(id, session);
+      writeJson(res, 200, { revoked });
       return;
     }
 
@@ -229,6 +294,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
       return;
     }
 
+    if (!await authorizeSession(req, res, sessionId!, session)) return;
     await session.transport.handleRequest(req, res);
   };
 
@@ -270,8 +336,9 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
   });
 
   const close = async (): Promise<void> => {
-    await Promise.allSettled(Array.from(sessions.values(), ({ transport }) => transport.close()));
-    sessions.clear();
+    clearInterval(sweep);
+    await Promise.allSettled(Array.from(sessions, ([id, session]) => dispose(id, session)));
+    await Promise.allSettled(closing);
 
     if (!server.listening) return;
 

@@ -189,6 +189,7 @@ describe('build tokens', () => {
         'content-type': 'application/json',
         accept: 'application/json, text/event-stream',
         'mcp-session-id': sessionId as string,
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }),
     });
