@@ -147,6 +147,17 @@ the default replace it. Report any license/application warning honestly.
 
 ### Identity and emphasis follow the job
 
+For a recognizable named brand, carry its distinctive visual cues into the working UI, not only the
+theme definition. In the existing brief, map the chosen identity to visible roles such as an orientation
+surface, section emphasis, selection treatment or primary action. Implement those roles with the resolved
+tokens and reuse them across pages; layouts still follow each page's job. A branded name plus a lone
+coloured button is insufficient when the defining identity is otherwise absent.
+
+If a secondary colour is important to recognition, give it a restrained visible role rather than leaving
+it unused in settings. Not every palette colour must appear, and no banner, KPI, logo or fixed surface
+count is required. Preserve neutral reading areas, contrast, semantic status colours and selected-theme
+precedence. Do not invent brand assets or recolour unrelated existing pages to satisfy this check.
+
 Translate identity into hierarchy and interaction emphasis, not just a colour swap. Decide where orientation
 is needed, what must be compared simultaneously, and what can wait until a record is selected. Let these
 needs determine header prominence, region proportions, grouping and density; no named composition is required.

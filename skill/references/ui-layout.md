@@ -45,6 +45,7 @@ Then hold to these:
 
 #### Design brief (write it before the first write)
 Before creating or changing the app, state one or two sentences with the page plan: who is doing what, which facts/actions must stay together, why the dominant surface fits, and the resolved theme. Do not add a separate planning call or design essay. Carry that rationale through the implementation, revising it only when actual data or constraints require it.
+For a brand-led design, also name where its distinctive identity will be visible in the normal page state; defining theme tokens alone does not implement the brief.
 
 #### Derive the composition from constraints
 Do not begin with a dashboard skeleton or pick from a layout menu. Use the page mode as an intent label, not a template:
@@ -91,6 +92,7 @@ Use other arrangements when the data and workflow justify them. Do not copy thes
 - **Listview cards:** choose list/grid mode and column count for the objects and available space. Children use each item's own 43-column canvas. Set rowHeight from the lowest rendered child bottom plus breathing room; include decision-relevant fields, not a fixed count of statistics or a copied card skeleton.
 #### Spacing and gutters
 - **Canvas padding:** don't run edge-to-edge across all 43 columns — keep a consistent side gutter (top-level content ≈ columns **2–41**). A full-width working surface is valid when the workflow and readable spacing justify it.
+- **One gutter layer for aligned surfaces:** when an Html header, card or summary strip should align with native peers, let the component layout provide the page gutter. Keep the background-covering root's horizontal padding/margin at zero; put content padding inside the visible child surface. Extra outer padding shrinks the painted card even when component boxes align. Preserve the full-box background wrapper to prevent white corners. Deliberate insets or shadow clearance are valid when their visible edges fit the composition; do not force every surface full-width.
 - A dense operational or analytical page with several root surfaces should not accidentally stop around the middle of the desktop canvas. MCP warns when four or more root components including a Table/Chart/Listview/Kanban occupy only about columns 0–27; expand the main composition toward columns 2–41 unless a narrow rail is deliberate and browser-verified.
 - **Consistent spacing:** ONE vertical gap between stacked sections (~16–24px) and ONE shared left edge for all top-level components.
 - **Buttons** are at least 7.5px per label character plus 32px wide (a two-word label needs 5 columns); a narrower button wraps its label and is rejected.
