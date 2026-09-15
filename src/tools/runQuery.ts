@@ -360,6 +360,9 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         if (output.warning) warnings.push(output.warning);
         return ok({
           ...output.result,
+          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
+          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
+          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
           ...(bindingHint ? { binding_hint: bindingHint } : {}),
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),

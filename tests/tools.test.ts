@@ -285,7 +285,10 @@ describe('run_query tool', () => {
       version_id: 'v1',
     });
 
-    expect(textOf(result)).toEqual({ status: 'ok', data: [{ '?column?': 1 }] });
+    expect(textOf(result)).toEqual({
+      status: 'ok', data: [{ '?column?': 1 }],
+      execution: { query_id: 'q1', datasource_kind: 'postgresql', read_only: true },
+    });
   });
 
   it('returns a user-operated datasource repair link after a runtime connection failure', async () => {
@@ -558,6 +561,7 @@ describe('run_query tool', () => {
     expect(textOf(approved)).toMatchObject({
       status: 'ok',
       data: { tag_name: 'v19.2.8' },
+      execution: { query_id: 'latest-release', datasource_kind: 'restapi', read_only: true },
       metadata: {
         request: { params: { per_page: '3' } },
         response: { statusCode: 200 },
@@ -618,7 +622,8 @@ describe('run_queries tool', () => {
     expect(client.getDevelopmentEnvironmentId).toHaveBeenCalledOnce();
     expect(client.runQuery).toHaveBeenCalledTimes(2);
     expect(textOf(result)).toEqual({ queries: [
-      { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }] },
+      { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }],
+        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', read_only: true } },
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
