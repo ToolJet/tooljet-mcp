@@ -48571,6 +48571,55 @@ function assessDynamo(options2, datasourceId) {
     reason: `DynamoDB ${operation} has no statically provable row limit.`
   };
 }
+function assessCouch(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "couchdb", ...datasourceId ? { datasourceId } : {} };
+  if (operation === "retrieve_record") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (!["list_records", "get_view", "find"].includes(operation)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `CouchDB operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  const limit = operation === "find" ? mongoOptions(options2.body)?.limit : options2.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? `CouchDB ${operation} has no statically provable row limit; set ${operation === "find" ? "limit in the request body" : "limit"}.` : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -48852,6 +48901,8 @@ function assessQueryRead(query) {
     return assessSheets(options2, datasourceId);
   if (kind === "dynamodb")
     return assessDynamo(options2, datasourceId);
+  if (kind === "couchdb")
+    return assessCouch(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);

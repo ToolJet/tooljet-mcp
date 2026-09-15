@@ -517,6 +517,39 @@ function assessDynamo(options: Record<string, unknown>, datasourceId?: string): 
   };
 }
 
+/* CouchDB. Same shape as Mongo, minus a collection field — the database lives on the datasource
+   connection, so a query names no static source and nothing can count it ahead of time. */
+function assessCouch(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const identity = { datasourceKind: 'couchdb', ...(datasourceId ? { datasourceId } : {}) };
+
+  if (operation === 'retrieve_record') {
+    return { provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, maxRows: 1, ...identity };
+  }
+  if (!['list_records', 'get_view', 'find'].includes(operation)) {
+    return { provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, ...identity,
+      reason: `CouchDB operation ${operation || '<missing>'} is not a proven bounded read.` };
+  }
+  // `find` is a Mango query whose limit sits inside the request body.
+  const limit = operation === 'find'
+    ? mongoOptions(options.body)?.limit
+    : options.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return { provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, maxRows, ...identity };
+  }
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: true, maxRows, ...identity,
+    reason: maxRows === undefined
+      ? `CouchDB ${operation} has no statically provable row limit; set ${operation === 'find' ? 'limit in the request body' : 'limit'}.`
+      : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+  };
+}
+
 function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
 }
@@ -725,6 +758,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   if (kind === 'googlesheetsv2') return assessSheets(options, datasourceId);
 
   if (kind === 'dynamodb') return assessDynamo(options, datasourceId);
+
+  if (kind === 'couchdb') return assessCouch(options, datasourceId);
 
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);
