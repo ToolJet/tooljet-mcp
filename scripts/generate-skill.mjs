@@ -476,7 +476,7 @@ Form inputs default to a **side-aligned label** (\`styles.alignment = "side"\`) 
 ## Async & UI states — required, not polish
 
 Any element backed by a query is **not done** until its states are handled. These are part of building the feature, not a later polish pass:
-- **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a \`loadingState\`), bound to the query's loading flag \`{{queries.<q>.isLoading}}\` — never leave a component blank while data loads.
+- **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a \`loadingState\`), bound to the query's loading flag \`{{queries.<q>.isLoading}}\` — never leave a component blank while data loads. For Table row mutations, scope the button's spinner to the affected record, not every row or the whole Table; read \`references/tables.md\`, "Row-specific loading". Keep loading feedback separate from any shared-query concurrency lock.
 - **Empty:** a query can return zero rows. Show a clear empty state ("No workouts logged yet" via a Text/HTML block, or the Table's own empty message) — not a blank grid or a broken-looking chart. A custom empty-state block binds \`visibility\` to the data being empty (\`{{(queries.q.data || []).length === 0}}\`); an unbound one shows under a populated table and is rejected. A custom empty state may intentionally share the Table's rectangle when their \`visibility\` bindings are exact complements; MCP suppresses the overlap warning only when that exclusivity is provable.
 - **Error:** a query can fail. Surface it (a \`show-alert\` on the query's failure event, or a visible error state) — never present blank/stale as if it were fine.
 - **Refresh:** after any mutation, re-run list/count queries from the mutation query's \`onDataQuerySuccess\` lifecycle event.
@@ -722,6 +722,26 @@ The event is attached to the **Table component id** with target \`table_column\`
 \`\`\`
 
 ToolJet updates the Table's \`selectedRow\` and \`selectedRowId\` before running this handler. Bind the query/action to \`{{components.<table>.selectedRow.<field>}}\`. Use \`rowData\` inside button configuration only; do not assume it is the event action context. \`source_type:"table_action"\` exists only for already-present legacy action buttons and should not be authored in new apps.
+
+### Row-specific loading
+
+For "Mark as closed" or another row mutation, set the clicked Button column's \`buttons[].loadingState\` to query loading **and** record identity. A bare \`{{queries.runjs1.isLoading}}\` makes every row spin. With a stable selection during a single in-flight action, use this guarded form of \`queries.runjs1.isLoading && components.table1.selectedRow.id === rowData.id\`:
+
+\`\`\`json
+{"loadingState":"{{queries.runjs1.isLoading && components.table1?.selectedRow?.id != null && components.table1.selectedRow.id === rowData.id}}"}
+\`\`\`
+
+Replace the query, Table and primary-key names with the real ones; retain the raw unique key in the data projection (hide its column if needed). Use a stable record key, not a row index, so sorting/filtering cannot move the spinner to a different record. Put \`rowData\` only in the button property, not the query/event action.
+
+If selection can change while saving, capture the clicked key in an action-specific variable (for example \`pendingCloseId\`) before starting the mutation and use that captured key for the write and spinner:
+
+\`\`\`json
+{"loadingState":"{{queries.runjs1.isLoading && variables.pendingCloseId != null && variables.pendingCloseId === rowData.id}}"}
+\`\`\`
+
+Clear the pending key on both success and failure. Prevent double-submit separately with \`disableButton\`: serializing a shared mutation query may disable its row actions globally while only the affected row shows loading. A single pending key/query flag does not track concurrent row writes; use per-record pending state only when that concurrency is actually supported and required. For a loading-only refinement, preserve the existing mutation and unrelated columns/events; update the button property in the complete columns array rather than rebuilding the workflow.
+
+When safe mutation testing is authorized, check two different rows, selection changes during a slow request, and success/failure cleanup: only the pending row spins, repeat clicks do not duplicate writes, and other rows never appear to be saving.
 
 If an action needs a key such as \`id\` that should not be visible, keep it in the Table's data projection and declare it in the complete columns array with \`columnVisibility:false\`:
 
