@@ -450,6 +450,10 @@ for (const collection of pluginCollections) {
     }
     const operations = Object.keys(contracts).filter((operation) => operation !== 'default');
     const selection = operationSelection(source.kind, properties, contracts);
+    if (source.kind === 'hubspot') {
+      selection.field = 'operation';
+      selection.description = 'Discover installed HubSpot specs with inspect_datasource_schema: listTables lists spec groups without schema, and endpoints with schema. getEndpointSchema returns the exact HTTP method, path, specType, parameters and response shape. Copy query_options and fill its parameters; do not use a spec label as an executable operation.';
+    }
     schemas[source.kind] = {
       kind: source.kind,
       name: source.name || querySchema.title || source.kind,
