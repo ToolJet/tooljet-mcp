@@ -56872,8 +56872,9 @@ var TABLE_COLUMN_MIN_PX = {
 };
 var TABLE_COLUMN_MONEY_MIN_PX = 130;
 var TABLE_COLUMN_NAME_MIN_PX = 150;
-var MONEY_COLUMN_NAME = /value|amount|price|total|cost|spend|revenue|budget|salary|fee/i;
-var NAME_COLUMN_NAME = /email|contact|customer|vendor|product|title|subject|description|address|category/i;
+var MONEY_COLUMN_NAME = /\b(amount|price|cost|spend|revenue|budget|salary|fee)\b/i;
+var NAME_COLUMN_NAME = /\b(email|contact|customer|vendor|product|title|subject|description|address|category)\b/i;
+var columnWords = (value) => value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ");
 var BUTTON_PADDING_PX = 32;
 function propVal2(props, key) {
   const p = props?.[key];
@@ -57481,7 +57482,7 @@ function lintTableProjectionRender(spec) {
   }
   return errors;
 }
-var EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[u\u00fa]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[u\u00fc]gbar|trouv|encontrad|trovat)/i;
+var EMPTY_STATE_TEXT = /^(?:no\s+(?:\w+\s+){0,3}(?:found|available|yet|records?|results?|items?)|nothing\s+(?:found|available|yet)|keine?\s+\w+\s+gefunden)[.!\s]*$/i;
 function lintUnboundEmptyState(spec) {
   if (spec.type !== "Text" && spec.type !== "Html")
     return [];
@@ -57490,7 +57491,7 @@ function lintUnboundEmptyState(spec) {
   if (typeof text !== "string" || text.includes("{{"))
     return [];
   const name = spec.name ?? "";
-  if (!EMPTY_STATE_TEXT.test(text) && !/empty/i.test(name))
+  if (!EMPTY_STATE_TEXT.test(text.replace(/<[^>]*>/g, "").trim()) && !/empty/i.test(name))
     return [];
   const visibility = propVal2(spec.properties ?? {}, "visibility") ?? propVal2(spec.styles ?? {}, "visibility");
   if (typeof visibility === "string" && visibility.includes("{{") && !/^\{\{\s*(true|false)\s*\}\}$/.test(visibility.trim()))
@@ -57507,7 +57508,7 @@ function lintEmptyTabs(components) {
       continue;
     const children = components.filter((component) => {
       const parentId = parentPlacement(component)?.parentId;
-      return parentId === key || typeof parentId === "string" && new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}-\\d+$`).test(parentId);
+      return parentId === key || typeof parentId === "string" && parentId.startsWith(`${key}-`) && /^\d+$/.test(parentId.slice(key.length + 1));
     });
     if (children.length)
       continue;
@@ -58118,7 +58119,7 @@ function lintComponentSpec(spec) {
     const projectsDataKeys = projectedDataKeys !== void 0;
     const desktopHeight = (spec.layouts?.desktop ?? spec.layout)?.height;
     const dynamicHeight = catalogValue("Table", props, "dynamicHeight");
-    const contentWrap = catalogValue("Table", props, "contentWrap");
+    const contentWrap = catalogValue("Table", spec.styles, "contentWrap", "styles");
     const expandableRows = catalogValue("Table", props, "enableExpandableRows");
     const paginationEnabled = catalogValue("Table", props, "enablePagination");
     const serverSide = catalogValue("Table", props, "serverSidePagination");
@@ -58128,16 +58129,17 @@ function lintComponentSpec(spec) {
     } else if (statementBodyMapInValue(data)) {
       errors.push(`Table "${label2}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
     }
-    if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(contentWrap) && !isTruthyBinding(expandableRows)) {
+    if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
-      const rowHeight2 = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const toolbarVisible = isTruthyBinding(catalogValue("Table", props, "displaySearchBox")) || isTruthyBinding(catalogValue("Table", props, "showFilterButton"));
+      const baseRowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const rowHeight2 = isTruthyBinding(contentWrap) ? Math.max(baseRowHeight, 60) : baseRowHeight;
+      const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key) => isTruthyBinding(catalogValue("Table", props, key)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
-      if (desktopHeight < chromeHeight + rowHeight2) {
-        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + rowHeight2}px.`);
+      if (desktopHeight < chromeHeight + baseRowHeight) {
+        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + baseRowHeight}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped behind the Table body scrollbar.`);
+        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {
@@ -58184,24 +58186,6 @@ function lintComponentSpec(spec) {
         const c = col;
         return c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}";
       }).length;
-      const height = (spec.layouts?.desktop ?? spec.layout)?.height;
-      const authoredPerPage = optionalStaticNumber(propVal2(props, "rowsPerPage"));
-      const perPage = authoredPerPage ?? 10;
-      const paginated = propVal2(props, "enablePagination");
-      const wrapsForRows = isTrueBinding(propVal2(spec.styles, "contentWrap"));
-      if (typeof height === "number" && paginated !== void 0 && !isTrueBinding(paginated) && height < 33 + 57 + 10 * (wrapsForRows ? 60 : 45)) {
-        errors.push(`Table "${label2}": enablePagination is off, so every row renders inside the ${height}px box behind an inner scrollbar and the last visible row is sliced. Keep pagination on with rowsPerPage sized to the height (rows x 45, or x 60 with contentWrap, plus 90 and a 56px toolbar when a search box or button is on).`);
-      }
-      if (typeof height === "number" && (paginated === void 0 || isTrueBinding(paginated)) && typeof perPage === "number" && perPage > 0) {
-        const wraps = wrapsForRows;
-        const rowPx = wraps ? 60 : 45;
-        const toolbar = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key) => isTrueBinding(propVal2(props, key)));
-        const toolbarPx = toolbar ? TABLE_TOOLBAR_HEIGHT_PX : 0;
-        const needed = 33 + 57 + toolbarPx + perPage * rowPx + 16;
-        if (height < needed) {
-          errors.push(`Table "${label2}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57 + 16 slack${toolbar ? " + toolbar 56 for the search box or buttons" : ""}${wraps ? ", rows grow with contentWrap" : ""}) but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 106 - toolbarPx) / rowPx))}.`);
-        }
-      }
       const tableWidth = (spec.layouts?.desktop ?? spec.layout)?.width;
       if (typeof tableWidth === "number" && tableWidth > 0 && !parentPlacement(spec)?.parentId) {
         const widthPx = Math.round(tableWidth * CANVAS_COLUMN_PX);
@@ -58239,11 +58223,11 @@ function lintComponentSpec(spec) {
           errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is in pixels, not proportional weights or grid columns. Use a readable pixel width (for example 240 for a name, 140 for a date), or omit columnSize for the default.`);
         } else if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0) {
           const type = String(c.columnType ?? "string");
-          const heading = `${String(c.name ?? "")} ${String(c.key ?? "")}`;
+          const heading = columnWords(`${String(c.name ?? "")} ${String(c.key ?? "")}`);
           const base = TABLE_COLUMN_MIN_PX[type] ?? 100;
           const minimum = ["string", "text", "html", "number"].includes(type) ? Math.max(base, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0) : base;
           if (c.columnSize < minimum) {
-            errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column (values wrap mid word, money splits at the decimal point, status chips are cut). Use at least the minimum; if the columns no longer fit the table, show fewer of them.`);
+            warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column (possible mid-word wrapping or clipped values). Size for the actual content; deliberate compact columns are valid after visual verification.`);
           }
         }
         if (deprecatedReplacement) {
@@ -58358,7 +58342,7 @@ function lintComponentSpec(spec) {
 }
 function detectOverlaps(components) {
   const warnings = [];
-  const items = components.map((c) => ({
+  const items = components.filter((c) => !(c.type === "ModalV2" && isFalseBinding(propVal2(c.properties, "useDefaultButton")))).map((c) => ({
     component: c,
     name: c.name ?? c.type ?? "?",
     r: c.layouts?.desktop ?? c.layout,
@@ -58542,7 +58526,7 @@ function lintComponents(components) {
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
-    errors.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintUnboundEmptyState(c));
     errors.push(...lintTableProjectionRender(c));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
@@ -58551,7 +58535,7 @@ function lintComponents(components) {
   errors.push(...lintComponentSlots(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintStatisticsRows(components));
-  errors.push(...lintEmptyTabs(components));
+  warnings.push(...lintEmptyTabs(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
@@ -64665,6 +64649,34 @@ function validateAppTool(client) {
   };
 }
 
+// dist/renderAuditPolicy.js
+function httpUrl2(value) {
+  const url2 = new URL(value);
+  if (!["http:", "https:"].includes(url2.protocol) || url2.username || url2.password) {
+    throw new Error("Render audit URLs must use HTTP(S) without embedded credentials");
+  }
+  return url2;
+}
+function renderAuditOrigins(configuredBase, additional = "") {
+  return /* @__PURE__ */ new Set([httpUrl2(configuredBase).origin, ...additional.split(",").map((s) => s.trim()).filter(Boolean).map((s) => httpUrl2(s).origin)]);
+}
+function renderAuditUrlAllowed(value, origins) {
+  try {
+    return origins.has(httpUrl2(value).origin);
+  } catch {
+    return false;
+  }
+}
+function renderAuditBase(configuredBase, override) {
+  const origins = renderAuditOrigins(configuredBase, process.env.MCP_RENDER_AUDIT_ALLOWED_ORIGINS);
+  const url2 = httpUrl2(override ?? configuredBase);
+  if (!origins.has(url2.origin))
+    throw new Error("viewer_url origin is not configured for render audits");
+  if (url2.search || url2.hash)
+    throw new Error("viewer_url must be a base URL without query or fragment");
+  return { base: url2.href.replace(/\/$/, ""), origins };
+}
+
 // dist/tools/verifyPageRender.js
 function auditScript() {
   const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]'));
@@ -64852,25 +64864,83 @@ async function loadPlaywright() {
     return null;
   }
 }
-async function auditPages(pages, options2 = {}) {
-  const pw = await loadPlaywright();
+async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
+  const unreachable = (p, reason, detail) => ({ ...p, widgets: 0, findings: [{ kind: "unreachable", component: "-", reason, detail }] });
+  if (!pages.length)
+    return [];
+  const origins = options2.allowedOrigins ?? renderAuditOrigins(pages[0].url);
+  if (pages.some((p) => !renderAuditUrlAllowed(p.url, origins))) {
+    return pages.map((p) => unreachable(p, "blocked_destination", "The requested viewer is outside the configured render-audit origins"));
+  }
+  const pw = await driver();
   if (!pw) {
-    return pages.map((p) => ({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: "playwright-core is not installed on the MCP host; the render audit cannot run" }] }));
+    return pages.map((p) => unreachable(p, "browser_unavailable", "playwright-core is not installed on the MCP host; the render audit cannot run"));
   }
   const launch = { headless: true };
   if (options2.executablePath)
     launch.executablePath = options2.executablePath;
   else
     launch.channel = options2.channel ?? "chrome";
-  const browser = await pw.chromium.launch(launch);
+  let browser;
+  try {
+    browser = await pw.chromium.launch(launch);
+  } catch {
+    return pages.map((p) => unreachable(p, "browser_unavailable", "Chrome could not start on the MCP host; check the configured executable/channel"));
+  }
   const concurrency = Math.max(1, Math.min(options2.concurrency ?? 4, pages.length || 1));
   const reports = new Array(pages.length);
   const auditOne = async (index) => {
     const p = pages[index];
-    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
-    const page = await ctx.newPage();
+    let ctx;
+    let blocked;
     try {
-      await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
+      ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: "block" });
+      if (!ctx.routeWebSocket) {
+        reports[index] = unreachable(p, "browser_unavailable", "The render audit requires Playwright 1.48+ for WebSocket interception");
+        return;
+      }
+      await ctx.routeWebSocket("**/*", (socket) => {
+        blocked ??= { kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A WebSocket dependency was blocked; live behavior was not verified" };
+        socket.close();
+      });
+      await ctx.route("**/*", async (route) => {
+        const url2 = route.request().url();
+        if (!renderAuditUrlAllowed(url2, origins)) {
+          blocked ??= { kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" };
+          await route.abort();
+          return;
+        }
+        try {
+          const response2 = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 3e4 });
+          try {
+            if (response2.status() >= 300 && response2.status() < 400 && response2.headers().location) {
+              const dest = new URL(response2.headers().location, url2);
+              const signIn = renderAuditUrlAllowed(dest.href, origins) && /\/(?:login|sign-in|signin)\b/i.test(dest.pathname);
+              blocked ??= {
+                kind: "unreachable",
+                component: "-",
+                reason: signIn ? "auth_required" : "redirect_blocked",
+                detail: signIn ? "The viewer requires sign-in; private app rendering was not verified" : "An HTTP redirect was blocked. Configure the canonical viewer/resource URL and its trusted origin"
+              };
+              await route.abort();
+            } else
+              await route.fulfill({ response: response2 });
+          } finally {
+            await response2.dispose();
+          }
+        } catch {
+          blocked ??= { kind: "unreachable", component: "-", reason: "navigation_failed", detail: "A viewer resource could not be loaded; the audit is incomplete" };
+          await route.abort().catch(() => {
+          });
+        }
+      });
+      const page = await ctx.newPage();
+      const response = await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
+      if (response && response.status() >= 400) {
+        const status = response.status();
+        reports[index] = unreachable(p, [401, 403].includes(status) ? "auth_required" : "navigation_failed", "Viewer returned HTTP " + status);
+        return;
+      }
       await page.waitForTimeout(options2.settleMs ?? 6e3);
       await page.waitForFunction(() => {
         const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
@@ -64879,16 +64949,17 @@ async function auditPages(pages, options2 = {}) {
       }, void 0, { timeout: options2.chartWaitMs ?? 2e4 }).catch(() => void 0);
       await page.waitForTimeout(1500);
       const landed = page.url();
-      if (/\/login\b/.test(landed)) {
-        reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: "the viewer redirected to sign-in; the page is not reachable without a session (a private app)" }] };
+      if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
+        reports[index] = unreachable(p, "auth_required", "The viewer requires sign-in; private app rendering was not verified");
         return;
       }
       const result = await page.evaluate(auditScript);
-      reports[index] = { page: p.page, url: p.url, widgets: result.widgets, findings: result.findings };
+      reports[index] = result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blocked ? [blocked] : []] };
     } catch (err) {
-      reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: "unreachable", component: "-", detail: `could not load the page: ${err.message}` }] };
+      reports[index] = blocked ? { ...p, widgets: 0, findings: [blocked] } : unreachable(p, "navigation_failed", "Could not load or inspect the viewer page");
     } finally {
-      await ctx.close();
+      await ctx?.close().catch(() => {
+      });
     }
   };
   try {
@@ -64910,23 +64981,26 @@ function verifyPageRenderTool(client, viewerBase) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: 'Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and fix every finding; a page with findings is not finished. The page must be reachable by the browser: a public app, or a viewer session configured on the MCP host. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
+    description: 'Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Uses a fresh unauthenticated browser context; a private app is reported as unverified, never made public. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
-      app_id: external_exports.string(),
+      app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
-      viewer_url: external_exports.string().optional().describe("override the viewer origin (e.g. a tunnel) when the MCP host cannot reach the configured one")
+      viewer_url: external_exports.string().optional().describe("canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS")
     },
     async handler(args) {
       try {
+        if (!/^[A-Za-z0-9_-]+$/.test(args.app_id))
+          return fail(new Error("Invalid app id"));
+        const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
         const summary = await client.getAppSummary(args.app_id);
         const pages = summary.pages ?? [];
-        const base = (args.viewer_url ?? viewerBase()).replace(/\/$/, "");
         const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}` }));
         if (!targets.length)
           return fail(new Error(`no page ${args.page_handle ?? ""} in app ${args.app_id}`));
         const options2 = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
-          executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0
+          executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
+          allowedOrigins: origins
         };
         const reports = await auditPages(targets, options2);
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
@@ -65544,6 +65618,8 @@ function lintQueryFedCharts(components, queries) {
       continue;
     const query = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
     if (!query)
+      continue;
+    if (query.kind !== "runjs")
       continue;
     const code = String(query.options?.code ?? "");
     const label2 = component.name ?? "Chart";
@@ -67407,6 +67483,9 @@ function addComponentsTool(client) {
       const pageWarnings = [];
       try {
         const summary = await client.getAppSummary(args.app_id);
+        if (summary.version_id && summary.version_id !== args.version_id) {
+          return fail(new Error("Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components."));
+        }
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (page) {
           const existing = page.components;
@@ -67418,6 +67497,7 @@ function addComponentsTool(client) {
           pageWarnings.push(...introducedLintFindings(lintRenderedGeometryAdvisory(existing), lintRenderedGeometryAdvisory(combined)));
         }
       } catch {
+        pageWarnings.push("Existing-page geometry was not checked because the app summary was unavailable; verify the target page after this write.");
       }
       try {
         const result = await client.createComponents({
@@ -68459,6 +68539,9 @@ function runQueryTool(client) {
           warnings.push(output.warning);
         return ok({
           ...output.result,
+          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
+          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
+          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
           ...bindingHint ? { binding_hint: bindingHint } : {},
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
@@ -68558,6 +68641,7 @@ function runQueriesTool(client) {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
               ...shaped,
+              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
               ...bindingHint ? { binding_hint: bindingHint } : {},
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {},
