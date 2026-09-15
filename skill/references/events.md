@@ -33,7 +33,7 @@ Wire events AFTER the components and queries exist (you need their ids). Prefer 
 ## Async & UI states — required, not polish
 
 Any element backed by a query is **not done** until its states are handled. These are part of building the feature, not a later polish pass:
-- **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a `loadingState`), bound to the query's loading flag `{{queries.<q>.isLoading}}` — never leave a component blank while data loads.
+- **Loading:** use the component's **native loading state** (Table/Statistics/Button etc. have a `loadingState`), bound to the query's loading flag `{{queries.<q>.isLoading}}` — never leave a component blank while data loads. For Table row mutations, scope the button's spinner to the affected record, not every row or the whole Table; read `references/tables.md`, "Row-specific loading". Keep loading feedback separate from any shared-query concurrency lock.
 - **Empty:** a query can return zero rows. Show a clear empty state ("No workouts logged yet" via a Text/HTML block, or the Table's own empty message) — not a blank grid or a broken-looking chart. A custom empty state may intentionally share the Table's rectangle when their `visibility` bindings are exact complements; MCP suppresses the overlap warning only when that exclusivity is provable.
 - **Error:** a query can fail. Surface it (a `show-alert` on the query's failure event, or a visible error state) — never present blank/stale as if it were fine.
 - **Refresh:** after any mutation, re-run list/count queries from the mutation query's `onDataQuerySuccess` lifecycle event.
