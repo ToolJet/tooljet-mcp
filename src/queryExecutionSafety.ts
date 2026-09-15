@@ -5,9 +5,11 @@ export const LARGE_READ_ROW_THRESHOLD = 1000;
 const SQL_KINDS = new Set([
   'postgresql', 'mysql', 'mariadb', 'mssql', 'sqlserver', 'cockroachdb', 'redshift',
   'snowflake', 'bigquery', 'clickhouse', 'oracle', 'oracledb', 'sqlite',
+  'databricks', 'athena', 'awsredshift', 'harperdb', 'ibmdb', 'saphana',
 ]);
 
-const BILLABLE_SCAN_SQL_KINDS = new Set(['bigquery', 'snowflake', 'redshift']);
+// ToolJet's kind string is `awsredshift`; the bare `redshift` entry never matched a real datasource.
+const BILLABLE_SCAN_SQL_KINDS = new Set(['bigquery', 'snowflake', 'redshift', 'awsredshift', 'athena', 'databricks']);
 
 interface ReadSource {
   kind: 'sql_table' | 'table_id' | 'gui_table' | 'remote_endpoint';
@@ -340,6 +342,104 @@ function assessSupabase(options: Record<string, unknown>, datasourceId?: string)
     requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity };
 }
 
+/* MongoDB, split by effect: the operation decides it, except for `aggregate`, whose pipeline can
+   end in a $out/$merge write. Those are refused structurally rather than proven safe. A bounded
+   read is directSafe — this is a database the workspace owns, not a remote API. */
+const MONGO_ROW_READS = new Set(['find_many', 'distinct']);
+const MONGO_SINGLE_READS = new Set(['find_one']);
+const MONGO_COUNT_READS = new Set(['count', 'count_total']);
+const MONGO_WRITE_STAGES = ['$out', '$merge'];
+
+/** The plugin accepts the driver options document as an object or as JSON text. */
+function mongoOptions(raw: unknown): Record<string, unknown> | undefined {
+  const direct = record(raw);
+  if (direct) return direct;
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    return record(JSON.parse(raw));
+  } catch {
+    return undefined;
+  }
+}
+
+function mongoPipelineWrites(pipeline: unknown): boolean {
+  const text = typeof pipeline === 'string' ? pipeline : JSON.stringify(pipeline ?? '');
+  return MONGO_WRITE_STAGES.some((stage) => text.includes(stage));
+}
+
+function assessMongo(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const identity = { datasourceKind: 'mongodb', ...(datasourceId ? { datasourceId } : {}) };
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity,
+  });
+
+  const collection = options.collection;
+  if (typeof collection !== 'string' || !collection.trim() || containsBinding(collection)) {
+    return refuse('MongoDB collection is missing or not statically known.');
+  }
+  const source = { kind: 'gui_table' as const, value: collection.trim().toLowerCase() };
+
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options.filter;
+    // An unfiltered count bounds the whole collection, so it can upper-bound a later read.
+    const fullSourceCount = filter == null || filter === '' ||
+      (!!record(filter) && Object.keys(record(filter)!).length === 0) ||
+      (typeof filter === 'string' && ['{}', '{ }'].includes(filter.trim()));
+    return {
+      provenRead: true, directSafe: true, countOnly: true, selectStar: false,
+      requiresCountPreflight: false, fullSourceCount, simpleSourceRead: true,
+      maxRows: 1, source, ...identity,
+    };
+  }
+
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, simpleSourceRead: true, maxRows: 1, source, ...identity,
+    };
+  }
+
+  if (operation === 'aggregate') {
+    if (mongoPipelineWrites(options.pipeline)) {
+      return refuse('MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.');
+    }
+    // An aggregation reshapes rows, so no simpleSourceRead: a collection count cannot bound it.
+    const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
+    return {
+      provenRead: true, directSafe: maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false, selectStar: false,
+      requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
+      source, maxRows, ...identity,
+      ...(maxRows === undefined
+        ? { reason: 'MongoDB aggregate has no statically provable row limit; add options.limit.' }
+        : {}),
+    };
+  }
+
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(
+      `MongoDB operation ${operation || '<missing>'} is not a proven bounded read.`
+    );
+  }
+
+  const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
+  if (maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, simpleSourceRead: true, maxRows, source, ...identity,
+    };
+  }
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: true, simpleSourceRead: true, maxRows, source, ...identity,
+    reason: maxRows === undefined
+      ? `MongoDB ${operation} has no statically provable row limit; set options.limit.`
+      : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+  };
+}
+
 function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
 }
@@ -543,6 +643,8 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
 
   if (kind === 'supabase') return assessSupabase(options, datasourceId);
 
+  if (kind === 'mongodb') return assessMongo(options, datasourceId);
+
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);
     if (operation === 'sql_execution') {
@@ -563,11 +665,10 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
 
   if (SQL_KINDS.has(kind)) {
     if (operation === 'list_rows' || options.mode === 'gui') return assessListRows(kind, options, datasourceId);
-    const sql = typeof options.query === 'string'
-      ? options.query
-      : typeof options.sql === 'string'
-        ? options.sql
-        : undefined;
+    // Plugins disagree on the field name; databricks, awsredshift and harperdb use `sql_query`.
+    const sql = ['query', 'sql_query', 'sql']
+      .map((field) => options[field])
+      .find((value): value is string => typeof value === 'string' && !!value.trim());
     return sql
       ? assessSql(sql, kind, datasourceId)
       : {

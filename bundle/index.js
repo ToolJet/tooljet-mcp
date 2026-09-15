@@ -48007,9 +48007,15 @@ var SQL_KINDS = /* @__PURE__ */ new Set([
   "clickhouse",
   "oracle",
   "oracledb",
-  "sqlite"
+  "sqlite",
+  "databricks",
+  "athena",
+  "awsredshift",
+  "harperdb",
+  "ibmdb",
+  "saphana"
 ]);
-var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift"]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
 function record3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
 }
@@ -48334,6 +48340,119 @@ function assessSupabase(options2, datasourceId) {
     ...identity
   };
 }
+var MONGO_ROW_READS = /* @__PURE__ */ new Set(["find_many", "distinct"]);
+var MONGO_SINGLE_READS = /* @__PURE__ */ new Set(["find_one"]);
+var MONGO_COUNT_READS = /* @__PURE__ */ new Set(["count", "count_total"]);
+var MONGO_WRITE_STAGES = ["$out", "$merge"];
+function mongoOptions(raw) {
+  const direct = record3(raw);
+  if (direct)
+    return direct;
+  if (typeof raw !== "string" || !raw.trim())
+    return void 0;
+  try {
+    return record3(JSON.parse(raw));
+  } catch {
+    return void 0;
+  }
+}
+function mongoPipelineWrites(pipeline) {
+  const text = typeof pipeline === "string" ? pipeline : JSON.stringify(pipeline ?? "");
+  return MONGO_WRITE_STAGES.some((stage) => text.includes(stage));
+}
+function assessMongo(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "mongodb", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const collection = options2.collection;
+  if (typeof collection !== "string" || !collection.trim() || containsBinding(collection)) {
+    return refuse("MongoDB collection is missing or not statically known.");
+  }
+  const source2 = { kind: "gui_table", value: collection.trim().toLowerCase() };
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options2.filter;
+    const fullSourceCount = filter == null || filter === "" || !!record3(filter) && Object.keys(record3(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  if (operation === "aggregate") {
+    if (mongoPipelineWrites(options2.pipeline)) {
+      return refuse("MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.");
+    }
+    const maxRows2 = staticPositiveInteger(mongoOptions(options2.options)?.limit);
+    return {
+      provenRead: true,
+      directSafe: maxRows2 !== void 0 && maxRows2 <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: maxRows2 === void 0 || maxRows2 > LARGE_READ_ROW_THRESHOLD,
+      source: source2,
+      maxRows: maxRows2,
+      ...identity,
+      ...maxRows2 === void 0 ? { reason: "MongoDB aggregate has no statically provable row limit; add options.limit." } : {}
+    };
+  }
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(`MongoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  const maxRows = staticPositiveInteger(mongoOptions(options2.options)?.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows,
+      source: source2,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    maxRows,
+    source: source2,
+    ...identity,
+    reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -48609,6 +48728,8 @@ function assessQueryRead(query) {
     return assessInflux(options2, datasourceId);
   if (kind === "supabase")
     return assessSupabase(options2, datasourceId);
+  if (kind === "mongodb")
+    return assessMongo(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -48635,7 +48756,7 @@ function assessQueryRead(query) {
   if (SQL_KINDS.has(kind)) {
     if (operation === "list_rows" || options2.mode === "gui")
       return assessListRows(kind, options2, datasourceId);
-    const sql = typeof options2.query === "string" ? options2.query : typeof options2.sql === "string" ? options2.sql : void 0;
+    const sql = ["query", "sql_query", "sql"].map((field) => options2[field]).find((value) => typeof value === "string" && !!value.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
