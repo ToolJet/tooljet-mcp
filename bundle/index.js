@@ -48140,6 +48140,102 @@ function assessOpenapi(options2, datasourceId) {
     ...identity
   };
 }
+var INFLUX_ROW_READS = /* @__PURE__ */ new Set(["query_data"]);
+var INFLUX_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_buckets",
+  "retrieve_bucket",
+  "analyze_flux_query",
+  "abstract_syntax_tree",
+  "query_suggestions",
+  "query_suggestions_for_branching"
+]);
+var FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_])(?:[A-Za-z_][A-Za-z0-9_]*\s*\.\s*)?(?:wideTo|to)\s*\(/;
+var FLUX_EGRESS_PACKAGES = [
+  "sql",
+  "kafka",
+  "mqtt",
+  "http",
+  "slack",
+  "pagerduty",
+  "discord",
+  "teams",
+  "telegram",
+  "bigpanda",
+  "opsgenie",
+  "sensu",
+  "servicenow",
+  "victorops",
+  "webexteams",
+  "zenoss",
+  "monitor",
+  "influxdata/influxdb/secrets",
+  "influxdata/influxdb/tasks"
+];
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
+function assessInflux(options2, datasourceId) {
+  const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("InfluxDB query has no operation.");
+  if (!INFLUX_ROW_READS.has(operation) && !INFLUX_METADATA_READS.has(operation)) {
+    return refuse(`InfluxDB operation ${operation} is not a read; it can change InfluxDB state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...identity
+  };
+  if (INFLUX_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `InfluxDB ${operation} reads remote metadata without executing a query.`
+    };
+  }
+  const body = typeof options2.body === "string" ? options2.body : "";
+  if (!body.trim())
+    return refuse("InfluxDB query_data has no Flux body to classify.");
+  if (FLUX_WRITE_CALL.test(body)) {
+    return refuse("InfluxDB query_data body calls to()/wideTo(), which writes points or rows out of the query; that is not a read.");
+  }
+  const egress = body.match(FLUX_EGRESS_IMPORT);
+  if (egress) {
+    return refuse(`InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; that is not a read.`);
+  }
+  const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
+  const source2 = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
+  const bounded = { ...remote, countOnly: false, ...source2 ? { source: source2 } : {} };
+  const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
+  if (maxRows === void 0) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      reason: "InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return { ...bounded, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
+}
 function assessRestGet(options2, datasourceId) {
   const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
   const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
@@ -48508,6 +48604,8 @@ function assessQueryRead(query) {
     return assessOpenapi(options2, datasourceId);
   if (kind === "servicenow")
     return assessServiceNow(options2, datasourceId);
+  if (kind === "influxdb")
+    return assessInflux(options2, datasourceId);
   if (kind === "supabase")
     return assessSupabase(options2, datasourceId);
   if (kind === "tooljetdb") {
@@ -48712,9 +48810,56 @@ function interpolatedSqlBindingIssues(sql) {
     }
   ];
 }
+function transformationWarnings(options2) {
+  const warnings = [];
+  const bag = isObject2(options2.transformations) ? options2.transformations : void 0;
+  const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
+  const hasCode = languages.length > 0 || typeof options2.transformation === "string" && options2.transformation.trim() !== "";
+  if (!hasCode)
+    return warnings;
+  const enabled = isTruthyStatic(options2.enableTransformation);
+  const language = typeof options2.transformationLanguage === "string" ? options2.transformationLanguage : void 0;
+  if (!enabled) {
+    warnings.push({
+      code: "transformation_not_enabled",
+      path: "enableTransformation",
+      message: "A transformation is supplied but enableTransformation is not true, so ToolJet saves the code and never runs it. Set enableTransformation: true and transformationLanguage to the language the code is written in."
+    });
+  }
+  if (!language) {
+    warnings.push({
+      code: "transformation_language_missing",
+      path: "transformationLanguage",
+      message: `A transformation is supplied without transformationLanguage, so ToolJet cannot tell how to run it. Set it to ${languages.length === 1 ? `"${languages[0]}"` : '"javascript" or "python"'}.`
+    });
+  } else if (languages.length > 0 && !languages.includes(language)) {
+    warnings.push({
+      code: "transformation_language_mismatch",
+      path: "transformationLanguage",
+      message: `transformationLanguage is "${language}" but the code is under transformations.${languages.join("/")}. ToolJet runs the entry matching transformationLanguage, so the supplied code is ignored.`
+    });
+  }
+  return warnings;
+}
+function influxTransformWarnings(kind, options2) {
+  if (kind !== "influxdb")
+    return [];
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (operation !== "query_data")
+    return [];
+  if (isTruthyStatic(options2.enableTransformation))
+    return [];
+  return [{
+    code: "influx_raw_csv_response",
+    path: "enableTransformation",
+    message: 'InfluxDB query_data returns annotated CSV as a single raw string, not rows. Bound directly, a Table renders nothing. Add a transformation that parses the CSV into an array of row objects (skip the #datatype/#group/#default annotation lines and the empty leading columns), with enableTransformation: true and transformationLanguage: "javascript".'
+  }];
+}
 function validateQueryOptions(kind, options2) {
   const errors = [];
   const warnings = tableStateWarnings(options2);
+  warnings.push(...transformationWarnings(options2));
+  warnings.push(...influxTransformWarnings(kind, options2));
   if (typeof options2.query === "string") {
     errors.push(...unquotedSqlBindingIssues(options2.query));
     warnings.push(...interpolatedSqlBindingIssues(options2.query));
