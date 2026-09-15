@@ -50,6 +50,9 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       const pageWarnings: string[] = [];
       try {
         const summary = await client.getAppSummary(args.app_id);
+        if (summary.version_id && summary.version_id !== args.version_id) {
+          return fail(new Error('Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components.'));
+        }
         const page = summary.pages.find((candidate) => candidate.id === args.page_id);
         if (page) {
           const existing = page.components as LintComponent[];
@@ -65,7 +68,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
           pageWarnings.push(...introducedLintFindings(lintRenderedGeometryAdvisory(existing), lintRenderedGeometryAdvisory(combined)));
         }
       } catch {
-        // The write does not depend on this read; a summary failure only costs the page-level check.
+        pageWarnings.push('Existing-page geometry was not checked because the app summary was unavailable; verify the target page after this write.');
       }
       try {
         const result = await client.createComponents({

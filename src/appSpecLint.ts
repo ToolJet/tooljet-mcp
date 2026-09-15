@@ -71,6 +71,7 @@ export function lintQueryFedCharts(components: LintComponent[], queries: Planned
     if (!match) continue;
     const query = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
     if (!query) continue; // an existing query the plan does not carry; validate_app covers persisted apps
+    if (query.kind !== 'runjs') continue; // REST/SQL may return a figure; their result is not JavaScript source.
     const code = String((query.options as Record<string, unknown>)?.code ?? '');
     const label = component.name ?? 'Chart';
     if (!code.trim()) {

@@ -185,8 +185,9 @@ const TABLE_COLUMN_MIN_PX: Record<string, number> = {
 };
 const TABLE_COLUMN_MONEY_MIN_PX = 130;
 const TABLE_COLUMN_NAME_MIN_PX = 150;
-const MONEY_COLUMN_NAME = /value|amount|price|total|cost|spend|revenue|budget|salary|fee/i;
-const NAME_COLUMN_NAME = /email|contact|customer|vendor|product|title|subject|description|address|category/i;
+const MONEY_COLUMN_NAME = /\b(amount|price|cost|spend|revenue|budget|salary|fee)\b/i;
+const NAME_COLUMN_NAME = /\b(email|contact|customer|vendor|product|title|subject|description|address|category)\b/i;
+const columnWords = (value: string): string => value.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]/g, ' ');
 const BUTTON_PADDING_PX = 32;
 
 interface Rect {
@@ -895,14 +896,14 @@ export function lintTableProjectionRender(spec: LintComponent): string[] {
 
 /** An empty-state message ("No users found", "Keine Nutzer gefunden.") with no visibility binding shows
  *  under a populated table (round nine, 2026-09-12). It must be bound to the data being empty. */
-const EMPTY_STATE_TEXT = /\b(no|nothing|none|keine?|kein|aucune?|nessun[ao]?|ning[u\u00fa]n[ao]?|nenhum[a]?)\b[\s\S]{0,40}\b(found|match|available|yet|records?|results?|items?|gefunden|vorhanden|verf[u\u00fc]gbar|trouv|encontrad|trovat)/i;
+const EMPTY_STATE_TEXT = /^(?:no\s+(?:\w+\s+){0,3}(?:found|available|yet|records?|results?|items?)|nothing\s+(?:found|available|yet)|keine?\s+\w+\s+gefunden)[.!\s]*$/i;
 export function lintUnboundEmptyState(spec: LintComponent): string[] {
   if (spec.type !== 'Text' && spec.type !== 'Html') return [];
   const key = spec.type === 'Html' ? 'rawHtml' : 'text';
   const text = propVal(spec.properties ?? {}, key);
   if (typeof text !== 'string' || text.includes('{{')) return [];
   const name = spec.name ?? '';
-  if (!EMPTY_STATE_TEXT.test(text) && !/empty/i.test(name)) return [];
+  if (!EMPTY_STATE_TEXT.test(text.replace(/<[^>]*>/g, '').trim()) && !/empty/i.test(name)) return [];
   const visibility = propVal(spec.properties ?? {}, 'visibility') ?? propVal(spec.styles ?? {}, 'visibility');
   if (typeof visibility === 'string' && visibility.includes('{{') && !/^\{\{\s*(true|false)\s*\}\}$/.test(visibility.trim())) return [];
   return [
@@ -922,7 +923,7 @@ export function lintEmptyTabs(components: LintComponent[]): string[] {
     // Tab children carry the tab index in their parent id ("<tabs>-0"), which the slot decoder leaves intact.
     const children = components.filter((component) => {
       const parentId = parentPlacement(component)?.parentId;
-      return parentId === key || (typeof parentId === 'string' && new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}-\\d+$`).test(parentId));
+      return parentId === key || (typeof parentId === 'string' && parentId.startsWith(`${key}-`) && /^\d+$/.test(parentId.slice(key.length + 1)));
     });
     if (children.length) continue;
     const height = (tabs.layouts?.desktop ?? tabs.layout)?.height;
@@ -1854,7 +1855,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     const projectsDataKeys = projectedDataKeys !== undefined;
     const desktopHeight = (spec.layouts?.desktop ?? spec.layout)?.height;
     const dynamicHeight = catalogValue('Table', props, 'dynamicHeight');
-    const contentWrap = catalogValue('Table', props, 'contentWrap');
+    const contentWrap = catalogValue('Table', spec.styles, 'contentWrap', 'styles');
     const expandableRows = catalogValue('Table', props, 'enableExpandableRows');
     const paginationEnabled = catalogValue('Table', props, 'enablePagination');
     const serverSide = catalogValue('Table', props, 'serverSidePagination');
@@ -1882,31 +1883,30 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       rowsPerPage > 0 &&
       isTruthyBinding(paginationEnabled) &&
       !isTruthyBinding(dynamicHeight) &&
-      !isTruthyBinding(contentWrap) &&
       !isTruthyBinding(expandableRows)
     ) {
       const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
-      const rowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const toolbarVisible =
-        isTruthyBinding(catalogValue('Table', props, 'displaySearchBox')) ||
-        isTruthyBinding(catalogValue('Table', props, 'showFilterButton'));
+      const baseRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const rowHeight = isTruthyBinding(contentWrap) ? Math.max(baseRowHeight, 60) : baseRowHeight;
+      const toolbarVisible = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
+        .some((key) => isTruthyBinding(catalogValue('Table', props, key)));
       const chromeHeight =
         (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) +
         TABLE_COLUMN_HEADER_HEIGHT_PX +
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
-      if (desktopHeight < chromeHeight + rowHeight) {
+      if (desktopHeight < chromeHeight + baseRowHeight) {
         errors.push(
           `Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; ` +
-            `use at least ${chromeHeight + rowHeight}px.`
+            `use at least ${chromeHeight + baseRowHeight}px.`
         );
       } else if (desktopHeight < minimumHeight) {
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
-            `${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. Rows remain reachable but appear clipped ` +
-            'behind the Table body scrollbar.'
+            `${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
+            'Deliberate inner scrolling is valid when the rows and actions remain usable.'
         );
       }
     }
@@ -1985,43 +1985,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         const c = col as Record<string, unknown> | null;
         return c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}';
       }).length;
-      // Cells cut mid value: a table splits its width across its columns, and ToolJet cuts any value wider
-      // than its cell with no ellipsis. On 2026-09-12, 11 of 27 reviewed pages had cut cells even with
-      // columnSize 180 to 360 set; turning styles.contentWrap on made every one of them wrap and audit clean.
-      // A table shorter than its page needs slices its last row at the bottom edge (14 of 32 round-seven
-      // pages carried a sliced row). Measured on the classic table: header 33px, footer 57px, rows 45px
-      // unwrapped and up to about 100px when contentWrap grows them.
-      const height = (spec.layouts?.desktop ?? spec.layout)?.height;
-      // The catalog defaults are pagination on with ten rows per page; an unauthored table is sized for ten.
-      const authoredPerPage = optionalStaticNumber(propVal(props, 'rowsPerPage'));
-      const perPage = authoredPerPage ?? 10;
-      const paginated = propVal(props, 'enablePagination');
-      const wrapsForRows = isTrueBinding(propVal(spec.styles, 'contentWrap'));
-      // Pagination off renders every row inside the box behind an inner scrollbar, so the last visible row is
-      // always sliced unless the box is tall enough for the whole set (round ten, 2026-09-12).
-      if (typeof height === 'number' && paginated !== undefined && !isTrueBinding(paginated) && height < 33 + 57 + 10 * (wrapsForRows ? 60 : 45)) {
-        errors.push(
-          `Table "${label}": enablePagination is off, so every row renders inside the ${height}px box behind an inner scrollbar and the last visible row is ` +
-            'sliced. Keep pagination on with rowsPerPage sized to the height (rows x 45, or x 60 with contentWrap, plus 90 and a 56px toolbar when a search box or button is on).'
-        );
-      }
-      if (typeof height === 'number' && (paginated === undefined || isTrueBinding(paginated)) && typeof perPage === 'number' && perPage > 0) {
-        const wraps = wrapsForRows;
-        const rowPx = wraps ? 60 : 45;
-        // A search box or any toolbar button adds a 56px toolbar above the header (three of four tables on
-        // the first round-nine app sliced a row for exactly this).
-        const toolbar = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
-          .some((key) => isTrueBinding(propVal(props, key)));
-        const toolbarPx = toolbar ? TABLE_TOOLBAR_HEIGHT_PX : 0;
-        // 16px of slack: wrapped rows measured 57 to 66px, and a table sized to the byte slices its last row by a few px.
-        const needed = 33 + 57 + toolbarPx + perPage * rowPx + 16;
-        if (height < needed) {
-          errors.push(
-            `Table "${label}": ${perPage} rows per page need about ${needed}px (header 33 + rows x ${rowPx} + footer 57 + 16 slack${toolbar ? ' + toolbar 56 for the search box or buttons' : ''}${wraps ? ', rows grow with contentWrap' : ''}) ` +
-              `but the table is ${height}px tall, so the last row is sliced at the bottom edge. Set height to ${Math.ceil(needed / 10) * 10} or rowsPerPage to ${Math.max(1, Math.floor((height - 106 - toolbarPx) / rowPx))}.`
-          );
-        }
-      }
+      // Height advice is computed once above from the catalog chrome and row size. Pagination-off,
+      // dynamic/expanded content and deliberate scrolling cannot be proven clipped from a static box.
       // Columns wider than the table: authored columnSize values are pixels, and whatever does not fit is cut
       // at the right edge (round eight, 2026-09-12: four tables summed 955 to 1775px of columns inside 530 to
       // 1090px of width and lost their last columns mid value). Root tables only; nested canvases differ.
@@ -2088,15 +2053,15 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           );
         } else if (c && c.columnVisibility !== false && c.columnVisibility !== '{{false}}' && typeof c.columnSize === 'number' && c.columnSize > 0) {
           const type = String(c.columnType ?? 'string');
-          const heading = `${String(c.name ?? '')} ${String(c.key ?? '')}`;
+          const heading = columnWords(`${String(c.name ?? '')} ${String(c.key ?? '')}`);
           const base = TABLE_COLUMN_MIN_PX[type] ?? 100;
           const minimum = ['string', 'text', 'html', 'number'].includes(type)
             ? Math.max(base, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0)
             : base;
           if (c.columnSize < minimum) {
-            errors.push(
+            warnings.push(
               `Table "${label}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column ` +
-                '(values wrap mid word, money splits at the decimal point, status chips are cut). Use at least the minimum; if the columns no longer fit the table, show fewer of them.'
+                '(possible mid-word wrapping or clipped values). Size for the actual content; deliberate compact columns are valid after visual verification.'
             );
           }
         }
@@ -2283,6 +2248,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 export function detectOverlaps(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const items = components
+    .filter((c) => !(c.type === 'ModalV2' && isFalseBinding(propVal(c.properties, 'useDefaultButton'))))
     .map((c) => ({
       component: c,
       name: c.name ?? c.type ?? '?',
@@ -2543,7 +2509,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
-    errors.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintUnboundEmptyState(c));
     errors.push(...lintTableProjectionRender(c));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
@@ -2552,7 +2518,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintComponentSlots(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintStatisticsRows(components));
-  errors.push(...lintEmptyTabs(components));
+  warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));

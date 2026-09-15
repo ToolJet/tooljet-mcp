@@ -37,15 +37,16 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const single = lintComponentSpec({ type: 'Text', name: 'title', properties: { text: { value: 'Today' } }, styles: { textSize: { value: 32 } }, layouts: { desktop: { top: 40, left: 2, width: 39, height: 50 } } });
     expect(single.errors.some((w) => w.includes('cut off'))).toBe(false);
   });
-  it('rejects a table shorter than its rows per page', () => {
+  it('advises when a page of rows needs an inner scrollbar', () => {
     const r = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 400 } } });
-    expect(r.errors.some((e) => e.includes('sliced') && e.includes('rowsPerPage to'))).toBe(true);
+    expect(r.errors.some((e) => e.includes('rows'))).toBe(false);
+    expect(r.warnings.some((e) => e.includes('8 regular rows'))).toBe(true);
     const ok = lintComponentSpec({ type: 'Table', name: 'notTable', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{true}}' }, rowsPerPage: { value: 8 } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 470 } } });
     expect(ok.errors.some((e) => e.includes('sliced'))).toBe(false);
   });
   it('assumes the catalog default of ten rows per page when none is authored', () => {
     const r = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: cols(4) } }, layouts: { desktop: { top: 100, left: 2, width: 39, height: 400 } } });
-    expect(r.errors.some((e) => e.includes('10 rows per page') && e.includes('sliced'))).toBe(true);
+    expect(r.warnings.some((e) => e.includes('10 regular rows'))).toBe(true);
   });
 
   it('rejects a table whose columnSize values are wider than the table', () => {
@@ -94,30 +95,30 @@ describe('render traps found in the 2026-09-12 reviews', () => {
 
   it('counts the search toolbar in the table height', () => {
     const table = (extra: Record<string, unknown>) => lintComponentSpec({ type: 'Table', name: 'logs', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 5 }, ...extra }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 650, left: 22, width: 19, height: 410 } } });
-    expect(table({}).errors.some((e) => e.includes('sliced'))).toBe(false);
+    expect(table({ displaySearchBox: { value: false }, showFilterButton: { value: false }, showDownloadButton: { value: false }, showAddNewRowButton: { value: false }, showBulkUpdateActions: { value: false } }).warnings.some((e) => e.includes('inner scrollbar'))).toBe(false);
     const withSearch = table({ displaySearchBox: { value: true } });
-    expect(withSearch.errors.some((e) => e.includes('toolbar 56') && e.includes('462px'))).toBe(true);
+    expect(withSearch.warnings.some((e) => e.includes('454px'))).toBe(true);
   });
 
-  it('rejects an empty-state message with no visibility binding', () => {
+  it('advises about an empty-state message with no visibility binding', () => {
     const text = (extra: Record<string, unknown>) => lintComponents([{ type: 'Text', name: 'usersEmptyState', properties: { text: { value: 'Keine Nutzer gefunden.' }, ...extra }, layouts: { desktop: { top: 820, left: 2, width: 39, height: 30 } } }] as any);
-    expect(text({}).errors.some((e) => e.includes('no visibility binding'))).toBe(true);
+    expect(text({}).warnings.some((e) => e.includes('no visibility binding'))).toBe(true);
     expect(text({ visibility: { value: '{{(queries.getUsers.data || []).length === 0}}' } }).errors.some((e) => e.includes('no visibility binding'))).toBe(false);
     const plain = lintComponents([{ type: 'Text', name: 'subtitle', properties: { text: { value: 'Health, service metrics and logs' } }, layouts: { desktop: { top: 80, left: 2, width: 39, height: 30 } } }] as any);
     expect(plain.errors.some((e) => e.includes('no visibility binding'))).toBe(false);
   });
 
-  it('rejects a Tabs component with no children', () => {
+  it('advises about empty Tabs while allowing parent-first incremental authoring', () => {
     const tabs = { id: 'tabs1', type: 'Tabs', name: 'docsTabs', properties: { tabItems: { value: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }] } }, layouts: { desktop: { top: 120, left: 2, width: 12, height: 490 } } };
-    expect(lintComponents([tabs] as any).errors.some((e) => e.includes('no child components'))).toBe(true);
+    expect(lintComponents([tabs] as any).warnings.some((e) => e.includes('no child components'))).toBe(true);
     const child = { id: 'c1', type: 'Text', name: 'aText', parent: 'tabs1-0', properties: { text: { value: 'Getting started' } }, layouts: { desktop: { top: 10, left: 2, width: 39, height: 30 } } };
     expect(lintComponents([tabs, child] as any).errors.some((e) => e.includes('no child components'))).toBe(false);
   });
 
-  it('rejects columns below the readable minimum width', () => {
+  it('advises about column widths rather than enforcing content estimates', () => {
     const r = lintComponentSpec({ type: 'Table', name: 'renewals', properties: { columns: { value: [{ name: 'Contract value', key: 'value', columnType: 'string', columnSize: 110 }, { name: 'Status', key: 'status', columnType: 'html', columnSize: 110 }, { name: 'Days left', key: 'days', columnType: 'string', columnSize: 80 }, { name: 'Start', key: 'start', columnType: 'datepicker', columnSize: 85 }] }, rowsPerPage: { value: 5 } }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 400 } } });
-    const messages = r.errors.filter((e) => e.includes('readable minimum'));
-    expect(messages.some((e) => e.includes('"value"') && e.includes('130px'))).toBe(true);
+    const messages = r.warnings.filter((e) => e.includes('readable minimum'));
+    expect(messages.some((e) => e.includes('"value"') && e.includes('120px'))).toBe(true);
     expect(messages.some((e) => e.includes('"status"') && e.includes('130px'))).toBe(true);
     expect(messages.some((e) => e.includes('"days"') && e.includes('120px'))).toBe(true);
     expect(messages.some((e) => e.includes('"start"') && e.includes('110px'))).toBe(true);
@@ -134,9 +135,9 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     expect(table(fixed).errors.some((e) => e.includes('broken markup'))).toBe(false);
   });
 
-  it('rejects pagination off on a table shorter than ten rows', () => {
+  it('does not assume ten rows when pagination is off', () => {
     const r = lintComponentSpec({ type: 'Table', name: 'productsTable', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 10 }, enablePagination: { value: '{{false}}' } }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 500 } } });
-    expect(r.errors.some((e) => e.includes('enablePagination is off'))).toBe(true);
+    expect(r.errors.some((e) => e.includes('enablePagination is off'))).toBe(false);
     const tall = lintComponentSpec({ type: 'Table', name: 't', properties: { columns: { value: cols(4) }, enablePagination: { value: '{{false}}' } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 560 } } });
     expect(tall.errors.some((e) => e.includes('enablePagination is off'))).toBe(false);
   });

@@ -20,7 +20,7 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
   return {
     createApp: vi.fn(),
     getApp: vi.fn(),
-    getAppSummary: vi.fn(),
+    getAppSummary: vi.fn().mockResolvedValue({ version_id: 'v1', pages: [] }),
     getDevelopmentEnvironmentId: vi.fn(),
     listDatasources: vi.fn(),
     createQuery: vi.fn(),
