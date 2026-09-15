@@ -42,6 +42,7 @@ Rebuild the bundle after every pull — a stale bundle silently runs old tools (
 - **Split-origin `tj_url`:** tools hit whatever URL the agent passes; the fix is agent-side (`MCP_AGENT_TOOLJET_URL_OVERRIDE`).
 - **HTTP port 3001** clashes with the gateway default and the postgrest container.
 - **Skill dir** is `skills/tooljet-app-builder/`; the agent derives it from `TOOLJET_MCP_DIR`.
+- Origin verification (`customerVerified`) is off unless `MCP_GATEWAY_URL` is set; when set, the server calls the gateway's `/internal/mcp/verify-origin` with `MCP_GATEWAY_TOKEN` — see `src/config.ts`. Leave both unset locally.
 
 ## 6. See also
 
