@@ -1,0 +1,25 @@
+name: MCP tests and packaging
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Uses the pinned source snapshot; no ToolJet checkout or credentials required.
+      - run: npm run generate:skill
+      - name: Verify generated Markdown is current
+        run: git diff --exit-code -- skill skills
+      - run: npm test
+      - name: Build shipped bundle and verify MCP initialization
+        run: npm run build:plugin
+      - name: Check published package contents
+        run: npm pack --dry-run

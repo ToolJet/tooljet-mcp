@@ -50,7 +50,7 @@ const MUST_BE_READ_ONLY = [
   'get_component_catalog', 'get_datasource_query_schema', 'get_runtime_info', 'get_table_schema',
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
   'list_events', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
-  'test_datasource_connection', 'use_workspace', 'validate_app',
+  'test_datasource_connection', 'use_workspace', 'validate_app', 'verify_page_render',
 ];
 
 describe('tool annotations', () => {

@@ -286,6 +286,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
 
         stage = 'seed data and create queries';
         const queryInputs = (spec.queries ?? []).map((query) => {
+          if (!query.datasource_id) throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
           const kind = datasourceKinds.get(query.datasource_id);
           if (!kind) throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
           const options = structuredClone(query.options);

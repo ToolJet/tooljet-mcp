@@ -1,6 +1,6 @@
 {
   "name": "tooljet-mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "main": "index.js",
   "type": "module",
   "directories": {
@@ -11,10 +11,12 @@
     "dev": "tsx src/index.ts",
     "dev:http": "tsx src/http.ts",
     "start:http": "node dist/http.js",
-    "test": "npm run check:datasource-catalog && vitest run",
+    "test": "npm run check:datasource-catalog && npm run render:catalog && vitest run",
     "check:datasource-catalog": "node scripts/datasource-coverage.mjs --check",
     "generate:catalogs": "node scripts/generate-catalog.mjs && node scripts/generate-datasource-catalog.mjs",
-    "generate:skill": "node scripts/generate-skill.mjs",
+    "generate:page-icons": "node scripts/generate-page-icons.mjs",
+    "generate:skill": "node scripts/generate-skill.mjs && npm run render:catalog",
+    "render:catalog": "npm run build && node scripts/render-component-catalog.mjs",
     "sync:skill": "node scripts/sync-skill.mjs --all",
     "build:plugin": "node scripts/build-plugin.mjs"
   },
@@ -23,12 +25,12 @@
   "license": "ISC",
   "description": "MCP server and app-builder skill for ToolJet: build and modify ToolJet apps end to end through governed tools.",
   "dependencies": {
+    "@babel/parser": "^7.29.8",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@babel/parser": "^7.29.8",
     "@types/node": "^26.2.0",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.12",

@@ -108,6 +108,34 @@ There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET
 `TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
 per-request credentials and, like direct mode, has no bearer gate of its own.
 
+The local stateful transport binds identity at initialization. Send the same bearer and acting-user
+headers on every POST, GET/SSE and DELETE; the session ID alone does not authenticate an authenticated
+session. Build-token revocation/expiry ends access. It retains at most 256 sessions, evicts sessions
+after 30 idle minutes or six hours total, and sweeps expired/revoked sessions every minute. These
+limits are configurable through createHttpMcpServer options. Credential-free local sessions retain
+the process-configured identity: keep this development transport on loopback, not a public endpoint.
+
+Build-token minting is an impersonation authority for the trusted ToolJet backend, not an end-user
+API. Keep MCP_BUILD_TOKEN_SECRET server-side. TOOLJET_MCP_TOKEN remains a compatibility fallback
+for that minting secret; setting either enables the mint/revoke endpoint. Do not give the minting
+secret to a sandbox/client; give it only the short-lived build token issued for the intended user.
+
+### Render-audit boundary
+
+verify_page_render uses an optional Playwright 1.48+ installation and Chrome on the MCP host.
+It creates a fresh, unauthenticated context: private apps may need manual authenticated browser QA.
+It does not load a stored viewer session, publish an app, or treat a sign-in/empty/error page as a pass.
+Findings retain kind "unreachable" with a reason distinguishing missing browser, authentication,
+network policy, HTTP errors and missing widgets.
+
+The configured ToolJet viewer origin is trusted, including an explicitly configured localhost or
+private/self-hosted address. Alternate viewer/API/CDN origins require the operator-controlled
+MCP_RENDER_AUDIT_ALLOWED_ORIGINS comma-separated list. A tool argument cannot extend it.
+All HTTP(S) resources use the same allowlist; HTTP redirects are not followed (configure canonical
+URLs), service workers are blocked, and WebSocket dependencies are reported as unverified.
+Use a dedicated browser container with infrastructure egress restrictions as defense in depth:
+application-level URL checks are not a substitute for network isolation or DNS-rebinding protection.
+
 ## Install as a Copilot / VS Code agent plugin
 
 `plugin.json` and `mcp.json` at the repo root follow the [Agent Plugins 1.0](https://agent-plugins.org)
@@ -149,6 +177,15 @@ If `TOOLJET_DEPLOYMENT_URL` and `TOOLJET_PAT` are missing, the server exits duri
 npm run generate:catalogs && npm run generate:skill && npm run build:plugin
 ```
 The plugin manifest is `.claude-plugin/plugin.json` (declares the MCP server via `${CLAUDE_PLUGIN_ROOT}/bundle/index.js`); the marketplace catalog is `.claude-plugin/marketplace.json`.
+
+For skill-only changes, run `npm run generate:skill && npm run build:plugin`; no sibling checkout,
+MCP server, Python MCP package, or credentials are needed. Generation uses the pinned grid/widget
+snapshot in `data/skill-source-snapshot.json`. Refresh upstream facts explicitly with
+`TOOLJET_ROOT=/path/to/ToolJet node scripts/generate-skill.mjs --refresh-source-snapshot`, review the
+snapshot diff, then regenerate/package. Generated Markdown identifies its source; edit that source,
+not the generated copy. Offline catalogs in both skill packages include full defaults, renderingHints
+and defaultChildren and are rebuilt during generation, tests and plugin packaging. CI regenerates
+Markdown, checks for drift, runs tests, builds the bundle and probes MCP initialization.
 
 ## Demo
 

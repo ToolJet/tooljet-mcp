@@ -19,12 +19,13 @@ const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
 // 1. Compile TS → dist/ (real .js files with resolvable imports), then bundle to one file.
 run('npm run build');
+run('node scripts/render-component-catalog.mjs');
 mkdirSync(resolve(root, 'bundle'), { recursive: true });
 run(
   'npx --no-install esbuild dist/index.js --bundle --platform=node --format=esm ' +
     // Isolated builds may share node_modules via a symlink. Keep module labels relative
     // to this checkout instead of embedding the dependency directory's physical path.
-    '--outfile=bundle/index.js --legal-comments=none --preserve-symlinks ' +
+    '--outfile=bundle/index.js --legal-comments=none --preserve-symlinks --external:playwright-core ' +
     // An ESM bundle has no `require`, so a CommonJS dependency calling require('process') (the
     // `yaml` parser does) dies at import time with "Dynamic require ... is not supported" — the
     // whole server fails to boot, and no unit test sees it because tests import src/, not this.
@@ -39,9 +40,10 @@ if (/(?:\/(?:Users|home)\/[^/\s"']+\/|\/(?:private\/)?(?:tmp|var\/folders)\/|[A-
 }
 
 // 2. Runtime catalogs and compatibility metadata live at `../data/*.json`. Assert they ship.
-for (const f of ['component-schemas.json', 'component-compatibility.json', 'datasource-schemas.json', 'default-theme.json']) {
+for (const f of ['component-schemas.json', 'component-compatibility.json', 'datasource-schemas.json', 'default-theme.json', 'page-icons.json']) {
   if (!existsSync(resolve(root, 'data', f))) {
-    throw new Error(`build-plugin: missing data/${f} — run "npm run generate:catalogs" first.`);
+    const generate = f === 'page-icons.json' ? 'generate:page-icons' : 'generate:catalogs';
+    throw new Error(`build-plugin: missing data/${f} — run "npm run ${generate}" first.`);
   }
 }
 
@@ -50,6 +52,7 @@ for (const f of ['component-schemas.json', 'component-compatibility.json', 'data
 for (const f of [
   'SKILL.md',
   'references/workflows.md',
+  'references/migration.md',
   'references/ui-layout.md',
   'references/tables.md',
   'references/forms.md',
@@ -80,7 +83,7 @@ for (const f of [
     timeout: 30_000,
     // No TOOLJET_PAT: the server is expected to answer initialize and report the missing
     // credential in `instructions`. We are testing that it boots, not that it is configured.
-    env: { ...process.env, TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '' },
+    env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '' },
   });
   const reply = (probe.stdout ?? '').split('\n').find((line) => line.includes('"result"'));
   if (!reply || !reply.includes('"serverInfo"')) {

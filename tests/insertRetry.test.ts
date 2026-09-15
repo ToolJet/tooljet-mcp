@@ -60,7 +60,7 @@ describe('insert retry safety', () => {
     }
   );
 
-  it.each([400, 404])('still retries a rejected schema-cache request with HTTP %i', async (status) => {
+  it.each([400, 404, 409])('still retries a rejected schema-cache request with HTTP %i', async (status) => {
     const committed: Record<string, unknown>[] = [];
     let attempts = 0;
     const { client } = setup(async (row) => {
@@ -74,6 +74,20 @@ describe('insert retry safety', () => {
     expect(await pending).toEqual({ processed_rows: 1 });
     expect(attempts).toBe(2);
     expect(committed).toEqual([{ id: 1, name: 'A' }]);
+  });
+
+  it('does not retry a genuine 409 conflict', async () => {
+    // The status cannot be the discriminator in either direction: a duplicate key is also a 409 and
+    // must fail immediately rather than burning the backoff waiting for a cache that is already warm.
+    let attempts = 0;
+    const { client } = setup(async () => {
+      attempts += 1;
+      return response(409, { code: '23505', message: 'duplicate key value violates unique constraint' });
+    });
+    const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }] }).catch((e: Error) => e);
+    await vi.runAllTimersAsync();
+    expect((await pending).message).toContain('duplicate key');
+    expect(attempts).toBe(1);
   });
 
   it('bounds retries when the schema cache never catches up', async () => {

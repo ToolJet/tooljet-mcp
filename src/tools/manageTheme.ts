@@ -12,7 +12,7 @@ const colorPair = z.object({
   dark: z.string().trim().min(1).max(100).describe('Color used in dark mode; hex is recommended.'),
 }).strict();
 
-const themeDefinition = z.object({
+export const themeDefinition = z.object({
   brand: z.object({
     colors: z.object({
       primary: colorPair,
@@ -195,4 +195,3 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
     },
   };
 }
-
