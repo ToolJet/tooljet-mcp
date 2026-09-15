@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed } from '../renderAuditPolicy.js';
 
 /**
  * Render audit: open a page in a headless browser and report what static checks cannot see. Built from
@@ -13,6 +14,7 @@ export interface RenderFinding {
   kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'unreachable';
   component: string;
   detail: string;
+  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'no_widgets';
 }
 
 export interface PageRenderReport {
@@ -197,26 +199,75 @@ async function loadPlaywright(): Promise<any | null> {
 
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
-  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number } = {}
+  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string> } = {},
+  driver: () => Promise<any | null> = loadPlaywright
 ): Promise<PageRenderReport[]> {
-  const pw = await loadPlaywright();
+  const unreachable = (p: { page: string; url: string }, reason: RenderFinding['reason'], detail: string): PageRenderReport =>
+    ({ ...p, widgets: 0, findings: [{ kind: 'unreachable', component: '-', reason, detail }] });
+  if (!pages.length) return [];
+  // Callers are server code; the MCP handler supplies an operator-derived allowlist, never tool args.
+  const origins = options.allowedOrigins ?? renderAuditOrigins(pages[0].url);
+  if (pages.some((p) => !renderAuditUrlAllowed(p.url, origins))) {
+    return pages.map((p) => unreachable(p, 'blocked_destination', 'The requested viewer is outside the configured render-audit origins'));
+  }
+  const pw = await driver();
   if (!pw) {
-    return pages.map((p) => ({ page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'playwright-core is not installed on the MCP host; the render audit cannot run' }] }));
+    return pages.map((p) => unreachable(p, 'browser_unavailable', 'playwright-core is not installed on the MCP host; the render audit cannot run'));
   }
   const launch: Record<string, unknown> = { headless: true };
   if (options.executablePath) launch.executablePath = options.executablePath;
   else launch.channel = options.channel ?? 'chrome';
-  const browser = await pw.chromium.launch(launch);
+  let browser: any;
+  try { browser = await pw.chromium.launch(launch); }
+  catch { return pages.map((p) => unreachable(p, 'browser_unavailable', 'Chrome could not start on the MCP host; check the configured executable/channel')); }
   // Pages are audited a few at a time in their own contexts: a 13-page app took over three minutes
   // sequentially (settle 6s + chart wait per page) and tripped the harness's 60s tool timeout.
   const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, pages.length || 1));
   const reports: PageRenderReport[] = new Array(pages.length);
   const auditOne = async (index: number): Promise<void> => {
     const p = pages[index];
-    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
-    const page = await ctx.newPage();
+    let ctx: any;
+    let blocked: RenderFinding | undefined;
     try {
-      await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: 'block' });
+      if (!ctx.routeWebSocket) {
+        reports[index] = unreachable(p, 'browser_unavailable', 'The render audit requires Playwright 1.48+ for WebSocket interception');
+        return;
+      }
+      // Audits are snapshots, not live subscriptions. No unaudited socket channel may bypass routing.
+      await ctx.routeWebSocket('**/*', (socket: any) => { blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }; socket.close(); });
+      await ctx.route('**/*', async (route: any) => {
+        const url = route.request().url();
+        if (!renderAuditUrlAllowed(url, origins)) {
+          blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A navigation or resource outside the configured audit origins was blocked' };
+          await route.abort();
+          return;
+        }
+        try {
+          // route.continue() may automatically follow redirects before another interception. Fetch
+          // with redirects disabled, and never fulfill a redirect response: use canonical URLs.
+          const response = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 30_000 });
+          try {
+            if (response.status() >= 300 && response.status() < 400 && response.headers().location) {
+              const dest = new URL(response.headers().location, url);
+              const signIn = renderAuditUrlAllowed(dest.href, origins) && /\/(?:login|sign-in|signin)\b/i.test(dest.pathname);
+              blocked ??= { kind: 'unreachable', component: '-', reason: signIn ? 'auth_required' : 'redirect_blocked',
+                detail: signIn ? 'The viewer requires sign-in; private app rendering was not verified' : 'An HTTP redirect was blocked. Configure the canonical viewer/resource URL and its trusted origin' };
+              await route.abort();
+            } else await route.fulfill({ response });
+          } finally { await response.dispose(); }
+        } catch {
+          blocked ??= { kind: 'unreachable', component: '-', reason: 'navigation_failed', detail: 'A viewer resource could not be loaded; the audit is incomplete' };
+          await route.abort().catch(() => {});
+        }
+      });
+      const page = await ctx.newPage();
+      const response = await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      if (response && response.status() >= 400) {
+        const status = response.status();
+        reports[index] = unreachable(p, [401, 403].includes(status) ? 'auth_required' : 'navigation_failed', 'Viewer returned HTTP ' + status);
+        return;
+      }
       await page.waitForTimeout(options.settleMs ?? 6000);
       // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
       // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
@@ -233,16 +284,19 @@ export async function auditPages(
         .catch(() => undefined);
       await page.waitForTimeout(1500);
       const landed: string = page.url();
-      if (/\/login\b/.test(landed)) {
-        reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: 'the viewer redirected to sign-in; the page is not reachable without a session (a private app)' }] };
+      if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
+        reports[index] = unreachable(p, 'auth_required', 'The viewer requires sign-in; private app rendering was not verified');
         return;
       }
       const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
-      reports[index] = { page: p.page, url: p.url, widgets: result.widgets, findings: result.findings };
+      reports[index] = result.widgets === 0
+        ? unreachable(p, 'no_widgets', 'No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded')
+        : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...(blocked ? [blocked] : [])] };
     } catch (err) {
-      reports[index] = { page: p.page, url: p.url, widgets: 0, findings: [{ kind: 'unreachable', component: '-', detail: `could not load the page: ${(err as Error).message}` }] };
+      reports[index] = blocked ? { ...p, widgets: 0, findings: [blocked] }
+        : unreachable(p, 'navigation_failed', 'Could not load or inspect the viewer page');
     } finally {
-      await ctx.close();
+      await ctx?.close().catch(() => {});
     }
   };
   try {
@@ -270,19 +324,20 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       'Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken ' +
       'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
       '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
-      'Run it once per page before the handoff and fix every finding; a page with findings is not finished. ' +
-      'The page must be reachable by the browser: a public app, or a viewer session configured on the MCP host. ' +
+      'Run it once per page before the handoff and review every finding; report unverified behavior explicitly. ' +
+      'Uses a fresh unauthenticated browser context; a private app is reported as unverified, never made public. ' +
       'Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
-      app_id: z.string(),
+      app_id: z.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: z.string().optional().describe('one page handle; omit to audit every page'),
-      viewer_url: z.string().optional().describe('override the viewer origin (e.g. a tunnel) when the MCP host cannot reach the configured one'),
+      viewer_url: z.string().optional().describe('canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS'),
     },
     async handler(args: { app_id: string; page_handle?: string; viewer_url?: string }) {
       try {
+        if (!/^[A-Za-z0-9_-]+$/.test(args.app_id)) return fail(new Error('Invalid app id'));
+        const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
         const summary = await client.getAppSummary(args.app_id);
         const pages = (summary.pages ?? []) as Array<{ handle?: string; name?: string }>;
-        const base = (args.viewer_url ?? viewerBase()).replace(/\/$/, '');
         const targets = pages
           .filter((p) => !args.page_handle || p.handle === args.page_handle)
           .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}` }));
@@ -290,6 +345,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
         const options = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
+          allowedOrigins: origins,
         };
         const reports = await auditPages(targets, options);
         // A private app redirects the headless browser to sign-in, and this audit will NOT publish it
