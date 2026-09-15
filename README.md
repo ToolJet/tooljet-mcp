@@ -108,6 +108,34 @@ There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET
 `TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
 per-request credentials and, like direct mode, has no bearer gate of its own.
 
+The local stateful transport binds identity at initialization. Send the same bearer and acting-user
+headers on every POST, GET/SSE and DELETE; the session ID alone does not authenticate an authenticated
+session. Build-token revocation/expiry ends access. It retains at most 256 sessions, evicts sessions
+after 30 idle minutes or six hours total, and sweeps expired/revoked sessions every minute. These
+limits are configurable through createHttpMcpServer options. Credential-free local sessions retain
+the process-configured identity: keep this development transport on loopback, not a public endpoint.
+
+Build-token minting is an impersonation authority for the trusted ToolJet backend, not an end-user
+API. Keep MCP_BUILD_TOKEN_SECRET server-side. TOOLJET_MCP_TOKEN remains a compatibility fallback
+for that minting secret; setting either enables the mint/revoke endpoint. Do not give the minting
+secret to a sandbox/client; give it only the short-lived build token issued for the intended user.
+
+### Render-audit boundary
+
+verify_page_render uses an optional Playwright 1.48+ installation and Chrome on the MCP host.
+It creates a fresh, unauthenticated context: private apps may need manual authenticated browser QA.
+It does not load a stored viewer session, publish an app, or treat a sign-in/empty/error page as a pass.
+Findings retain kind "unreachable" with a reason distinguishing missing browser, authentication,
+network policy, HTTP errors and missing widgets.
+
+The configured ToolJet viewer origin is trusted, including an explicitly configured localhost or
+private/self-hosted address. Alternate viewer/API/CDN origins require the operator-controlled
+MCP_RENDER_AUDIT_ALLOWED_ORIGINS comma-separated list. A tool argument cannot extend it.
+All HTTP(S) resources use the same allowlist; HTTP redirects are not followed (configure canonical
+URLs), service workers are blocked, and WebSocket dependencies are reported as unverified.
+Use a dedicated browser container with infrastructure egress restrictions as defense in depth:
+application-level URL checks are not a substitute for network isolation or DNS-rebinding protection.
+
 ## Install as a Copilot / VS Code agent plugin
 
 `plugin.json` and `mcp.json` at the repo root follow the [Agent Plugins 1.0](https://agent-plugins.org)
@@ -150,6 +178,15 @@ npm run generate:catalogs && npm run generate:skill && npm run build:plugin
 ```
 The plugin manifest is `.claude-plugin/plugin.json` (declares the MCP server via `${CLAUDE_PLUGIN_ROOT}/bundle/index.js`); the marketplace catalog is `.claude-plugin/marketplace.json`.
 
+For skill-only changes, run `npm run generate:skill && npm run build:plugin`; no sibling checkout,
+MCP server, Python MCP package, or credentials are needed. Generation uses the pinned grid/widget
+snapshot in `data/skill-source-snapshot.json`. Refresh upstream facts explicitly with
+`TOOLJET_ROOT=/path/to/ToolJet node scripts/generate-skill.mjs --refresh-source-snapshot`, review the
+snapshot diff, then regenerate/package. Generated Markdown identifies its source; edit that source,
+not the generated copy. Offline catalogs in both skill packages include full defaults, renderingHints
+and defaultChildren and are rebuilt during generation, tests and plugin packaging. CI regenerates
+Markdown, checks for drift, runs tests, builds the bundle and probes MCP initialization.
+
 ## Demo
 
 In Codex:
@@ -166,6 +203,8 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
 | `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |
 | `list_workspace_users(...)` | List/search workspace users with pagination and status filtering through PAT auth |
+| `list_workspace_groups(...)` | List groups/members; read permission switches and granular rules with `include_permissions:true`; discover selectable resources with `resource_type` |
+| `manage_workspace_groups(...)` | Create/rename/delete/duplicate groups, remove members, update permission switches, and create/update/delete granular access; requires confirmation and ToolJet admin permissions |
 | `manage_workspace_users(...)` | Invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
@@ -185,6 +224,11 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
+
+Group management stays within the PAT workspace. `manage_workspace_groups` supports `create`, `rename`, `delete`, `remove_member`, `duplicate`, `update_permissions`, `create_access`, `update_access`, and `delete_access`. Read groups and membership IDs with `list_workspace_groups`; add `group_id` and `include_permissions:true` for permission switches and granular rule IDs. Use `resource_type` (`app`, `module`, `workflow`, or `data_source`) to discover selectable resources.
+
+Permission updates change only supplied switches. New granular rules disable omitted action switches; updates preserve unrelated actions. Enabling `canEdit`/`canView` or `canConfigure`/`canUse` disables its paired switch; both cannot be enabled together. `access.resource_ids` replaces the selected resources, while `access.is_all:true` includes all current and future resources of that type. Duplication requires at least one selected `copy` category. Disabled groups cannot be changed. Synthetic rules supplied by restricted plans are returned with `read_only:true` and a reason, without a writable rule ID. Role-changing updates require explicit `allow_role_change:true` and remain subject to ToolJet's authorization and license checks. Default Admin permissions and default role group names/memberships are protected. Existing `manage_workspace_users` adds members to custom groups.
+
 
 Workspace theme creation and management are exposed through `manage_theme`; applying a theme to an app remains part
 of `update_app_settings`. The definition structure and token-backed styling guidance are documented in

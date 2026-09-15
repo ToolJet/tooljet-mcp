@@ -259,7 +259,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         }
         if (containsComponentBinding(query.options)) {
           warnings.push(
-            'Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.'
+            'Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.'
           );
         }
 
@@ -360,6 +360,9 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         if (output.warning) warnings.push(output.warning);
         return ok({
           ...output.result,
+          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
+          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
+          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
           ...(bindingHint ? { binding_hint: bindingHint } : {}),
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),

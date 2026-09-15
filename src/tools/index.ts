@@ -1,3 +1,4 @@
+import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -27,6 +28,7 @@ import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
 import { validateAppTool } from './validateApp.js';
+import { verifyPageRenderTool } from './verifyPageRender.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
 import { applyAppPhaseTool } from './applyAppPhase.js';
 import { addPageTool } from './addPage.js';
@@ -91,6 +93,8 @@ export function registerTools(
     listWorkspaceAppsTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
+    listWorkspaceGroupsTool(client),
+    manageWorkspaceGroupsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
@@ -115,6 +119,7 @@ export function registerTools(
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
+    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082'),
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
