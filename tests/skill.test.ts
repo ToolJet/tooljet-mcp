@@ -117,8 +117,7 @@ describe('generated skill — progressive disclosure', () => {
     const canonical = resolve(root, 'skill');
     const packaged = resolve(root, 'skills/tooljet-app-builder');
     expect(readFileSync(resolve(packaged, 'SKILL.md'), 'utf8')).toBe(readFileSync(resolve(canonical, 'SKILL.md'), 'utf8'));
-    // `catalog/` is rendered separately by scripts/render-component-catalog.py after generation and is
-    // gitignored, so it exists in a packaged tree that has been prepared for a sandbox and nowhere else.
+    // Offline catalogs are rendered from local contracts; compare them separately from Markdown.
     // Compare the generated markdown, not whatever else a working tree happens to be carrying.
     const markdown = (dir: string) => readdirSync(dir).filter((name) => name.endsWith('.md')).sort();
     const canonicalReferences = markdown(resolve(canonical, 'references'));

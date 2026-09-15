@@ -16,7 +16,8 @@ describe('migration reference packaging', () => {
       // leave hosted sessions without the conditional instructions.
       for (const path of new Set(references)) expect(readFileSync(resolve(root, host, path), 'utf8').length).toBeGreaterThan(0);
       const published = readFileSync(resolve(root, host, 'references/migration.md'), 'utf8').trim();
-      expect(published).toBe(source);
+      expect(published).toContain('edit docs/app-migration.md');
+      expect(published.replace(/^<!-- GENERATED[^]*?-->\s*/, '')).toBe(source);
       expect(entry).not.toContain(source);
       return entry;
     });

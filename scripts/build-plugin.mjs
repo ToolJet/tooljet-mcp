@@ -19,6 +19,7 @@ const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
 // 1. Compile TS → dist/ (real .js files with resolvable imports), then bundle to one file.
 run('npm run build');
+run('node scripts/render-component-catalog.mjs');
 mkdirSync(resolve(root, 'bundle'), { recursive: true });
 run(
   'npx --no-install esbuild dist/index.js --bundle --platform=node --format=esm ' +
@@ -39,6 +40,7 @@ for (const f of ['component-schemas.json', 'component-compatibility.json', 'data
 for (const f of [
   'SKILL.md',
   'references/workflows.md',
+  'references/migration.md',
   'references/ui-layout.md',
   'references/tables.md',
   'references/forms.md',
@@ -69,7 +71,7 @@ for (const f of [
     timeout: 30_000,
     // No TOOLJET_PAT: the server is expected to answer initialize and report the missing
     // credential in `instructions`. We are testing that it boots, not that it is configured.
-    env: { ...process.env, TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '' },
+    env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '' },
   });
   const reply = (probe.stdout ?? '').split('\n').find((line) => line.includes('"result"'));
   if (!reply || !reply.includes('"serverInfo"')) {

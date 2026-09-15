@@ -32,7 +32,7 @@ describe('sync-skill', () => {
     expect(readFileSync(join(codexHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
     expect(readFileSync(join(claudeHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
     expect(readFileSync(join(grokHome, 'skills/tooljet-app-builder/SKILL.md'), 'utf8')).toBe(expected);
-    const references = readdirSync(resolve(root, 'skill/references')).sort();
+    const references = readdirSync(resolve(root, 'skill/references')).filter((name) => name.endsWith('.md')).sort();
     for (const name of references) {
       const expectedReference = readFileSync(resolve(root, 'skill/references', name), 'utf8');
       expect(readFileSync(join(codexHome, 'skills/tooljet-app-builder/references', name), 'utf8')).toBe(expectedReference);
