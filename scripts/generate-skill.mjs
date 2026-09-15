@@ -21,7 +21,8 @@ function locate(envVar, label, candidates, marker) {
   if (found) return found;
   throw new Error(
     `generate-skill: could not find the ${label} checkout (looked for ${marker} in ` +
-      `${candidates.map((c) => resolve(root, ...c)).join(', ')}). Set ${envVar} to its path.`
+      `${candidates.map((c) => resolve(root, ...c)).join(', ')}).\n` +
+      `Point ${envVar} at it:\n  ${envVar}=/path/to/${label} npm run generate:skill`
   );
 }
 
