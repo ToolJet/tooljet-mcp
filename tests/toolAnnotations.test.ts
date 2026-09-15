@@ -39,7 +39,7 @@ function registeredTools(): Registered[] {
  */
 const MUST_BE_DESTRUCTIVE = [
   'delete_components', 'delete_event', 'delete_page', 'delete_query',
-  'drop_table', 'drop_table_column', 'manage_theme',
+  'drop_table', 'drop_table_column', 'manage_theme', 'manage_workspace_groups',
   'run_queries', 'run_query',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query',
@@ -49,7 +49,7 @@ const MUST_BE_READ_ONLY = [
   'generate_form_schema', 'get_app', 'get_app_settings', 'get_app_summary', 'get_component',
   'get_component_catalog', 'get_datasource_query_schema', 'get_runtime_info', 'get_table_schema',
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
-  'list_events', 'list_tables', 'list_workspaces', 'prepare_sql_discovery_queries',
+  'list_events', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app', 'verify_page_render',
 ];
 

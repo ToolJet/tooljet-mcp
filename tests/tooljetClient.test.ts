@@ -40,6 +40,53 @@ describe('createClient', () => {
     uuidState.n = 0;
   });
 
+  describe('workspace groups', () => {
+    it('uses v2 routes and exposes membership IDs without leaking nested user data', async () => {
+      const group = { id: 'group-7', name: 'Dispatch', type: 'custom' };
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: { groupPermissions: [group] } }))
+        .mockResolvedValueOnce(mockResponse({ json: { group } }))
+        .mockResolvedValueOnce(mockResponse({ json: [{ id: 'membership-9', userId: 'person-4',
+          user: { email: 'dispatch@example.test', password: 'private-field' } }] }));
+      const client = createClient(auth, config);
+      expect(await client.listWorkspaceGroups()).toEqual([group]);
+      expect(await client.getWorkspaceGroup('group-7')).toEqual(group);
+      const members = await client.listWorkspaceGroupMembers('group-7');
+      expect(members).toEqual([{ group_user_id: 'membership-9', user_id: 'person-4', email: 'dispatch@example.test' }]);
+      expect(JSON.stringify(members)).not.toContain('private-field');
+      expect(auth.authedFetch.mock.calls.map((call) => call[0])).toEqual([
+        '/api/v2/group-permissions', '/api/v2/group-permissions/group-7', '/api/v2/group-permissions/group-7/users',
+      ]);
+    });
+
+    it('sends only names for create/rename and deletes memberships using the membership route', async () => {
+      auth.authedFetch.mockResolvedValue(mockResponse({ status: 204 }));
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201,
+        json: { id: 'group-7', name: 'Dispatch' } }));
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: { group: { id: 'group-7', name: 'Dispatch', type: 'custom' } } }));
+      const client = createClient(auth, config);
+      expect(await client.createWorkspaceGroup('Dispatch')).toEqual({ id: 'group-7', name: 'Dispatch', type: 'custom' });
+      await client.renameWorkspaceGroup('group-7', 'Routing');
+      await client.removeWorkspaceGroupMember('membership-9');
+      await client.deleteWorkspaceGroup('group-7');
+      expect(auth.authedFetch.mock.calls).toEqual([
+        ['/api/v2/group-permissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"name":"Dispatch"}' }],
+        ['/api/v2/group-permissions/group-7'],
+        ['/api/v2/group-permissions/group-7', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{"name":"Routing"}' }],
+        ['/api/v2/group-permissions/users/membership-9', { method: 'DELETE' }],
+        ['/api/v2/group-permissions/group-7', { method: 'DELETE' }],
+      ]);
+    });
+
+    it('propagates backend permission errors and rejects malformed discovery responses', async () => {
+      const client = createClient(auth, config);
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 403, text: 'Denied' }));
+      await expect(client.deleteWorkspaceGroup('group-7')).rejects.toThrow();
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: {} }));
+      await expect(client.listWorkspaceGroups()).rejects.toThrow('Unexpected workspace groups');
+    });
+  });
+
   describe('createApp', () => {
     it('creates the app then fetches it to resolve version/home page, and builds the app url', async () => {
       auth.authedFetch

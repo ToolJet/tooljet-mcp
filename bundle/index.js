@@ -59345,6 +59345,41 @@ function isCanonicalStaticBooleanBinding(value, expected) {
 }
 
 // dist/tooljetClient.js
+var WORKSPACE_PERMISSION_KEYS = [
+  "appCreate",
+  "appDelete",
+  "moduleCreate",
+  "moduleDelete",
+  "workflowCreate",
+  "workflowDelete",
+  "folderCRUD",
+  "orgConstantCRUD",
+  "tjdbCRUD",
+  "dataSourceCreate",
+  "dataSourceDelete",
+  "appPromote",
+  "appRelease"
+];
+var WORKSPACE_ACCESS_KEYS = [
+  "canEdit",
+  "canView",
+  "hideFromDashboard",
+  "canAccessDevelopment",
+  "canAccessStaging",
+  "canAccessProduction",
+  "canAccessReleased",
+  "canConfigure",
+  "canUse"
+];
+function workspaceAccessKeys(type) {
+  if (type === "data_source")
+    return ["canConfigure", "canUse"];
+  if (type === "module")
+    return ["canEdit", "canView", "hideFromDashboard"];
+  if (type === "workflow")
+    return ["canEdit", "canView"];
+  return WORKSPACE_ACCESS_KEYS.filter((key) => !["canConfigure", "canUse"].includes(key));
+}
 var PartialWriteError = class extends Error {
   completed;
   failures;
@@ -59470,6 +59505,158 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/organization-users?${query}`);
     await assertOk(res, "listWorkspaceUsers");
     return await res.json();
+  }
+  const groupPath = "/api/v2/group-permissions";
+  function workspaceGroup(value) {
+    if (!value || typeof value.id !== "string" || typeof value.name !== "string" || !["default", "custom"].includes(value.type)) {
+      throw new Error("Unexpected workspace group response.");
+    }
+    const permissions = booleanFields(value, WORKSPACE_PERMISSION_KEYS);
+    return {
+      id: value.id,
+      name: value.name,
+      type: value.type,
+      ...typeof value.disabled === "boolean" ? { disabled: value.disabled } : {},
+      ...Object.keys(permissions).length ? { permissions } : {}
+    };
+  }
+  function booleanFields(value, keys) {
+    return Object.fromEntries(keys.filter((key) => typeof value?.[key] === "boolean").map((key) => [key, value[key]]));
+  }
+  async function updateWorkspaceGroupPermissions(groupId, permissions, allowRoleChange = false) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...permissions, allowRoleChange })
+    });
+    await assertOk(res, "updateWorkspaceGroupPermissions");
+  }
+  async function duplicateWorkspaceGroup(groupId, options2) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/duplicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options2)
+    });
+    await assertOk(res, "duplicateWorkspaceGroup");
+    const created = await res.json();
+    if (typeof created?.id !== "string")
+      throw new Error("Unexpected duplicated group response.");
+    return getWorkspaceGroup(created.id);
+  }
+  async function listWorkspaceGroupResources(type) {
+    const res = await auth.authedFetch(`${groupPath}/granular-permissions/addable-${type === "data_source" ? "data-sources" : "apps"}`);
+    await assertOk(res, "listWorkspaceGroupResources");
+    const items = await res.json();
+    if (!Array.isArray(items))
+      throw new Error("Unexpected group resources response.");
+    const appType = { app: "front-end", module: "module", workflow: "workflow" };
+    return items.filter((item) => type === "data_source" || item.type === appType[type]).map((item) => {
+      if (typeof item.id !== "string" || typeof item.name !== "string")
+        throw new Error("Unexpected group resource.");
+      return { id: item.id, name: item.name };
+    });
+  }
+  async function listWorkspaceGroupAccess(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/granular-permissions`);
+    await assertOk(res, "listWorkspaceGroupAccess");
+    const items = await res.json();
+    if (!Array.isArray(items))
+      throw new Error("Unexpected granular permissions response.");
+    return items.map((item) => {
+      if (!item || item.id != null && typeof item.id !== "string" || typeof item.name !== "string" || typeof item.isAll !== "boolean" || !["app", "module", "workflow", "data_source"].includes(item.type))
+        throw new Error("Unexpected granular permission.");
+      const synthetic = item.id == null;
+      if (synthetic && !item.isAll)
+        throw new Error("Unexpected granular permission without a persisted ID.");
+      const ds = item.type === "data_source";
+      const detail = ds ? item.dataSourcesGroupPermission : item.appsGroupPermissions;
+      return {
+        ...synthetic ? {
+          read_only: true,
+          read_only_reason: "These effective permissions are supplied by the current license/plan and cannot be edited."
+        } : { id: item.id },
+        name: item.name,
+        type: item.type,
+        is_all: item.isAll,
+        actions: booleanFields(detail, workspaceAccessKeys(item.type)),
+        resources: (detail?.[ds ? "groupDataSources" : "groupApps"] ?? []).map((link) => {
+          const resource = link[ds ? "dataSource" : "app"];
+          if (!resource || typeof resource.id !== "string" || typeof resource.name !== "string" || typeof link.id !== "string") {
+            throw new Error("Unexpected granular permission resource.");
+          }
+          return { id: resource.id, name: resource.name, membership_id: link.id };
+        })
+      };
+    });
+  }
+  async function writeWorkspaceGroupAccess(method, groupId, type, ruleId, body) {
+    const route = type === "app" ? "app" : "data-source";
+    const path = method === "POST" ? `${groupId}/granular-permissions/${route}` : `granular-permissions/${route}/${ruleId}`;
+    const res = await auth.authedFetch(`${groupPath}/${path}`, {
+      method,
+      ...body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}
+    });
+    await assertOk(res, "writeWorkspaceGroupAccess");
+  }
+  async function listWorkspaceGroups() {
+    const res = await auth.authedFetch(groupPath);
+    await assertOk(res, "listWorkspaceGroups");
+    const data = await res.json();
+    if (!Array.isArray(data.groupPermissions))
+      throw new Error("Unexpected workspace groups response.");
+    return data.groupPermissions.map(workspaceGroup);
+  }
+  async function getWorkspaceGroup(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`);
+    await assertOk(res, "getWorkspaceGroup");
+    return workspaceGroup((await res.json()).group);
+  }
+  async function listWorkspaceGroupMembers(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}/users`);
+    await assertOk(res, "listWorkspaceGroupMembers");
+    const data = await res.json();
+    if (!Array.isArray(data))
+      throw new Error("Unexpected workspace group members response.");
+    return data.map((entry) => {
+      if (typeof entry?.id !== "string" || typeof entry?.userId !== "string") {
+        throw new Error("Unexpected workspace group member response.");
+      }
+      return {
+        group_user_id: entry.id,
+        user_id: entry.userId,
+        email: entry.user?.email,
+        first_name: entry.user?.firstName,
+        last_name: entry.user?.lastName
+      };
+    });
+  }
+  async function createWorkspaceGroup(name) {
+    const res = await auth.authedFetch(groupPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    await assertOk(res, "createWorkspaceGroup");
+    const created = await res.json();
+    if (typeof created?.id !== "string")
+      throw new Error("Create group response did not include an id.");
+    return getWorkspaceGroup(created.id);
+  }
+  async function renameWorkspaceGroup(groupId, name) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    await assertOk(res, "renameWorkspaceGroup");
+  }
+  async function deleteWorkspaceGroup(groupId) {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, { method: "DELETE" });
+    await assertOk(res, "deleteWorkspaceGroup");
+  }
+  async function removeWorkspaceGroupMember(groupUserId) {
+    const res = await auth.authedFetch(`${groupPath}/users/${encodeURIComponent(groupUserId)}`, { method: "DELETE" });
+    await assertOk(res, "removeWorkspaceGroupMember");
   }
   async function inviteWorkspaceUser(params) {
     const res = await auth.authedFetch("/api/organization-users", {
@@ -60579,6 +60766,18 @@ function createClient(auth, config2) {
     useWorkspace,
     listWorkspaceApps,
     listWorkspaceUsers,
+    listWorkspaceGroups,
+    getWorkspaceGroup,
+    listWorkspaceGroupMembers,
+    createWorkspaceGroup,
+    renameWorkspaceGroup,
+    deleteWorkspaceGroup,
+    removeWorkspaceGroupMember,
+    updateWorkspaceGroupPermissions,
+    duplicateWorkspaceGroup,
+    listWorkspaceGroupAccess,
+    listWorkspaceGroupResources,
+    writeWorkspaceGroupAccess,
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
@@ -60644,6 +60843,218 @@ function ok(value) {
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
   return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+}
+
+// dist/tools/workspaceGroupManagement.js
+function listWorkspaceGroupsTool(client) {
+  const schema = external_exports.object({
+    group_id: external_exports.string().uuid().optional(),
+    include_permissions: external_exports.boolean().optional(),
+    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
+  }).strict();
+  return {
+    name: "list_workspace_groups",
+    title: "List Workspace Groups",
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description: "List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
+    inputSchema: schema.shape,
+    async handler(input) {
+      try {
+        const args = schema.parse(input);
+        if (args.include_permissions && !args.group_id)
+          throw new Error("group_id is required with include_permissions.");
+        const resources = args.resource_type ? { resources: await client.listWorkspaceGroupResources(args.resource_type) } : {};
+        if (!args.group_id)
+          return ok({ ...args.resource_type ? {} : { groups: await client.listWorkspaceGroups() }, ...resources });
+        const group = await client.getWorkspaceGroup(args.group_id);
+        return ok({
+          group,
+          members: await client.listWorkspaceGroupMembers(args.group_id),
+          ...resources,
+          ...args.include_permissions ? { access_rules: await client.listWorkspaceGroupAccess(args.group_id) } : {}
+        });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+function manageWorkspaceGroupsTool(client) {
+  const schema = external_exports.object({
+    action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
+    group_id: external_exports.string().uuid().optional(),
+    name: external_exports.string().trim().min(1).max(50).optional(),
+    group_user_id: external_exports.string().uuid().optional(),
+    confirm: external_exports.boolean().optional(),
+    permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
+    copy: external_exports.object({
+      permissions: external_exports.boolean().optional(),
+      members: external_exports.boolean().optional(),
+      apps: external_exports.boolean().optional(),
+      modules: external_exports.boolean().optional(),
+      workflows: external_exports.boolean().optional(),
+      data_sources: external_exports.boolean().optional()
+    }).strict().optional(),
+    rule_id: external_exports.string().uuid().optional(),
+    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
+    access: external_exports.object({
+      name: external_exports.string().trim().min(1).max(255).optional(),
+      is_all: external_exports.boolean().optional(),
+      actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
+      resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional()
+    }).strict().optional(),
+    allow_role_change: external_exports.boolean().optional()
+  }).strict();
+  return {
+    name: "manage_workspace_groups",
+    title: "Manage Workspace Groups",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
+    inputSchema: schema.shape,
+    async handler(input) {
+      try {
+        const args = schema.parse(input);
+        if (args.confirm !== true)
+          throw new Error(`${args.action} requires confirm:true after reviewing the exact change.`);
+        const needsName = args.action === "create" || args.action === "rename";
+        if (needsName !== (args.name !== void 0))
+          throw new Error(needsName ? "name is required." : "name must be omitted.");
+        if (args.action !== "create" !== (args.group_id !== void 0)) {
+          throw new Error(args.action === "create" ? "group_id must be omitted for create." : "group_id is required.");
+        }
+        if (args.action === "remove_member" !== (args.group_user_id !== void 0)) {
+          throw new Error(args.action === "remove_member" ? "group_user_id is required." : "group_user_id must be omitted.");
+        }
+        const expected = {
+          duplicate: ["copy"],
+          update_permissions: ["permissions", "allow_role_change"],
+          create_access: ["resource_type", "access"],
+          update_access: ["rule_id", "access", "allow_role_change", "resource_type"],
+          delete_access: ["rule_id", "resource_type"]
+        };
+        for (const key of ["copy", "permissions", "resource_type", "access", "rule_id", "allow_role_change"]) {
+          if (args[key] !== void 0 && !expected[args.action]?.includes(key))
+            throw new Error(`${key} must be omitted for ${args.action}.`);
+        }
+        for (const key of expected[args.action] ?? []) {
+          if (key !== "allow_role_change" && !(key === "resource_type" && args.action !== "create_access") && args[key] === void 0)
+            throw new Error(`${key} is required.`);
+        }
+        if (args.permissions && !Object.keys(args.permissions).length)
+          throw new Error("permissions must contain at least one switch.");
+        if (args.access && !Object.keys(args.access).length)
+          throw new Error("access must contain at least one change.");
+        if (args.action === "create")
+          return ok({ group: await client.createWorkspaceGroup(args.name) });
+        const group = await client.getWorkspaceGroup(args.group_id);
+        if (group.disabled === true)
+          throw new Error(`Group "${group.name}" is read-only under the current license/plan.`);
+        const permissionAction = ["update_permissions", "create_access", "update_access", "delete_access"].includes(args.action);
+        if (group.type !== "custom" && args.action !== "duplicate" && !(permissionAction && group.name !== "admin")) {
+          throw new Error("Only custom groups can be changed with this tool.");
+        }
+        if (args.action === "duplicate") {
+          const copy = args.copy;
+          if (!Object.values(copy).some((value) => value === true))
+            throw new Error("Select at least one category to duplicate.");
+          return ok({ group: await client.duplicateWorkspaceGroup(group.id, {
+            addPermission: copy.permissions ?? false,
+            addUsers: copy.members ?? false,
+            addApps: copy.apps ?? false,
+            addModules: copy.modules ?? false,
+            addWorkflows: copy.workflows ?? false,
+            addDataSource: copy.data_sources ?? false
+          }) });
+        }
+        if (args.action === "update_permissions") {
+          await client.updateWorkspaceGroupPermissions(group.id, args.permissions, args.allow_role_change);
+          return ok({ group: await client.getWorkspaceGroup(group.id), updated: true });
+        }
+        if (["create_access", "update_access", "delete_access"].includes(args.action)) {
+          const rules = await client.listWorkspaceGroupAccess(group.id);
+          const rule = args.rule_id ? rules.find((item) => item.id === args.rule_id) : void 0;
+          if (args.rule_id && !rule)
+            throw new Error("Access rule not found in this group. Read include_permissions:true again.");
+          if (rule?.read_only)
+            throw new Error(rule.read_only_reason || "This access rule is read-only under the current license/plan.");
+          if (rule && args.resource_type && args.resource_type !== rule.type)
+            throw new Error("resource_type does not match this access rule.");
+          const type = rule?.type ?? args.resource_type;
+          if (args.action === "delete_access") {
+            await client.writeWorkspaceGroupAccess("DELETE", group.id, type, rule.id);
+            return ok({ group_id: group.id, name: group.name, rule_id: rule.id, rule_name: rule.name, deleted: true });
+          }
+          const access = args.access;
+          const creating = args.action === "create_access";
+          if (creating && (!access.name || access.is_all === void 0 || !access.actions)) {
+            throw new Error("create_access requires access.name, is_all and actions.");
+          }
+          const actionKeys = workspaceAccessKeys(type);
+          if (access.actions && (!Object.keys(access.actions).length || Object.keys(access.actions).some((key) => !actionKeys.includes(key)))) {
+            throw new Error(`Invalid actions for ${type}. Use ${actionKeys.join(", ")}.`);
+          }
+          const all = access.is_all ?? rule.is_all;
+          const selected = access.resource_ids ?? (all ? [] : rule?.resources.map((item) => item.id) ?? []);
+          if (new Set(selected).size !== selected.length || all && selected.length || !all && !selected.length) {
+            throw new Error("Use unique resource_ids for a selected-resource rule; omit them or use [] for is_all:true.");
+          }
+          if (access.resource_ids || creating || rule?.is_all && !all) {
+            const available = await client.listWorkspaceGroupResources(type);
+            if (selected.some((id) => !available.some((item) => item.id === id)))
+              throw new Error("Resource not found in this workspace/resource type.");
+          }
+          const resourceKey = type === "data_source" ? "dataSourceId" : "appId";
+          const actions = { ...creating ? Object.fromEntries(actionKeys.map((key) => [key, false])) : rule.actions, ...access.actions };
+          const [primary, secondary] = type === "data_source" ? ["canConfigure", "canUse"] : ["canEdit", "canView"];
+          if (access.actions?.[primary] === true && access.actions?.[secondary] === void 0)
+            actions[secondary] = false;
+          if (access.actions?.[secondary] === true && access.actions?.[primary] === void 0)
+            actions[primary] = false;
+          if (actions[primary] && actions[secondary])
+            throw new Error(`${primary} and ${secondary} cannot both be enabled.`);
+          if (creating) {
+            await client.writeWorkspaceGroupAccess("POST", group.id, type, void 0, {
+              name: access.name,
+              type,
+              groupId: group.id,
+              isAll: all,
+              createResourcePermissionObject: {
+                ...type === "data_source" ? { action: actions } : actions,
+                resourcesToAdd: selected.map((id) => ({ [resourceKey]: id }))
+              }
+            });
+          } else {
+            const current = rule.resources;
+            await client.writeWorkspaceGroupAccess("PUT", group.id, type, rule.id, {
+              ...access.name !== void 0 ? { name: access.name } : {},
+              isAll: all,
+              actions,
+              resourcesToAdd: selected.filter((id) => !current.some((item) => item.id === id)).map((id) => ({ [resourceKey]: id })),
+              resourcesToDelete: current.filter((item) => !selected.includes(item.id)).map((item) => ({ id: item.membership_id })),
+              allowRoleChange: args.allow_role_change ?? false
+            });
+          }
+          return ok({ group_id: group.id, name: group.name, access_rules: await client.listWorkspaceGroupAccess(group.id) });
+        }
+        if (args.action === "rename") {
+          await client.renameWorkspaceGroup(group.id, args.name);
+          return ok({ group_id: group.id, name: args.name, renamed: true });
+        }
+        if (args.action === "delete") {
+          await client.deleteWorkspaceGroup(group.id);
+          return ok({ group_id: group.id, name: group.name, deleted: true });
+        }
+        const members = await client.listWorkspaceGroupMembers(group.id);
+        if (!members.some((member) => member.group_user_id === args.group_user_id)) {
+          throw new Error("Membership not found in this group. Use list_workspace_groups with group_id for current member ids.");
+        }
+        await client.removeWorkspaceGroupMember(args.group_user_id);
+        return ok({ group_id: group.id, group_user_id: args.group_user_id, removed: true });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
 }
 
 // dist/tools/listWorkspaces.js
@@ -69291,7 +69702,7 @@ function manageWorkspaceUsersTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups, change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
+    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups (use manage_workspace_groups), change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
     inputSchema: {
       action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
       organization_user_id: external_exports.string().uuid().optional(),
@@ -69361,6 +69772,8 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     listWorkspaceAppsTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
+    listWorkspaceGroupsTool(client),
+    manageWorkspaceGroupsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
