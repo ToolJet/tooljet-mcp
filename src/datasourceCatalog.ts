@@ -24,7 +24,7 @@ export interface DatasourceQuerySchema {
 }
 
 export interface DatasourceOperationSelection {
-  mode: 'enumerated' | 'remote-spec' | 'single';
+  mode: 'enumerated' | 'remote-spec' | 'single' | 'user-supplied-schema';
   /** Query-option keys that select the operation (`enumerated`). */
   fields?: string[];
   values?: string[];

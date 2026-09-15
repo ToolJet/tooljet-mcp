@@ -46,8 +46,6 @@
   ],
   "single_form_kinds": [
     "graphql",
-    "grpc",
-    "grpcv2",
     "openapi",
     "Presto",
     "redis",
@@ -55,6 +53,10 @@
     "runpy",
     "smtp",
     "spanner"
+  ],
+  "user_supplied_schema_kinds": [
+    "grpc",
+    "grpcv2"
   ],
   "unexplained_default_only_kinds": [],
   "spec_driven_kinds_without_spec_ref": [],

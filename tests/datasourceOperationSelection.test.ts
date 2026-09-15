@@ -31,7 +31,7 @@ describe('datasource operation selection', () => {
       const selection = schema.operationSelection;
       expect(selection, source.kind).toBeDefined();
       if (schema.operations.length) expect(selection!.mode, source.kind).toBe('enumerated');
-      else expect(['remote-spec', 'single'], source.kind).toContain(selection!.mode);
+      else expect(['remote-spec', 'single', 'user-supplied-schema'], source.kind).toContain(selection!.mode);
     }
   });
 
@@ -107,5 +107,14 @@ describe('spec-driven datasource spec references', () => {
       .not.toMatch(/remote API spec/);
     expect(getDatasourceQuerySchema('stripe')!.operationSelection!.description)
       .toMatch(/remote API spec/);
+  });
+});
+
+describe('user-supplied schema kinds', () => {
+  it('separates a caller-supplied .proto from a single query form', () => {
+    for (const kind of ['grpc', 'grpcv2']) {
+      expect(getDatasourceQuerySchema(kind)!.operationSelection!.mode, kind).toBe('user-supplied-schema');
+    }
+    expect(getDatasourceQuerySchema('redis')!.operationSelection!.mode).toBe('single');
   });
 });

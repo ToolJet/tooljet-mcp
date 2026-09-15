@@ -10,6 +10,14 @@ const SQL_FIELD: Record<string, string> = {
   databricks: 'sql_query', awsredshift: 'sql_query', harperdb: 'sql_query',
   athena: 'query', ibmdb: 'query', saphana: 'query',
 };
+// Dialects assessSql already parses, each keeping its SQL in one operation.
+const DIALECTS: Array<[string, string, string]> = [
+  ['spanner', 'sql', 'select id from Singers where n = @p limit 100'],
+  ['Presto', 'presto_sql_query', 'select id from hive.default.bugs limit 20'],
+  ['cosmosdb', 'query', 'select c.id from c where c.type = "bug" limit 25'],
+  ['couchbase', 'query', 'select meta().id from `travel` limit 10'],
+  ['salesforce', 'soql_query', 'select Id, Name from Account limit 50'],
+];
 
 describe('SQL kinds newly covered by the generic classifier', () => {
   it('every added kind publishes a sql contract whose field name we read', () => {
@@ -52,5 +60,28 @@ describe('SQL kinds newly covered by the generic classifier', () => {
   it('still refuses a harperdb operation that carries no SQL', () => {
     const a = assess('harperdb', { operation: 'search_by_hash', table: 'bugs' });
     expect(a.provenRead).toBe(false);
+  });
+
+  it('parses each additional SQL dialect and bounds it', () => {
+    for (const [kind, field, sql] of DIALECTS) {
+      const a = assess(kind, { [field]: sql });
+      expect(a.provenRead, kind).toBe(true);
+      expect(a.maxRows, kind).toBeGreaterThan(0);
+    }
+  });
+
+  it('refuses the write operations of those kinds, which carry no SQL field', () => {
+    for (const [kind, options] of [
+      ['cosmosdb', { operation: 'delete_item', table: 't' }],
+      ['couchbase', { operation: 'delete_document', id: '1' }],
+      ['salesforce', { operation: 'crud', record: '{}' }],
+    ] as Array<[string, Record<string, unknown>]>) {
+      expect(assess(kind, options).provenRead, kind).toBe(false);
+    }
+  });
+
+  it('matches Presto under the lowercased kind string', () => {
+    // ToolJet's kind is `Presto`; the dispatch lowercases before the SQL_KINDS lookup.
+    expect(assess('Presto', { presto_sql_query: 'select id from t limit 5' }).provenRead).toBe(true);
   });
 });

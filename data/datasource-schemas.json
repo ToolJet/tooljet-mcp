@@ -23090,8 +23090,8 @@
     "defaults": {},
     "operations": [],
     "operationSelection": {
-      "mode": "single",
-      "description": "This kind has a single query form; author it against the `default` contract."
+      "mode": "user-supplied-schema",
+      "description": "Operations come from a schema the user attaches to the datasource (an OpenAPI document or a .proto), so they cannot be enumerated at harvest time. Inspect the connected datasource."
     },
     "contracts": {
       "default": {
@@ -23127,8 +23127,8 @@
     "defaults": {},
     "operations": [],
     "operationSelection": {
-      "mode": "single",
-      "description": "This kind has a single query form; author it against the `default` contract."
+      "mode": "user-supplied-schema",
+      "description": "Operations come from a schema the user attaches to the datasource (an OpenAPI document or a .proto), so they cannot be enumerated at harvest time. Inspect the connected datasource."
     },
     "contracts": {
       "default": {

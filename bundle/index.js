@@ -48013,7 +48013,14 @@ var SQL_KINDS = /* @__PURE__ */ new Set([
   "awsredshift",
   "harperdb",
   "ibmdb",
-  "saphana"
+  "saphana",
+  // SQL dialects assessSql already parses; each keeps its SQL in one operation, and the write
+  // operations carry no SQL field, so they still fall through to a refusal.
+  "spanner",
+  "presto",
+  "cosmosdb",
+  "couchbase",
+  "salesforce"
 ]);
 var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
 function record3(value) {
@@ -48453,6 +48460,117 @@ function assessMongo(options2, datasourceId) {
     reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
+var SHEETS_METADATA_READS = /* @__PURE__ */ new Set(["info", "list_all_spreadsheets"]);
+var A1_ROW_RANGE = /^(?:[^!]*!)?[A-Z]*(\d+):[A-Z]*(\d+)$/i;
+function sheetsRangeRows(range) {
+  if (typeof range !== "string" || containsBinding(range))
+    return void 0;
+  const match = range.trim().match(A1_ROW_RANGE);
+  if (!match)
+    return void 0;
+  const rows = Number(match[2]) - Number(match[1]) + 1;
+  return rows > 0 ? rows : void 0;
+}
+function assessSheets(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "googlesheetsv2", ...datasourceId ? { datasourceId } : {} };
+  const spreadsheet = options2.spreadsheet_id;
+  if (SHEETS_METADATA_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (operation !== "read" && operation !== "list_all") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `Google Sheets operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (typeof spreadsheet !== "string" || !spreadsheet.trim() || containsBinding(spreadsheet)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: "Google Sheets spreadsheet_id is missing or not statically known."
+    };
+  }
+  const sheet = typeof options2.sheet === "string" && options2.sheet.trim() ? `:${options2.sheet.trim()}` : "";
+  const source2 = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === "read" ? sheetsRangeRows(options2.spreadsheet_range) : void 0;
+  const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: !bounded,
+    requiresRemoteReadConfirmation: true,
+    source: source2,
+    maxRows,
+    ...identity,
+    ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
+  };
+}
+function assessDynamo(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "dynamodb", ...datasourceId ? { datasourceId } : {} };
+  const table = options2.table;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!["get_item", "query_table", "scan_table", "describe_table"].includes(operation)) {
+    return refuse(`DynamoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  if (typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return refuse("DynamoDB table is missing or not statically known.");
+  }
+  const source2 = { kind: "gui_table", value: table.trim().toLowerCase() };
+  if (operation === "get_item" || operation === "describe_table") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    source: source2,
+    ...identity,
+    reason: `DynamoDB ${operation} has no statically provable row limit.`
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -48730,6 +48848,10 @@ function assessQueryRead(query) {
     return assessSupabase(options2, datasourceId);
   if (kind === "mongodb")
     return assessMongo(options2, datasourceId);
+  if (kind === "googlesheetsv2")
+    return assessSheets(options2, datasourceId);
+  if (kind === "dynamodb")
+    return assessDynamo(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -48756,7 +48878,7 @@ function assessQueryRead(query) {
   if (SQL_KINDS.has(kind)) {
     if (operation === "list_rows" || options2.mode === "gui")
       return assessListRows(kind, options2, datasourceId);
-    const sql = ["query", "sql_query", "sql"].map((field) => options2[field]).find((value) => typeof value === "string" && !!value.trim());
+    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options2[field]).find((value) => typeof value === "string" && !!value.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,

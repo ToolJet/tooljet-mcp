@@ -13,6 +13,7 @@ export function buildDatasourceCoverage(schemas) {
   const singleFormKinds = [];
   const unexplainedDefaultOnlyKinds = [];
   const specDrivenKindsWithoutSpecRef = [];
+  const userSuppliedSchemaKinds = [];
   const kindsWithoutContracts = [];
   const knownResponseKinds = new Set();
   const opaqueEndpointKinds = new Set();
@@ -37,6 +38,7 @@ export function buildDatasourceCoverage(schemas) {
         if (!(schema.operationSelection.specs || []).length) specDrivenKindsWithoutSpecRef.push(kind);
       }
       else if (mode === 'single') singleFormKinds.push(kind);
+      else if (mode === 'user-supplied-schema') userSuppliedSchemaKinds.push(kind);
       else unexplainedDefaultOnlyKinds.push(kind);
     }
 
@@ -83,6 +85,7 @@ export function buildDatasourceCoverage(schemas) {
     default_only_kinds: defaultOnlyKinds,
     remote_spec_operation_kinds: remoteSpecKinds,
     single_form_kinds: singleFormKinds,
+    user_supplied_schema_kinds: userSuppliedSchemaKinds,
     unexplained_default_only_kinds: unexplainedDefaultOnlyKinds,
     spec_driven_kinds_without_spec_ref: specDrivenKindsWithoutSpecRef,
     response_contracts: {
@@ -158,6 +161,7 @@ function checkCoverage() {
     `Operations: ${coverage.kinds_with_named_operations} kinds enumerate them, ` +
     `${coverage.remote_spec_operation_kinds.length} defer to a remote spec, ` +
     `${coverage.single_form_kinds.length} have a single form, ` +
+    `${coverage.user_supplied_schema_kinds.length} take a user-supplied schema, ` +
     `${coverage.unexplained_default_only_kinds.length} unexplained; ` +
     `${coverage.spec_driven_kinds_without_spec_ref.length} spec-driven without a spec reference.`
   );

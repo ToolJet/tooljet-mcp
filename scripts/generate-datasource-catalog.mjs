@@ -225,7 +225,10 @@ function findRemoteSpecField(container, found = []) {
   return found[0] || null;
 }
 
-function operationSelection(properties, contracts) {
+// grpc/grpcv2 ship an empty operations.json because the caller supplies a .proto at connect time.
+const USER_SUPPLIED_SCHEMA_KINDS = new Set(['grpc', 'grpcv2']);
+
+function operationSelection(kind, properties, contracts) {
   const named = Object.keys(contracts).filter((operation) => operation !== 'default');
   if (named.length) {
     // A nested selection (weaviate: data_type then operation_<type>) names its contract by joining
@@ -252,6 +255,14 @@ function operationSelection(properties, contracts) {
         : 'The operation list is served by the remote API spec at query-authoring time, not by the ' +
           'ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource ' +
           'in ToolJet or the spec itself before authoring a query.',
+    };
+  }
+  if (USER_SUPPLIED_SCHEMA_KINDS.has(kind)) {
+    return {
+      mode: 'user-supplied-schema',
+      description:
+        'Operations come from a schema the user attaches to the datasource (an OpenAPI document or ' +
+        'a .proto), so they cannot be enumerated at harvest time. Inspect the connected datasource.',
     };
   }
   return {
@@ -438,7 +449,7 @@ for (const collection of pluginCollections) {
       continue;
     }
     const operations = Object.keys(contracts).filter((operation) => operation !== 'default');
-    const selection = operationSelection(properties, contracts);
+    const selection = operationSelection(source.kind, properties, contracts);
     schemas[source.kind] = {
       kind: source.kind,
       name: source.name || querySchema.title || source.kind,
