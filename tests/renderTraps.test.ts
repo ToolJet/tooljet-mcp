@@ -126,13 +126,14 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     expect(ok.errors.some((e) => e.includes('readable minimum'))).toBe(false);
   });
 
-  it('rejects a projection whose chip markup short-circuits at an || fallback', () => {
+  it('warns about chip short-circuits with unknown lookup keys without executing the projection', () => {
     const binding = String.raw`{{queries.opscc_users_list.data.map(r => ({id:r.id,name:r.name,email:r.email,role:r.role,status:'<'+'span style="display:inline-block;white-space:nowrap;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:'+{"Aktiv":"#DCFCE7","Eingeladen":"#DBEAFE","Deaktiviert":"#FEE2E2"}[r.status]||'#F3F4F6'+';color:'+{"Aktiv":"#166534","Eingeladen":"#1E40AF","Deaktiviert":"#991B1B"}[r.status]||'#374151'+'">'+r.status+'<'+'/span>',last_login_at:r.last_login_at}))}}`;
     const table = (data: string) => lintComponents([{ type: 'Table', name: 'usersTable', properties: { data: { value: data }, columns: { value: [{ name: 'Name', key: 'name', columnType: 'string', columnSize: 160 }, { name: 'Status', key: 'status', columnType: 'html', columnSize: 140 }] }, rowsPerPage: { value: 5 } }, layouts: { desktop: { top: 200, left: 2, width: 39, height: 400 } } }] as any);
-    expect(table(binding).errors.some((e) => e.includes('column "status"') && e.includes('broken markup'))).toBe(true);
+    expect(table(binding).warnings.some((e) => e.includes('column "status"') && e.includes('short-circuit'))).toBe(true);
     const fixed = binding.replace("+{\"Aktiv\":\"#DCFCE7\",\"Eingeladen\":\"#DBEAFE\",\"Deaktiviert\":\"#FEE2E2\"}[r.status]||'#F3F4F6'+", "+({\"Aktiv\":\"#DCFCE7\",\"Eingeladen\":\"#DBEAFE\",\"Deaktiviert\":\"#FEE2E2\"}[r.status]||'#F3F4F6')+").replace("+{\"Aktiv\":\"#166534\",\"Eingeladen\":\"#1E40AF\",\"Deaktiviert\":\"#991B1B\"}[r.status]||'#374151'+", "+({\"Aktiv\":\"#166534\",\"Eingeladen\":\"#1E40AF\",\"Deaktiviert\":\"#991B1B\"}[r.status]||'#374151')+");
     expect(fixed).not.toBe(binding);
     expect(table(fixed).errors.some((e) => e.includes('broken markup'))).toBe(false);
+    expect(table(fixed).warnings.some((e) => e.includes('short-circuit'))).toBe(false);
   });
 
   it('does not assume ten rows when pagination is off', () => {

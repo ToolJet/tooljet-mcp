@@ -803,94 +803,142 @@ export function lintStatisticsRows(components: LintComponent[]): string[] {
   return errors;
 }
 
-/** Find the short-circuit that blanks a Table column, WITHOUT executing the projection.
- *
- *  Round ten (2026-09-12): `'...background:' + lookup[r.status] || '#EEE' + '">' + r.status + '</span>'`
- *  binds as `('...' + lookup[r.status]) || ('#EEE' + ...)`, so when the lookup hits the left side wins
- *  and every cell renders an unterminated tag. Four of four pages had a blank Status column.
- *
- *  This used to evaluate the expression in a Node `vm` context against a proxy row. That was a
- *  mistake: `vm` is explicitly not a security boundary, host objects passed in as proxies give the
- *  guest a path back out through constructor chains (a probe reached `process.version`), and the
- *  `timeout` only bounds compilation, not the later call. A linter that runs model-authored code
- *  inside the MCP server is a remote code execution surface, and no timeout makes that acceptable.
- *
- *  The defect is syntactic, so detect it syntactically: a `||` that sits inside a string concatenation
- *  without parentheses around the fallback. That is the whole bug, and it needs no interpreter. */
-export function lintTableProjectionRender(spec: LintComponent): string[] {
+/** Inspect syntax only. Never execute model-authored bindings, even in a Node vm.
+ * Property boundaries and operator precedence belong to the parser, not a character scan.
+ * Only provably unterminated opening tags in explicitly HTML columns block writes. */
+export function lintTableProjectionRender(spec: LintComponent, warnings: string[] = []): string[] {
   if (spec.type !== 'Table') return [];
-  const props = spec.properties ?? {};
-  const data = propVal(props, 'data');
+  const data = propVal(spec.properties, 'data');
   if (typeof data !== 'string') return [];
-  const trimmed = data.trim();
-  if (!trimmed.startsWith('{{') || !trimmed.endsWith('}}') || !trimmed.includes('.map(')) return [];
-  const label = spec.name ?? spec.type;
+  const binding = data.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!binding) return [];
+  let root: unknown;
+  try { root = parseExpression(binding[1]); } catch { return []; } // syntax lint owns parse errors
+  type Ast = Record<string, any>;
+  type Literal = string | number | boolean | null | undefined;
   const errors: string[] = [];
+  const columns = propVal(spec.properties, 'columns');
+  const reported = new Map<string, { proven: boolean; message: string }>();
 
-  // Scan the projection for `... + <expr> || <expr> + ...`: an unparenthesised || with concatenation
-  // on at least one side. Depth tracking keeps it from firing on a || already wrapped in parentheses,
-  // which is the correct form and must stay silent.
-  const body = trimmed.slice(2, -2);
-  // A copy with every string literal blanked out. Property names are read from THIS, because the
-  // markup being concatenated is full of CSS like `background:` and the nearest `x:` inside a string
-  // is not the column being built.
-  const masked = (() => {
-    const out = body.split('');
-    for (let i = 0; i < out.length; i += 1) {
-      const q = out[i];
-      if (q !== '"' && q !== "'" && q !== '`') continue;
-      let j = i + 1;
-      while (j < out.length && out[j] !== q) {
-        if (out[j] === '\\') { out[j] = ' '; j += 1; }
-        if (j < out.length) out[j] = ' ';
-        j += 1;
+  // Bounded abstract evaluation of literals only: no calls, getters, identifiers or runtime code.
+  // null means unknown, not invalid. Dynamic keys and inherited properties stay unknown.
+  const variants = (node: Ast, depth = 0): Literal[] | null => {
+    if (!node || depth > 32) return null;
+    if (['StringLiteral', 'NumericLiteral', 'BooleanLiteral'].includes(node.type)) return [node.value];
+    if (node.type === 'NullLiteral') return [null];
+    if (node.type === 'LogicalExpression' && node.operator === '||') {
+      const left = variants(node.left, depth + 1);
+      if (!left) return null;
+      if (left.every(Boolean)) return left;
+      if (left.every((v) => !v)) return variants(node.right, depth + 1);
+      return null;
+    }
+    if (node.type === 'BinaryExpression' && node.operator === '+') {
+      const left = variants(node.left, depth + 1), right = variants(node.right, depth + 1);
+      if (!left || !right || left.length * right.length > 16) return null;
+      const values: Literal[] = [];
+      for (const a of left) for (const b of right) {
+        // Only string concatenation; this check does not need to evaluate arithmetic.
+        if (typeof a !== 'string' && typeof b !== 'string') return null;
+        const value = String(a) + String(b);
+        if (value.length > 8192) return null;
+        values.push(value);
       }
-      out[i] = ' ';
-      if (j < out.length) out[j] = ' ';
-      i = j;
+      return values;
     }
-    return out.join('');
-  })();
-  // The question is not "is this || at the top level" — inside .map(r => ({...})) nothing is. It is
-  // "was this || wrapped in parentheses of its own". Walk back from the || to the nearest + that
-  // concatenates it; if an unclosed ( was opened in between, the fallback is grouped and the binding
-  // is correct. That is exactly the difference between the broken and fixed forms of this bug.
-  for (let i = 0; i < body.length - 1; i += 1) {
-    const ch = body[i];
-    if (ch === '"' || ch === "'" || ch === '`') {
-      const quote = ch;
-      i += 1;
-      while (i < body.length && body[i] !== quote) i += body[i] === '\\' ? 2 : 1;
-      continue;
+    if (node.type === 'TemplateLiteral' && node.expressions.length === 0) return [node.quasis[0].value.cooked];
+    if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type) && node.object?.type === 'ObjectExpression') {
+      const props = node.object.properties;
+      if (props.length > 15 || props.some((p: Ast) => p.type !== 'ObjectProperty' || p.computed || p.method ||
+          (p.key.name ?? p.key.value) === '__proto__')) return null;
+      const key = node.computed
+        ? (['StringLiteral', 'NumericLiteral'].includes(node.property?.type) ? String(node.property.value) : undefined)
+        : node.property?.name;
+      if (key === undefined) return null;
+      const prop = [...props].reverse().find((p: Ast) => String(p.key.name ?? p.key.value) === key);
+      return prop ? variants(prop.value, depth + 1) : null;
     }
-    if (ch !== '|' || body[i + 1] !== '|') continue;
-
-    let grouped = false;
-    let concatenated = false;
-    let open = 0;
-    for (let j = i - 1; j >= 0; j -= 1) {
-      const c = body[j];
-      if (c === ')' || c === ']' || c === '}') open -= 1;
-      else if (c === '(' || c === '[' || c === '{') {
-        open += 1;
-        if (open > 0) { grouped = true; break; }  // an unclosed opener: the || sits inside a group
-      } else if (c === '+' && open === 0) { concatenated = true; break; }
+    return null;
+  };
+  const skeleton = (node: Ast, depth = 0): string => {
+    if (!node || depth > 32) return '?';
+    if (node.type === 'StringLiteral') return node.value;
+    if (node.type === 'BinaryExpression' && node.operator === '+') return (skeleton(node.left, depth + 1) + skeleton(node.right, depth + 1)).slice(0, 8192);
+    if (node.type === 'TemplateLiteral') return node.quasis.map((q: Ast) => q.value.cooked ?? '').join('?');
+    return '?';
+  };
+  // Recognize actual opening tags and respect quoted ">" inside attributes. Not plain "x < y".
+  const unfinishedTag = (text: string): boolean => {
+    const start = /<[A-Za-z][\w:-]*(?=[\s/>]|$)/g;
+    let match: RegExpExecArray | null;
+    while ((match = start.exec(text))) {
+      let quote = '', closed = false;
+      for (let i = start.lastIndex; i < text.length; i++) {
+        const c = text[i];
+        if (quote) { if (c === quote) quote = ''; }
+        else if (c === '"' || c === "'") quote = c;
+        else if (c === '>') { start.lastIndex = i + 1; closed = true; break; }
+      }
+      if (!closed) return true;
     }
-    if (grouped || !concatenated) continue;
-    // And something is concatenated onto the fallback on the right, which is what makes it swallow
-    // the rest of the markup rather than merely defaulting a value.
-    if (!/^\s*[^;,)\]}]*\+/.test(body.slice(i + 2, i + 160))) continue;
-
-    const keys = masked.slice(0, i).match(/([A-Za-z_$][\w$]*)\s*:/g);
-    const key = keys?.length ? keys[keys.length - 1].replace(/\s*:$/, '') : '';
-    errors.push(
-      `Table "${label}"${key ? ` column "${key}"` : ''}: the data projection renders broken markup for this cell. ` +
-        'An unparenthesised || inside a string concatenation binds as (a + lookup) || (fallback + rest) and ' +
-        'short-circuits, so the cell emits an unterminated tag and the column shows blank. ' +
-        'Wrap the lookup and its fallback together: (lookup[x] || fallback).'
-    );
-    break;
-  }
+    return false;
+  };
+  const inspect = (node: Ast, key: string, depth = 0, canBlock = true): void => {
+    if (!node || depth > 32) return;
+    if (node.type === 'ConditionalExpression') {
+      const test = variants(node.test);
+      if (!test || !test.every((v) => !v)) inspect(node.consequent, key, depth + 1, canBlock);
+      if (!test || !test.every(Boolean)) inspect(node.alternate, key, depth + 1, canBlock);
+      return;
+    }
+    if (node.type !== 'LogicalExpression' || node.operator !== '||') return;
+    // A || nested under concatenation is grouped; its suffix still runs. Inspect only returned
+    // logical branches, not arbitrary descendants, helper calls, or unrelated object properties.
+    inspect(node.left, key, depth + 1, canBlock);
+    const left = variants(node.left);
+    if (!left || !left.every(Boolean)) inspect(node.right, key, depth + 1, canBlock);
+    const possible = unfinishedTag(skeleton(node.left)) || left?.some((v) => typeof v === 'string' && unfinishedTag(v));
+    if (!possible) return;
+    const column = Array.isArray(columns) ? columns.find((c: any) => c?.key === key) : undefined;
+    const proven = canBlock && column?.columnType === 'html' && left !== null &&
+      left.every((v) => typeof v === 'string' && v.length > 0 && unfinishedTag(v));
+    const message = 'Table "' + (spec.name ?? spec.type) + '" column "' + key + '": ' +
+      (proven ? 'the data projection renders broken markup for this cell. ' :
+        'the data projection may short-circuit while constructing HTML; runtime values must be verified. ') +
+      'The left branch of || contains an unfinished opening tag. When truthy, it skips the fallback and its closing markup. ' +
+      'If the fallback is part of the attribute, group it before concatenating the closing markup: (lookup[x] || fallback).';
+    if (!reported.has(key) || (proven && !reported.get(key)!.proven)) reported.set(key, { proven, message });
+  };
+  let remaining = 20_000;
+  const visit = (value: unknown, depth = 0): void => {
+    if (--remaining < 0 || depth > 128 || !value || typeof value !== 'object') return;
+    if (Array.isArray(value)) { for (const item of value) visit(item, depth + 1); return; }
+    const node = value as Ast, callee = node.callee;
+    if (['CallExpression', 'OptionalCallExpression'].includes(node.type) &&
+        ['MemberExpression', 'OptionalMemberExpression'].includes(callee?.type) &&
+        (callee.computed ? callee.property?.value === 'map' : callee.property?.name === 'map') &&
+        node.arguments?.[0]?.type === 'ArrowFunctionExpression' && node.arguments[0].body.type === 'ObjectExpression') {
+      // Only the outermost returned map proves a rendered value. Intermediate maps
+      // can be overwritten, filtered or consumed as scratch data by a later step.
+      // Within an object, the last property wins; a later spread/computed key makes
+      // the effective value unknown, so it cannot justify a blocking error.
+      const seen = new Set<string>();
+      let unknownOverride = false;
+      for (const prop of [...node.arguments[0].body.properties].reverse()) {
+        if (prop.type !== 'ObjectProperty' || (prop.computed && prop.key.type !== 'StringLiteral')) {
+          unknownOverride = true;
+          continue;
+        }
+        const key = String(prop.key.name ?? prop.key.value);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        inspect(prop.value, key, 0, node === root && !unknownOverride);
+      }
+    }
+    for (const child of Object.values(node)) visit(child, depth + 1);
+  };
+  visit(root);
+  for (const { proven, message } of reported.values()) (proven ? errors : warnings).push(message);
   return errors;
 }
 
@@ -2510,7 +2558,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
-    errors.push(...lintTableProjectionRender(c));
+    errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
     warnings.push(...r.warnings);
