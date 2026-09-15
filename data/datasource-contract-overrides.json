@@ -210,6 +210,72 @@
       }
     }
   },
+  "hubspot": {
+    "notes": [
+      "HubSpot selects endpoints from installed OpenAPI specs. Call inspect_datasource_schema listTables without schema to list spec groups, then pass schema to listTables/getEndpointSchema. Copy the returned query_options, including specType.",
+      "Use HTTP operation, path, params.path, params.query and params.request. hubspot_operation is editor metadata, not an executable endpoint.",
+      "Read CRM Properties and Pipelines endpoints to verify workspace-specific fields and stage IDs before configuring writes. Do not invent inventory fields or status values. Unsupported workflows must be reported."
+    ],
+    "introspection_methods": [
+      "listTables",
+      "getEndpointSchema"
+    ],
+    "operations": {
+      "default": {
+        "required": [
+          "operation",
+          "path",
+          "specType",
+          "params.path",
+          "params.query",
+          "params.request"
+        ],
+        "fields": {
+          "operation": {
+            "type": "string",
+            "allowedValues": [
+              "get",
+              "post",
+              "patch",
+              "put",
+              "delete"
+            ],
+            "description": "Lowercase HTTP method from getEndpointSchema. Only static GET is eligible for MCP read verification after user approval."
+          },
+          "path": {
+            "type": "string",
+            "description": "Static endpoint path from the installed spec, with placeholders populated through params.path."
+          },
+          "specType": {
+            "type": "string",
+            "description": "Exact serialized editor spec key returned by inspect_datasource_schema; preserve it when saving or updating queries."
+          },
+          "params.path": {
+            "type": "object",
+            "description": "Path placeholder values keyed by placeholder name; use {} if none."
+          },
+          "params.query": {
+            "type": "object",
+            "description": "Query parameters including pagination/properties; use {} if none."
+          },
+          "params.request": {
+            "type": "object",
+            "description": "JSON body. CRM writes generally wrap fields in {properties:{...}}. Use {} for reads."
+          },
+          "selectedOperation": {
+            "type": "object",
+            "description": "Optional editor metadata. Does not replace operation/path/params."
+          }
+        },
+        "response": {
+          "type": "object|array|string",
+          "status": "runtime-dependent",
+          "source": "remote-api",
+          "description": "The parsed HubSpot response body directly. CRM collection reads commonly expose data.results and nested record.properties. Inspect the endpoint response or a verified read; paginate using the endpoint contract."
+        }
+      }
+    }
+  },
   "postgresql": {
     "response_groups": [
       {

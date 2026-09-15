@@ -1,3 +1,4 @@
+import { hubspotQueryIssues } from './hubspotQuery.js';
 import {
   COMMON_QUERY_OPTION_FIELDS,
   getDatasourceQuerySchema,
@@ -51,6 +52,7 @@ function valueAtPath(source: Record<string, unknown>, path: string): unknown {
 // Saying so keeps a caller from concluding the datasource is unsupported and silently substituting
 // another one.
 function describeOperationSelection(schema: DatasourceQuerySchema): string {
+  if (schema.kind === 'hubspot') return 'Use inspect_datasource_schema getEndpointSchema and copy query_options (operation, path, specType and params).';
   const selection = schema.operationSelection;
   if (schema.operations.length) {
     const fields = selection?.fields?.length ? selection.fields.join(' + ') : 'operation';
@@ -304,6 +306,11 @@ function influxTransformWarnings(kind: string, options: Record<string, unknown>)
 
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
+  if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
+  if (kind === 'hubspot' && options.operation !== 'get' &&
+      (isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange))) {
+    errors.push({ code: 'automatic_hubspot_write', message: 'HubSpot writes must run from an explicit user action, not on page load or dependency changes.' });
+  }
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
   warnings.push(...transformationWarnings(options));
   warnings.push(...influxTransformWarnings(kind, options));
