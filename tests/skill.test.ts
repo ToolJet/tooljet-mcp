@@ -203,7 +203,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
 
   it('documents the Kanban selection dependency and blank custom-card modal caveat', () => {
     expect(guidance).toMatch(/onCardSelected.*only when.*openModalOnCardClick.*true/is);
-    expect(guidance).toMatch(/custom Html child.*native modal.*blank/is);
+    expect(guidance).toMatch(/custom Html child.*native modal.*blank.*slot_name:"modal"/is);
   });
 
   it('publishes modern component names instead of legacy palette choices', () => {

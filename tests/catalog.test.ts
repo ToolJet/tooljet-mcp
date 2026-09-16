@@ -271,7 +271,8 @@ describe('catalog', () => {
   it('serves the Kanban interaction dependency and custom-card modal caveat', () => {
     const rule = getComponentSchema('Kanban')!.authoringHints!.cardContent as any;
     expect(rule.interactionRule.selectionDependency).toMatch(/onCardSelected.*only when openModalOnCardClick.*true/i);
-    expect(rule.interactionRule.customHtmlModal).toMatch(/custom Html.*built-in card modal.*blank/i);
+    expect(rule.interactionRule.customHtmlModal).toContain('slot_name:"modal"');
+    expect(rule.interactionRule.customHtmlModal).toContain('Page-root controls remain behind the modal backdrop');
   });
 
   it('describes the runtime movement payload rather than moveCard action arguments', () => {

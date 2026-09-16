@@ -89,6 +89,10 @@ The event is attached to the **Table component id** with target `table_column`. 
 
 ToolJet updates the Table's `selectedRow` and `selectedRowId` before running this handler. Bind the query/action to `{{components.<table>.selectedRow.<field>}}`. Use `rowData` inside button configuration only; do not assume it is the event action context. `source_type:"table_action"` exists only for already-present legacy action buttons and should not be authored in new apps.
 
+### Row actions that consume input
+
+A Table row action is not a Form submission: a field label, placeholder or `validation.mandatory` does not automatically guard a separate `run-query` action. When this particular decision requires input (for example a rejection/recount reason), encode its prerequisite in the event's `action.runOnlyIf` or a validating RunJS step before the mutation; also reflect it in the button's `disableButton` and explain what is missing. For a required reason, check `String(components.reason.value ?? '').trim().length > 0` along with the selected record's key and allowed state. Use `rowData` only in the button property, and `components.<table>.selectedRow` in the event. An optional note for another action can remain optional; do not make the whole shared field mandatory. UI guards do not replace datasource authorization or concurrent-write protection. See `references/forms.md` for conditional decision/history sequencing.
+
 ### Row-specific loading
 
 For "Mark as closed" or another row mutation, set the clicked Button column's `buttons[].loadingState` to query loading **and** record identity. A bare `{{queries.runjs1.isLoading}}` makes every row spin. With a stable selection during a single in-flight action, use this guarded form of `queries.runjs1.isLoading && components.table1.selectedRow.id === rowData.id`:
