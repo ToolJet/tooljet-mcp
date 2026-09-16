@@ -62253,6 +62253,7 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
+      ...schema.operationSelection ? { operation_selection: schema.operationSelection } : {},
       ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
     });
     if (!options2.operation) {
@@ -64015,9 +64016,22 @@ var SQL_KINDS = /* @__PURE__ */ new Set([
   "clickhouse",
   "oracle",
   "oracledb",
-  "sqlite"
+  "sqlite",
+  "databricks",
+  "athena",
+  "awsredshift",
+  "harperdb",
+  "ibmdb",
+  "saphana",
+  // SQL dialects assessSql already parses; each keeps its SQL in one operation, and the write
+  // operations carry no SQL field, so they still fall through to a refusal.
+  "spanner",
+  "presto",
+  "cosmosdb",
+  "couchbase",
+  "salesforce"
 ]);
-var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift"]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
 function record3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
 }
@@ -64342,6 +64356,279 @@ function assessSupabase(options2, datasourceId) {
     ...identity
   };
 }
+var MONGO_ROW_READS = /* @__PURE__ */ new Set(["find_many", "distinct"]);
+var MONGO_SINGLE_READS = /* @__PURE__ */ new Set(["find_one"]);
+var MONGO_COUNT_READS = /* @__PURE__ */ new Set(["count", "count_total"]);
+var MONGO_WRITE_STAGES = ["$out", "$merge"];
+function mongoOptions(raw) {
+  const direct = record3(raw);
+  if (direct)
+    return direct;
+  if (typeof raw !== "string" || !raw.trim())
+    return void 0;
+  try {
+    return record3(JSON.parse(raw));
+  } catch {
+    return void 0;
+  }
+}
+function mongoPipelineWrites(pipeline) {
+  const text = typeof pipeline === "string" ? pipeline : JSON.stringify(pipeline ?? "");
+  return MONGO_WRITE_STAGES.some((stage) => text.includes(stage));
+}
+function assessMongo(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "mongodb", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const collection = options2.collection;
+  if (typeof collection !== "string" || !collection.trim() || containsBinding(collection)) {
+    return refuse("MongoDB collection is missing or not statically known.");
+  }
+  const source2 = { kind: "gui_table", value: collection.trim().toLowerCase() };
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options2.filter;
+    const fullSourceCount = filter == null || filter === "" || !!record3(filter) && Object.keys(record3(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  if (operation === "aggregate") {
+    if (mongoPipelineWrites(options2.pipeline)) {
+      return refuse("MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.");
+    }
+    const maxRows2 = staticPositiveInteger(mongoOptions(options2.options)?.limit);
+    return {
+      provenRead: true,
+      directSafe: maxRows2 !== void 0 && maxRows2 <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: maxRows2 === void 0 || maxRows2 > LARGE_READ_ROW_THRESHOLD,
+      source: source2,
+      maxRows: maxRows2,
+      ...identity,
+      ...maxRows2 === void 0 ? { reason: "MongoDB aggregate has no statically provable row limit; add options.limit." } : {}
+    };
+  }
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(`MongoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  const maxRows = staticPositiveInteger(mongoOptions(options2.options)?.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows,
+      source: source2,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    maxRows,
+    source: source2,
+    ...identity,
+    reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+var SHEETS_METADATA_READS = /* @__PURE__ */ new Set(["info", "list_all_spreadsheets"]);
+var A1_ROW_RANGE = /^(?:[^!]*!)?[A-Z]*(\d+):[A-Z]*(\d+)$/i;
+function sheetsRangeRows(range) {
+  if (typeof range !== "string" || containsBinding(range))
+    return void 0;
+  const match = range.trim().match(A1_ROW_RANGE);
+  if (!match)
+    return void 0;
+  const rows = Number(match[2]) - Number(match[1]) + 1;
+  return rows > 0 ? rows : void 0;
+}
+function assessSheets(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "googlesheetsv2", ...datasourceId ? { datasourceId } : {} };
+  const spreadsheet = options2.spreadsheet_id;
+  if (SHEETS_METADATA_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (operation !== "read" && operation !== "list_all") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `Google Sheets operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (typeof spreadsheet !== "string" || !spreadsheet.trim() || containsBinding(spreadsheet)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: "Google Sheets spreadsheet_id is missing or not statically known."
+    };
+  }
+  const sheet = typeof options2.sheet === "string" && options2.sheet.trim() ? `:${options2.sheet.trim()}` : "";
+  const source2 = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === "read" ? sheetsRangeRows(options2.spreadsheet_range) : void 0;
+  const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: !bounded,
+    requiresRemoteReadConfirmation: true,
+    source: source2,
+    maxRows,
+    ...identity,
+    ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
+  };
+}
+function assessDynamo(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "dynamodb", ...datasourceId ? { datasourceId } : {} };
+  const table = options2.table;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!["get_item", "query_table", "scan_table", "describe_table"].includes(operation)) {
+    return refuse(`DynamoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  if (typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return refuse("DynamoDB table is missing or not statically known.");
+  }
+  const source2 = { kind: "gui_table", value: table.trim().toLowerCase() };
+  if (operation === "get_item" || operation === "describe_table") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    source: source2,
+    ...identity,
+    reason: `DynamoDB ${operation} has no statically provable row limit.`
+  };
+}
+function assessCouch(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "couchdb", ...datasourceId ? { datasourceId } : {} };
+  if (operation === "retrieve_record") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (!["list_records", "get_view", "find"].includes(operation)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `CouchDB operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  const limit = operation === "find" ? mongoOptions(options2.body)?.limit : options2.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? `CouchDB ${operation} has no statically provable row limit; set ${operation === "find" ? "limit in the request body" : "limit"}.` : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -64617,6 +64904,14 @@ function assessQueryRead(query) {
     return assessInflux(options2, datasourceId);
   if (kind === "supabase")
     return assessSupabase(options2, datasourceId);
+  if (kind === "mongodb")
+    return assessMongo(options2, datasourceId);
+  if (kind === "googlesheetsv2")
+    return assessSheets(options2, datasourceId);
+  if (kind === "dynamodb")
+    return assessDynamo(options2, datasourceId);
+  if (kind === "couchdb")
+    return assessCouch(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -64643,7 +64938,7 @@ function assessQueryRead(query) {
   if (SQL_KINDS.has(kind)) {
     if (operation === "list_rows" || options2.mode === "gui")
       return assessListRows(kind, options2, datasourceId);
-    const sql = typeof options2.query === "string" ? options2.query : typeof options2.sql === "string" ? options2.sql : void 0;
+    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options2[field]).find((value) => typeof value === "string" && !!value.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
@@ -64707,6 +65002,17 @@ function valueAtPath(source2, path) {
     cursor = cursor[segment];
   }
   return cursor;
+}
+function describeOperationSelection(schema) {
+  const selection = schema.operationSelection;
+  if (schema.operations.length) {
+    const fields = selection?.fields?.length ? selection.fields.join(" + ") : "operation";
+    return `Set ${fields}. Valid operations: ${schema.operations.join(", ")}.`;
+  }
+  if (selection?.mode === "remote-spec") {
+    return `This kind takes its operation from the remote API spec${selection.specUrl ? ` (${selection.specUrl})` : ""}, not from a fixed list; set ${selection.field ?? "the operation field"} to an operation id from that spec.`;
+  }
+  return "This kind has a single unnamed query form; author it against the default contract.";
 }
 function operationFromOptions(options2, contracts, defaults) {
   const operation = options2.operation ?? defaults.operation;
@@ -64931,12 +65237,13 @@ function validateQueryOptions(kind, options2) {
     });
     return { kind, schemaFound: false, errors, warnings };
   }
+  const operationHint = describeOperationSelection(schema);
   const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: "missing_operation",
       path: schema.contracts.sql ? "mode" : "operation",
-      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(", ") || "default"}.`
+      message: `Datasource "${kind}" needs an operation/mode. ${operationHint}`
     });
     return { kind, schemaFound: true, errors, warnings };
   }
@@ -64945,7 +65252,7 @@ function validateQueryOptions(kind, options2) {
     errors.push({
       code: "invalid_operation",
       path: typeof options2.operation === "string" ? "operation" : "mode",
-      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(", ")}.`
+      message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }
