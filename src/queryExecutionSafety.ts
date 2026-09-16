@@ -1,4 +1,5 @@
 import { assessRedisRead } from './redisReadSafety.js';
+import JSON5 from 'json5';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
@@ -349,26 +350,29 @@ function assessSupabase(options: Record<string, unknown>, datasourceId?: string)
 /* MongoDB, split by effect: the operation decides it, except for `aggregate`, whose pipeline can
    end in a $out/$merge write. Those are refused structurally rather than proven safe. A bounded
    read is directSafe — this is a database the workspace owns, not a remote API. */
-const MONGO_ROW_READS = new Set(['find_many', 'distinct']);
+const MONGO_ROW_READS = new Set(['find_many']);
 const MONGO_SINGLE_READS = new Set(['find_one']);
 const MONGO_COUNT_READS = new Set(['count', 'count_total']);
 const MONGO_WRITE_STAGES = ['$out', '$merge'];
 
-/** The plugin accepts the driver options document as an object or as JSON text. */
+/** Authoring normalizes objects to text; the plugin parses JSON5, not only strict JSON. */
 function mongoOptions(raw: unknown): Record<string, unknown> | undefined {
   const direct = record(raw);
   if (direct) return direct;
   if (typeof raw !== 'string' || !raw.trim()) return undefined;
   try {
-    return record(JSON.parse(raw));
+    if (containsBinding(raw)) return undefined;
+    return record(JSON5.parse(raw));
   } catch {
     return undefined;
   }
 }
 
 function mongoPipelineWrites(pipeline: unknown): boolean {
-  const text = typeof pipeline === 'string' ? pipeline : JSON.stringify(pipeline ?? '');
-  return MONGO_WRITE_STAGES.some((stage) => text.includes(stage));
+  if (Array.isArray(pipeline)) return pipeline.some(mongoPipelineWrites);
+  const obj = record(pipeline);
+  return !!obj && Object.entries(obj).some(([key, value]) =>
+    MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
 }
 
 function assessMongo(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
@@ -383,7 +387,7 @@ function assessMongo(options: Record<string, unknown>, datasourceId?: string): Q
   if (typeof collection !== 'string' || !collection.trim() || containsBinding(collection)) {
     return refuse('MongoDB collection is missing or not statically known.');
   }
-  const source = { kind: 'gui_table' as const, value: collection.trim().toLowerCase() };
+  const source = { kind: 'gui_table' as const, value: collection };
 
   if (MONGO_COUNT_READS.has(operation)) {
     const filter = options.filter;
@@ -406,20 +410,38 @@ function assessMongo(options: Record<string, unknown>, datasourceId?: string): Q
   }
 
   if (operation === 'aggregate') {
-    if (mongoPipelineWrites(options.pipeline)) {
+    let pipeline: unknown = options.pipeline;
+    if (containsBinding(pipeline)) return refuse('MongoDB aggregate pipeline is not statically known.');
+    if (typeof pipeline === 'string') {
+      try { pipeline = JSON5.parse(pipeline); } catch { return refuse('MongoDB aggregate pipeline must be valid JSON5 array text.'); }
+    }
+    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record(stage))) {
+      return refuse('MongoDB aggregate pipeline must be a statically known array of stages.');
+    }
+    if (mongoPipelineWrites(pipeline)) {
       return refuse('MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.');
     }
     // An aggregation reshapes rows, so no simpleSourceRead: a collection count cannot bound it.
-    const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
+    // Driver options.limit is ignored by aggregate. Only a final pipeline $limit bounds output;
+    // a later $unwind/$unionWith can expand an earlier limit again.
+    const last = record(pipeline.at(-1));
+    const maxRows = last && Object.keys(last).length === 1 && typeof last.$limit === 'number'
+      ? staticPositiveInteger(last.$limit) : undefined;
     return {
       provenRead: true, directSafe: maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD,
       countOnly: false, selectStar: false,
       requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
       source, maxRows, ...identity,
       ...(maxRows === undefined
-        ? { reason: 'MongoDB aggregate has no statically provable row limit; add options.limit.' }
+        ? { reason: 'MongoDB aggregate has no statically provable row limit; add a final {$limit: N} pipeline stage. options.limit does not bound aggregation output.' }
         : {}),
     };
+  }
+
+  if (operation === 'distinct') {
+    return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: true, source, ...identity,
+      reason: 'MongoDB distinct ignores options.limit and array fields can yield multiple values per document. Use a bounded aggregate with a final $limit stage.' };
   }
 
   if (!MONGO_ROW_READS.has(operation)) {
@@ -813,6 +835,8 @@ export function sameReadSource(target: QueryReadAssessment, count: QueryReadAsse
 export function extractRowCount(result: RunQueryResult): number | undefined {
   if (result.status !== 'ok') return undefined;
   let value: unknown = result.data;
+  // MongoDB count/count_total return a scalar, unlike SQL's one-row result.
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? value : undefined;
   if (record(value)?.result !== undefined) value = record(value)!.result;
   if (Array.isArray(value)) {
     if (value.length !== 1) return undefined;

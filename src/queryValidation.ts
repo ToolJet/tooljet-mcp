@@ -731,6 +731,19 @@ function normalizeWriteColumnMap(columns: unknown): Record<string, unknown> | nu
  * object when something changed, else the original). Call this on every authoring path so a
  * persisted query is never the silently-broken flat shape. */
 export function normalizeQueryOptions(kind: string, options: Record<string, unknown>): Record<string, unknown> {
+  if (kind === 'mongodb' && isObject(options)) {
+    // The plugin's parseEJSON calls JSON5.parse, which receives "[object Object]" for objects.
+    // Preserve string bindings and EJSON markers; only serialize already-structured literals.
+    let result = options;
+    for (const field of ['filter', 'options', 'pipeline', 'document', 'documents', 'update', 'replacement', 'operations']) {
+      const value = options[field];
+      if (value !== null && typeof value === 'object') {
+        if (result === options) result = { ...options };
+        result[field] = JSON.stringify(value);
+      }
+    }
+    return result;
+  }
   if (kind !== 'tooljetdb' || !isObject(options)) return options;
   const operation = typeof options.operation === 'string' ? options.operation : '';
 

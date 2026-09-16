@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { assessQueryRead, LARGE_READ_ROW_THRESHOLD } from '../src/queryExecutionSafety.js';
 
-/* Build 01a0a29e (demo-prod, gpt-5.6-terra) created the query `get_bugs_btrk1` against a connected
-   MongoDB, persisted it, passed lint and contract validation — then died with PartialBuildError
-   because run_queries refused its own verification step: "Datasource kind mongodb has no proven
-   read classifier". The app was fine; the build reported failure. */
 const mongo = (options: Record<string, unknown>) =>
   assessQueryRead({ kind: 'mongodb', data_source_id: 'ds-1', options } as never);
 
@@ -68,10 +64,10 @@ describe('MongoDB read classification', () => {
     }
   });
 
-  it('allows a read-only aggregate, bounded by options.limit', () => {
+  it('allows a read-only aggregate bounded by a final pipeline limit', () => {
     const bounded = mongo({
       operation: 'aggregate', collection: 'bugs',
-      pipeline: '[{"$match": {"open": true}}]', options: '{"limit": 20}',
+      pipeline: '[{"$match": {"open": true}}, {"$limit": 20}]', options: '{}',
     });
     expect(bounded).toMatchObject({ provenRead: true, directSafe: true, maxRows: 20 });
     expect(bounded.simpleSourceRead).toBeUndefined();

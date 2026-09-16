@@ -29694,15 +29694,15 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "pipeline": {
                 "path": "pipeline",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Pipeline",
-                "description": "Enter pipeline"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -29711,11 +29711,15 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "A final {$limit: N} pipeline stage bounds results; options.limit is ignored by aggregate. $out/$merge stages are writes and cannot be automatically verified."
+        ]
       },
       "bulk_write": {
         "operation": "bulk_write",
@@ -29762,21 +29766,24 @@
               },
               "operations": {
                 "path": "operations",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Operations",
-                "description": "Enter operations"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29803,9 +29810,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29836,9 +29843,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -29847,11 +29854,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "count_total": {
         "operation": "count_total",
@@ -29898,9 +29908,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -29909,11 +29919,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "create_collection": {
         "operation": "create_collection",
@@ -29960,15 +29973,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter collection options (e.g., capped, size, max)"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29995,9 +30011,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30028,15 +30044,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30063,9 +30082,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30096,15 +30115,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30137,9 +30159,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30170,15 +30192,19 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "options.limit does not bound distinct results. Prefer a group/unwind aggregation with a final $limit."
         ],
         "response": {
           "type": "unknown",
@@ -30205,9 +30231,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30238,9 +30264,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -30249,11 +30275,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "find_one": {
         "operation": "find_one",
@@ -30273,9 +30302,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30306,9 +30335,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -30317,11 +30346,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object|null",
+          "description": "One matching document, or null when none matches."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "find_one_delete": {
         "operation": "find_one_delete",
@@ -30341,9 +30373,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30374,15 +30406,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30409,9 +30444,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30442,21 +30477,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "replacement": {
                 "path": "replacement",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Replacement",
-                "description": "Enter replacement"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30483,9 +30521,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30516,21 +30554,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "update": {
                 "path": "update",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Update",
-                "description": "Enter update"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30557,9 +30598,9 @@
               },
               "documents": {
                 "path": "documents",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Documents",
-                "description": "Enter document"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30590,15 +30631,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30625,9 +30669,9 @@
               },
               "document": {
                 "path": "document",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Document",
-                "description": "Enter document"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30658,15 +30702,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30693,9 +30740,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30726,21 +30773,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "replacement": {
                 "path": "replacement",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Replacement",
-                "description": "Enter replacement"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30767,9 +30817,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30800,21 +30850,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "update": {
                 "path": "update",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Update",
-                "description": "Enter update"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30841,9 +30894,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -30874,21 +30927,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "update": {
                 "path": "update",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Update",
-                "description": "Enter update"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",

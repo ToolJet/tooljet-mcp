@@ -52,6 +52,7 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
           const options = normalizeQueryOptions(datasource.kind, query.options);
           if (options !== query.options) {
             warnings.push(
+              datasource.kind === 'mongodb' ? `Query "${query.name}": serialized MongoDB document fields to JSON text expected by the plugin.` :
               `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
                 '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
             );

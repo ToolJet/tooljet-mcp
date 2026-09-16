@@ -415,5 +415,313 @@
         ]
       }
     }
+  },
+  "mongodb": {
+    "operations": {
+      "aggregate": {
+        "fields": {
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "pipeline": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "A final {$limit: N} pipeline stage bounds results; options.limit is ignored by aggregate. $out/$merge stages are writes and cannot be automatically verified."
+        ],
+        "response": {
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        }
+      },
+      "bulk_write": {
+        "fields": {
+          "operations": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "count": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        }
+      },
+      "count_total": {
+        "fields": {
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        }
+      },
+      "create_collection": {
+        "fields": {
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "delete_many": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "delete_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "distinct": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "options.limit does not bound distinct results. Prefer a group/unwind aggregation with a final $limit."
+        ]
+      },
+      "find_many": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        }
+      },
+      "find_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "object|null",
+          "description": "One matching document, or null when none matches."
+        }
+      },
+      "find_one_delete": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "find_one_replace": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "replacement": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "find_one_update": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "update": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "insert_many": {
+        "fields": {
+          "documents": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "insert_one": {
+        "fields": {
+          "document": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "replace_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "replacement": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "update_many": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "update": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "update_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "update": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      }
+    }
   }
 }
