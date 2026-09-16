@@ -1,3 +1,4 @@
+import { assessRedisRead } from './redisReadSafety.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
@@ -754,6 +755,7 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   if (kind === 'supabase') return assessSupabase(options, datasourceId);
 
   if (kind === 'mongodb') return assessMongo(options, datasourceId);
+  if (kind === 'redis') return assessRedisRead(options, datasourceId);
 
   if (kind === 'googlesheetsv2') return assessSheets(options, datasourceId);
 

@@ -45332,12 +45332,20 @@
             "fields": {
               "query": {
                 "path": "query",
-                "type": "unknown|binding",
-                "description": "Enter query"
+                "type": "string|binding",
+                "description": "One Redis command as a space-delimited string, e.g. PING, SCAN 0 MATCH cache:* COUNT 50, TYPE cache:one, GET cache:one, or HGETALL cache:one. The plugin splits on literal spaces; it does not parse shell quoting or multiline scripts."
               }
             },
-            "required": []
+            "required": [
+              "query"
+            ]
           }
+        ],
+        "notes": [
+          "Redis uses one default query contract and no operation selector. An empty named-operations list does not mean the datasource is unavailable.",
+          "Discover actual keys with SCAN, then TYPE and type-appropriate reads. Continue the returned cursor until 0 if full discovery is needed; COUNT is a hint, not a guaranteed page size. Do not use KEYS for discovery.",
+          "Scalar and bounded range reads can run directly. SCAN and whole collection reads require singular run_query with confirmed read access, not run_queries. Writes only belong to explicit user actions.",
+          "Responses depend on the command: GET is string or null; HGETALL is an alternating field/value array; SCAN returns [cursor, keys]. Parse only the observed structure."
         ],
         "response": {
           "type": "unknown",

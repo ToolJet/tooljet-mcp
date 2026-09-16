@@ -62266,7 +62266,12 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       return {
         kind,
         error: `Unknown operation "${options2.operation}" for datasource kind "${kind}".`,
-        operations: schema.operations
+        operations: schema.operations,
+        ...schema.operationSelection?.mode === "single" ? {
+          operation_selection: schema.operationSelection,
+          available_contracts: Object.keys(schema.contracts),
+          recovery: 'This datasource has one query form, not zero capabilities. Request operation:"default" (or omit operation) to read its contract. Put the command in the documented query option; do not invent an operation selector.'
+        } : {}
       };
     }
     if (sections.has("request")) {
@@ -64001,6 +64006,85 @@ function persistedEventSpecs(summary) {
   });
 }
 
+// dist/redisReadSafety.js
+function assessRedisRead(options2, datasourceId) {
+  const base = {
+    datasourceKind: "redis",
+    ...datasourceId ? { datasourceId } : {},
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false
+  };
+  const query = options2.query;
+  if (typeof query !== "string" || !query || query.includes("{{") || /[\r\n\t\0]/.test(query)) {
+    return { ...base, reason: "Redis needs one static space-delimited command in options.query." };
+  }
+  const [raw, ...args] = query.split(" ");
+  if (!raw || args.some((arg) => !arg)) {
+    return { ...base, reason: "Redis commands must use single spaces, matching the plugin parser." };
+  }
+  const command = raw.toUpperCase();
+  const scalarArity = {
+    PING: 0,
+    DBSIZE: 0,
+    GET: 1,
+    TYPE: 1,
+    TTL: 1,
+    PTTL: 1,
+    STRLEN: 1,
+    HLEN: 1,
+    LLEN: 1,
+    SCARD: 1,
+    ZCARD: 1,
+    HGET: 2,
+    HEXISTS: 2,
+    SISMEMBER: 2,
+    ZSCORE: 2
+  };
+  if (Object.hasOwn(scalarArity, command) && args.length === scalarArity[command]) {
+    return { ...base, provenRead: true, directSafe: true, maxRows: 1 };
+  }
+  if (["MGET", "EXISTS", "HMGET"].includes(command)) {
+    const fields = args.length - (command === "HMGET" ? 1 : 0);
+    if (fields > 0 && fields <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows: command === "EXISTS" ? 1 : fields };
+    }
+  }
+  if (["LRANGE", "ZRANGE"].includes(command) && args.length === 3 && /^\d+$/.test(args[1]) && /^\d+$/.test(args[2])) {
+    const start = Number(args[1]);
+    const end = Number(args[2]);
+    const maxRows = end - start + 1;
+    if (Number.isSafeInteger(start) && Number.isSafeInteger(end) && maxRows > 0 && maxRows <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows };
+    }
+  }
+  const scanOffset = command === "SCAN" ? 0 : ["HSCAN", "SSCAN", "ZSCAN"].includes(command) ? 1 : -1;
+  let scan = scanOffset >= 0 && args.length > scanOffset && /^\d+$/.test(args[scanOffset]);
+  const seen = /* @__PURE__ */ new Set();
+  if (scan) {
+    for (let i = scanOffset + 1; i < args.length; i += 2) {
+      const option = args[i].toUpperCase();
+      const value = args[i + 1];
+      if (!value || seen.has(option) || !["MATCH", "COUNT", ...command === "SCAN" ? ["TYPE"] : []].includes(option) || option === "COUNT" && (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 1e3)) {
+        scan = false;
+        break;
+      }
+      seen.add(option);
+    }
+  }
+  if (scan || ["HGETALL", "HKEYS", "HVALS", "SMEMBERS"].includes(command) && args.length === 1) {
+    return {
+      ...base,
+      provenRead: true,
+      requiresRemoteReadConfirmation: true,
+      reason: "Redis collection/scan reads have no hard result bound. Use singular run_query with confirmed read access; SCAN COUNT is only a hint."
+    };
+  }
+  return { ...base, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
+}
+
 // dist/queryExecutionSafety.js
 var LARGE_READ_ROW_THRESHOLD = 1e3;
 var SQL_KINDS = /* @__PURE__ */ new Set([
@@ -64906,6 +64990,8 @@ function assessQueryRead(query) {
     return assessSupabase(options2, datasourceId);
   if (kind === "mongodb")
     return assessMongo(options2, datasourceId);
+  if (kind === "redis")
+    return assessRedisRead(options2, datasourceId);
   if (kind === "googlesheetsv2")
     return assessSheets(options2, datasourceId);
   if (kind === "dynamodb")
