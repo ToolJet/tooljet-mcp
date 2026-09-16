@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { dbColumnTypeSchema } from '../dbColumnTypeSchema.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const columnSchema = z.object({
   name: z.string(),
-  type: z.string(),
+  type: dbColumnTypeSchema,
   primaryKey: z.boolean().optional(),
   notNull: z.boolean().optional(),
   unique: z.boolean().optional(),
