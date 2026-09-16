@@ -1311,64 +1311,67 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   /* A browser-usable session for ONE app.
    *
-   * Two calls against ToolJet's external API: create an app-scoped PAT, then trade it for a session.
-   * The result is signed by the same signer as a cookie login, so a browser accepts it as
-   * tj_auth_token — unlike the workspace session this server builds with, which is PAT-derived and
-   * which PatScopeInterceptor bars from the endpoints the frontend needs to boot.
-   *
-   * EXTERNAL_API_ACCESS_TOKEN is an instance-wide secret (it can mint for any user and any app), so
-   * it is read here, in the deployment that already owns it, and never handed to a caller. What
-   * leaves this function is only a short-lived token for the one app that was asked about.
+   * Signed by the same signer as a cookie login, so a browser accepts it as tj_auth_token — unlike
+   * the plain workspace session this server builds with, which PatScopeInterceptor bars from
+   * /api/authorize and which therefore bounces the player to /login.
    */
   async function createAppScopedSession(
     appId: string,
-    email: string,
+    _email: string,
     expiryMinutes: number
   ): Promise<{ token: string; expires_in_minutes: number; url: string }> {
-    const accessToken = process.env.EXTERNAL_API_ACCESS_TOKEN?.trim();
-    if (!accessToken) {
+    /* One call, with the SAME workspace PAT this server already authenticates with:
+       POST /api/personal-access-tokens/session {appId} returns a session pinned to that one app.
+       ToolJet checks the app is in the token's workspace and stamps the session with the token's
+       own kind plus the app id; PatScopeInterceptor then confines it to the render module list,
+       pins it to this app, and makes it read-only apart from running the app's queries.
+
+       This replaces a two-call mint through /api/ext/users/*, which needed
+       EXTERNAL_API_ACCESS_TOKEN — an instance-wide secret able to mint a token for ANY user and ANY
+       app. Deployments only ever set TOOLJET_PAT, so that path could not be relied on; it also
+       resolved the app by slug, which happened to work only because ToolJet defaults an app's slug
+       to its id.
+
+       `email` is no longer used: the old path had to be TOLD whom to impersonate, whereas this
+       session is minted from a PAT that already belongs to someone. In-product that is the
+       requesting user's own per-user service token, so the render is seen as they would see it. The
+       parameter stays in the signature so the caller does not have to change. */
+    if (!config.pat) {
       throw new Error(
-        'EXTERNAL_API_ACCESS_TOKEN is not configured on this MCP server, so a render session cannot ' +
-          'be minted. Skip the render check rather than reporting the app as broken.'
+        'A render session needs a personal access token, and this server is running on a ' +
+          'pre-minted session instead (TOOLJET_SESSION_TOKEN / x-tooljet-session-token). Skip the ' +
+          'render check rather than reporting the app as broken.'
       );
     }
 
-    const post = async (path: string, body: unknown, headers?: Record<string, string>) => {
-      const res = await fetch(`${config.apiUrl}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        throw new Error(`ToolJet ${path} failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
-      }
-      return (await res.json()) as Record<string, unknown>;
-    };
-
-    const created = await post(
-      '/api/ext/users/personal-access-token',
-      // appId, NOT appSlug: the external API resolves appSlug with a strict `where: { slug }`
-      // lookup, which happens to match only because ToolJet defaults an app's slug to its id. A
-      // renamed app would stop resolving and the caller would silently lose its render check.
-      { email, appId, patExpiry: expiryMinutes, sessionExpiry: expiryMinutes },
-      { Authorization: `Basic ${accessToken}` }
-    );
-    const pat = created.personalAccessToken;
-    if (typeof pat !== 'string' || !pat) {
-      throw new Error('ToolJet did not return a personal access token for the render session.');
+    const res = await fetch(`${config.apiUrl}/api/personal-access-tokens/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
+      body: JSON.stringify({ appId }),
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => '')).slice(0, 200);
+      const hint =
+        res.status === 404
+          ? ' — the app is not in this token\'s workspace, or this ToolJet predates app-scoped PAT sessions.'
+          : res.status === 400
+            ? ' — appId was rejected as malformed.'
+            : '';
+      throw new Error(`ToolJet app-scoped session exchange failed: ${res.status}${hint} ${detail}`);
     }
 
-    const session = await post('/api/ext/users/session', { appId, accessToken: pat });
-    const token = session.signedPat;
-    if (typeof token !== 'string' || !token) {
-      throw new Error('ToolJet did not return a session for the render personal access token.');
+    const body = (await res.json()) as { authToken?: string };
+    if (!body.authToken) {
+      throw new Error('ToolJet returned no authToken for the render session.');
     }
 
     // The editor route, not the viewer one: /applications/<id> serves an unreleased app as
-    // "app not available", while the editor renders the current version.
+    // "App URL Unavailable", while the editor renders the current version. Measured.
     const orgSlug = await auth.getOrganizationSlug();
     return {
-      token,
+      token: body.authToken,
+      // Governed by the token's own sessionExpiryMinutes, not by this argument — the exchange takes
+      // no expiry. Reported as asked for so the caller's contract is unchanged.
       expires_in_minutes: expiryMinutes,
       url: `${config.appUrl}/${orgSlug}/apps/${appId}`,
     };
