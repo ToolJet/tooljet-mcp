@@ -56562,6 +56562,27 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
 }
 
+// dist/tableQuotaError.js
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error51) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error51 instanceof Error && !seen.has(error51)) {
+    if (error51 instanceof TableQuotaError)
+      return error51;
+    seen.add(error51);
+    error51 = error51.cause;
+  }
+  return void 0;
+}
+
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
@@ -60495,8 +60516,8 @@ function workspaceAccessKeys(type) {
 var PartialWriteError = class extends Error {
   completed;
   failures;
-  constructor(operation, completed, failures) {
-    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`);
+  constructor(operation, completed, failures, cause) {
+    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`, { cause });
     this.name = "PartialWriteError";
     this.completed = completed;
     this.failures = failures;
@@ -60541,7 +60562,10 @@ function pageHiddenNeedsUpdate(page, expected) {
 }
 async function assertOk(res, method) {
   if (!res.ok) {
-    throw new ToolJetHttpError(res.status, method, await res.text());
+    const detail = await res.text();
+    if (method === "createTable" && res.status === 451)
+      throw new TableQuotaError();
+    throw new ToolJetHttpError(res.status, method, detail);
   }
 }
 var TYPE_ALIASES = {
@@ -61393,16 +61417,21 @@ function createClient(auth, config2) {
     const levels = tableCreationLevels(params.tables);
     const created = [];
     for (const level of levels) {
-      const settled = await Promise.allSettled(level.map((table) => createTable(table)));
-      const failures = [];
-      settled.forEach((result, index) => {
-        if (result.status === "fulfilled")
-          created.push(result.value);
-        else
-          failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      });
-      if (failures.length) {
-        throw new PartialWriteError("createTables", created, failures);
+      for (let start = 0; start < level.length; start += 4) {
+        const batch = level.slice(start, start + 4);
+        const settled = await Promise.allSettled(batch.map((table) => createTable(table)));
+        const failures = [];
+        let quota;
+        settled.forEach((result, index) => {
+          if (result.status === "fulfilled")
+            created.push(result.value);
+          else {
+            quota ??= tableQuotaError(result.reason);
+            failures.push(`${batch[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+          }
+        });
+        if (failures.length)
+          throw new PartialWriteError("createTables", created, failures, quota);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -61807,6 +61836,11 @@ function createClient(auth, config2) {
     await assertOk(res, "invokeDatasourceMethod");
     return await res.json();
   }
+  async function getPluginSpec(pluginKind, specName) {
+    const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
+    await assertOk(res, "getPluginSpec");
+    return res.text();
+  }
   async function getDatasourceConnectionDetails(dataSourceId, environmentId) {
     const envId = environmentId ?? await getDevelopmentEnvironmentId();
     const res = await auth.authedFetch(`/api/data-sources/${encodeURIComponent(dataSourceId)}/environment/${encodeURIComponent(envId)}`);
@@ -61941,6 +61975,7 @@ function createClient(auth, config2) {
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    getPluginSpec,
     testDatasourceConnection,
     listEvents,
     updateEvents,
@@ -61954,7 +61989,15 @@ function ok(value) {
 }
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
-  return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+  const quota = tableQuotaError(err);
+  const text = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text }], isError: true };
 }
 
 // dist/tools/workspaceGroupManagement.js
@@ -62892,7 +62935,7 @@ function createTablesTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created concurrently. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
+    description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created in batches of at most four; a failed batch stops further creation. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
     inputSchema: { tables: external_exports.array(tableSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -63512,6 +63555,46 @@ function getDatasourceQuerySchemaTool(client) {
   };
 }
 
+// dist/hubspotQuery.js
+function hubspotSpecs() {
+  return (getDatasourceQuerySchema("hubspot")?.operationSelection?.specs ?? []).filter((spec) => spec.location === "bundled" && spec.plugin === "hubspot" && spec.name && spec.label).map((spec) => ({
+    name: spec.name,
+    label: spec.label,
+    specType: spec.label.split(/(?=[A-Z])/).join("_").toLowerCase()
+  }));
+}
+function hubspotQueryIssues(options2) {
+  const issues = [];
+  const issue2 = (path, message) => issues.push({ path, message });
+  const record4 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+  if (!["get", "post", "patch", "put", "delete"].includes(String(options2.operation))) {
+    issue2("operation", "HubSpot operation must be a lowercase HTTP method from getEndpointSchema, not an object name or create/update action.");
+  }
+  if (typeof options2.path !== "string" || !/^\/(?!\/)[^\s?#]*$/.test(options2.path) || options2.path.includes("{{")) {
+    issue2("path", "HubSpot needs the static endpoint path returned by getEndpointSchema; put record IDs in params.path.");
+  }
+  if (!hubspotSpecs().some((spec) => spec.specType === options2.specType)) {
+    issue2("specType", "Use the exact specType returned by inspect_datasource_schema so the HubSpot editor retains the selected endpoint.");
+  }
+  for (const bucket of ["path", "query", "request"]) {
+    if (!record4(options2.params) || !record4(options2.params[bucket])) {
+      issue2(`params.${bucket}`, `HubSpot requires params.${bucket} as an object; use {} when empty.`);
+    }
+  }
+  for (const misplaced of ["objectId", "properties"]) {
+    if (misplaced in options2)
+      issue2(misplaced, `HubSpot ignores top-level ${misplaced}; use params.path for IDs and params.request for the JSON body.`);
+  }
+  if (typeof options2.path === "string" && record4(options2.params) && record4(options2.params.path)) {
+    for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
+      const value = options2.params.path[match[1]];
+      if (value === void 0 || value === null || value === "")
+        issue2(`params.path.${match[1]}`, "Provide a value for every endpoint path placeholder.");
+    }
+  }
+  return issues;
+}
+
 // dist/openapiSpec.js
 var import_yaml = __toESM(require_dist2(), 1);
 var HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
@@ -63603,8 +63686,13 @@ function endpointParameters(spec, path, method) {
   const body = deref(spec, operation.requestBody);
   const json3 = body && record2(body.content) ? record2(record2(body.content)["application/json"]) : void 0;
   const bodySchema = json3 ? deref(spec, json3.schema) : void 0;
+  const success2 = Object.entries(record2(operation.responses) ?? {}).find(([status]) => /^2\d\d$/.test(status));
+  const response = success2 ? deref(spec, success2[1]) : void 0;
+  const responseContent = record2(record2(response?.content)?.["application/json"]);
+  const responseSchema = deref(spec, responseContent?.schema ?? response?.schema);
   return {
     parameters: [...byKey.values()],
+    ...responseSchema ? { response: { status: success2[0], schema: responseSchema } } : {},
     ...bodySchema ? { requestBody: { required: body?.required === true, schema: bodySchema } } : {},
     found: true
   };
@@ -63830,6 +63918,7 @@ function openapiIntrospection(spec, request) {
     // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
     buckets,
     parameters: result.parameters,
+    ...result.response ? { response: result.response } : {},
     ...result.requestBody ? { requestBody: result.requestBody } : {},
     ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
   };
@@ -63843,7 +63932,7 @@ function inspectDatasourceSchemaTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
+    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
     inputSchema: {
       version_id: external_exports.string(),
       datasource_id: external_exports.string(),
@@ -63899,7 +63988,41 @@ function inspectDatasourceSchemaTool(client) {
             return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
           }
         }
+        const hubspotDocuments = /* @__PURE__ */ new Map();
         const results = await Promise.all(requests.map(async (request) => {
+          if (datasource.kind === "hubspot") {
+            const specs = hubspotSpecs();
+            const selector = request.schema ?? request.args?.specType;
+            if (!selector && request.method === "listTables") {
+              return { method: request.method, result: {
+                specs,
+                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
+              } };
+            }
+            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
+            if (!selected)
+              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
+            if (!hubspotDocuments.has(selected.name)) {
+              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
+                const spec = extractSpec({ spec: text });
+                if (!spec)
+                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
+                return spec;
+              }));
+            }
+            const document2 = await hubspotDocuments.get(selected.name);
+            const result2 = openapiIntrospection(document2, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params.header;
+              delete result2.host_warning;
+              result2.query_options.specType = selected.specType;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
+            }
+            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
+          }
           if (openapiSpec) {
             const result2 = openapiIntrospection(openapiSpec, request);
             return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
@@ -65624,6 +65747,14 @@ function assessMongo(options2, datasourceId) {
     };
   }
   if (operation === "aggregate") {
+    const rawOptions = options2.options;
+    const aggregateOptions = rawOptions == null || rawOptions === "" ? {} : mongoOptions(rawOptions);
+    if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
+      return refuse("MongoDB aggregate options must be a statically known JSON5 object.");
+    }
+    if ("out" in aggregateOptions) {
+      return refuse("MongoDB aggregate options.out adds a $out stage, which writes a collection.");
+    }
     let pipeline = options2.pipeline;
     if (containsBinding(pipeline))
       return refuse("MongoDB aggregate pipeline is not statically known.");
@@ -66121,6 +66252,15 @@ function assessQueryRead(query) {
     };
   }
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (kind === "hubspot") {
+    const issue2 = hubspotQueryIssues(options2)[0];
+    const assessment = assessOpenapi({ ...options2, host: "https://api.hubapi.com" }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: "hubspot",
+      ...issue2 ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue2.message } : { reason: assessment.reason?.replaceAll("OpenAPI", "HubSpot") }
+    };
+  }
   if (kind === "restapi")
     return assessRestGet(options2, datasourceId);
   if (kind === "openapi")
@@ -66235,6 +66375,8 @@ function valueAtPath(source2, path) {
   return cursor;
 }
 function describeOperationSelection(schema) {
+  if (schema.kind === "hubspot")
+    return "Use inspect_datasource_schema getEndpointSchema and copy query_options (operation, path, specType and params).";
   const selection = schema.operationSelection;
   if (schema.operations.length) {
     const fields = selection?.fields?.length ? selection.fields.join(" + ") : "operation";
@@ -66413,6 +66555,11 @@ function influxTransformWarnings(kind, options2) {
 }
 function validateQueryOptions(kind, options2) {
   const errors = [];
+  if (kind === "hubspot")
+    errors.push(...hubspotQueryIssues(options2).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
+  if (kind === "hubspot" && options2.operation !== "get" && (isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange))) {
+    errors.push({ code: "automatic_hubspot_write", message: "HubSpot writes must run from an explicit user action, not on page load or dependency changes." });
+  }
   const warnings = tableStateWarnings(options2);
   if (kind === "runjs" && typeof options2.code === "string" && options2.code.trim()) {
     const syntax = runjsSyntaxError(options2.code);
@@ -69015,7 +69162,9 @@ function applyAppPhaseTool(client) {
           ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
         ];
         if (foundationFailures.length)
-          throw new Error(foundationFailures.join(" | "));
+          throw new Error(foundationFailures.join(" | "), {
+            cause: tableWrite.status === "rejected" ? tableQuotaError(tableWrite.reason) : void 0
+          });
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables)
           tableIds.set(table.table_name.toLowerCase(), table.table_id);
@@ -69227,7 +69376,7 @@ function applyAppPhaseTool(client) {
           } catch {
           }
         }
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery, { cause: error51 }));
       }
     }
   };

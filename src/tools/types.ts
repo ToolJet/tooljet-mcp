@@ -1,3 +1,4 @@
+import { tableQuotaError } from '../tableQuotaError.js';
 import type { z } from 'zod';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
@@ -42,5 +43,10 @@ export function ok(value: unknown): ToolResult {
 /** Wraps a thrown error as a failed MCP tool result. Never throws. */
 export function fail(err: unknown): ToolResult {
   const message = err instanceof Error ? err.message : String(err);
-  return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
+  const quota = tableQuotaError(err);
+  const text = quota ? JSON.stringify({ error: {
+    code: quota.code, status: quota.status, retryable: quota.retryable,
+    message: quota.message, details: message,
+  } }) : `Error: ${message}`;
+  return { content: [{ type: 'text', text }], isError: true };
 }

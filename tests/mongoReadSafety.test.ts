@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { assessQueryRead, LARGE_READ_ROW_THRESHOLD } from '../src/queryExecutionSafety.js';
+import { runQueryTool } from '../src/tools/runQuery.js';
+import { runQueriesTool } from '../src/tools/runQueries.js';
+import type { ToolJetClient } from '../src/tooljetClient.js';
 
 const mongo = (options: Record<string, unknown>) =>
   assessQueryRead({ kind: 'mongodb', data_source_id: 'ds-1', options } as never);
@@ -80,5 +83,48 @@ describe('MongoDB read classification', () => {
     expect(mongo({ operation: 'find_many' }).reason).toMatch(/collection is missing/);
     expect(mongo({ operation: 'find_many', collection: '{{ components.sel.value }}' }).reason)
       .toMatch(/not statically known/);
+  });
+
+  it.each([
+    { out: 'sensor_archive' },
+    '{out:"sensor_archive"}',
+    String.raw`{"\u006fut":"sensor_archive"}`,
+    '{{variables.aggregateSettings}}',
+    { out: '{{variables.destination}}' },
+    { let: { threshold: '{{variables.threshold}}' } },
+    String.raw`{"let":{"threshold":"\u007b\u007bvariables.threshold}}"}`,
+    '{out:',
+    '[]',
+    'null',
+    12,
+  ])('refuses unsafe aggregate options before either execution tool runs: %j', async (options) => {
+    const query = { id: 'sensor-preview', kind: 'mongodb', data_source_id: 'sensor-db',
+      options: { operation: 'aggregate', collection: 'sensor_samples', pipeline: '[{$limit:7}]', options } };
+    expect(assessQueryRead(query)).toMatchObject({ provenRead: false, directSafe: false });
+    const client = {
+      getQuery: vi.fn().mockResolvedValue(query),
+      getQueries: vi.fn().mockResolvedValue([query]),
+      getDevelopmentEnvironmentId: vi.fn().mockResolvedValue('development'),
+      runQuery: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+    };
+    const singular = await runQueryTool(client as unknown as ToolJetClient).handler({
+      query_id: query.id, version_id: 'sensor-version',
+      user_confirmed_large_read: true, user_confirmed_remote_read: true,
+      user_confirmed_billable_read: true,
+    });
+    const batch = await runQueriesTool(client as unknown as ToolJetClient).handler({
+      query_ids: [query.id], version_id: 'sensor-version',
+    });
+    expect(singular.isError).toBe(true);
+    expect(batch.isError).toBe(true);
+    expect(client.runQuery).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, null, '', {}, '{}', '{allowDiskUse:true, maxTimeMS:500, /* bounded read */}',
+    { allowDiskUse: true, let: { threshold: 3 } },
+  ])('preserves bounded aggregation with static read options: %j', (options) => {
+    expect(mongo({ operation: 'aggregate', collection: 'sensor_samples',
+      pipeline: '[{$limit:7}]', options,
+    })).toMatchObject({ provenRead: true, directSafe: true, maxRows: 7 });
   });
 });

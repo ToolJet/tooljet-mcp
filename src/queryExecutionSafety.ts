@@ -1,5 +1,6 @@
 import { assessRedisRead } from './redisReadSafety.js';
 import JSON5 from 'json5';
+import { hubspotQueryIssues } from './hubspotQuery.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
@@ -410,6 +411,16 @@ function assessMongo(options: Record<string, unknown>, datasourceId?: string): Q
   }
 
   if (operation === 'aggregate') {
+    // The driver appends a $out stage from options.out, even when the supplied pipeline
+    // only reads. Prove the options as well as the pipeline before allowing execution.
+    const rawOptions = options.options;
+    const aggregateOptions = rawOptions == null || rawOptions === '' ? {} : mongoOptions(rawOptions);
+    if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
+      return refuse('MongoDB aggregate options must be a statically known JSON5 object.');
+    }
+    if ('out' in aggregateOptions) {
+      return refuse('MongoDB aggregate options.out adds a $out stage, which writes a collection.');
+    }
     let pipeline: unknown = options.pipeline;
     if (containsBinding(pipeline)) return refuse('MongoDB aggregate pipeline is not statically known.');
     if (typeof pipeline === 'string') {
@@ -766,6 +777,16 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
     };
   }
   const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+
+  if (kind === 'hubspot') {
+    const issue = hubspotQueryIssues(options)[0];
+    const assessment = assessOpenapi({ ...options, host: 'https://api.hubapi.com' }, datasourceId);
+    return {
+      ...assessment, datasourceKind: 'hubspot',
+      ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
+        : { reason: assessment.reason?.replaceAll('OpenAPI', 'HubSpot') }),
+    };
+  }
 
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
   if (kind === 'openapi') return assessOpenapi(options, datasourceId);

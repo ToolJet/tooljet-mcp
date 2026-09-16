@@ -24011,7 +24011,7 @@
     "operations": [],
     "operationSelection": {
       "mode": "remote-spec",
-      "field": "hubspot_operation",
+      "field": "operation",
       "specs": [
         {
           "label": "WebHooks",
@@ -24294,7 +24294,7 @@
           "path": "marketplace/plugins/hubspot/openapi-specs/line-items.json"
         }
       ],
-      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+      "description": "Discover installed HubSpot specs with inspect_datasource_schema: listTables lists spec groups without schema, and endpoints with schema. getEndpointSchema returns the exact HTTP method, path, specType, parameters and response shape. Copy query_options and fill its parameters; do not use a spec label as an executable operation."
     },
     "contracts": {
       "default": {
@@ -24307,16 +24307,65 @@
                 "path": "hubspot_operation",
                 "type": "react-component-api-endpoint",
                 "description": "Single select dropdown for operation"
+              },
+              "operation": {
+                "type": "string",
+                "allowedValues": [
+                  "get",
+                  "post",
+                  "patch",
+                  "put",
+                  "delete"
+                ],
+                "description": "Lowercase HTTP method from getEndpointSchema. Only static GET is eligible for MCP read verification after user approval.",
+                "path": "operation"
+              },
+              "path": {
+                "type": "string",
+                "description": "Static endpoint path from the installed spec, with placeholders populated through params.path.",
+                "path": "path"
+              },
+              "specType": {
+                "type": "string",
+                "description": "Exact serialized editor spec key returned by inspect_datasource_schema; preserve it when saving or updating queries.",
+                "path": "specType"
+              },
+              "params.path": {
+                "type": "object",
+                "description": "Path placeholder values keyed by placeholder name; use {} if none.",
+                "path": "params.path"
+              },
+              "params.query": {
+                "type": "object",
+                "description": "Query parameters including pagination/properties; use {} if none.",
+                "path": "params.query"
+              },
+              "params.request": {
+                "type": "object",
+                "description": "JSON body. CRM writes generally wrap fields in {properties:{...}}. Use {} for reads.",
+                "path": "params.request"
+              },
+              "selectedOperation": {
+                "type": "object",
+                "description": "Optional editor metadata. Does not replace operation/path/params.",
+                "path": "selectedOperation"
               }
             },
-            "required": []
+            "required": [
+              "operation",
+              "params.path",
+              "params.query",
+              "params.request",
+              "path",
+              "specType"
+            ]
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
           "source": "remote-api",
-          "description": "The selected remote API endpoint defines the query data. This generated contract does not yet expose endpoint-specific response fields."
+          "type": "object|array|string",
+          "description": "The parsed HubSpot response body directly. CRM collection reads commonly expose data.results and nested record.properties. Inspect the endpoint response or a verified read; paginate using the endpoint contract."
         }
       }
     },
@@ -24365,7 +24414,10 @@
         }
       }
     },
-    "introspectionMethods": [],
+    "introspectionMethods": [
+      "listTables",
+      "getEndpointSchema"
+    ],
     "supportsTestConnection": false,
     "sources": [
       {
