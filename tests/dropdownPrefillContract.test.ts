@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeComponentSpec } from '../src/componentNormalization.js';
 import { lintComponentSpec } from '../src/lint.js';
-import { dropdownDefaultVisibilityWarning } from '../src/dropdownDefaultContract.js';
+import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from '../src/dropdownDefaultContract.js';
 
 describe('DropdownV2 preselection contract',()=>{
   it.each(['value','defaultValue'])('preserves invalid %s for an actionable error instead of silently stripping it',key=>{
@@ -16,6 +16,38 @@ describe('DropdownV2 preselection contract',()=>{
     expect(normalized.component.properties?.schema).toEqual({value:schema});
     expect(lintComponentSpec(normalized.component).errors).toEqual([]);
     expect(normalizeComponentSpec({name:'name',type:'TextInput',properties:{value:'Hello'}},{stripUnknownKeys:true}).component.properties?.value).toEqual({value:'Hello'});
+  });
+});
+
+describe('DropdownV2 self-referential defaults', () => {
+  it('warns on the workshop status initializer without rejecting or rewriting it', () => {
+    const schema="{{[{label:'Booked',value:'Booked',visible:true,default:components.editJobStatus?.value === 'Booked'}]}}";
+    const input={name:'editJobStatus',type:'DropdownV2',properties:{advanced:true,schema}};
+    const result=lintComponentSpec(input);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.join(' ')).toContain("option.default reads this dropdown's own value");
+    expect(input.properties.schema).toBe(schema);
+  });
+  it('covers explicit unassigned plus mapped options and literal bracket access', () => {
+    const schema="{{[{label:'Unassigned',value:null,visible:true,default:!components.editMechanic?.value}].concat(queries.mechanics.data.map(m=>({label:m.name,value:m.id,visible:true,default:components['editMechanic'].value===m.id})))}}";
+    expect(dropdownSelfDefaultWarning(schema,'editMechanic')).toHaveLength(1);
+  });
+  it.each([
+    "{{[{label:'Booked',value:'Booked',visible:true,default:components.jobsTable.selectedRow.status==='Booked'}]}}",
+    "{{queries.rows.data.map(r=>({label:r.name,value:r.id,visible:true,default:r.id===variables.draft.mechanic_id}))}}",
+    "{{queries.rows.data.map(components=>({default:components.edit.value==='x'}))}}",
+    "{{queries.rows.data.map(({components})=>({default:components.edit.value==='x'}))}}",
+    "{{[{...variables.option,default:components.edit.value==='x'}]}}",
+    "{{[{default:()=>components.edit.value==='x'}]}}",
+    "{{[{label:components.edit.value,default:true} ]}}",
+    "{{queries.options.data}}",
+    "{{[{default:components[variables.name].value==='x'}]}}",
+  ])('does not infer initialization from unknown or external sources: %s', schema => {
+    expect(dropdownSelfDefaultWarning(schema,'edit')).toEqual([]);
+  });
+  it('ignores inactive advanced schema', () => {
+    const result=lintComponentSpec({name:'edit',type:'DropdownV2',properties:{advanced:false,schema:"{{[{default:components.edit.value==='x'}]}}",options:[{label:'A',value:'a',visible:true,default:true}]}});
+    expect(result.warnings.join(' ')).not.toContain('own value');
   });
 });
 

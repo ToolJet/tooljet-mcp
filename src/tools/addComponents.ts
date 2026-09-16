@@ -32,7 +32,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child ' +
       '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
-      'those defaults (use Html for wrapped multi-line card content).',
+      'those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),

@@ -56,7 +56,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       'Move / resize existing components (batch) without touching their properties. `left`/`width` are ' +
       'in grid columns (43 desktop), `top`/`height` in grid rows. Provide desktop and/or mobile per ' +
       'component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` ' +
-      '(header/body/footer) for native ModalV2/Form/Container regions. `slot_name` alone keeps the current parent.',
+      '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -72,7 +72,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         desktop?: { top: number; left: number; width: number; height: number };
         mobile?: { top: number; left: number; width: number; height: number };
         parent?: string;
-        slot_name?: 'body' | 'header' | 'footer';
+        slot_name?: 'body' | 'header' | 'footer' | 'modal';
       }>;
     }) {
       try {

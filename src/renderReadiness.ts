@@ -255,7 +255,7 @@ export function lintUnguardedSelectionText(c: ReadinessComponent): string[] {
   return [
     `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(', ')} without a fallback. Until a row is selected that ` +
       "value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') " +
-      'or wrap the panel in a ternary on components.table?.selectedRow.',
+      'or wrap the panel in a ternary on a stable selected-row key such as components.table?.selectedRow?.id. The row object itself may be empty but truthy.',
   ];
 }
 

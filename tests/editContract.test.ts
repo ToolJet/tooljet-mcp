@@ -33,6 +33,31 @@ function context(rows: unknown[] = [structuredClone(row)]) {
 }
 
 describe('safe edit contract generated runtime', () => {
+  it('generates record-bound dropdown defaults and preserves untouched relationships', async () => {
+    const contract=generateEditContract({prefix:'Edit',source_query:'rows',table_component:'queue',fields:[
+      {field:'owner',component:'owner',type:'number',nullable:true,choices:{query:'owners',value_field:'id',label_field:'name'}},
+      {field:'status',component:'status',type:'text',choices:[{label:'Open',value:'open'},{label:'Closed',value:'closed'}]},
+    ]});
+    const variables:Record<string,any>={},components:Record<string,any>={queue:{selectedRow:{id:1}}},queries={rows:{data:[{id:1,owner:0,status:'open'}]},owners:{data:[{id:0,name:'Zero ID'},{id:2,name:'Second'}]}};
+    const actions={setVariable:async(k:string,v:unknown)=>{variables[k]=v;}};
+    const run=(index:number)=>new AsyncFunction('components','queries','variables','actions',contract.queries[index]!.options.code)(components,queries,variables,actions);
+    await run(0);
+    const input=contract.inputs[0]!;
+    expect(input.type).toBe('DropdownV2');expect(input.properties.advanced).toBe('{{true}}');expect(input.events[0]!.trigger).toBe('onSelect');
+    const options=new Function('queries','variables',`return (${String(input.properties.schema).slice(2,-2)});`)(queries,variables);
+    expect(options).toEqual([{label:'Zero ID',value:0,visible:true,default:true},{label:'Second',value:2,visible:true,default:false}]);
+    expect((await run(1)).patch).toEqual({});
+    components.owner={value:undefined};const event=input.events[0]!.action;
+    variables[event.key]=new Function('variables','components',`return (${event.value.slice(2,-2)});`)(variables,components);
+    expect((await run(1)).patch).toEqual({owner:null});
+    expect(variables.EditSnapshot.values.status).toBe('open');
+  });
+  it('does not coerce dropdown IDs or accept duplicate values and unsupported adapters',()=>{
+    const base={prefix:'Edit',source_query:'rows',table_component:'queue'};
+    expect(()=>generateEditContract({...base,fields:[{field:'owner',component:'owner',type:'number',choices:[{label:'One',value:'1'}]}]})).toThrow('match field type');
+    expect(()=>generateEditContract({...base,fields:[{field:'status',component:'status',type:'text',choices:[{label:'One',value:'a'},{label:'Other',value:'a'}]}]})).toThrow('Duplicate choice');
+    expect(()=>generateEditContract({...base,fields:[{field:'flag',component:'flag',type:'boolean',choices:[{label:'One',value:1}]}]})).toThrow('text or number');
+  });
   it('snapshots raw values; a no-change save writes nothing', async () => {
     const c=context(); await c.run(0);
     expect(c.variables.EditJobSnapshot).toEqual({id:0,values:{title:'Job',due:'2026-09-15',amount:0,enabled:false,note:'Keep this'}});

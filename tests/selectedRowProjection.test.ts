@@ -81,6 +81,24 @@ describe('selected row snapshots through variables', () => {
     expect(lintSelectedRowProjections(present,[assignment])).toEqual([]);
     expect(lintSelectedRowProjections([components[0]!,{name:'text',type:'Text',properties:{text:'{{((variables)=>variables.selectedEquipment.active)({})}}'}}],[assignment])).toEqual([]);
   });
+  it('checks each known table feeding a shared review variable',()=>{
+    const second={...components[0]!,name:'OtherQueue'};
+    const another={label:'Review',value:{...assignment.value,value:'{{components.OtherQueue.selectedRow}}'}};
+    const warnings=lintSelectedRowProjections([...components,second],[assignment,another]);
+    expect(warnings.filter(w=>w.includes('omits "active"'))).toHaveLength(2);
+    expect(warnings.join(' ')).toContain('Table "OtherQueue"');
+    const complete={...second,properties:{data:'{{queries.raw.data.map(r=>({id:r.id,active:r.active}))}}'}};
+    expect(lintSelectedRowProjections([...components,complete],[assignment,another])).toHaveLength(1);
+  });
+  it('does not restore a known alias after an unknown writer or certify open projections',()=>{
+    const unknown={label:'Other',value:{...assignment.value,value:'{{queries.raw.data[0]}}'}};
+    expect(lintSelectedRowProjections(components,[unknown,assignment])).toEqual([]);
+    const open={...components[0]!,name:'OpenQueue',properties:{data:'{{queries.raw.data}}'}};
+    const another={label:'Review',value:{...assignment.value,value:'{{components.OpenQueue.selectedRow}}'}};
+    const warnings=lintSelectedRowProjections([...components,open],[assignment,another]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('Table "EquipmentTable"');
+  });
 });
 
 describe('display placeholder edit contamination',()=>{

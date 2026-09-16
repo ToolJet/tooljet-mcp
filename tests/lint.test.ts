@@ -120,7 +120,7 @@ describe('lintComponentSpec', () => {
   });
 
   it('ERRORS when style keys are placed under properties', () => {
-    const r = lintComponentSpec({ name: 'title', type: 'Text', properties: { textColor: { value: '#111' } } });
+    const r = lintComponentSpec({ name: 'title', type: 'Text', properties: { text: 'Title', textColor: { value: '#111' } } });
     expect(r.errors.join(' ')).toMatch(/style keys \["textColor"\] are under `properties`/);
     expect(r.warnings).toEqual([]);
   });
@@ -1287,7 +1287,7 @@ describe('lintComponents (batch)', () => {
       { name: 'board', type: 'Kanban', clientRef: 'board' },
       { name: 'badHeader', type: 'Text', parentRef: 'board', slotName: 'header', properties: {} },
     ]);
-    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*only by ModalV2, Form, and Container/i);
+    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2, Form, and Container/i);
   });
 
   it('aggregates per-component results and overlaps', () => {
@@ -1838,7 +1838,7 @@ describe('validateAppStructure', () => {
       }],
       events: [],
     });
-    expect(warning.warnings.join(' ')).toMatch(/custom Html.*blank built-in modal.*openModalOnCardClick:false/is);
+    expect(warning.warnings.join(' ')).toMatch(/custom Html.*blank built-in modal.*slot_name:"modal".*openModalOnCardClick:false/is);
 
     const readOnly = validateAppStructure({
       ...base,

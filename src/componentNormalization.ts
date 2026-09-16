@@ -142,7 +142,8 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== 'styles' && STYLE_KEYS_IN_PROPERTIES.has(canonical);
+    const belongsInStyles = canonical !== 'styles' && (STYLE_KEYS_IN_PROPERTIES.has(canonical) ||
+      (!!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical)));
     if (!aliasTarget && !belongsInStyles) continue;
     if (belongsInStyles) {
       if (stylesValue[canonical] === undefined) stylesValue[canonical] = properties[key];
@@ -224,15 +225,28 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     // isDateSelectionEnabled:false thinking it means "read-only"; re-enable date selection so the value
     // displays. Only touches this exact blank-rendering combination.
     if (Array.isArray(columns)) {
-      let fixedDateColumn = false;
+      let changedColumns = false;
       const repairedColumns = columns.map((column) => {
+        if (options.stripUnknownKeys && column && typeof column === 'object' && !Array.isArray(column) &&
+            column.columnType === 'button' && Array.isArray(column.buttons)) {
+          const buttons = column.buttons.map((button: unknown) => {
+            if (!button || typeof button !== 'object' || Array.isArray(button)) return button;
+            const b = button as Record<string, unknown>;
+            if (typeof b.label !== 'string' || b.buttonLabel !== undefined) return button;
+            const { label, ...rest } = b;
+            changedColumns = true;
+            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
+            return { ...rest, buttonLabel: label };
+          });
+          column = { ...column, buttons };
+        }
         if (
           column && typeof column === 'object' && !Array.isArray(column) &&
           (column as Record<string, unknown>).columnType === 'datepicker' &&
           (column as Record<string, unknown>).isDateSelectionEnabled === false &&
           (column as Record<string, unknown>).isTimeChecked !== true
         ) {
-          fixedDateColumn = true;
+          changedColumns = true;
           const entry = column as Record<string, unknown>;
           warnings.push(
             `Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection — a ` +
@@ -242,7 +256,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
         return column;
       });
-      if (fixedDateColumn) setProperty('columns', repairedColumns);
+      if (changedColumns) setProperty('columns', repairedColumns);
     }
   }
 

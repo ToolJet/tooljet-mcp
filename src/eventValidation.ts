@@ -177,7 +177,7 @@ export function validateEvents(
         ) {
           errors.push(
             `${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ` +
-              'ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, ' +
+              'ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", ' +
               'or remove this handler and use a separate supported detail flow.'
           );
         }

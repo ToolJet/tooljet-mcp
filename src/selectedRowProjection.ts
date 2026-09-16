@@ -67,9 +67,13 @@ export function lintSelectedRowProjections(
     tables.set(c.name, tables.has(c.name) ? undefined : projectedFields(c));
   }
   // Edit events commonly snapshot selectedRow into a variable. Follow only a
-  // single known table assignment (plus null/reset); mixed/unknown writers are
+  // known table assignments (plus null/reset); unknown writers are
   // unverified. This is an advisory, not general interprocedural dataflow.
-  const aliases = new Map<string, string | undefined>();
+  const aliases = new Map<string, Set<string> | undefined>();
+  const singleAlias = (alias: string): string | undefined => {
+    const names = aliases.get(alias);
+    return names?.size === 1 ? [...names][0] : undefined;
+  };
   for (const source of extraSources) {
     const action = node(source.value);
     if (action?.actionId !== 'set-custom-variable' || typeof action.key !== 'string') continue;
@@ -78,13 +82,15 @@ export function lintSelectedRowProjections(
     const table = node(selected?.object), namespace = node(table?.object);
     const name = member(selected) && key(selected) === 'selectedRow' && member(table) &&
       namespace?.type === 'Identifier' && namespace.name === 'components' ? key(table) : undefined;
-    if (!aliases.has(action.key)) aliases.set(action.key, name);
-    else if (aliases.get(action.key) !== name) aliases.set(action.key, undefined);
+    if (!name) aliases.set(action.key, undefined);
+    else if (!aliases.has(action.key)) aliases.set(action.key, new Set([name]));
+    else aliases.get(action.key)?.add(name);
   }
   // RunJS can assign variables outside the declarative events; do not infer an
   // alias if such a writer exists anywhere in these sources.
   if (extraSources.some(s => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value)))) aliases.clear();
   const warnings = new Set<string>();
+  const aliasOmissions = new Map<string, { alias: string; table: string; fields: Set<string> }>();
   function inspect(value: unknown, label: string): void {
     if (Array.isArray(value)) { for (const v of value) inspect(v, label); return; }
     if (node(value)) { for (const v of Object.values(node(value)!)) inspect(v, label); return; }
@@ -101,10 +107,14 @@ export function lintSelectedRowProjections(
       if (!member(n)) return;
       const field = key(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
       if (field && member(selection) && table?.type === 'Identifier' && table.name === 'variables') {
-        const alias = key(selection), name = alias ? aliases.get(alias) : undefined;
-        const fields = name ? tables.get(name) : undefined;
-        if (name && fields && !fields.has(field) && !['toString','valueOf','constructor','hasOwnProperty','__proto__','isPrototypeOf','propertyIsEnumerable','toLocaleString'].includes(field)) {
-          warnings.add(`${label}: reads variables.${alias}.${field}; an event assigns that variable from Table "${name}" selectedRow, whose closed map projection omits "${field}". This edit can overwrite the missing value with a blank/false default. Preserve the raw field or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
+        const alias = key(selection), names = alias ? aliases.get(alias) : undefined;
+        for (const name of names ?? []) {
+          const fields = tables.get(name);
+          if (fields && !fields.has(field) && !['toString','valueOf','constructor','hasOwnProperty','__proto__','isPrototypeOf','propertyIsEnumerable','toLocaleString'].includes(field)) {
+            const id = JSON.stringify([alias, name]);
+            if (!aliasOmissions.has(id)) aliasOmissions.set(id, { alias: alias!, table: name, fields: new Set() });
+            aliasOmissions.get(id)!.fields.add(field);
+          }
         }
       }
       if (!field || !member(selection) || key(selection) !== 'selectedRow' || !member(table) || namespace?.type !== 'Identifier' || namespace.name !== 'components') return;
@@ -120,6 +130,9 @@ export function lintSelectedRowProjections(
     for (const warning of lintQueryArrayMutations(value, label)) warnings.add(warning);
   }
   for (const source of extraSources) inspect(source.value, source.label);
+  for (const { alias, table, fields } of aliasOmissions.values()) {
+    warnings.add(`Bindings read ${[...fields].map(field => `variables.${alias}.${field}`).join(', ')}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map(field => `"${field}"`).join(', ')}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
+  }
   // Typed editors must not reuse display-only projections as their raw defaults. Keep this
   // advisory: conversions in the consumer, open projections and dynamic formats are unknown.
   const unwrap = (value: unknown) => node(value) && 'value' in node(value)! ? node(value)!.value : value;
@@ -133,7 +146,7 @@ export function lintSelectedRowProjections(
     const field=key(selected), selection=node(selected?.object), owner=node(selection?.object), namespace=node(owner?.object);
     if (!field || !member(selection)) continue;
     const tableName = owner?.type === 'Identifier' && owner.name === 'variables'
-      ? aliases.get(key(selection) ?? '')
+      ? singleAlias(key(selection) ?? '')
       : key(selection) === 'selectedRow' && member(owner) && namespace?.type === 'Identifier' && namespace.name === 'components'
         ? key(owner) : undefined;
     const projected=tableName ? tables.get(tableName)?.get(field) : undefined;
@@ -151,7 +164,7 @@ export function lintSelectedRowProjections(
     const field = key(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
     if (!field || !member(selection)) continue;
     const tableName = table?.type === 'Identifier' && table.name === 'variables'
-      ? aliases.get(key(selection) ?? '')
+      ? singleAlias(key(selection) ?? '')
       : key(selection) === 'selectedRow' && member(table) && namespace?.type === 'Identifier' && namespace.name === 'components'
         ? key(table) : undefined;
     const value = tableName ? tables.get(tableName)?.get(field) : undefined;

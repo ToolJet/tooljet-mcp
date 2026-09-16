@@ -14,6 +14,10 @@ export const editContractSchema = z.object({
     required: z.boolean().default(false),
     nullable: z.boolean().default(false).describe('Opt in to clearing to null; a user change event is also required.'),
     trim: z.boolean().default(false),
+    choices: z.union([
+      z.array(z.object({label:z.string(),value:z.union([z.string(),z.number().finite()])}).strict()).min(1).max(100),
+      z.object({query:name,value_field:name,label_field:name}).strict(),
+    ]).optional().describe('Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.'),
   })).min(1).max(40),
 }).strict();
 export type EditContractInput = z.input<typeof editContractSchema>;
@@ -61,6 +65,13 @@ export function generateEditContract(input: EditContractInput) {
   }
   if (spec.fields.some(f => f.field === spec.id_field)) throw new Error('The stable primary key cannot be edited');
   if (spec.fields.some(f => f.required && f.nullable)) throw new Error('A required field cannot be nullable');
+  for (const f of spec.fields) if (f.choices) {
+    if (!['text','number'].includes(f.type)) throw new Error('Choices require a text or number field');
+    if (Array.isArray(f.choices)) {
+      if (f.choices.some(o=>typeof o.value !== (f.type==='text'?'string':'number'))) throw new Error('Choice values must match field type');
+      if (new Set(f.choices.map(o=>o.value)).size!==f.choices.length) throw new Error('Duplicate choice value');
+    }
+  }
   const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
   const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
   const q = JSON.stringify;
@@ -109,18 +120,25 @@ for (const field of fields) {
 }
 return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   const inputs = spec.fields.map(f => {
-    const type = { text: 'TextInput', number: 'NumberInput', date_only: 'DatePickerV2', boolean: 'Checkbox' }[f.type];
-    const initialKey = ['date_only', 'boolean'].includes(f.type) ? 'defaultValue' : 'value';
+    const type = f.choices ? 'DropdownV2' : { text: 'TextInput', number: 'NumberInput', date_only: 'DatePickerV2', boolean: 'Checkbox' }[f.type];
+    const initialKey = f.choices ? 'schema' : ['date_only', 'boolean'].includes(f.type) ? 'defaultValue' : 'value';
     const exposed = f.type === 'date_only' ? 'selectedDate' : 'value';
-    const trigger = f.type === 'date_only' ? 'onSelect' : 'onChange';
+    const trigger = f.choices || f.type === 'date_only' ? 'onSelect' : 'onChange';
     const schema = getComponentSchema(type);
     if (!schema?.properties.some(p => p.key === initialKey) || !schema.events?.some(e => e.id === trigger)) throw new Error(`Unsupported edit adapter: ${type}`);
     const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    const value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === 'boolean' ? 'false' : "''"}}}`;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:components.${f.component}.${exposed}})})}}`;
+    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === 'boolean' ? 'false' : "''"}}}`;
+    if (f.choices) {
+      const options = Array.isArray(f.choices) ? q(f.choices)
+        : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
+      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
+    }
+    const exposedValue = `components.${f.component}.${exposed}`;
+    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
+    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
     return {
       name: f.component, type,
-      properties: { [initialKey]: value, ...(f.type === 'date_only' ? {dateFormat: 'YYYY-MM-DD'} : {}) },
+      properties: { [initialKey]: value, ...(f.choices ? {advanced:'{{true}}',showClearBtn:f.nullable} : {}), ...(f.type === 'date_only' ? {dateFormat: 'YYYY-MM-DD'} : {}) },
       validation: { mandatory: f.required },
       events: [{ source_ref: f.component, source_type: 'component', trigger, action: {
         actionId: 'set-custom-variable', key: draft, value: draftValue,
@@ -145,7 +163,8 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
     ],
     limitations: [
       'Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.',
-      'Only text, finite number, ISO date-only and boolean inputs are covered. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.',
+      'Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.',
+      'Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.',
       'Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions.',
     ],
   };

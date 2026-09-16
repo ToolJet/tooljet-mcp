@@ -2,6 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { lintRenderedText, expressionOutsideBinding, lintComponentSpec } from '../src/lint.js';
 
 describe('rendered text that a customer would read as a bug', () => {
+  it('warns when Text silently falls back to the catalog greeting without constraining copy or layout', () => {
+    const absent = lintComponentSpec({ type: 'Text', name: 'reviewTitle', properties: { textFormat: 'html' } });
+    expect(absent.warnings.some(w => w.includes('default greeting'))).toBe(true);
+    for (const text of ['', 'Review workspace', '{{queries.header.data}}', { value: '' }]) {
+      expect(lintComponentSpec({ type: 'Text', properties: { text } }).warnings.some(w => w.includes('default greeting'))).toBe(false);
+    }
+    expect(lintComponentSpec({ type: 'Container', properties: {} }).warnings.some(w => w.includes('default greeting'))).toBe(false);
+  });
+
   it('rejects a literal backslash-n in a Text value', () => {
     const errors = lintRenderedText({ type: 'Text', name: 'totalCard', properties: { text: 'TOTAL PRODUCTS\\n{{queries.list.data.length}}' } });
     expect(errors).toHaveLength(1);
