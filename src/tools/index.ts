@@ -24,6 +24,7 @@ import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
 import { testDatasourceConnectionTool } from './testDatasourceConnection.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
 import { generateFormSchemaTool } from './generateFormSchema.js';
+import { generateEditContractTool } from './generateEditContract.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
@@ -114,6 +115,7 @@ export function registerTools(
     testDatasourceConnectionTool(client),
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
+    generateEditContractTool(),
     getComponentCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),
