@@ -44,6 +44,7 @@ export interface PlannedEvent {
 
 export interface PlannedLifecycle {
   queryRef: string;
+  beforeRefreshActions?: Array<Record<string, unknown>>;
   refreshQueryRefs?: string[];
   clearComponentRefs?: string[];
   closeModalRef?: string;
@@ -451,6 +452,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
         type: component.type,
         properties: component.properties,
         styles: component.styles,
+        validation: component.validation,
         others: component.others,
         layouts: component.layouts ?? (component.layout
           ? { desktop: component.layout, mobile: component.layout }
@@ -504,6 +506,9 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
         closeModalId: resolveRef(lifecycle.closeModalRef, componentRefs, errors, `Lifecycle[${index}] modal`),
         successAlert: lifecycle.successAlert,
         failureAlert: lifecycle.failureAlert,
+        beforeRefreshActions: lifecycle.beforeRefreshActions?.map((action, actionIndex) =>
+          resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] before refresh action[${actionIndex}]`)
+        ),
         successActions: lifecycle.successActions?.map((action, actionIndex) =>
           resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] success action[${actionIndex}]`)
         ),

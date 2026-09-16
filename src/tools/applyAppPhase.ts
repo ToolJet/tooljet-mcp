@@ -396,6 +396,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         });
         const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
           queryId: oneRef(lifecycle.query_ref, queryTargets, 'Lifecycle query')!,
+          beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) =>
+            resolveAction(action, pageTargets, queryTargets, componentTargets)
+          ),
           refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, 'Lifecycle refresh query'),
           clearComponentIds: refs(lifecycle.clear_component_refs, componentTargets, 'Lifecycle clear component'),
           closeModalId: oneRef(lifecycle.close_modal_ref, componentTargets, 'Lifecycle modal'),

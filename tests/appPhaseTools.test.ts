@@ -102,7 +102,7 @@ describe('plan token + apply_app_phase', () => {
       seed_data: [{ table_name: 'cases', rows: [{ title: 'Broken login' }] }],
       queries: [
         { client_ref: 'list', datasource_id: 'tjdb', table_ref: 'cases', name: 'list_cases', options: { operation: 'list_rows', list_rows: {} } },
-        { client_ref: 'create', datasource_id: 'tjdb', table_ref: 'cases', name: 'create_case', options: { operation: 'create_row', create_row: { 0: { column: 'title', value: '{{components.caseTitle.value}}' } } } },
+        { client_ref: 'create', datasource_id: 'tjdb', table_ref: 'cases', name: 'create_case', options: { operation: 'create_row', create_row: { 0: { column: 'title', value: '{{components.title.value}}' } } } },
       ],
       pages: [{
         client_ref: 'home', name: 'Overview', icon: 'IconLayoutDashboard',
@@ -112,14 +112,20 @@ describe('plan token + apply_app_phase', () => {
         ],
       }],
       events: [{ source_ref: 'save', source_type: 'component', trigger: 'onClick', action }],
-      lifecycles: [{ query_ref: 'create', refresh_query_refs: ['list'], clear_component_refs: ['title'], success_alert: { message: 'Created' }, failure_alert: { message: 'Failed' } }],
+      lifecycles: [{
+        query_ref: 'create',
+        before_refresh_actions: [{ actionId: 'control-component', target_ref: 'title',
+          componentSpecificActionHandle: 'setText', componentSpecificActionParams: [{ handle: 'text', value: 'Saved title' }] }],
+        refresh_query_refs: ['list'], clear_component_refs: ['title'],
+        success_alert: { message: 'Created' }, failure_alert: { message: 'Failed' },
+      }],
     });
     const planToken = textOf(lintResult).plan_token;
-    expect(planToken).toEqual(expect.any(String));
+    expect(planToken, JSON.stringify(textOf(lintResult).errors)).toEqual(expect.any(String));
 
     const applyResult = await applyAppPhaseTool(client).handler({ app_id: 'app1', version_id: 'v1', plan_token: planToken });
     const body = textOf(applyResult);
-    expect(body.applied).toMatchObject({ app_metadata: 1, tables: 1, seed_rows: 1, pages: 0, queries: 2, components: 2, events: 5 });
+    expect(body.applied).toMatchObject({ app_metadata: 1, tables: 1, seed_rows: 1, pages: 0, queries: 2, components: 2, events: 6 });
     expect(body.refs).toMatchObject({
       pages: { home: 'home-id' },
       queries: { list: 'list-id', create: 'create-id' },
@@ -136,7 +142,16 @@ describe('plan token + apply_app_phase', () => {
       queries: expect.arrayContaining([expect.objectContaining({ options: expect.objectContaining({ table_id: 'table-id' }) })]),
     }));
     expect(client.createEvents).toHaveBeenCalledOnce();
+    expect(client.createQueries).toHaveBeenCalledWith(expect.objectContaining({
+      queries: expect.arrayContaining([expect.objectContaining({ name: 'create_case', options: expect.objectContaining({
+        create_row: { 0: { column: 'title', value: '{{components["caseTitle"].value}}' } },
+      }) })]),
+    }));
     expect(persistedEvents[0].action).toMatchObject({ queryId: 'create-id', queryName: 'create_case' });
+    expect(persistedEvents[1].action).toMatchObject({
+      actionId: 'control-component', componentId: 'title-id', componentSpecificActionParams: [{ handle: 'text', value: 'Saved title' }],
+    });
+    expect(persistedEvents[2].action).toMatchObject({ actionId: 'run-query', queryId: 'list-id' });
 
     const retry = await applyAppPhaseTool(client).handler({ app_id: 'app1', version_id: 'v1', plan_token: planToken });
     expect(retry.isError).toBe(true);

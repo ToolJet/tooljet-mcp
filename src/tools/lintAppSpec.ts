@@ -5,6 +5,7 @@ import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { updateRowsCompatibilityWarning } from '../tableQueryCompatibility.js';
 import { suggestedHtmlHeight } from '../renderReadiness.js';
+import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -169,6 +170,10 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           ? await client.listDatasources(args.version_id)
           : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
+        const uniqueDatasourceNames = new Map(datasources.filter(source =>
+          datasources.filter(other => other.name === source.name).length === 1
+        ).map(source => [source.name, source.kind]));
+        preflightWarnings.push(...normalizePlanBindingAliases(args, existingSummary, datasourceKinds, uniqueDatasourceNames));
         const resolvedQueryIds = new Map<number, string>();
         const queries = (args.queries ?? []).map((query, index) => {
           let datasourceId = query.datasource_id;
@@ -293,6 +298,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           })),
           lifecycles: args.lifecycles?.map((lifecycle) => ({
             queryRef: lifecycle.query_ref,
+            beforeRefreshActions: lifecycle.before_refresh_actions,
             refreshQueryRefs: lifecycle.refresh_query_refs,
             clearComponentRefs: lifecycle.clear_component_refs,
             closeModalRef: lifecycle.close_modal_ref,

@@ -19,8 +19,10 @@ import {
 import { bindingReferences } from './bindingReferences.js';
 import { lintComponentStateBindings } from './componentStateBindings.js';
 import { pageIconError } from './pageIcons.js';
-import { runjsQueryReferences } from './runjsReferences.js';
+import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
+import { lintSelectedRowProjections } from './selectedRowProjection.js';
+import { dropdownDefaultVisibilityWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
@@ -56,6 +58,7 @@ export const STYLE_KEYS_IN_PROPERTIES = new Set([
  *  (fontSize vs textSize). Lookup is case-insensitive; a match is only used when its target is actually
  *  a valid key for the component. */
 export const PROPERTY_KEY_ALIASES: Record<string, string> = {
+  isdisabled: 'disabledState',
   fontsize: 'textSize',
   font_size: 'textSize',
   size: 'textSize',
@@ -1722,11 +1725,21 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   // DropdownV2 has two mutually exclusive option surfaces. ToolJet persists defaults for both, so
   // compare with the exact catalog defaults and warn only when the caller authored a custom value.
   if (spec.type === 'DropdownV2') {
+    for (const key of ['value', 'defaultValue']) {
+      if (Object.prototype.hasOwnProperty.call(props, key)) {
+        errors.push(`DropdownV2 "${label}": properties.${key} is not a supported preselection property. ` +
+          'Set visible:true and default:true on the matching option; for an edit form use advanced:true and a schema binding ' +
+          'whose option.default compares its value with the raw selected record ID/field. Preserve ID types. ' +
+          'Remove this unsupported property after wiring the selection; silently dropping it can clear saved relationships.');
+      }
+    }
     const advanced = propVal(props, 'advanced');
     const schema = propVal(props, 'schema');
     const options = propVal(props, 'options');
     const customSchema = differsFromCatalogDefault('DropdownV2', 'schema', schema);
     const customOptions = differsFromCatalogDefault('DropdownV2', 'options', options);
+    if (isTruthyBinding(advanced)) warnings.push(...dropdownDefaultVisibilityWarning(schema, label));
+    else if (advanced === undefined || isFalseBinding(advanced)) warnings.push(...dropdownDefaultVisibilityWarning(options, label));
 
     if (customOptions && !Array.isArray(options)) {
       errors.push(
@@ -2552,6 +2565,7 @@ export function lintUnrenderableHeights(components: LintComponent[]): string[] {
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
@@ -2772,6 +2786,13 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     const options = recordValue(query.options);
     const code = options?.code;
     if (typeof code !== 'string') continue;
+    for (const name of runjsComponentReferences(code)) {
+      if (!componentNames.has(name)) errors.push(
+        `RunJS query "${query.name ?? query.id}" references components[${JSON.stringify(name)}], but no component is named ` +
+          `${JSON.stringify(name)}. Use the persisted component name exactly (bracket notation for spaces); ` +
+          'a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.'
+      );
+    }
     const referencedNames = runjsQueryReferences(code);
     for (const name of referencedNames) {
       if (!queryNames.has(name)) errors.push(
@@ -2977,10 +2998,11 @@ export function validateAppStructure(summary: AppSummary): LintResult {
 
   // Bindings to non-existent queries/components + re-run per-component render lints.
   const bindingSources = [
-    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles, v: c.validation, o: c.others } })),
     ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
     ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event })),
   ];
+  warnings.push(...lintSelectedRowProjections(allComponents, bindingSources.filter(s => !s.label.startsWith('Component '))));
   for (const source of bindingSources) {
     errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
     const seen = new Set<string>();

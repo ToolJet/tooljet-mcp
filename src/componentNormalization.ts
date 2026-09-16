@@ -72,6 +72,9 @@ function isStrippableUnknownKey(
   knownKeys: string[]
 ): boolean {
   if (knownKeys.includes(key)) return false;
+  // These are not harmless cruft: stripping an attempted edit preselection
+  // silently opens a blank selector and can erase a foreign key on Save.
+  if (type === 'DropdownV2' && section === 'properties' && ['value', 'defaultValue'].includes(key)) return false;
   if (section === 'properties' && STYLE_KEYS_IN_PROPERTIES.has(key)) return false;
   const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
   if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))) return false;
@@ -156,6 +159,23 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     }
   }
   if (stylesChanged) normalizedSections.styles.value = stylesValue;
+
+  // New definitions only: these NumberInput bounds have one source-verified destination.
+  // Never choose between conflicting constraints or reinterpret a legacy persisted update.
+  if (options.stripUnknownKeys && component.type === 'NumberInput') {
+    for (const key of ['minValue', 'maxValue']) {
+      const value = propValue(properties, key);
+      if (value == null || (typeof value === 'string' && !value.trim())) continue;
+      const validation = normalizedSections.validation.value ?? {};
+      const current = propValue(validation, key);
+      if (validation[key] !== undefined && current !== value) continue;
+      validation[key] = properties[key];
+      normalizedSections.validation.value = validation;
+      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key]: validation[key] };
+      delete properties[key];
+      warnings.push(`NumberInput "${component.name}": moved properties.${key} to validation.${key}, where the renderer reads the bound.`);
+    }
+  }
 
   // Older catalog snapshots exposed clientServerSwitch's editor labels as enum values even
   // though ToolJet persists these controls as booleans. Accept the common model-authored form
