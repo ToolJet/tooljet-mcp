@@ -26,6 +26,7 @@ import { generateFormSchemaTool } from './generateFormSchema.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
+import { createRenderSessionTool } from './createRenderSession.js';
 import { validateAppTool } from './validateApp.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
 import { applyAppPhaseTool } from './applyAppPhase.js';
@@ -115,6 +116,7 @@ export function registerTools(
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
+    createRenderSessionTool(client),
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
