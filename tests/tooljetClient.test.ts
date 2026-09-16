@@ -1587,6 +1587,20 @@ describe('createClient', () => {
     });
   });
 
+  describe('getPluginSpec', () => {
+    it('reads a raw spec through the authenticated metadata route with encoded segments', async () => {
+      const spec = 'openapi: 3.0.0\npaths: {}\n';
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ text: spec }));
+      expect(await createClient(auth, config).getPluginSpec('example plugin', 'service/cases')).toBe(spec);
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/plugins/specs/example%20plugin/service%2Fcases');
+    });
+
+    it('surfaces denied or missing spec responses instead of parsing them as API metadata', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 403, text: 'Forbidden' }));
+      await expect(createClient(auth, config).getPluginSpec('hubspot', 'tickets')).rejects.toThrow('getPluginSpec');
+    });
+  });
+
   describe('runQuery', () => {
     it('resolves the dev env, POSTs to /run/:env with empty options, returns the result', async () => {
       auth.authedFetch

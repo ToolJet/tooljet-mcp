@@ -597,6 +597,7 @@ export interface ToolJetClient {
   runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  getPluginSpec(pluginKind: string, specName: string): Promise<string>;
   testDatasourceConnection(params: TestDatasourceConnectionParams): Promise<ConnectionTestResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
@@ -2311,6 +2312,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return (await res.json()) as RunQueryResult;
   }
 
+  /** Read installed plugin API metadata through the authenticated spec route. */
+  async function getPluginSpec(pluginKind: string, specName: string): Promise<string> {
+    const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
+    await assertOk(res, 'getPluginSpec');
+    return res.text();
+  }
+
   /** Read one saved datasource's stored connection configuration for an environment.
    *
    *  Deliberately NOT taken from listDatasources: that response passes through ToolJet's
@@ -2492,6 +2500,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    getPluginSpec,
     testDatasourceConnection,
     listEvents,
     updateEvents,

@@ -1,3 +1,4 @@
+import { hubspotQueryIssues } from './hubspotQuery.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
@@ -743,6 +744,16 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
     };
   }
   const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
+
+  if (kind === 'hubspot') {
+    const issue = hubspotQueryIssues(options)[0];
+    const assessment = assessOpenapi({ ...options, host: 'https://api.hubapi.com' }, datasourceId);
+    return {
+      ...assessment, datasourceKind: 'hubspot',
+      ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
+        : { reason: assessment.reason?.replaceAll('OpenAPI', 'HubSpot') }),
+    };
+  }
 
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
   if (kind === 'openapi') return assessOpenapi(options, datasourceId);

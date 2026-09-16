@@ -1,3 +1,4 @@
+import { hubspotSpecs } from '../hubspotQuery.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
@@ -157,6 +158,7 @@ function openapiIntrospection(
     // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
     buckets,
     parameters: result.parameters,
+    ...(result.response ? { response: result.response } : {}),
     ...(result.requestBody ? { requestBody: result.requestBody } : {}),
     ...(host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }),
   };
@@ -174,6 +176,7 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
     description:
       'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, ' +
       'listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. ' +
+      'HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. ' +
       'Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/' +
       'search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the ' +
       'requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups ' +
@@ -252,7 +255,38 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
             ));
           }
         }
+        // Cache per invocation so batched endpoint reads share one fetch, without retaining
+        // an installed plugin's old spec across upgrades or across ToolJet instances.
+        const hubspotDocuments = new Map<string, Promise<Record<string, any>>>();
         const results = await Promise.all(requests.map(async (request) => {
+          if (datasource.kind === 'hubspot') {
+            const specs = hubspotSpecs();
+            const selector = request.schema ?? request.args?.specType;
+            if (!selector && request.method === 'listTables') {
+              return { method: request.method, result: { specs,
+                next_step: 'Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages.' } };
+            }
+            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
+            if (!selected) throw new Error('HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.');
+            if (!hubspotDocuments.has(selected.name)) {
+              hubspotDocuments.set(selected.name, client.getPluginSpec('hubspot', selected.name).then((text) => {
+                const spec = extractSpec({ spec: text });
+                if (!spec) throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
+                return spec;
+              }));
+            }
+            const document = await hubspotDocuments.get(selected.name)!;
+            const result = openapiIntrospection(document, request) as Record<string, any>;
+            if (result.query_options) {
+              delete result.query_options.host;
+              delete result.query_options.params.header;
+              delete result.host_warning;
+              result.query_options.specType = selected.specType;
+              if (result.buckets?.['params.header']) result.unsupported_headers = result.buckets['params.header'];
+              result.notes = 'HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.';
+            }
+            return { method: request.method, schema: selected.name, specType: selected.specType, result };
+          }
           if (openapiSpec) {
             const result = openapiIntrospection(openapiSpec, request);
             return { method: request.method, ...(request.table ? { table: request.table } : {}), result };
