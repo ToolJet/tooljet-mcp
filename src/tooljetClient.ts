@@ -7,6 +7,7 @@ import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
+import { invalidSeedTimestamps } from './seedTimestampValidation.js';
 
 export interface CreateAppResult {
   app_id: string;
@@ -1894,6 +1895,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     if (!params.rows.length) return { processed_rows: 0 };
     const schema = await getTableSchema(params.tableName);
     const rows = params.rows.map((r) => ({ ...r }));
+    const timestampErrors = invalidSeedTimestamps(schema, rows);
+    if (timestampErrors.length) throw new Error(`insertRows preflight for "${params.tableName}": ${timestampErrors.join(' ')} No rows in this table batch were inserted.`);
     const generatedPrimaryKey = schema.find(
       (column) => column.isPrimaryKey && (
         /serial/i.test(column.type) || /^nextval\(/i.test(String(column.defaultValue ?? ''))

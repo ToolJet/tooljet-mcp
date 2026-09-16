@@ -3,9 +3,12 @@ import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { updateRowsCompatibilityWarning } from '../tableQueryCompatibility.js';
+import { updateRowsCompatibilityWarning, bulkPrimaryKeyWarning } from '../tableQueryCompatibility.js';
+import { arithmeticWriteWarning } from '../arithmeticWriteContract.js';
 import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
+import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -126,6 +129,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           }
           const plannedTable = plannedTables.get(seed.table_name.toLowerCase());
           if (plannedTable) {
+            preflightErrors.push(...invalidSeedTimestamps(plannedTable.columns, seed.rows)
+              .map(error => `Seed data for planned table "${seed.table_name}": ${error}`));
             const requiredColumns = plannedTable.columns.filter((column) =>
               (column.primaryKey || column.notNull) &&
               column.defaultValue === undefined &&
@@ -230,16 +235,19 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           };
         });
 
-        // Inspect only tables actually targeted by this phase's update_rows queries.
+        // Inspect only tables actually targeted by this phase's structured writes.
         // Metadata reads only; no query execution and no broad workspace schema scan.
         const schemas = new Map<string, string[] | undefined>();
+        const insertSchemas = new Map<string, RequiredColumn[]>();
         for (const table of args.tables ?? []) {
           const columns = table.columns.map(column => column.name);
           if (!table.columns.some(column => column.primaryKey)) columns.push('id');
           schemas.set(`planned-table:${table.table_name}`, columns);
+          insertSchemas.set(`planned-table:${table.table_name}`, table.columns.some(column => column.primaryKey)
+            ? table.columns : [...table.columns, {name:'id',type:'serial',primaryKey:true}]);
         }
         const updateTableIds = new Set(queries.filter(query =>
-          query.kind === 'tooljetdb' && query.options.operation === 'update_rows' &&
+          query.kind === 'tooljetdb' && ['update_rows', 'create_row', 'bulk_upsert_with_primary_key'].includes(String(query.options.operation)) &&
           typeof query.options.table_id === 'string'
         ).map(query => query.options.table_id as string));
         await Promise.all([...updateTableIds].map(async tableId => {
@@ -247,9 +255,12 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           const table = existingTables.find(item => item.id === tableId);
           if (!table) return;
           try {
-            schemas.set(tableId, (await client.getTableSchema(table.table_name)).map(column => column.name));
+            const schema = await client.getTableSchema(table.table_name);
+            schemas.set(tableId, schema.map(column => column.name));
+            insertSchemas.set(tableId, schema.map(column => ({name:column.name,type:column.type,
+              primaryKey:column.isPrimaryKey,notNull:column.isNotNull,defaultValue:column.defaultValue})));
           } catch {
-            preflightWarnings.push(`Could not inspect update_rows target "${table.table_name}"; primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
+            preflightWarnings.push(`Could not inspect write target "${table.table_name}"; required insert columns were not checked and update_rows primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
           }
         }));
         for (const query of queries) {
@@ -258,6 +269,19 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             (args.tables ?? []).find(table => `planned-table:${table.table_name}` === tableId)?.table_name ?? tableId;
           const warning = updateRowsCompatibilityWarning(query.kind, query.options, tableName, schemas.get(tableId));
           if (warning) preflightWarnings.push(`Query "${query.name}": ${warning}`);
+          const arithmetic = arithmeticWriteWarning(query.kind, query.options);
+          if (arithmetic) preflightWarnings.push(`Query "${query.name}": ${arithmetic}`);
+          const bulkWarning = bulkPrimaryKeyWarning(query.kind, query.options, tableName, insertSchemas.get(tableId));
+          if (bulkWarning) (tableId.startsWith('planned-table:') ? preflightErrors : preflightWarnings).push(`Query "${query.name}": ${bulkWarning}`);
+          if (query.kind === 'tooljetdb' && insertSchemas.has(tableId)) {
+            const missing = missingCreateRowColumns(query.options, insertSchemas.get(tableId)!);
+            if (missing?.length) {
+              const message = `Query "${query.name}": create_row for "${tableName}" omits required non-generated column(s) ${missing.map(name => JSON.stringify(name)).join(', ')}. ` +
+                'Seed rows do not supply values for future user-created records. Include the required values in this insert, or use a generated/defaulted key when designing a new table. Never recreate an existing table or change its key merely to fix this query.';
+              if (tableId.startsWith('planned-table:')) preflightErrors.push(message);
+              else preflightWarnings.push(message + ' Metadata does not verify database triggers; if an existing trigger supplies these fields, confirm that contract instead.');
+            }
+          }
         }
 
         const lint = lintPlannedApp({

@@ -1,6 +1,7 @@
 import type { AppPlanInput } from './appPlanSchema.js';
 import type { AppSummary } from './tooljetClient.js';
 import { namespaceReads } from './runjsReferences.js';
+import { bindingSpans } from './bindingSpans.js';
 
 type Namespace = 'components' | 'queries';
 type BindingPlan = Omit<AppPlanInput, 'pages'> & {
@@ -45,11 +46,15 @@ export function normalizePlanBindingAliases(
     return code;
   };
   const values = (value: unknown): unknown => {
-    if (typeof value === 'string') return value.replace(/\{\{([\s\S]*?)\}\}/g, (whole, body: string) => {
-      const source = `(${body})`;
-      const normalized = rewrite(source);
-      return source === normalized ? whole : `{{${normalized.slice(1, -1)}}}`;
-    });
+    if (typeof value === 'string') {
+      let result = value;
+      for (const span of bindingSpans(value).reverse()) {
+        const source = `(${span.body})`;
+        const normalized = rewrite(source);
+        if (source !== normalized) result = result.slice(0, span.start) + `{{${normalized.slice(1, -1)}}}` + result.slice(span.end);
+      }
+      return result;
+    }
     if (Array.isArray(value)) return value.map(values);
     if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, values(child)]));
     return value;

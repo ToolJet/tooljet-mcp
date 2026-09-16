@@ -65,6 +65,23 @@ describe('explicit plan alias normalization', () => {
 });
 
 describe('parse-only binding references', () => {
+  it('keeps nested object and quoted delimiters inside the expression', () => {
+    const expression = '{{[{answers:{name:components.project_name.value},note:"}}",q:queries.project_list.data}]}}';
+    expect(bindingReferences(expression)).toEqual([
+      {namespace:'components',name:'project_name'}, {namespace:'queries',name:'project_list'},
+    ]);
+    const spec = plan();
+    spec.queries![0]!.options.payload = expression;
+    normalizePlanBindingAliases(spec);
+    expect(spec.queries![0]!.options.payload).toBe('{{[{answers:{name:components["projectName"].value},note:"}}",q:queries["listProjects"].data}]}}');
+  });
+  it('handles adjacent objects, multiple interpolations and template literals without evaluating them', () => {
+    expect(bindingReferences('{{({a:{b:components.foo.value}})}} / {{queries.bar.data}}')).toEqual([
+      {namespace:'components',name:'foo'}, {namespace:'queries',name:'bar'},
+    ]);
+    expect(bindingReferences('{{`}} ${components.foo.value}`}}')).toEqual([{namespace:'components',name:'foo'}]);
+    expect(bindingReferences('{{ (() => { throw new Error("never execute") })() }}')).toEqual([]);
+  });
   it('sees template interpolation but not quoted text, regex examples or local namespaces', () => {
     expect(bindingReferences('{{`Hi ${components.name.value}`}}')).toEqual([{namespace:'components',name:'name'}]);
     expect(bindingReferences('{{/components.fake/.test("x")}}')).toEqual([]);

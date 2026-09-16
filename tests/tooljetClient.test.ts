@@ -685,6 +685,20 @@ describe('createClient', () => {
       expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
     });
 
+    it('persists Kanban modal children on the separate card-click canvas', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'board', type: 'Kanban', clientRef: 'board', properties: { openModalOnCardClick: { value: true } } },
+          { name: 'detail', type: 'Text', parentRef: 'board', slotName: 'modal', properties: { text: { value: '{{cardData.title}}' } } },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1-modal');
+    });
+
     it('encodes a logical modal slot in the persisted parent id', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
       const client = createClient(auth, config);
