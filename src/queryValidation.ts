@@ -4,6 +4,7 @@ import {
   type DatasourceOperationContract,
   type DatasourceContractVariant,
   type DatasourceFieldContract,
+  type DatasourceQuerySchema,
 } from './datasourceCatalog.js';
 import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafety.js';
 
@@ -44,6 +45,24 @@ function valueAtPath(source: Record<string, unknown>, path: string): unknown {
     cursor = cursor[segment];
   }
   return cursor;
+}
+
+// An empty `operations` list is not "this kind has no operations" — see DatasourceOperationSelection.
+// Saying so keeps a caller from concluding the datasource is unsupported and silently substituting
+// another one.
+function describeOperationSelection(schema: DatasourceQuerySchema): string {
+  const selection = schema.operationSelection;
+  if (schema.operations.length) {
+    const fields = selection?.fields?.length ? selection.fields.join(' + ') : 'operation';
+    return `Set ${fields}. Valid operations: ${schema.operations.join(', ')}.`;
+  }
+  if (selection?.mode === 'remote-spec') {
+    return (
+      `This kind takes its operation from the remote API spec${selection.specUrl ? ` (${selection.specUrl})` : ''}, ` +
+      `not from a fixed list; set ${selection.field ?? 'the operation field'} to an operation id from that spec.`
+    );
+  }
+  return 'This kind has a single unnamed query form; author it against the default contract.';
 }
 
 function operationFromOptions(
@@ -363,12 +382,13 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     return { kind, schemaFound: false, errors, warnings };
   }
 
+  const operationHint = describeOperationSelection(schema);
   const operation = operationFromOptions(options, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: 'missing_operation',
       path: schema.contracts.sql ? 'mode' : 'operation',
-      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(', ') || 'default'}.`,
+      message: `Datasource "${kind}" needs an operation/mode. ${operationHint}`,
     });
     return { kind, schemaFound: true, errors, warnings };
   }
@@ -378,7 +398,7 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     errors.push({
       code: 'invalid_operation',
       path: typeof options.operation === 'string' ? 'operation' : 'mode',
-      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(', ')}.`,
+      message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`,
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }

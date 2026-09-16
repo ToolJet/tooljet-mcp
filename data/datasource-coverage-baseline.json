@@ -5,11 +5,14 @@
     "known_response_contracts": 64,
     "response_contracts_present": 470,
     "kinds_with_test_connection_flag": 94,
-    "kinds_supporting_test_connection": 60
+    "kinds_supporting_test_connection": 60,
+    "kinds_with_named_operations": 71
   },
   "maximums": {
     "missing_response_contracts": 0,
     "kinds_without_contracts": 0,
-    "opaque_endpoint_kinds": 13
+    "opaque_endpoint_kinds": 14,
+    "unexplained_default_only_kinds": 0,
+    "spec_driven_kinds_without_spec_ref": 0
   }
 }
