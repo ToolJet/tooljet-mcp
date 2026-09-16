@@ -187,6 +187,13 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     const columns = propValue(properties, 'columns');
     const dynamicColumns = isTruthy(propValue(properties, 'useDynamicColumn'));
     const autogenerateColumns = propValue(properties, 'autogenerateColumns');
+    if (options.stripUnknownKeys && columns === undefined && !dynamicColumns && isTruthy(autogenerateColumns) &&
+        typeof propValue(properties, 'data') === 'string' && /\bqueries(?:\.|\[)/.test(String(propValue(properties, 'data')))) {
+      // New query-bound tables have no authored columns yet. Override the widget's demo columns;
+      // the browser will generate real columns when the query returns. Otherwise server-side
+      // verification compares fields like photo/email with unrelated datasource rows.
+      setProperty('columns', []);
+    }
     if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
       setProperty('autogenerateColumns', true);
       if (autogenerateColumns !== undefined) {

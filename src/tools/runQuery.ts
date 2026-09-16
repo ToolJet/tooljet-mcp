@@ -92,6 +92,9 @@ const LEGACY_SCHEMA_CODES = new Set(['ER_BAD_FIELD_ERROR', 'ER_BAD_TABLE_ERROR',
  *  names — never the misleading "go fix your datasource" prompt for a plain SQL name error. */
 export function classifyQueryFailure(result: Record<string, unknown> | undefined): QueryFailureClass {
   if (!result) return 'unknown';
+  // A malformed MongoDB JSON5 query is an authoring error, not a broken connection.
+  const details = result.data as { name?: unknown } | undefined;
+  if (details?.name === 'SyntaxError' && typeof result.description === 'string' && result.description.startsWith('JSON5:')) return 'query';
   const category = result.category;
   if (category === 'authentication' || category === 'connection') return 'connection';
   if (category === 'schema_name') return 'schema_name';

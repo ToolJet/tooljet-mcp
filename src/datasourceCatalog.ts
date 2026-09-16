@@ -182,6 +182,11 @@ export function selectDatasourceQuerySchema(
         kind,
         error: `Unknown operation "${options.operation}" for datasource kind "${kind}".`,
         operations: schema.operations,
+        ...(schema.operationSelection?.mode === 'single' ? {
+          operation_selection: schema.operationSelection,
+          available_contracts: Object.keys(schema.contracts),
+          recovery: 'This datasource has one query form, not zero capabilities. Request operation:"default" (or omit operation) to read its contract. Put the command in the documented query option; do not invent an operation selector.',
+        } : {}),
       };
     }
     if (sections.has('request')) {

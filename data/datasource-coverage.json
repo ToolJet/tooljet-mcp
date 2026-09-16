@@ -62,16 +62,17 @@
   "spec_driven_kinds_without_spec_ref": [],
   "response_contracts": {
     "total": 489,
-    "known": 77,
+    "known": 82,
     "runtime_dependent": 36,
-    "unknown": 376,
+    "unknown": 371,
     "missing": 0,
-    "known_percent": 15.7
+    "known_percent": 16.8
   },
   "known_response_kinds": [
     "anthropic",
     "databricks",
     "mariadb",
+    "mongodb",
     "mssql",
     "mysql",
     "openai",
@@ -130,7 +131,7 @@
     "microsoft_graph": 1,
     "minio": 6,
     "mistral_ai": 1,
-    "mongodb": 18,
+    "mongodb": 13,
     "mssql": 1,
     "mysql": 1,
     "n8n": 2,
