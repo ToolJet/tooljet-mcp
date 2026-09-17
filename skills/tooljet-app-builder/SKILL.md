@@ -52,7 +52,7 @@ Detail: `references/qa.md`.
 
 ## Datasource repair handoff
 
-If an expected source is absent or a query returns a connection failure, explain the problem and use the returned `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the clickable link. Do not enter credentials, authorize OAuth, test, or save the connection for the user. Wait for them to confirm the repair, refresh datasource discovery, and retry at most one selected safe read. Read `references/datasources.md` for the full contract and large/billable-read safeguards.
+If an expected source is absent or a query fails to connect, use the returned `datasources_url`, `settings_url`, or `recovery.url`: open it in the built-in browser when available; otherwise send the clickable link. Never enter credentials, authorize OAuth, test, or save the connection. A native connector nobody connected (Google Sheets, Airtable, SQL databases, CRMs): stop, build nothing, hand off. No connector: build on a labelled placeholder table. Never ask which. After a repair, retry one safe read. See `references/datasources.md`.
 
 ## Load only the references the phase needs
 
