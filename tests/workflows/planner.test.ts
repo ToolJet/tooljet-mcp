@@ -86,6 +86,17 @@ describe('workflow planning and recovery', () => {
     const result = await lint(client, 'w', 'v', invalid);
     expect(result.errors.length).toBeGreaterThan(0); expect(result).not.toHaveProperty('plan_token');
   });
+  it('requires explicit draft permission for a reachable Agent without a model', async () => {
+    const { client } = fixture();
+    const incomplete = specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'agent', type: 'agent' },
+    ], edges: [{ ref: 'flow', from: 'start', to: 'agent', port: 'default' }] });
+    const blocked = await lint(client, 'w', 'v', incomplete);
+    expect(blocked).toMatchObject({ runtime_readiness: 'draft_only', blockers: [expect.objectContaining({ code: 'agent_missing_model' })] });
+    expect(blocked).not.toHaveProperty('plan_token');
+    expect(await lint(client, 'w', 'v', incomplete, true)).toHaveProperty('plan_token');
+  });
   it('deletes a query node, its incident edges, and its query after graph persistence', async () => {
     const { client, queries } = fixture(); const created = await apply(client, await token(client));
     const result = await deleteNode(client, 'w', 'v', created.node_ids.q);
@@ -95,6 +106,92 @@ describe('workflow planning and recovery', () => {
     const graph = (await client.get('w', 'v')).definition;
     expect(graph.nodes.map((node) => node.id)).not.toContain(created.node_ids.q);
     expect(graph.edges.some((edge) => edge.source === created.node_ids.q || edge.target === created.node_ids.q)).toBe(false);
+    expect(graph.queries).toEqual([]);
+  });
+  it('creates, maps, and preserves an Agent model query', async () => {
+    const { client } = fixture();
+    vi.mocked(client.listDatasources).mockResolvedValue([
+      { id: 'js', kind: 'runjs', name: 'JS', settings_url: '' },
+      { id: 'ai', kind: 'openai', name: 'AI', settings_url: '' },
+    ]);
+    const agentSpec = specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'agent', type: 'agent', model: { datasource_id: 'ai', name: 'draftEmail', options: { model: 'gpt-4o-mini' } } },
+      { ref: 'response', type: 'response', code: 'return {};' },
+    ], edges: [
+      { ref: 'start-agent', from: 'start', to: 'agent', port: 'default' },
+      { ref: 'agent-response', from: 'agent', to: 'response', port: 'default' },
+    ] });
+    const planned = await lint(client, 'w', 'v', agentSpec);
+    expect(planned).toHaveProperty('plan_token');
+    const applied = await apply(client, (planned as { plan_token: string }).plan_token);
+    expect(applied).not.toHaveProperty('failed');
+    expect(client.createWorkflowQuery).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'draftEmail', dataSourceId: 'ai', kind: 'openai', options: { model: 'gpt-4o-mini' },
+    }));
+    const graph = (await client.get('w', 'v')).definition;
+    const child = graph.nodes.find(node => node.data.agentConnectionType === 'ai-model')!;
+    expect(graph.queries.find(mapping => mapping.idOnDefinition === child.data.idOnDefinition)?.id).not.toMatch(/^pending:/);
+
+    const preserve = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'agent', existing_id: applied.node_ids.agent, type: 'agent', label: 'Renamed' },
+    ] }));
+    await apply(client, (preserve as { plan_token: string }).plan_token);
+    expect(client.createWorkflowQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes an Agent model attachment before deleting its owned query', async () => {
+    const { client, queries } = fixture();
+    vi.mocked(client.listDatasources).mockResolvedValue([
+      { id: 'js', kind: 'runjs', name: 'JS', settings_url: '' },
+      { id: 'ai', kind: 'openai', name: 'AI', settings_url: '' },
+    ]);
+    const create = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'agent', type: 'agent', model: { datasource_id: 'ai', name: 'modelQuery', options: { model: 'gpt-4o-mini' } } },
+    ], edges: [{ ref: 'flow', from: 'start', to: 'agent', port: 'default' }] }));
+    const applied = await apply(client, (create as { plan_token: string }).plan_token);
+    const remove = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'agent', existing_id: applied.node_ids.agent, type: 'agent', model: null },
+    ] }), true);
+    await apply(client, (remove as { plan_token: string }).plan_token);
+    expect(queries).toEqual([]);
+    const savedGraph = vi.mocked(client.save).mock.calls.at(-1)![1];
+    expect(savedGraph.nodes.some(node => node.data.agentConnectionType === 'ai-model')).toBe(false);
+    expect(vi.mocked(client.save).mock.invocationCallOrder.at(-1)).toBeLessThan(vi.mocked(client.deleteQuery).mock.invocationCallOrder.at(-1)!);
+  });
+  it('refuses apply when an Agent model datasource disappeared after lint', async () => {
+    const { client } = fixture();
+    vi.mocked(client.listDatasources).mockResolvedValue([
+      { id: 'js', kind: 'runjs', name: 'JS', settings_url: '' },
+      { id: 'ai', kind: 'openai', name: 'AI', settings_url: '' },
+    ]);
+    const planned = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'agent', type: 'agent', model: { datasource_id: 'ai', name: 'modelQuery', options: { model: 'gpt-4o-mini' } } },
+    ], edges: [{ ref: 'flow', from: 'start', to: 'agent', port: 'default' }] }));
+    vi.mocked(client.listDatasources).mockResolvedValue([{ id: 'js', kind: 'runjs', name: 'JS', settings_url: '' }]);
+    await expect(apply(client, (planned as { plan_token: string }).plan_token)).rejects.toThrow('Datasource unavailable');
+    expect(client.createWorkflowQuery).not.toHaveBeenCalled();
+    expect(client.save).not.toHaveBeenCalled();
+  });
+  it('deletes an Agent and its owned model query without leaving an orphan', async () => {
+    const { client, queries } = fixture();
+    vi.mocked(client.listDatasources).mockResolvedValue([
+      { id: 'js', kind: 'runjs', name: 'JS', settings_url: '' },
+      { id: 'ai', kind: 'openai', name: 'AI', settings_url: '' },
+    ]);
+    const planned = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'agent', type: 'agent', model: { datasource_id: 'ai', name: 'ownedModel', options: { model: 'gpt-4o-mini' } } },
+    ], edges: [{ ref: 'flow', from: 'start', to: 'agent', port: 'default' }] }));
+    const applied = await apply(client, (planned as { plan_token: string }).plan_token);
+    const deleted = await deleteNode(client, 'w', 'v', applied.node_ids.agent);
+    expect(deleted).not.toHaveProperty('failed');
+    expect(queries).toEqual([]);
+    const graph = (await client.get('w', 'v')).definition;
+    expect(graph.nodes.some(node => node.data.isChildOfAgent === true)).toBe(false);
+    expect(graph.edges.some(edge => edge.targetHandle === 'ai-model')).toBe(false);
     expect(graph.queries).toEqual([]);
   });
 });

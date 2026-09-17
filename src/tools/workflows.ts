@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { nodeCatalog, specSchema, validateGraph } from '../workflows/graph.js';
+import { getWorkflowCapabilities } from '../workflows/capabilities.js';
+import { capabilityRequestSchema } from '../workflows/capabilitySchema.js';
 import { lint, apply, deleteNode } from '../workflows/planner.js';
 import { ok, fail, type ToolDef } from './types.js';
 
@@ -28,13 +30,14 @@ export function workflowTools(client: ToolJetClient): ToolDef[] {
   });
   return [
     make('get_workflow_node_catalog', 'Get Workflow Node Catalog', 'Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.', {}, 'read', async () => ({ ...nodeCatalog, spec_schema: z.toJSONSchema(specSchema) })),
+    make('get_workflow_capabilities', 'Get Workflow Capabilities', 'List authorable workflow node types and configured datasource capabilities for one workflow version. Does not inspect credentials, create resources, or execute queries.', capabilityRequestSchema.shape, 'read', args => getWorkflowCapabilities(client, args)),
     make('list_workflows', 'List Workflows', 'List workflows in the active workspace.', { page: z.number().int().min(1).default(1), search: z.string().default('') }, 'read', args => client.workflows.list(args.page, args.search)),
     make('create_workflow', 'Create Workflow', 'Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.', { name: z.string().trim().min(1).max(100).regex(/^[^/]+$/) }, 'create', args => client.workflows.create(args.name)),
     make('get_workflow', 'Get Workflow', 'Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.', { workflow_id: id, version_id: id.optional() }, 'read', async args => {
       const snapshot = await client.workflows.get(args.workflow_id, args.version_id);
       return { ...snapshot, queries: await client.workflows.getQueries(snapshot.version_id) };
     }),
-    make('lint_workflow_spec', 'Lint Workflow Spec', 'Validate graph edits and query options without executing or saving. Returns a scoped one-use plan token. Omitted nodes/edges are preserved; removals require explicit IDs. Existing query rename/datasource changes are unsupported.', { ...target, spec: specSchema }, 'read', args => lint(client.workflows, args.workflow_id, args.version_id, args.spec)),
+    make('lint_workflow_spec', 'Lint Workflow Spec', 'Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.', { ...target, spec: specSchema, allow_draft: z.boolean().default(false) }, 'read', args => lint(client.workflows, args.workflow_id, args.version_id, args.spec, args.allow_draft)),
     make('apply_workflow_spec', 'Apply Workflow Spec', 'Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.', { plan_token: id }, 'write', args => apply(client.workflows, args.plan_token)),
     make('delete_workflow_node', 'Delete Workflow Node', 'Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.', { ...target, node_id: id }, 'write', args => deleteNode(client.workflows, args.workflow_id, args.version_id, args.node_id)),
     make('validate_workflow', 'Validate Workflow', 'Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.', target, 'read', async args => {

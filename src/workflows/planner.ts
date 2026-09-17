@@ -3,8 +3,10 @@ import { isDeepStrictEqual } from 'node:util';
 import type { WorkflowClient } from '../workflowClient.js';
 import { normalizeQueryOptions, validateQueryOptions, issueMessages } from '../queryValidation.js';
 import { compileGraph, specSchema, validateGraph, type WorkflowSpec, type Compiled } from './graph.js';
+import { AI_DATASOURCE_KINDS } from './capabilities.js';
+import { workflowReadiness } from './readiness.js';
 
-interface Plan { scope: string; workflowId: string; versionId: string; spec: WorkflowSpec; ids: Compiled; expires: number }
+interface Plan { scope: string; workflowId: string; versionId: string; spec: WorkflowSpec; ids: Compiled; allowDraft: boolean; expires: number }
 interface QueryDeletion { node_id: string; definition_id: string; query_id: string }
 // Scope is a digest of endpoint + credential + workspace. Stateless HTTP calls can resume plans
 // without exposing another user's plan. Tokens expire, are bounded, and are consumed before writes.
@@ -15,15 +17,13 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
   const snapshot = await client.get(workflowId, versionId);
   if (!snapshot.editable) throw new Error('Only editable draft workflow versions can be changed.');
   const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot.definition, spec, ids);
+  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map(datasource => [datasource.id, datasource.kind])));
   const warnings: string[] = [];
   const writes: Array<{ node_id: string; definition_id: string; existing_id?: string; name: string; dataSourceId: string; kind: string; options: Record<string, unknown> }> = [];
-  const removedDefinitionIds = new Set(
-    snapshot.definition.nodes
-      .filter((node) => spec.remove_node_ids.includes(node.id))
-      .map((node) => typeof node.data.idOnDefinition === 'string' ? node.data.idOnDefinition : undefined)
-      .filter((id): id is string => Boolean(id))
-  );
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map(node => node.data.idOnDefinition).filter((value): value is string => typeof value === 'string'));
+  const removedDefinitionIds = new Set(snapshot.definition.nodes
+    .map(node => node.data.idOnDefinition)
+    .filter((value): value is string => typeof value === 'string' && !finalDefinitionIds.has(value)));
   const deletions: QueryDeletion[] = [];
   for (const mapping of snapshot.definition.queries) {
     if (!removedDefinitionIds.has(mapping.idOnDefinition)) continue;
@@ -36,43 +36,51 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
   }
   const claimedNames = new Set<string>();
   for (const item of compiled.query_nodes) {
-    const input = item.spec;
-    if (input.type !== 'javascript' && input.type !== 'query' && input.type !== 'loop') continue;
     const existingMapping = snapshot.definition.queries.find(q => q.idOnDefinition === item.definition_id);
     const oldQuery = queries.find(q => q.id === existingMapping?.id);
     if (existingMapping && !oldQuery) throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
     if (oldQuery && snapshot.definition.nodes.filter(n => snapshot.definition.queries.some(q => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1) throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
     // The workflow-node guard requires a datasource ID. RunJS is represented by ToolJet's
     // workspace static datasource, so resolve its real ID just like the visual editor does.
-    const datasource = input.type === 'javascript' || input.type === 'loop'
-      ? datasources.find(d => d.kind === 'runjs')
-      : datasources.find(d => d.id === input.datasource_id);
-    if (!datasource) throw new Error(`Datasource unavailable for node ${input.ref}.`);
+    const input = item.role === 'workflow-node' ? item.spec : undefined;
+    const datasource = item.role === 'agent-model'
+      ? datasources.find(d => d.id === item.datasource_id)
+      : input!.type === 'javascript' || input!.type === 'loop'
+        ? datasources.find(d => d.kind === 'runjs')
+        : datasources.find(d => d.id === input!.datasource_id);
+    const label = item.role === 'agent-model' ? 'Agent model' : `node ${input!.ref}`;
+    if (!datasource) throw new Error(`Datasource unavailable for ${label}.`);
+    if (item.role === 'agent-model' && !AI_DATASOURCE_KINDS.has(datasource.kind)) throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
     const kind = datasource.kind;
     const dataSourceId = datasource.id;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId)) throw new Error('Changing an existing query datasource is unsupported; add a new node.');
-    if (oldQuery?.name !== undefined && oldQuery.name !== input.name) throw new Error('Renaming existing queries is unsupported because code references cannot be rewritten safely.');
-    if (claimedNames.has(input.name) || queries.some(q => q.name === input.name && q.id !== oldQuery?.id)) throw new Error(`Duplicate query name: ${input.name}`);
-    claimedNames.add(input.name);
-    const options = normalizeQueryOptions(kind, input.type === 'javascript' || input.type === 'loop' ? { ...(oldQuery?.options as Record<string, unknown> ?? {}), code: input.code } : input.options);
-    const validation = validateQueryOptions(kind, options);
-    if (validation.errors.length) throw new Error(issueMessages(validation.errors).join(' '));
-    warnings.push(...issueMessages(validation.warnings));
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: input.name, dataSourceId: dataSourceId ?? '', kind, options });
-    if (!existingMapping) compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+    const name = item.role === 'agent-model' ? item.name : input!.name;
+    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId)) throw new Error(item.role === 'agent-model' ? 'Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase.' : 'Changing an existing query datasource is unsupported; add a new node.');
+    if (oldQuery?.name !== undefined && oldQuery.name !== name) throw new Error(item.role === 'agent-model' ? 'Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase.' : 'Renaming existing queries is unsupported because code references cannot be rewritten safely.');
+    if (claimedNames.has(name) || queries.some(q => q.name === name && q.id !== oldQuery?.id)) throw new Error(`Duplicate query name: ${name}`);
+    claimedNames.add(name);
+    const requestedOptions = item.role === 'agent-model' ? item.options : input!.type === 'javascript' || input!.type === 'loop' ? { ...(oldQuery?.options as Record<string, unknown> ?? {}), code: input!.code } : input!.options;
+    const options = item.role === 'agent-model' ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (item.role === 'workflow-node') {
+      const validation = validateQueryOptions(kind, options);
+      if (validation.errors.length) throw new Error(issueMessages(validation.errors).join(' '));
+      warnings.push(...issueMessages(validation.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? '', kind, options });
+    if (!existingMapping && !compiled.graph.queries.some(mapping => mapping.idOnDefinition === item.definition_id)) compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
   }
   const queryIds = new Set([...queries.map(q => q.id), ...writes.filter(q => !q.existing_id).map(q => `pending:${q.node_id}`)]);
   const validation = validateGraph(compiled.graph, queryIds);
-  return { snapshot, compiled, writes, deletions, validation, warnings };
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
 }
-export async function lint(client: WorkflowClient, workflowId: string, versionId: string, spec: WorkflowSpec) {
+export async function lint(client: WorkflowClient, workflowId: string, versionId: string, spec: WorkflowSpec, allowDraft = false) {
   const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length) return { ...prepared.validation, query_warnings: prepared.warnings };
+  if (prepared.validation.errors.length || (prepared.readiness.runtime_readiness === 'draft_only' && !allowDraft)) return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
   prune();
   while (plans.size >= 200) plans.delete(plans.keys().next().value!);
   const token = randomUUID();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, expires: Date.now() + TTL });
-  return { plan_token: token, expires_in_seconds: TTL / 1000, node_ids: prepared.compiled.node_ids, edge_ids: prepared.compiled.edge_ids, ...prepared.validation, query_warnings: prepared.warnings,
+  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+  return { plan_token: token, expires_in_seconds: TTL / 1000, node_ids: prepared.compiled.node_ids, edge_ids: prepared.compiled.edge_ids, ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings,
     changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map(q => ({ name: q.name, operation: q.existing_id ? 'update' : 'create' })), ...prepared.deletions.map(q => ({ query_id: q.query_id, operation: 'delete' }))] } };
 }
 export async function apply(client: WorkflowClient, token: string) {
@@ -82,8 +90,9 @@ export async function apply(client: WorkflowClient, token: string) {
   if (!plan || plan.scope !== scope) throw new Error('Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.');
   // Consume before any awaited revalidation so simultaneous calls cannot both apply the plan.
   plans.delete(token);
-  const { compiled, snapshot, writes, deletions, validation } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
   if (validation.errors.length) throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === 'draft_only' && !plan.allowDraft) throw new Error(JSON.stringify(readiness.blockers));
   const completed: Array<{ operation: string; query_id: string; node_id: string }> = [];
   let phase = 'queries';
   let attemptedQuery: { name: string; node_id: string; existing_id?: string } | undefined;
@@ -107,7 +116,7 @@ export async function apply(client: WorkflowClient, token: string) {
     for (const write of writes) {
       const id = completed.find(q => q.node_id === write.node_id)!.query_id;
       const persisted = queries.find(q => q.id === id);
-      if (!persisted || persisted.name !== write.name || !isDeepStrictEqual(persisted.options, write.options)) throw new Error(`Query ${id} readback differs from intended options.`);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options)) throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
     }
     if (validation.errors.length) throw new Error(JSON.stringify(validation.errors));
     phase = 'query_deletions';
@@ -117,7 +126,7 @@ export async function apply(client: WorkflowClient, token: string) {
       completed.push({ operation: 'delete', query_id: deletion.query_id, node_id: deletion.node_id });
       attemptedQuery = undefined;
     }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation };
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation, ...readiness };
   } catch (error) {
     return { failed: true, workflow_id: plan.workflowId, version_id: plan.versionId, phase, completed, attempted_query: attemptedQuery, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids,
       graph_persistence: phase === 'queries' ? 'not_attempted' : phase === 'save' ? 'unknown' : 'saved',

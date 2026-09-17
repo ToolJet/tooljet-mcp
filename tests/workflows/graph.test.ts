@@ -88,6 +88,43 @@ describe('workflow graph contracts', () => {
       options: { systemPrompt: 'Original system', userPrompt: 'Original user', outputFormat: { example: { value: 'string' } } },
     });
   });
+  it('compiles the exact ToolJet Agent model child shape without treating it as control flow', () => {
+    const spec = specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'agent', type: 'agent', model: { datasource_id: 'ai', name: 'draftEmail', options: { model: 'gpt-4o-mini' } } },
+      { ref: 'response', type: 'response', code: 'return {};' },
+    ], edges: [
+      { ref: 'start-agent', from: 'start', to: 'agent', port: 'default' },
+      { ref: 'agent-response', from: 'agent', to: 'response', port: 'default' },
+    ] });
+    const compiled = compileGraph(empty(), spec, undefined, new Map([['ai', 'openai']]));
+    const child = compiled.graph.nodes.find(node => node.data.agentConnectionType === 'ai-model');
+    expect(child).toMatchObject({ type: 'query', data: {
+      kind: 'openai', isChildOfAgent: true, agentConnectionType: 'ai-model', nodeType: 'query',
+    } });
+    expect(compiled.graph.edges).toContainEqual(expect.objectContaining({
+      source: child?.id, target: compiled.node_ids.agent, sourceHandle: 'output', targetHandle: 'ai-model',
+      type: 'custom', data: { direction: 'vertical' },
+    }));
+    expect(validateGraph(compiled.graph).errors.map(issue => issue.code)).not.toEqual(expect.arrayContaining(['invalid_port', 'cycle', 'invalid_attachment']));
+    expect(validateGraph(compiled.graph).warnings.find(issue => issue.path === `nodes.${child?.id}`)).toBeUndefined();
+  });
+
+  it('preserves and explicitly removes Agent model attachments', () => {
+    const initial = compileGraph(empty(), specSchema.parse({ nodes: [
+      { ref: 'agent', type: 'agent', model: { datasource_id: 'ai', name: 'modelQuery', options: {} } },
+    ] }), undefined, new Map([['ai', 'openai']]));
+    const preserved = compileGraph(initial.graph, specSchema.parse({ nodes: [
+      { ref: 'agent', existing_id: initial.node_ids.agent, type: 'agent', label: 'Renamed' },
+    ] }));
+    expect(preserved.graph.nodes.some(node => node.data.agentConnectionType === 'ai-model')).toBe(true);
+    const removed = compileGraph(initial.graph, specSchema.parse({ nodes: [
+      { ref: 'agent', existing_id: initial.node_ids.agent, type: 'agent', model: null },
+    ] }));
+    expect(removed.graph.nodes.some(node => node.data.agentConnectionType === 'ai-model')).toBe(false);
+    expect(removed.graph.edges.some(edge => edge.targetHandle === 'ai-model')).toBe(false);
+    expect(removed.graph.queries).toEqual([]);
+  });
   it('rejects query mappings from another version', () => {
     const c = compileGraph(empty(), basic()); c.graph.queries.push({ id: 'foreign', idOnDefinition: 'logical' });
     expect(validateGraph(c.graph, new Set()).errors.map(e => e.code)).toContain('missing_query');

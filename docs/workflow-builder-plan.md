@@ -14,7 +14,7 @@ Use existing ToolJet HTTP APIs. Do not add backend node CRUD APIs for the first 
 
 Initial supported nodes: start, JavaScript query, datasource query, loop, condition, response, and agent. Loops are loop-enabled RunJS queries. Agents support ordinary flow output but not AI-model or tool attachments. Support normal, true/false, and query success/error connections only where verified against the target runtime. Treat unverified handles as unsupported rather than guessing them.
 
-Deferred: agent AI-model and tool attachments, dependency installation and bundle management, nested workflows, schedules, webhooks, publishing, promotion, and individual node preview. Existing unsupported nodes must remain intact during supported edits.
+Supported now: Agent nodes with one configured AI-model child attachment, including create, option update, preserve, and explicit removal. Deferred: Agent tool attachments, dependency installation and bundle management, nested workflows, schedules, webhooks, publishing, promotion, and individual node preview. Existing unsupported nodes must remain intact during supported edits.
 
 ## 2. Confirmed architecture and unresolved compatibility
 
@@ -49,10 +49,11 @@ All names below are proposed contracts. Tool handlers use existing `ToolDef`, Zo
 | Tool | Input | Output / behavior |
 |---|---|---|
 | `get_workflow_node_catalog` | Optional node types | Catalog revision, supported types, typed config, ports, bindings, examples, compatibility limitations. Static catalog support is distinct from verified server support. |
+| `get_workflow_capabilities` | Workflow version ID | Authorable node types and sanitized configured datasource instances tagged as query, AI-model, or email capable. Does not scan tables. |
 | `list_workflows` | Search and pagination | Workspace-scoped IDs, names, version metadata, editor URLs. Reuse app listing transport with workflow filtering, not front-end-only assumptions. |
 | `create_workflow` | Name | Workflow ID, draft version ID, environment ID, editor URL, creation/readback status. No graph execution. |
 | `get_workflow` | Workflow ID, optional version ID, detail level | Compact graph, query references, parameters, editability and validation issues. An omitted version resolves explicitly to an editable draft or returns available versions; never silently edits a release. |
-| `lint_workflow_spec` | Target workflow/version, desired spec | Errors, warnings, proposed diff, effect summary, and expiring plan token when valid. Reads allowed; no remote mutations or node execution. |
+| `lint_workflow_spec` | Target workflow/version, desired spec, optional `allow_draft` | Errors, warnings, blockers, runtime readiness, proposed diff, effect summary, and expiring plan token when runnable (or when an incomplete draft is explicitly allowed). Reads allowed; no remote mutations or node execution. |
 | `apply_workflow_spec` | Plan token | Persisted ID mappings, applied changes, validation/readback result and partial-write/recovery details. |
 | `validate_workflow` | Workflow/version IDs | Structural and reference checks on persisted content; explicit `runtime_verified: false` unless reporting a separately identified execution. |
 | `run_workflow` | Workflow/version/environment IDs, params | Explicit execution submission; result and/or execution ID, observed status, and bounded error details. Potentially destructive, non-idempotent, external effects possible. |

@@ -5,6 +5,8 @@ import { createAuth } from '../dist/auth.js';
 import { createClient } from '../dist/tooljetClient.js';
 import { lint, apply, deleteNode } from '../dist/workflows/planner.js';
 import { specSchema } from '../dist/workflows/graph.js';
+import { getWorkflowCapabilities } from '../dist/workflows/capabilities.js';
+import { assertAgentModelCapability } from '../dist/workflows/integrationPreflight.js';
 
 const apiUrl = process.env.TOOLJET_TEST_API_URL ?? 'http://localhost:3010';
 const appUrl = process.env.TOOLJET_TEST_APP_URL ?? 'http://localhost:8090';
@@ -47,6 +49,43 @@ const summarizeExecution = async (workflowId, versionId, environmentId) => {
 if (existingWorkflowId || existingVersionId) {
   if (!existingWorkflowId || !existingVersionId) throw new Error('Set both TOOLJET_TEST_WORKFLOW_ID and TOOLJET_TEST_VERSION_ID for runtime-only mode.');
   let saved = await client.workflows.get(existingWorkflowId, existingVersionId);
+  const agentModelDatasourceId = process.env.TOOLJET_TEST_AGENT_MODEL_DATASOURCE_ID;
+  if (agentModelDatasourceId) {
+    const capabilities = await getWorkflowCapabilities(client, { version_id: existingVersionId });
+    const datasource = assertAgentModelCapability(capabilities, agentModelDatasourceId);
+    const existingAgent = saved.definition.nodes.find((node) => node.type === 'agent');
+    if (process.env.TOOLJET_TEST_RUN_AGENT === '1' && !existingAgent) {
+      throw new Error('TOOLJET_TEST_RUN_AGENT requires an existing reachable Agent so this acceptance mode does not rewrite control flow implicitly.');
+    }
+    const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
+    const agentRef = `agent_${suffix}`;
+    const modelName = `agent_model_${suffix}`;
+    const defaultModels = { openai: 'gpt-4o', anthropic: 'claude-sonnet-4-5', gemini: 'gemini-2.5-pro', mistral_ai: 'mistral-large-latest' };
+    const spec = specSchema.parse({ nodes: [{
+      ref: agentRef,
+      ...(existingAgent ? { existing_id: existingAgent.id } : {}),
+      type: 'agent',
+      model: { datasource_id: agentModelDatasourceId, name: modelName, options: { model: defaultModels[datasource.kind] } },
+    }] });
+    const plan = await lint(client.workflows, existingWorkflowId, existingVersionId, spec, !existingAgent);
+    if (!('plan_token' in plan)) throw new Error(`Agent model lint failed: ${JSON.stringify(plan)}`);
+    const applied = await apply(client.workflows, plan.plan_token);
+    if ('failed' in applied && applied.failed) throw new Error(`Agent model apply failed: ${JSON.stringify(applied)}`);
+    saved = await client.workflows.get(existingWorkflowId, existingVersionId);
+    const agentId = existingAgent?.id ?? applied.node_ids[agentRef];
+    const edge = saved.definition.edges.find((candidate) => candidate.target === agentId && candidate.targetHandle === 'ai-model');
+    const child = edge && saved.definition.nodes.find((candidate) => candidate.id === edge.source && candidate.data.agentConnectionType === 'ai-model');
+    const mapping = child && saved.definition.queries.find((candidate) => candidate.idOnDefinition === child.data.idOnDefinition);
+    const query = mapping && (await client.workflows.getQueries(existingVersionId)).find((candidate) => candidate.id === mapping.id);
+    if (!edge || !child || !query || query.data_source_id !== agentModelDatasourceId || query.kind !== datasource.kind) {
+      throw new Error('Saved Agent model attachment failed readback verification.');
+    }
+    const runtime = process.env.TOOLJET_TEST_RUN_AGENT === '1'
+      ? await summarizeExecution(existingWorkflowId, existingVersionId, saved.environment_id)
+      : { executed: false };
+    console.log(JSON.stringify({ workflow_id: existingWorkflowId, version_id: existingVersionId, agent_id: agentId, model_query_id: query.id, datasource_kind: datasource.kind, runtime }));
+    process.exit(0);
+  }
   const deleteNodeId = process.env.TOOLJET_TEST_DELETE_NODE_ID;
   if (deleteNodeId) {
     const result = await deleteNode(client.workflows, existingWorkflowId, existingVersionId, deleteNodeId);

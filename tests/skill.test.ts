@@ -52,6 +52,11 @@ function section(document: string, from: string): string {
 const designSection = section(uiAuthoring, '## Design — decide before you build');
 
 describe('generated skill — progressive disclosure', () => {
+  it('requires capability discovery and lint before workflow writes', () => {
+    expect(workflows).toMatch(/get_workflow_capabilities/);
+    expect(workflows).toMatch(/lint_workflow_spec.*plan_token.*apply_workflow_spec/is);
+    expect(workflows).toMatch(/missing.*AI.*email.*datasource.*blocker/is);
+  });
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
     expect(skill.trim().split(/\s+/).length).toBeLessThan(1_000);
     expect(skill).toContain('## Load only the references the phase needs');

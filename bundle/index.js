@@ -40872,6 +40872,7 @@ import { randomUUID } from "node:crypto";
 var ref = external_exports.string().min(1).max(100);
 var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
 var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
+var agentModel = external_exports.object(query).strict();
 var nodeSchema = external_exports.discriminatedUnion("type", [
   external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
@@ -40879,7 +40880,7 @@ var nodeSchema = external_exports.discriminatedUnion("type", [
   external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).default(200) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional() }).strict()
+  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
 ]);
 var specSchema = external_exports.object({
   schema_version: external_exports.literal(1).default(1),
@@ -40889,12 +40890,18 @@ var specSchema = external_exports.object({
   remove_edge_ids: external_exports.array(external_exports.string()).default([]),
   test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 }).strict();
+function isAttachmentEdge(edge) {
+  return edge.targetHandle === "ai-model" || edge.targetHandle === "tool";
+}
+function controlFlowEdges(graph) {
+  return graph.edges.filter((edge) => !isAttachmentEdge(edge));
+}
 function definition(value) {
   if (value == null)
     return { nodes: [], edges: [], queries: [] };
   const parsed = external_exports.object({
     nodes: external_exports.array(external_exports.object({ id: external_exports.string(), type: external_exports.string(), data: external_exports.record(external_exports.string(), external_exports.unknown()) }).passthrough()).default([]),
-    edges: external_exports.array(external_exports.object({ id: external_exports.string(), source: external_exports.string(), target: external_exports.string(), sourceHandle: external_exports.string().nullable().optional() }).passthrough()).default([]),
+    edges: external_exports.array(external_exports.object({ id: external_exports.string(), source: external_exports.string(), target: external_exports.string(), sourceHandle: external_exports.string().nullable().optional(), targetHandle: external_exports.string().nullable().optional(), data: external_exports.record(external_exports.string(), external_exports.unknown()).optional() }).passthrough()).default([]),
     queries: external_exports.array(external_exports.object({ id: external_exports.string(), idOnDefinition: external_exports.string() }).passthrough()).default([])
   }).passthrough().parse(value);
   return structuredClone(parsed);
@@ -40922,10 +40929,17 @@ function validateGraph(graph, queryIds) {
     if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
       warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
   }
+  const flowEdges = controlFlowEdges(graph);
   for (const edge of graph.edges) {
     const source2 = nodes.get(edge.source), target2 = nodes.get(edge.target), path = `edges.${edge.id}`;
     if (!source2 || !target2) {
       error51("missing_endpoint", path, "Edge endpoint does not exist.");
+      continue;
+    }
+    if (isAttachmentEdge(edge)) {
+      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target2.type === "agent")) {
+        error51("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
+      }
       continue;
     }
     if (target2.type === "input")
@@ -40936,7 +40950,12 @@ function validateGraph(graph, queryIds) {
     if (source2.type === "query" && edge.sourceHandle === "failure" && !source2.data.errorHandler)
       error51("error_handler_disabled", path, "Failure edge requires query error handling.");
   }
-  const adjacency = new Map(graph.nodes.map((n) => [n.id, graph.edges.filter((e) => e.source === n.id).map((e) => e.target)]));
+  for (const agent of graph.nodes.filter((node) => node.type === "agent")) {
+    if (graph.edges.filter((edge) => edge.target === agent.id && edge.targetHandle === "ai-model").length > 1) {
+      error51("duplicate_agent_model", `nodes.${agent.id}.model`, "Agent can have only one AI model attachment.");
+    }
+  }
+  const adjacency = new Map(graph.nodes.map((n) => [n.id, flowEdges.filter((e) => e.source === n.id).map((e) => e.target)]));
   const visited = /* @__PURE__ */ new Set(), active = /* @__PURE__ */ new Set();
   const visit = (id2) => {
     if (active.has(id2))
@@ -40960,11 +40979,11 @@ function validateGraph(graph, queryIds) {
   };
   starts.forEach((n) => reach(n.id));
   for (const n of graph.nodes)
-    if (!reachable.has(n.id))
+    if (!reachable.has(n.id) && n.data.isChildOfAgent !== true)
       warnings.push({ code: "unreachable", path: `nodes.${n.id}`, message: "Node is unreachable from start." });
   return { errors, warnings, runtime_verified: false };
 }
-function compileGraph(current, spec, ids) {
+function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new Map()) {
   const graph = structuredClone(current);
   const node_ids = /* @__PURE__ */ Object.create(null), edge_ids = /* @__PURE__ */ Object.create(null);
   const query_nodes = [];
@@ -40980,9 +40999,17 @@ function compileGraph(current, spec, ids) {
   for (const id2 of spec.remove_edge_ids)
     if (!graph.edges.some((e) => e.id === id2))
       throw new Error(`Unknown edge to remove: ${id2}`);
-  const removedDefinitionIds = graph.nodes.filter((n) => spec.remove_node_ids.includes(n.id)).map((n) => n.data.idOnDefinition);
-  graph.nodes = graph.nodes.filter((n) => !spec.remove_node_ids.includes(n.id));
-  graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id));
+  const removedNodeIds = new Set(spec.remove_node_ids);
+  const cascadedChildIds = /* @__PURE__ */ new Set();
+  for (const agentId of spec.remove_node_ids) {
+    for (const edge of graph.edges.filter((candidate) => candidate.target === agentId && candidate.targetHandle === "ai-model")) {
+      removedNodeIds.add(edge.source);
+      cascadedChildIds.add(edge.source);
+    }
+  }
+  const removedDefinitionIds = graph.nodes.filter((n) => removedNodeIds.has(n.id)).map((n) => n.data.idOnDefinition);
+  graph.nodes = graph.nodes.filter((n) => !removedNodeIds.has(n.id));
+  graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
   const editedIds = /* @__PURE__ */ new Set();
   for (const input of spec.nodes) {
     if ("code" in input) {
@@ -41030,11 +41057,49 @@ function compileGraph(current, spec, ids) {
         userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
         outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
       };
+      const attachments = graph.edges.filter((edge) => edge.target === id2 && edge.targetHandle === "ai-model");
+      if (attachments.length > 1)
+        throw new Error(`Agent ${input.ref} has multiple AI model attachments.`);
+      const attachment = attachments[0];
+      const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
+      if (input.model === null && attachment) {
+        if (typeof child?.data.idOnDefinition === "string")
+          removedDefinitionIds.push(child.data.idOnDefinition);
+        graph.edges = graph.edges.filter((edge) => edge.id !== attachment.id);
+        graph.nodes = graph.nodes.filter((node2) => node2.id !== attachment.source);
+      } else if (input.model) {
+        const modelNodeId = child?.id ?? ids?.node_ids[`${input.ref}.model`] ?? randomUUID();
+        const definitionId = typeof child?.data.idOnDefinition === "string" ? child.data.idOnDefinition : randomUUID();
+        const kind = datasourceKinds.get(input.model.datasource_id);
+        const modelNode = {
+          ...child,
+          id: modelNodeId,
+          type: "query",
+          sourcePosition: "right",
+          targetPosition: "left",
+          deletable: false,
+          data: { ...child?.data, idOnDefinition: definitionId, nodeType: "query", kind, isChildOfAgent: true, agentConnectionType: "ai-model" },
+          position: child?.position ?? { x: 100, y: 70 }
+        };
+        if (child)
+          graph.nodes[graph.nodes.indexOf(child)] = modelNode;
+        else
+          graph.nodes.push(modelNode);
+        const edgeId = attachment?.id ?? ids?.edge_ids[`${input.ref}.model`] ?? randomUUID();
+        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id2, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
+        if (attachment)
+          graph.edges[graph.edges.indexOf(attachment)] = modelEdge;
+        else
+          graph.edges.push(modelEdge);
+        node_ids[`${input.ref}.model`] = modelNodeId;
+        edge_ids[`${input.ref}.model`] = edgeId;
+        query_nodes.push({ role: "agent-model", parent_agent_id: id2, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
+      }
     }
     if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
       const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
       data.idOnDefinition = definitionId;
-      query_nodes.push({ spec: input, node_id: id2, definition_id: definitionId });
+      query_nodes.push({ role: "workflow-node", spec: input, node_id: id2, definition_id: definitionId });
     }
     const node = { ...old, id: id2, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
     if (old)
@@ -41074,7 +41139,7 @@ function compileGraph(current, spec, ids) {
   const depths = new Map(graph.nodes.map((n) => [n.id, 0]));
   for (let pass = 0; pass < graph.nodes.length; pass++) {
     let changed = false;
-    for (const edge of graph.edges) {
+    for (const edge of controlFlowEdges(graph)) {
       const next = (depths.get(edge.source) ?? 0) + 1;
       if (next > (depths.get(edge.target) ?? 0)) {
         depths.set(edge.target, next);
@@ -41106,10 +41171,10 @@ var nodeCatalog = {
     { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
     { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
     { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
-    { type: "agent", renderer: "agent", ports: ["output"], fields: ["system_prompt", "user_prompt", "output_format"] }
+    { type: "agent", renderer: "agent", ports: ["output"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
   ],
   edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
-  limitations: ["Agent AI-model and tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
+  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
 };
 
 // dist/workflowClient.js
@@ -45583,6 +45648,48 @@ function createClient(auth, config2) {
   };
 }
 
+// dist/workflows/capabilitySchema.js
+var capabilityRequestSchema = external_exports.object({
+  version_id: external_exports.string().uuid()
+}).strict();
+var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
+var workflowCapabilityReportSchema = external_exports.object({
+  version_id: external_exports.string().uuid(),
+  authorable_node_types: external_exports.array(external_exports.string()),
+  datasources: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    name: external_exports.string(),
+    kind: external_exports.string(),
+    capabilities: external_exports.array(datasourceCapabilitySchema)
+  }).strict())
+}).strict();
+
+// dist/workflows/capabilities.js
+var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
+var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
+function datasourceCapabilities(kind) {
+  const capabilities = ["query"];
+  if (AI_DATASOURCE_KINDS.has(kind))
+    capabilities.push("ai-model");
+  if (EMAIL_DATASOURCE_KINDS.has(kind))
+    capabilities.push("email");
+  return capabilities;
+}
+async function getWorkflowCapabilities(client, input) {
+  const { version_id } = capabilityRequestSchema.parse(input);
+  const datasources = await client.workflows.listDatasources(version_id);
+  return workflowCapabilityReportSchema.parse({
+    version_id,
+    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
+    datasources: datasources.map((datasource) => ({
+      id: datasource.id,
+      name: datasource.name,
+      kind: datasource.kind,
+      capabilities: datasourceCapabilities(datasource.kind)
+    }))
+  });
+}
+
 // dist/workflows/planner.js
 import { randomUUID as randomUUID3 } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -46880,6 +46987,39 @@ function normalizeQueryOptions(kind, options2) {
   return options2;
 }
 
+// dist/workflows/readiness.js
+function workflowReadiness(graph, structuralErrors) {
+  if (structuralErrors.length)
+    return { runtime_readiness: "blocked", blockers: structuralErrors };
+  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
+  for (const edge of controlFlowEdges(graph))
+    adjacency.get(edge.source)?.push(edge.target);
+  const reachable = /* @__PURE__ */ new Set();
+  const visit = (id2) => {
+    if (reachable.has(id2))
+      return;
+    reachable.add(id2);
+    for (const target2 of adjacency.get(id2) ?? [])
+      visit(target2);
+  };
+  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
+    visit(start.id);
+  const blockers = [];
+  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
+    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
+    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
+    const definitionId = child?.data.idOnDefinition;
+    const mapping = typeof definitionId === "string" && graph.queries.find((query2) => query2.idOnDefinition === definitionId);
+    if (!attachment || !child || !mapping)
+      blockers.push({
+        code: "agent_missing_model",
+        path: `nodes.${agent.id}.model`,
+        message: "Reachable Agent requires one configured AI model attachment."
+      });
+  }
+  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+}
+
 // dist/workflows/planner.js
 var plans = /* @__PURE__ */ new Map();
 var TTL = 30 * 6e4;
@@ -46893,10 +47033,11 @@ async function prepare(client, workflowId, versionId, spec, ids) {
   if (!snapshot2.editable)
     throw new Error("Only editable draft workflow versions can be changed.");
   const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot2.definition, spec, ids);
+  const compiled = compileGraph(snapshot2.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
   const warnings = [];
   const writes = [];
-  const removedDefinitionIds = new Set(snapshot2.definition.nodes.filter((node) => spec.remove_node_ids.includes(node.id)).map((node) => typeof node.data.idOnDefinition === "string" ? node.data.idOnDefinition : void 0).filter((id2) => Boolean(id2)));
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
+  const removedDefinitionIds = new Set(snapshot2.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
   const deletions = [];
   for (const mapping of snapshot2.definition.queries) {
     if (!removedDefinitionIds.has(mapping.idOnDefinition))
@@ -46912,55 +47053,62 @@ async function prepare(client, workflowId, versionId, spec, ids) {
   }
   const claimedNames = /* @__PURE__ */ new Set();
   for (const item of compiled.query_nodes) {
-    const input = item.spec;
-    if (input.type !== "javascript" && input.type !== "query" && input.type !== "loop")
-      continue;
     const existingMapping = snapshot2.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
     const oldQuery = queries.find((q) => q.id === existingMapping?.id);
     if (existingMapping && !oldQuery)
       throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
     if (oldQuery && snapshot2.definition.nodes.filter((n) => snapshot2.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
       throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const datasource = input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const input = item.role === "workflow-node" ? item.spec : void 0;
+    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const label2 = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
     if (!datasource)
-      throw new Error(`Datasource unavailable for node ${input.ref}.`);
+      throw new Error(`Datasource unavailable for ${label2}.`);
+    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
+      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
     const kind = datasource.kind;
     const dataSourceId = datasource.id;
+    const name = item.role === "agent-model" ? item.name : input.name;
     if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error("Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== input.name)
-      throw new Error("Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(input.name) || queries.some((q) => q.name === input.name && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${input.name}`);
-    claimedNames.add(input.name);
-    const options2 = normalizeQueryOptions(kind, input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options);
-    const validation2 = validateQueryOptions(kind, options2);
-    if (validation2.errors.length)
-      throw new Error(issueMessages(validation2.errors).join(" "));
-    warnings.push(...issueMessages(validation2.warnings));
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: input.name, dataSourceId: dataSourceId ?? "", kind, options: options2 });
-    if (!existingMapping)
+      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name)
+      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
+    if (claimedNames.has(name) || queries.some((q) => q.name === name && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name}`);
+    claimedNames.add(name);
+    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
+    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (item.role === "workflow-node") {
+      const validation2 = validateQueryOptions(kind, options2);
+      if (validation2.errors.length)
+        throw new Error(issueMessages(validation2.errors).join(" "));
+      warnings.push(...issueMessages(validation2.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? "", kind, options: options2 });
+    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
       compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
   }
   const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
   const validation = validateGraph(compiled.graph, queryIds);
-  return { snapshot: snapshot2, compiled, writes, deletions, validation, warnings };
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot: snapshot2, compiled, writes, deletions, validation, readiness, warnings };
 }
-async function lint(client, workflowId, versionId, spec) {
+async function lint(client, workflowId, versionId, spec, allowDraft = false) {
   const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length)
-    return { ...prepared.validation, query_warnings: prepared.warnings };
+  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
+    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
   prune();
   while (plans.size >= 200)
     plans.delete(plans.keys().next().value);
   const token = randomUUID3();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, expires: Date.now() + TTL });
+  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
   return {
     plan_token: token,
     expires_in_seconds: TTL / 1e3,
     node_ids: prepared.compiled.node_ids,
     edge_ids: prepared.compiled.edge_ids,
     ...prepared.validation,
+    ...prepared.readiness,
     query_warnings: prepared.warnings,
     changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
   };
@@ -46972,9 +47120,11 @@ async function apply(client, token) {
   if (!plan || plan.scope !== scope)
     throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
   plans.delete(token);
-  const { compiled, snapshot: snapshot2, writes, deletions, validation } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  const { compiled, snapshot: snapshot2, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
   if (validation.errors.length)
     throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
+    throw new Error(JSON.stringify(readiness.blockers));
   const completed = [];
   let phase = "queries";
   let attemptedQuery;
@@ -46997,8 +47147,8 @@ async function apply(client, token) {
     for (const write of writes) {
       const id2 = completed.find((q) => q.node_id === write.node_id).query_id;
       const persisted = queries.find((q) => q.id === id2);
-      if (!persisted || persisted.name !== write.name || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id2} readback differs from intended options.`);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
+        throw new Error(`Query ${id2} readback differs from intended datasource, kind, name, or options.`);
     }
     if (validation2.errors.length)
       throw new Error(JSON.stringify(validation2.errors));
@@ -47009,7 +47159,7 @@ async function apply(client, token) {
       completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
       attemptedQuery = void 0;
     }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2 };
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
   } catch (error51) {
     return {
       failed: true,
@@ -47077,13 +47227,14 @@ function workflowTools(client) {
   });
   return [
     make("get_workflow_node_catalog", "Get Workflow Node Catalog", "Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.", {}, "read", async () => ({ ...nodeCatalog, spec_schema: external_exports.toJSONSchema(specSchema) })),
+    make("get_workflow_capabilities", "Get Workflow Capabilities", "List authorable workflow node types and configured datasource capabilities for one workflow version. Does not inspect credentials, create resources, or execute queries.", capabilityRequestSchema.shape, "read", (args) => getWorkflowCapabilities(client, args)),
     make("list_workflows", "List Workflows", "List workflows in the active workspace.", { page: external_exports.number().int().min(1).default(1), search: external_exports.string().default("") }, "read", (args) => client.workflows.list(args.page, args.search)),
     make("create_workflow", "Create Workflow", "Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.", { name: external_exports.string().trim().min(1).max(100).regex(/^[^/]+$/) }, "create", (args) => client.workflows.create(args.name)),
     make("get_workflow", "Get Workflow", "Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.", { workflow_id: id, version_id: id.optional() }, "read", async (args) => {
       const snapshot2 = await client.workflows.get(args.workflow_id, args.version_id);
       return { ...snapshot2, queries: await client.workflows.getQueries(snapshot2.version_id) };
     }),
-    make("lint_workflow_spec", "Lint Workflow Spec", "Validate graph edits and query options without executing or saving. Returns a scoped one-use plan token. Omitted nodes/edges are preserved; removals require explicit IDs. Existing query rename/datasource changes are unsupported.", { ...target, spec: specSchema }, "read", (args) => lint(client.workflows, args.workflow_id, args.version_id, args.spec)),
+    make("lint_workflow_spec", "Lint Workflow Spec", "Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.", { ...target, spec: specSchema, allow_draft: external_exports.boolean().default(false) }, "read", (args) => lint(client.workflows, args.workflow_id, args.version_id, args.spec, args.allow_draft)),
     make("apply_workflow_spec", "Apply Workflow Spec", "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.", { plan_token: id }, "write", (args) => apply(client.workflows, args.plan_token)),
     make("delete_workflow_node", "Delete Workflow Node", "Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.", { ...target, node_id: id }, "write", (args) => deleteNode(client.workflows, args.workflow_id, args.version_id, args.node_id)),
     make("validate_workflow", "Validate Workflow", "Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.", target, "read", async (args) => {

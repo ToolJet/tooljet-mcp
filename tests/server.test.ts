@@ -48,6 +48,7 @@ describe('buildServer', () => {
         'drop_table',
         'generate_form_schema',
         'run_queries',
+        'get_workflow_capabilities',
       ]) {
         expect(names).toContain(required);
       }

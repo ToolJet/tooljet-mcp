@@ -8,9 +8,7 @@
       "env": {
         "TOOLJET_URL": "${TOOLJET_URL}",
         "TOOLJET_DEPLOYMENT_URL": "${TOOLJET_DEPLOYMENT_URL}",
-        "TOOLJET_PAT": "${TOOLJET_PAT}",
-        "TOOLJET_EMAIL": "${TOOLJET_EMAIL}",
-        "TOOLJET_PASSWORD": "${TOOLJET_PASSWORD}"
+        "TOOLJET_PAT": "${TOOLJET_PAT}"
       }
     }
   }
