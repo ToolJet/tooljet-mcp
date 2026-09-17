@@ -18,8 +18,13 @@ function wrappedValues(keys: string[] | undefined, defaults: Record<string, unkn
   return Object.fromEntries(keys.map((key) => [key, { value: defaults[key] ?? '' }]));
 }
 
-function childLayout(child: ComponentDefaultChild): ComponentLayout {
+function childLayout(child: ComponentDefaultChild, parentType: string, index: number): ComponentLayout {
   const schema = getComponentSchema(child.componentName);
+  // A Kanban card is its own 43-column canvas about 300px wide; the catalog's 14-column Text children cut a
+  // customer name after a few characters. Materialize them full width, title above description.
+  if (parentType === 'Kanban' && child.componentName === 'Text') {
+    return { top: index === 0 ? 12 : 44, left: 2, width: 39, height: child.layout?.height ?? 30 };
+  }
   return {
     top: child.layout?.top ?? 0,
     left: child.layout?.left ?? 0,
@@ -49,7 +54,7 @@ function unusedInternalRef(used: Set<string>, index: number): string {
  * Explicit same-batch children always win, allowing callers to author a custom card body. */
 export function materializeRequiredDefaultChildren(input: ComponentSpec[]): DefaultChildrenExpansion {
   const usedRefs = new Set(input.flatMap((component) => component.clientRef ? [component.clientRef] : []));
-  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef ? [component.parentRef] : []));
+  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === 'body') ? [component.parentRef] : []));
   const components: ComponentSpec[] = [];
   const warnings: string[] = [];
   let materializedChildren = 0;
@@ -76,7 +81,7 @@ export function materializeRequiredDefaultChildren(input: ComponentSpec[]): Defa
         type: child.componentName,
         properties: wrappedValues(child.properties, defaultValue) ?? {},
         styles: wrappedValues(child.styles, defaultValue),
-        layout: childLayout(child),
+        layout: childLayout(child, original.type, childIndex),
         parentRef: clientRef,
       });
     });

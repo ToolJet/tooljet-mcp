@@ -40,6 +40,53 @@ describe('createClient', () => {
     uuidState.n = 0;
   });
 
+  describe('workspace groups', () => {
+    it('uses v2 routes and exposes membership IDs without leaking nested user data', async () => {
+      const group = { id: 'group-7', name: 'Dispatch', type: 'custom' };
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: { groupPermissions: [group] } }))
+        .mockResolvedValueOnce(mockResponse({ json: { group } }))
+        .mockResolvedValueOnce(mockResponse({ json: [{ id: 'membership-9', userId: 'person-4',
+          user: { email: 'dispatch@example.test', password: 'private-field' } }] }));
+      const client = createClient(auth, config);
+      expect(await client.listWorkspaceGroups()).toEqual([group]);
+      expect(await client.getWorkspaceGroup('group-7')).toEqual(group);
+      const members = await client.listWorkspaceGroupMembers('group-7');
+      expect(members).toEqual([{ group_user_id: 'membership-9', user_id: 'person-4', email: 'dispatch@example.test' }]);
+      expect(JSON.stringify(members)).not.toContain('private-field');
+      expect(auth.authedFetch.mock.calls.map((call) => call[0])).toEqual([
+        '/api/v2/group-permissions', '/api/v2/group-permissions/group-7', '/api/v2/group-permissions/group-7/users',
+      ]);
+    });
+
+    it('sends only names for create/rename and deletes memberships using the membership route', async () => {
+      auth.authedFetch.mockResolvedValue(mockResponse({ status: 204 }));
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201,
+        json: { id: 'group-7', name: 'Dispatch' } }));
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: { group: { id: 'group-7', name: 'Dispatch', type: 'custom' } } }));
+      const client = createClient(auth, config);
+      expect(await client.createWorkspaceGroup('Dispatch')).toEqual({ id: 'group-7', name: 'Dispatch', type: 'custom' });
+      await client.renameWorkspaceGroup('group-7', 'Routing');
+      await client.removeWorkspaceGroupMember('membership-9');
+      await client.deleteWorkspaceGroup('group-7');
+      expect(auth.authedFetch.mock.calls).toEqual([
+        ['/api/v2/group-permissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"name":"Dispatch"}' }],
+        ['/api/v2/group-permissions/group-7'],
+        ['/api/v2/group-permissions/group-7', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{"name":"Routing"}' }],
+        ['/api/v2/group-permissions/users/membership-9', { method: 'DELETE' }],
+        ['/api/v2/group-permissions/group-7', { method: 'DELETE' }],
+      ]);
+    });
+
+    it('propagates backend permission errors and rejects malformed discovery responses', async () => {
+      const client = createClient(auth, config);
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 403, text: 'Denied' }));
+      await expect(client.deleteWorkspaceGroup('group-7')).rejects.toThrow();
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: {} }));
+      await expect(client.listWorkspaceGroups()).rejects.toThrow('Unexpected workspace groups');
+    });
+  });
+
   describe('createApp', () => {
     it('creates the app then fetches it to resolve version/home page, and builds the app url', async () => {
       auth.authedFetch
@@ -636,6 +683,20 @@ describe('createClient', () => {
       });
       const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
       expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
+    });
+
+    it('persists Kanban modal children on the separate card-click canvas', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'board', type: 'Kanban', clientRef: 'board', properties: { openModalOnCardClick: { value: true } } },
+          { name: 'detail', type: 'Text', parentRef: 'board', slotName: 'modal', properties: { text: { value: '{{cardData.title}}' } } },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1-modal');
     });
 
     it('encodes a logical modal slot in the persisted parent id', async () => {
@@ -1332,6 +1393,39 @@ describe('createClient', () => {
   });
 
   describe('createQueries (batch)', () => {
+    it('serializes overlapping single and batch writes per version but not across versions', async () => {
+      const releases: Array<() => void> = [];
+      const started: string[] = [];
+      auth.authedFetch.mockImplementation(async (_path: string, init: RequestInit) => {
+        const { name } = JSON.parse(init.body as string);
+        started.push(name);
+        await new Promise<void>(resolve => releases.push(resolve));
+        return mockResponse({status:201,json:{id:name,name}});
+      });
+      const client = createClient(auth, config);
+      const query = (name: string) => ({name,dataSourceId:'ds1',kind:'runjs',options:{code:'return [];'}});
+      const batch = client.createQueries({versionId:'v1',queries:[query('a'),query('b')]});
+      const same = client.createQuery({versionId:'v1',...query('c')});
+      const other = client.createQuery({versionId:'v2',...query('d')});
+      await vi.waitFor(() => expect(started).toEqual(['a','d']));
+      releases[0]!(); releases[1]!();
+      await vi.waitFor(() => expect(started).toEqual(['a','d','b']));
+      releases[2]!();
+      await vi.waitFor(() => expect(started).toEqual(['a','d','b','c']));
+      releases[3]!();
+      await Promise.all([batch,same,other]);
+    });
+    it('continues after a failed write, reports partial success and does not automatically retry', async () => {
+      auth.authedFetch
+        .mockRejectedValueOnce(new Error('connection lost: outcome unknown'))
+        .mockResolvedValueOnce(mockResponse({status:201,json:{id:'q2',name:'b'}}))
+        .mockResolvedValueOnce(mockResponse({status:201,json:{id:'q3',name:'c'}}));
+      const client = createClient(auth, config);
+      const query = (name: string) => ({name,dataSourceId:'ds1',kind:'runjs',options:{code:'return [];'}});
+      await expect(client.createQueries({versionId:'v1',queries:[query('a'),query('b')]})).rejects.toMatchObject({completed:[{query_id:'q2',name:'b'}]});
+      await expect(client.createQuery({versionId:'v1',...query('c')})).resolves.toEqual({query_id:'q3',name:'c'});
+      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
+    });
     it('fans out to one create call per query and returns all results', async () => {
       auth.authedFetch
         .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q1', name: 'a' } }))
@@ -1537,6 +1631,20 @@ describe('createClient', () => {
       expect(init.method).toBe('DELETE');
       expect(JSON.parse(init.body)).toEqual({ pageId: 'page-analytics', deleteAssociatedPages: false });
       expect(result).toEqual({ deleted: true });
+    });
+  });
+
+  describe('getPluginSpec', () => {
+    it('reads a raw spec through the authenticated metadata route with encoded segments', async () => {
+      const spec = 'openapi: 3.0.0\npaths: {}\n';
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ text: spec }));
+      expect(await createClient(auth, config).getPluginSpec('example plugin', 'service/cases')).toBe(spec);
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/plugins/specs/example%20plugin/service%2Fcases');
+    });
+
+    it('surfaces denied or missing spec responses instead of parsing them as API metadata', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 403, text: 'Forbidden' }));
+      await expect(createClient(auth, config).getPluginSpec('hubspot', 'tickets')).rejects.toThrow('getPluginSpec');
     });
   });
 

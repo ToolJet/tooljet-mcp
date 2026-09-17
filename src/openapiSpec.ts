@@ -125,7 +125,7 @@ export function endpointParameters(
   spec: Record<string, any>,
   path: string,
   method: string
-): { parameters: OpenapiParameter[]; requestBody?: Record<string, any>; found: boolean } {
+): { parameters: OpenapiParameter[]; requestBody?: Record<string, any>; response?: Record<string, any>; found: boolean } {
   const pathItem = record(record(spec.paths)?.[path]);
   const operation = record(pathItem?.[method.toLowerCase()]);
   if (!pathItem || !operation) return { parameters: [], found: false };
@@ -154,8 +154,14 @@ export function endpointParameters(
     : undefined;
   const bodySchema = json ? deref(spec, json.schema) : undefined;
 
+  const success = Object.entries(record(operation.responses) ?? {}).find(([status]) => /^2\d\d$/.test(status));
+  const response = success ? deref(spec, success[1]) : undefined;
+  const responseContent = record(record(response?.content)?.['application/json']);
+  const responseSchema = deref(spec, responseContent?.schema ?? response?.schema);
+
   return {
     parameters: [...byKey.values()],
+    ...(responseSchema ? { response: { status: success![0], schema: responseSchema } } : {}),
     ...(bodySchema
       ? { requestBody: { required: body?.required === true, schema: bodySchema } }
       : {}),

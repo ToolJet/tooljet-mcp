@@ -3,8 +3,12 @@ import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { updateRowsCompatibilityWarning } from '../tableQueryCompatibility.js';
+import { updateRowsCompatibilityWarning, bulkPrimaryKeyWarning } from '../tableQueryCompatibility.js';
+import { arithmeticWriteWarning } from '../arithmeticWriteContract.js';
 import { suggestedHtmlHeight } from '../renderReadiness.js';
+import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
+import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -24,7 +28,9 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
       'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
       'values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ' +
-      'ToolJet DB table into options.table_id. Set app_name when the target app should be renamed in the same governed phase. ' +
+      'ToolJet DB table by its actual table_name into options.table_id (not a client_ref or alias). For each query use either ' +
+      'the exact datasource_id or the exact unique datasource_name from list_datasources(version_id); names are pinned to IDs ' +
+      'during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. ' +
       'For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
       'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
       'Treat this call as an awaited barrier; it never mutates ToolJet.',
@@ -123,6 +129,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           }
           const plannedTable = plannedTables.get(seed.table_name.toLowerCase());
           if (plannedTable) {
+            preflightErrors.push(...invalidSeedTimestamps(plannedTable.columns, seed.rows)
+              .map(error => `Seed data for planned table "${seed.table_name}": ${error}`));
             const requiredColumns = plannedTable.columns.filter((column) =>
               (column.primaryKey || column.notNull) &&
               column.defaultValue === undefined &&
@@ -167,11 +175,31 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           ? await client.listDatasources(args.version_id)
           : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        const queries = (args.queries ?? []).map((query) => {
-          const datasourceKind = datasourceKinds.get(query.datasource_id);
-          if (args.version_id && !datasourceKind) {
-            preflightErrors.push(`Query "${query.name}" datasource "${query.datasource_id}" is not available.`);
+        const uniqueDatasourceNames = new Map(datasources.filter(source =>
+          datasources.filter(other => other.name === source.name).length === 1
+        ).map(source => [source.name, source.kind]));
+        preflightWarnings.push(...normalizePlanBindingAliases(args, existingSummary, datasourceKinds, uniqueDatasourceNames));
+        const resolvedQueryIds = new Map<number, string>();
+        const queries = (args.queries ?? []).map((query, index) => {
+          let datasourceId = query.datasource_id;
+          const hasId = query.datasource_id !== undefined;
+          const hasName = query.datasource_name !== undefined;
+          if (hasId === hasName) {
+            preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
+          } else if (hasName) {
+            const matches = datasources.filter(source => source.name === query.datasource_name);
+            if (!query.datasource_name || matches.length !== 1) {
+              preflightErrors.push(
+                `Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version ` +
+                `(found ${matches.length}). Use the exact name or id returned by list_datasources(version_id).`
+              );
+            } else datasourceId = matches[0]!.id;
           }
+          const datasourceKind = datasourceKinds.get(datasourceId ?? '');
+          if (args.version_id && !datasourceKind) {
+            preflightErrors.push(`Query "${query.name}" datasource "${datasourceId ?? query.datasource_name ?? ''}" is not available.`);
+          }
+          if (datasourceId && datasourceKind) resolvedQueryIds.set(index, datasourceId);
           if (query.kind && datasourceKind && query.kind !== datasourceKind) {
             preflightErrors.push(
               `Query "${query.name}" kind "${query.kind}" does not match datasource kind "${datasourceKind}".`
@@ -180,7 +208,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           const options = structuredClone(query.options);
           if (query.table_ref) {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
-            if (!tableId) preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
+            if (!tableId) preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}". Use the actual table_name from tables[] or list_tables, not a client_ref, alias, or UUID.`);
             else options.table_id = tableId;
           } else if ((datasourceKind ?? query.kind) === 'tooljetdb' && typeof options.table_id === 'string') {
             // A raw table_id must be one of this workspace's tables. Small models splice UUIDs when they
@@ -200,23 +228,26 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           }
           return {
             clientRef: query.client_ref,
-            datasourceId: query.datasource_id,
+            datasourceId: datasourceId ?? '',
             name: query.name,
             kind: datasourceKind ?? query.kind,
             options,
           };
         });
 
-        // Inspect only tables actually targeted by this phase's update_rows queries.
+        // Inspect only tables actually targeted by this phase's structured writes.
         // Metadata reads only; no query execution and no broad workspace schema scan.
         const schemas = new Map<string, string[] | undefined>();
+        const insertSchemas = new Map<string, RequiredColumn[]>();
         for (const table of args.tables ?? []) {
           const columns = table.columns.map(column => column.name);
           if (!table.columns.some(column => column.primaryKey)) columns.push('id');
           schemas.set(`planned-table:${table.table_name}`, columns);
+          insertSchemas.set(`planned-table:${table.table_name}`, table.columns.some(column => column.primaryKey)
+            ? table.columns : [...table.columns, {name:'id',type:'serial',primaryKey:true}]);
         }
         const updateTableIds = new Set(queries.filter(query =>
-          query.kind === 'tooljetdb' && query.options.operation === 'update_rows' &&
+          query.kind === 'tooljetdb' && ['update_rows', 'create_row', 'bulk_upsert_with_primary_key'].includes(String(query.options.operation)) &&
           typeof query.options.table_id === 'string'
         ).map(query => query.options.table_id as string));
         await Promise.all([...updateTableIds].map(async tableId => {
@@ -224,9 +255,12 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           const table = existingTables.find(item => item.id === tableId);
           if (!table) return;
           try {
-            schemas.set(tableId, (await client.getTableSchema(table.table_name)).map(column => column.name));
+            const schema = await client.getTableSchema(table.table_name);
+            schemas.set(tableId, schema.map(column => column.name));
+            insertSchemas.set(tableId, schema.map(column => ({name:column.name,type:column.type,
+              primaryKey:column.isPrimaryKey,notNull:column.isNotNull,defaultValue:column.defaultValue})));
           } catch {
-            preflightWarnings.push(`Could not inspect update_rows target "${table.table_name}"; primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
+            preflightWarnings.push(`Could not inspect write target "${table.table_name}"; required insert columns were not checked and update_rows primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
           }
         }));
         for (const query of queries) {
@@ -235,6 +269,19 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             (args.tables ?? []).find(table => `planned-table:${table.table_name}` === tableId)?.table_name ?? tableId;
           const warning = updateRowsCompatibilityWarning(query.kind, query.options, tableName, schemas.get(tableId));
           if (warning) preflightWarnings.push(`Query "${query.name}": ${warning}`);
+          const arithmetic = arithmeticWriteWarning(query.kind, query.options);
+          if (arithmetic) preflightWarnings.push(`Query "${query.name}": ${arithmetic}`);
+          const bulkWarning = bulkPrimaryKeyWarning(query.kind, query.options, tableName, insertSchemas.get(tableId));
+          if (bulkWarning) (tableId.startsWith('planned-table:') ? preflightErrors : preflightWarnings).push(`Query "${query.name}": ${bulkWarning}`);
+          if (query.kind === 'tooljetdb' && insertSchemas.has(tableId)) {
+            const missing = missingCreateRowColumns(query.options, insertSchemas.get(tableId)!);
+            if (missing?.length) {
+              const message = `Query "${query.name}": create_row for "${tableName}" omits required non-generated column(s) ${missing.map(name => JSON.stringify(name)).join(', ')}. ` +
+                'Seed rows do not supply values for future user-created records. Include the required values in this insert, or use a generated/defaulted key when designing a new table. Never recreate an existing table or change its key merely to fix this query.';
+              if (tableId.startsWith('planned-table:')) preflightErrors.push(message);
+              else preflightWarnings.push(message + ' Metadata does not verify database triggers; if an existing trigger supplies these fields, confirm that contract instead.');
+            }
+          }
         }
 
         const lint = lintPlannedApp({
@@ -275,6 +322,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           })),
           lifecycles: args.lifecycles?.map((lifecycle) => ({
             queryRef: lifecycle.query_ref,
+            beforeRefreshActions: lifecycle.before_refresh_actions,
             refreshQueryRefs: lifecycle.refresh_query_refs,
             clearComponentRefs: lifecycle.clear_component_refs,
             closeModalRef: lifecycle.close_modal_ref,
@@ -294,7 +342,14 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           errors: unique([...preflightErrors, ...lint.errors]),
           warnings: unique([...preflightWarnings, ...lint.warnings]),
         };
-        return ok(result.ok ? { ...result, ...storeAppPlan(args, result) } : result);
+        if (!result.ok) return ok(result);
+        // Store the concrete ID, not a name to re-resolve at apply. A rename or duplicate created
+        // after lint must never silently retarget the authorized phase to another datasource.
+        const resolvedSpec: AppPlanInput = { ...args, queries: args.queries?.map((query, index) => {
+          const { datasource_name: _name, ...rest } = query;
+          return { ...rest, datasource_id: resolvedQueryIds.get(index)! };
+        }) };
+        return ok({ ...result, ...storeAppPlan(resolvedSpec, result) });
       } catch (error) {
         return fail(error);
       }

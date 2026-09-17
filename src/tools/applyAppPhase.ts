@@ -1,3 +1,4 @@
+import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
 import type { AppPlanInput } from '../appPlanSchema.js';
 import { consumeAppPlan } from '../appPlanStore.js';
@@ -246,7 +247,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`]
             : []),
         ];
-        if (foundationFailures.length) throw new Error(foundationFailures.join(' | '));
+        if (foundationFailures.length) throw new Error(foundationFailures.join(' | '), {
+          cause: tableWrite.status === 'rejected' ? tableQuotaError(tableWrite.reason) : undefined,
+        });
 
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables) tableIds.set(table.table_name.toLowerCase(), table.table_id);
@@ -286,6 +289,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
 
         stage = 'seed data and create queries';
         const queryInputs = (spec.queries ?? []).map((query) => {
+          if (!query.datasource_id) throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
           const kind = datasourceKinds.get(query.datasource_id);
           if (!kind) throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
           const options = structuredClone(query.options);
@@ -395,6 +399,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         });
         const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
           queryId: oneRef(lifecycle.query_ref, queryTargets, 'Lifecycle query')!,
+          beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) =>
+            resolveAction(action, pageTargets, queryTargets, componentTargets)
+          ),
           refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, 'Lifecycle refresh query'),
           clearComponentIds: refs(lifecycle.clear_component_refs, componentTargets, 'Lifecycle clear component'),
           closeModalId: oneRef(lifecycle.close_modal_ref, componentTargets, 'Lifecycle modal'),
@@ -482,7 +489,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         return fail(new Error(
           `apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. ` +
             `The one-time plan token is consumed; nothing with content on it was auto-deleted. ` +
-            `${error instanceof Error ? error.message : String(error)}` + recovery
+            `${error instanceof Error ? error.message : String(error)}` + recovery,
+          { cause: error }
         ));
       }
     },

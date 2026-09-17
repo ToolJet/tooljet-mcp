@@ -6,6 +6,37 @@
     "description": "A schema defining Aftership datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "aftership_operation",
+      "specs": [
+        {
+          "label": "Shipping",
+          "ref": "@spec/aftership/shipping",
+          "location": "bundled",
+          "plugin": "aftership",
+          "name": "shipping",
+          "path": "marketplace/plugins/aftership/openapi-specs/shipping.json"
+        },
+        {
+          "label": "Tracking",
+          "ref": "@spec/aftership/tracking",
+          "location": "bundled",
+          "plugin": "aftership",
+          "name": "tracking",
+          "path": "marketplace/plugins/aftership/openapi-specs/tracking.json"
+        },
+        {
+          "label": "Returns",
+          "ref": "@spec/aftership/returns",
+          "location": "bundled",
+          "plugin": "aftership",
+          "name": "returns",
+          "path": "marketplace/plugins/aftership/openapi-specs/returns.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -67,6 +98,19 @@
       "retrieve_record",
       "update_record"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_record",
+        "delete_record",
+        "list_records",
+        "retrieve_record",
+        "update_record"
+      ]
+    },
     "contracts": {
       "create_record": {
         "operation": "create_record",
@@ -704,6 +748,15 @@
     "operations": [
       "mail_service"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "mail_service"
+      ]
+    },
     "contracts": {
       "mail_service": {
         "operation": "mail_service",
@@ -874,6 +927,17 @@
       "chat",
       "chat-v2"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "model",
+        "operation"
+      ],
+      "values": [
+        "chat",
+        "chat-v2"
+      ]
+    },
     "contracts": {
       "chat": {
         "operation": "chat",
@@ -2230,6 +2294,19 @@
       "list_docs",
       "update_document"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "add_document",
+        "delete_document",
+        "get_document",
+        "list_docs",
+        "update_document"
+      ]
+    },
     "contracts": {
       "add_document": {
         "operation": "add_document",
@@ -2809,6 +2886,43 @@
       "update_project",
       "update_task"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation",
+        "resource"
+      ],
+      "values": [
+        "add_comment",
+        "add_followers",
+        "add_to_project",
+        "create_project",
+        "create_subtask",
+        "create_tag",
+        "create_task",
+        "delete_attachment",
+        "delete_project",
+        "delete_task",
+        "duplicate_task",
+        "get_attachment",
+        "get_project",
+        "get_task",
+        "list_attachments",
+        "list_projects",
+        "list_sections",
+        "list_stories",
+        "list_subtasks",
+        "list_tags",
+        "list_tasks",
+        "list_teams",
+        "list_users",
+        "list_workspaces",
+        "remove_followers",
+        "remove_from_project",
+        "update_project",
+        "update_task"
+      ]
+    },
     "contracts": {
       "add_comment": {
         "operation": "add_comment",
@@ -5673,6 +5787,15 @@
     "operations": [
       "sql"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode"
+      ],
+      "values": [
+        "sql"
+      ]
+    },
     "contracts": {
       "sql": {
         "operation": "sql",
@@ -5822,6 +5945,31 @@
       "validate_customer_payment_profile",
       "void_transaction"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "authorize_credit_card",
+        "capture_authorized_amount",
+        "charge_credit_card",
+        "charge_customer_profile",
+        "create_customer_payment_profile",
+        "create_customer_pofile",
+        "create_customer_profile_from_transaction",
+        "delete_customer_payment_profile",
+        "delete_customer_profile",
+        "get_customer_payment_profile",
+        "get_customer_profile",
+        "get_customer_profileIds",
+        "refund_transaction",
+        "update_customer_payment_profile",
+        "update_customer_profile",
+        "validate_customer_payment_profile",
+        "void_transaction"
+      ]
+    },
     "contracts": {
       "authorize_credit_card": {
         "operation": "authorize_credit_card",
@@ -7077,6 +7225,16 @@
       "generate_content",
       "list_foundation_models"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "generate_content",
+        "list_foundation_models"
+      ]
+    },
     "contracts": {
       "generate_content": {
         "operation": "generate_content",
@@ -7333,6 +7491,15 @@
     "operations": [
       "invoke_lambda"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "invoke_lambda"
+      ]
+    },
     "contracts": {
       "invoke_lambda": {
         "operation": "invoke_lambda",
@@ -7433,6 +7600,15 @@
     "operations": [
       "sql"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode"
+      ],
+      "values": [
+        "sql"
+      ]
+    },
     "contracts": {
       "sql": {
         "operation": "sql",
@@ -7516,6 +7692,19 @@
       "read_blob",
       "upload_blob"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_container",
+        "delete_blob",
+        "list_blobs",
+        "read_blob",
+        "upload_blob"
+      ]
+    },
     "contracts": {
       "create_container": {
         "operation": "create_container",
@@ -7999,6 +8188,19 @@
       "get_repo_commits",
       "get_repo_pushes"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "get_azure_repo",
+        "get_project_pull_requests",
+        "get_repo_branches",
+        "get_repo_commits",
+        "get_repo_pushes"
+      ]
+    },
     "contracts": {
       "get_azure_repo": {
         "operation": "get_azure_repo",
@@ -8418,6 +8620,21 @@
       "move_row",
       "update_row"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_row",
+        "delete_row",
+        "get_row",
+        "list_fields",
+        "list_rows",
+        "move_row",
+        "update_row"
+      ]
+    },
     "contracts": {
       "create_row": {
         "operation": "create_row",
@@ -9005,6 +9222,29 @@
       "sql",
       "update_record"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_table",
+        "create_view",
+        "delete_record",
+        "delete_table",
+        "get_dataset_info",
+        "insert_record",
+        "list_datasets",
+        "list_tables",
+        "query",
+        "sql",
+        "update_record"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -10828,6 +11068,16 @@
       "insert",
       "sql"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "insert",
+        "sql"
+      ]
+    },
     "contracts": {
       "insert": {
         "operation": "insert",
@@ -10991,6 +11241,20 @@
     "description": "A schema defining ClickUp datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "clickup_operation",
+      "specs": [
+        {
+          "ref": "@spec/clickup/clickup",
+          "location": "bundled",
+          "plugin": "clickup",
+          "name": "clickup",
+          "path": "marketplace/plugins/clickup/openapi-specs/clickup.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -11046,6 +11310,17 @@
       "chat",
       "text_generation"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "model",
+        "operation"
+      ],
+      "values": [
+        "chat",
+        "text_generation"
+      ]
+    },
     "contracts": {
       "chat": {
         "operation": "chat",
@@ -11927,6 +12202,69 @@
       }
     ]
   },
+  "confluence": {
+    "kind": "confluence",
+    "name": "Confluence",
+    "type": "api",
+    "description": "A schema defining Confluence datasource",
+    "defaults": {},
+    "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "confluence_operation",
+      "specs": [
+        {
+          "ref": "@spec/confluence/confluence_v2",
+          "location": "bundled",
+          "plugin": "confluence",
+          "name": "confluence_v2",
+          "path": "marketplace/plugins/confluence/openapi-specs/confluence_v2.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
+    "contracts": {
+      "default": {
+        "operation": "default",
+        "variants": [
+          {
+            "when": {},
+            "fields": {
+              "confluence_operation": {
+                "path": "confluence_operation",
+                "type": "react-component-api-endpoint",
+                "description": "Single select dropdown for operation"
+              }
+            },
+            "required": []
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "runtime-dependent",
+          "source": "remote-api",
+          "description": "The selected remote API endpoint defines the query data. This generated contract does not yet expose endpoint-specific response fields."
+        }
+      }
+    },
+    "properties": {
+      "operation": {
+        "label": "",
+        "key": "confluence_operation",
+        "type": "react-component-api-endpoint",
+        "description": "Single select dropdown for operation",
+        "specUrl": "@spec/confluence/confluence_v2"
+      }
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": true,
+    "sources": [
+      {
+        "collection": "marketplace",
+        "package": "confluence"
+      }
+    ]
+  },
   "cosmosdb": {
     "kind": "cosmosdb",
     "name": "CosmosDB",
@@ -11940,6 +12278,19 @@
       "query_database",
       "read_item"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "delete_item",
+        "insert_items",
+        "list_containers",
+        "query_database",
+        "read_item"
+      ]
+    },
     "contracts": {
       "delete_item": {
         "operation": "delete_item",
@@ -12430,6 +12781,20 @@
       "query",
       "update_document"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_document",
+        "delete_document",
+        "fts_search",
+        "get_document",
+        "query",
+        "update_document"
+      ]
+    },
     "contracts": {
       "create_document": {
         "operation": "create_document",
@@ -13124,6 +13489,21 @@
       "retrieve_record",
       "update_record"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_record",
+        "delete_record",
+        "find",
+        "get_view",
+        "list_records",
+        "retrieve_record",
+        "update_record"
+      ]
+    },
     "contracts": {
       "create_record": {
         "operation": "create_record",
@@ -13754,6 +14134,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -14821,6 +15219,22 @@
       "scan_table",
       "update_item"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_table",
+        "delete_item",
+        "describe_table",
+        "get_item",
+        "put_item",
+        "query_table",
+        "scan_table",
+        "update_item"
+      ]
+    },
     "contracts": {
       "create_table": {
         "operation": "create_table",
@@ -15551,6 +15965,20 @@
     "description": "A schema defining EasyPost datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "easypost_operation",
+      "specs": [
+        {
+          "ref": "@spec/easypost/easypost",
+          "location": "bundled",
+          "plugin": "easypost",
+          "name": "easypost",
+          "path": "marketplace/plugins/easypost/openapi-specs/easypost.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -15617,6 +16045,27 @@
       "search",
       "update"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "bulk",
+        "cat_indices",
+        "clear_scroll",
+        "cluster_health",
+        "count",
+        "delete",
+        "exists",
+        "get",
+        "index_document",
+        "mget",
+        "scroll",
+        "search",
+        "update"
+      ]
+    },
     "contracts": {
       "bulk": {
         "operation": "bulk",
@@ -16646,6 +17095,17 @@
       "generate_user_token",
       "send_notification"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_or_update_user",
+        "generate_user_token",
+        "send_notification"
+      ]
+    },
     "contracts": {
       "create_or_update_user": {
         "operation": "create_or_update_user",
@@ -16981,6 +17441,117 @@
     "description": "A schema defining FedEx datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "fedex_operation",
+      "specs": [
+        {
+          "label": "Address Validation",
+          "ref": "@spec/fedex/address-validation",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "address-validation",
+          "path": "marketplace/plugins/fedex/openapi-specs/address-validation.json"
+        },
+        {
+          "label": "Ground End of Day Close",
+          "ref": "@spec/fedex/ground-end-of-day-close",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "ground-end-of-day-close",
+          "path": "marketplace/plugins/fedex/openapi-specs/ground-end-of-day-close.json"
+        },
+        {
+          "label": "Ship Consolidation",
+          "ref": "@spec/fedex/ship-consolidation",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "ship-consolidation",
+          "path": "marketplace/plugins/fedex/openapi-specs/ship-consolidation.json"
+        },
+        {
+          "label": "Open Ship",
+          "ref": "@spec/fedex/open-ship",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "open-ship",
+          "path": "marketplace/plugins/fedex/openapi-specs/open-ship.json"
+        },
+        {
+          "label": "Pickup Request",
+          "ref": "@spec/fedex/pickup-request",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "pickup-request",
+          "path": "marketplace/plugins/fedex/openapi-specs/pickup-request.json"
+        },
+        {
+          "label": "Postal Code Validation",
+          "ref": "@spec/fedex/postal-code-validation",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "postal-code-validation",
+          "path": "marketplace/plugins/fedex/openapi-specs/postal-code-validation.json"
+        },
+        {
+          "label": "Rates and Transit Times",
+          "ref": "@spec/fedex/rates-and-transit-times",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "rates-and-transit-times",
+          "path": "marketplace/plugins/fedex/openapi-specs/rates-and-transit-times.json"
+        },
+        {
+          "label": "Ship",
+          "ref": "@spec/fedex/ship",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "ship",
+          "path": "marketplace/plugins/fedex/openapi-specs/ship.json"
+        },
+        {
+          "label": "Tracking (Basic Integrated Visibility)",
+          "ref": "@spec/fedex/tracking-basic-integrated-visibility-",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "tracking-basic-integrated-visibility-",
+          "path": "marketplace/plugins/fedex/openapi-specs/tracking-basic-integrated-visibility-.json"
+        },
+        {
+          "label": "Trade Documents Upload",
+          "ref": "@spec/fedex/trade-documents-upload",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "trade-documents-upload",
+          "path": "marketplace/plugins/fedex/openapi-specs/trade-documents-upload.json"
+        },
+        {
+          "label": "FedEx Location Search",
+          "ref": "@spec/fedex/fedex-location-search",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "fedex-location-search",
+          "path": "marketplace/plugins/fedex/openapi-specs/fedex-location-search.json"
+        },
+        {
+          "label": "Freight LTL",
+          "ref": "@spec/fedex/freight-ltl",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "freight-ltl",
+          "path": "marketplace/plugins/fedex/openapi-specs/freight-ltl.json"
+        },
+        {
+          "label": "Service Availability",
+          "ref": "@spec/fedex/service-availability",
+          "location": "bundled",
+          "plugin": "fedex",
+          "name": "service-availability",
+          "path": "marketplace/plugins/fedex/openapi-specs/service-availability.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -17056,6 +17627,21 @@
       "set_document",
       "update_document"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "add_document",
+        "bulk_update",
+        "delete_document",
+        "get_document",
+        "query_collection",
+        "set_document",
+        "update_document"
+      ]
+    },
     "contracts": {
       "add_document": {
         "operation": "add_document",
@@ -17746,6 +18332,19 @@
       "signed_url_for_put",
       "upload_file"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "get_file",
+        "list_files",
+        "signed_url_for_get",
+        "signed_url_for_put",
+        "upload_file"
+      ]
+    },
     "contracts": {
       "get_file": {
         "operation": "get_file",
@@ -18270,6 +18869,17 @@
       "chat",
       "text_generation"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "model",
+        "operation"
+      ],
+      "values": [
+        "chat",
+        "text_generation"
+      ]
+    },
     "contracts": {
       "chat": {
         "operation": "chat",
@@ -19533,6 +20143,18 @@
       "get_repo_pull_requests",
       "get_user_info"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "get_repo",
+        "get_repo_issues",
+        "get_repo_pull_requests",
+        "get_user_info"
+      ]
+    },
     "contracts": {
       "get_repo": {
         "operation": "get_repo",
@@ -19976,6 +20598,20 @@
     "description": "A schema defining Gmail datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "gmail_operation",
+      "specs": [
+        {
+          "ref": "@spec/gmail/gmail",
+          "location": "bundled",
+          "plugin": "gmail",
+          "name": "gmail",
+          "path": "marketplace/plugins/gmail/openapi-specs/gmail.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -20025,6 +20661,20 @@
     "description": "A schema defining Googlecalendar datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "google_operation",
+      "specs": [
+        {
+          "ref": "@spec/googlecalendar/googlecalendar",
+          "location": "bundled",
+          "plugin": "googlecalendar",
+          "name": "googlecalendar",
+          "path": "marketplace/plugins/googlecalendar/openapi-specs/googlecalendar.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -20084,6 +20734,21 @@
       "read",
       "update"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "append",
+        "create",
+        "delete_row",
+        "info",
+        "list_all",
+        "read",
+        "update"
+      ]
+    },
     "contracts": {
       "append": {
         "operation": "append",
@@ -20754,6 +21419,27 @@
       "update",
       "update_spreadsheet"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "append",
+        "bulk_update_by_primary_key",
+        "copy_spreadsheet",
+        "create",
+        "delete_by_filter",
+        "delete_by_range",
+        "delete_row",
+        "info",
+        "list_all",
+        "list_all_spreadsheets",
+        "read",
+        "update",
+        "update_spreadsheet"
+      ]
+    },
     "contracts": {
       "append": {
         "operation": "append",
@@ -22311,6 +22997,10 @@
     "description": "A schema defining graphql data query",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -22399,6 +23089,10 @@
     "name": "gRPC",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "user-supplied-schema",
+      "description": "Operations come from a schema the user attaches to the datasource (an OpenAPI document or a .proto), so they cannot be enumerated at harvest time. Inspect the connected datasource."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -22432,6 +23126,10 @@
     "name": "gRPC 2.0",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "user-supplied-schema",
+      "description": "Operations come from a schema the user attaches to the datasource (an OpenAPI document or a .proto), so they cannot be enumerated at harvest time. Inspect the connected datasource."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -22477,6 +23175,22 @@
       "sql",
       "update"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "delete",
+        "insert",
+        "search_by_conditions",
+        "search_by_hash",
+        "search_by_value",
+        "sql",
+        "update"
+      ]
+    },
     "contracts": {
       "delete": {
         "operation": "delete",
@@ -23295,6 +24009,293 @@
     "description": "A schema defining HubSpot datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "operation",
+      "specs": [
+        {
+          "label": "WebHooks",
+          "ref": "@spec/hubspot/webhooks",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "webhooks",
+          "path": "marketplace/plugins/hubspot/openapi-specs/webhooks.json"
+        },
+        {
+          "label": "Subscriptions",
+          "ref": "@spec/hubspot/subscriptions",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "subscriptions",
+          "path": "marketplace/plugins/hubspot/openapi-specs/subscriptions.json"
+        },
+        {
+          "label": "Oauth Service",
+          "ref": "@spec/hubspot/oauth-service",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "oauth-service",
+          "path": "marketplace/plugins/hubspot/openapi-specs/oauth-service.json"
+        },
+        {
+          "label": "Domains",
+          "ref": "@spec/hubspot/domains",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "domains",
+          "path": "marketplace/plugins/hubspot/openapi-specs/domains.json"
+        },
+        {
+          "label": "Blog Posts",
+          "ref": "@spec/hubspot/blog-posts",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "blog-posts",
+          "path": "marketplace/plugins/hubspot/openapi-specs/blog-posts.json"
+        },
+        {
+          "label": "Blog Authors",
+          "ref": "@spec/hubspot/blog-authors",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "blog-authors",
+          "path": "marketplace/plugins/hubspot/openapi-specs/blog-authors.json"
+        },
+        {
+          "label": "Url Redirects",
+          "ref": "@spec/hubspot/url-redirects",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "url-redirects",
+          "path": "marketplace/plugins/hubspot/openapi-specs/url-redirects.json"
+        },
+        {
+          "label": "Performance",
+          "ref": "@spec/hubspot/performance",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "performance",
+          "path": "marketplace/plugins/hubspot/openapi-specs/performance.json"
+        },
+        {
+          "label": "HubDB",
+          "ref": "@spec/hubspot/hubdb",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "hubdb",
+          "path": "marketplace/plugins/hubspot/openapi-specs/hubdb.json"
+        },
+        {
+          "label": "Blog Tags",
+          "ref": "@spec/hubspot/blog-tags",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "blog-tags",
+          "path": "marketplace/plugins/hubspot/openapi-specs/blog-tags.json"
+        },
+        {
+          "label": "Audit Logs",
+          "ref": "@spec/hubspot/audit-logs",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "audit-logs",
+          "path": "marketplace/plugins/hubspot/openapi-specs/audit-logs.json"
+        },
+        {
+          "label": "Site Search",
+          "ref": "@spec/hubspot/site-search",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "site-search",
+          "path": "marketplace/plugins/hubspot/openapi-specs/site-search.json"
+        },
+        {
+          "label": "Transactional Email",
+          "ref": "@spec/hubspot/transactional-email",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "transactional-email",
+          "path": "marketplace/plugins/hubspot/openapi-specs/transactional-email.json"
+        },
+        {
+          "label": "Custom Workflow Actions",
+          "ref": "@spec/hubspot/custom-workflow-actions",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "custom-workflow-actions",
+          "path": "marketplace/plugins/hubspot/openapi-specs/custom-workflow-actions.json"
+        },
+        {
+          "label": "Files",
+          "ref": "@spec/hubspot/files",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "files",
+          "path": "marketplace/plugins/hubspot/openapi-specs/files.json"
+        },
+        {
+          "label": "Visitor Identification",
+          "ref": "@spec/hubspot/visitor-identification",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "visitor-identification",
+          "path": "marketplace/plugins/hubspot/openapi-specs/visitor-identification.json"
+        },
+        {
+          "label": "Cards",
+          "ref": "@spec/hubspot/cards",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "cards",
+          "path": "marketplace/plugins/hubspot/openapi-specs/cards.json"
+        },
+        {
+          "label": "Products",
+          "ref": "@spec/hubspot/products",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "products",
+          "path": "marketplace/plugins/hubspot/openapi-specs/products.json"
+        },
+        {
+          "label": "Pipelines",
+          "ref": "@spec/hubspot/pipelines",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "pipelines",
+          "path": "marketplace/plugins/hubspot/openapi-specs/pipelines.json"
+        },
+        {
+          "label": "Companies",
+          "ref": "@spec/hubspot/companies",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "companies",
+          "path": "marketplace/plugins/hubspot/openapi-specs/companies.json"
+        },
+        {
+          "label": "Calling",
+          "ref": "@spec/hubspot/calling",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "calling",
+          "path": "marketplace/plugins/hubspot/openapi-specs/calling.json"
+        },
+        {
+          "label": "Quotes",
+          "ref": "@spec/hubspot/quotes",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "quotes",
+          "path": "marketplace/plugins/hubspot/openapi-specs/quotes.json"
+        },
+        {
+          "label": "Deals",
+          "ref": "@spec/hubspot/deals",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "deals",
+          "path": "marketplace/plugins/hubspot/openapi-specs/deals.json"
+        },
+        {
+          "label": "Imports",
+          "ref": "@spec/hubspot/imports",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "imports",
+          "path": "marketplace/plugins/hubspot/openapi-specs/imports.json"
+        },
+        {
+          "label": "Schemas",
+          "ref": "@spec/hubspot/schemas",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "schemas",
+          "path": "marketplace/plugins/hubspot/openapi-specs/schemas.json"
+        },
+        {
+          "label": "Properties",
+          "ref": "@spec/hubspot/properties",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "properties",
+          "path": "marketplace/plugins/hubspot/openapi-specs/properties.json"
+        },
+        {
+          "label": "Associations",
+          "ref": "@spec/hubspot/associations",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "associations",
+          "path": "marketplace/plugins/hubspot/openapi-specs/associations.json"
+        },
+        {
+          "label": "Owners",
+          "ref": "@spec/hubspot/owners",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "owners",
+          "path": "marketplace/plugins/hubspot/openapi-specs/owners.json"
+        },
+        {
+          "label": "Timeline",
+          "ref": "@spec/hubspot/timeline",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "timeline",
+          "path": "marketplace/plugins/hubspot/openapi-specs/timeline.json"
+        },
+        {
+          "label": "Contacts",
+          "ref": "@spec/hubspot/contacts",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "contacts",
+          "path": "marketplace/plugins/hubspot/openapi-specs/contacts.json"
+        },
+        {
+          "label": "Feedback Submissions",
+          "ref": "@spec/hubspot/feedback-submissions",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "feedback-submissions",
+          "path": "marketplace/plugins/hubspot/openapi-specs/feedback-submissions.json"
+        },
+        {
+          "label": "Objects",
+          "ref": "@spec/hubspot/objects",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "objects",
+          "path": "marketplace/plugins/hubspot/openapi-specs/objects.json"
+        },
+        {
+          "label": "Video Conference",
+          "ref": "@spec/hubspot/video-conference",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "video-conference",
+          "path": "marketplace/plugins/hubspot/openapi-specs/video-conference.json"
+        },
+        {
+          "label": "Tickets",
+          "ref": "@spec/hubspot/tickets",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "tickets",
+          "path": "marketplace/plugins/hubspot/openapi-specs/tickets.json"
+        },
+        {
+          "label": "Line Items",
+          "ref": "@spec/hubspot/line-items",
+          "location": "bundled",
+          "plugin": "hubspot",
+          "name": "line-items",
+          "path": "marketplace/plugins/hubspot/openapi-specs/line-items.json"
+        }
+      ],
+      "description": "Discover installed HubSpot specs with inspect_datasource_schema: listTables lists spec groups without schema, and endpoints with schema. getEndpointSchema returns the exact HTTP method, path, specType, parameters and response shape. Copy query_options and fill its parameters; do not use a spec label as an executable operation."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -23306,16 +24307,65 @@
                 "path": "hubspot_operation",
                 "type": "react-component-api-endpoint",
                 "description": "Single select dropdown for operation"
+              },
+              "operation": {
+                "type": "string",
+                "allowedValues": [
+                  "get",
+                  "post",
+                  "patch",
+                  "put",
+                  "delete"
+                ],
+                "description": "Lowercase HTTP method from getEndpointSchema. Only static GET is eligible for MCP read verification after user approval.",
+                "path": "operation"
+              },
+              "path": {
+                "type": "string",
+                "description": "Static endpoint path from the installed spec, with placeholders populated through params.path.",
+                "path": "path"
+              },
+              "specType": {
+                "type": "string",
+                "description": "Exact serialized editor spec key returned by inspect_datasource_schema; preserve it when saving or updating queries.",
+                "path": "specType"
+              },
+              "params.path": {
+                "type": "object",
+                "description": "Path placeholder values keyed by placeholder name; use {} if none.",
+                "path": "params.path"
+              },
+              "params.query": {
+                "type": "object",
+                "description": "Query parameters including pagination/properties; use {} if none.",
+                "path": "params.query"
+              },
+              "params.request": {
+                "type": "object",
+                "description": "JSON body. CRM writes generally wrap fields in {properties:{...}}. Use {} for reads.",
+                "path": "params.request"
+              },
+              "selectedOperation": {
+                "type": "object",
+                "description": "Optional editor metadata. Does not replace operation/path/params.",
+                "path": "selectedOperation"
               }
             },
-            "required": []
+            "required": [
+              "operation",
+              "params.path",
+              "params.query",
+              "params.request",
+              "path",
+              "specType"
+            ]
           }
         ],
         "response": {
-          "type": "unknown",
           "status": "runtime-dependent",
           "source": "remote-api",
-          "description": "The selected remote API endpoint defines the query data. This generated contract does not yet expose endpoint-specific response fields."
+          "type": "object|array|string",
+          "description": "The parsed HubSpot response body directly. CRM collection reads commonly expose data.results and nested record.properties. Inspect the endpoint response or a verified read; paginate using the endpoint contract."
         }
       }
     },
@@ -23364,7 +24414,10 @@
         }
       }
     },
-    "introspectionMethods": [],
+    "introspectionMethods": [
+      "listTables",
+      "getEndpointSchema"
+    ],
     "supportsTestConnection": false,
     "sources": [
       {
@@ -23387,6 +24440,16 @@
       "summarisation",
       "text_generation"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "summarisation",
+        "text_generation"
+      ]
+    },
     "contracts": {
       "summarisation": {
         "operation": "summarisation",
@@ -23589,6 +24652,15 @@
     "operations": [
       "sql"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode"
+      ],
+      "values": [
+        "sql"
+      ]
+    },
     "contracts": {
       "sql": {
         "operation": "sql",
@@ -23693,6 +24765,25 @@
       "update_bucket",
       "write"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "abstract_syntax_tree",
+        "analyze_flux_query",
+        "create_bucket",
+        "delete_bucket",
+        "list_buckets",
+        "query_data",
+        "query_suggestions",
+        "query_suggestions_for_branching",
+        "retrieve_bucket",
+        "update_bucket",
+        "write"
+      ]
+    },
     "contracts": {
       "abstract_syntax_tree": {
         "operation": "abstract_syntax_tree",
@@ -24473,6 +25564,20 @@
     "description": "A schema defining Intercom datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "intercom_operation",
+      "specs": [
+        {
+          "ref": "@spec/intercom/intercom",
+          "location": "bundled",
+          "plugin": "intercom",
+          "name": "intercom",
+          "path": "marketplace/plugins/intercom/openapi-specs/intercom.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -24537,6 +25642,29 @@
       "get_user",
       "issue_worklogs"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation",
+        "resource"
+      ],
+      "values": [
+        "add_worklog",
+        "assign_issue",
+        "create_issue",
+        "delete_issue",
+        "delete_worklog",
+        "edit_issue",
+        "find_assignable_users",
+        "find_users_by_query",
+        "get_all_boards",
+        "get_issue",
+        "get_issues_for_backlog",
+        "get_issues_for_board",
+        "get_user",
+        "issue_worklogs"
+      ]
+    },
     "contracts": {
       "add_worklog": {
         "operation": "add_worklog",
@@ -26218,6 +27346,15 @@
     "operations": [
       "mail_service"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "mail_service"
+      ]
+    },
     "contracts": {
       "mail_service": {
         "operation": "mail_service",
@@ -26374,6 +27511,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -27491,6 +28646,69 @@
     "description": "A schema defining Microsoft_graph datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "ms_graph_operation",
+      "specs": [
+        {
+          "label": "Outlook",
+          "ref": "@spec/microsoft_graph/outlook",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "outlook",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/outlook.json"
+        },
+        {
+          "label": "Calendar",
+          "ref": "@spec/microsoft_graph/calendar",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "calendar",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/calendar.json"
+        },
+        {
+          "label": "Users",
+          "ref": "@spec/microsoft_graph/users",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "users",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/users.json"
+        },
+        {
+          "label": "Teams",
+          "ref": "@spec/microsoft_graph/teams",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "teams",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/teams.yaml"
+        },
+        {
+          "label": "OneDrive",
+          "ref": "@spec/microsoft_graph/onedrive",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "onedrive",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/onedrive.json"
+        },
+        {
+          "label": "SharePoint",
+          "ref": "@spec/microsoft_graph/sharepoint",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "sharepoint",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/sharepoint.json"
+        },
+        {
+          "label": "OneNote",
+          "ref": "@spec/microsoft_graph/onenote",
+          "location": "bundled",
+          "plugin": "microsoft_graph",
+          "name": "onenote",
+          "path": "marketplace/plugins/microsoft_graph/openapi-specs/onenote.json"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -27555,6 +28773,20 @@
       "signed_url_for_get",
       "signed_url_for_put"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "get_object",
+        "list_objects",
+        "put_object",
+        "remove_object",
+        "signed_url_for_get",
+        "signed_url_for_put"
+      ]
+    },
     "contracts": {
       "get_object": {
         "operation": "get_object",
@@ -28122,6 +29354,15 @@
     "operations": [
       "text_generation"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "text_generation"
+      ]
+    },
     "contracts": {
       "text_generation": {
         "operation": "text_generation",
@@ -28433,6 +29674,32 @@
       "update_many",
       "update_one"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "aggregate",
+        "bulk_write",
+        "count",
+        "count_total",
+        "create_collection",
+        "delete_many",
+        "delete_one",
+        "distinct",
+        "find_many",
+        "find_one",
+        "find_one_delete",
+        "find_one_replace",
+        "find_one_update",
+        "insert_many",
+        "insert_one",
+        "replace_one",
+        "update_many",
+        "update_one"
+      ]
+    },
     "contracts": {
       "aggregate": {
         "operation": "aggregate",
@@ -28479,15 +29746,15 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "pipeline": {
                 "path": "pipeline",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Pipeline",
-                "description": "Enter pipeline"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -28496,11 +29763,15 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "A final {$limit: N} pipeline stage bounds results; options.limit is ignored by aggregate. $out/$merge stages are writes and cannot be automatically verified."
+        ]
       },
       "bulk_write": {
         "operation": "bulk_write",
@@ -28547,21 +29818,24 @@
               },
               "operations": {
                 "path": "operations",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Operations",
-                "description": "Enter operations"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -28588,9 +29862,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -28621,9 +29895,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -28632,11 +29906,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "count_total": {
         "operation": "count_total",
@@ -28683,9 +29960,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -28694,11 +29971,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "create_collection": {
         "operation": "create_collection",
@@ -28745,15 +30025,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter collection options (e.g., capped, size, max)"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -28780,9 +30063,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -28813,15 +30096,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -28848,9 +30134,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -28881,15 +30167,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -28922,9 +30211,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -28955,15 +30244,19 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "options.limit does not bound distinct results. Prefer a group/unwind aggregation with a final $limit."
         ],
         "response": {
           "type": "unknown",
@@ -28990,9 +30283,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29023,9 +30316,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -29034,11 +30327,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "find_one": {
         "operation": "find_one",
@@ -29058,9 +30354,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29091,9 +30387,9 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
@@ -29102,11 +30398,14 @@
           }
         ],
         "response": {
-          "type": "unknown",
-          "status": "unknown",
-          "source": "tooljet-database-plugin",
-          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
-        }
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object|null",
+          "description": "One matching document, or null when none matches."
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
       },
       "find_one_delete": {
         "operation": "find_one_delete",
@@ -29126,9 +30425,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29159,15 +30458,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29194,9 +30496,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29227,21 +30529,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "replacement": {
                 "path": "replacement",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Replacement",
-                "description": "Enter replacement"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29268,9 +30573,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29301,21 +30606,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "update": {
                 "path": "update",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Update",
-                "description": "Enter update"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29342,9 +30650,9 @@
               },
               "documents": {
                 "path": "documents",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Documents",
-                "description": "Enter document"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29375,15 +30683,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29410,9 +30721,9 @@
               },
               "document": {
                 "path": "document",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Document",
-                "description": "Enter document"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29443,15 +30754,18 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29478,9 +30792,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29511,21 +30825,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "replacement": {
                 "path": "replacement",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Replacement",
-                "description": "Enter replacement"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29552,9 +30869,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29585,21 +30902,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "update": {
                 "path": "update",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Update",
-                "description": "Enter update"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -29626,9 +30946,9 @@
               },
               "filter": {
                 "path": "filter",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Filter",
-                "description": "Enter filter"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "operation": {
                 "path": "operation",
@@ -29659,21 +30979,24 @@
               },
               "options": {
                 "path": "options",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Options",
-                "description": "Enter options"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               },
               "update": {
                 "path": "update",
-                "type": "unknown|binding",
+                "type": "string|binding",
                 "label": "Update",
-                "description": "Enter update"
+                "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
               }
             },
             "required": [
               "operation"
             ]
           }
+        ],
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
         ],
         "response": {
           "type": "unknown",
@@ -30569,6 +31892,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -32013,6 +33354,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -33274,10 +34633,23 @@
     "type": "api",
     "description": "A schema defining N8n datasource",
     "defaults": {},
-    "operations": [],
+    "operations": [
+      "get",
+      "post"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "method"
+      ],
+      "values": [
+        "get",
+        "post"
+      ]
+    },
     "contracts": {
-      "default": {
-        "operation": "default",
+      "get": {
+        "operation": "get",
         "variants": [
           {
             "when": {
@@ -33312,7 +34684,18 @@
             "required": [
               "method"
             ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "post": {
+        "operation": "post",
+        "variants": [
           {
             "when": {
               "method": [
@@ -33450,6 +34833,20 @@
       "list_records",
       "update_record"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_record",
+        "delete_record",
+        "get_count",
+        "get_record",
+        "list_records",
+        "update_record"
+      ]
+    },
     "contracts": {
       "create_record": {
         "operation": "create_record",
@@ -33987,6 +35384,32 @@
       "update_database",
       "update_page"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation",
+        "resource",
+        "parent_type"
+      ],
+      "values": [
+        "append_block_children",
+        "archive_page",
+        "create_database",
+        "create_page",
+        "delete_block",
+        "get_block",
+        "get_block_children",
+        "get_database",
+        "get_page",
+        "get_page_property",
+        "get_user",
+        "list_users",
+        "query_database",
+        "update_block",
+        "update_database",
+        "update_page"
+      ]
+    },
     "contracts": {
       "append_block_children": {
         "operation": "append_block_children",
@@ -36149,6 +37572,19 @@
       "generate_embedding",
       "image_generation"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "model",
+        "operation",
+        "model_embedding"
+      ],
+      "values": [
+        "chat",
+        "generate_embedding",
+        "image_generation"
+      ]
+    },
     "contracts": {
       "chat": {
         "operation": "chat",
@@ -38037,6 +39473,10 @@
     "name": "OpenAPI",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -38176,6 +39616,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -39489,6 +40947,21 @@
       "update_vector",
       "upsert_vectors"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "delete_vectors",
+        "fetch_vectors",
+        "get_index_stats",
+        "list_vector_ids",
+        "query_vector",
+        "update_vector",
+        "upsert_vectors"
+      ]
+    },
     "contracts": {
       "delete_vectors": {
         "operation": "delete_vectors",
@@ -40261,6 +41734,15 @@
     "operations": [
       "send_sms"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "send_sms"
+      ]
+    },
     "contracts": {
       "send_sms": {
         "operation": "send_sms",
@@ -40382,6 +41864,19 @@
       "list_records",
       "update_record"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "add_record",
+        "delete_record",
+        "get_record",
+        "list_records",
+        "update_record"
+      ]
+    },
     "contracts": {
       "add_record": {
         "operation": "add_record",
@@ -40922,6 +42417,18 @@
       "create_embedding",
       "prompt_completion"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "chat",
+        "completion",
+        "create_embedding",
+        "prompt_completion"
+      ]
+    },
     "contracts": {
       "chat": {
         "operation": "chat",
@@ -41583,6 +43090,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -42991,6 +44516,10 @@
     "description": "A schema defining PrestoDB data source",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -43046,6 +44575,16 @@
       "instant_query",
       "range_query"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "instant_query",
+        "range_query"
+      ]
+    },
     "contracts": {
       "instant_query": {
         "operation": "instant_query",
@@ -43328,6 +44867,20 @@
       "query_points",
       "upsert_points"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "delete_points",
+        "get_collection_info",
+        "get_points",
+        "list_collections",
+        "query_points",
+        "upsert_points"
+      ]
+    },
     "contracts": {
       "delete_points": {
         "operation": "delete_points",
@@ -43809,6 +45362,20 @@
     "description": "A schema defining QuickBooks datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "quickbooks_operation",
+      "specs": [
+        {
+          "ref": "@spec/quickbooks/accounting",
+          "location": "bundled",
+          "plugin": "quickbooks",
+          "name": "accounting",
+          "path": "marketplace/plugins/quickbooks/openapi-specs/accounting.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -43860,6 +45427,10 @@
       "query": "PING"
     },
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -43869,12 +45440,20 @@
             "fields": {
               "query": {
                 "path": "query",
-                "type": "unknown|binding",
-                "description": "Enter query"
+                "type": "string|binding",
+                "description": "One Redis command as a space-delimited string, e.g. PING, SCAN 0 MATCH cache:* COUNT 50, TYPE cache:one, GET cache:one, or HGETALL cache:one. The plugin splits on literal spaces; it does not parse shell quoting or multiline scripts."
               }
             },
-            "required": []
+            "required": [
+              "query"
+            ]
           }
+        ],
+        "notes": [
+          "Redis uses one default query contract and no operation selector. An empty named-operations list does not mean the datasource is unavailable.",
+          "Discover actual keys with SCAN, then TYPE and type-appropriate reads. Continue the returned cursor until 0 if full discovery is needed; COUNT is a hint, not a guaranteed page size. Do not use KEYS for discovery.",
+          "Scalar and bounded range reads can run directly. SCAN and whole collection reads require singular run_query with confirmed read access, not run_queries. Writes only belong to explicit user actions.",
+          "Responses depend on the command: GET is string or null; HGETALL is an alternating field/value array; SCAN returns [cursor, keys]. Parse only the observed structure."
         ],
         "response": {
           "type": "unknown",
@@ -44668,6 +46247,19 @@
         }
       }
     },
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "method"
+      ],
+      "values": [
+        "delete",
+        "get",
+        "patch",
+        "post",
+        "put"
+      ]
+    },
     "properties": {
       "method": {
         "path": "method",
@@ -44811,6 +46403,27 @@
       "update_all_docs",
       "update_docs_by_id"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_docs",
+        "create_table",
+        "db_create",
+        "db_drop",
+        "db_list",
+        "delete_all_docs",
+        "delete_docs_by_id",
+        "drop_table",
+        "list_documents",
+        "list_table",
+        "retrieve_docs",
+        "update_all_docs",
+        "update_docs_by_id"
+      ]
+    },
     "contracts": {
       "create_docs": {
         "operation": "create_docs",
@@ -45943,6 +47556,10 @@
       "parameters": []
     },
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -45998,6 +47615,10 @@
       "code": ""
     },
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -46055,6 +47676,21 @@
       "signed_url_for_put",
       "upload_object"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_bucket",
+        "get_object",
+        "list_objects",
+        "remove_object",
+        "signed_url_for_get",
+        "signed_url_for_put",
+        "upload_object"
+      ]
+    },
     "contracts": {
       "create_bucket": {
         "operation": "create_bucket",
@@ -46782,6 +48418,17 @@
       "crud",
       "soql"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "actiontype",
+        "operation"
+      ],
+      "values": [
+        "crud",
+        "soql"
+      ]
+    },
     "contracts": {
       "crud": {
         "operation": "crud",
@@ -47113,6 +48760,15 @@
     "operations": [
       "sql"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode"
+      ],
+      "values": [
+        "sql"
+      ]
+    },
     "contracts": {
       "sql": {
         "operation": "sql",
@@ -47192,6 +48848,15 @@
     "operations": [
       "mail_service"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "mail_service"
+      ]
+    },
     "contracts": {
       "mail_service": {
         "operation": "mail_service",
@@ -47383,6 +49048,27 @@
       "trigger_flow",
       "update_record"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "aggregate",
+        "create_record",
+        "delete_record",
+        "get_field_choices",
+        "get_record",
+        "get_table_schema",
+        "invoke_workflow",
+        "list_flows",
+        "list_records",
+        "list_tables",
+        "list_workflows",
+        "trigger_flow",
+        "update_record"
+      ]
+    },
     "contracts": {
       "aggregate": {
         "operation": "aggregate",
@@ -48726,61 +50412,61 @@
     "type": "api",
     "description": "A schema defining SharePoint datasource",
     "defaults": {},
-    "operations": [],
+    "operations": [
+      "add_item",
+      "create_list",
+      "delete_item",
+      "get_analytics",
+      "get_items",
+      "get_lists",
+      "get_metadata",
+      "get_pages",
+      "get_site",
+      "get_sites",
+      "update_item"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "sp_operation"
+      ],
+      "values": [
+        "add_item",
+        "create_list",
+        "delete_item",
+        "get_analytics",
+        "get_items",
+        "get_lists",
+        "get_metadata",
+        "get_pages",
+        "get_site",
+        "get_sites",
+        "update_item"
+      ]
+    },
     "contracts": {
-      "default": {
-        "operation": "default",
+      "add_item": {
+        "operation": "add_item",
         "variants": [
           {
             "when": {
               "sp_operation": [
-                "get_sites"
+                "add_item"
               ]
             },
             "fields": {
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_page": {
-                "path": "sp_page",
+              "sp_item_object": {
+                "path": "sp_item_object",
                 "type": "unknown|binding",
-                "label": "Page",
-                "description": "Enter the page number"
+                "label": "Body",
+                "description": "Enter item object"
               },
-              "sp_top": {
-                "path": "sp_top",
+              "sp_list_id": {
+                "path": "sp_list_id",
                 "type": "unknown|binding",
-                "label": "Top",
-                "description": "Enter the number of items a response page should contain"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "get_site"
-              ]
-            },
-            "fields": {
+                "label": "List id",
+                "description": "Enter list id"
+              },
               "sp_operation": {
                 "path": "sp_operation",
                 "type": "string|binding",
@@ -48810,7 +50496,132 @@
             "required": [
               "sp_operation"
             ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "create_list": {
+        "operation": "create_list",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "create_list"
+              ]
+            },
+            "fields": {
+              "sp_list_object": {
+                "path": "sp_list_object",
+                "type": "unknown|binding",
+                "label": "Body",
+                "description": "Enter list object"
+              },
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_site_id": {
+                "path": "sp_site_id",
+                "type": "unknown|binding",
+                "label": "Site id",
+                "description": "Enter site id"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "delete_item": {
+        "operation": "delete_item",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "delete_item"
+              ]
+            },
+            "fields": {
+              "sp_item_id": {
+                "path": "sp_item_id",
+                "type": "unknown|binding",
+                "label": "Item id",
+                "description": "Enter item id"
+              },
+              "sp_list_id": {
+                "path": "sp_list_id",
+                "type": "unknown|binding",
+                "label": "List id",
+                "description": "Enter list id"
+              },
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_site_id": {
+                "path": "sp_site_id",
+                "type": "unknown|binding",
+                "label": "Site id",
+                "description": "Enter site id"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_analytics": {
+        "operation": "get_analytics",
+        "variants": [
           {
             "when": {
               "sp_operation": [
@@ -48857,191 +50668,18 @@
             "required": [
               "sp_operation"
             ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "get_pages"
-              ]
-            },
-            "fields": {
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_page": {
-                "path": "sp_page",
-                "type": "unknown|binding",
-                "label": "Page",
-                "description": "Enter the page number"
-              },
-              "sp_site_id": {
-                "path": "sp_site_id",
-                "type": "unknown|binding",
-                "label": "Site id",
-                "description": "Enter site id"
-              },
-              "sp_top": {
-                "path": "sp_top",
-                "type": "unknown|binding",
-                "label": "Top",
-                "description": "Enter the number of items a response page should contain"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "get_lists"
-              ]
-            },
-            "fields": {
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_page": {
-                "path": "sp_page",
-                "type": "unknown|binding",
-                "label": "Page",
-                "description": "Enter the page number"
-              },
-              "sp_site_id": {
-                "path": "sp_site_id",
-                "type": "unknown|binding",
-                "label": "Site id",
-                "description": "Enter site id"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "get_metadata"
-              ]
-            },
-            "fields": {
-              "sp_list_id": {
-                "path": "sp_list_id",
-                "type": "unknown|binding",
-                "label": "List id",
-                "description": "Enter list id"
-              },
-              "sp_list_name": {
-                "path": "sp_list_name",
-                "type": "unknown|binding",
-                "label": "List Name",
-                "description": "Enter list name"
-              },
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_site_id": {
-                "path": "sp_site_id",
-                "type": "unknown|binding",
-                "label": "Site id",
-                "description": "Enter site id"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "create_list"
-              ]
-            },
-            "fields": {
-              "sp_list_object": {
-                "path": "sp_list_object",
-                "type": "unknown|binding",
-                "label": "Body",
-                "description": "Enter list object"
-              },
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_site_id": {
-                "path": "sp_site_id",
-                "type": "unknown|binding",
-                "label": "Site id",
-                "description": "Enter site id"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_items": {
+        "operation": "get_items",
+        "variants": [
           {
             "when": {
               "sp_operation": [
@@ -49096,7 +50734,294 @@
             "required": [
               "sp_operation"
             ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_lists": {
+        "operation": "get_lists",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "get_lists"
+              ]
+            },
+            "fields": {
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_page": {
+                "path": "sp_page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter the page number"
+              },
+              "sp_site_id": {
+                "path": "sp_site_id",
+                "type": "unknown|binding",
+                "label": "Site id",
+                "description": "Enter site id"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_metadata": {
+        "operation": "get_metadata",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "get_metadata"
+              ]
+            },
+            "fields": {
+              "sp_list_id": {
+                "path": "sp_list_id",
+                "type": "unknown|binding",
+                "label": "List id",
+                "description": "Enter list id"
+              },
+              "sp_list_name": {
+                "path": "sp_list_name",
+                "type": "unknown|binding",
+                "label": "List Name",
+                "description": "Enter list name"
+              },
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_site_id": {
+                "path": "sp_site_id",
+                "type": "unknown|binding",
+                "label": "Site id",
+                "description": "Enter site id"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_pages": {
+        "operation": "get_pages",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "get_pages"
+              ]
+            },
+            "fields": {
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_page": {
+                "path": "sp_page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter the page number"
+              },
+              "sp_site_id": {
+                "path": "sp_site_id",
+                "type": "unknown|binding",
+                "label": "Site id",
+                "description": "Enter site id"
+              },
+              "sp_top": {
+                "path": "sp_top",
+                "type": "unknown|binding",
+                "label": "Top",
+                "description": "Enter the number of items a response page should contain"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_site": {
+        "operation": "get_site",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "get_site"
+              ]
+            },
+            "fields": {
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_site_id": {
+                "path": "sp_site_id",
+                "type": "unknown|binding",
+                "label": "Site id",
+                "description": "Enter site id"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_sites": {
+        "operation": "get_sites",
+        "variants": [
+          {
+            "when": {
+              "sp_operation": [
+                "get_sites"
+              ]
+            },
+            "fields": {
+              "sp_operation": {
+                "path": "sp_operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select operation",
+                "allowedValues": [
+                  "get_sites",
+                  "get_site",
+                  "get_analytics",
+                  "get_pages",
+                  "get_lists",
+                  "get_metadata",
+                  "create_list",
+                  "get_items",
+                  "update_item",
+                  "delete_item",
+                  "add_item"
+                ]
+              },
+              "sp_page": {
+                "path": "sp_page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter the page number"
+              },
+              "sp_top": {
+                "path": "sp_top",
+                "type": "unknown|binding",
+                "label": "Top",
+                "description": "Enter the number of items a response page should contain"
+              }
+            },
+            "required": [
+              "sp_operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "update_item": {
+        "operation": "update_item",
+        "variants": [
           {
             "when": {
               "sp_operation": [
@@ -49110,104 +51035,6 @@
                 "label": "Item id",
                 "description": "Enter item id"
               },
-              "sp_item_object": {
-                "path": "sp_item_object",
-                "type": "unknown|binding",
-                "label": "Body",
-                "description": "Enter item object"
-              },
-              "sp_list_id": {
-                "path": "sp_list_id",
-                "type": "unknown|binding",
-                "label": "List id",
-                "description": "Enter list id"
-              },
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_site_id": {
-                "path": "sp_site_id",
-                "type": "unknown|binding",
-                "label": "Site id",
-                "description": "Enter site id"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "delete_item"
-              ]
-            },
-            "fields": {
-              "sp_item_id": {
-                "path": "sp_item_id",
-                "type": "unknown|binding",
-                "label": "Item id",
-                "description": "Enter item id"
-              },
-              "sp_list_id": {
-                "path": "sp_list_id",
-                "type": "unknown|binding",
-                "label": "List id",
-                "description": "Enter list id"
-              },
-              "sp_operation": {
-                "path": "sp_operation",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Select operation",
-                "allowedValues": [
-                  "get_sites",
-                  "get_site",
-                  "get_analytics",
-                  "get_pages",
-                  "get_lists",
-                  "get_metadata",
-                  "create_list",
-                  "get_items",
-                  "update_item",
-                  "delete_item",
-                  "add_item"
-                ]
-              },
-              "sp_site_id": {
-                "path": "sp_site_id",
-                "type": "unknown|binding",
-                "label": "Site id",
-                "description": "Enter site id"
-              }
-            },
-            "required": [
-              "sp_operation"
-            ]
-          },
-          {
-            "when": {
-              "sp_operation": [
-                "add_item"
-              ]
-            },
-            "fields": {
               "sp_item_object": {
                 "path": "sp_item_object",
                 "type": "unknown|binding",
@@ -49647,6 +51474,16 @@
       "list_messages",
       "send_message"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "list_messages",
+        "send_message"
+      ]
+    },
     "contracts": {
       "list_messages": {
         "operation": "list_messages",
@@ -49844,6 +51681,10 @@
       }
     },
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -50041,6 +51882,24 @@
       "update_rows",
       "upsert_rows"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "mode",
+        "operation"
+      ],
+      "values": [
+        "bulk_insert",
+        "bulk_update_pkey",
+        "bulk_upsert_pkey",
+        "create_row",
+        "delete_rows",
+        "list_rows",
+        "sql",
+        "update_rows",
+        "upsert_rows"
+      ]
+    },
     "contracts": {
       "bulk_insert": {
         "operation": "bulk_insert",
@@ -51346,6 +53205,10 @@
       "query_mode": "read"
     },
     "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "This kind has a single query form; author it against the `default` contract."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -51510,6 +53373,18 @@
     "description": "A schema defining stripe datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "stripe_operation",
+      "specs": [
+        {
+          "ref": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
+          "location": "remote"
+        }
+      ],
+      "specUrl": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
+      "description": "The operation list is served by the remote API spec at query-authoring time, not by the ToolJet plugin definition, so it cannot be enumerated statically. Inspect the datasource in ToolJet or the spec itself before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -51565,6 +53440,19 @@
       "get_rows",
       "update_row"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "count_rows",
+        "create_row",
+        "delete_row",
+        "get_rows",
+        "update_row"
+      ]
+    },
     "contracts": {
       "count_rows": {
         "operation": "count_rows",
@@ -52272,6 +54160,16 @@
       "analyze_document",
       "analyze_document_s3"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "analyze_document",
+        "analyze_document_s3"
+      ]
+    },
     "contracts": {
       "analyze_document": {
         "operation": "analyze_document",
@@ -52935,6 +54833,22 @@
         }
       }
     },
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "bulk_update_with_primary_key",
+        "bulk_upsert_with_primary_key",
+        "create_row",
+        "delete_rows",
+        "join_tables",
+        "list_rows",
+        "sql_execution",
+        "update_rows"
+      ]
+    },
     "properties": {
       "operation": {
         "type": "string"
@@ -53082,6 +54996,15 @@
     "operations": [
       "send_sms"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "send_sms"
+      ]
+    },
     "contracts": {
       "send_sms": {
         "operation": "send_sms",
@@ -53191,6 +55114,20 @@
       "search",
       "update"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "create_collection",
+        "delete",
+        "get",
+        "index_document",
+        "search",
+        "update"
+      ]
+    },
     "contracts": {
       "create_collection": {
         "operation": "create_collection",
@@ -53675,6 +55612,69 @@
     "description": "A schema defining UPS datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "ups_operation",
+      "specs": [
+        {
+          "label": "Shipping",
+          "ref": "@spec/ups/shipping",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "shipping",
+          "path": "marketplace/plugins/ups/openapi-specs/shipping.yaml"
+        },
+        {
+          "label": "Rating",
+          "ref": "@spec/ups/rating",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "rating",
+          "path": "marketplace/plugins/ups/openapi-specs/rating.yaml"
+        },
+        {
+          "label": "Tracking",
+          "ref": "@spec/ups/tracking",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "tracking",
+          "path": "marketplace/plugins/ups/openapi-specs/tracking.yaml"
+        },
+        {
+          "label": "Address_Validation",
+          "ref": "@spec/ups/address-validation",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "address-validation",
+          "path": "marketplace/plugins/ups/openapi-specs/address-validation.yaml"
+        },
+        {
+          "label": "Time_In_Transit",
+          "ref": "@spec/ups/time-in-transit",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "time-in-transit",
+          "path": "marketplace/plugins/ups/openapi-specs/time-in-transit.yaml"
+        },
+        {
+          "label": "Pickup",
+          "ref": "@spec/ups/pickup",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "pickup",
+          "path": "marketplace/plugins/ups/openapi-specs/pickup.yaml"
+        },
+        {
+          "label": "Paperless_Invoice",
+          "ref": "@spec/ups/paperless-invoice",
+          "location": "bundled",
+          "plugin": "ups",
+          "name": "paperless-invoice",
+          "path": "marketplace/plugins/ups/openapi-specs/paperless-invoice.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -53736,101 +55736,39 @@
       "operation_collection": "get_collection",
       "operation_objects": "list_objects"
     },
-    "operations": [],
+    "operations": [
+      "collection.create_collection",
+      "collection.delete_collection",
+      "collection.get_collection",
+      "objects.create_object",
+      "objects.delete_object_by_id",
+      "objects.get_object_by_id",
+      "objects.list_objects",
+      "schema.get_schema"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "data_type",
+        "operation_collection",
+        "operation_objects",
+        "operation_schema"
+      ],
+      "values": [
+        "collection.create_collection",
+        "collection.delete_collection",
+        "collection.get_collection",
+        "objects.create_object",
+        "objects.delete_object_by_id",
+        "objects.get_object_by_id",
+        "objects.list_objects",
+        "schema.get_schema"
+      ]
+    },
     "contracts": {
-      "default": {
-        "operation": "default",
+      "collection.create_collection": {
+        "operation": "collection.create_collection",
         "variants": [
-          {
-            "when": {
-              "data_type": [
-                "schema"
-              ],
-              "operation_schema": [
-                "get_schema"
-              ]
-            },
-            "fields": {
-              "consistency": {
-                "path": "consistency",
-                "type": "boolean|binding",
-                "label": "Consistency"
-              },
-              "data_type": {
-                "path": "data_type",
-                "type": "string|binding",
-                "label": "Data type",
-                "description": "Single select dropdown for data type",
-                "allowedValues": [
-                  "schema",
-                  "collection",
-                  "objects"
-                ]
-              },
-              "operation_schema": {
-                "path": "operation_schema",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Single select dropdown for operation",
-                "allowedValues": [
-                  "get_schema"
-                ]
-              }
-            },
-            "required": [
-              "data_type",
-              "operation_schema"
-            ]
-          },
-          {
-            "when": {
-              "data_type": [
-                "collection"
-              ],
-              "operation_collection": [
-                "get_collection"
-              ]
-            },
-            "fields": {
-              "collectionName": {
-                "path": "collectionName",
-                "type": "unknown|binding",
-                "label": "Collection Name",
-                "description": "Enter the name of the collection"
-              },
-              "consistency": {
-                "path": "consistency",
-                "type": "boolean|binding",
-                "label": "Consistency"
-              },
-              "data_type": {
-                "path": "data_type",
-                "type": "string|binding",
-                "label": "Data type",
-                "description": "Single select dropdown for data type",
-                "allowedValues": [
-                  "schema",
-                  "collection",
-                  "objects"
-                ]
-              },
-              "operation_collection": {
-                "path": "operation_collection",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Single select dropdown for operation",
-                "allowedValues": [
-                  "get_collection",
-                  "create_collection",
-                  "delete_collection"
-                ]
-              }
-            },
-            "required": [
-              "data_type",
-              "operation_collection"
-            ]
-          },
           {
             "when": {
               "data_type": [
@@ -53959,7 +55897,18 @@
               "data_type",
               "operation_collection"
             ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "collection.delete_collection": {
+        "operation": "collection.delete_collection",
+        "variants": [
           {
             "when": {
               "data_type": [
@@ -54003,7 +55952,275 @@
               "data_type",
               "operation_collection"
             ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "collection.get_collection": {
+        "operation": "collection.get_collection",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "collection"
+              ],
+              "operation_collection": [
+                "get_collection"
+              ]
+            },
+            "fields": {
+              "collectionName": {
+                "path": "collectionName",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "consistency": {
+                "path": "consistency",
+                "type": "boolean|binding",
+                "label": "Consistency"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "operation_collection": {
+                "path": "operation_collection",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "get_collection",
+                  "create_collection",
+                  "delete_collection"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_collection"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.create_object": {
+        "operation": "objects.create_object",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "create_object"
+              ]
+            },
+            "fields": {
+              "collectionName_create_object": {
+                "path": "collectionName_create_object",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "object_uuid": {
+                "path": "object_uuid",
+                "type": "unknown|binding",
+                "label": "Object uuid",
+                "description": "Enter the name of the collection"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              },
+              "properties_create_object": {
+                "path": "properties_create_object",
+                "type": "unknown|binding",
+                "label": "Properties",
+                "description": "Enter the name of the collection"
+              },
+              "vectors_create_object": {
+                "path": "vectors_create_object",
+                "type": "unknown|binding",
+                "label": "Vectors",
+                "description": "Enter the name of the collection"
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.delete_object_by_id": {
+        "operation": "objects.delete_object_by_id",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "delete_object_by_id"
+              ]
+            },
+            "fields": {
+              "collectionName_delete_object": {
+                "path": "collectionName_delete_object",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "objectId_delete_object": {
+                "path": "objectId_delete_object",
+                "type": "unknown|binding",
+                "label": "Object ID",
+                "description": "Enter the ID of the object"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.get_object_by_id": {
+        "operation": "objects.get_object_by_id",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "get_object_by_id"
+              ]
+            },
+            "fields": {
+              "collectionName_get_object": {
+                "path": "collectionName_get_object",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "objectId_get_object": {
+                "path": "objectId_get_object",
+                "type": "unknown|binding",
+                "label": "Object ID"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.list_objects": {
+        "operation": "objects.list_objects",
+        "variants": [
           {
             "when": {
               "data_type": [
@@ -54088,22 +56305,32 @@
               "data_type",
               "operation_objects"
             ]
-          },
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "schema.get_schema": {
+        "operation": "schema.get_schema",
+        "variants": [
           {
             "when": {
               "data_type": [
-                "objects"
+                "schema"
               ],
-              "operation_objects": [
-                "create_object"
+              "operation_schema": [
+                "get_schema"
               ]
             },
             "fields": {
-              "collectionName_create_object": {
-                "path": "collectionName_create_object",
-                "type": "unknown|binding",
-                "label": "Collection Name",
-                "description": "Enter the name of the collection"
+              "consistency": {
+                "path": "consistency",
+                "type": "boolean|binding",
+                "label": "Consistency"
               },
               "data_type": {
                 "path": "data_type",
@@ -54116,141 +56343,19 @@
                   "objects"
                 ]
               },
-              "object_uuid": {
-                "path": "object_uuid",
-                "type": "unknown|binding",
-                "label": "Object uuid",
-                "description": "Enter the name of the collection"
-              },
-              "operation_objects": {
-                "path": "operation_objects",
+              "operation_schema": {
+                "path": "operation_schema",
                 "type": "string|binding",
                 "label": "Operation",
                 "description": "Single select dropdown for operation",
                 "allowedValues": [
-                  "list_objects",
-                  "create_object",
-                  "get_object_by_id",
-                  "delete_object_by_id"
-                ]
-              },
-              "properties_create_object": {
-                "path": "properties_create_object",
-                "type": "unknown|binding",
-                "label": "Properties",
-                "description": "Enter the name of the collection"
-              },
-              "vectors_create_object": {
-                "path": "vectors_create_object",
-                "type": "unknown|binding",
-                "label": "Vectors",
-                "description": "Enter the name of the collection"
-              }
-            },
-            "required": [
-              "data_type",
-              "operation_objects"
-            ]
-          },
-          {
-            "when": {
-              "data_type": [
-                "objects"
-              ],
-              "operation_objects": [
-                "get_object_by_id"
-              ]
-            },
-            "fields": {
-              "collectionName_get_object": {
-                "path": "collectionName_get_object",
-                "type": "unknown|binding",
-                "label": "Collection Name",
-                "description": "Enter the name of the collection"
-              },
-              "data_type": {
-                "path": "data_type",
-                "type": "string|binding",
-                "label": "Data type",
-                "description": "Single select dropdown for data type",
-                "allowedValues": [
-                  "schema",
-                  "collection",
-                  "objects"
-                ]
-              },
-              "objectId_get_object": {
-                "path": "objectId_get_object",
-                "type": "unknown|binding",
-                "label": "Object ID"
-              },
-              "operation_objects": {
-                "path": "operation_objects",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Single select dropdown for operation",
-                "allowedValues": [
-                  "list_objects",
-                  "create_object",
-                  "get_object_by_id",
-                  "delete_object_by_id"
+                  "get_schema"
                 ]
               }
             },
             "required": [
               "data_type",
-              "operation_objects"
-            ]
-          },
-          {
-            "when": {
-              "data_type": [
-                "objects"
-              ],
-              "operation_objects": [
-                "delete_object_by_id"
-              ]
-            },
-            "fields": {
-              "collectionName_delete_object": {
-                "path": "collectionName_delete_object",
-                "type": "unknown|binding",
-                "label": "Collection Name",
-                "description": "Enter the name of the collection"
-              },
-              "data_type": {
-                "path": "data_type",
-                "type": "string|binding",
-                "label": "Data type",
-                "description": "Single select dropdown for data type",
-                "allowedValues": [
-                  "schema",
-                  "collection",
-                  "objects"
-                ]
-              },
-              "objectId_delete_object": {
-                "path": "objectId_delete_object",
-                "type": "unknown|binding",
-                "label": "Object ID",
-                "description": "Enter the ID of the object"
-              },
-              "operation_objects": {
-                "path": "operation_objects",
-                "type": "string|binding",
-                "label": "Operation",
-                "description": "Single select dropdown for operation",
-                "allowedValues": [
-                  "list_objects",
-                  "create_object",
-                  "get_object_by_id",
-                  "delete_object_by_id"
-                ]
-              }
-            },
-            "required": [
-              "data_type",
-              "operation_objects"
+              "operation_schema"
             ]
           }
         ],
@@ -54792,6 +56897,35 @@
       "update_order",
       "update_product"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation",
+        "resource"
+      ],
+      "values": [
+        "batch_update_customer",
+        "batch_update_order",
+        "batch_update_product",
+        "create_coupon",
+        "create_customer",
+        "create_order",
+        "create_product",
+        "delete_customer",
+        "delete_order",
+        "delete_product",
+        "list_coupon",
+        "list_customer",
+        "list_order",
+        "list_product",
+        "retrieve_customer",
+        "retrieve_order",
+        "retrieve_product",
+        "update_customer",
+        "update_order",
+        "update_product"
+      ]
+    },
     "contracts": {
       "batch_update_customer": {
         "operation": "batch_update_customer",
@@ -57508,6 +59642,101 @@
     "description": "A schema defining Xero datasource",
     "defaults": {},
     "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "xero_operation",
+      "specs": [
+        {
+          "label": "Accounts",
+          "ref": "@spec/xero/accounts",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "accounts",
+          "path": "marketplace/plugins/xero/openapi-specs/accounts.yaml"
+        },
+        {
+          "label": "Finance",
+          "ref": "@spec/xero/finance",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "finance",
+          "path": "marketplace/plugins/xero/openapi-specs/finance.yaml"
+        },
+        {
+          "label": "identity",
+          "ref": "@spec/xero/identity",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "identity",
+          "path": "marketplace/plugins/xero/openapi-specs/identity.yaml"
+        },
+        {
+          "label": "BankFeeds",
+          "ref": "@spec/xero/bankfeeds",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "bankfeeds",
+          "path": "marketplace/plugins/xero/openapi-specs/bankfeeds.yaml"
+        },
+        {
+          "label": "AppStore",
+          "ref": "@spec/xero/appstore",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "appstore",
+          "path": "marketplace/plugins/xero/openapi-specs/appstore.yaml"
+        },
+        {
+          "label": "Assets",
+          "ref": "@spec/xero/assets",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "assets",
+          "path": "marketplace/plugins/xero/openapi-specs/assets.yaml"
+        },
+        {
+          "label": "PayrollAu",
+          "ref": "@spec/xero/payrollau",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrollau",
+          "path": "marketplace/plugins/xero/openapi-specs/payrollau.yaml"
+        },
+        {
+          "label": "PayrollUk",
+          "ref": "@spec/xero/payrolluk",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrolluk",
+          "path": "marketplace/plugins/xero/openapi-specs/payrolluk.yaml"
+        },
+        {
+          "label": "PayrollNz",
+          "ref": "@spec/xero/payrollnz",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrollnz",
+          "path": "marketplace/plugins/xero/openapi-specs/payrollnz.yaml"
+        },
+        {
+          "label": "Projects",
+          "ref": "@spec/xero/projects",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "projects",
+          "path": "marketplace/plugins/xero/openapi-specs/projects.yaml"
+        },
+        {
+          "label": "Files",
+          "ref": "@spec/xero/files",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "files",
+          "path": "marketplace/plugins/xero/openapi-specs/files.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
     "contracts": {
       "default": {
         "operation": "default",
@@ -57596,6 +59825,20 @@
       "show_ticket",
       "update_ticket"
     ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "get_profile",
+        "get_user",
+        "read_requested_tickets",
+        "search",
+        "show_ticket",
+        "update_ticket"
+      ]
+    },
     "contracts": {
       "get_profile": {
         "operation": "get_profile",

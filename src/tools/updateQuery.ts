@@ -83,6 +83,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           options = normalizeQueryOptions(kind, args.options);
           if (options !== args.options) {
             warnings.push(
+              kind === 'mongodb' ? 'Serialized MongoDB document fields to JSON text expected by the plugin.' :
               `Rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; ` +
                 'the flat {column: value} form sends an empty body and fails at runtime.'
             );
