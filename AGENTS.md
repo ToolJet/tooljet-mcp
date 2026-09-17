@@ -1,7 +1,7 @@
 # tooljet-mcp — AGENTS.md
 
-Cross-repo overview (plans, hops, who owns what): `../tooljet-agent/ai-stack/SETUP.md` and
-https://github.com/ToolJet/tooljet-agent/pull/199. This file covers this repo only.
+Cross-repo overview (plans, hops, who owns what): ToolJet/tooljet-agent, `ai-stack/SETUP.md`
+(whole-stack overview: architecture, plans, licences, local setup). This file covers this repo only.
 
 ## 1. Purpose
 
@@ -123,4 +123,5 @@ Rebuild the bundle after every pull — a stale bundle silently runs old tools (
 
 ## 7. See also
 
-`../tooljet-agent/ai-stack/SETUP.md`, https://github.com/ToolJet/tooljet-agent/pull/199.
+ToolJet/tooljet-agent, `ai-stack/SETUP.md` (whole-stack overview: architecture, plans, licences,
+local setup).
