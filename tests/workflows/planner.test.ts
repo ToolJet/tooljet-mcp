@@ -61,6 +61,21 @@ describe('workflow planning and recovery', () => {
     expect(client.createWorkflowQuery).toHaveBeenCalledTimes(1); expect(client.updateQuery).toHaveBeenCalledTimes(1);
     expect((await client.get('w', 'v')).definition.nodes.map(n => n.id)).toEqual(original.nodes.map(n => n.id));
   });
+  it('creates the RunJS query required by a loop node', async () => {
+    const { client } = fixture();
+    const loopSpec = specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'each', type: 'loop', name: 'eachRecord', iteration_values_code: 'return [1, 2];', code: 'return value * 2;' },
+      { ref: 'response', type: 'response', code: 'return {};' },
+    ], edges: [
+      { ref: 'start-each', from: 'start', to: 'each', port: 'default' },
+      { ref: 'each-response', from: 'each', to: 'response', port: 'success' },
+    ] });
+    const planned = await lint(client, 'w', 'v', loopSpec);
+    expect(planned).toHaveProperty('plan_token');
+    await apply(client, (planned as { plan_token: string }).plan_token);
+    expect(client.createWorkflowQuery).toHaveBeenCalledWith(expect.objectContaining({ name: 'eachRecord', kind: 'runjs', options: expect.objectContaining({ code: 'return value * 2;' }) }));
+  });
   it('refuses noneditable versions before query writes', async () => {
     const { client } = fixture(); const t = await token(client);
     const value = await client.get('w', 'v'); vi.mocked(client.get).mockResolvedValue({ ...value, editable: false });

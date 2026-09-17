@@ -37,14 +37,14 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
   const claimedNames = new Set<string>();
   for (const item of compiled.query_nodes) {
     const input = item.spec;
-    if (input.type !== 'javascript' && input.type !== 'query') continue;
+    if (input.type !== 'javascript' && input.type !== 'query' && input.type !== 'loop') continue;
     const existingMapping = snapshot.definition.queries.find(q => q.idOnDefinition === item.definition_id);
     const oldQuery = queries.find(q => q.id === existingMapping?.id);
     if (existingMapping && !oldQuery) throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
     if (oldQuery && snapshot.definition.nodes.filter(n => snapshot.definition.queries.some(q => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1) throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
     // The workflow-node guard requires a datasource ID. RunJS is represented by ToolJet's
     // workspace static datasource, so resolve its real ID just like the visual editor does.
-    const datasource = input.type === 'javascript'
+    const datasource = input.type === 'javascript' || input.type === 'loop'
       ? datasources.find(d => d.kind === 'runjs')
       : datasources.find(d => d.id === input.datasource_id);
     if (!datasource) throw new Error(`Datasource unavailable for node ${input.ref}.`);
@@ -54,7 +54,7 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
     if (oldQuery?.name !== undefined && oldQuery.name !== input.name) throw new Error('Renaming existing queries is unsupported because code references cannot be rewritten safely.');
     if (claimedNames.has(input.name) || queries.some(q => q.name === input.name && q.id !== oldQuery?.id)) throw new Error(`Duplicate query name: ${input.name}`);
     claimedNames.add(input.name);
-    const options = normalizeQueryOptions(kind, input.type === 'javascript' ? { ...(oldQuery?.options as Record<string, unknown> ?? {}), code: input.code } : input.options);
+    const options = normalizeQueryOptions(kind, input.type === 'javascript' || input.type === 'loop' ? { ...(oldQuery?.options as Record<string, unknown> ?? {}), code: input.code } : input.options);
     const validation = validateQueryOptions(kind, options);
     if (validation.errors.length) throw new Error(issueMessages(validation.errors).join(' '));
     warnings.push(...issueMessages(validation.warnings));

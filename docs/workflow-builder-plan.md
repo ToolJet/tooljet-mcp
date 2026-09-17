@@ -12,9 +12,9 @@ An agent can discover supported workflow capabilities, create a draft, build a g
 
 Use existing ToolJet HTTP APIs. Do not add backend node CRUD APIs for the first release. Keep the app builder working unchanged. Authoring does not release a workflow, activate a schedule/webhook, or execute its nodes.
 
-Initial supported nodes: start, JavaScript query, datasource query, condition, and response. Support normal, true/false, and query success/error connections only where verified against the target runtime. Treat unverified handles as unsupported rather than guessing them.
+Initial supported nodes: start, JavaScript query, datasource query, loop, condition, response, and agent. Loops are loop-enabled RunJS queries. Agents support ordinary flow output but not AI-model or tool attachments. Support normal, true/false, and query success/error connections only where verified against the target runtime. Treat unverified handles as unsupported rather than guessing them.
 
-Deferred: loops, Python, dependency installation and bundle management, nested workflows, AI agents, human approvals, schedules, webhooks, publishing, promotion, and individual node preview. Existing unsupported nodes must remain intact during supported edits.
+Deferred: agent AI-model and tool attachments, dependency installation and bundle management, nested workflows, schedules, webhooks, publishing, promotion, and individual node preview. Existing unsupported nodes must remain intact during supported edits.
 
 ## 2. Confirmed architecture and unresolved compatibility
 

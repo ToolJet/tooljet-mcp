@@ -40876,8 +40876,10 @@ var nodeSchema = external_exports.discriminatedUnion("type", [
   external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).default(200) }).strict()
+  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).default(200) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional() }).strict()
 ]);
 var specSchema = external_exports.object({
   schema_version: external_exports.literal(1).default(1),
@@ -40917,7 +40919,7 @@ function validateGraph(graph, queryIds) {
   for (const n of graph.nodes) {
     if (n.type === "query" && !mappings.has(String(n.data.idOnDefinition)))
       error51("missing_mapping", `nodes.${n.id}`, "Query node has no query mapping.");
-    if (!["input", "query", "if-condition", "output"].includes(n.type))
+    if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
       warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
   }
   for (const edge of graph.edges) {
@@ -40928,7 +40930,7 @@ function validateGraph(graph, queryIds) {
     }
     if (target2.type === "input")
       error51("start_inbound", path, "Start cannot have inbound edges.");
-    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [] };
+    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
     if (ports[source2.type] && !ports[source2.type].includes(edge.sourceHandle))
       error51("invalid_port", path, `Invalid source port for ${source2.type}.`);
     if (source2.type === "query" && edge.sourceHandle === "failure" && !source2.data.errorHandler)
@@ -40991,6 +40993,14 @@ function compileGraph(current, spec, ids) {
         throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`);
       }
     }
+    if (input.type === "loop") {
+      try {
+        new Script(`(async function() {${input.iteration_values_code}
+})`);
+      } catch {
+        throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`);
+      }
+    }
     const id2 = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
     if (editedIds.has(id2))
       throw new Error("Multiple node edits target the same ID.");
@@ -40998,17 +41008,30 @@ function compileGraph(current, spec, ids) {
     const old = graph.nodes.find((n) => n.id === id2);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing node: ${id2}`);
-    const type = { start: "input", javascript: "query", query: "query", condition: "if-condition", response: "output" }[input.type];
+    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
     if (old && old.type !== type)
       throw new Error("Changing node type is unsupported; remove and add explicitly.");
     const data = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
     if (input.type !== "condition")
-      data.nodeType = input.type === "javascript" ? "query" : input.type;
+      data.nodeType = input.type === "javascript" || input.type === "loop" ? "query" : input.type;
     if (input.type === "condition" || input.type === "response")
       data.code = input.code;
     if (input.type === "response")
       data.statusCode = { fxActive: false, value: String(input.status_code) };
-    if (input.type === "query" || input.type === "javascript") {
+    if (input.type === "loop") {
+      data.looped = true;
+      data.iterationValuesCode = input.iteration_values_code;
+    }
+    if (input.type === "agent") {
+      const oldOptions = old?.data.options && typeof old.data.options === "object" && !Array.isArray(old.data.options) ? old.data.options : {};
+      data.nodeName = input.label ?? old?.data.nodeName ?? input.ref;
+      data.options = {
+        systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? "",
+        userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
+        outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
+      };
+    }
+    if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
       const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
       data.idOnDefinition = definitionId;
       query_nodes.push({ spec: input, node_id: id2, definition_id: definitionId });
@@ -41033,7 +41056,9 @@ function compileGraph(current, spec, ids) {
     const source2 = resolve4(input.from), target2 = resolve4(input.to);
     if (!source2 || !target2)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
-    const edge = { ...old, id: id2, source: source2, target: target2, sourceHandle: input.port === "default" ? null : input.port, type: "custom" };
+    const sourceNode = graph.nodes.find((node) => node.id === source2);
+    const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
+    const edge = { ...old, id: id2, source: source2, target: target2, sourceHandle, type: "custom" };
     if (old)
       graph.edges[graph.edges.indexOf(old)] = edge;
     else
@@ -41078,11 +41103,13 @@ var nodeCatalog = {
     { type: "start", renderer: "input", ports: ["default"] },
     { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
     { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
+    { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
     { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
-    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] }
+    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
+    { type: "agent", renderer: "agent", ports: ["output"], fields: ["system_prompt", "user_prompt", "output_format"] }
   ],
   edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
-  limitations: ["No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
+  limitations: ["Agent AI-model and tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
 };
 
 // dist/workflowClient.js
@@ -46886,7 +46913,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
   const claimedNames = /* @__PURE__ */ new Set();
   for (const item of compiled.query_nodes) {
     const input = item.spec;
-    if (input.type !== "javascript" && input.type !== "query")
+    if (input.type !== "javascript" && input.type !== "query" && input.type !== "loop")
       continue;
     const existingMapping = snapshot2.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
     const oldQuery = queries.find((q) => q.id === existingMapping?.id);
@@ -46894,7 +46921,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
       throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
     if (oldQuery && snapshot2.definition.nodes.filter((n) => snapshot2.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
       throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const datasource = input.type === "javascript" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const datasource = input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
     if (!datasource)
       throw new Error(`Datasource unavailable for node ${input.ref}.`);
     const kind = datasource.kind;
@@ -46906,7 +46933,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
     if (claimedNames.has(input.name) || queries.some((q) => q.name === input.name && q.id !== oldQuery?.id))
       throw new Error(`Duplicate query name: ${input.name}`);
     claimedNames.add(input.name);
-    const options2 = normalizeQueryOptions(kind, input.type === "javascript" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options);
+    const options2 = normalizeQueryOptions(kind, input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options);
     const validation2 = validateQueryOptions(kind, options2);
     if (validation2.errors.length)
       throw new Error(issueMessages(validation2.errors).join(" "));
@@ -47049,7 +47076,7 @@ function workflowTools(client) {
     }
   });
   return [
-    make("get_workflow_node_catalog", "Get Workflow Node Catalog", "Supported basic workflow node types, ports and exact authoring schema. Advanced nodes are preserved, not authored.", {}, "read", async () => ({ ...nodeCatalog, spec_schema: external_exports.toJSONSchema(specSchema) })),
+    make("get_workflow_node_catalog", "Get Workflow Node Catalog", "Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.", {}, "read", async () => ({ ...nodeCatalog, spec_schema: external_exports.toJSONSchema(specSchema) })),
     make("list_workflows", "List Workflows", "List workflows in the active workspace.", { page: external_exports.number().int().min(1).default(1), search: external_exports.string().default("") }, "read", (args) => client.workflows.list(args.page, args.search)),
     make("create_workflow", "Create Workflow", "Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.", { name: external_exports.string().trim().min(1).max(100).regex(/^[^/]+$/) }, "create", (args) => client.workflows.create(args.name)),
     make("get_workflow", "Get Workflow", "Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.", { workflow_id: id, version_id: id.optional() }, "read", async (args) => {

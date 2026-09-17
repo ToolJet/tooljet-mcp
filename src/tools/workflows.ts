@@ -27,7 +27,7 @@ export function workflowTools(client: ToolJetClient): ToolDef[] {
     },
   });
   return [
-    make('get_workflow_node_catalog', 'Get Workflow Node Catalog', 'Supported basic workflow node types, ports and exact authoring schema. Advanced nodes are preserved, not authored.', {}, 'read', async () => ({ ...nodeCatalog, spec_schema: z.toJSONSchema(specSchema) })),
+    make('get_workflow_node_catalog', 'Get Workflow Node Catalog', 'Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.', {}, 'read', async () => ({ ...nodeCatalog, spec_schema: z.toJSONSchema(specSchema) })),
     make('list_workflows', 'List Workflows', 'List workflows in the active workspace.', { page: z.number().int().min(1).default(1), search: z.string().default('') }, 'read', args => client.workflows.list(args.page, args.search)),
     make('create_workflow', 'Create Workflow', 'Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.', { name: z.string().trim().min(1).max(100).regex(/^[^/]+$/) }, 'create', args => client.workflows.create(args.name)),
     make('get_workflow', 'Get Workflow', 'Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.', { workflow_id: id, version_id: id.optional() }, 'read', async args => {

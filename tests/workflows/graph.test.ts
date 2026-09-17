@@ -47,12 +47,53 @@ describe('workflow graph contracts', () => {
     expect(c.graph.nodes.find(n => n.id === c.node_ids.q)?.data.errorHandler).toBe(true);
     expect(validateGraph(c.graph).errors.map(e => e.code)).toContain('missing_mapping');
   });
+  it('compiles a loop into ToolJet’s loop-enabled RunJS query shape', () => {
+    const spec = specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'each', type: 'loop', name: 'eachRecord', iteration_values_code: 'return [1, 2];', code: 'return value * 2;' },
+      { ref: 'response', type: 'response', code: 'return {};' },
+    ], edges: [
+      { ref: 'start-each', from: 'start', to: 'each', port: 'default' },
+      { ref: 'each-response', from: 'each', to: 'response', port: 'success' },
+    ] });
+    const { graph, node_ids } = compileGraph(empty(), spec);
+    expect(graph.nodes.find((node) => node.id === node_ids.each)).toMatchObject({
+      type: 'query', data: { nodeType: 'query', looped: true, iterationValuesCode: 'return [1, 2];' },
+    });
+  });
+  it('compiles an agent with its ToolJet options and output handle', () => {
+    const spec = specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'summarize', type: 'agent', system_prompt: 'Summarize clearly.', user_prompt: '{{queries.source.data}}', output_format: { title: 'string' } },
+      { ref: 'response', type: 'response', code: 'return {};' },
+    ], edges: [
+      { ref: 'start-agent', from: 'start', to: 'summarize', port: 'default' },
+      { ref: 'agent-response', from: 'summarize', to: 'response', port: 'default' },
+    ] });
+    const { graph, node_ids } = compileGraph(empty(), spec);
+    expect(graph.nodes.find((node) => node.id === node_ids.summarize)).toMatchObject({
+      type: 'agent', data: {
+        nodeType: 'agent', nodeName: 'summarize',
+        options: { systemPrompt: 'Summarize clearly.', userPrompt: '{{queries.source.data}}', outputFormat: { example: { title: 'string' } } },
+      },
+    });
+    expect(graph.edges.find((edge) => edge.id === graph.edges.find((edge) => edge.source === node_ids.summarize)?.id)?.sourceHandle).toBe('output');
+    expect(validateGraph(graph).errors).toEqual([]);
+  });
+  it('preserves unspecified agent options when patching an existing agent', () => {
+    const initial = compileGraph(empty(), specSchema.parse({ nodes: [{ ref: 'agent', type: 'agent', system_prompt: 'Original system', user_prompt: 'Original user', output_format: { value: 'string' } }] }));
+    const updated = compileGraph(initial.graph, specSchema.parse({ nodes: [{ ref: 'agent', existing_id: initial.node_ids.agent, type: 'agent', label: 'Renamed agent' }] }));
+    expect(updated.graph.nodes[0].data).toMatchObject({
+      label: 'Renamed agent',
+      options: { systemPrompt: 'Original system', userPrompt: 'Original user', outputFormat: { example: { value: 'string' } } },
+    });
+  });
   it('rejects query mappings from another version', () => {
     const c = compileGraph(empty(), basic()); c.graph.queries.push({ id: 'foreign', idOnDefinition: 'logical' });
     expect(validateGraph(c.graph, new Set()).errors.map(e => e.code)).toContain('missing_query');
   });
   it('preserves unsupported nodes and reports limited validation', () => {
-    const c = compileGraph(empty(), basic()); c.graph.nodes.push({ id: 'agent', type: 'agent', data: { custom: true } });
+    const c = compileGraph(empty(), basic()); c.graph.nodes.push({ id: 'nested', type: 'workflow', data: { custom: true } });
     expect(validateGraph(c.graph).warnings.map(e => e.code)).toContain('unsupported_node');
     expect(compileGraph(c.graph, specSchema.parse({})).graph.nodes.at(-1)).toEqual(c.graph.nodes.at(-1));
   });
