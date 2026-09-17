@@ -27,6 +27,15 @@ function sessionResponse(org = 'org1', token = 'TOKEN') {
   });
 }
 
+function passwordLoginResponse(org = 'org1', token = 'TOKEN') {
+  return {
+    status: 200, ok: true,
+    headers: { get: () => `tj_auth_token=${token}; Path=/`, getSetCookie: () => [`tj_auth_token=${token}; Path=/`] },
+    json: async () => ({ organization_id: org, organization_name: 'Acme' }),
+    text: async () => '',
+  } as unknown as Response;
+}
+
 describe('createAuth (personal access token)', () => {
   let fetchImpl: ReturnType<typeof vi.fn>;
   beforeEach(() => {
@@ -107,6 +116,23 @@ describe('createAuth (personal access token)', () => {
     fetchImpl.mockResolvedValue(mockResponse({ status: 201, json: { organizationId: 'org1' } }));
     const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
     await expect(auth.authedFetch('/api/x')).rejects.toThrow(/returned no authToken/i);
+  });
+});
+
+describe('createAuth (temporary password login)', () => {
+  it('exchanges environment-supplied credentials for a session cookie', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(passwordLoginResponse('org-password', 'PASSWORD_SESSION'))
+      .mockResolvedValueOnce(mockResponse({ json: { ok: true } }));
+    const auth = createAuth({ apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:8082', email: 'dev@example.com', password: 'secret' }, fetchImpl as unknown as typeof fetch);
+    await auth.authedFetch('/api/resource');
+    const [loginUrl, loginInit] = fetchImpl.mock.calls[0];
+    expect(loginUrl).toBe('http://localhost:3000/api/authenticate');
+    expect(JSON.parse((loginInit as RequestInit).body as string)).toEqual({ email: 'dev@example.com', password: 'secret' });
+    const headers = (fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers;
+    expect(headers.get('Cookie')).toBe('tj_auth_token=PASSWORD_SESSION');
+    expect(headers.get('tj-workspace-id')).toBe('org-password');
+    await expect(auth.getOrganizationSlug()).resolves.toBe('org-password');
   });
 });
 
