@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { createAuth } from '../dist/auth.js';
 import { createClient } from '../dist/tooljetClient.js';
-import { lint, apply } from '../dist/workflows/planner.js';
+import { lint, apply, deleteNode } from '../dist/workflows/planner.js';
 import { specSchema } from '../dist/workflows/graph.js';
 
 const apiUrl = process.env.TOOLJET_TEST_API_URL ?? 'http://localhost:3000';
@@ -64,6 +64,15 @@ const summarizeExecution = async (workflowId, versionId, environmentId) => {
 if (existingWorkflowId || existingVersionId) {
   if (!existingWorkflowId || !existingVersionId) throw new Error('Set both TOOLJET_TEST_WORKFLOW_ID and TOOLJET_TEST_VERSION_ID for runtime-only mode.');
   let saved = await client.workflows.get(existingWorkflowId, existingVersionId);
+  const deleteNodeId = process.env.TOOLJET_TEST_DELETE_NODE_ID;
+  if (deleteNodeId) {
+    const result = await deleteNode(client.workflows, existingWorkflowId, existingVersionId, deleteNodeId);
+    if ('failed' in result && result.failed) throw new Error(`Workflow node deletion failed: ${JSON.stringify(result)}`);
+    const refreshed = await client.workflows.get(existingWorkflowId, existingVersionId);
+    if (refreshed.definition.nodes.some((node) => node.id === deleteNodeId)) throw new Error('Deleted workflow node remained in the saved graph.');
+    console.log(JSON.stringify({ workflow_id: existingWorkflowId, version_id: existingVersionId, deleted_node_id: deleteNodeId, completed: result.completed }));
+    process.exit(0);
+  }
   if (process.env.TOOLJET_TEST_REPAIR_RESPONSE === '1') {
     const response = saved.definition.nodes.find((node) => node.type === 'output');
     const query = (await client.workflows.getQueries(existingVersionId)).find((item) => item.id === saved.definition.queries.find((mapping) => mapping.idOnDefinition === saved.definition.nodes.find((node) => node.type === 'query')?.data.idOnDefinition)?.id);

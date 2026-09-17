@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { nodeCatalog, specSchema, validateGraph } from '../workflows/graph.js';
-import { lint, apply } from '../workflows/planner.js';
+import { lint, apply, deleteNode } from '../workflows/planner.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const id = z.string().uuid();
@@ -36,6 +36,7 @@ export function workflowTools(client: ToolJetClient): ToolDef[] {
     }),
     make('lint_workflow_spec', 'Lint Workflow Spec', 'Validate graph edits and query options without executing or saving. Returns a scoped one-use plan token. Omitted nodes/edges are preserved; removals require explicit IDs. Existing query rename/datasource changes are unsupported.', { ...target, spec: specSchema }, 'read', args => lint(client.workflows, args.workflow_id, args.version_id, args.spec)),
     make('apply_workflow_spec', 'Apply Workflow Spec', 'Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.', { plan_token: id }, 'write', args => apply(client.workflows, args.plan_token)),
+    make('delete_workflow_node', 'Delete Workflow Node', 'Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.', { ...target, node_id: id }, 'write', args => deleteNode(client.workflows, args.workflow_id, args.version_id, args.node_id)),
     make('validate_workflow', 'Validate Workflow', 'Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.', target, 'read', async args => {
       const snapshot = await client.workflows.get(args.workflow_id, args.version_id);
       const queries = await client.workflows.getQueries(args.version_id);

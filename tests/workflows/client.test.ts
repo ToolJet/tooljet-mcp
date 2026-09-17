@@ -5,7 +5,7 @@ const version = 'v';
 const app = () => ({ id: 'w', type: 'workflow', organizationId: 'org', slug: 'my-workflow', isMaintenanceOn: true, editing_version: { id: version, status: 'DRAFT', currentEnvironmentId: 'env', definition: { nodes: [], edges: [], queries: [], customField: { snake_key: 42 } } } });
 function setup(fetcher = vi.fn(async () => new Response(JSON.stringify(app())))) {
   const auth = { authedFetch: fetcher, getOrganizationId: async () => 'org', getOrganizationSlug: async () => 'workspace' } as unknown as Auth;
-  const queries = { getQueries: vi.fn(), listDatasources: vi.fn(), createQuery: vi.fn(), updateQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
+  const queries = { getQueries: vi.fn(), listDatasources: vi.fn(), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
   const client = createWorkflowClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:3000', sessionToken: 'test-session', workspaceId: 'org' }, queries);
   return { client, fetcher };
 }

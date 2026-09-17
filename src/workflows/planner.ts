@@ -2,9 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import type { WorkflowClient } from '../workflowClient.js';
 import { normalizeQueryOptions, validateQueryOptions, issueMessages } from '../queryValidation.js';
-import { compileGraph, validateGraph, type WorkflowSpec, type Compiled } from './graph.js';
+import { compileGraph, specSchema, validateGraph, type WorkflowSpec, type Compiled } from './graph.js';
 
 interface Plan { scope: string; workflowId: string; versionId: string; spec: WorkflowSpec; ids: Compiled; expires: number }
+interface QueryDeletion { node_id: string; definition_id: string; query_id: string }
 // Scope is a digest of endpoint + credential + workspace. Stateless HTTP calls can resume plans
 // without exposing another user's plan. Tokens expire, are bounded, and are consumed before writes.
 const plans = new Map<string, Plan>();
@@ -17,6 +18,22 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
   const compiled = compileGraph(snapshot.definition, spec, ids);
   const warnings: string[] = [];
   const writes: Array<{ node_id: string; definition_id: string; existing_id?: string; name: string; dataSourceId: string; kind: string; options: Record<string, unknown> }> = [];
+  const removedDefinitionIds = new Set(
+    snapshot.definition.nodes
+      .filter((node) => spec.remove_node_ids.includes(node.id))
+      .map((node) => typeof node.data.idOnDefinition === 'string' ? node.data.idOnDefinition : undefined)
+      .filter((id): id is string => Boolean(id))
+  );
+  const deletions: QueryDeletion[] = [];
+  for (const mapping of snapshot.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition)) continue;
+    // A definition ID can only be deleted when no retained node still references it.
+    if (compiled.graph.nodes.some((node) => node.data.idOnDefinition === mapping.idOnDefinition)) continue;
+    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node) continue;
+    if (!queries.some((query) => query.id === mapping.id)) throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
   const claimedNames = new Set<string>();
   for (const item of compiled.query_nodes) {
     const input = item.spec;
@@ -46,7 +63,7 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
   }
   const queryIds = new Set([...queries.map(q => q.id), ...writes.filter(q => !q.existing_id).map(q => `pending:${q.node_id}`)]);
   const validation = validateGraph(compiled.graph, queryIds);
-  return { snapshot, compiled, writes, validation, warnings };
+  return { snapshot, compiled, writes, deletions, validation, warnings };
 }
 export async function lint(client: WorkflowClient, workflowId: string, versionId: string, spec: WorkflowSpec) {
   const prepared = await prepare(client, workflowId, versionId, spec);
@@ -56,7 +73,7 @@ export async function lint(client: WorkflowClient, workflowId: string, versionId
   const token = randomUUID();
   plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, expires: Date.now() + TTL });
   return { plan_token: token, expires_in_seconds: TTL / 1000, node_ids: prepared.compiled.node_ids, edge_ids: prepared.compiled.edge_ids, ...prepared.validation, query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: prepared.writes.map(q => ({ name: q.name, operation: q.existing_id ? 'update' : 'create' })) } };
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map(q => ({ name: q.name, operation: q.existing_id ? 'update' : 'create' })), ...prepared.deletions.map(q => ({ query_id: q.query_id, operation: 'delete' }))] } };
 }
 export async function apply(client: WorkflowClient, token: string) {
   prune();
@@ -65,7 +82,7 @@ export async function apply(client: WorkflowClient, token: string) {
   if (!plan || plan.scope !== scope) throw new Error('Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.');
   // Consume before any awaited revalidation so simultaneous calls cannot both apply the plan.
   plans.delete(token);
-  const { compiled, snapshot, writes, validation } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  const { compiled, snapshot, writes, deletions, validation } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
   if (validation.errors.length) throw new Error(JSON.stringify(validation.errors));
   const completed: Array<{ operation: string; query_id: string; node_id: string }> = [];
   let phase = 'queries';
@@ -93,6 +110,13 @@ export async function apply(client: WorkflowClient, token: string) {
       if (!persisted || persisted.name !== write.name || !isDeepStrictEqual(persisted.options, write.options)) throw new Error(`Query ${id} readback differs from intended options.`);
     }
     if (validation.errors.length) throw new Error(JSON.stringify(validation.errors));
+    phase = 'query_deletions';
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: 'delete', query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = undefined;
+    }
     return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation };
   } catch (error) {
     return { failed: true, workflow_id: plan.workflowId, version_id: plan.versionId, phase, completed, attempted_query: attemptedQuery, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids,
@@ -100,4 +124,17 @@ export async function apply(client: WorkflowClient, token: string) {
       error: error instanceof Error ? error.message : String(error),
       recovery: 'Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted.' };
   }
+}
+
+/** Removes one workflow node and its incident edges. If the node owns a query, the graph is
+ * saved first and the no-longer-referenced query is then deleted. */
+export async function deleteNode(client: WorkflowClient, workflowId: string, versionId: string, nodeId: string) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.definition.nodes.some((node) => node.id === nodeId)) throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges
+    .filter((edge) => edge.source === nodeId || edge.target === nodeId)
+    .map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec);
+  if (!('plan_token' in result)) throw new Error(JSON.stringify(result.errors));
+  return apply(client, result.plan_token);
 }

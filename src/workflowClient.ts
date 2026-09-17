@@ -11,7 +11,7 @@ export interface WorkflowSnapshot {
 export type WorkflowClient = ReturnType<typeof createWorkflowClient>;
 const record = (x: unknown): Record<string, unknown> => x && typeof x === 'object' && !Array.isArray(x) ? x as Record<string, unknown> : {};
 const required = (x: unknown, label: string) => { if (typeof x !== 'string' || !x) throw new Error(`Workflow response missing ${label}.`); return x; };
-export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<ToolJetClient, 'getQueries' | 'listDatasources' | 'createQuery' | 'updateQuery' | 'getDevelopmentEnvironmentId'>) {
+export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<ToolJetClient, 'getQueries' | 'listDatasources' | 'createQuery' | 'updateQuery' | 'deleteQuery' | 'getDevelopmentEnvironmentId'>) {
   async function request(path: string, body?: unknown, method = 'POST') {
     const mutation = body !== undefined;
     let response: Response;

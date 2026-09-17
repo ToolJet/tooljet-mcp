@@ -2203,7 +2203,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
-    workflows: createWorkflowClient(auth, config, { getQueries, listDatasources, createQuery, updateQuery, getDevelopmentEnvironmentId }),
+    workflows: createWorkflowClient(auth, config, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,

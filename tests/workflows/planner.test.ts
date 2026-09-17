@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { lint, apply } from '../../src/workflows/planner.js';
+import { lint, apply, deleteNode } from '../../src/workflows/planner.js';
 import { definition, specSchema } from '../../src/workflows/graph.js';
 import type { WorkflowClient, WorkflowSnapshot } from '../../src/workflowClient.js';
 import type { QuerySummary } from '../../src/tooljetClient.js';
@@ -14,6 +14,7 @@ function fixture() {
     getQueries: vi.fn(async () => structuredClone(queries)),
     createWorkflowQuery: vi.fn(async (p) => { const id = crypto.randomUUID(); queries.push({ id, name: p.name, kind: p.kind, data_source_id: p.dataSourceId, options: p.options }); return { query_id: id, name: p.name }; }),
     updateQuery: vi.fn(async p => { Object.assign(queries.find(q => q.id === p.queryId)!, { name: p.name, options: p.options }); return { query_id: p.queryId }; }),
+    deleteQuery: vi.fn(async ({ queryId }) => { const index = queries.findIndex((query) => query.id === queryId); if (index >= 0) queries.splice(index, 1); return { deleted: true }; }),
     save: vi.fn(async (_snapshot, value) => { graph = structuredClone(value); }),
   } as unknown as WorkflowClient;
   return { client, queries, setScope: () => { scope = crypto.randomUUID(); } };
@@ -69,5 +70,16 @@ describe('workflow planning and recovery', () => {
     const { client } = fixture(); const invalid = spec(); invalid.edges[0].port = 'true';
     const result = await lint(client, 'w', 'v', invalid);
     expect(result.errors.length).toBeGreaterThan(0); expect(result).not.toHaveProperty('plan_token');
+  });
+  it('deletes a query node, its incident edges, and its query after graph persistence', async () => {
+    const { client, queries } = fixture(); const created = await apply(client, await token(client));
+    const result = await deleteNode(client, 'w', 'v', created.node_ids.q);
+    expect(result).not.toHaveProperty('failed');
+    expect(client.deleteQuery).toHaveBeenCalledWith({ queryId: created.completed[0].query_id, versionId: 'v' });
+    expect(queries).toEqual([]);
+    const graph = (await client.get('w', 'v')).definition;
+    expect(graph.nodes.map((node) => node.id)).not.toContain(created.node_ids.q);
+    expect(graph.edges.some((edge) => edge.source === created.node_ids.q || edge.target === created.node_ids.q)).toBe(false);
+    expect(graph.queries).toEqual([]);
   });
 });

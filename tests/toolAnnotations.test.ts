@@ -42,6 +42,7 @@ const MUST_BE_DESTRUCTIVE = [
   'drop_table', 'drop_table_column', 'manage_theme',
   'run_queries', 'run_query',
   'apply_workflow_spec', 'run_workflow',
+  'delete_workflow_node',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query',
 ];

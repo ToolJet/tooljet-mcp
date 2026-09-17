@@ -45493,7 +45493,7 @@ function createClient(auth, config2) {
     return { deleted: true };
   }
   return {
-    workflows: createWorkflowClient(auth, config2, { getQueries, listDatasources, createQuery, updateQuery, getDevelopmentEnvironmentId }),
+    workflows: createWorkflowClient(auth, config2, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
@@ -46869,6 +46869,20 @@ async function prepare(client, workflowId, versionId, spec, ids) {
   const compiled = compileGraph(snapshot2.definition, spec, ids);
   const warnings = [];
   const writes = [];
+  const removedDefinitionIds = new Set(snapshot2.definition.nodes.filter((node) => spec.remove_node_ids.includes(node.id)).map((node) => typeof node.data.idOnDefinition === "string" ? node.data.idOnDefinition : void 0).filter((id2) => Boolean(id2)));
+  const deletions = [];
+  for (const mapping of snapshot2.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+      continue;
+    if (compiled.graph.nodes.some((node2) => node2.data.idOnDefinition === mapping.idOnDefinition))
+      continue;
+    const node = snapshot2.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node)
+      continue;
+    if (!queries.some((query2) => query2.id === mapping.id))
+      throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
   const claimedNames = /* @__PURE__ */ new Set();
   for (const item of compiled.query_nodes) {
     const input = item.spec;
@@ -46903,7 +46917,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
   }
   const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
   const validation = validateGraph(compiled.graph, queryIds);
-  return { snapshot: snapshot2, compiled, writes, validation, warnings };
+  return { snapshot: snapshot2, compiled, writes, deletions, validation, warnings };
 }
 async function lint(client, workflowId, versionId, spec) {
   const prepared = await prepare(client, workflowId, versionId, spec);
@@ -46921,7 +46935,7 @@ async function lint(client, workflowId, versionId, spec) {
     edge_ids: prepared.compiled.edge_ids,
     ...prepared.validation,
     query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })) }
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
   };
 }
 async function apply(client, token) {
@@ -46931,7 +46945,7 @@ async function apply(client, token) {
   if (!plan || plan.scope !== scope)
     throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
   plans.delete(token);
-  const { compiled, snapshot: snapshot2, writes, validation } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  const { compiled, snapshot: snapshot2, writes, deletions, validation } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
   if (validation.errors.length)
     throw new Error(JSON.stringify(validation.errors));
   const completed = [];
@@ -46961,6 +46975,13 @@ async function apply(client, token) {
     }
     if (validation2.errors.length)
       throw new Error(JSON.stringify(validation2.errors));
+    phase = "query_deletions";
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = void 0;
+    }
     return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2 };
   } catch (error51) {
     return {
@@ -46977,6 +46998,16 @@ async function apply(client, token) {
       recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
     };
   }
+}
+async function deleteNode(client, workflowId, versionId, nodeId) {
+  const snapshot2 = await client.get(workflowId, versionId);
+  if (!snapshot2.definition.nodes.some((node) => node.id === nodeId))
+    throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot2.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec);
+  if (!("plan_token" in result))
+    throw new Error(JSON.stringify(result.errors));
+  return apply(client, result.plan_token);
 }
 
 // dist/tools/types.js
@@ -47027,6 +47058,7 @@ function workflowTools(client) {
     }),
     make("lint_workflow_spec", "Lint Workflow Spec", "Validate graph edits and query options without executing or saving. Returns a scoped one-use plan token. Omitted nodes/edges are preserved; removals require explicit IDs. Existing query rename/datasource changes are unsupported.", { ...target, spec: specSchema }, "read", (args) => lint(client.workflows, args.workflow_id, args.version_id, args.spec)),
     make("apply_workflow_spec", "Apply Workflow Spec", "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.", { plan_token: id }, "write", (args) => apply(client.workflows, args.plan_token)),
+    make("delete_workflow_node", "Delete Workflow Node", "Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.", { ...target, node_id: id }, "write", (args) => deleteNode(client.workflows, args.workflow_id, args.version_id, args.node_id)),
     make("validate_workflow", "Validate Workflow", "Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.", target, "read", async (args) => {
       const snapshot2 = await client.workflows.get(args.workflow_id, args.version_id);
       const queries = await client.workflows.getQueries(args.version_id);
