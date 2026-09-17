@@ -822,11 +822,20 @@ const makeReference = (title, purpose, headings, document = fullSkill) => `# ${t
   .map((heading) => extractSection(document, heading))
   .join('\n\n')}\n`;
 
+const workflowBuilder = `## ToolJet workflow authoring
+
+Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. The supported authoring subset is Start, JavaScript, datasource query, condition, and response nodes. Begin with \`get_workflow_node_catalog\`, then \`create_workflow\`, \`lint_workflow_spec\`, and \`apply_workflow_spec\`. The lint call is a no-write barrier and returns a scoped, one-use token. Omitted nodes and edges remain intact; inspect \`get_workflow\` and specify exact IDs for removals.
+
+\`apply_workflow_spec\` creates or updates node queries before saving the graph. It never executes, publishes, enables, or configures triggers. A partial-write result identifies resources that persisted before a failure; inspect the workflow and replan instead of blindly recreating anything. Existing drafts are editable, but concurrent visual-editor changes are not protected in this release.
+
+\`run_workflow\` is separate from authoring and can execute arbitrary JavaScript and datasource writes. Run it only for an explicitly selected version/environment when execution is authorized. Use \`get_workflow_execution\` to inspect the run and never automatically retry an uncertain execution. JavaScript and response code reference the persisted query \`name\`, not the logical graph \`ref\`.
+`;
+
 const workflows = makeReference(
   'Tool workflows and runtime guardrails',
   'Read this only when choosing an authoring/update path, repairing an existing app, or diagnosing a silent ToolJet configuration failure. MCP input schemas and returned warnings remain authoritative.',
   routedSections.workflows
-);
+) + `\n\n${workflowBuilder}`;
 const uiLayout = makeReference(
   'UI authoring and layout',
   'Read this before laying out a new page or using a Chart, nested view, or other layout-sensitive surface. Table-specific layout and pagination live in tables.md.',
