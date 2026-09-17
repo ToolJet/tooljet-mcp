@@ -72,7 +72,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
       'NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are ' +
       'REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, ' +
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +
-      'regions; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles ' +
+      'regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles ' +
       'patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current ' +
       'values from get_app_summary / get_component.',
     inputSchema: {
@@ -90,7 +90,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         definition?: Record<string, unknown>;
         name?: string;
         parent?: string;
-        slot_name?: 'body' | 'header' | 'footer';
+        slot_name?: 'body' | 'header' | 'footer' | 'modal';
       }>;
     }) {
       try {
@@ -108,7 +108,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           definition?: Record<string, unknown>;
           name?: string;
           parent?: string;
-          slotName?: 'body' | 'header' | 'footer';
+          slotName?: 'body' | 'header' | 'footer' | 'modal';
         }> = [];
         for (const update of args.updates) {
           // Models routinely pass the component NAME here — it is the stable handle they authored and

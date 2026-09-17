@@ -17,10 +17,16 @@ import {
   lintUntriggeredDataQueries,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
+import { lintWhitespaceGuards } from './whitespaceGuard.js';
+import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
+import { lintSurfaceInsets } from './surfaceInsets.js';
 import { lintComponentStateBindings } from './componentStateBindings.js';
 import { pageIconError } from './pageIcons.js';
-import { runjsQueryReferences } from './runjsReferences.js';
+import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
+import { lintSelectedRowProjections } from './selectedRowProjection.js';
+import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
 import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import {
@@ -56,6 +62,8 @@ export const STYLE_KEYS_IN_PROPERTIES = new Set([
  *  (fontSize vs textSize). Lookup is case-insensitive; a match is only used when its target is actually
  *  a valid key for the component. */
 export const PROPERTY_KEY_ALIASES: Record<string, string> = {
+  disabled: 'disabledState',
+  isdisabled: 'disabledState',
   fontsize: 'textSize',
   font_size: 'textSize',
   size: 'textSize',
@@ -721,10 +729,12 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
-    if (parent && !SLOT_PARENT_TYPES.has(parent.type ?? '')) {
+    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' :
+      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && parent?.type === 'Kanban');
+    if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
-          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; native slots are supported only by ModalV2, Form, and Container.`
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container; Kanban supports body (card) and modal.`
       );
     }
   }
@@ -741,15 +751,16 @@ export function lintKanbanInteractions(components: LintComponent[]): string[] {
     const openModal = propVal(board.properties, 'openModalOnCardClick');
     const nativeModalEnabled = openModal === undefined || isTruthyBinding(openModal);
     if (!nativeModalEnabled) continue;
-    const htmlChildren = components.filter(
-      (component) => parentPlacement(component)?.parentId === key && component.type === 'Html'
-    );
-    if (!htmlChildren.length) continue;
+    const modalChildren = components.filter(component => {
+      const p = parentPlacement(component);
+      return p?.parentId === key && p.slotName === 'modal';
+    });
+    if (modalChildren.length) continue;
     warnings.push(
-      `Kanban "${board.name ?? board.id ?? 'Kanban'}" enables the native card modal while using a custom Html ` +
-        `card child (${htmlChildren.map((child) => `"${child.name ?? child.id ?? 'Html'}"`).join(', ')}). ` +
-        'The card can render correctly while ToolJet opens a blank built-in modal. Prefer ' +
-        'openModalOnCardClick:false for a read-only board, or browser-verify a separate supported detail flow.'
+      `Kanban "${board.name ?? board.id ?? 'Kanban'}" enables the native card modal but has no modal children. ` +
+        'Cards (including custom Html) can look correct while a blank built-in modal covers page-level detail controls. ' +
+        'Parent the detail controls to this Kanban with slot_name:"modal"; ordinary body children only populate cards. ' +
+        'For a board without card selection use openModalOnCardClick:false and omit onCardSelected. Never merely enable the modal to satisfy the event lint without giving it content.'
     );
   }
   return warnings;
@@ -763,7 +774,7 @@ export function lintKanbanCardChildren(components: LintComponent[]): string[] {
     const key = componentKey(board);
     if (!key) continue;
     for (const child of components) {
-      if (parentPlacement(child)?.parentId !== key) continue;
+      if (parentPlacement(child)?.parentId !== key || parentPlacement(child)?.slotName !== 'body') continue;
       if (child.type !== 'Text' && child.type !== 'Html') continue;
       const width = (child.layouts?.desktop ?? child.layout)?.width;
       if (typeof width !== 'number' || width >= KANBAN_CARD_CHILD_MIN_COLS) continue;
@@ -1402,6 +1413,37 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   const props = spec.properties ?? {};
   const label = spec.name ?? spec.type ?? 'component';
 
+  // An omitted Text payload uses the catalog greeting, not an empty display.
+  // Keep this advisory: staged authoring and deliberately retained sample copy are valid.
+  if (spec.type === 'Text' && propVal(props, 'text') === undefined) {
+    warnings.push(
+      `Text "${label}" has no properties.text and will render ToolJet's default greeting. ` +
+      'Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. ' +
+      'Do not invent replacement copy or change its layout.'
+    );
+  }
+
+  if (spec.type === 'Table') {
+    const columns = propVal(props, 'columns');
+    if (Array.isArray(columns)) {
+      const hasClockFormat = (c: Record<string, unknown>) => typeof c.dateFormat === 'string' &&
+        !c.dateFormat.includes('{{') && /[Hhms]/.test(c.dateFormat.replace(/\[[^\]]*\]/g, ''));
+      const timed = columns.filter((c) => c && typeof c === 'object' &&
+        c.columnType === 'datepicker' && (isTrueBinding(c.isTimeChecked) || hasClockFormat(c)) &&
+        c.columnVisibility !== false && c.columnVisibility !== '{{false}}');
+      const local = timed.filter(c => !c.timeZoneDisplay);
+      if (local.length) warnings.push(
+        `Table "${label}" time columns ${local.map(c => JSON.stringify(c.key ?? c.name)).join(', ')} have no timeZoneDisplay, so times follow the viewer's browser timezone. ` +
+        'For a location-bound schedule, set the business IANA timeZoneDisplay and appropriate source timeZoneValue; keep viewer-local time only when intended and labelled. Do not infer a timezone from locale or currency.'
+      );
+      const doubled = timed.filter(c => isTrueBinding(c.isTimeChecked) && hasClockFormat(c));
+      if (doubled.length) warnings.push(
+        `Table "${label}" time columns ${doubled.map(c => JSON.stringify(c.key ?? c.name)).join(', ')} include time tokens in dateFormat while isTimeChecked is on. ` +
+        'The renderer appends time itself; use a date-only dateFormat and isTwentyFourHrFormatEnabled for 24-hour time to avoid displaying the time twice.'
+      );
+    }
+  }
+
   // Outline ignores backgroundColor; surface-colored primary-button text is not remapped
   // by Button.jsx. Warn, rather than rewrite: a deliberately dark parent can be valid.
   if (spec.type === 'Button' && propVal(spec.styles ?? {}, 'type') === 'outline') {
@@ -1491,7 +1533,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
 
   if (spec.slotName !== undefined) {
     if (!(COMPONENT_SLOT_NAMES as readonly string[]).includes(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, or footer.`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, or Kanban modal.`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -1722,11 +1764,24 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   // DropdownV2 has two mutually exclusive option surfaces. ToolJet persists defaults for both, so
   // compare with the exact catalog defaults and warn only when the caller authored a custom value.
   if (spec.type === 'DropdownV2') {
+    for (const key of ['value', 'defaultValue']) {
+      if (Object.prototype.hasOwnProperty.call(props, key)) {
+        errors.push(`DropdownV2 "${label}": properties.${key} is not a supported preselection property. ` +
+          'Set visible:true and default:true on the matching option; for an edit form use advanced:true and a schema binding ' +
+          'whose option.default compares its value with the raw selected record ID/field. Preserve ID types. ' +
+          'Remove this unsupported property after wiring the selection; silently dropping it can clear saved relationships.');
+      }
+    }
     const advanced = propVal(props, 'advanced');
     const schema = propVal(props, 'schema');
     const options = propVal(props, 'options');
     const customSchema = differsFromCatalogDefault('DropdownV2', 'schema', schema);
     const customOptions = differsFromCatalogDefault('DropdownV2', 'options', options);
+    if (isTruthyBinding(advanced)) {
+      warnings.push(...dropdownDefaultVisibilityWarning(schema, label));
+      if (spec.name) warnings.push(...dropdownSelfDefaultWarning(schema, spec.name));
+    }
+    else if (advanced === undefined || isFalseBinding(advanced)) warnings.push(...dropdownDefaultVisibilityWarning(options, label));
 
     if (customOptions && !Array.isArray(options)) {
       errors.push(
@@ -1889,6 +1944,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintEmbeddedBindingSyntax(spec));
   errors.push(...lintChartDataShape(spec));
   errors.push(...lintUnguardedSelectionText(spec));
+  warnings.push(...lintSurfaceInsets(spec));
 
   // Table: data-binding + column config traps.
   if (spec.type === 'Table') {
@@ -2337,6 +2393,31 @@ export function detectOverlaps(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Hiding a ModalV2 launch button does not remove its canvas wrapper. It can
+ * still intercept clicks on siblings. Keep this advisory: DOM stacking order,
+ * custom pointer-events and dynamic visibility are not statically knowable. */
+export function lintHiddenModalHitTargets(components: LintComponent[]): string[] {
+  const interactive = new Set(['Button', 'ButtonGroup', 'ButtonGroupV2', 'Table', 'Kanban', 'Calendar', 'Map', ...FORM_INPUT_TYPES]);
+  const warnings: string[] = [];
+  for (const modal of components) {
+    if (modal.type !== 'ModalV2' || !isFalseBinding(propVal(modal.properties, 'useDefaultButton'))) continue;
+    const a = modal.layouts?.desktop ?? modal.layout;
+    if (!a) continue;
+    const targets: string[] = [];
+    for (const target of components) {
+      if (!interactive.has(target.type ?? '') || placementKey(target) !== placementKey(modal) || mutuallyExclusiveVisibility(modal, target)) continue;
+      const b = target.layouts?.desktop ?? target.layout;
+      if (!b) continue;
+      if ((a.left ?? 0) < (b.left ?? 0) + (b.width ?? 0) && (b.left ?? 0) < (a.left ?? 0) + (a.width ?? 0) &&
+          (a.top ?? 0) < (b.top ?? 0) + renderedHeight(target, b) && (b.top ?? 0) < (a.top ?? 0) + (a.height ?? 0)) {
+        targets.push(target.name ?? target.type ?? '?');
+      }
+    }
+    if (targets.length) warnings.push(`ModalV2 "${modal.name ?? '?'}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map(n=>`"${n}"`).join(', ')}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
+  }
+  return warnings;
+}
+
 const TOOLBAR_BUTTON_TYPES = new Set(['Button', 'ButtonGroup']);
 
 /** A button sharing a row with top-labelled inputs must align with their field boxes, not their labels.
@@ -2552,6 +2633,7 @@ export function lintUnrenderableHeights(components: LintComponent[]): string[] {
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
@@ -2572,9 +2654,11 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintOversizedWidths(components));
   for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
+  for (const c of components) warnings.push(...lintSurfaceInsets(c));
   errors.push(...lintRenderedGeometryBlocking(components));
   warnings.push(...lintRenderedGeometryAdvisory(components));
   warnings.push(...lintKanbanInteractions(components));
+  warnings.push(...lintHiddenModalHitTargets(components));
   return { errors, warnings };
 }
 
@@ -2686,6 +2770,10 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
 export function validateAppStructure(summary: AppSummary): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  warnings.push(...lintEditPrefill(summary));
+  warnings.push(...lintUninitializedWriteSelections(summary));
+  warnings.push(...lintWhitespaceGuards(summary));
+  warnings.push(...lintSelectedRowObjectGuards(summary));
 
   const allComponents = summary.pages.flatMap((p) => p.components);
   const componentNames = new Set(allComponents.map((c) => c.name).filter(Boolean) as string[]);
@@ -2772,6 +2860,13 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     const options = recordValue(query.options);
     const code = options?.code;
     if (typeof code !== 'string') continue;
+    for (const name of runjsComponentReferences(code)) {
+      if (!componentNames.has(name)) errors.push(
+        `RunJS query "${query.name ?? query.id}" references components[${JSON.stringify(name)}], but no component is named ` +
+          `${JSON.stringify(name)}. Use the persisted component name exactly (bracket notation for spaces); ` +
+          'a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.'
+      );
+    }
     const referencedNames = runjsQueryReferences(code);
     for (const name of referencedNames) {
       if (!queryNames.has(name)) errors.push(
@@ -2977,10 +3072,11 @@ export function validateAppStructure(summary: AppSummary): LintResult {
 
   // Bindings to non-existent queries/components + re-run per-component render lints.
   const bindingSources = [
-    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles } })),
+    ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles, v: c.validation, o: c.others } })),
     ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),
     ...summary.events.map((e) => ({ label: `Event "${e.name ?? e.id}"`, value: e.event })),
   ];
+  warnings.push(...lintSelectedRowProjections(allComponents, bindingSources.filter(s => !s.label.startsWith('Component '))));
   for (const source of bindingSources) {
     errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
     const seen = new Set<string>();
@@ -3094,6 +3190,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
     for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
+    for (const c of p.components) warnings.push(...lintSurfaceInsets(c));
     errors.push(...lintRenderedGeometryBlocking(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometryAdvisory(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));

@@ -16,13 +16,15 @@ const lifecycleSchema = z
     close_modal_id: z.string().optional(),
     success_alert: alertSchema.optional(),
     failure_alert: alertSchema.optional(),
+    before_refresh_actions: z.array(z.record(z.string(), z.any())).optional(),
     success_actions: z.array(z.record(z.string(), z.any())).optional(),
     failure_actions: z.array(z.record(z.string(), z.any())).optional(),
   })
   .refine(
     (value) =>
       Boolean(
-        value.refresh_query_ids?.length ||
+        value.before_refresh_actions?.length ||
+          value.refresh_query_ids?.length ||
           value.clear_component_ids?.length ||
           value.close_modal_id ||
           value.success_alert ||
@@ -48,7 +50,9 @@ export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
       'Create standard mutation success/failure behavior for many queries in one call. For each query, declare refresh_query_ids, ' +
       'clear_component_ids, close_modal_id, success_alert, and/or failure_alert; MCP expands them into normal ordered ToolJet events, ' +
       'validates every source/target/action, then performs one bulk event write. Optional success_actions/failure_actions accept ordinary ' +
-      'event action objects for uncommon extras; use add_events when custom action ordering is required. This helper is datasource-neutral.',
+      'event action objects for uncommon extras. before_refresh_actions are dispatched before refresh_query_ids; success_actions remain after them. ' +
+      'This is ordering, not a transaction or async completion guarantee: chain dependent writes via success events and refresh only after the final write. ' +
+      'Use add_events for other ordering. This helper is datasource-neutral.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -61,6 +65,7 @@ export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
           summary,
           args.lifecycles.map((lifecycle) => ({
             queryId: lifecycle.query_id,
+            beforeRefreshActions: lifecycle.before_refresh_actions,
             refreshQueryIds: lifecycle.refresh_query_ids,
             clearComponentIds: lifecycle.clear_component_ids,
             closeModalId: lifecycle.close_modal_id,

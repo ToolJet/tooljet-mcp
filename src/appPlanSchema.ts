@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dbColumnTypeSchema } from './dbColumnTypeSchema.js';
 import { componentInputSchema } from './componentBatch.js';
 import { pageIconSchema } from './pageIcons.js';
 
@@ -12,7 +13,7 @@ const foreignKeySchema = z.object({
 });
 const columnSchema = z.object({
   name: z.string(),
-  type: z.string(),
+  type: dbColumnTypeSchema,
   primaryKey: z.boolean().optional(),
   notNull: z.boolean().optional(),
   unique: z.boolean().optional(),
@@ -59,6 +60,7 @@ const alertSchema = z.object({
 });
 export const plannedLifecycleSchema = z.object({
   query_ref: z.string(),
+  before_refresh_actions: z.array(z.record(z.string(), z.any())).optional(),
   refresh_query_refs: z.array(z.string()).optional(),
   clear_component_refs: z.array(z.string()).optional(),
   close_modal_ref: z.string().optional(),

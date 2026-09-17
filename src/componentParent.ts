@@ -1,13 +1,13 @@
-export const COMPONENT_SLOT_NAMES = ['body', 'header', 'footer'] as const;
+export const COMPONENT_SLOT_NAMES = ['body', 'header', 'footer', 'modal'] as const;
 
 export type ComponentSlotName = (typeof COMPONENT_SLOT_NAMES)[number];
 
-const ENCODED_SLOT_SUFFIXES = ['header', 'footer'] as const;
+const ENCODED_SLOT_SUFFIXES = ['header', 'footer', 'modal'] as const;
 
 /**
  * ToolJet persists header/footer placement by suffixing the parent component id. The MCP surface
  * exposes a stable slot name so callers never need to know that storage convention. Body children
- * use the unsuffixed parent id.
+ * use the unsuffixed parent id. Kanban's separate card-click canvas uses the modal suffix.
  */
 export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName): string {
   if (!slotName) return parentId;

@@ -8,6 +8,7 @@ import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
+import { invalidSeedTimestamps } from './seedTimestampValidation.js';
 
 export interface CreateAppResult {
   app_id: string;
@@ -1906,6 +1907,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     if (!params.rows.length) return { processed_rows: 0 };
     const schema = await getTableSchema(params.tableName);
     const rows = params.rows.map((r) => ({ ...r }));
+    const timestampErrors = invalidSeedTimestamps(schema, rows);
+    if (timestampErrors.length) throw new Error(`insertRows preflight for "${params.tableName}": ${timestampErrors.join(' ')} No rows in this table batch were inserted.`);
     const generatedPrimaryKey = schema.find(
       (column) => column.isPrimaryKey && (
         /serial/i.test(column.type) || /^nextval\(/i.test(String(column.defaultValue ?? ''))
@@ -1967,7 +1970,25 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return ds.kind;
   }
 
+  // Query creates contend on version-scoped backend locks. Keep one in flight per version
+  // in this client, including overlapping single/batch calls. Other versions remain independent.
+  // This is not a distributed lock; separate MCP processes can still contend.
+  const queryCreateTails = new Map<string, Promise<void>>();
   async function createQuery(params: CreateQueryParams): Promise<CreateQueryResult> {
+    const previous = queryCreateTails.get(params.versionId);
+    let release!: () => void;
+    const tail = new Promise<void>(resolve => { release = resolve; });
+    queryCreateTails.set(params.versionId, tail);
+    await previous;
+    try {
+      return await createQueryUnqueued(params);
+    } finally {
+      release();
+      if (queryCreateTails.get(params.versionId) === tail) queryCreateTails.delete(params.versionId);
+    }
+  }
+
+  async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
@@ -1982,10 +2003,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { query_id: body.id, name: body.name };
   }
 
-  // Batch: create many queries in one tool call. No native bulk-create endpoint, so fan out
-  // (in parallel) to the single-create route — saves model round-trips even though it's N HTTP calls.
+  // One model call, N ordered HTTP writes. Preserve partial-write reporting without replaying
+  // successful or uncertain writes; serial execution avoids this client's own lock contention.
   async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
-    // Resolve datasource kinds once for the whole batch (only if any query omitted its kind), then fan out.
+    // Resolve datasource kinds once; createQuery queues the writes per version.
     const needResolve = params.queries.some((q) => !q.kind);
     const dsList = needResolve ? await listDatasources(params.versionId) : [];
     const kindOf = (id: string): string | undefined => dsList.find((d) => d.id === id)?.kind;

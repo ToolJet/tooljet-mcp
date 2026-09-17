@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import type { ToolJetClient } from '../tooljetClient.js';
+import type { AppSummary, ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
 import { introducedLintFindings } from '../lint.js';
+import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -26,10 +27,12 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
       'for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children ' +
       'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
+      'bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names ' +
+      'when existing names can be checked, without overriding an existing runtime name. ' +
       'coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child ' +
       '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
-      'those defaults (use Html for wrapped multi-line card content).',
+      'those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -42,18 +45,25 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       page_id: string;
       components: ComponentInput[];
     }) {
-      const prepared = prepareComponentBatch(args.components);
+      const inputs = structuredClone(args.components);
+      const pageWarnings: string[] = [];
+      let summary: AppSummary | undefined;
+      try {
+        summary = await client.getAppSummary(args.app_id);
+      } catch {
+        pageWarnings.push('Existing-page geometry and binding aliases were not checked because the app summary was unavailable; use exact runtime names and verify the target page.');
+      }
+      if (summary?.version_id && summary.version_id !== args.version_id) {
+        return fail(new Error('Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components.'));
+      }
+      if (summary) pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
+      const prepared = prepareComponentBatch(inputs);
       if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
       // Geometry against the page as it already is, not the batch alone: a targeted add that lands on top
       // of an existing table (a modal's buttons placed at root, a caption over a register) passed here
       // unremarked in the 2026-09-12 review because only the new components were checked together.
-      const pageWarnings: string[] = [];
       try {
-        const summary = await client.getAppSummary(args.app_id);
-        if (summary.version_id && summary.version_id !== args.version_id) {
-          return fail(new Error('Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components.'));
-        }
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        const page = summary?.pages.find((candidate) => candidate.id === args.page_id);
         if (page) {
           const existing = page.components as LintComponent[];
           const combined = [...existing, ...(prepared.components as LintComponent[])];

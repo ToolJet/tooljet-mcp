@@ -11,6 +11,29 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 describe('lint_app_spec', () => {
   beforeEach(() => clearAppPlansForTests());
 
+  it('blocks a planned bulk upsert on a unique non-primary key, while accepting implicit id', async () => {
+    const client={listTables:vi.fn().mockResolvedValue([]),listDatasources:vi.fn().mockResolvedValue([{id:'db',kind:'tooljetdb'}])} as unknown as ToolJetClient;
+    for (const key of ['finding_key','id']) {
+      const body=textOf(await lintAppSpecTool(client).handler({version_id:'v1',
+        tables:[{table_name:'findings',columns:[{name:'finding_key',type:'varchar',unique:true}]}],
+        queries:[{datasource_id:'db',name:'saveFindings',table_ref:'findings',options:{operation:'bulk_upsert_with_primary_key',bulk_upsert_with_primary_key:{primary_key:[key],rows:[]}}}],
+      }));
+      expect(body.ok).toBe(key === 'id');
+      if (key !== 'id') { expect(body.plan_token).toBeUndefined(); expect(body.errors.join(' ')).toContain('actual PRIMARY KEY'); }
+    }
+  });
+
+  it('rejects obvious invalid seed timestamps before issuing a writable phase token', async () => {
+    const client = { listTables: vi.fn().mockResolvedValue([]) } as unknown as ToolJetClient;
+    const body = textOf(await lintAppSpecTool(client).handler({
+      tables: [{ table_name: 'jobs', columns: [{name:'created_at',type:'timestamp'}] }],
+      seed_data: [{table_name:'jobs',rows:[{created_at:'2026-09-16T00:00:00Z'},{created_at:'3'}]}],
+    }));
+    expect(body.ok).toBe(false);
+    expect(body.plan_token).toBeUndefined();
+    expect(body.errors.join(' ')).toMatch(/created_at.*row\(s\) 2/);
+  });
+
   it('resolves an exact unique datasource name within the version and pins the ID in the plan', async () => {
     const client = {
       listDatasources: vi.fn().mockResolvedValue([{ id: 'js-source', name: 'runjsdefault', kind: 'runjs' }]),

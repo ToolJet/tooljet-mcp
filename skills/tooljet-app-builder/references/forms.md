@@ -11,9 +11,57 @@ Read this only when the phase contains generated or standalone forms, validation
 - For standalone forms, set `styles.alignment.value="top"` on every labelled input; use one two-column grid for compact fields, make TextArea fields full-width and genuinely multi-line, and use each component's top-level `validation.mandatory` for required state/asterisks. Read values from `components.<name>.value` (FilePicker: `components.<picker>.file[0]`). Bind conditional visibility directly on the standalone components.
 - Generated Form cannot be repaired with schema `alignment`: FormUtils passes no alignment through. Dropdown/Multiselect labels stay offset and TextArea keeps a literal `Label` and may render as a single-line box. `filepicker` additionally crashes the whole Form. Treat these as hard selection rules, not browser-polish warnings.
 - Required asterisks do not gate a standalone submit. Check trimmed required text, valid dates/selections and domain numeric bounds; disable submit while invalid/loading and repeat the same condition on the run-query event's runOnlyIf. Keep server constraints authoritative. Edit/decision actions also require the selected record id; never clear/reset fields until the write succeeds.
-- Preserve raw edit values: a Table selectedRow is its displayed projection, not necessarily the source record. Carry the stable id, then look up the raw row in already-loaded query data (or one bounded detail query). Keep display chips/formatted dates separate; do not replace omitted notes with empty text when saving. Treat missing data differently from an intentional user-cleared value.
+- When a decision requires a comment, whitespace-only is missing: gate the decision write on the selected eligible record, allowed transition and trimmed comment. Use Button properties.disabledState (not isDisabled) and loadingState for the UI, and repeat the eligibility check at the query/event boundary using its advertised contract. Derive allowed states from the actual source codes. Guard terminal/repeated transitions too; UI disabling alone is not a concurrency guarantee. A successful status update without its required audit note is not a completed decision; use a transaction when supported or report partial failure.
+- For stock, capacity or balance movements, reject quantities beyond the available amount instead of silently clamping the result to zero or recording a different delta. Use an authoritative conditional write/transaction when supported; a cached client balance alone cannot prevent concurrent overdraw. The successful movement history, balance delta and update timestamp must agree; report an unsupported atomicity guarantee rather than claiming it.
+- When records have independent lifecycle and workflow states, completing work must preserve the other constraints. For example, finishing maintenance must not make retired equipment hireable. Derive the destination state from the actual record and workflow; do not hardcode availability. Check this cross-page transition when synthetic mutation testing is authorized.
+- Preserve raw edit values: a Table selectedRow is its displayed projection, not necessarily the source record. Resolve its stable id to a raw record using loaded query data or one bounded detail query. Initialize the edit draft from that record, not create-mode defaults. Submit only edited fields when supported; otherwise merge the draft with the raw snapshot. Do not use a truthiness fallback (input.value || original) to track edits: it loses intentional empty text, zero and false, while non-empty create defaults overwrite untouched fields. Keep relationship IDs and displayed names from the same selected option.
+- Guard empty selection with the row's stable key, not the selectedRow object: an empty object is truthy. Detail text and actions must remain in their empty/disabled state until that key exists; optional chaining alone prevents exceptions but does not stop concatenated text from displaying undefined.
+- For standalone edits of text, number, date-only or boolean fields backed by loaded raw rows, use generate_edit_contract when available. It returns snapshot/preparation RunJS, typed defaults and native change events without prescribing layout. Text/number fields can opt into DropdownV2 via choices (literal label/value options, or an already-loaded raw option query with value_field and label_field); defaults follow the raw snapshot, not the dropdown's own value. Merge all returned change events; persist its changed-field patch only after preparation succeeds and changed=true. Other field types and datasource-specific writes remain explicit. This helper does not replace server authorization, concurrency checks or browser testing.
+- Selection does not populate standalone controls automatically. Wire catalog-supported prefill for every editable field, including dropdown selections and dates; reset the draft when the selected id changes. Use searchable entity selectors instead of asking business users to enter internal foreign keys. Check non-destructively that selecting two records prefills different values; when synthetic mutation testing is authorized, reload after a one-field edit and compare all untouched fields.
+- For asynchronous availability or duplicate checks, unchecked, loading, stale and failed results mean unknown, not available. Permit submission only after a successful check for the current input values; invalidate the result when those values change. Enforce the business rule at the write boundary when supported, or disclose the remaining concurrency limitation. An empty fallback array is not proof that a check passed.
 - DatePickerV2 parses defaultValue with dateFormat. For date-only storage use YYYY-MM-DD for both, or explicitly format the initial raw date into the chosen display format. Its selectedDate uses dateFormat; value is an ISO timestamp with timezone. Do not slice/parse localized display strings as ISO. Persist shared filter dates in app variables when navigation must retain them.
+- For appointments, dispatch and other location-bound schedules, use the business/location timezone consistently for displayed times, day filters, editor prefill and conversion back to stored instants. A browser-local formatter can silently move a São Paulo appointment when an operator opens it elsewhere. Keep date-only values separate from instants; do not substitute a fixed UTC offset for an IANA timezone with daylight-saving rules. Use verified runtime timezone support, and check one known appointment against its source timestamp. Viewer-local time is appropriate only when that is the intended workflow and the timezone is labelled.
+- When a workflow promises availability or no double-booking, a sorted workload table is not conflict prevention. Check active reservations for the same resource using start < otherEnd and end > otherStart, exclude the record being edited, and validate end > start before creating or rescheduling. Use an authoritative conditional write/transaction when supported; otherwise disclose the concurrency limitation. Preserve the original booking if replacement fails.
+- For a decision followed by audit/history writes, capture the stable record ID before any queue refresh can clear selection. Finish the dependent writes before refreshing, refresh details from that captured ID, and retain a route to inspect completed records. A successful status update alone does not prove its audit write succeeded.
 - Put submit loading/disable state on a standalone Button and run only the mutation from its click. Put refresh, reset/clear, close, and success behavior on the mutation query's `onDataQuerySuccess`; preserve values and show an error on `onDataQueryFailure`.
+
+## Reusable workflow logic — adapt fields, not semantics
+
+Use these small JavaScript patterns only for the matching workflow. They do not prescribe a layout or datasource. Put multi-line helpers in a RunJS query, never inside a multi-line binding. Read the exact input/action contracts before wiring them; a correct helper cannot populate a control whose configured property is wrong.
+
+### Edit a record without losing untouched values
+
+Resolve the selected primary key to a raw record, initialize a fresh draft for that record, and prefill every control using its catalog contract. Keep create defaults out of edit mode. For flat editable values, build a patch with this helper; intentional empty text, zero, false and null remain edits:
+
+```js
+function changedFields(original, draft, editableKeys) {
+  if (!original || !draft) throw new Error('Select and load a record before saving');
+  return Object.fromEntries(editableKeys
+    .filter(key => Object.hasOwn(draft, key) && draft[key] !== undefined && !Object.is(draft[key], original[key]))
+    .map(key => [key, draft[key]]));
+}
+```
+
+Choose editableKeys explicitly, excluding identity/audit fields. Normalize both original and draft to the same storage types before comparing (dates, numbers, relationship IDs); object/array fields need their own comparator. Bind the update's WHERE to the captured original primary key. If the source requires a full editable payload, merge the patch into the original snapshot and select only editableKeys. This preserves fields but does not prevent concurrent lost updates: use the source's version/conditional-update contract when available. Skip an empty patch; keep the draft on failure.
+
+### Finish work with a required note and history
+
+Derive allowedFrom from the real workflow; do not invent status codes. This eligibility helper rejects whitespace and missing selection:
+
+```js
+function canComplete(record, note, allowedFrom) {
+  return record != null && record.id != null && String(record.id).trim() !== '' &&
+    allowedFrom.includes(record.status) && typeof note === 'string' && note.trim().length > 0;
+}
+```
+
+Adapt id/status to the actual fields. Use the same predicate for the button and mutation boundary, and persist the trimmed note. Capture record identity, previous status and note before any refresh clears selection. Status and required history must succeed together: prefer a supported transaction; otherwise sequence through confirmed success, surface partial failure and do not announce completion after only the status write. This client predicate is not an authorization or concurrency safeguard.
+
+### Start a related record from its parent
+
+Carry the parent's stable ID into the new-record draft, show its readable name, and bind that ID into the create query. Do not rely on a table selection surviving navigation; capture the context first and reset it for ordinary unlinked creation. Verify the destination prefill and the saved relationship, not just that the navigation button exists.
+
+For each requested workflow, check one executable chain: selection/input → eligibility → write → dependent history/refresh → visible saved result. Without mutation-test authorization, inspect the wiring and report persistence as unverified; never execute writes just to satisfy this check.
 
 ## Forms & modals — field layout (avoid cramped, misaligned fields)
 

@@ -1575,7 +1575,7 @@ describe('add_component tool', () => {
         { component_id: 'title-id', name: 'ticketBoardCardTitle' },
         { component_id: 'description-id', name: 'ticketBoardCardDescription' },
       ],
-      warnings: [expect.stringMatching(/materialized 2 catalog default children/i)],
+      warnings: expect.arrayContaining([expect.stringMatching(/materialized 2 catalog default children/i)]),
     });
   });
 

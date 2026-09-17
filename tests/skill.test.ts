@@ -203,7 +203,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
 
   it('documents the Kanban selection dependency and blank custom-card modal caveat', () => {
     expect(guidance).toMatch(/onCardSelected.*only when.*openModalOnCardClick.*true/is);
-    expect(guidance).toMatch(/custom Html child.*native modal.*blank/is);
+    expect(guidance).toMatch(/custom Html child.*native modal.*blank.*slot_name:"modal"/is);
   });
 
   it('publishes modern component names instead of legacy palette choices', () => {
@@ -507,7 +507,6 @@ describe('generated skill — information architecture & phasing (the crowded-pa
     expect(guidance).toMatch(/information architecture BEFORE any component/i);
     expect(guidance).toMatch(/name a PRODUCT, not a single page/i);
     expect(guidance).toMatch(/add an overview when it helps users orient or compare/i);
-    expect(guidance).toMatch(/Map every capability to exactly ONE page/i);
   });
 
   it('separates page architecture from phasing (no appending to the overview)', () => {

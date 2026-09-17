@@ -8,6 +8,8 @@ import {
   type DatasourceQuerySchema,
 } from './datasourceCatalog.js';
 import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafety.js';
+import { primitiveWriteBindingEntries } from './writeBindingShape.js';
+import { conditionalWriteWarning } from './arithmeticWriteContract.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -324,6 +326,8 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     errors.push({ code: 'automatic_hubspot_write', message: 'HubSpot writes must run from an explicit user action, not on page load or dependency changes.' });
   }
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  const conditionalWrite = conditionalWriteWarning(kind, options);
+  if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
   if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
     const syntax = runjsSyntaxError(options.code);
     if (syntax) {
@@ -534,6 +538,13 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     // This is an error, not a warning: the query is guaranteed to be broken as authored.
     const columnsPath = operation === 'create_row' ? 'create_row' : 'update_rows.columns';
     const columns = valueAtPath(options, columnsPath);
+    const primitiveEntries = primitiveWriteBindingEntries(columns);
+    if (primitiveEntries.length) errors.push({
+      code: 'malformed_write_columns', path: columnsPath,
+      message: `ToolJet DB ${operation} "${columnsPath}" binds a flat object with primitive entry values at ${primitiveEntries.map(k=>JSON.stringify(k)).join(', ')}. ` +
+        'ToolJet reads {column, value} records, so these fields are omitted or the write fails. ' +
+        'Use a literal column map with bound values, e.g. {"0":{"column":"status","value":"{{components.status.value}}"}}, or make the binding return that same record-map shape. Do not change the intended field values.',
+    });
     if (isObject(columns) && Object.keys(columns).length > 0) {
       const flat = Object.entries(columns).filter(
         ([, clause]) => !isObject(clause) || typeof clause.column !== 'string' || clause.column === ''

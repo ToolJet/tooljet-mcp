@@ -54,7 +54,7 @@ function unusedInternalRef(used: Set<string>, index: number): string {
  * Explicit same-batch children always win, allowing callers to author a custom card body. */
 export function materializeRequiredDefaultChildren(input: ComponentSpec[]): DefaultChildrenExpansion {
   const usedRefs = new Set(input.flatMap((component) => component.clientRef ? [component.clientRef] : []));
-  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef ? [component.parentRef] : []));
+  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === 'body') ? [component.parentRef] : []));
   const components: ComponentSpec[] = [];
   const warnings: string[] = [];
   let materializedChildren = 0;

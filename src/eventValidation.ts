@@ -2,6 +2,8 @@ import { getComponentSchema } from './catalog.js';
 import { resolveRef } from './refResolution.js';
 import { decodeComponentParent } from './componentParent.js';
 import { lintComponentStateBindings } from './componentStateBindings.js';
+import { requiredMutationGuardWarnings } from './requiredMutationGuard.js';
+import { queryEventCycleErrors } from './queryEventCycles.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 
 export interface EventValidationResult {
@@ -175,7 +177,7 @@ export function validateEvents(
         ) {
           errors.push(
             `${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ` +
-              'ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal, ' +
+              'ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", ' +
               'or remove this handler and use a separate supported detail flow.'
           );
         }
@@ -270,6 +272,7 @@ export function validateEvents(
         const source = components.get(event.sourceId);
         const query = queryById.get(queryId);
         if (source?.type === 'Button' && query && isMutationQuery(query)) {
+          warnings.push(...requiredMutationGuardWarnings(source, query, event.action, [...components.values()]));
           const disabled = propVal(source.properties, 'disabledState');
           const guarded = typeof disabled === 'string' && disabled.includes('{{') && /isloading/i.test(disabled);
           if (!guarded) {
@@ -464,6 +467,7 @@ export function validateEvents(
     );
   }
 
+  errors.push(...queryEventCycleErrors(summary, events, options.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
