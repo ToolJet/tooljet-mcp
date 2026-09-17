@@ -1,3 +1,4 @@
+import { workflowTools } from './workflows.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -84,6 +85,7 @@ export function registerTools(
   runtime: RuntimeFreshnessMonitor = runtimeFreshness
 ): void {
   const tools: ToolDef[] = [
+    ...workflowTools(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),

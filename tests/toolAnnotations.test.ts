@@ -41,6 +41,7 @@ const MUST_BE_DESTRUCTIVE = [
   'delete_components', 'delete_event', 'delete_page', 'delete_query',
   'drop_table', 'drop_table_column', 'manage_theme',
   'run_queries', 'run_query',
+  'apply_workflow_spec', 'run_workflow',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query',
 ];
@@ -51,6 +52,8 @@ const MUST_BE_READ_ONLY = [
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
   'list_events', 'list_tables', 'list_workspaces', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app',
+  'get_workflow', 'get_workflow_execution', 'get_workflow_node_catalog',
+  'list_workflows', 'lint_workflow_spec', 'validate_workflow',
 ];
 
 describe('tool annotations', () => {

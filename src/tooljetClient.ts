@@ -1,3 +1,4 @@
+import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { randomUUID } from 'node:crypto';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
@@ -467,6 +468,7 @@ export interface QuerySummary {
 }
 
 export interface ToolJetClient {
+  workflows: WorkflowClient;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
@@ -2201,6 +2203,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    workflows: createWorkflowClient(auth, config, { getQueries, listDatasources, createQuery, updateQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
