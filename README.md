@@ -26,21 +26,6 @@ TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the tar
 # TOOLJET_DEPLOYMENT_URL=http://localhost:8090
 ```
 
-### Temporary password-login fallback
-
-When the target instance cannot issue a PAT yet, a standalone MCP process may instead use a
-ToolJet email/password pair. Set both values in the shell or a local secret manager before
-launching the MCP; the server exchanges them for an in-memory session and does not persist them.
-This fallback is not accepted as per-request HTTP credentials.
-
-```bash
-export TOOLJET_EMAIL="you@example.com"
-export TOOLJET_PASSWORD="your-password"
-```
-
-Configure exactly one credential method: `TOOLJET_PAT`, `TOOLJET_SESSION_TOKEN`, or this pair.
-Prefer a PAT when one is available.
-
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
 
 ## Install as a Codex plugin

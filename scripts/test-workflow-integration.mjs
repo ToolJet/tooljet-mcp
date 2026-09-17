@@ -1,5 +1,5 @@
-// Development-instance smoke test. Credentials are intentionally environment-only:
-// TOOLJET_TEST_EMAIL=... TOOLJET_TEST_PASSWORD=... node scripts/test-workflow-integration.mjs
+// Development-instance smoke test. The PAT is intentionally environment-only:
+// TOOLJET_PAT=... node scripts/test-workflow-integration.mjs
 import { randomUUID } from 'node:crypto';
 import { createAuth } from '../dist/auth.js';
 import { createClient } from '../dist/tooljetClient.js';
@@ -8,27 +8,10 @@ import { specSchema } from '../dist/workflows/graph.js';
 
 const apiUrl = process.env.TOOLJET_TEST_API_URL ?? 'http://localhost:3010';
 const appUrl = process.env.TOOLJET_TEST_APP_URL ?? 'http://localhost:8090';
-const email = process.env.TOOLJET_TEST_EMAIL;
-const password = process.env.TOOLJET_TEST_PASSWORD;
-if (!email || !password) throw new Error('Set TOOLJET_TEST_EMAIL and TOOLJET_TEST_PASSWORD; do not commit credentials.');
-
-const login = await fetch(`${apiUrl}/api/authenticate`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password }),
-});
-if (!login.ok) throw new Error(`Login failed (HTTP ${login.status}).`);
-const cookie = login.headers.getSetCookie?.().find((value) => value.startsWith('tj_auth_token='))
-  ?? login.headers.get('set-cookie');
-const sessionToken = cookie?.match(/(?:^|,)\s*tj_auth_token=([^;]+)/)?.[1];
-if (!sessionToken) throw new Error('Login returned no ToolJet session cookie.');
-const loginBody = await login.json();
-const workspaceId = loginBody.organization_id ?? loginBody.organizationId;
-const workspaceSlug = loginBody.organization_slug ?? loginBody.organizationSlug;
-if (!workspaceId) throw new Error('Login response returned no workspace ID.');
-
-const auth = createAuth({ apiUrl, appUrl, sessionToken, workspaceId, workspaceSlug });
-const client = createClient(auth, { apiUrl, appUrl, sessionToken, workspaceId, workspaceSlug });
+const pat = process.env.TOOLJET_PAT;
+if (!pat) throw new Error('Set TOOLJET_PAT; do not commit it.');
+const auth = createAuth({ apiUrl, appUrl, pat });
+const client = createClient(auth, { apiUrl, appUrl, pat });
 const existingWorkflowId = process.env.TOOLJET_TEST_WORKFLOW_ID;
 const existingVersionId = process.env.TOOLJET_TEST_VERSION_ID;
 if (process.env.TOOLJET_TEST_DISCOVER_DATASOURCES === '1') {

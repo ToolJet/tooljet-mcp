@@ -8,10 +8,6 @@ export interface Config {
    *  determines the workspace: a PAT session is pinned to the workspace the token was issued in and
    *  can reach no other. Used when this server is run standalone (a developer's MCP client). */
   pat?: string;
-  /** Temporary standalone fallback for instances where a PAT cannot yet be issued. Exchanged for
-   * an in-memory session and never accepted through shared-HTTP request headers. */
-  email?: string;
-  password?: string;
   /** A ToolJet session minted by ToolJet's own backend for the signed-in user, handed to us instead
    *  of a token to exchange. This is the in-product path: the credential is already a session, so
    *  every write lands in the audit log under the person who asked for the build rather than under
@@ -362,18 +358,9 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');
   const workspaceId = env('TOOLJET_WORKSPACE_ID');
-  const email = env('TOOLJET_EMAIL');
-  const password = env('TOOLJET_PASSWORD');
-
-  if (Boolean(email) !== Boolean(password)) {
-    throw new Error('TOOLJET_EMAIL and TOOLJET_PASSWORD must be set together.');
-  }
-  if ([pat, sessionToken, email].filter(Boolean).length > 1) {
-    throw new Error('Configure exactly one of TOOLJET_PAT, TOOLJET_SESSION_TOKEN, or TOOLJET_EMAIL/TOOLJET_PASSWORD.');
-  }
-  if (!pat && !sessionToken && !email) {
+  if (!pat && !sessionToken) {
     throw new Error(
-      'TOOLJET_SESSION_TOKEN, TOOLJET_PAT, or temporary TOOLJET_EMAIL/TOOLJET_PASSWORD is required. For a standalone server, create a personal ' +
+      'TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal ' +
         'access token in ToolJet under Settings → Access tokens, in the workspace you want this ' +
         'server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting ' +
         `user per request via the ${SESSION_TOKEN_HEADER} header.`
@@ -389,8 +376,6 @@ export function loadConfig(identity?: RequestIdentity): Config {
     apiUrl,
     appUrl,
     pat,
-    email,
-    password,
     sessionToken,
     workspaceId,
     workspaceSlug: env('TOOLJET_WORKSPACE_SLUG'),

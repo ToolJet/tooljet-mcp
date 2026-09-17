@@ -11,8 +11,6 @@ describe('loadConfig', () => {
       'TOOLJET_SESSION_TOKEN',
       'TOOLJET_WORKSPACE_ID',
       'TOOLJET_WORKSPACE_SLUG',
-      'TOOLJET_EMAIL',
-      'TOOLJET_PASSWORD',
     ])
       delete process.env[k];
   });
@@ -26,19 +24,12 @@ describe('loadConfig', () => {
   });
 
   it('throws when no credential is configured', () => {
-    expect(() => loadConfig()).toThrow(/TOOLJET_SESSION_TOKEN, TOOLJET_PAT, or temporary TOOLJET_EMAIL/);
+    expect(() => loadConfig()).toThrow(/TOOLJET_SESSION_TOKEN or TOOLJET_PAT/);
   });
 
-  it('accepts a complete temporary password-login pair', () => {
+  it('does not treat password-login environment variables as MCP credentials', () => {
     process.env.TOOLJET_EMAIL = 'dev@example.com'; process.env.TOOLJET_PASSWORD = 'secret';
-    expect(loadConfig()).toMatchObject({ email: 'dev@example.com', password: 'secret' });
-  });
-
-  it('refuses an incomplete or mixed password-login configuration', () => {
-    process.env.TOOLJET_EMAIL = 'dev@example.com';
-    expect(() => loadConfig()).toThrow(/must be set together/);
-    process.env.TOOLJET_PASSWORD = 'secret'; process.env.TOOLJET_PAT = 'tj_pat_test';
-    expect(() => loadConfig()).toThrow(/exactly one/);
+    expect(() => loadConfig()).toThrow(/TOOLJET_SESSION_TOKEN or TOOLJET_PAT/);
   });
 
   /* The in-product path: ToolJet's backend mints a session for the signed-in user and passes it
@@ -73,8 +64,6 @@ describe('appUrl defaults to the deployment origin', () => {
       'TOOLJET_PAT',
       'TOOLJET_SESSION_TOKEN',
       'TOOLJET_WORKSPACE_ID',
-      'TOOLJET_EMAIL',
-      'TOOLJET_PASSWORD',
     ])
       delete process.env[k];
   });

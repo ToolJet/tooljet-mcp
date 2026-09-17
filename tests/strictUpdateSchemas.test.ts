@@ -211,7 +211,7 @@ describe('update_pages strict entries', () => {
 // Last line of defence: even a caller that bypasses the tool layer can never PUT an empty diff and
 // have it reported as an update.
 describe('client refuses empty update diffs', () => {
-  const config: Config = { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:8082', email: 'a@b.com', password: 'pw' };
+  const config: Config = { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:8082', pat: 'fixture-pat' };
   function makeAuth(): Auth & { authedFetch: ReturnType<typeof vi.fn> } {
     return {
       authedFetch: vi.fn(),

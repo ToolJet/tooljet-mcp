@@ -40673,16 +40673,8 @@ function loadConfig(identity) {
   const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
-  const email3 = env("TOOLJET_EMAIL");
-  const password = env("TOOLJET_PASSWORD");
-  if (Boolean(email3) !== Boolean(password)) {
-    throw new Error("TOOLJET_EMAIL and TOOLJET_PASSWORD must be set together.");
-  }
-  if ([pat, sessionToken, email3].filter(Boolean).length > 1) {
-    throw new Error("Configure exactly one of TOOLJET_PAT, TOOLJET_SESSION_TOKEN, or TOOLJET_EMAIL/TOOLJET_PASSWORD.");
-  }
-  if (!pat && !sessionToken && !email3) {
-    throw new Error(`TOOLJET_SESSION_TOKEN, TOOLJET_PAT, or temporary TOOLJET_EMAIL/TOOLJET_PASSWORD is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
+  if (!pat && !sessionToken) {
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
   }
   if (sessionToken && !workspaceId) {
     throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
@@ -40691,8 +40683,6 @@ function loadConfig(identity) {
     apiUrl,
     appUrl,
     pat,
-    email: email3,
-    password,
     sessionToken,
     workspaceId,
     workspaceSlug: env("TOOLJET_WORKSPACE_SLUG")
@@ -40751,7 +40741,6 @@ async function withToolTelemetry(tool, handler) {
 }
 
 // dist/auth.js
-var COOKIE_PREFIX = "tj_auth_token=";
 function createAuth(config2, fetchImpl = fetch) {
   let token;
   let suppliedSessionUsed = false;
@@ -40768,31 +40757,6 @@ function createAuth(config2, fetchImpl = fetch) {
       token = config2.sessionToken;
       workspaceId = config2.workspaceId;
       workspaceSlug = config2.workspaceSlug ?? config2.workspaceId;
-      return;
-    }
-    if (config2.email && config2.password) {
-      const res2 = await fetchImpl(`${config2.apiUrl}/api/authenticate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: config2.email, password: config2.password })
-      });
-      recordHttpResponse(res2);
-      if (!res2.ok) {
-        const detail = (await res2.text().catch(() => "")).slice(0, 500);
-        throw new Error(`ToolJet password login failed (HTTP ${res2.status})${detail ? ` Response: ${detail}` : ""}`);
-      }
-      const cookies = res2.headers.getSetCookie?.() ?? [res2.headers.get("set-cookie") ?? ""];
-      const cookie = cookies.find((value) => value.startsWith(COOKIE_PREFIX)) ?? "";
-      const match = cookie.match(/^tj_auth_token=([^;]+)/);
-      if (!match?.[1])
-        throw new Error("ToolJet password login succeeded but returned no session cookie.");
-      const body2 = await res2.json();
-      token = match[1];
-      workspaceId = body2.organization_id ?? body2.organizationId;
-      workspaceSlug = body2.organization_slug ?? body2.organizationSlug ?? workspaceId;
-      workspaceName = body2.organization_name ?? body2.organizationName;
-      if (!workspaceId)
-        throw new Error("ToolJet password login succeeded but returned no workspace ID.");
       return;
     }
     const res = await fetchImpl(`${config2.apiUrl}/api/personal-access-tokens/session`, {

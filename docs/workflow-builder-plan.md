@@ -1,6 +1,6 @@
 # Workflow builder MCP implementation plan
 
-Status: proposed; implementation has not started.
+Status: implemented.
 Date: 2026-09-17.
 Source baseline: tooljet-mcp `4519d7a`; supplied ToolJet checkout `280f047ce4`.
 
@@ -30,12 +30,12 @@ Confirmed from the supplied code:
 - Workflow functionality is edition/license dependent; public base methods include unimplemented stubs.
 - Workflow execution, status, details, and node-result APIs exist. Execution must not be assumed to always return an asynchronous job: the inspected execution controller can run synchronously.
 
-Authentication decision (user confirmed): use ToolJet's existing username/password login to obtain a session for development-instance testing, then use the MCP's existing session-token authentication path for workflow requests. The local test runner verified this against the supplied development instance without persisting credentials or session tokens. No PAT endpoint or scope changes are required for this release; PAT support for workflow URLs is deferred. Existing MCP PAT behavior for other features remains unchanged.
+Authentication decision (user confirmed): use ToolJet personal access tokens (PATs). The MCP exchanges `TOOLJET_PAT` through `/api/personal-access-tokens/session`, then sends the resulting session cookie and workspace header for every workflow request. The ToolJet server enables this through `PAT_BUNDLE.WORKFLOWS`. Standalone password authentication is not supported.
 
 Open questions to settle in phase 0:
 
-1. Confirm the current username/password login response and session handoff to the MCP on the test instance. The PAT session exchange route was not found in this checkout, but it is not a blocker for the chosen session-based approach.
-2. Verify workspace selection, workflow create/edit/execute authorization, and session-token access on the supported deployment. Keep existing role and license checks intact; defer PAT scope verification to the later PAT integration.
+1. Verify workspace selection plus workflow create, edit, and execute authorization using a PAT issued for the target workspace.
+2. Confirm the target server includes `PAT_BUNDLE.WORKFLOWS`, while retaining existing role and license checks.
 3. Confirm create response fields, initial version status, workflow enabled state, datasource availability, and the editor URL against an actual instance.
 4. Confirm readback key casing and retention of arbitrary user keys. Avoid recursive casing conversions of user code, params, or query options.
 5. Confirm condition node metadata, branch/error handles, runtime binding syntax, supported joins, and response semantics using representative fixtures and execution.
@@ -173,7 +173,7 @@ Verify plugin manifests, npm package inclusion, skill generation/sync, bundle as
 
 | Phase | Deliverable | Acceptance gate |
 |---|---|---|
-| 0 — Compatibility | Session-auth/API matrix, wire fixtures, supported version baseline | Username/password login yields a session usable through the MCP's session-token path to create/read/save a disposable draft and access its queries. Role/license/session errors are differentiated. PAT support is deferred and does not block this phase. |
+| 0 — Compatibility | PAT-auth/API matrix, wire fixtures, supported version baseline | A workspace PAT yields a session usable through the MCP to create/read/save a disposable draft and access its queries. Role, license, token, and session errors are differentiated. |
 | 1 — Read/create foundation | Workflow client, catalog, list/create/get tools | Create response resolves to a real editable version and working editor URL; reads preserve user keys and graph data. |
 | 2 — Pure planning | Typed spec, compiler, layout, validator, scoped plan store, lint tool | Representative graphs compile deterministically; invalid graphs fail before writes; opaque content survives merges. |
 | 3 — Apply and repair | Apply/validate tools and partial-write reconciliation | Start → JS → response opens correctly; reapplying a consumed token is refused; invalid plans and injected failures produce actionable results. |

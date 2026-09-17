@@ -66,33 +66,6 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
       return;
     }
 
-    if (config.email && config.password) {
-      const res = await fetchImpl(`${config.apiUrl}/api/authenticate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: config.email, password: config.password }),
-      });
-      recordHttpResponse(res);
-      if (!res.ok) {
-        const detail = (await res.text().catch(() => '')).slice(0, 500);
-        throw new Error(`ToolJet password login failed (HTTP ${res.status})${detail ? ` Response: ${detail}` : ''}`);
-      }
-      const cookies = res.headers.getSetCookie?.() ?? [res.headers.get('set-cookie') ?? ''];
-      const cookie = cookies.find((value) => value.startsWith(COOKIE_PREFIX)) ?? '';
-      const match = cookie.match(/^tj_auth_token=([^;]+)/);
-      if (!match?.[1]) throw new Error('ToolJet password login succeeded but returned no session cookie.');
-      const body = (await res.json()) as {
-        organization_id?: string; organizationId?: string; organization_slug?: string; organizationSlug?: string;
-        organization_name?: string; organizationName?: string;
-      };
-      token = match[1];
-      workspaceId = body.organization_id ?? body.organizationId;
-      workspaceSlug = body.organization_slug ?? body.organizationSlug ?? workspaceId;
-      workspaceName = body.organization_name ?? body.organizationName;
-      if (!workspaceId) throw new Error('ToolJet password login succeeded but returned no workspace ID.');
-      return;
-    }
-
     const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
