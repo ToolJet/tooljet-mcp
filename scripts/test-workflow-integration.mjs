@@ -6,8 +6,8 @@ import { createClient } from '../dist/tooljetClient.js';
 import { lint, apply, deleteNode } from '../dist/workflows/planner.js';
 import { specSchema } from '../dist/workflows/graph.js';
 
-const apiUrl = process.env.TOOLJET_TEST_API_URL ?? 'http://localhost:3000';
-const appUrl = process.env.TOOLJET_TEST_APP_URL ?? 'http://localhost:8082';
+const apiUrl = process.env.TOOLJET_TEST_API_URL ?? 'http://localhost:3010';
+const appUrl = process.env.TOOLJET_TEST_APP_URL ?? 'http://localhost:8090';
 const email = process.env.TOOLJET_TEST_EMAIL;
 const password = process.env.TOOLJET_TEST_PASSWORD;
 if (!email || !password) throw new Error('Set TOOLJET_TEST_EMAIL and TOOLJET_TEST_PASSWORD; do not commit credentials.');

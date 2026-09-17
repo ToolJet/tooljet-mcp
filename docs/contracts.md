@@ -2,7 +2,7 @@
 
 Evidence comes from the current ToolJet source, mocked MCP contract tests, and dated local live checks where explicitly stated. Treat dated observations as historical evidence, not a guarantee for another ToolJet version or workspace.
 
-Base API: `http://localhost:3000/api`. Frontend (for user-facing app URLs): `http://localhost:8082`.
+Base API: `http://localhost:3010/api`. Frontend (for user-facing app URLs): `http://localhost:8090`.
 
 ---
 

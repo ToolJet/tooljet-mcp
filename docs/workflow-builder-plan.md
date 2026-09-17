@@ -4,7 +4,7 @@ Status: proposed; implementation has not started.
 Date: 2026-09-17.
 Source baseline: tooljet-mcp `4519d7a`; supplied ToolJet checkout `280f047ce4`.
 
-Confirmed decisions: basic node set; creation and editing existing drafts; runtime execution and inspection included; publishing and trigger setup excluded; concurrent-edit protection deferred. Integration test API: `http://localhost:3000`; editor URL: `http://localhost:8082`.
+Confirmed decisions: basic node set; creation and editing existing drafts; runtime execution and inspection included; publishing and trigger setup excluded; concurrent-edit protection deferred. Integration test API: `http://localhost:3010`; editor URL: `http://localhost:8090`.
 
 ## 1. Outcome and scope
 
