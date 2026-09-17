@@ -28940,6 +28940,1118 @@ var require_dist2 = __commonJS({
   }
 });
 
+// node_modules/json5/lib/unicode.js
+var require_unicode = __commonJS({
+  "node_modules/json5/lib/unicode.js"(exports, module) {
+    module.exports.Space_Separator = /[\u1680\u2000-\u200A\u202F\u205F\u3000]/;
+    module.exports.ID_Start = /[\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u05D0-\u05EA\u05F0-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1877\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C88\u1CE9-\u1CEC\u1CEE-\u1CF1\u1CF5\u1CF6\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312E\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEA\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6EF\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AE\uA7B0-\uA7B7\uA7F7-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDD40-\uDD74\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF4A\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF\uDFD1-\uDFD5]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE33\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2]|\uD804[\uDC03-\uDC37\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDF00-\uDF19]|\uD806[\uDCA0-\uDCDF\uDCFF\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE83\uDE86-\uDE89\uDEC0-\uDEF8]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46]|\uD808[\uDC00-\uDF99]|\uD809[\uDC00-\uDC6E\uDC80-\uDD43]|[\uD80C\uD81C-\uD820\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2E]|\uD811[\uDC00-\uDE46]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDF00-\uDF44\uDF50\uDF93-\uDF9F\uDFE0\uDFE1]|\uD821[\uDC00-\uDFEC]|\uD822[\uDC00-\uDEF2]|\uD82C[\uDC00-\uDD1E\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDED6\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF34\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]/;
+    module.exports.ID_Continue = /[\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0300-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u0483-\u0487\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u05D0-\u05EA\u05F0-\u05F2\u0610-\u061A\u0620-\u0669\u066E-\u06D3\u06D5-\u06DC\u06DF-\u06E8\u06EA-\u06FC\u06FF\u0710-\u074A\u074D-\u07B1\u07C0-\u07F5\u07FA\u0800-\u082D\u0840-\u085B\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u08D4-\u08E1\u08E3-\u0963\u0966-\u096F\u0971-\u0983\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BC-\u09C4\u09C7\u09C8\u09CB-\u09CE\u09D7\u09DC\u09DD\u09DF-\u09E3\u09E6-\u09F1\u09FC\u0A01-\u0A03\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A59-\u0A5C\u0A5E\u0A66-\u0A75\u0A81-\u0A83\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABC-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AD0\u0AE0-\u0AE3\u0AE6-\u0AEF\u0AF9-\u0AFF\u0B01-\u0B03\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3C-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B56\u0B57\u0B5C\u0B5D\u0B5F-\u0B63\u0B66-\u0B6F\u0B71\u0B82\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD0\u0BD7\u0BE6-\u0BEF\u0C00-\u0C03\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C58-\u0C5A\u0C60-\u0C63\u0C66-\u0C6F\u0C80-\u0C83\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBC-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CDE\u0CE0-\u0CE3\u0CE6-\u0CEF\u0CF1\u0CF2\u0D00-\u0D03\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D44\u0D46-\u0D48\u0D4A-\u0D4E\u0D54-\u0D57\u0D5F-\u0D63\u0D66-\u0D6F\u0D7A-\u0D7F\u0D82\u0D83\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E01-\u0E3A\u0E40-\u0E4E\u0E50-\u0E59\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB9\u0EBB-\u0EBD\u0EC0-\u0EC4\u0EC6\u0EC8-\u0ECD\u0ED0-\u0ED9\u0EDC-\u0EDF\u0F00\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E-\u0F47\u0F49-\u0F6C\u0F71-\u0F84\u0F86-\u0F97\u0F99-\u0FBC\u0FC6\u1000-\u1049\u1050-\u109D\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u135D-\u135F\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u170C\u170E-\u1714\u1720-\u1734\u1740-\u1753\u1760-\u176C\u176E-\u1770\u1772\u1773\u1780-\u17D3\u17D7\u17DC\u17DD\u17E0-\u17E9\u180B-\u180D\u1810-\u1819\u1820-\u1877\u1880-\u18AA\u18B0-\u18F5\u1900-\u191E\u1920-\u192B\u1930-\u193B\u1946-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u19D0-\u19D9\u1A00-\u1A1B\u1A20-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AA7\u1AB0-\u1ABD\u1B00-\u1B4B\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1BF3\u1C00-\u1C37\u1C40-\u1C49\u1C4D-\u1C7D\u1C80-\u1C88\u1CD0-\u1CD2\u1CD4-\u1CF9\u1D00-\u1DF9\u1DFB-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u203F\u2040\u2054\u2071\u207F\u2090-\u209C\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D7F-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2DE0-\u2DFF\u2E2F\u3005-\u3007\u3021-\u302F\u3031-\u3035\u3038-\u303C\u3041-\u3096\u3099\u309A\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312E\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEA\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA62B\uA640-\uA66F\uA674-\uA67D\uA67F-\uA6F1\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AE\uA7B0-\uA7B7\uA7F7-\uA827\uA840-\uA873\uA880-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F7\uA8FB\uA8FD\uA900-\uA92D\uA930-\uA953\uA960-\uA97C\uA980-\uA9C0\uA9CF-\uA9D9\uA9E0-\uA9FE\uAA00-\uAA36\uAA40-\uAA4D\uAA50-\uAA59\uAA60-\uAA76\uAA7A-\uAAC2\uAADB-\uAADD\uAAE0-\uAAEF\uAAF2-\uAAF6\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABEA\uABEC\uABED\uABF0-\uABF9\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFE70-\uFE74\uFE76-\uFEFC\uFF10-\uFF19\uFF21-\uFF3A\uFF3F\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDD40-\uDD74\uDDFD\uDE80-\uDE9C\uDEA0-\uDED0\uDEE0\uDF00-\uDF1F\uDF2D-\uDF4A\uDF50-\uDF7A\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF\uDFD1-\uDFD5]|\uD801[\uDC00-\uDC9D\uDCA0-\uDCA9\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD80-\uDDB7\uDDBE\uDDBF\uDE00-\uDE03\uDE05\uDE06\uDE0C-\uDE13\uDE15-\uDE17\uDE19-\uDE33\uDE38-\uDE3A\uDE3F\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE6\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2]|\uD804[\uDC00-\uDC46\uDC66-\uDC6F\uDC7F-\uDCBA\uDCD0-\uDCE8\uDCF0-\uDCF9\uDD00-\uDD34\uDD36-\uDD3F\uDD50-\uDD73\uDD76\uDD80-\uDDC4\uDDCA-\uDDCC\uDDD0-\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE37\uDE3E\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEEA\uDEF0-\uDEF9\uDF00-\uDF03\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3C-\uDF44\uDF47\uDF48\uDF4B-\uDF4D\uDF50\uDF57\uDF5D-\uDF63\uDF66-\uDF6C\uDF70-\uDF74]|\uD805[\uDC00-\uDC4A\uDC50-\uDC59\uDC80-\uDCC5\uDCC7\uDCD0-\uDCD9\uDD80-\uDDB5\uDDB8-\uDDC0\uDDD8-\uDDDD\uDE00-\uDE40\uDE44\uDE50-\uDE59\uDE80-\uDEB7\uDEC0-\uDEC9\uDF00-\uDF19\uDF1D-\uDF2B\uDF30-\uDF39]|\uD806[\uDCA0-\uDCE9\uDCFF\uDE00-\uDE3E\uDE47\uDE50-\uDE83\uDE86-\uDE99\uDEC0-\uDEF8]|\uD807[\uDC00-\uDC08\uDC0A-\uDC36\uDC38-\uDC40\uDC50-\uDC59\uDC72-\uDC8F\uDC92-\uDCA7\uDCA9-\uDCB6\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD36\uDD3A\uDD3C\uDD3D\uDD3F-\uDD47\uDD50-\uDD59]|\uD808[\uDC00-\uDF99]|\uD809[\uDC00-\uDC6E\uDC80-\uDD43]|[\uD80C\uD81C-\uD820\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2E]|\uD811[\uDC00-\uDE46]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE60-\uDE69\uDED0-\uDEED\uDEF0-\uDEF4\uDF00-\uDF36\uDF40-\uDF43\uDF50-\uDF59\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDF00-\uDF44\uDF50-\uDF7E\uDF8F-\uDF9F\uDFE0\uDFE1]|\uD821[\uDC00-\uDFEC]|\uD822[\uDC00-\uDEF2]|\uD82C[\uDC00-\uDD1E\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99\uDC9D\uDC9E]|\uD834[\uDD65-\uDD69\uDD6D-\uDD72\uDD7B-\uDD82\uDD85-\uDD8B\uDDAA-\uDDAD\uDE42-\uDE44]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB\uDFCE-\uDFFF]|\uD836[\uDE00-\uDE36\uDE3B-\uDE6C\uDE75\uDE84\uDE9B-\uDE9F\uDEA1-\uDEAF]|\uD838[\uDC00-\uDC06\uDC08-\uDC18\uDC1B-\uDC21\uDC23\uDC24\uDC26-\uDC2A]|\uD83A[\uDC00-\uDCC4\uDCD0-\uDCD6\uDD00-\uDD4A\uDD50-\uDD59]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDED6\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF34\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]|\uDB40[\uDD00-\uDDEF]/;
+  }
+});
+
+// node_modules/json5/lib/util.js
+var require_util2 = __commonJS({
+  "node_modules/json5/lib/util.js"(exports, module) {
+    var unicode = require_unicode();
+    module.exports = {
+      isSpaceSeparator(c) {
+        return typeof c === "string" && unicode.Space_Separator.test(c);
+      },
+      isIdStartChar(c) {
+        return typeof c === "string" && (c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c === "$" || c === "_" || unicode.ID_Start.test(c));
+      },
+      isIdContinueChar(c) {
+        return typeof c === "string" && (c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c >= "0" && c <= "9" || c === "$" || c === "_" || c === "\u200C" || c === "\u200D" || unicode.ID_Continue.test(c));
+      },
+      isDigit(c) {
+        return typeof c === "string" && /[0-9]/.test(c);
+      },
+      isHexDigit(c) {
+        return typeof c === "string" && /[0-9A-Fa-f]/.test(c);
+      }
+    };
+  }
+});
+
+// node_modules/json5/lib/parse.js
+var require_parse = __commonJS({
+  "node_modules/json5/lib/parse.js"(exports, module) {
+    var util2 = require_util2();
+    var source2;
+    var parseState;
+    var stack;
+    var pos;
+    var line;
+    var column;
+    var token;
+    var key4;
+    var root;
+    module.exports = function parse4(text, reviver) {
+      source2 = String(text);
+      parseState = "start";
+      stack = [];
+      pos = 0;
+      line = 1;
+      column = 0;
+      token = void 0;
+      key4 = void 0;
+      root = void 0;
+      do {
+        token = lex();
+        parseStates[parseState]();
+      } while (token.type !== "eof");
+      if (typeof reviver === "function") {
+        return internalize({ "": root }, "", reviver);
+      }
+      return root;
+    };
+    function internalize(holder, name2, reviver) {
+      const value2 = holder[name2];
+      if (value2 != null && typeof value2 === "object") {
+        if (Array.isArray(value2)) {
+          for (let i = 0; i < value2.length; i++) {
+            const key5 = String(i);
+            const replacement = internalize(value2, key5, reviver);
+            if (replacement === void 0) {
+              delete value2[key5];
+            } else {
+              Object.defineProperty(value2, key5, {
+                value: replacement,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          }
+        } else {
+          for (const key5 in value2) {
+            const replacement = internalize(value2, key5, reviver);
+            if (replacement === void 0) {
+              delete value2[key5];
+            } else {
+              Object.defineProperty(value2, key5, {
+                value: replacement,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          }
+        }
+      }
+      return reviver.call(holder, name2, value2);
+    }
+    var lexState;
+    var buffer;
+    var doubleQuote;
+    var sign;
+    var c;
+    function lex() {
+      lexState = "default";
+      buffer = "";
+      doubleQuote = false;
+      sign = 1;
+      for (; ; ) {
+        c = peek();
+        const token2 = lexStates[lexState]();
+        if (token2) {
+          return token2;
+        }
+      }
+    }
+    function peek() {
+      if (source2[pos]) {
+        return String.fromCodePoint(source2.codePointAt(pos));
+      }
+    }
+    function read() {
+      const c2 = peek();
+      if (c2 === "\n") {
+        line++;
+        column = 0;
+      } else if (c2) {
+        column += c2.length;
+      } else {
+        column++;
+      }
+      if (c2) {
+        pos += c2.length;
+      }
+      return c2;
+    }
+    var lexStates = {
+      default() {
+        switch (c) {
+          case "	":
+          case "\v":
+          case "\f":
+          case " ":
+          case "\xA0":
+          case "\uFEFF":
+          case "\n":
+          case "\r":
+          case "\u2028":
+          case "\u2029":
+            read();
+            return;
+          case "/":
+            read();
+            lexState = "comment";
+            return;
+          case void 0:
+            read();
+            return newToken("eof");
+        }
+        if (util2.isSpaceSeparator(c)) {
+          read();
+          return;
+        }
+        return lexStates[parseState]();
+      },
+      comment() {
+        switch (c) {
+          case "*":
+            read();
+            lexState = "multiLineComment";
+            return;
+          case "/":
+            read();
+            lexState = "singleLineComment";
+            return;
+        }
+        throw invalidChar(read());
+      },
+      multiLineComment() {
+        switch (c) {
+          case "*":
+            read();
+            lexState = "multiLineCommentAsterisk";
+            return;
+          case void 0:
+            throw invalidChar(read());
+        }
+        read();
+      },
+      multiLineCommentAsterisk() {
+        switch (c) {
+          case "*":
+            read();
+            return;
+          case "/":
+            read();
+            lexState = "default";
+            return;
+          case void 0:
+            throw invalidChar(read());
+        }
+        read();
+        lexState = "multiLineComment";
+      },
+      singleLineComment() {
+        switch (c) {
+          case "\n":
+          case "\r":
+          case "\u2028":
+          case "\u2029":
+            read();
+            lexState = "default";
+            return;
+          case void 0:
+            read();
+            return newToken("eof");
+        }
+        read();
+      },
+      value() {
+        switch (c) {
+          case "{":
+          case "[":
+            return newToken("punctuator", read());
+          case "n":
+            read();
+            literal3("ull");
+            return newToken("null", null);
+          case "t":
+            read();
+            literal3("rue");
+            return newToken("boolean", true);
+          case "f":
+            read();
+            literal3("alse");
+            return newToken("boolean", false);
+          case "-":
+          case "+":
+            if (read() === "-") {
+              sign = -1;
+            }
+            lexState = "sign";
+            return;
+          case ".":
+            buffer = read();
+            lexState = "decimalPointLeading";
+            return;
+          case "0":
+            buffer = read();
+            lexState = "zero";
+            return;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9":
+            buffer = read();
+            lexState = "decimalInteger";
+            return;
+          case "I":
+            read();
+            literal3("nfinity");
+            return newToken("numeric", Infinity);
+          case "N":
+            read();
+            literal3("aN");
+            return newToken("numeric", NaN);
+          case '"':
+          case "'":
+            doubleQuote = read() === '"';
+            buffer = "";
+            lexState = "string";
+            return;
+        }
+        throw invalidChar(read());
+      },
+      identifierNameStartEscape() {
+        if (c !== "u") {
+          throw invalidChar(read());
+        }
+        read();
+        const u = unicodeEscape();
+        switch (u) {
+          case "$":
+          case "_":
+            break;
+          default:
+            if (!util2.isIdStartChar(u)) {
+              throw invalidIdentifier();
+            }
+            break;
+        }
+        buffer += u;
+        lexState = "identifierName";
+      },
+      identifierName() {
+        switch (c) {
+          case "$":
+          case "_":
+          case "\u200C":
+          case "\u200D":
+            buffer += read();
+            return;
+          case "\\":
+            read();
+            lexState = "identifierNameEscape";
+            return;
+        }
+        if (util2.isIdContinueChar(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("identifier", buffer);
+      },
+      identifierNameEscape() {
+        if (c !== "u") {
+          throw invalidChar(read());
+        }
+        read();
+        const u = unicodeEscape();
+        switch (u) {
+          case "$":
+          case "_":
+          case "\u200C":
+          case "\u200D":
+            break;
+          default:
+            if (!util2.isIdContinueChar(u)) {
+              throw invalidIdentifier();
+            }
+            break;
+        }
+        buffer += u;
+        lexState = "identifierName";
+      },
+      sign() {
+        switch (c) {
+          case ".":
+            buffer = read();
+            lexState = "decimalPointLeading";
+            return;
+          case "0":
+            buffer = read();
+            lexState = "zero";
+            return;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9":
+            buffer = read();
+            lexState = "decimalInteger";
+            return;
+          case "I":
+            read();
+            literal3("nfinity");
+            return newToken("numeric", sign * Infinity);
+          case "N":
+            read();
+            literal3("aN");
+            return newToken("numeric", NaN);
+        }
+        throw invalidChar(read());
+      },
+      zero() {
+        switch (c) {
+          case ".":
+            buffer += read();
+            lexState = "decimalPoint";
+            return;
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+          case "x":
+          case "X":
+            buffer += read();
+            lexState = "hexadecimal";
+            return;
+        }
+        return newToken("numeric", sign * 0);
+      },
+      decimalInteger() {
+        switch (c) {
+          case ".":
+            buffer += read();
+            lexState = "decimalPoint";
+            return;
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util2.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalPointLeading() {
+        if (util2.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalFraction";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalPoint() {
+        switch (c) {
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util2.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalFraction";
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalFraction() {
+        switch (c) {
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util2.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalExponent() {
+        switch (c) {
+          case "+":
+          case "-":
+            buffer += read();
+            lexState = "decimalExponentSign";
+            return;
+        }
+        if (util2.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalExponentInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalExponentSign() {
+        if (util2.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalExponentInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalExponentInteger() {
+        if (util2.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      hexadecimal() {
+        if (util2.isHexDigit(c)) {
+          buffer += read();
+          lexState = "hexadecimalInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      hexadecimalInteger() {
+        if (util2.isHexDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      string() {
+        switch (c) {
+          case "\\":
+            read();
+            buffer += escape2();
+            return;
+          case '"':
+            if (doubleQuote) {
+              read();
+              return newToken("string", buffer);
+            }
+            buffer += read();
+            return;
+          case "'":
+            if (!doubleQuote) {
+              read();
+              return newToken("string", buffer);
+            }
+            buffer += read();
+            return;
+          case "\n":
+          case "\r":
+            throw invalidChar(read());
+          case "\u2028":
+          case "\u2029":
+            separatorChar(c);
+            break;
+          case void 0:
+            throw invalidChar(read());
+        }
+        buffer += read();
+      },
+      start() {
+        switch (c) {
+          case "{":
+          case "[":
+            return newToken("punctuator", read());
+        }
+        lexState = "value";
+      },
+      beforePropertyName() {
+        switch (c) {
+          case "$":
+          case "_":
+            buffer = read();
+            lexState = "identifierName";
+            return;
+          case "\\":
+            read();
+            lexState = "identifierNameStartEscape";
+            return;
+          case "}":
+            return newToken("punctuator", read());
+          case '"':
+          case "'":
+            doubleQuote = read() === '"';
+            lexState = "string";
+            return;
+        }
+        if (util2.isIdStartChar(c)) {
+          buffer += read();
+          lexState = "identifierName";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      afterPropertyName() {
+        if (c === ":") {
+          return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      beforePropertyValue() {
+        lexState = "value";
+      },
+      afterPropertyValue() {
+        switch (c) {
+          case ",":
+          case "}":
+            return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      beforeArrayValue() {
+        if (c === "]") {
+          return newToken("punctuator", read());
+        }
+        lexState = "value";
+      },
+      afterArrayValue() {
+        switch (c) {
+          case ",":
+          case "]":
+            return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      end() {
+        throw invalidChar(read());
+      }
+    };
+    function newToken(type, value2) {
+      return {
+        type,
+        value: value2,
+        line,
+        column
+      };
+    }
+    function literal3(s) {
+      for (const c2 of s) {
+        const p = peek();
+        if (p !== c2) {
+          throw invalidChar(read());
+        }
+        read();
+      }
+    }
+    function escape2() {
+      const c2 = peek();
+      switch (c2) {
+        case "b":
+          read();
+          return "\b";
+        case "f":
+          read();
+          return "\f";
+        case "n":
+          read();
+          return "\n";
+        case "r":
+          read();
+          return "\r";
+        case "t":
+          read();
+          return "	";
+        case "v":
+          read();
+          return "\v";
+        case "0":
+          read();
+          if (util2.isDigit(peek())) {
+            throw invalidChar(read());
+          }
+          return "\0";
+        case "x":
+          read();
+          return hexEscape();
+        case "u":
+          read();
+          return unicodeEscape();
+        case "\n":
+        case "\u2028":
+        case "\u2029":
+          read();
+          return "";
+        case "\r":
+          read();
+          if (peek() === "\n") {
+            read();
+          }
+          return "";
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+          throw invalidChar(read());
+        case void 0:
+          throw invalidChar(read());
+      }
+      return read();
+    }
+    function hexEscape() {
+      let buffer2 = "";
+      let c2 = peek();
+      if (!util2.isHexDigit(c2)) {
+        throw invalidChar(read());
+      }
+      buffer2 += read();
+      c2 = peek();
+      if (!util2.isHexDigit(c2)) {
+        throw invalidChar(read());
+      }
+      buffer2 += read();
+      return String.fromCodePoint(parseInt(buffer2, 16));
+    }
+    function unicodeEscape() {
+      let buffer2 = "";
+      let count = 4;
+      while (count-- > 0) {
+        const c2 = peek();
+        if (!util2.isHexDigit(c2)) {
+          throw invalidChar(read());
+        }
+        buffer2 += read();
+      }
+      return String.fromCodePoint(parseInt(buffer2, 16));
+    }
+    var parseStates = {
+      start() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        push();
+      },
+      beforePropertyName() {
+        switch (token.type) {
+          case "identifier":
+          case "string":
+            key4 = token.value;
+            parseState = "afterPropertyName";
+            return;
+          case "punctuator":
+            pop();
+            return;
+          case "eof":
+            throw invalidEOF();
+        }
+      },
+      afterPropertyName() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        parseState = "beforePropertyValue";
+      },
+      beforePropertyValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        push();
+      },
+      beforeArrayValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        if (token.type === "punctuator" && token.value === "]") {
+          pop();
+          return;
+        }
+        push();
+      },
+      afterPropertyValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        switch (token.value) {
+          case ",":
+            parseState = "beforePropertyName";
+            return;
+          case "}":
+            pop();
+        }
+      },
+      afterArrayValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        switch (token.value) {
+          case ",":
+            parseState = "beforeArrayValue";
+            return;
+          case "]":
+            pop();
+        }
+      },
+      end() {
+      }
+    };
+    function push() {
+      let value2;
+      switch (token.type) {
+        case "punctuator":
+          switch (token.value) {
+            case "{":
+              value2 = {};
+              break;
+            case "[":
+              value2 = [];
+              break;
+          }
+          break;
+        case "null":
+        case "boolean":
+        case "numeric":
+        case "string":
+          value2 = token.value;
+          break;
+      }
+      if (root === void 0) {
+        root = value2;
+      } else {
+        const parent = stack[stack.length - 1];
+        if (Array.isArray(parent)) {
+          parent.push(value2);
+        } else {
+          Object.defineProperty(parent, key4, {
+            value: value2,
+            writable: true,
+            enumerable: true,
+            configurable: true
+          });
+        }
+      }
+      if (value2 !== null && typeof value2 === "object") {
+        stack.push(value2);
+        if (Array.isArray(value2)) {
+          parseState = "beforeArrayValue";
+        } else {
+          parseState = "beforePropertyName";
+        }
+      } else {
+        const current = stack[stack.length - 1];
+        if (current == null) {
+          parseState = "end";
+        } else if (Array.isArray(current)) {
+          parseState = "afterArrayValue";
+        } else {
+          parseState = "afterPropertyValue";
+        }
+      }
+    }
+    function pop() {
+      stack.pop();
+      const current = stack[stack.length - 1];
+      if (current == null) {
+        parseState = "end";
+      } else if (Array.isArray(current)) {
+        parseState = "afterArrayValue";
+      } else {
+        parseState = "afterPropertyValue";
+      }
+    }
+    function invalidChar(c2) {
+      if (c2 === void 0) {
+        return syntaxError(`JSON5: invalid end of input at ${line}:${column}`);
+      }
+      return syntaxError(`JSON5: invalid character '${formatChar(c2)}' at ${line}:${column}`);
+    }
+    function invalidEOF() {
+      return syntaxError(`JSON5: invalid end of input at ${line}:${column}`);
+    }
+    function invalidIdentifier() {
+      column -= 5;
+      return syntaxError(`JSON5: invalid identifier character at ${line}:${column}`);
+    }
+    function separatorChar(c2) {
+      console.warn(`JSON5: '${formatChar(c2)}' in strings is not valid ECMAScript; consider escaping`);
+    }
+    function formatChar(c2) {
+      const replacements = {
+        "'": "\\'",
+        '"': '\\"',
+        "\\": "\\\\",
+        "\b": "\\b",
+        "\f": "\\f",
+        "\n": "\\n",
+        "\r": "\\r",
+        "	": "\\t",
+        "\v": "\\v",
+        "\0": "\\0",
+        "\u2028": "\\u2028",
+        "\u2029": "\\u2029"
+      };
+      if (replacements[c2]) {
+        return replacements[c2];
+      }
+      if (c2 < " ") {
+        const hexString = c2.charCodeAt(0).toString(16);
+        return "\\x" + ("00" + hexString).substring(hexString.length);
+      }
+      return c2;
+    }
+    function syntaxError(message) {
+      const err = new SyntaxError(message);
+      err.lineNumber = line;
+      err.columnNumber = column;
+      return err;
+    }
+  }
+});
+
+// node_modules/json5/lib/stringify.js
+var require_stringify2 = __commonJS({
+  "node_modules/json5/lib/stringify.js"(exports, module) {
+    var util2 = require_util2();
+    module.exports = function stringify(value2, replacer, space) {
+      const stack = [];
+      let indent = "";
+      let propertyList;
+      let replacerFunc;
+      let gap = "";
+      let quote2;
+      if (replacer != null && typeof replacer === "object" && !Array.isArray(replacer)) {
+        space = replacer.space;
+        quote2 = replacer.quote;
+        replacer = replacer.replacer;
+      }
+      if (typeof replacer === "function") {
+        replacerFunc = replacer;
+      } else if (Array.isArray(replacer)) {
+        propertyList = [];
+        for (const v of replacer) {
+          let item;
+          if (typeof v === "string") {
+            item = v;
+          } else if (typeof v === "number" || v instanceof String || v instanceof Number) {
+            item = String(v);
+          }
+          if (item !== void 0 && propertyList.indexOf(item) < 0) {
+            propertyList.push(item);
+          }
+        }
+      }
+      if (space instanceof Number) {
+        space = Number(space);
+      } else if (space instanceof String) {
+        space = String(space);
+      }
+      if (typeof space === "number") {
+        if (space > 0) {
+          space = Math.min(10, Math.floor(space));
+          gap = "          ".substr(0, space);
+        }
+      } else if (typeof space === "string") {
+        gap = space.substr(0, 10);
+      }
+      return serializeProperty("", { "": value2 });
+      function serializeProperty(key4, holder) {
+        let value3 = holder[key4];
+        if (value3 != null) {
+          if (typeof value3.toJSON5 === "function") {
+            value3 = value3.toJSON5(key4);
+          } else if (typeof value3.toJSON === "function") {
+            value3 = value3.toJSON(key4);
+          }
+        }
+        if (replacerFunc) {
+          value3 = replacerFunc.call(holder, key4, value3);
+        }
+        if (value3 instanceof Number) {
+          value3 = Number(value3);
+        } else if (value3 instanceof String) {
+          value3 = String(value3);
+        } else if (value3 instanceof Boolean) {
+          value3 = value3.valueOf();
+        }
+        switch (value3) {
+          case null:
+            return "null";
+          case true:
+            return "true";
+          case false:
+            return "false";
+        }
+        if (typeof value3 === "string") {
+          return quoteString(value3, false);
+        }
+        if (typeof value3 === "number") {
+          return String(value3);
+        }
+        if (typeof value3 === "object") {
+          return Array.isArray(value3) ? serializeArray(value3) : serializeObject(value3);
+        }
+        return void 0;
+      }
+      function quoteString(value3) {
+        const quotes = {
+          "'": 0.1,
+          '"': 0.2
+        };
+        const replacements = {
+          "'": "\\'",
+          '"': '\\"',
+          "\\": "\\\\",
+          "\b": "\\b",
+          "\f": "\\f",
+          "\n": "\\n",
+          "\r": "\\r",
+          "	": "\\t",
+          "\v": "\\v",
+          "\0": "\\0",
+          "\u2028": "\\u2028",
+          "\u2029": "\\u2029"
+        };
+        let product = "";
+        for (let i = 0; i < value3.length; i++) {
+          const c = value3[i];
+          switch (c) {
+            case "'":
+            case '"':
+              quotes[c]++;
+              product += c;
+              continue;
+            case "\0":
+              if (util2.isDigit(value3[i + 1])) {
+                product += "\\x00";
+                continue;
+              }
+          }
+          if (replacements[c]) {
+            product += replacements[c];
+            continue;
+          }
+          if (c < " ") {
+            let hexString = c.charCodeAt(0).toString(16);
+            product += "\\x" + ("00" + hexString).substring(hexString.length);
+            continue;
+          }
+          product += c;
+        }
+        const quoteChar = quote2 || Object.keys(quotes).reduce((a, b) => quotes[a] < quotes[b] ? a : b);
+        product = product.replace(new RegExp(quoteChar, "g"), replacements[quoteChar]);
+        return quoteChar + product + quoteChar;
+      }
+      function serializeObject(value3) {
+        if (stack.indexOf(value3) >= 0) {
+          throw TypeError("Converting circular structure to JSON5");
+        }
+        stack.push(value3);
+        let stepback = indent;
+        indent = indent + gap;
+        let keys = propertyList || Object.keys(value3);
+        let partial2 = [];
+        for (const key4 of keys) {
+          const propertyString = serializeProperty(key4, value3);
+          if (propertyString !== void 0) {
+            let member5 = serializeKey(key4) + ":";
+            if (gap !== "") {
+              member5 += " ";
+            }
+            member5 += propertyString;
+            partial2.push(member5);
+          }
+        }
+        let final;
+        if (partial2.length === 0) {
+          final = "{}";
+        } else {
+          let properties;
+          if (gap === "") {
+            properties = partial2.join(",");
+            final = "{" + properties + "}";
+          } else {
+            let separator = ",\n" + indent;
+            properties = partial2.join(separator);
+            final = "{\n" + indent + properties + ",\n" + stepback + "}";
+          }
+        }
+        stack.pop();
+        indent = stepback;
+        return final;
+      }
+      function serializeKey(key4) {
+        if (key4.length === 0) {
+          return quoteString(key4, true);
+        }
+        const firstChar = String.fromCodePoint(key4.codePointAt(0));
+        if (!util2.isIdStartChar(firstChar)) {
+          return quoteString(key4, true);
+        }
+        for (let i = firstChar.length; i < key4.length; i++) {
+          if (!util2.isIdContinueChar(String.fromCodePoint(key4.codePointAt(i)))) {
+            return quoteString(key4, true);
+          }
+        }
+        return key4;
+      }
+      function serializeArray(value3) {
+        if (stack.indexOf(value3) >= 0) {
+          throw TypeError("Converting circular structure to JSON5");
+        }
+        stack.push(value3);
+        let stepback = indent;
+        indent = indent + gap;
+        let partial2 = [];
+        for (let i = 0; i < value3.length; i++) {
+          const propertyString = serializeProperty(String(i), value3);
+          partial2.push(propertyString !== void 0 ? propertyString : "null");
+        }
+        let final;
+        if (partial2.length === 0) {
+          final = "[]";
+        } else {
+          if (gap === "") {
+            let properties = partial2.join(",");
+            final = "[" + properties + "]";
+          } else {
+            let separator = ",\n" + indent;
+            let properties = partial2.join(separator);
+            final = "[\n" + indent + properties + ",\n" + stepback + "]";
+          }
+        }
+        stack.pop();
+        indent = stepback;
+        return final;
+      }
+    };
+  }
+});
+
+// node_modules/json5/lib/index.js
+var require_lib2 = __commonJS({
+  "node_modules/json5/lib/index.js"(exports, module) {
+    var parse4 = require_parse();
+    var stringify = require_stringify2();
+    var JSON52 = {
+      parse: parse4,
+      stringify
+    };
+    module.exports = JSON52;
+  }
+});
+
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
@@ -55450,6 +56562,27 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
 }
 
+// dist/tableQuotaError.js
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error51) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error51 instanceof Error && !seen.has(error51)) {
+    if (error51 instanceof TableQuotaError)
+      return error51;
+    seen.add(error51);
+    error51 = error51.cause;
+  }
+  return void 0;
+}
+
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
 
@@ -60205,8 +61338,8 @@ function workspaceAccessKeys(type) {
 var PartialWriteError = class extends Error {
   completed;
   failures;
-  constructor(operation, completed, failures) {
-    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`);
+  constructor(operation, completed, failures, cause) {
+    super(`ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. Failed: ${failures.join(" | ")}. Persisted resources were not deleted automatically.`, { cause });
     this.name = "PartialWriteError";
     this.completed = completed;
     this.failures = failures;
@@ -60251,7 +61384,10 @@ function pageHiddenNeedsUpdate(page, expected) {
 }
 async function assertOk(res, method) {
   if (!res.ok) {
-    throw new ToolJetHttpError(res.status, method, await res.text());
+    const detail = await res.text();
+    if (method === "createTable" && res.status === 451)
+      throw new TableQuotaError();
+    throw new ToolJetHttpError(res.status, method, detail);
   }
 }
 var TYPE_ALIASES = {
@@ -61103,16 +62239,21 @@ function createClient(auth, config2) {
     const levels = tableCreationLevels(params.tables);
     const created = [];
     for (const level of levels) {
-      const settled = await Promise.allSettled(level.map((table) => createTable(table)));
-      const failures = [];
-      settled.forEach((result, index) => {
-        if (result.status === "fulfilled")
-          created.push(result.value);
-        else
-          failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      });
-      if (failures.length) {
-        throw new PartialWriteError("createTables", created, failures);
+      for (let start = 0; start < level.length; start += 4) {
+        const batch = level.slice(start, start + 4);
+        const settled = await Promise.allSettled(batch.map((table) => createTable(table)));
+        const failures = [];
+        let quota;
+        settled.forEach((result, index) => {
+          if (result.status === "fulfilled")
+            created.push(result.value);
+          else {
+            quota ??= tableQuotaError(result.reason);
+            failures.push(`${batch[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+          }
+        });
+        if (failures.length)
+          throw new PartialWriteError("createTables", created, failures, quota);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -61537,6 +62678,11 @@ function createClient(auth, config2) {
     await assertOk(res, "invokeDatasourceMethod");
     return await res.json();
   }
+  async function getPluginSpec(pluginKind, specName) {
+    const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
+    await assertOk(res, "getPluginSpec");
+    return res.text();
+  }
   async function getDatasourceConnectionDetails(dataSourceId, environmentId) {
     const envId = environmentId ?? await getDevelopmentEnvironmentId();
     const res = await auth.authedFetch(`/api/data-sources/${encodeURIComponent(dataSourceId)}/environment/${encodeURIComponent(envId)}`);
@@ -61671,6 +62817,7 @@ function createClient(auth, config2) {
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    getPluginSpec,
     testDatasourceConnection,
     listEvents,
     updateEvents,
@@ -61684,7 +62831,15 @@ function ok(value2) {
 }
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
-  return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+  const quota = tableQuotaError(err);
+  const text = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text }], isError: true };
 }
 
 // dist/tools/workspaceGroupManagement.js
@@ -62627,7 +63782,7 @@ function createTablesTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created concurrently. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
+    description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created in batches of at most four; a failed batch stops further creation. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
     inputSchema: { tables: external_exports.array(tableSchema).min(1).max(50) },
     async handler(args) {
       try {
@@ -63100,6 +64255,7 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
+      ...schema.operationSelection ? { operation_selection: schema.operationSelection } : {},
       ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
     });
     if (!options2.operation) {
@@ -63112,7 +64268,12 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       return {
         kind,
         error: `Unknown operation "${options2.operation}" for datasource kind "${kind}".`,
-        operations: schema.operations
+        operations: schema.operations,
+        ...schema.operationSelection?.mode === "single" ? {
+          operation_selection: schema.operationSelection,
+          available_contracts: Object.keys(schema.contracts),
+          recovery: 'This datasource has one query form, not zero capabilities. Request operation:"default" (or omit operation) to read its contract. Put the command in the documented query option; do not invent an operation selector.'
+        } : {}
       };
     }
     if (sections.has("request")) {
@@ -63241,6 +64402,46 @@ function getDatasourceQuerySchemaTool(client) {
   };
 }
 
+// dist/hubspotQuery.js
+function hubspotSpecs() {
+  return (getDatasourceQuerySchema("hubspot")?.operationSelection?.specs ?? []).filter((spec) => spec.location === "bundled" && spec.plugin === "hubspot" && spec.name && spec.label).map((spec) => ({
+    name: spec.name,
+    label: spec.label,
+    specType: spec.label.split(/(?=[A-Z])/).join("_").toLowerCase()
+  }));
+}
+function hubspotQueryIssues(options2) {
+  const issues = [];
+  const issue2 = (path, message) => issues.push({ path, message });
+  const record5 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+  if (!["get", "post", "patch", "put", "delete"].includes(String(options2.operation))) {
+    issue2("operation", "HubSpot operation must be a lowercase HTTP method from getEndpointSchema, not an object name or create/update action.");
+  }
+  if (typeof options2.path !== "string" || !/^\/(?!\/)[^\s?#]*$/.test(options2.path) || options2.path.includes("{{")) {
+    issue2("path", "HubSpot needs the static endpoint path returned by getEndpointSchema; put record IDs in params.path.");
+  }
+  if (!hubspotSpecs().some((spec) => spec.specType === options2.specType)) {
+    issue2("specType", "Use the exact specType returned by inspect_datasource_schema so the HubSpot editor retains the selected endpoint.");
+  }
+  for (const bucket of ["path", "query", "request"]) {
+    if (!record5(options2.params) || !record5(options2.params[bucket])) {
+      issue2(`params.${bucket}`, `HubSpot requires params.${bucket} as an object; use {} when empty.`);
+    }
+  }
+  for (const misplaced of ["objectId", "properties"]) {
+    if (misplaced in options2)
+      issue2(misplaced, `HubSpot ignores top-level ${misplaced}; use params.path for IDs and params.request for the JSON body.`);
+  }
+  if (typeof options2.path === "string" && record5(options2.params) && record5(options2.params.path)) {
+    for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
+      const value2 = options2.params.path[match[1]];
+      if (value2 === void 0 || value2 === null || value2 === "")
+        issue2(`params.path.${match[1]}`, "Provide a value for every endpoint path placeholder.");
+    }
+  }
+  return issues;
+}
+
 // dist/openapiSpec.js
 var import_yaml = __toESM(require_dist2(), 1);
 var HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
@@ -63332,8 +64533,13 @@ function endpointParameters(spec, path, method) {
   const body = deref(spec, operation.requestBody);
   const json3 = body && record3(body.content) ? record3(record3(body.content)["application/json"]) : void 0;
   const bodySchema = json3 ? deref(spec, json3.schema) : void 0;
+  const success2 = Object.entries(record3(operation.responses) ?? {}).find(([status]) => /^2\d\d$/.test(status));
+  const response = success2 ? deref(spec, success2[1]) : void 0;
+  const responseContent = record3(record3(response?.content)?.["application/json"]);
+  const responseSchema = deref(spec, responseContent?.schema ?? response?.schema);
   return {
     parameters: [...byKey.values()],
+    ...responseSchema ? { response: { status: success2[0], schema: responseSchema } } : {},
     ...bodySchema ? { requestBody: { required: body?.required === true, schema: bodySchema } } : {},
     found: true
   };
@@ -63559,6 +64765,7 @@ function openapiIntrospection(spec, request) {
     // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
     buckets,
     parameters: result.parameters,
+    ...result.response ? { response: result.response } : {},
     ...result.requestBody ? { requestBody: result.requestBody } : {},
     ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
   };
@@ -63572,7 +64779,7 @@ function inspectDatasourceSchemaTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
+    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
     inputSchema: {
       version_id: external_exports.string(),
       datasource_id: external_exports.string(),
@@ -63628,7 +64835,41 @@ function inspectDatasourceSchemaTool(client) {
             return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
           }
         }
+        const hubspotDocuments = /* @__PURE__ */ new Map();
         const results = await Promise.all(requests.map(async (request) => {
+          if (datasource.kind === "hubspot") {
+            const specs = hubspotSpecs();
+            const selector = request.schema ?? request.args?.specType;
+            if (!selector && request.method === "listTables") {
+              return { method: request.method, result: {
+                specs,
+                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
+              } };
+            }
+            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
+            if (!selected)
+              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
+            if (!hubspotDocuments.has(selected.name)) {
+              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
+                const spec = extractSpec({ spec: text });
+                if (!spec)
+                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
+                return spec;
+              }));
+            }
+            const document2 = await hubspotDocuments.get(selected.name);
+            const result2 = openapiIntrospection(document2, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params.header;
+              delete result2.host_warning;
+              result2.query_options.specType = selected.specType;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
+            }
+            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
+          }
           if (openapiSpec) {
             const result2 = openapiIntrospection(openapiSpec, request);
             return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
@@ -65212,7 +66453,87 @@ function persistedEventSpecs(summary) {
   });
 }
 
+// dist/redisReadSafety.js
+function assessRedisRead(options2, datasourceId) {
+  const base = {
+    datasourceKind: "redis",
+    ...datasourceId ? { datasourceId } : {},
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false
+  };
+  const query = options2.query;
+  if (typeof query !== "string" || !query || query.includes("{{") || /[\r\n\t\0]/.test(query)) {
+    return { ...base, reason: "Redis needs one static space-delimited command in options.query." };
+  }
+  const [raw, ...args] = query.split(" ");
+  if (!raw || args.some((arg) => !arg)) {
+    return { ...base, reason: "Redis commands must use single spaces, matching the plugin parser." };
+  }
+  const command = raw.toUpperCase();
+  const scalarArity = {
+    PING: 0,
+    DBSIZE: 0,
+    GET: 1,
+    TYPE: 1,
+    TTL: 1,
+    PTTL: 1,
+    STRLEN: 1,
+    HLEN: 1,
+    LLEN: 1,
+    SCARD: 1,
+    ZCARD: 1,
+    HGET: 2,
+    HEXISTS: 2,
+    SISMEMBER: 2,
+    ZSCORE: 2
+  };
+  if (Object.hasOwn(scalarArity, command) && args.length === scalarArity[command]) {
+    return { ...base, provenRead: true, directSafe: true, maxRows: 1 };
+  }
+  if (["MGET", "EXISTS", "HMGET"].includes(command)) {
+    const fields = args.length - (command === "HMGET" ? 1 : 0);
+    if (fields > 0 && fields <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows: command === "EXISTS" ? 1 : fields };
+    }
+  }
+  if (["LRANGE", "ZRANGE"].includes(command) && args.length === 3 && /^\d+$/.test(args[1]) && /^\d+$/.test(args[2])) {
+    const start = Number(args[1]);
+    const end = Number(args[2]);
+    const maxRows = end - start + 1;
+    if (Number.isSafeInteger(start) && Number.isSafeInteger(end) && maxRows > 0 && maxRows <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows };
+    }
+  }
+  const scanOffset = command === "SCAN" ? 0 : ["HSCAN", "SSCAN", "ZSCAN"].includes(command) ? 1 : -1;
+  let scan = scanOffset >= 0 && args.length > scanOffset && /^\d+$/.test(args[scanOffset]);
+  const seen = /* @__PURE__ */ new Set();
+  if (scan) {
+    for (let i = scanOffset + 1; i < args.length; i += 2) {
+      const option = args[i].toUpperCase();
+      const value2 = args[i + 1];
+      if (!value2 || seen.has(option) || !["MATCH", "COUNT", ...command === "SCAN" ? ["TYPE"] : []].includes(option) || option === "COUNT" && (!/^\d+$/.test(value2) || Number(value2) < 1 || Number(value2) > 1e3)) {
+        scan = false;
+        break;
+      }
+      seen.add(option);
+    }
+  }
+  if (scan || ["HGETALL", "HKEYS", "HVALS", "SMEMBERS"].includes(command) && args.length === 1) {
+    return {
+      ...base,
+      provenRead: true,
+      requiresRemoteReadConfirmation: true,
+      reason: "Redis collection/scan reads have no hard result bound. Use singular run_query with confirmed read access; SCAN COUNT is only a hint."
+    };
+  }
+  return { ...base, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
+}
+
 // dist/queryExecutionSafety.js
+var import_json5 = __toESM(require_lib2(), 1);
 var LARGE_READ_ROW_THRESHOLD = 1e3;
 var SQL_KINDS = /* @__PURE__ */ new Set([
   "postgresql",
@@ -65227,9 +66548,22 @@ var SQL_KINDS = /* @__PURE__ */ new Set([
   "clickhouse",
   "oracle",
   "oracledb",
-  "sqlite"
+  "sqlite",
+  "databricks",
+  "athena",
+  "awsredshift",
+  "harperdb",
+  "ibmdb",
+  "saphana",
+  // SQL dialects assessSql already parses; each keeps its SQL in one operation, and the write
+  // operations carry no SQL field, so they still fall through to a refusal.
+  "spanner",
+  "presto",
+  "cosmosdb",
+  "couchbase",
+  "salesforce"
 ]);
-var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift"]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
 function record4(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
 }
@@ -65554,6 +66888,317 @@ function assessSupabase(options2, datasourceId) {
     ...identity
   };
 }
+var MONGO_ROW_READS = /* @__PURE__ */ new Set(["find_many"]);
+var MONGO_SINGLE_READS = /* @__PURE__ */ new Set(["find_one"]);
+var MONGO_COUNT_READS = /* @__PURE__ */ new Set(["count", "count_total"]);
+var MONGO_WRITE_STAGES = ["$out", "$merge"];
+function mongoOptions(raw) {
+  const direct = record4(raw);
+  if (direct)
+    return direct;
+  if (typeof raw !== "string" || !raw.trim())
+    return void 0;
+  try {
+    if (containsBinding(raw))
+      return void 0;
+    return record4(import_json5.default.parse(raw));
+  } catch {
+    return void 0;
+  }
+}
+function mongoPipelineWrites(pipeline) {
+  if (Array.isArray(pipeline))
+    return pipeline.some(mongoPipelineWrites);
+  const obj3 = record4(pipeline);
+  return !!obj3 && Object.entries(obj3).some(([key4, value2]) => MONGO_WRITE_STAGES.includes(key4) || mongoPipelineWrites(value2));
+}
+function assessMongo(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "mongodb", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const collection = options2.collection;
+  if (typeof collection !== "string" || !collection.trim() || containsBinding(collection)) {
+    return refuse("MongoDB collection is missing or not statically known.");
+  }
+  const source2 = { kind: "gui_table", value: collection };
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options2.filter;
+    const fullSourceCount = filter == null || filter === "" || !!record4(filter) && Object.keys(record4(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  if (operation === "aggregate") {
+    const rawOptions = options2.options;
+    const aggregateOptions = rawOptions == null || rawOptions === "" ? {} : mongoOptions(rawOptions);
+    if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
+      return refuse("MongoDB aggregate options must be a statically known JSON5 object.");
+    }
+    if ("out" in aggregateOptions) {
+      return refuse("MongoDB aggregate options.out adds a $out stage, which writes a collection.");
+    }
+    let pipeline = options2.pipeline;
+    if (containsBinding(pipeline))
+      return refuse("MongoDB aggregate pipeline is not statically known.");
+    if (typeof pipeline === "string") {
+      try {
+        pipeline = import_json5.default.parse(pipeline);
+      } catch {
+        return refuse("MongoDB aggregate pipeline must be valid JSON5 array text.");
+      }
+    }
+    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record4(stage))) {
+      return refuse("MongoDB aggregate pipeline must be a statically known array of stages.");
+    }
+    if (mongoPipelineWrites(pipeline)) {
+      return refuse("MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.");
+    }
+    const last = record4(pipeline.at(-1));
+    const maxRows2 = last && Object.keys(last).length === 1 && typeof last.$limit === "number" ? staticPositiveInteger(last.$limit) : void 0;
+    return {
+      provenRead: true,
+      directSafe: maxRows2 !== void 0 && maxRows2 <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: maxRows2 === void 0 || maxRows2 > LARGE_READ_ROW_THRESHOLD,
+      source: source2,
+      maxRows: maxRows2,
+      ...identity,
+      ...maxRows2 === void 0 ? { reason: "MongoDB aggregate has no statically provable row limit; add a final {$limit: N} pipeline stage. options.limit does not bound aggregation output." } : {}
+    };
+  }
+  if (operation === "distinct") {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: true,
+      source: source2,
+      ...identity,
+      reason: "MongoDB distinct ignores options.limit and array fields can yield multiple values per document. Use a bounded aggregate with a final $limit stage."
+    };
+  }
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(`MongoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  const maxRows = staticPositiveInteger(mongoOptions(options2.options)?.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows,
+      source: source2,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    maxRows,
+    source: source2,
+    ...identity,
+    reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+var SHEETS_METADATA_READS = /* @__PURE__ */ new Set(["info", "list_all_spreadsheets"]);
+var A1_ROW_RANGE = /^(?:[^!]*!)?[A-Z]*(\d+):[A-Z]*(\d+)$/i;
+function sheetsRangeRows(range) {
+  if (typeof range !== "string" || containsBinding(range))
+    return void 0;
+  const match = range.trim().match(A1_ROW_RANGE);
+  if (!match)
+    return void 0;
+  const rows = Number(match[2]) - Number(match[1]) + 1;
+  return rows > 0 ? rows : void 0;
+}
+function assessSheets(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "googlesheetsv2", ...datasourceId ? { datasourceId } : {} };
+  const spreadsheet = options2.spreadsheet_id;
+  if (SHEETS_METADATA_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (operation !== "read" && operation !== "list_all") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `Google Sheets operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (typeof spreadsheet !== "string" || !spreadsheet.trim() || containsBinding(spreadsheet)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: "Google Sheets spreadsheet_id is missing or not statically known."
+    };
+  }
+  const sheet = typeof options2.sheet === "string" && options2.sheet.trim() ? `:${options2.sheet.trim()}` : "";
+  const source2 = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === "read" ? sheetsRangeRows(options2.spreadsheet_range) : void 0;
+  const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: !bounded,
+    requiresRemoteReadConfirmation: true,
+    source: source2,
+    maxRows,
+    ...identity,
+    ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
+  };
+}
+function assessDynamo(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "dynamodb", ...datasourceId ? { datasourceId } : {} };
+  const table = options2.table;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!["get_item", "query_table", "scan_table", "describe_table"].includes(operation)) {
+    return refuse(`DynamoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  if (typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return refuse("DynamoDB table is missing or not statically known.");
+  }
+  const source2 = { kind: "gui_table", value: table.trim().toLowerCase() };
+  if (operation === "get_item" || operation === "describe_table") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    source: source2,
+    ...identity,
+    reason: `DynamoDB ${operation} has no statically provable row limit.`
+  };
+}
+function assessCouch(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "couchdb", ...datasourceId ? { datasourceId } : {} };
+  if (operation === "retrieve_record") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (!["list_records", "get_view", "find"].includes(operation)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `CouchDB operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  const limit = operation === "find" ? mongoOptions(options2.body)?.limit : options2.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? `CouchDB ${operation} has no statically provable row limit; set ${operation === "find" ? "limit in the request body" : "limit"}.` : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
@@ -65819,6 +67464,15 @@ function assessQueryRead(query) {
     };
   }
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (kind === "hubspot") {
+    const issue2 = hubspotQueryIssues(options2)[0];
+    const assessment = assessOpenapi({ ...options2, host: "https://api.hubapi.com" }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: "hubspot",
+      ...issue2 ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue2.message } : { reason: assessment.reason?.replaceAll("OpenAPI", "HubSpot") }
+    };
+  }
   if (kind === "restapi")
     return assessRestGet(options2, datasourceId);
   if (kind === "openapi")
@@ -65829,6 +67483,16 @@ function assessQueryRead(query) {
     return assessInflux(options2, datasourceId);
   if (kind === "supabase")
     return assessSupabase(options2, datasourceId);
+  if (kind === "mongodb")
+    return assessMongo(options2, datasourceId);
+  if (kind === "redis")
+    return assessRedisRead(options2, datasourceId);
+  if (kind === "googlesheetsv2")
+    return assessSheets(options2, datasourceId);
+  if (kind === "dynamodb")
+    return assessDynamo(options2, datasourceId);
+  if (kind === "couchdb")
+    return assessCouch(options2, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
@@ -65855,7 +67519,7 @@ function assessQueryRead(query) {
   if (SQL_KINDS.has(kind)) {
     if (operation === "list_rows" || options2.mode === "gui")
       return assessListRows(kind, options2, datasourceId);
-    const sql = typeof options2.query === "string" ? options2.query : typeof options2.sql === "string" ? options2.sql : void 0;
+    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options2[field]).find((value2) => typeof value2 === "string" && !!value2.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
@@ -65881,6 +67545,8 @@ function extractRowCount(result) {
   if (result.status !== "ok")
     return void 0;
   let value2 = result.data;
+  if (typeof value2 === "number")
+    return Number.isSafeInteger(value2) && value2 >= 0 ? value2 : void 0;
   if (record4(value2)?.result !== void 0)
     value2 = record4(value2).result;
   if (Array.isArray(value2)) {
@@ -66030,6 +67696,19 @@ function valueAtPath(source2, path) {
     cursor = cursor[segment];
   }
   return cursor;
+}
+function describeOperationSelection(schema) {
+  if (schema.kind === "hubspot")
+    return "Use inspect_datasource_schema getEndpointSchema and copy query_options (operation, path, specType and params).";
+  const selection = schema.operationSelection;
+  if (schema.operations.length) {
+    const fields = selection?.fields?.length ? selection.fields.join(" + ") : "operation";
+    return `Set ${fields}. Valid operations: ${schema.operations.join(", ")}.`;
+  }
+  if (selection?.mode === "remote-spec") {
+    return `This kind takes its operation from the remote API spec${selection.specUrl ? ` (${selection.specUrl})` : ""}, not from a fixed list; set ${selection.field ?? "the operation field"} to an operation id from that spec.`;
+  }
+  return "This kind has a single unnamed query form; author it against the default contract.";
 }
 function operationFromOptions(options2, contracts, defaults) {
   const operation = options2.operation ?? defaults.operation;
@@ -66199,6 +67878,11 @@ function influxTransformWarnings(kind, options2) {
 }
 function validateQueryOptions(kind, options2) {
   const errors = [];
+  if (kind === "hubspot")
+    errors.push(...hubspotQueryIssues(options2).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
+  if (kind === "hubspot" && options2.operation !== "get" && (isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange))) {
+    errors.push({ code: "automatic_hubspot_write", message: "HubSpot writes must run from an explicit user action, not on page load or dependency changes." });
+  }
   const warnings = tableStateWarnings(options2);
   const conditionalWrite = conditionalWriteWarning(kind, options2);
   if (conditionalWrite)
@@ -66257,12 +67941,13 @@ function validateQueryOptions(kind, options2) {
     });
     return { kind, schemaFound: false, errors, warnings };
   }
+  const operationHint = describeOperationSelection(schema);
   const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: "missing_operation",
       path: schema.contracts.sql ? "mode" : "operation",
-      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(", ") || "default"}.`
+      message: `Datasource "${kind}" needs an operation/mode. ${operationHint}`
     });
     return { kind, schemaFound: true, errors, warnings };
   }
@@ -66271,7 +67956,7 @@ function validateQueryOptions(kind, options2) {
     errors.push({
       code: "invalid_operation",
       path: typeof options2.operation === "string" ? "operation" : "mode",
-      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(", ")}.`
+      message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }
@@ -66520,6 +68205,18 @@ function normalizeWriteColumnMap(columns) {
   return normalized2;
 }
 function normalizeQueryOptions(kind, options2) {
+  if (kind === "mongodb" && isObject2(options2)) {
+    let result = options2;
+    for (const field of ["filter", "options", "pipeline", "document", "documents", "update", "replacement", "operations"]) {
+      const value2 = options2[field];
+      if (value2 !== null && typeof value2 === "object") {
+        if (result === options2)
+          result = { ...options2 };
+        result[field] = JSON.stringify(value2);
+      }
+    }
+    return result;
+  }
   if (kind !== "tooljetdb" || !isObject2(options2))
     return options2;
   const operation = typeof options2.operation === "string" ? options2.operation : "";
@@ -67415,6 +69112,9 @@ function normalizeComponentSpec(component, options2 = {}) {
     const columns = propValue(properties, "columns");
     const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
     const autogenerateColumns = propValue(properties, "autogenerateColumns");
+    if (options2.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
+      setProperty("columns", []);
+    }
     if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
       setProperty("autogenerateColumns", true);
       if (autogenerateColumns !== void 0) {
@@ -67833,7 +69533,7 @@ function lintPlannedApp(spec, existingSummary) {
     } else {
       options2 = normalizeQueryOptions(query.kind, query.options);
       if (options2 !== query.options) {
-        warnings.push(`Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+        warnings.push(query.kind === "mongodb" ? `Query "${query.name}": serialized MongoDB document fields to the JSON text expected by the plugin.` : `Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
       }
       const validation = validateQueryOptions(query.kind, options2);
       errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
@@ -68980,7 +70680,9 @@ function applyAppPhaseTool(client) {
           ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
         ];
         if (foundationFailures.length)
-          throw new Error(foundationFailures.join(" | "));
+          throw new Error(foundationFailures.join(" | "), {
+            cause: tableWrite.status === "rejected" ? tableQuotaError(tableWrite.reason) : void 0
+          });
         const tableIds = new Map(existingTableIds);
         for (const table of createdTables)
           tableIds.set(table.table_name.toLowerCase(), table.table_id);
@@ -69193,7 +70895,7 @@ function applyAppPhaseTool(client) {
           } catch {
           }
         }
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery));
+        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; nothing with content on it was auto-deleted. ${error51 instanceof Error ? error51.message : String(error51)}` + recovery, { cause: error51 }));
       }
     }
   };
@@ -69428,7 +71130,7 @@ function addQueryTool(client) {
           return fail(new Error(issueMessages(validation.errors).join(" ")));
         const warnings = issueMessages(validation.warnings);
         if (options2 !== args.options) {
-          warnings.push(`Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+          warnings.push(datasource.kind === "mongodb" ? "Serialized MongoDB document fields to JSON text expected by the plugin." : `Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
         }
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
@@ -69497,7 +71199,7 @@ function addQueriesTool(client) {
           }
           const options2 = normalizeQueryOptions(datasource.kind, query.options);
           if (options2 !== query.options) {
-            warnings.push(`Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+            warnings.push(datasource.kind === "mongodb" ? `Query "${query.name}": serialized MongoDB document fields to JSON text expected by the plugin.` : `Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
           }
           const validation = validateQueryOptions(datasource.kind, options2);
           if (validation.errors.length) {
@@ -70355,7 +72057,7 @@ function updateQueryTool(client) {
         if (kind) {
           options2 = normalizeQueryOptions(kind, args.options);
           if (options2 !== args.options) {
-            warnings.push(`Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
+            warnings.push(kind === "mongodb" ? "Serialized MongoDB document fields to JSON text expected by the plugin." : `Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
           }
           validation = validateQueryOptions(kind, options2);
           if (validation.errors.length)
@@ -70555,6 +72257,9 @@ var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD
 function classifyQueryFailure(result) {
   if (!result)
     return "unknown";
+  const details = result.data;
+  if (details?.name === "SyntaxError" && typeof result.description === "string" && result.description.startsWith("JSON5:"))
+    return "query";
   const category = result.category;
   if (category === "authentication" || category === "connection")
     return "connection";

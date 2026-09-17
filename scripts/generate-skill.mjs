@@ -22,7 +22,8 @@ function locate(envVar, label, candidates, marker) {
   if (found) return found;
   throw new Error(
     `generate-skill: could not find the ${label} checkout (looked for ${marker} in ` +
-      `${candidates.map((c) => resolve(root, ...c)).join(', ')}). Set ${envVar} to its path.`
+      `${candidates.map((c) => resolve(root, ...c)).join(', ')}).\n` +
+      `Point ${envVar} at it:\n  ${envVar}=/path/to/${label} npm run generate:skill`
   );
 }
 
@@ -1002,9 +1003,15 @@ For \`kind:"restapi"\`, fetch the contract for the intended HTTP method, but do 
 \`queries.<name>.data\` is the remote response body directly—parsed JSON object/array, text, or supported binary base64—not a normalized row array. For an MCP-side preview, name the exact saved query and obtain separate approval before calling \`run_query\` with \`user_confirmed_remote_read:true\`; only static GET requests are eligible. Inspect \`metadata.request.url/params/headers\` to confirm the resolved request and \`metadata.response.statusCode/headers\` for status, pagination, and rate-limit information. A deployment that reached one public endpoint does not prove outbound access to every host.
 
 Pagination is defined by the remote API. Put its page/limit/cursor fields in \`url_params\`, guard first-load Table state, and bind totals or next cursors from the response body or headers. Avoid one REST request per Table/Listview row; prefer a batch endpoint or enrich only the selected/detail record. Authentication and token repair stay user-owned in datasource settings—never copy, inspect, or author credentials in query options.`;
+const hubspotGuidance = `## HubSpot queries
+
+HubSpot uses multiple installed OpenAPI specs. Call \`inspect_datasource_schema\` with \`method:"listTables"\` and no schema to list groups; pass the returned group as \`schema\` to discover endpoints, then call \`getEndpointSchema\`. Copy its \`query_options\`: lowercase HTTP \`operation\`, endpoint \`path\`, exact \`specType\`, and \`params.path/query/request\` objects. A category in \`hubspot_operation\` alone is not executable. The editor requires the returned specType; a display label may reset the selected endpoint. Put record IDs in params.path and write fields inside the endpoint's request body, not top-level objectId/properties.
+
+Specs describe API shapes, not the account's custom fields or pipeline stage values. Use Properties and Pipelines reads to verify those before wiring writes. If the required field or operation is unavailable, explain the blocker and keep the action disabled. For an additive update, apply the delta to the current quantity through a supported operation; do not replace the quantity with the delta or claim atomicity without evidence. A static GET can be verified with singular \`run_query\` only after remote-read approval. Batch execution and all writes remain refused during MCP verification. Report unexecuted operations as unverified, not working.
+`;
 const datasources = `# Datasources and query contracts
 
-Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n`;
+Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
 const security = makeReference(
   'Security and authorization boundaries',
   'Read this before adding sensitive data access, user-scoped behavior, permissions, or destructive writes.',

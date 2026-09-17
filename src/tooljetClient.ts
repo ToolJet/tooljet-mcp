@@ -1,3 +1,4 @@
+import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
@@ -173,10 +174,11 @@ export class PartialWriteError<T> extends Error {
   readonly completed: T[];
   readonly failures: string[];
 
-  constructor(operation: string, completed: T[], failures: string[]) {
+  constructor(operation: string, completed: T[], failures: string[], cause?: unknown) {
     super(
       `ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. ` +
-        `Failed: ${failures.join(' | ')}. Persisted resources were not deleted automatically.`
+        `Failed: ${failures.join(' | ')}. Persisted resources were not deleted automatically.`,
+      { cause }
     );
     this.name = 'PartialWriteError';
     this.completed = completed;
@@ -596,6 +598,7 @@ export interface ToolJetClient {
   runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  getPluginSpec(pluginKind: string, specName: string): Promise<string>;
   testDatasourceConnection(params: TestDatasourceConnectionParams): Promise<ConnectionTestResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
@@ -718,7 +721,9 @@ function pageHiddenNeedsUpdate(page: any, expected: boolean): boolean {
 
 async function assertOk(res: Response, method: string): Promise<void> {
   if (!res.ok) {
-    throw new ToolJetHttpError(res.status, method, await res.text());
+    const detail = await res.text();
+    if (method === 'createTable' && res.status === 451) throw new TableQuotaError();
+    throw new ToolJetHttpError(res.status, method, detail);
   }
 }
 
@@ -1721,14 +1726,21 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const levels = tableCreationLevels(params.tables);
     const created: CreateTableResult[] = [];
     for (const level of levels) {
-      const settled = await Promise.allSettled(level.map((table) => createTable(table)));
-      const failures: string[] = [];
-      settled.forEach((result, index) => {
-        if (result.status === 'fulfilled') created.push(result.value);
-        else failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      });
-      if (failures.length) {
-        throw new PartialWriteError('createTables', created, failures);
+      // Bound in-flight writes and stop scheduling after a failed batch. Already-started
+      // requests must settle so every persisted table remains available for recovery.
+      for (let start = 0; start < level.length; start += 4) {
+        const batch = level.slice(start, start + 4);
+        const settled = await Promise.allSettled(batch.map((table) => createTable(table)));
+        const failures: string[] = [];
+        let quota: TableQuotaError | undefined;
+        settled.forEach((result, index) => {
+          if (result.status === 'fulfilled') created.push(result.value);
+          else {
+            quota ??= tableQuotaError(result.reason);
+            failures.push(`${batch[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+          }
+        });
+        if (failures.length) throw new PartialWriteError('createTables', created, failures, quota);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -2321,6 +2333,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return (await res.json()) as RunQueryResult;
   }
 
+  /** Read installed plugin API metadata through the authenticated spec route. */
+  async function getPluginSpec(pluginKind: string, specName: string): Promise<string> {
+    const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
+    await assertOk(res, 'getPluginSpec');
+    return res.text();
+  }
+
   /** Read one saved datasource's stored connection configuration for an environment.
    *
    *  Deliberately NOT taken from listDatasources: that response passes through ToolJet's
@@ -2502,6 +2521,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    getPluginSpec,
     testDatasourceConnection,
     listEvents,
     updateEvents,
