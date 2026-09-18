@@ -830,8 +830,8 @@ Use this capability-first sequence:
 
 1. Call \`get_workflow_node_catalog\` for the exact node and patch schema.
 2. Call \`create_workflow\` or \`get_workflow\` and keep its workflow/version IDs.
-3. Call \`get_workflow_capabilities(version_id)\` to discover configured datasource instances tagged for ordinary queries, AI models, and email.
-4. For table intent, call \`list_tables\`, then inspect only the selected table schema. Fetch \`get_datasource_query_schema\` for each selected database and email datasource. Agent model options are provider/model parameters rather than an ordinary chat-query prompt contract.
+3. Call \`get_workflow_capabilities(version_id)\` to discover configured datasource instances classified for ordinary queries, AI models, and email. Its classifications do not contain query options.
+4. For every ordinary datasource-query node, call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` to get its exact fields, allowed operations, response shape, and available metadata methods. For table intent, call \`list_tables\`, then inspect only the selected table schema. Agent model options are provider/model parameters rather than an ordinary chat-query prompt contract.
 5. Construct one explicit \`WorkflowSpec\` and call \`lint_workflow_spec\` by itself. Inspect \`runtime_readiness\`, \`blockers\`, errors, and warnings. A clean runnable result includes a scoped, one-use 30-minute \`plan_token\`; pass that token once to \`apply_workflow_spec\`.
 
 Missing AI or email datasource capability is a real blocker for a request that requires it. Ask the user to configure the missing datasource in ToolJet; never invent an ID or silently omit that part. Capability discovery deliberately does not scan tables or expose credentials.

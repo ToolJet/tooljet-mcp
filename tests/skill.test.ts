@@ -55,6 +55,8 @@ const designSection = section(uiAuthoring, '## Design — decide before you buil
 describe('generated skill — progressive disclosure', () => {
   it('requires capability discovery and lint before workflow writes', () => {
     expect(workflowBuilder).toMatch(/get_workflow_capabilities/);
+    expect(workflowBuilder).toMatch(/classifications do not contain query options/i);
+    expect(workflowBuilder).toMatch(/get_datasource_query_schema\(\{ datasource_id, version_id, operation \}\)/);
     expect(workflowBuilder).toMatch(/lint_workflow_spec.*plan_token.*apply_workflow_spec/is);
     expect(workflowBuilder).toMatch(/missing.*AI.*email.*datasource.*blocker/is);
     expect(workflows).not.toContain('## ToolJet workflow authoring');
