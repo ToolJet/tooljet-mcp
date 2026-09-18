@@ -52,7 +52,7 @@ Detail: `references/qa.md`.
 
 ## Datasource repair handoff
 
-If an expected source is absent or a query fails to connect, use the returned `datasources_url`, `settings_url`, or `recovery.url`: open it in the built-in browser when available; otherwise send the clickable link. Never enter credentials, authorize OAuth, test, or save the connection. A native connector nobody connected: stop, build nothing, hand off. No native connector: say so, and name a REST API datasource if the service has an HTTP API. Sample data only on request. See `references/datasources.md`.
+If an expected source is absent or a query fails to connect, use the returned `datasources_url`, `settings_url`, or `recovery.url`: open it in the built-in browser when available; otherwise send the clickable link. Never enter credentials, authorize OAuth, test, or save the connection. Check the source against `list_datasources`'s `connectable`: in it but unconnected means stop and hand off; absent means no ToolJet connector, so say so and name a REST API datasource. Sample data only on request. See `references/datasources.md`.
 
 ## Load only the references the phase needs
 

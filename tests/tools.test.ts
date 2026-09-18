@@ -232,7 +232,26 @@ describe('list_datasources tool', () => {
     const result = await tool.handler({ version_id: 'v1' });
 
     expect(client.listDatasources).toHaveBeenCalledWith('v1');
-    expect(textOf(result)).toEqual(datasources);
+    expect((textOf(result) as { datasources: unknown }).datasources).toEqual(datasources);
+  });
+
+  it('lists what ToolJet can connect, so an absent source can be told from an unsupported one', async () => {
+    // Without this the model can only see what IS connected: Pipedrive and Google Sheets both look
+    // like "not in the list", though one needs connecting and the other has no ToolJet connector at
+    // all and has to go through a REST API datasource instead.
+    const client = makeClient();
+    client.listDatasources.mockResolvedValue([{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }]);
+
+    const tool = listDatasourcesTool(client as unknown as ToolJetClient);
+    const result = textOf(await tool.handler({ version_id: 'v1' })) as {
+      datasources: unknown[];
+      connectable: string[];
+    };
+
+    expect(result.datasources).toHaveLength(1);
+    expect(result.connectable).toEqual(expect.arrayContaining(['Google Sheets 2.0', 'HubSpot', 'REST API']));
+    expect(result.connectable).not.toContain('Pipedrive');
+    expect(tool.description).toMatch(/connectable/i);
   });
 
   it('returns isError on client failure', async () => {
