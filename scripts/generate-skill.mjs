@@ -851,7 +851,12 @@ const workflows = makeReference(
   'Tool workflows and runtime guardrails',
   'Read this only when choosing an authoring/update path, repairing an existing app, or diagnosing a silent ToolJet configuration failure. MCP input schemas and returned warnings remain authoritative.',
   routedSections.workflows
-) + `\n\n${workflowBuilder}`;
+);
+const workflowBuilderReference = `# ToolJet workflow builder
+
+Read this only when creating, editing, validating, or running a ToolJet automation workflow. App Builder page and interaction guidance remains in workflows.md.
+
+${workflowBuilder}`;
 const uiLayout = makeReference(
   'UI authoring and layout',
   'Read this before laying out a new page or using a Chart, nested view, or other layout-sensitive surface. Table-specific layout and pagination live in tables.md.',
@@ -945,6 +950,7 @@ If an expected source is absent or a query returns a connection failure, explain
 ## Load only the references the phase needs
 
 - \`references/workflows.md\` — tool selection, plan/apply behavior, repair, reuse, deletion, and silent-failure guardrails.
+- \`references/workflow-builder.md\` — ToolJet automation workflow discovery, graph authoring, validation, and execution safeguards. Load only when the request requires a ToolJet Workflow.
 - \`references/ui-layout.md\` — page design, canvas geometry, nested layouts, charts, and visual defaults.
 - \`references/tables.md\` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - \`references/forms.md\` — generated-vs-standalone forms, validation, uploads, and modal geometry.
@@ -969,6 +975,7 @@ Tool schemas, catalog responses, and returned warnings are authoritative. Do not
 
 const references = {
   'workflows.md': workflows,
+  'workflow-builder.md': workflowBuilderReference,
   'ui-layout.md': uiLayout,
   'tables.md': tables,
   'forms.md': forms,

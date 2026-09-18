@@ -15,13 +15,14 @@ const security = readReference('security.md');
 const tables = readReference('tables.md');
 const uiLayout = readReference('ui-layout.md');
 const workflows = readReference('workflows.md');
+const workflowBuilder = readReference('workflow-builder.md');
 // Compatibility aggregates keep assertions scoped by subject while the published files stay focused.
 const reference = [components, datasources, forms, tables].join('\n');
 const toolWorkflows = workflows;
 const uiAuthoring = uiLayout;
 const formsAndInteractions = [forms, events].join('\n');
 const verification = qa;
-const guidance = [skill, workflows, uiLayout, tables, forms, events, datasources, security, qa, components].join('\n');
+const guidance = [skill, workflows, workflowBuilder, uiLayout, tables, forms, events, datasources, security, qa, components].join('\n');
 const both = guidance;
 // The generator holds the skill body in a template literal, so backticks are escaped (\`) in source.
 // Unescape them so anchor comparisons match the rendered skill text.
@@ -53,15 +54,16 @@ const designSection = section(uiAuthoring, '## Design — decide before you buil
 
 describe('generated skill — progressive disclosure', () => {
   it('requires capability discovery and lint before workflow writes', () => {
-    expect(workflows).toMatch(/get_workflow_capabilities/);
-    expect(workflows).toMatch(/lint_workflow_spec.*plan_token.*apply_workflow_spec/is);
-    expect(workflows).toMatch(/missing.*AI.*email.*datasource.*blocker/is);
+    expect(workflowBuilder).toMatch(/get_workflow_capabilities/);
+    expect(workflowBuilder).toMatch(/lint_workflow_spec.*plan_token.*apply_workflow_spec/is);
+    expect(workflowBuilder).toMatch(/missing.*AI.*email.*datasource.*blocker/is);
+    expect(workflows).not.toContain('## ToolJet workflow authoring');
   });
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
     expect(skill.trim().split(/\s+/).length).toBeLessThan(1_000);
     expect(skill).toContain('## Load only the references the phase needs');
     for (const name of [
-      'workflows.md', 'ui-layout.md', 'tables.md', 'forms.md', 'events.md',
+      'workflows.md', 'workflow-builder.md', 'ui-layout.md', 'tables.md', 'forms.md', 'events.md',
       'datasources.md', 'security.md', 'qa.md', 'components.md',
     ]) {
       expect(skill).toContain(`\`references/${name}\``);
