@@ -1,4 +1,3 @@
-import { workflowTools } from './workflows.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -66,6 +65,17 @@ import {
   listWorkspaceUsersTool,
   manageWorkspaceUsersTool,
 } from './workspaceUserManagement.js';
+import { getWorkflowNodeCatalogTool } from './getWorkflowNodeCatalog.js';
+import { getWorkflowCapabilitiesTool } from './getWorkflowCapabilities.js';
+import { listWorkflowsTool } from './listWorkflows.js';
+import { createWorkflowTool } from './createWorkflow.js';
+import { getWorkflowTool } from './getWorkflow.js';
+import { lintWorkflowSpecTool } from './lintWorkflowSpec.js';
+import { applyWorkflowSpecTool } from './applyWorkflowSpec.js';
+import { deleteWorkflowNodeTool } from './deleteWorkflowNode.js';
+import { validateWorkflowTool } from './validateWorkflow.js';
+import { runWorkflowTool } from './runWorkflow.js';
+import { getWorkflowExecutionTool } from './getWorkflowExecution.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -85,7 +95,17 @@ export function registerTools(
   runtime: RuntimeFreshnessMonitor = runtimeFreshness
 ): void {
   const tools: ToolDef[] = [
-    ...workflowTools(client),
+    getWorkflowNodeCatalogTool(client),
+    getWorkflowCapabilitiesTool(client),
+    listWorkflowsTool(client),
+    createWorkflowTool(client),
+    getWorkflowTool(client),
+    lintWorkflowSpecTool(client),
+    applyWorkflowSpecTool(client),
+    deleteWorkflowNodeTool(client),
+    validateWorkflowTool(client),
+    runWorkflowTool(client),
+    getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),

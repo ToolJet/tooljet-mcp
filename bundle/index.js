@@ -19,9 +19,9 @@ var __commonJS = (cb, mod) => function __require2() {
     throw mod = 0, e;
   }
 };
-var __export = (target2, all) => {
+var __export = (target, all) => {
   for (var name in all)
-    __defProp(target2, name, { get: all[name], enumerable: true });
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -31,12 +31,12 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target2) => (target2 = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
   // If the importer is in node compatibility mode or this is not an ESM
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target2, "default", { value: mod, enumerable: true }) : target2,
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
 
@@ -2346,10 +2346,10 @@ var require_resolve = __commonJS({
       }
       return count;
     }
-    function getFullPath(resolver, id2 = "", normalize) {
+    function getFullPath(resolver, id = "", normalize) {
       if (normalize !== false)
-        id2 = normalizeId(id2);
-      const p = resolver.parse(id2);
+        id = normalizeId(id);
+      const p = resolver.parse(id);
       return _getFullPath(resolver, p);
     }
     exports.getFullPath = getFullPath;
@@ -2359,13 +2359,13 @@ var require_resolve = __commonJS({
     }
     exports._getFullPath = _getFullPath;
     var TRAILING_SLASH_HASH = /#\/?$/;
-    function normalizeId(id2) {
-      return id2 ? id2.replace(TRAILING_SLASH_HASH, "") : "";
+    function normalizeId(id) {
+      return id ? id.replace(TRAILING_SLASH_HASH, "") : "";
     }
     exports.normalizeId = normalizeId;
-    function resolveUrl(resolver, baseId, id2) {
-      id2 = normalizeId(id2);
-      return resolver.resolve(baseId, id2);
+    function resolveUrl(resolver, baseId, id) {
+      id = normalizeId(id);
+      return resolver.resolve(baseId, id);
     }
     exports.resolveUrl = resolveUrl;
     var ANCHOR = /^[a-z_][-a-z0-9._]*$/i;
@@ -3135,8 +3135,8 @@ var require_compile = __commonJS({
       if (Object.keys(root.schema).length > 0 && refPath === baseId) {
         return getJsonPointer.call(this, p, root);
       }
-      const id2 = (0, resolve_1.normalizeId)(refPath);
-      const schOrRef = this.refs[id2] || this.schemas[id2];
+      const id = (0, resolve_1.normalizeId)(refPath);
+      const schOrRef = this.refs[id] || this.schemas[id];
       if (typeof schOrRef == "string") {
         const sch = resolveSchema.call(this, root, schOrRef);
         if (typeof (sch === null || sch === void 0 ? void 0 : sch.schema) !== "object")
@@ -3147,7 +3147,7 @@ var require_compile = __commonJS({
         return;
       if (!schOrRef.validate)
         compileSchema.call(this, schOrRef);
-      if (id2 === (0, resolve_1.normalizeId)(ref2)) {
+      if (id === (0, resolve_1.normalizeId)(ref2)) {
         const { schema } = schOrRef;
         const { schemaId } = this.opts;
         const schId = schema[schemaId];
@@ -3765,57 +3765,57 @@ var require_fast_uri = __commonJS({
       return serialize(resolved, schemelessOptions);
     }
     function resolveComponent(base2, relative, options2, skipNormalization) {
-      const target2 = {};
+      const target = {};
       if (!skipNormalization) {
         base2 = parse3(serialize(base2, options2), options2);
         relative = parse3(serialize(relative, options2), options2);
       }
       options2 = options2 || {};
       if (!options2.tolerant && relative.scheme) {
-        target2.scheme = relative.scheme;
-        target2.userinfo = relative.userinfo;
-        target2.host = relative.host;
-        target2.port = relative.port;
-        target2.path = removeDotSegments(relative.path || "");
-        target2.query = relative.query;
+        target.scheme = relative.scheme;
+        target.userinfo = relative.userinfo;
+        target.host = relative.host;
+        target.port = relative.port;
+        target.path = removeDotSegments(relative.path || "");
+        target.query = relative.query;
       } else {
         if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target2.userinfo = relative.userinfo;
-          target2.host = relative.host;
-          target2.port = relative.port;
-          target2.path = removeDotSegments(relative.path || "");
-          target2.query = relative.query;
+          target.userinfo = relative.userinfo;
+          target.host = relative.host;
+          target.port = relative.port;
+          target.path = removeDotSegments(relative.path || "");
+          target.query = relative.query;
         } else {
           if (!relative.path) {
-            target2.path = base2.path;
+            target.path = base2.path;
             if (relative.query !== void 0) {
-              target2.query = relative.query;
+              target.query = relative.query;
             } else {
-              target2.query = base2.query;
+              target.query = base2.query;
             }
           } else {
             if (relative.path[0] === "/") {
-              target2.path = removeDotSegments(relative.path);
+              target.path = removeDotSegments(relative.path);
             } else {
               if ((base2.userinfo !== void 0 || base2.host !== void 0 || base2.port !== void 0) && !base2.path) {
-                target2.path = "/" + relative.path;
+                target.path = "/" + relative.path;
               } else if (!base2.path) {
-                target2.path = relative.path;
+                target.path = relative.path;
               } else {
-                target2.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative.path;
               }
-              target2.path = removeDotSegments(target2.path);
+              target.path = removeDotSegments(target.path);
             }
-            target2.query = relative.query;
+            target.query = relative.query;
           }
-          target2.userinfo = base2.userinfo;
-          target2.host = base2.host;
-          target2.port = base2.port;
+          target.userinfo = base2.userinfo;
+          target.host = base2.host;
+          target.port = base2.port;
         }
-        target2.scheme = base2.scheme;
+        target.scheme = base2.scheme;
       }
-      target2.fragment = relative.fragment;
-      return target2;
+      target.fragment = relative.fragment;
+      return target;
     }
     function equal(uriA, uriB, options2) {
       const normalizedA = normalizeComparableURI(uriA, options2);
@@ -4290,15 +4290,15 @@ var require_core = __commonJS({
             this.addSchema(sch, void 0, _meta, _validateSchema);
           return this;
         }
-        let id2;
+        let id;
         if (typeof schema === "object") {
           const { schemaId } = this.opts;
-          id2 = schema[schemaId];
-          if (id2 !== void 0 && typeof id2 != "string") {
+          id = schema[schemaId];
+          if (id !== void 0 && typeof id != "string") {
             throw new Error(`schema ${schemaId} must be string`);
           }
         }
-        key = (0, resolve_1.normalizeId)(key || id2);
+        key = (0, resolve_1.normalizeId)(key || id);
         this._checkUnique(key);
         this.schemas[key] = this._addSchema(schema, _meta, key, _validateSchema, true);
         return this;
@@ -4377,11 +4377,11 @@ var require_core = __commonJS({
           case "object": {
             const cacheKey2 = schemaKeyRef;
             this._cache.delete(cacheKey2);
-            let id2 = schemaKeyRef[this.opts.schemaId];
-            if (id2) {
-              id2 = (0, resolve_1.normalizeId)(id2);
-              delete this.schemas[id2];
-              delete this.refs[id2];
+            let id = schemaKeyRef[this.opts.schemaId];
+            if (id) {
+              id = (0, resolve_1.normalizeId)(id);
+              delete this.schemas[id];
+              delete this.refs[id];
             }
             return this;
           }
@@ -4488,10 +4488,10 @@ var require_core = __commonJS({
         }
       }
       _addSchema(schema, meta3, baseId, validateSchema = this.opts.validateSchema, addSchema = this.opts.addUsedSchema) {
-        let id2;
+        let id;
         const { schemaId } = this.opts;
         if (typeof schema == "object") {
-          id2 = schema[schemaId];
+          id = schema[schemaId];
         } else {
           if (this.opts.jtd)
             throw new Error("schema must be object");
@@ -4501,7 +4501,7 @@ var require_core = __commonJS({
         let sch = this._cache.get(schema);
         if (sch !== void 0)
           return sch;
-        baseId = (0, resolve_1.normalizeId)(id2 || baseId);
+        baseId = (0, resolve_1.normalizeId)(id || baseId);
         const localRefs = resolve_1.getSchemaRefs.call(this, schema, baseId);
         sch = new compile_1.SchemaEnv({ schema, schemaId, meta: meta3, baseId, localRefs });
         this._cache.set(sch.schema, sch);
@@ -4514,9 +4514,9 @@ var require_core = __commonJS({
           this.validateSchema(schema, true);
         return sch;
       }
-      _checkUnique(id2) {
-        if (this.schemas[id2] || this.refs[id2]) {
-          throw new Error(`schema with key or id "${id2}" already exists`);
+      _checkUnique(id) {
+        if (this.schemas[id] || this.refs[id]) {
+          throw new Error(`schema with key or id "${id}" already exists`);
         }
       }
       _compileSchemaEnv(sch) {
@@ -13401,12 +13401,12 @@ var require_parser = __commonJS({
       }
       return prev.splice(i, prev.length);
     }
-    function arrayPushArray(target2, source2) {
+    function arrayPushArray(target, source2) {
       if (source2.length < 1e5)
-        Array.prototype.push.apply(target2, source2);
+        Array.prototype.push.apply(target, source2);
       else
         for (let i = 0; i < source2.length; ++i)
-          target2.push(source2[i]);
+          target.push(source2[i]);
     }
     function fixFlowSeqItems(fc) {
       if (fc.start.type === "flow-seq-start") {
@@ -15108,8 +15108,8 @@ function defineLazy(object3, key, getter) {
 function objectClone(obj) {
   return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
 }
-function assignProp(target2, prop, value) {
-  Object.defineProperty(target2, prop, {
+function assignProp(target, prop, value) {
+  Object.defineProperty(target, prop, {
     value,
     writable: true,
     enumerable: true,
@@ -15292,35 +15292,35 @@ function normalizeParams(_params) {
   return params;
 }
 function createTransparentProxy(getter) {
-  let target2;
+  let target;
   return new Proxy({}, {
     get(_, prop, receiver) {
-      target2 ?? (target2 = getter());
-      return Reflect.get(target2, prop, receiver);
+      target ?? (target = getter());
+      return Reflect.get(target, prop, receiver);
     },
     set(_, prop, value, receiver) {
-      target2 ?? (target2 = getter());
-      return Reflect.set(target2, prop, value, receiver);
+      target ?? (target = getter());
+      return Reflect.set(target, prop, value, receiver);
     },
     has(_, prop) {
-      target2 ?? (target2 = getter());
-      return Reflect.has(target2, prop);
+      target ?? (target = getter());
+      return Reflect.has(target, prop);
     },
     deleteProperty(_, prop) {
-      target2 ?? (target2 = getter());
-      return Reflect.deleteProperty(target2, prop);
+      target ?? (target = getter());
+      return Reflect.deleteProperty(target, prop);
     },
     ownKeys(_) {
-      target2 ?? (target2 = getter());
-      return Reflect.ownKeys(target2);
+      target ?? (target = getter());
+      return Reflect.ownKeys(target);
     },
     getOwnPropertyDescriptor(_, prop) {
-      target2 ?? (target2 = getter());
-      return Reflect.getOwnPropertyDescriptor(target2, prop);
+      target ?? (target = getter());
+      return Reflect.getOwnPropertyDescriptor(target, prop);
     },
     defineProperty(_, prop, descriptor) {
-      target2 ?? (target2 = getter());
-      return Reflect.defineProperty(target2, prop, descriptor);
+      target ?? (target = getter());
+      return Reflect.defineProperty(target, prop, descriptor);
     }
   });
 }
@@ -17453,42 +17453,42 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
     }
     doc.write(`const newResult = {};`);
     for (const key of normalized2.keys) {
-      const id2 = ids[key];
+      const id = ids[key];
       const k = esc(key);
       const schema = shape[key];
       const isOptionalIn = schema?._zod?.optin === "optional";
       const isOptionalOut = schema?._zod?.optout === "optional";
-      doc.write(`const ${id2} = ${parseStr(key)};`);
+      doc.write(`const ${id} = ${parseStr(key)};`);
       if (isOptionalIn && isOptionalOut) {
         doc.write(`
-        if (${id2}.issues.length) {
+        if (${id}.issues.length) {
           if (${k} in input) {
-            payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
+            payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
               ...iss,
               path: iss.path ? [${k}, ...iss.path] : [${k}]
             })));
           }
         }
         
-        if (${id2}.value === undefined) {
+        if (${id}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
           }
         } else {
-          newResult[${k}] = ${id2}.value;
+          newResult[${k}] = ${id}.value;
         }
         
       `);
       } else if (!isOptionalIn) {
         doc.write(`
-        const ${id2}_present = ${k} in input;
-        if (${id2}.issues.length) {
-          payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
+        const ${id}_present = ${k} in input;
+        if (${id}.issues.length) {
+          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
             ...iss,
             path: iss.path ? [${k}, ...iss.path] : [${k}]
           })));
         }
-        if (!${id2}_present && !${id2}.issues.length) {
+        if (!${id}_present && !${id}.issues.length) {
           payload.issues.push({
             code: "invalid_type",
             expected: "nonoptional",
@@ -17497,30 +17497,30 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
           });
         }
 
-        if (${id2}_present) {
-          if (${id2}.value === undefined) {
+        if (${id}_present) {
+          if (${id}.value === undefined) {
             newResult[${k}] = undefined;
           } else {
-            newResult[${k}] = ${id2}.value;
+            newResult[${k}] = ${id}.value;
           }
         }
 
       `);
       } else {
         doc.write(`
-        if (${id2}.issues.length) {
-          payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
+        if (${id}.issues.length) {
+          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
             ...iss,
             path: iss.path ? [${k}, ...iss.path] : [${k}]
           })));
         }
         
-        if (${id2}.value === undefined) {
+        if (${id}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
           }
         } else {
-          newResult[${k}] = ${id2}.value;
+          newResult[${k}] = ${id}.value;
         }
         
       `);
@@ -25772,15 +25772,15 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
 
 // node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
-  let target2 = params?.target ?? "draft-2020-12";
-  if (target2 === "draft-4")
-    target2 = "draft-04";
-  if (target2 === "draft-7")
-    target2 = "draft-07";
+  let target = params?.target ?? "draft-2020-12";
+  if (target === "draft-4")
+    target = "draft-04";
+  if (target === "draft-7")
+    target = "draft-07";
   return {
     processors: params.processors ?? {},
     metadataRegistry: params?.metadata ?? globalRegistry,
-    target: target2,
+    target,
     unrepresentable: params?.unrepresentable ?? "throw",
     override: params?.override ?? (() => {
     }),
@@ -25852,26 +25852,26 @@ function extractDefs(ctx, schema) {
     throw new Error("Unprocessed schema. This is a bug in Zod.");
   const idToSchema = /* @__PURE__ */ new Map();
   for (const entry of ctx.seen.entries()) {
-    const id2 = ctx.metadataRegistry.get(entry[0])?.id;
-    if (id2) {
-      const existing = idToSchema.get(id2);
+    const id = ctx.metadataRegistry.get(entry[0])?.id;
+    if (id) {
+      const existing = idToSchema.get(id);
       if (existing && existing !== entry[0]) {
-        throw new Error(`Duplicate schema id "${id2}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
+        throw new Error(`Duplicate schema id "${id}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
       }
-      idToSchema.set(id2, entry[0]);
+      idToSchema.set(id, entry[0]);
     }
   }
   const makeURI = (entry) => {
     const defsSegment = ctx.target === "draft-2020-12" ? "$defs" : "definitions";
     if (ctx.external) {
       const externalId = ctx.external.registry.get(entry[0])?.id;
-      const uriGenerator = ctx.external.uri ?? ((id3) => id3);
+      const uriGenerator = ctx.external.uri ?? ((id2) => id2);
       if (externalId) {
         return { ref: uriGenerator(externalId) };
       }
-      const id2 = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
-      entry[1].defId = id2;
-      return { defId: id2, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id2}` };
+      const id = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
+      entry[1].defId = id;
+      return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
     }
     if (entry[1] === root) {
       return { ref: "#" };
@@ -25919,8 +25919,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         continue;
       }
     }
-    const id2 = ctx.metadataRegistry.get(entry[0])?.id;
-    if (id2) {
+    const id = ctx.metadataRegistry.get(entry[0])?.id;
+    if (id) {
       extractToDef(entry);
       continue;
     }
@@ -26016,10 +26016,10 @@ function finalize(ctx, schema) {
   } else {
   }
   if (ctx.external?.uri) {
-    const id2 = ctx.external.registry.get(schema)?.id;
-    if (!id2)
+    const id = ctx.external.registry.get(schema)?.id;
+    if (!id)
       throw new Error("Schema is missing an `id` property");
-    result.$id = ctx.external.uri(id2);
+    result.$id = ctx.external.uri(id);
   }
   Object.assign(result, root.def ?? root.schema);
   const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
@@ -26122,8 +26122,8 @@ var createToJSONSchemaMethod = (schema, processors = {}) => (params) => {
   return finalize(ctx, schema);
 };
 var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) => {
-  const { libraryOptions, target: target2 } = params ?? {};
-  const ctx = initializeContext({ ...libraryOptions ?? {}, target: target2, io, processors });
+  const { libraryOptions, target } = params ?? {};
+  const ctx = initializeContext({ ...libraryOptions ?? {}, target, io, processors });
   process2(schema, ctx);
   extractDefs(ctx, schema);
   return finalize(ctx, schema);
@@ -27182,8 +27182,8 @@ var ZodType = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
     catch(params) {
       return _catch2(this, params);
     },
-    pipe(target2) {
-      return pipe(this, target2);
+    pipe(target) {
+      return pipe(this, target);
     },
     readonly() {
       return readonly(this);
@@ -32406,28 +32406,28 @@ data:
     }
     if (isJSONRPCResultResponse(message) || isJSONRPCErrorResponse(message)) {
       this._requestResponseMap.set(requestId, message);
-      const relatedIds = Array.from(this._requestToStreamMapping.entries()).filter(([_, sid]) => sid === streamId).map(([id2]) => id2);
-      const allResponsesReady = relatedIds.every((id2) => this._requestResponseMap.has(id2));
+      const relatedIds = Array.from(this._requestToStreamMapping.entries()).filter(([_, sid]) => sid === streamId).map(([id]) => id);
+      const allResponsesReady = relatedIds.every((id) => this._requestResponseMap.has(id));
       if (allResponsesReady) {
         if (!stream) {
           if (this._closed) {
-            for (const id2 of relatedIds) {
-              this._requestResponseMap.delete(id2);
-              this._requestToStreamMapping.delete(id2);
+            for (const id of relatedIds) {
+              this._requestResponseMap.delete(id);
+              this._requestToStreamMapping.delete(id);
             }
             return;
           }
           if (!this._enableJsonResponse && this._eventStore && this._resumableStreams.has(streamId)) {
-            for (const id2 of relatedIds) {
-              this._requestResponseMap.delete(id2);
-              this._requestToStreamMapping.delete(id2);
+            for (const id of relatedIds) {
+              this._requestResponseMap.delete(id);
+              this._requestToStreamMapping.delete(id);
             }
             this._resumableStreams.delete(streamId);
             return;
           }
-          for (const id2 of relatedIds) {
-            this._requestResponseMap.delete(id2);
-            this._requestToStreamMapping.delete(id2);
+          for (const id of relatedIds) {
+            this._requestResponseMap.delete(id);
+            this._requestToStreamMapping.delete(id);
           }
           throw new Error(`No connection established for request ID: ${String(requestId)}`);
         }
@@ -32438,7 +32438,7 @@ data:
           if (this.sessionId !== void 0) {
             headers["mcp-session-id"] = this.sessionId;
           }
-          const responses = relatedIds.map((id2) => this._requestResponseMap.get(id2));
+          const responses = relatedIds.map((id) => this._requestResponseMap.get(id));
           if (responses.length === 1) {
             stream.resolveJson(new Response(JSON.stringify(responses[0]), { status: 200, headers }));
           } else {
@@ -32447,9 +32447,9 @@ data:
         } else {
           stream.cleanup();
         }
-        for (const id2 of relatedIds) {
-          this._requestResponseMap.delete(id2);
-          this._requestToStreamMapping.delete(id2);
+        for (const id of relatedIds) {
+          this._requestResponseMap.delete(id);
+          this._requestToStreamMapping.delete(id);
         }
         this._resumableStreams.delete(streamId);
       }
@@ -33364,8 +33364,8 @@ var ZodType2 = class {
       description
     });
   }
-  pipe(target2) {
-    return ZodPipeline.create(this, target2);
+  pipe(target) {
+    return ZodPipeline.create(this, target);
   }
   readonly() {
     return ZodReadonly2.create(this);
@@ -39082,7 +39082,7 @@ var ExperimentalServerTasks = class {
       if (hasPreviousToolUse) {
         const toolUseIds = new Set(previousContent.filter((c) => c.type === "tool_use").map((c) => c.id));
         const toolResultIds = new Set(lastContent.filter((c) => c.type === "tool_result").map((c) => c.toolUseId));
-        if (toolUseIds.size !== toolResultIds.size || ![...toolUseIds].every((id2) => toolResultIds.has(id2))) {
+        if (toolUseIds.size !== toolResultIds.size || ![...toolUseIds].every((id) => toolResultIds.has(id))) {
           throw new Error("ids of tool_result blocks and tool_use blocks from previous message do not match");
         }
       }
@@ -39507,7 +39507,7 @@ var Server = class extends Protocol {
       if (hasPreviousToolUse) {
         const toolUseIds = new Set(previousContent.filter((c) => c.type === "tool_use").map((c) => c.id));
         const toolResultIds = new Set(lastContent.filter((c) => c.type === "tool_result").map((c) => c.toolUseId));
-        if (toolUseIds.size !== toolResultIds.size || ![...toolUseIds].every((id2) => toolResultIds.has(id2))) {
+        if (toolUseIds.size !== toolResultIds.size || ![...toolUseIds].every((id) => toolResultIds.has(id))) {
           throw new Error("ids of tool_result blocks and tool_use blocks from previous message do not match");
         }
       }
@@ -40851,12 +40851,12 @@ function createAuth(config2, fetchImpl = fetch) {
       await login();
     return fetchWorkspaceList();
   }
-  async function switchWorkspace(id2) {
+  async function switchWorkspace(id) {
     if (!token)
       await login();
     const current = (await fetchWorkspaceList())[0];
-    if (id2 !== current.id) {
-      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id2}. ` + (config2.sessionToken ? "Its session was minted for that workspace; start a build from the workspace you want to act on." : "Issue a personal access token in the target workspace and set TOOLJET_PAT to it."));
+    if (id !== current.id) {
+      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id}. ` + (config2.sessionToken ? "Its session was minted for that workspace; start a build from the workspace you want to act on." : "Issue a personal access token in the target workspace and set TOOLJET_PAT to it."));
     }
     return current;
   }
@@ -40931,18 +40931,18 @@ function validateGraph(graph, queryIds) {
   }
   const flowEdges = controlFlowEdges(graph);
   for (const edge of graph.edges) {
-    const source2 = nodes.get(edge.source), target2 = nodes.get(edge.target), path = `edges.${edge.id}`;
-    if (!source2 || !target2) {
+    const source2 = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
+    if (!source2 || !target) {
       error51("missing_endpoint", path, "Edge endpoint does not exist.");
       continue;
     }
     if (isAttachmentEdge(edge)) {
-      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target2.type === "agent")) {
+      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target.type === "agent")) {
         error51("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
       }
       continue;
     }
-    if (target2.type === "input")
+    if (target.type === "input")
       error51("start_inbound", path, "Start cannot have inbound edges.");
     const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
     if (ports[source2.type] && !ports[source2.type].includes(edge.sourceHandle))
@@ -40957,25 +40957,25 @@ function validateGraph(graph, queryIds) {
   }
   const adjacency = new Map(graph.nodes.map((n) => [n.id, flowEdges.filter((e) => e.source === n.id).map((e) => e.target)]));
   const visited = /* @__PURE__ */ new Set(), active = /* @__PURE__ */ new Set();
-  const visit = (id2) => {
-    if (active.has(id2))
+  const visit = (id) => {
+    if (active.has(id))
       return true;
-    if (visited.has(id2))
+    if (visited.has(id))
       return false;
-    visited.add(id2);
-    active.add(id2);
-    const cyclic = (adjacency.get(id2) ?? []).some(visit);
-    active.delete(id2);
+    visited.add(id);
+    active.add(id);
+    const cyclic = (adjacency.get(id) ?? []).some(visit);
+    active.delete(id);
     return cyclic;
   };
   if (graph.nodes.some((n) => visit(n.id)))
     error51("cycle", "edges", "Cycles are unsupported in the basic node set.");
   const reachable = /* @__PURE__ */ new Set();
-  const reach = (id2) => {
-    if (reachable.has(id2))
+  const reach = (id) => {
+    if (reachable.has(id))
       return;
-    reachable.add(id2);
-    (adjacency.get(id2) ?? []).forEach(reach);
+    reachable.add(id);
+    (adjacency.get(id) ?? []).forEach(reach);
   };
   starts.forEach((n) => reach(n.id));
   for (const n of graph.nodes)
@@ -40993,12 +40993,12 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
   };
   checkUnique(spec.nodes.map((n) => n.ref));
   checkUnique(spec.edges.map((e) => e.ref));
-  for (const id2 of spec.remove_node_ids)
-    if (!graph.nodes.some((n) => n.id === id2))
-      throw new Error(`Unknown node to remove: ${id2}`);
-  for (const id2 of spec.remove_edge_ids)
-    if (!graph.edges.some((e) => e.id === id2))
-      throw new Error(`Unknown edge to remove: ${id2}`);
+  for (const id of spec.remove_node_ids)
+    if (!graph.nodes.some((n) => n.id === id))
+      throw new Error(`Unknown node to remove: ${id}`);
+  for (const id of spec.remove_edge_ids)
+    if (!graph.edges.some((e) => e.id === id))
+      throw new Error(`Unknown edge to remove: ${id}`);
   const removedNodeIds = new Set(spec.remove_node_ids);
   const cascadedChildIds = /* @__PURE__ */ new Set();
   for (const agentId of spec.remove_node_ids) {
@@ -41028,13 +41028,13 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
         throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`);
       }
     }
-    const id2 = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
-    if (editedIds.has(id2))
+    const id = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
+    if (editedIds.has(id))
       throw new Error("Multiple node edits target the same ID.");
-    editedIds.add(id2);
-    const old = graph.nodes.find((n) => n.id === id2);
+    editedIds.add(id);
+    const old = graph.nodes.find((n) => n.id === id);
     if (input.existing_id && !old)
-      throw new Error(`Unknown existing node: ${id2}`);
+      throw new Error(`Unknown existing node: ${id}`);
     const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
     if (old && old.type !== type)
       throw new Error("Changing node type is unsupported; remove and add explicitly.");
@@ -41057,7 +41057,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
         userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
         outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
       };
-      const attachments = graph.edges.filter((edge) => edge.target === id2 && edge.targetHandle === "ai-model");
+      const attachments = graph.edges.filter((edge) => edge.target === id && edge.targetHandle === "ai-model");
       if (attachments.length > 1)
         throw new Error(`Agent ${input.ref} has multiple AI model attachments.`);
       const attachment = attachments[0];
@@ -41086,49 +41086,49 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
         else
           graph.nodes.push(modelNode);
         const edgeId = attachment?.id ?? ids?.edge_ids[`${input.ref}.model`] ?? randomUUID();
-        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id2, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
+        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
         if (attachment)
           graph.edges[graph.edges.indexOf(attachment)] = modelEdge;
         else
           graph.edges.push(modelEdge);
         node_ids[`${input.ref}.model`] = modelNodeId;
         edge_ids[`${input.ref}.model`] = edgeId;
-        query_nodes.push({ role: "agent-model", parent_agent_id: id2, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
+        query_nodes.push({ role: "agent-model", parent_agent_id: id, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
       }
     }
     if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
       const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
       data.idOnDefinition = definitionId;
-      query_nodes.push({ role: "workflow-node", spec: input, node_id: id2, definition_id: definitionId });
+      query_nodes.push({ role: "workflow-node", spec: input, node_id: id, definition_id: definitionId });
     }
-    const node = { ...old, id: id2, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
+    const node = { ...old, id, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
     if (old)
       graph.nodes[graph.nodes.indexOf(old)] = node;
     else
       graph.nodes.push(node);
-    node_ids[input.ref] = id2;
+    node_ids[input.ref] = id;
   }
   const resolve4 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
   const editedEdges = /* @__PURE__ */ new Set();
   for (const input of spec.edges) {
-    const id2 = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
-    if (editedEdges.has(id2))
+    const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
+    if (editedEdges.has(id))
       throw new Error("Multiple edge edits target the same ID.");
-    editedEdges.add(id2);
-    const old = graph.edges.find((e) => e.id === id2);
+    editedEdges.add(id);
+    const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
-      throw new Error(`Unknown existing edge: ${id2}`);
-    const source2 = resolve4(input.from), target2 = resolve4(input.to);
-    if (!source2 || !target2)
+      throw new Error(`Unknown existing edge: ${id}`);
+    const source2 = resolve4(input.from), target = resolve4(input.to);
+    if (!source2 || !target)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node) => node.id === source2);
     const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
-    const edge = { ...old, id: id2, source: source2, target: target2, sourceHandle, type: "custom" };
+    const edge = { ...old, id, source: source2, target, sourceHandle, type: "custom" };
     if (old)
       graph.edges[graph.edges.indexOf(old)] = edge;
     else
       graph.edges.push(edge);
-    edge_ids[input.ref] = id2;
+    edge_ids[input.ref] = id;
     if (input.port === "failure") {
       const n = graph.nodes.find((n2) => n2.id === source2);
       if (n.type === "query")
@@ -41202,7 +41202,7 @@ function createWorkflowClient(auth, config2, queries) {
     const text = await response.text();
     return text ? JSON.parse(text) : {};
   }
-  const versionPath = (id2, version2) => `/api/v2/apps/${encodeURIComponent(id2)}/versions/${encodeURIComponent(version2)}`;
+  const versionPath = (id, version2) => `/api/v2/apps/${encodeURIComponent(id)}/versions/${encodeURIComponent(version2)}`;
   async function get(workflowId, versionId) {
     if (!versionId) {
       const app2 = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
@@ -41246,11 +41246,11 @@ function createWorkflowClient(auth, config2, queries) {
     get,
     async create(name) {
       const created = record2(await request("/api/workflows", { name, type: "workflow" }));
-      const id2 = required2(created.id, "created workflow ID");
+      const id = required2(created.id, "created workflow ID");
       try {
-        return await get(id2);
+        return await get(id);
       } catch (error51) {
-        throw new Error(`Workflow ${id2} was created, but readback failed. Do not recreate it. ${error51 instanceof Error ? error51.message : String(error51)}`);
+        throw new Error(`Workflow ${id} was created, but readback failed. Do not recreate it. ${error51 instanceof Error ? error51.message : String(error51)}`);
       }
     },
     async save(snapshot2, graph) {
@@ -41279,11 +41279,11 @@ function createWorkflowClient(auth, config2, queries) {
         throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
       return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
     },
-    async execution(id2, page = 1, perPage = 20) {
-      const base2 = `/api/workflow_executions/${encodeURIComponent(id2)}`;
+    async execution(id, page = 1, perPage = 20) {
+      const base2 = `/api/workflow_executions/${encodeURIComponent(id)}`;
       const status = await request(`${base2}/status`);
       const nodes = await request(`${base2}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
-      return { execution_id: id2, status, nodes, page, per_page: perPage };
+      return { execution_id: id, status, nodes, page, per_page: perPage };
     }
   };
 }
@@ -41917,17 +41917,17 @@ function queryTriggers(summary) {
     const payload = eventPayload(e.event);
     if (!payload || payload.actionId !== "run-query")
       continue;
-    const target2 = resolve4(payload.queryId ?? payload.queryName);
-    if (!target2)
+    const target = resolve4(payload.queryId ?? payload.queryName);
+    if (!target)
       continue;
-    const entry = triggers.get(target2.id);
+    const entry = triggers.get(target.id);
     if (!entry)
       continue;
     const trigger = String(payload.eventId ?? "");
     if (e.target === "page" && trigger === "onPageLoad") {
       entry.automatic = true;
     } else if (e.target === "data_query" && trigger === "onDataQuerySuccess" && e.sourceId) {
-      chains.push([e.sourceId, target2.id]);
+      chains.push([e.sourceId, target.id]);
     } else {
       entry.manual.push(`${e.target ?? "component"} ${trigger || "event"}`);
     }
@@ -41937,9 +41937,9 @@ function queryTriggers(summary) {
     changed = false;
     for (const [sourceId, targetId] of chains) {
       const source2 = triggers.get(sourceId);
-      const target2 = triggers.get(targetId);
-      if (source2?.automatic && target2 && !target2.automatic) {
-        target2.automatic = true;
+      const target = triggers.get(targetId);
+      if (source2?.automatic && target && !target.automatic) {
+        target.automatic = true;
         changed = true;
       }
     }
@@ -43295,12 +43295,12 @@ function lintComponentSpec(spec) {
       const deletionHistoryValue = propVal2(props, "fieldDeletionHistory");
       const deletionHistory = new Set(Array.isArray(deletionHistoryValue) ? deletionHistoryValue.filter((key) => typeof key === "string") : []);
       const hasCustomField = fields.some((field) => {
-        const id2 = recordValue(field)?.id;
-        return typeof id2 !== "string" || !catalogKeyById.has(id2);
+        const id = recordValue(field)?.id;
+        return typeof id !== "string" || !catalogKeyById.has(id);
       });
       const contradictoryDemoKeys = hasCustomField ? fields.flatMap((field) => {
-        const id2 = recordValue(field)?.id;
-        const key = typeof id2 === "string" ? catalogKeyById.get(id2) : void 0;
+        const id = recordValue(field)?.id;
+        const key = typeof id === "string" ? catalogKeyById.get(id) : void 0;
         return key && deletionHistory.has(key) ? [key] : [];
       }) : [];
       if (contradictoryDemoKeys.length) {
@@ -43409,13 +43409,13 @@ function lintComponentSpec(spec) {
           } else {
             const ids = /* @__PURE__ */ new Set();
             buttons.forEach((button, buttonIndex) => {
-              const id2 = button?.id;
-              if (typeof id2 !== "string" || id2.length === 0) {
+              const id = button?.id;
+              if (typeof id !== "string" || id.length === 0) {
                 warnings.push(`Table "${label2}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
-              } else if (ids.has(id2)) {
-                warnings.push(`Table "${label2}" column[${i}]: duplicate button id "${id2}" makes event refs ambiguous.`);
+              } else if (ids.has(id)) {
+                warnings.push(`Table "${label2}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
               } else {
-                ids.add(id2);
+                ids.add(id);
               }
             });
           }
@@ -44529,13 +44529,13 @@ function createClient(auth, config2) {
     await assertOk(res, "getApp");
     return res.json();
   }
-  function projectComponent(id2, entry) {
+  function projectComponent(id, entry) {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
     const persistedParent = typeof c.parent === "string" ? c.parent : void 0;
     const decodedParent = persistedParent ? decodeComponentParent(persistedParent) : void 0;
     return {
-      id: id2,
+      id,
       name: c.name,
       type: c.component,
       layouts: entry?.layouts,
@@ -44558,7 +44558,7 @@ function createClient(auth, config2) {
       ...typeof p.index === "number" ? { index: p.index } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
-      components: Object.entries(p.components ?? {}).map(([id2, entry]) => projectComponent(id2, entry))
+      components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry))
     }));
     const queries = (full.data_queries ?? []).map((q) => ({
       id: q.id,
@@ -45278,7 +45278,7 @@ function createClient(auth, config2) {
   async function createQueries(params) {
     const needResolve = params.queries.some((q) => !q.kind);
     const dsList = needResolve ? await listDatasources(params.versionId) : [];
-    const kindOf = (id2) => dsList.find((d) => d.id === id2)?.kind;
+    const kindOf = (id) => dsList.find((d) => d.id === id)?.kind;
     const settled = await Promise.allSettled(params.queries.map((q) => createQuery({
       versionId: params.versionId,
       dataSourceId: q.dataSourceId,
@@ -45648,1545 +45648,6 @@ function createClient(auth, config2) {
   };
 }
 
-// dist/workflows/capabilitySchema.js
-var capabilityRequestSchema = external_exports.object({
-  version_id: external_exports.string().uuid()
-}).strict();
-var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
-var workflowCapabilityReportSchema = external_exports.object({
-  version_id: external_exports.string().uuid(),
-  authorable_node_types: external_exports.array(external_exports.string()),
-  datasources: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    name: external_exports.string(),
-    kind: external_exports.string(),
-    capabilities: external_exports.array(datasourceCapabilitySchema)
-  }).strict())
-}).strict();
-
-// dist/workflows/capabilities.js
-var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
-var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
-function datasourceCapabilities(kind) {
-  const capabilities = ["query"];
-  if (AI_DATASOURCE_KINDS.has(kind))
-    capabilities.push("ai-model");
-  if (EMAIL_DATASOURCE_KINDS.has(kind))
-    capabilities.push("email");
-  return capabilities;
-}
-async function getWorkflowCapabilities(client, input) {
-  const { version_id } = capabilityRequestSchema.parse(input);
-  const datasources = await client.workflows.listDatasources(version_id);
-  return workflowCapabilityReportSchema.parse({
-    version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
-    datasources: datasources.map((datasource) => ({
-      id: datasource.id,
-      name: datasource.name,
-      kind: datasource.kind,
-      capabilities: datasourceCapabilities(datasource.kind)
-    }))
-  });
-}
-
-// dist/workflows/planner.js
-import { randomUUID as randomUUID3 } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
-
-// dist/datasourceCatalog.js
-import { readFileSync as readFileSync2 } from "node:fs";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { dirname as dirname3, resolve as resolve2 } from "node:path";
-var COMMON_QUERY_OPTION_FIELDS = {
-  runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
-  runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
-  requestConfirmation: { path: "requestConfirmation", type: "boolean|binding" },
-  requestConfirmationFx: { path: "requestConfirmationFx", type: "boolean" },
-  confirmationMessage: { path: "confirmationMessage", type: "string|binding" },
-  showSuccessNotification: { path: "showSuccessNotification", type: "boolean|binding" },
-  successMessage: { path: "successMessage", type: "string|binding" },
-  notificationDuration: { path: "notificationDuration", type: "number|string" },
-  enableTransformation: { path: "enableTransformation", type: "boolean" },
-  transformationLanguage: { path: "transformationLanguage", type: "string", allowedValues: ["javascript", "python"] },
-  transformations: { path: "transformations", type: "object" },
-  transformation: { path: "transformation", type: "string" },
-  query_timeout: { path: "query_timeout", type: "number|string" },
-  disableQuery: { path: "disableQuery", type: "boolean|binding" },
-  disabledMessage: { path: "disabledMessage", type: "string|binding" }
-};
-var dataPath2 = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/datasource-schemas.json");
-var cache2 = null;
-function load2() {
-  if (!cache2)
-    cache2 = JSON.parse(readFileSync2(dataPath2, "utf8"));
-  return cache2;
-}
-function getDatasourceCatalog() {
-  return Object.values(load2()).map(({ kind, name, type, operations }) => ({ kind, name, type, operations }));
-}
-function getDatasourceQuerySchema(kind) {
-  return load2()[kind] ?? null;
-}
-function operationSummary(contract) {
-  const selectors = {};
-  const required4 = /* @__PURE__ */ new Set();
-  for (const variant of contract.variants) {
-    variant.required.forEach((path) => required4.add(path));
-    for (const [key, values] of Object.entries(variant.when)) {
-      const collected = selectors[key] ?? /* @__PURE__ */ new Set();
-      values.forEach((value) => collected.add(value));
-      selectors[key] = collected;
-    }
-  }
-  return {
-    operation: contract.operation,
-    selectors: Object.fromEntries(Object.entries(selectors).map(([key, values]) => [key, [...values].sort()])),
-    required: [...required4].sort(),
-    variants: contract.variants.length,
-    ...contract.response ? { response_type: contract.response.type } : {},
-    ...contract.response ? { response_status: contract.response.status } : {}
-  };
-}
-function selectDatasourceQuerySchema(kind, options2 = {}) {
-  const schema = getDatasourceQuerySchema(kind);
-  if (!schema)
-    return null;
-  const sections = new Set(options2.sections ?? (options2.operation ? ["summary", "request", "response"] : ["summary"]));
-  const result = {};
-  if (sections.has("summary")) {
-    Object.assign(result, {
-      kind: schema.kind,
-      name: schema.name,
-      type: schema.type,
-      description: schema.description,
-      defaults: schema.defaults,
-      operations: schema.operations,
-      ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
-    });
-    if (!options2.operation) {
-      result.operation_summaries = Object.values(schema.contracts).map(operationSummary);
-    }
-  }
-  if (options2.operation) {
-    const contract = schema.contracts[options2.operation];
-    if (!contract) {
-      return {
-        kind,
-        error: `Unknown operation "${options2.operation}" for datasource kind "${kind}".`,
-        operations: schema.operations
-      };
-    }
-    if (sections.has("request")) {
-      result.request = {
-        operation: contract.operation,
-        variants: contract.variants,
-        common_fields: COMMON_QUERY_OPTION_FIELDS,
-        ...contract.notes ? { notes: contract.notes } : {}
-      };
-    }
-    if (sections.has("response")) {
-      result.response = contract.response ?? {
-        type: "unknown",
-        status: "unknown",
-        source: "tooljet-plugin",
-        description: "This plugin does not publish a stable response contract. Run a safe read query and inspect data."
-      };
-    }
-  }
-  if (sections.has("raw")) {
-    result.raw = { properties: schema.properties, sources: schema.sources };
-  }
-  if (sections.has("introspection")) {
-    result.introspection_methods = schema.introspectionMethods ?? [];
-  }
-  return result;
-}
-
-// dist/queryExecutionSafety.js
-var LARGE_READ_ROW_THRESHOLD = 1e3;
-var SQL_KINDS = /* @__PURE__ */ new Set([
-  "postgresql",
-  "mysql",
-  "mariadb",
-  "mssql",
-  "sqlserver",
-  "cockroachdb",
-  "redshift",
-  "snowflake",
-  "bigquery",
-  "clickhouse",
-  "oracle",
-  "oracledb",
-  "sqlite"
-]);
-var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift"]);
-function record3(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
-}
-function staticPositiveInteger(value) {
-  if (typeof value === "number" && Number.isInteger(value) && value > 0)
-    return value;
-  if (typeof value !== "string")
-    return void 0;
-  const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
-  return match ? Number(match[1]) : void 0;
-}
-function containsBinding(value) {
-  if (typeof value === "string")
-    return value.includes("{{");
-  if (Array.isArray(value))
-    return value.some(containsBinding);
-  return !!record3(value) && Object.values(record3(value)).some(containsBinding);
-}
-var SERVICENOW_ROW_READS = /* @__PURE__ */ new Set(["list_records"]);
-var SERVICENOW_SINGLE_READS = /* @__PURE__ */ new Set(["get_record", "aggregate"]);
-var SERVICENOW_METADATA_READS = /* @__PURE__ */ new Set([
-  "list_tables",
-  "get_table_schema",
-  "get_field_choices",
-  "list_workflows",
-  "list_flows"
-]);
-function assessServiceNow(options2, datasourceId) {
-  const identity = { datasourceKind: "servicenow", ...datasourceId ? { datasourceId } : {} };
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  const table = typeof options2.table === "string" ? options2.table.trim() : "";
-  const source2 = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
-  const refuse = (reason) => ({
-    provenRead: false,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    reason,
-    ...identity
-  });
-  if (!operation)
-    return refuse("ServiceNow query has no operation.");
-  if (!SERVICENOW_ROW_READS.has(operation) && !SERVICENOW_SINGLE_READS.has(operation) && !SERVICENOW_METADATA_READS.has(operation)) {
-    return refuse(`ServiceNow operation ${operation} is not a read; it can change ServiceNow state.`);
-  }
-  const remote = {
-    provenRead: true,
-    directSafe: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    requiresRemoteReadConfirmation: true,
-    ...source2 ? { source: source2 } : {},
-    ...identity
-  };
-  if (SERVICENOW_SINGLE_READS.has(operation)) {
-    return {
-      ...remote,
-      countOnly: operation === "aggregate",
-      maxRows: 1,
-      reason: `ServiceNow ${operation} reads remote data and consumes API quota.`
-    };
-  }
-  if (SERVICENOW_METADATA_READS.has(operation)) {
-    return {
-      ...remote,
-      countOnly: false,
-      reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.`
-    };
-  }
-  const maxRows = staticPositiveInteger(options2.sysparm_limit);
-  if (maxRows === void 0) {
-    return {
-      ...remote,
-      countOnly: false,
-      requiresCountPreflight: true,
-      reason: "ServiceNow list_records has no static sysparm_limit, so its result size cannot be bounded."
-    };
-  }
-  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
-    return {
-      ...remote,
-      countOnly: false,
-      requiresCountPreflight: true,
-      maxRows,
-      reason: `ServiceNow list_records can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
-    };
-  }
-  return {
-    ...remote,
-    countOnly: false,
-    maxRows,
-    simpleSourceRead: true,
-    reason: "ServiceNow list_records reads remote data and consumes API quota."
-  };
-}
-function assessOpenapi(options2, datasourceId) {
-  const identity = { datasourceKind: "openapi", ...datasourceId ? { datasourceId } : {} };
-  const refuse = (reason) => ({
-    provenRead: false,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    reason,
-    ...identity
-  });
-  const method = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  if (method !== "get") {
-    return refuse(`OpenAPI method ${method ?? "<missing>"} is not a proven read; only GET queries can be previewed.`);
-  }
-  const path = typeof options2.path === "string" ? options2.path.trim() : "";
-  if (!path || containsBinding(path)) {
-    return refuse("OpenAPI preview requires a non-empty static path; dynamic endpoints must be verified in the viewer.");
-  }
-  if (containsBinding(options2.params) || containsBinding(options2.host)) {
-    return refuse("OpenAPI preview requires static host and parameters; binding-dependent requests must be verified in the viewer.");
-  }
-  const host = typeof options2.host === "string" ? options2.host.trim() : "";
-  return {
-    provenRead: true,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    requiresRemoteReadConfirmation: true,
-    source: { kind: "remote_endpoint", value: `${host}${path}` },
-    reason: "OpenAPI GET may expose remote data, consume quota, or return an unbounded payload.",
-    ...identity
-  };
-}
-var INFLUX_ROW_READS = /* @__PURE__ */ new Set(["query_data"]);
-var INFLUX_METADATA_READS = /* @__PURE__ */ new Set([
-  "list_buckets",
-  "retrieve_bucket",
-  "analyze_flux_query",
-  "abstract_syntax_tree",
-  "query_suggestions",
-  "query_suggestions_for_branching"
-]);
-var FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_])(?:[A-Za-z_][A-Za-z0-9_]*\s*\.\s*)?(?:wideTo|to)\s*\(/;
-var FLUX_EGRESS_PACKAGES = [
-  "sql",
-  "kafka",
-  "mqtt",
-  "http",
-  "slack",
-  "pagerduty",
-  "discord",
-  "teams",
-  "telegram",
-  "bigpanda",
-  "opsgenie",
-  "sensu",
-  "servicenow",
-  "victorops",
-  "webexteams",
-  "zenoss",
-  "monitor",
-  "influxdata/influxdb/secrets",
-  "influxdata/influxdb/tasks"
-];
-var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
-var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
-function assessInflux(options2, datasourceId) {
-  const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  const refuse = (reason) => ({
-    provenRead: false,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    reason,
-    ...identity
-  });
-  if (!operation)
-    return refuse("InfluxDB query has no operation.");
-  if (!INFLUX_ROW_READS.has(operation) && !INFLUX_METADATA_READS.has(operation)) {
-    return refuse(`InfluxDB operation ${operation} is not a read; it can change InfluxDB state.`);
-  }
-  const remote = {
-    provenRead: true,
-    directSafe: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    requiresRemoteReadConfirmation: true,
-    ...identity
-  };
-  if (INFLUX_METADATA_READS.has(operation)) {
-    return {
-      ...remote,
-      countOnly: false,
-      reason: `InfluxDB ${operation} reads remote metadata without executing a query.`
-    };
-  }
-  const body = typeof options2.body === "string" ? options2.body : "";
-  if (!body.trim())
-    return refuse("InfluxDB query_data has no Flux body to classify.");
-  if (FLUX_WRITE_CALL.test(body)) {
-    return refuse("InfluxDB query_data body calls to()/wideTo(), which writes points or rows out of the query; that is not a read.");
-  }
-  const egress = body.match(FLUX_EGRESS_IMPORT);
-  if (egress) {
-    return refuse(`InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; that is not a read.`);
-  }
-  const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
-  const source2 = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
-  const bounded2 = { ...remote, countOnly: false, ...source2 ? { source: source2 } : {} };
-  const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
-  if (maxRows === void 0) {
-    return {
-      ...bounded2,
-      requiresCountPreflight: true,
-      reason: "InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded."
-    };
-  }
-  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
-    return {
-      ...bounded2,
-      requiresCountPreflight: true,
-      maxRows,
-      reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
-    };
-  }
-  return { ...bounded2, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
-}
-function assessRestGet(options2, datasourceId) {
-  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
-  const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
-  if (method !== "get") {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
-      ...identity
-    };
-  }
-  const url2 = typeof options2.url === "string" ? options2.url.trim() : "";
-  if (!url2 || containsBinding(url2)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
-      ...identity
-    };
-  }
-  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
-  if (requestFields.some(containsBinding)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
-      ...identity
-    };
-  }
-  return {
-    provenRead: true,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    requiresRemoteReadConfirmation: true,
-    source: { kind: "remote_endpoint", value: url2 },
-    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
-    ...identity
-  };
-}
-function assessSupabase(options2, datasourceId) {
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
-  const table = operation === "count_rows" ? options2.count_table_name : options2.get_table_name;
-  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
-  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "Supabase operation is not a static row read.",
-      ...identity
-    };
-  }
-  const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
-  if (operation === "count_rows") {
-    const countFilters = options2.count_filters;
-    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record3(countFilters) && Object.keys(record3(countFilters)).length === 0;
-    return {
-      provenRead: true,
-      directSafe: false,
-      countOnly: true,
-      selectStar: false,
-      requiresCountPreflight: false,
-      requiresRemoteReadConfirmation: true,
-      fullSourceCount,
-      simpleSourceRead: true,
-      maxRows: 1,
-      source: source2,
-      ...identity
-    };
-  }
-  const maxRows = staticPositiveInteger(options2.get_limit);
-  return {
-    provenRead: true,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD,
-    requiresRemoteReadConfirmation: true,
-    simpleSourceRead: true,
-    source: source2,
-    maxRows,
-    ...identity
-  };
-}
-function stripSql(sql) {
-  return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
-}
-function normalizeSqlTable(raw) {
-  return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
-}
-function sqlSource(sql) {
-  const match = sql.match(/\bfrom\s+((?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?)/i);
-  return match ? { kind: "sql_table", value: normalizeSqlTable(match[1]) } : void 0;
-}
-function assessSql(sql, datasourceKind, datasourceId) {
-  const compact = stripSql(sql);
-  const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
-  if (!compact || /;\s*\S/.test(compact)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "SQL is empty or contains more than one statement",
-      ...identity
-    };
-  }
-  if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
-    return {
-      provenRead: true,
-      directSafe: true,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      ...identity
-    };
-  }
-  if (!/^select\b/i.test(compact)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "SQL is not a single proven read statement",
-      ...identity
-    };
-  }
-  if (/\binto\s+(?:temp(?:orary)?\s+|unlogged\s+)?[`"\[]?[A-Za-z_$]/i.test(compact)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "SELECT INTO creates or replaces data and is not a read-only query",
-      ...identity
-    };
-  }
-  if (/\bfor\s+(?:no\s+key\s+update|key\s+share|update|share)\b|\block\s+in\s+share\s+mode\b/i.test(compact)) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "Locking SELECT statements are not side-effect-free reads",
-      ...identity
-    };
-  }
-  const fromIndex = compact.search(/\bfrom\b/i);
-  const selectClause = compact.slice("select".length, fromIndex >= 0 ? fromIndex : compact.length).trim();
-  const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
-  const projectionClause = selectClause.replace(/^top\s*(?:\(\s*\d+\s*\)|\d+)\s+/i, "").trim();
-  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(projectionClause);
-  const source2 = sqlSource(compact);
-  const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
-  const simpleSourceRead = !!source2 && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
-  const limit = compact.match(/\blimit\s+(\d+)\b/i);
-  const top = selectClause.match(/^top\s*(?:\(\s*(\d+)\s*\)|(\d+))\s+/i);
-  const fetch2 = compact.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only\b/i);
-  const maxRows = limit ? Number(limit[1]) : top ? Number(top[1] ?? top[2]) : fetch2 ? Number(fetch2[1]) : void 0;
-  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(datasourceKind) && fromIndex >= 0;
-  const fullSourceCount = countOnly && /^count\s*\(\s*\*\s*\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause) && simpleSourceRead && !/\b(where|group\s+by|having|limit|offset)\b/i.test(compact);
-  if (selectStar) {
-    return {
-      provenRead: true,
-      directSafe: false,
-      countOnly: false,
-      selectStar: true,
-      requiresCountPreflight: false,
-      source: source2,
-      maxRows,
-      simpleSourceRead,
-      ...identity,
-      reason: "SELECT * is refused. Inspect the schema and select only the required columns."
-    };
-  }
-  if (fromIndex < 0) {
-    if (/\b[A-Za-z_$][\w$.]*\s*\(/.test(selectClause)) {
-      return {
-        provenRead: false,
-        directSafe: false,
-        countOnly: false,
-        selectStar: false,
-        requiresCountPreflight: false,
-        reason: "Function-only SELECT statements cannot be proven side-effect-free",
-        ...identity
-      };
-    }
-    return {
-      provenRead: true,
-      directSafe: true,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      source: source2,
-      maxRows,
-      ...identity
-    };
-  }
-  if (countOnly) {
-    return {
-      provenRead: true,
-      directSafe: !billableRead,
-      countOnly: true,
-      selectStar: false,
-      requiresCountPreflight: false,
-      requiresBillableReadConfirmation: billableRead,
-      fullSourceCount,
-      simpleSourceRead,
-      source: source2,
-      maxRows: 1,
-      ...identity
-    };
-  }
-  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
-    return {
-      provenRead: true,
-      directSafe: !billableRead,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      requiresBillableReadConfirmation: billableRead,
-      simpleSourceRead,
-      source: source2,
-      maxRows,
-      ...identity
-    };
-  }
-  return {
-    provenRead: true,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: true,
-    requiresBillableReadConfirmation: billableRead,
-    simpleSourceRead,
-    source: source2,
-    maxRows,
-    ...identity,
-    reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
-  };
-}
-function countAggregate(options2) {
-  const listRows = record3(options2.list_rows);
-  const aggregates = record3(listRows?.aggregates);
-  const groupBy = record3(listRows?.group_by);
-  if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
-    return false;
-  return Object.values(aggregates).every((aggregate) => record3(aggregate)?.aggFx === "count");
-}
-function fullToolJetDbCount(options2) {
-  if (!countAggregate(options2))
-    return false;
-  const listRows = record3(options2.list_rows);
-  const aggregates = record3(listRows.aggregates);
-  if (Object.keys(aggregates).length !== 1)
-    return false;
-  const aggregate = record3(Object.values(aggregates)[0]);
-  if (aggregate?.column !== "id")
-    return false;
-  const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
-  return Object.entries(listRows).every(([key, value]) => {
-    if (ignoredForScope.has(key))
-      return true;
-    if (value === void 0 || value === null || value === "")
-      return true;
-    if (Array.isArray(value))
-      return value.length === 0;
-    if (record3(value))
-      return Object.keys(record3(value)).length === 0;
-    return false;
-  });
-}
-function guiSource(kind, options2) {
-  if (kind === "tooljetdb" && typeof options2.table_id === "string") {
-    return { kind: "table_id", value: options2.table_id };
-  }
-  const table = typeof options2.table === "string" ? options2.table : void 0;
-  if (!table)
-    return void 0;
-  const schema = typeof options2.schema === "string" ? `${options2.schema}.` : "";
-  return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
-}
-function assessListRows(kind, options2, datasourceId) {
-  const source2 = guiSource(kind, options2);
-  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(kind);
-  const identity = { datasourceKind: kind, ...datasourceId ? { datasourceId } : {} };
-  if (kind === "tooljetdb" && countAggregate(options2)) {
-    return {
-      provenRead: true,
-      directSafe: true,
-      countOnly: true,
-      selectStar: false,
-      requiresCountPreflight: false,
-      fullSourceCount: fullToolJetDbCount(options2),
-      simpleSourceRead: true,
-      source: source2,
-      maxRows: 1,
-      ...identity
-    };
-  }
-  const listRows = record3(options2.list_rows);
-  const maxRows = staticPositiveInteger(listRows?.limit ?? options2.limit);
-  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
-    return {
-      provenRead: true,
-      directSafe: !billableRead,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      requiresBillableReadConfirmation: billableRead,
-      simpleSourceRead: true,
-      source: source2,
-      maxRows,
-      ...identity
-    };
-  }
-  return {
-    provenRead: true,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: true,
-    requiresBillableReadConfirmation: billableRead,
-    simpleSourceRead: true,
-    source: source2,
-    maxRows,
-    ...identity,
-    reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
-  };
-}
-function assessQueryRead(query2) {
-  const kind = query2.kind?.toLowerCase();
-  const datasourceId = query2.data_source_id;
-  const options2 = record3(query2.options);
-  if (!kind || !options2) {
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "Datasource kind/options are unavailable."
-    };
-  }
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  if (kind === "restapi")
-    return assessRestGet(options2, datasourceId);
-  if (kind === "openapi")
-    return assessOpenapi(options2, datasourceId);
-  if (kind === "servicenow")
-    return assessServiceNow(options2, datasourceId);
-  if (kind === "influxdb")
-    return assessInflux(options2, datasourceId);
-  if (kind === "supabase")
-    return assessSupabase(options2, datasourceId);
-  if (kind === "tooljetdb") {
-    if (operation === "list_rows")
-      return assessListRows(kind, options2, datasourceId);
-    if (operation === "sql_execution") {
-      const sql = record3(options2.sql_execution)?.sqlQuery;
-      return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
-        provenRead: false,
-        directSafe: false,
-        countOnly: false,
-        selectStar: false,
-        requiresCountPreflight: false,
-        reason: "ToolJet DB SQL text is unavailable."
-      };
-    }
-    return {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: `ToolJet DB operation ${operation ?? "<missing>"} is not a proven bounded read.`
-    };
-  }
-  if (SQL_KINDS.has(kind)) {
-    if (operation === "list_rows" || options2.mode === "gui")
-      return assessListRows(kind, options2, datasourceId);
-    const sql = typeof options2.query === "string" ? options2.query : typeof options2.sql === "string" ? options2.sql : void 0;
-    return sql ? assessSql(sql, kind, datasourceId) : {
-      provenRead: false,
-      directSafe: false,
-      countOnly: false,
-      selectStar: false,
-      requiresCountPreflight: false,
-      reason: "SQL text is unavailable."
-    };
-  }
-  return {
-    provenRead: false,
-    directSafe: false,
-    countOnly: false,
-    selectStar: false,
-    requiresCountPreflight: false,
-    reason: `Datasource kind ${kind} has no proven read classifier.`
-  };
-}
-function sameReadSource(target2, count) {
-  return !!target2.source && !!count.source && target2.simpleSourceRead === true && count.fullSourceCount === true && !!target2.datasourceId && target2.datasourceId === count.datasourceId && target2.datasourceKind === count.datasourceKind && target2.source.kind === count.source.kind && target2.source.value === count.source.value;
-}
-function extractRowCount(result) {
-  if (result.status !== "ok")
-    return void 0;
-  let value = result.data;
-  if (record3(value)?.result !== void 0)
-    value = record3(value).result;
-  if (Array.isArray(value)) {
-    if (value.length !== 1)
-      return void 0;
-    value = value[0];
-  }
-  const row = record3(value);
-  if (!row)
-    return void 0;
-  const numeric = Object.values(row).flatMap((candidate) => {
-    const parsed = typeof candidate === "number" ? candidate : typeof candidate === "string" && /^\d+$/.test(candidate.trim()) ? Number(candidate) : Number.NaN;
-    return Number.isSafeInteger(parsed) && parsed >= 0 ? [parsed] : [];
-  });
-  return numeric.length === 1 ? numeric[0] : void 0;
-}
-
-// dist/queryValidation.js
-var KNOWN_IGNORED_KEYS = {
-  run_on_page_load: "runOnPageLoad"
-};
-function isObject2(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-function isTruthyStatic(value) {
-  return value === true || value === "true" || value === "{{true}}";
-}
-function isDynamicBinding2(value) {
-  return typeof value === "string" && value.includes("{{");
-}
-function valueAtPath(source2, path) {
-  let cursor = source2;
-  for (const segment of path.split(".")) {
-    if (!isObject2(cursor) || !Object.prototype.hasOwnProperty.call(cursor, segment))
-      return void 0;
-    cursor = cursor[segment];
-  }
-  return cursor;
-}
-function operationFromOptions(options2, contracts, defaults) {
-  const operation = options2.operation ?? defaults.operation;
-  if (typeof operation === "string" && operation) {
-    if (Object.prototype.hasOwnProperty.call(contracts, operation))
-      return operation;
-    if (Object.prototype.hasOwnProperty.call(contracts, "default"))
-      return "default";
-    return operation;
-  }
-  const mode = options2.mode ?? defaults.mode;
-  if (typeof mode === "string" && mode && Object.prototype.hasOwnProperty.call(contracts, mode))
-    return mode;
-  if (Object.prototype.hasOwnProperty.call(contracts, "default"))
-    return "default";
-  const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
-    const selectors = Object.entries(variant.when);
-    return selectors.length > 0 && selectors.every(([selector, accepted]) => {
-      const actual = options2[selector] ?? defaults[selector];
-      return typeof actual === "string" && !isDynamicBinding2(actual) && accepted.includes(actual);
-    });
-  }));
-  if (selectorMatches.length === 1)
-    return selectorMatches[0][0];
-  return void 0;
-}
-function variantMatches(variant, options2) {
-  return Object.entries(variant.when).every(([selector, accepted]) => {
-    const actual = options2[selector];
-    return actual === void 0 || isDynamicBinding2(actual) || typeof actual === "string" && accepted.includes(actual);
-  });
-}
-function intersection2(values) {
-  if (!values.length)
-    return [];
-  return values[0].filter((value) => values.every((items) => items.includes(value)));
-}
-function fieldMap(variants) {
-  const fields = { ...COMMON_QUERY_OPTION_FIELDS };
-  for (const variant of variants)
-    Object.assign(fields, variant.fields);
-  return fields;
-}
-function topLevelKeys(fields) {
-  return new Set(Object.keys(fields).map((path) => path.split(".")[0]));
-}
-function nestedChildren(fields, root) {
-  return new Set(Object.keys(fields).filter((path) => path.startsWith(`${root}.`)).map((path) => path.slice(root.length + 1).split(".")[0]));
-}
-function suffixSuggestion(key, fields) {
-  const matches2 = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
-  return matches2.length === 1 ? matches2[0] : void 0;
-}
-function tupleArity(field) {
-  const tuple2 = field.shape?.["<index>"];
-  return Array.isArray(tuple2) && tuple2.length > 0 ? tuple2.length : void 0;
-}
-function bindingStrings(value, path = "") {
-  if (typeof value === "string")
-    return [{ path: path || void 0, value }];
-  if (Array.isArray(value)) {
-    return value.flatMap((item, index) => bindingStrings(item, `${path}[${index}]`));
-  }
-  if (!isObject2(value))
-    return [];
-  return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
-}
-function tableStateWarnings(options2) {
-  const warnings = [];
-  for (const binding of bindingStrings(options2)) {
-    const match = binding.value.match(/components\.([A-Za-z_$][\w$]*)\.pageIndex\s*-\s*1/);
-    if (!match)
-      continue;
-    warnings.push({
-      code: "unguarded_table_page_index",
-      path: binding.path,
-      message: `Table pageIndex may be undefined when the first page-load query evaluates; "${match[0]}" can produce NaN and an empty table. Use ((components.${match[1]}.pageIndex || 1) - 1) * pageSize (or an equivalent nullish guard).`
-    });
-  }
-  return warnings;
-}
-function unquotedSqlBindingIssues(sql) {
-  const issues = [];
-  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b|,|\()\s*(?!')\{\{/gi;
-  const seen = /* @__PURE__ */ new Set();
-  let match;
-  while ((match = risky.exec(sql)) !== null) {
-    const raw = match[1].toUpperCase();
-    const operator = raw === "," || raw === "(" ? "a function argument" : raw;
-    if (seen.has(operator))
-      continue;
-    seen.add(operator);
-    issues.push({
-      code: "unquoted_sql_binding",
-      path: "query",
-      message: `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes nothing at that position and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Pass it as a parameter instead: put \`:name\` in the statement and the binding in query_params, e.g. \`WHERE priority = :priority\` with query_params [["priority", "{{components.priorityFilter.value}}"]]. That fixes the empty case and the escaping together. Quoting it ('{{...}}') only fixes the empty case and leaves the value spliced into the statement as text.`
-    });
-  }
-  return issues;
-}
-function interpolatedSqlBindingIssues(sql) {
-  const quoted = /'\s*\{\{[^}]*\}\}\s*'/g;
-  if (!quoted.test(sql))
-    return [];
-  return [
-    {
-      code: "interpolated_sql_binding",
-      path: "query",
-      message: 'SQL pastes a binding into the statement as quoted text (\'{{...}}\'). The quotes are the only escaping, so a value containing a quote rewrites the statement. Pass it as a parameter instead: `:name` in the query and the binding in query_params, e.g. `WHERE priority = :priority` with query_params [["priority", "{{components.priorityFilter.value}}"]]. Safe today if the value comes from a fixed dropdown, but the query does not change when someone later binds it to a text input.'
-    }
-  ];
-}
-function transformationWarnings(options2) {
-  const warnings = [];
-  const bag = isObject2(options2.transformations) ? options2.transformations : void 0;
-  const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
-  const hasCode = languages.length > 0 || typeof options2.transformation === "string" && options2.transformation.trim() !== "";
-  if (!hasCode)
-    return warnings;
-  const enabled = isTruthyStatic(options2.enableTransformation);
-  const language = typeof options2.transformationLanguage === "string" ? options2.transformationLanguage : void 0;
-  if (!enabled) {
-    warnings.push({
-      code: "transformation_not_enabled",
-      path: "enableTransformation",
-      message: "A transformation is supplied but enableTransformation is not true, so ToolJet saves the code and never runs it. Set enableTransformation: true and transformationLanguage to the language the code is written in."
-    });
-  }
-  if (!language) {
-    warnings.push({
-      code: "transformation_language_missing",
-      path: "transformationLanguage",
-      message: `A transformation is supplied without transformationLanguage, so ToolJet cannot tell how to run it. Set it to ${languages.length === 1 ? `"${languages[0]}"` : '"javascript" or "python"'}.`
-    });
-  } else if (languages.length > 0 && !languages.includes(language)) {
-    warnings.push({
-      code: "transformation_language_mismatch",
-      path: "transformationLanguage",
-      message: `transformationLanguage is "${language}" but the code is under transformations.${languages.join("/")}. ToolJet runs the entry matching transformationLanguage, so the supplied code is ignored.`
-    });
-  }
-  return warnings;
-}
-function influxTransformWarnings(kind, options2) {
-  if (kind !== "influxdb")
-    return [];
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  if (operation !== "query_data")
-    return [];
-  if (isTruthyStatic(options2.enableTransformation))
-    return [];
-  return [{
-    code: "influx_raw_csv_response",
-    path: "enableTransformation",
-    message: 'InfluxDB query_data returns annotated CSV as a single raw string, not rows. Bound directly, a Table renders nothing. Add a transformation that parses the CSV into an array of row objects (skip the #datatype/#group/#default annotation lines and the empty leading columns), with enableTransformation: true and transformationLanguage: "javascript".'
-  }];
-}
-function validateQueryOptions(kind, options2) {
-  const errors = [];
-  const warnings = tableStateWarnings(options2);
-  warnings.push(...transformationWarnings(options2));
-  warnings.push(...influxTransformWarnings(kind, options2));
-  if (typeof options2.query === "string") {
-    errors.push(...unquotedSqlBindingIssues(options2.query));
-    warnings.push(...interpolatedSqlBindingIssues(options2.query));
-  }
-  const readAssessment = assessQueryRead({ id: "<planned-query>", kind, options: options2 });
-  if (readAssessment.selectStar) {
-    warnings.push({
-      code: "select_star_read",
-      path: typeof options2.query === "string" ? "query" : void 0,
-      message: "SELECT * will be refused by run_query. Inspect the table schema and select only the fields the app needs; this avoids unknown/wide columns and accidental sensitive-data reads."
-    });
-  }
-  if (readAssessment.provenRead && readAssessment.requiresCountPreflight) {
-    warnings.push({
-      code: "unbounded_read",
-      path: typeof options2.query === "string" ? "query" : void 0,
-      message: `${readAssessment.reason ?? "This read is not statically bounded"} Count the same table before running it. Prefer a bounded preview and server-side pagination for large or growing datasets.`
-    });
-  }
-  const automaticRead = isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange);
-  if (automaticRead && readAssessment.provenRead && readAssessment.requiresCountPreflight) {
-    errors.push({
-      code: "unsafe_automatic_unbounded_read",
-      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
-      message: `An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`
-    });
-  }
-  if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
-    errors.push({
-      code: "unsafe_automatic_billable_read",
-      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
-      message: "A potentially billable warehouse read cannot run automatically. Trigger it through an explicit user action, and use run_query user_confirmed_billable_read:true only after the user approves any MCP-side verification run."
-    });
-  }
-  const schema = getDatasourceQuerySchema(kind);
-  if (!schema) {
-    warnings.push({
-      code: "schema_unavailable",
-      message: `No generated query contract is available for datasource kind "${kind}"; options were not validated.`
-    });
-    return { kind, schemaFound: false, errors, warnings };
-  }
-  const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
-  if (!operation) {
-    errors.push({
-      code: "missing_operation",
-      path: schema.contracts.sql ? "mode" : "operation",
-      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(", ") || "default"}.`
-    });
-    return { kind, schemaFound: true, errors, warnings };
-  }
-  const contract = schema.contracts[operation];
-  if (!contract) {
-    errors.push({
-      code: "invalid_operation",
-      path: typeof options2.operation === "string" ? "operation" : "mode",
-      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(", ")}.`
-    });
-    return { kind, operation, schemaFound: true, errors, warnings };
-  }
-  const matching = contract.variants.filter((variant) => variantMatches(variant, options2));
-  if (!matching.length) {
-    const selectors = /* @__PURE__ */ new Map();
-    for (const variant of contract.variants) {
-      for (const [selector, accepted] of Object.entries(variant.when)) {
-        const values = selectors.get(selector) ?? /* @__PURE__ */ new Set();
-        accepted.forEach((value) => values.add(value));
-        selectors.set(selector, values);
-      }
-    }
-    for (const [selector, accepted] of selectors) {
-      const actual = options2[selector];
-      if (typeof actual === "string" && !accepted.has(actual)) {
-        errors.push({
-          code: "invalid_selector_value",
-          path: selector,
-          message: `Invalid ${selector} "${actual}" for ${kind}/${operation}. Allowed values: ${[...accepted].sort().join(", ")}.`
-        });
-      }
-    }
-    return { kind, operation, schemaFound: true, errors, warnings };
-  }
-  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding2(options2[selector])))];
-  for (const selector of dynamicSelectors) {
-    warnings.push({
-      code: "runtime_selector_binding",
-      path: selector,
-      message: `Selector "${selector}" is a dynamic binding, so MCP validated the fields shared by every possible ${kind}/${operation} variant. Browser-verify any fields required only by the runtime-selected value.`
-    });
-  }
-  const fields = fieldMap(matching);
-  const allowedTopLevel = topLevelKeys(fields);
-  for (const key of Object.keys(options2)) {
-    if (allowedTopLevel.has(key))
-      continue;
-    const exactReplacement = KNOWN_IGNORED_KEYS[key];
-    const nestedReplacement = suffixSuggestion(key, fields);
-    const replacement = exactReplacement ?? nestedReplacement;
-    warnings.push({
-      code: replacement ? "ignored_or_misplaced_option_key" : "unknown_option_key",
-      path: key,
-      message: replacement ? `Option key "${key}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
-    });
-  }
-  for (const root of allowedTopLevel) {
-    const children = nestedChildren(fields, root);
-    const actual = options2[root];
-    if (!children.size || !isObject2(actual))
-      continue;
-    for (const child of Object.keys(actual)) {
-      if (!children.has(child)) {
-        warnings.push({
-          code: "unknown_nested_option_key",
-          path: `${root}.${child}`,
-          message: `Unknown nested option key "${root}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`
-        });
-      }
-    }
-  }
-  const required4 = intersection2(matching.map((variant) => variant.required));
-  for (const path of required4) {
-    const value = valueAtPath(options2, path);
-    if (value === void 0 || value === null || value === "") {
-      errors.push({
-        code: "missing_required_option",
-        path,
-        message: `Missing required option "${path}" for ${kind}/${operation}.`
-      });
-    }
-  }
-  for (const [path, field] of Object.entries(fields)) {
-    const value = valueAtPath(options2, path);
-    const arity = tupleArity(field);
-    if (arity !== void 0 && value !== void 0 && !isDynamicBinding2(value)) {
-      if (!Array.isArray(value)) {
-        errors.push({
-          code: "invalid_option_shape",
-          path,
-          message: `Option "${path}" for ${kind}/${operation} must be an array of ${arity}-item tuples.`
-        });
-      } else {
-        const invalidIndex = value.findIndex((item) => !Array.isArray(item) || item.length !== arity);
-        if (invalidIndex >= 0) {
-          errors.push({
-            code: "invalid_option_shape",
-            path: `${path}[${invalidIndex}]`,
-            message: `Option "${path}" for ${kind}/${operation} must contain ${arity}-item tuples such as [["key", "value"]].`
-          });
-        }
-      }
-    }
-    if (!field.allowedValues?.length)
-      continue;
-    if (typeof value === "string" && !value.includes("{{") && !field.allowedValues.includes(value)) {
-      errors.push({
-        code: "invalid_option_value",
-        path,
-        message: `Invalid value "${value}" for ${kind}/${operation} option "${path}". Allowed values: ${field.allowedValues.join(", ")}.`
-      });
-    }
-  }
-  if (kind === "tooljetdb" && (operation === "create_row" || operation === "update_rows")) {
-    const columnsPath = operation === "create_row" ? "create_row" : "update_rows.columns";
-    const columns = valueAtPath(options2, columnsPath);
-    if (isObject2(columns) && Object.keys(columns).length > 0) {
-      const flat = Object.entries(columns).filter(([, clause]) => !isObject2(clause) || typeof clause.column !== "string" || clause.column === "");
-      if (flat.length > 0) {
-        const example = flat[0][0];
-        errors.push({
-          code: "malformed_write_columns",
-          path: `${columnsPath}.${example}`,
-          message: `ToolJet DB ${operation} "${columnsPath}" must map each entry to a {column, value} record, not a flat {"${example}": <value>} pair. ToolJet reads .column off each entry, so as authored this write sends an empty body and fails at runtime with PGRST102 ("Empty or invalid json") even though the app validates. Use {"0": {"column": "${example}", "value": <value>}, \u2026}.`
-        });
-      }
-    }
-  }
-  if (kind !== "tooljetdb" && operation === "create_row" && isObject2(valueAtPath(options2, "create_row"))) {
-    const createRow = valueAtPath(options2, "create_row");
-    const columns = createRow.columns;
-    const usable = isObject2(columns) && Object.values(columns).some((clause) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "");
-    if (!usable) {
-      const misplaced = !isObject2(columns) && Object.values(createRow).some((clause) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "");
-      errors.push({
-        code: "malformed_write_columns",
-        path: "create_row.columns",
-        message: misplaced ? `${kind} create_row expects the column map under "create_row.columns", not directly on "create_row" (that is the ToolJet DB shape). As authored no column is read, and the driver falls back to INSERT ... DEFAULT VALUES \u2014 inserting a BLANK ROW that reports success.` : `${kind} create_row requires "create_row.columns" as {"0": {"column": "<name>", "value": <v>}, \u2026}. With no usable column entry the driver emits INSERT ... DEFAULT VALUES, inserting a BLANK ROW and reporting success.`
-      });
-    }
-  }
-  if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
-    const filtersPath = `${operation}.where_filters`;
-    const filters = valueAtPath(options2, filtersPath);
-    if (isObject2(filters) || Array.isArray(filters)) {
-      const usable = Object.entries(filters).filter(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
-      if (usable.length === 0) {
-        const example = Object.keys(filters)[0];
-        errors.push({
-          code: "malformed_where_filters",
-          path: filtersPath,
-          message: `ToolJet DB ${operation} "${filtersPath}" has no usable clause: every entry must be a {column, operator, value} record (for example {"0": {"column": "id", "operator": "eq", "value": "{{components.table1.selectedRow.id}}"}}). ToolJet silently drops any clause missing column or operator` + (operation === "update_rows" ? ", and an update with no surviving clause updates EVERY ROW in the table." : ".") + (example ? ` Entry "${example}" is not in that shape.` : "")
-        });
-      }
-    } else if (filters === void 0 && operation === "update_rows") {
-      errors.push({
-        code: "malformed_where_filters",
-        path: filtersPath,
-        message: `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.`
-      });
-    }
-  }
-  if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
-    const filters = valueAtPath(options2, `${operation}.where_filters`);
-    if (isObject2(filters) || Array.isArray(filters)) {
-      for (const [mapKey, rawClause] of Object.entries(filters)) {
-        const aliases = {
-          equals: "eq",
-          equal: "eq",
-          "==": "eq",
-          "===": "eq",
-          "=": "eq",
-          not_equals: "neq",
-          notEquals: "neq",
-          "!=": "neq",
-          "!==": "neq",
-          "<>": "neq",
-          greater_than: "gt",
-          greaterThan: "gt",
-          ">": "gt",
-          greater_than_or_equal: "gte",
-          ">=": "gte",
-          less_than: "lt",
-          lessThan: "lt",
-          "<": "lt",
-          less_than_or_equal: "lte",
-          "<=": "lte"
-        };
-        if (isObject2(rawClause) && typeof rawClause.operator === "string" && Object.hasOwn(aliases, rawClause.operator)) {
-          errors.push({
-            code: "invalid_tooljetdb_filter_operator",
-            path: `${operation}.where_filters.${mapKey}.operator`,
-            message: `ToolJet DB filter operator "${rawClause.operator}" is not a PostgREST builder operator. Use "${aliases[rawClause.operator]}" for this comparison; keep the same column and value. The query was not automatically rewritten. Fetch the datasource operation contract if unsure.`
-          });
-        }
-        if (!isObject2(rawClause) || rawClause.operator !== "eq")
-          continue;
-        const column = typeof rawClause.column === "string" ? rawClause.column : "";
-        const value = typeof rawClause.value === "string" ? rawClause.value : "";
-        const dateLikeColumn = /(^|_)(date|day|time|at|on)$|_date_|timestamp/i.test(column);
-        const dayValue = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) || /format\(\s*['"]YYYY-MM-DD['"]\s*\)/.test(value);
-        if (!dayValue && !dateLikeColumn)
-          continue;
-        if (!dayValue && !/moment\(|new Date|Date\.now/.test(value))
-          continue;
-        warnings.push({
-          code: "date_equality_filter",
-          path: `${operation}.where_filters.${mapKey}`,
-          message: `ToolJet DB ${operation} filter "${column}" uses "eq" against a calendar day. Date and timestamp columns come back as full ISO timestamps ("2026-09-04T00:00:00+00:00"), so equality with "YYYY-MM-DD" matches no rows and the table shows "No data" with no error. Filter a day as a range instead: one clause "gte" the day at 00:00 and one "lt" the next day, or store the day in a text column seeded as YYYY-MM-DD when this build creates the table.`
-        });
-      }
-    }
-  }
-  if (kind === "tooljetdb" && operation === "list_rows") {
-    const orderFilters = valueAtPath(options2, "list_rows.order_filters");
-    if (isObject2(orderFilters)) {
-      for (const [mapKey, rawClause] of Object.entries(orderFilters)) {
-        if (!isObject2(rawClause) || typeof rawClause.id !== "string" || rawClause.id === mapKey)
-          continue;
-        warnings.push({
-          code: "mismatched_record_id",
-          path: `list_rows.order_filters.${mapKey}.id`,
-          message: `ToolJet DB order_filters key "${mapKey}" does not match its inner id "${rawClause.id}"; ToolJet can silently ignore the sort. Use the same stable value for the outer key and inner id.`
-        });
-      }
-    }
-  }
-  return { kind, operation, schemaFound: true, errors, warnings };
-}
-function issueMessages(issues, prefix) {
-  return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
-}
-function normalizeWriteColumnMap(columns) {
-  if (!isObject2(columns) || Object.keys(columns).length === 0)
-    return null;
-  const entries = Object.entries(columns);
-  if (entries.every(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "")) {
-    return null;
-  }
-  const normalized2 = {};
-  entries.forEach(([key, clause], index) => {
-    if (isObject2(clause) && typeof clause.column === "string" && clause.column !== "") {
-      normalized2[String(index)] = clause;
-      return;
-    }
-    normalized2[String(index)] = { column: key, value: clause };
-  });
-  return normalized2;
-}
-function normalizeQueryOptions(kind, options2) {
-  if (kind !== "tooljetdb" || !isObject2(options2))
-    return options2;
-  const operation = typeof options2.operation === "string" ? options2.operation : "";
-  if (operation === "create_row") {
-    const normalized2 = normalizeWriteColumnMap(options2.create_row);
-    return normalized2 ? { ...options2, create_row: normalized2 } : options2;
-  }
-  if (operation === "update_rows") {
-    const updateRows = options2.update_rows;
-    if (!isObject2(updateRows))
-      return options2;
-    const normalized2 = normalizeWriteColumnMap(updateRows.columns);
-    return normalized2 ? { ...options2, update_rows: { ...updateRows, columns: normalized2 } } : options2;
-  }
-  return options2;
-}
-
-// dist/workflows/readiness.js
-function workflowReadiness(graph, structuralErrors) {
-  if (structuralErrors.length)
-    return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
-  for (const edge of controlFlowEdges(graph))
-    adjacency.get(edge.source)?.push(edge.target);
-  const reachable = /* @__PURE__ */ new Set();
-  const visit = (id2) => {
-    if (reachable.has(id2))
-      return;
-    reachable.add(id2);
-    for (const target2 of adjacency.get(id2) ?? [])
-      visit(target2);
-  };
-  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
-    visit(start.id);
-  const blockers = [];
-  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
-    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
-    const definitionId = child?.data.idOnDefinition;
-    const mapping = typeof definitionId === "string" && graph.queries.find((query2) => query2.idOnDefinition === definitionId);
-    if (!attachment || !child || !mapping)
-      blockers.push({
-        code: "agent_missing_model",
-        path: `nodes.${agent.id}.model`,
-        message: "Reachable Agent requires one configured AI model attachment."
-      });
-  }
-  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
-}
-
-// dist/workflows/planner.js
-var plans = /* @__PURE__ */ new Map();
-var TTL = 30 * 6e4;
-function prune() {
-  for (const [key, plan] of plans)
-    if (plan.expires <= Date.now())
-      plans.delete(key);
-}
-async function prepare(client, workflowId, versionId, spec, ids) {
-  const snapshot2 = await client.get(workflowId, versionId);
-  if (!snapshot2.editable)
-    throw new Error("Only editable draft workflow versions can be changed.");
-  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot2.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
-  const warnings = [];
-  const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot2.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
-  const deletions = [];
-  for (const mapping of snapshot2.definition.queries) {
-    if (!removedDefinitionIds.has(mapping.idOnDefinition))
-      continue;
-    if (compiled.graph.nodes.some((node2) => node2.data.idOnDefinition === mapping.idOnDefinition))
-      continue;
-    const node = snapshot2.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node)
-      continue;
-    if (!queries.some((query2) => query2.id === mapping.id))
-      throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
-  }
-  const claimedNames = /* @__PURE__ */ new Set();
-  for (const item of compiled.query_nodes) {
-    const existingMapping = snapshot2.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
-    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
-    if (existingMapping && !oldQuery)
-      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
-    if (oldQuery && snapshot2.definition.nodes.filter((n) => snapshot2.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
-      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const input = item.role === "workflow-node" ? item.spec : void 0;
-    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label2 = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
-    if (!datasource)
-      throw new Error(`Datasource unavailable for ${label2}.`);
-    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
-      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
-    const kind = datasource.kind;
-    const dataSourceId = datasource.id;
-    const name = item.role === "agent-model" ? item.name : input.name;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name)
-      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name) || queries.some((q) => q.name === name && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name}`);
-    claimedNames.add(name);
-    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
-    if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options2);
-      if (validation2.errors.length)
-        throw new Error(issueMessages(validation2.errors).join(" "));
-      warnings.push(...issueMessages(validation2.warnings));
-    }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? "", kind, options: options2 });
-    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
-      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
-  }
-  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
-  const validation = validateGraph(compiled.graph, queryIds);
-  const readiness = workflowReadiness(compiled.graph, validation.errors);
-  return { snapshot: snapshot2, compiled, writes, deletions, validation, readiness, warnings };
-}
-async function lint(client, workflowId, versionId, spec, allowDraft = false) {
-  const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
-    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
-  prune();
-  while (plans.size >= 200)
-    plans.delete(plans.keys().next().value);
-  const token = randomUUID3();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
-  return {
-    plan_token: token,
-    expires_in_seconds: TTL / 1e3,
-    node_ids: prepared.compiled.node_ids,
-    edge_ids: prepared.compiled.edge_ids,
-    ...prepared.validation,
-    ...prepared.readiness,
-    query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
-  };
-}
-async function apply(client, token) {
-  prune();
-  const scope = await client.planScope();
-  const plan = plans.get(token);
-  if (!plan || plan.scope !== scope)
-    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
-  plans.delete(token);
-  const { compiled, snapshot: snapshot2, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
-  if (validation.errors.length)
-    throw new Error(JSON.stringify(validation.errors));
-  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
-    throw new Error(JSON.stringify(readiness.blockers));
-  const completed = [];
-  let phase = "queries";
-  let attemptedQuery;
-  try {
-    for (const write of writes) {
-      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
-      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
-      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
-      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
-      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
-      attemptedQuery = void 0;
-    }
-    phase = "save";
-    await client.save(snapshot2, compiled.graph);
-    phase = "readback";
-    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
-    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
-    if (!isDeepStrictEqual(saved.definition, compiled.graph))
-      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
-    for (const write of writes) {
-      const id2 = completed.find((q) => q.node_id === write.node_id).query_id;
-      const persisted = queries.find((q) => q.id === id2);
-      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id2} readback differs from intended datasource, kind, name, or options.`);
-    }
-    if (validation2.errors.length)
-      throw new Error(JSON.stringify(validation2.errors));
-    phase = "query_deletions";
-    for (const deletion of deletions) {
-      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
-      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
-      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
-      attemptedQuery = void 0;
-    }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
-  } catch (error51) {
-    return {
-      failed: true,
-      workflow_id: plan.workflowId,
-      version_id: plan.versionId,
-      phase,
-      completed,
-      attempted_query: attemptedQuery,
-      node_ids: compiled.node_ids,
-      edge_ids: compiled.edge_ids,
-      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
-      error: error51 instanceof Error ? error51.message : String(error51),
-      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
-    };
-  }
-}
-async function deleteNode(client, workflowId, versionId, nodeId) {
-  const snapshot2 = await client.get(workflowId, versionId);
-  if (!snapshot2.definition.nodes.some((node) => node.id === nodeId))
-    throw new Error(`Unknown workflow node: ${nodeId}`);
-  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot2.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec);
-  if (!("plan_token" in result))
-    throw new Error(JSON.stringify(result.errors));
-  return apply(client, result.plan_token);
-}
-
 // dist/tools/types.js
 function ok(value) {
   return { content: [{ type: "text", text: JSON.stringify(value) }] };
@@ -47194,57 +45655,6 @@ function ok(value) {
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
   return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
-}
-
-// dist/tools/workflows.js
-var id = external_exports.string().uuid();
-var target = { workflow_id: id, version_id: id };
-function bounded(value) {
-  const serialized = JSON.stringify(value);
-  if (serialized.length <= 6e4)
-    return value;
-  const data = value && typeof value === "object" ? value : {};
-  const execution = data.workflowExecution;
-  return { truncated: true, execution_id: data.execution_id ?? execution?.id, message: "Result exceeds 60 KB. Inspect a smaller node-result page or open the workflow in ToolJet." };
-}
-function workflowTools(client) {
-  const make = (name, title, description, inputSchema, effect, handler) => ({
-    name,
-    title,
-    description,
-    inputSchema,
-    annotations: { readOnlyHint: effect === "read", destructiveHint: effect === "write", openWorldHint: true },
-    async handler(args) {
-      try {
-        const result = await handler(external_exports.object(inputSchema).strict().parse(args));
-        if (result && typeof result === "object" && "failed" in result && result.failed)
-          return { ...ok(result), isError: true };
-        return ok(result);
-      } catch (error51) {
-        return fail(error51);
-      }
-    }
-  });
-  return [
-    make("get_workflow_node_catalog", "Get Workflow Node Catalog", "Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.", {}, "read", async () => ({ ...nodeCatalog, spec_schema: external_exports.toJSONSchema(specSchema) })),
-    make("get_workflow_capabilities", "Get Workflow Capabilities", "List authorable workflow node types and configured datasource capabilities for one workflow version. Does not inspect credentials, create resources, or execute queries.", capabilityRequestSchema.shape, "read", (args) => getWorkflowCapabilities(client, args)),
-    make("list_workflows", "List Workflows", "List workflows in the active workspace.", { page: external_exports.number().int().min(1).default(1), search: external_exports.string().default("") }, "read", (args) => client.workflows.list(args.page, args.search)),
-    make("create_workflow", "Create Workflow", "Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.", { name: external_exports.string().trim().min(1).max(100).regex(/^[^/]+$/) }, "create", (args) => client.workflows.create(args.name)),
-    make("get_workflow", "Get Workflow", "Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.", { workflow_id: id, version_id: id.optional() }, "read", async (args) => {
-      const snapshot2 = await client.workflows.get(args.workflow_id, args.version_id);
-      return { ...snapshot2, queries: await client.workflows.getQueries(snapshot2.version_id) };
-    }),
-    make("lint_workflow_spec", "Lint Workflow Spec", "Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.", { ...target, spec: specSchema, allow_draft: external_exports.boolean().default(false) }, "read", (args) => lint(client.workflows, args.workflow_id, args.version_id, args.spec, args.allow_draft)),
-    make("apply_workflow_spec", "Apply Workflow Spec", "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.", { plan_token: id }, "write", (args) => apply(client.workflows, args.plan_token)),
-    make("delete_workflow_node", "Delete Workflow Node", "Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.", { ...target, node_id: id }, "write", (args) => deleteNode(client.workflows, args.workflow_id, args.version_id, args.node_id)),
-    make("validate_workflow", "Validate Workflow", "Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.", target, "read", async (args) => {
-      const snapshot2 = await client.workflows.get(args.workflow_id, args.version_id);
-      const queries = await client.workflows.getQueries(args.version_id);
-      return { workflow_id: args.workflow_id, version_id: args.version_id, ...validateGraph(snapshot2.definition, new Set(queries.map((q) => q.id))) };
-    }),
-    make("run_workflow", "Run Workflow", "Execute the explicitly selected workflow version/environment with real effects, including datasource writes and arbitrary code. Use only when execution is authorized. Never automatically retry a timeout: execution may have completed. Does not enable disabled workflows.", { ...target, environment_id: id, params: external_exports.record(external_exports.string(), external_exports.unknown()).default({}) }, "write", async (args) => bounded(await client.workflows.run(args.workflow_id, args.version_id, args.environment_id, args.params))),
-    make("get_workflow_execution", "Get Workflow Execution", "Inspect execution status and a bounded page of node results. Does not start or retry executions.", { execution_id: id, page: external_exports.number().int().min(1).default(1), per_page: external_exports.number().int().min(1).max(50).default(20) }, "read", async (args) => bounded(await client.workflows.execution(args.execution_id, args.page, args.per_page)))
-  ];
 }
 
 // dist/tools/listWorkspaces.js
@@ -47292,13 +45702,13 @@ function useWorkspaceTool(client) {
 }
 
 // dist/tools/createApp.js
-import { existsSync, readFileSync as readFileSync3 } from "node:fs";
-import { dirname as dirname4, resolve as resolve3 } from "node:path";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
-var here = dirname4(fileURLToPath3(import.meta.url));
+import { existsSync, readFileSync as readFileSync2 } from "node:fs";
+import { dirname as dirname3, resolve as resolve2 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+var here = dirname3(fileURLToPath2(import.meta.url));
 var standardThemeCandidates = [
-  resolve3(here, "../../data/default-theme.json"),
-  resolve3(here, "../data/default-theme.json")
+  resolve2(here, "../../data/default-theme.json"),
+  resolve2(here, "../data/default-theme.json")
 ];
 var standardThemeCache;
 function loadStandardTheme() {
@@ -47307,7 +45717,7 @@ function loadStandardTheme() {
     if (!path) {
       throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
     }
-    standardThemeCache = JSON.parse(readFileSync3(path, "utf8"));
+    standardThemeCache = JSON.parse(readFileSync2(path, "utf8"));
   }
   return standardThemeCache;
 }
@@ -48193,6 +46603,115 @@ function getComponentCatalogTool(_client) {
   };
 }
 
+// dist/datasourceCatalog.js
+import { readFileSync as readFileSync3 } from "node:fs";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { dirname as dirname4, resolve as resolve3 } from "node:path";
+var COMMON_QUERY_OPTION_FIELDS = {
+  runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
+  runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
+  requestConfirmation: { path: "requestConfirmation", type: "boolean|binding" },
+  requestConfirmationFx: { path: "requestConfirmationFx", type: "boolean" },
+  confirmationMessage: { path: "confirmationMessage", type: "string|binding" },
+  showSuccessNotification: { path: "showSuccessNotification", type: "boolean|binding" },
+  successMessage: { path: "successMessage", type: "string|binding" },
+  notificationDuration: { path: "notificationDuration", type: "number|string" },
+  enableTransformation: { path: "enableTransformation", type: "boolean" },
+  transformationLanguage: { path: "transformationLanguage", type: "string", allowedValues: ["javascript", "python"] },
+  transformations: { path: "transformations", type: "object" },
+  transformation: { path: "transformation", type: "string" },
+  query_timeout: { path: "query_timeout", type: "number|string" },
+  disableQuery: { path: "disableQuery", type: "boolean|binding" },
+  disabledMessage: { path: "disabledMessage", type: "string|binding" }
+};
+var dataPath2 = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/datasource-schemas.json");
+var cache2 = null;
+function load2() {
+  if (!cache2)
+    cache2 = JSON.parse(readFileSync3(dataPath2, "utf8"));
+  return cache2;
+}
+function getDatasourceCatalog() {
+  return Object.values(load2()).map(({ kind, name, type, operations }) => ({ kind, name, type, operations }));
+}
+function getDatasourceQuerySchema(kind) {
+  return load2()[kind] ?? null;
+}
+function operationSummary(contract) {
+  const selectors = {};
+  const required4 = /* @__PURE__ */ new Set();
+  for (const variant of contract.variants) {
+    variant.required.forEach((path) => required4.add(path));
+    for (const [key, values] of Object.entries(variant.when)) {
+      const collected = selectors[key] ?? /* @__PURE__ */ new Set();
+      values.forEach((value) => collected.add(value));
+      selectors[key] = collected;
+    }
+  }
+  return {
+    operation: contract.operation,
+    selectors: Object.fromEntries(Object.entries(selectors).map(([key, values]) => [key, [...values].sort()])),
+    required: [...required4].sort(),
+    variants: contract.variants.length,
+    ...contract.response ? { response_type: contract.response.type } : {},
+    ...contract.response ? { response_status: contract.response.status } : {}
+  };
+}
+function selectDatasourceQuerySchema(kind, options2 = {}) {
+  const schema = getDatasourceQuerySchema(kind);
+  if (!schema)
+    return null;
+  const sections = new Set(options2.sections ?? (options2.operation ? ["summary", "request", "response"] : ["summary"]));
+  const result = {};
+  if (sections.has("summary")) {
+    Object.assign(result, {
+      kind: schema.kind,
+      name: schema.name,
+      type: schema.type,
+      description: schema.description,
+      defaults: schema.defaults,
+      operations: schema.operations,
+      ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
+    });
+    if (!options2.operation) {
+      result.operation_summaries = Object.values(schema.contracts).map(operationSummary);
+    }
+  }
+  if (options2.operation) {
+    const contract = schema.contracts[options2.operation];
+    if (!contract) {
+      return {
+        kind,
+        error: `Unknown operation "${options2.operation}" for datasource kind "${kind}".`,
+        operations: schema.operations
+      };
+    }
+    if (sections.has("request")) {
+      result.request = {
+        operation: contract.operation,
+        variants: contract.variants,
+        common_fields: COMMON_QUERY_OPTION_FIELDS,
+        ...contract.notes ? { notes: contract.notes } : {}
+      };
+    }
+    if (sections.has("response")) {
+      result.response = contract.response ?? {
+        type: "unknown",
+        status: "unknown",
+        source: "tooljet-plugin",
+        description: "This plugin does not publish a stable response contract. Run a safe read query and inspect data."
+      };
+    }
+  }
+  if (sections.has("raw")) {
+    result.raw = { properties: schema.properties, sources: schema.sources };
+  }
+  if (sections.has("introspection")) {
+    result.introspection_methods = schema.introspectionMethods ?? [];
+  }
+  return result;
+}
+
 // dist/tools/getDatasourceQuerySchema.js
 var SECTIONS = ["summary", "request", "response", "raw", "introspection"];
 var requestSchema = external_exports.object({
@@ -48296,7 +46815,7 @@ function getDatasourceQuerySchemaTool(client) {
 // dist/openapiSpec.js
 var import_yaml = __toESM(require_dist2(), 1);
 var HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
-function record4(value) {
+function record3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
 }
 function extractSpec(options2) {
@@ -48308,34 +46827,34 @@ function extractSpec(options2) {
   return void 0;
 }
 function parseSpecEntry(entry) {
-  const unwrapped = record4(entry)?.value !== void 0 ? record4(entry).value : entry;
+  const unwrapped = record3(entry)?.value !== void 0 ? record3(entry).value : entry;
   if (typeof unwrapped === "string") {
     try {
-      return record4(JSON.parse(unwrapped));
+      return record3(JSON.parse(unwrapped));
     } catch {
       try {
-        return record4((0, import_yaml.parse)(unwrapped, { prettyErrors: false }));
+        return record3((0, import_yaml.parse)(unwrapped, { prettyErrors: false }));
       } catch {
         return void 0;
       }
     }
   }
-  return record4(unwrapped);
+  return record3(unwrapped);
 }
 function schemaType(schema) {
   if (!schema)
     return void 0;
   if (typeof schema.type === "string") {
-    return schema.type === "array" && record4(schema.items)?.type ? `array<${record4(schema.items).type}>` : schema.type;
+    return schema.type === "array" && record3(schema.items)?.type ? `array<${record3(schema.items).type}>` : schema.type;
   }
   return schema.$ref ? String(schema.$ref) : void 0;
 }
 function listEndpoints(spec) {
-  const paths = record4(spec.paths) ?? {};
+  const paths = record3(spec.paths) ?? {};
   return Object.entries(paths).flatMap(([path, methods]) => {
-    const byMethod = record4(methods) ?? {};
+    const byMethod = record3(methods) ?? {};
     return Object.keys(byMethod).filter((method) => HTTP_METHODS.includes(method.toLowerCase())).map((method) => {
-      const operation = record4(byMethod[method]) ?? {};
+      const operation = record3(byMethod[method]) ?? {};
       return {
         path,
         method: method.toLowerCase(),
@@ -48347,19 +46866,19 @@ function listEndpoints(spec) {
   });
 }
 function deref(spec, node, seen = /* @__PURE__ */ new Set()) {
-  const value = record4(node);
+  const value = record3(node);
   if (!value)
     return void 0;
   const ref2 = typeof value.$ref === "string" ? value.$ref : void 0;
   if (!ref2 || !ref2.startsWith("#/") || seen.has(ref2))
     return value;
   seen.add(ref2);
-  const resolved = ref2.slice(2).split("/").reduce((node2, segment) => record4(node2)?.[segment.replace(/~1/g, "/").replace(/~0/g, "~")], spec);
+  const resolved = ref2.slice(2).split("/").reduce((node2, segment) => record3(node2)?.[segment.replace(/~1/g, "/").replace(/~0/g, "~")], spec);
   return deref(spec, resolved, seen) ?? value;
 }
 function endpointParameters(spec, path, method) {
-  const pathItem = record4(record4(spec.paths)?.[path]);
-  const operation = record4(pathItem?.[method.toLowerCase()]);
+  const pathItem = record3(record3(spec.paths)?.[path]);
+  const operation = record3(pathItem?.[method.toLowerCase()]);
   if (!pathItem || !operation)
     return { parameters: [], found: false };
   const raw = [
@@ -48382,7 +46901,7 @@ function endpointParameters(spec, path, method) {
     });
   }
   const body = deref(spec, operation.requestBody);
-  const json3 = body && record4(body.content) ? record4(record4(body.content)["application/json"]) : void 0;
+  const json3 = body && record3(body.content) ? record3(record3(body.content)["application/json"]) : void 0;
   const bodySchema = json3 ? deref(spec, json3.schema) : void 0;
   return {
     parameters: [...byKey.values()],
@@ -48391,7 +46910,7 @@ function endpointParameters(spec, path, method) {
   };
 }
 function specHost(spec) {
-  const server = Array.isArray(spec.servers) ? record4(spec.servers[0]) : void 0;
+  const server = Array.isArray(spec.servers) ? record3(spec.servers[0]) : void 0;
   const url2 = typeof server?.url === "string" ? server.url : void 0;
   if (url2 && /^https?:\/\//i.test(url2))
     return url2.replace(/\/+$/, "");
@@ -48438,7 +46957,7 @@ function tokenize(text) {
 var DESCRIPTION_WEIGHT = 0.2;
 var NAME_COVERAGE_BONUS = 4;
 function endpointFields(spec, endpoint) {
-  const operation = record4(record4(record4(spec.paths)?.[endpoint.path])?.[endpoint.method]) ?? {};
+  const operation = record3(record3(record3(spec.paths)?.[endpoint.path])?.[endpoint.method]) ?? {};
   const tags = Array.isArray(operation.tags) ? operation.tags.map(String) : void 0;
   return {
     // The operation's own name, for coverage: its summary, else its operationId.
@@ -49296,8 +47815,8 @@ function readPath(source2, segments) {
   }
   return { found: true, value: cursor };
 }
-function writePath(target2, segments, value) {
-  let cursor = target2;
+function writePath(target, segments, value) {
+  let cursor = target;
   for (let index = 0; index < segments.length - 1; index += 1) {
     const segment = segments[index];
     const child = cursor[segment];
@@ -49624,12 +48143,12 @@ function validateEvents(summary, events, options2 = {}) {
       noteTrigger(queryId, pageOfComponent.get(event.sourceId));
   }
   const pageScopedTarget = (action) => {
-    const id2 = action.actionId;
-    if (id2 === "set-table-page")
+    const id = action.actionId;
+    if (id === "set-table-page")
       return typeof action.table === "string" ? action.table : void 0;
-    if (id2 === "control-component" || id2 === "scroll-component-into-view")
+    if (id === "control-component" || id === "scroll-component-into-view")
       return typeof action.componentId === "string" ? action.componentId : void 0;
-    if (id2 === "show-modal" || id2 === "close-modal")
+    if (id === "show-modal" || id === "close-modal")
       return typeof action.modal === "string" ? action.modal : void 0;
     return void 0;
   };
@@ -49731,26 +48250,26 @@ function validateEvents(summary, events, options2 = {}) {
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
-      const target2 = typeof modal === "string" ? components.get(modal) : void 0;
-      if (!target2) {
+      const target = typeof modal === "string" ? components.get(modal) : void 0;
+      if (!target) {
         errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
-      } else if (!["Modal", "ModalV2"].includes(target2.type ?? "")) {
-        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target2.type ?? "unknown"} "${target2.name ?? target2.id}".`);
+      } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
+        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
-      const target2 = typeof componentId === "string" ? components.get(componentId) : void 0;
-      if (!target2) {
+      const target = typeof componentId === "string" ? components.get(componentId) : void 0;
+      if (!target) {
         errors.push(`${label2}: control-component target "${String(componentId)}" does not exist.`);
       } else {
         const handle = event.action.componentSpecificActionHandle;
-        const schema = target2.type ? getComponentSchema(target2.type) : null;
+        const schema = target.type ? getComponentSchema(target.type) : null;
         const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
         if (!nonEmptyString(handle)) {
           errors.push(`${label2}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target2.type ?? "unknown"} "${target2.name ?? target2.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
@@ -49896,6 +48415,1190 @@ function persistedEventSpecs(summary) {
       name: event.name
     }];
   });
+}
+
+// dist/queryExecutionSafety.js
+var LARGE_READ_ROW_THRESHOLD = 1e3;
+var SQL_KINDS = /* @__PURE__ */ new Set([
+  "postgresql",
+  "mysql",
+  "mariadb",
+  "mssql",
+  "sqlserver",
+  "cockroachdb",
+  "redshift",
+  "snowflake",
+  "bigquery",
+  "clickhouse",
+  "oracle",
+  "oracledb",
+  "sqlite"
+]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift"]);
+function record4(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+}
+function staticPositiveInteger(value) {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0)
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
+  return match ? Number(match[1]) : void 0;
+}
+function containsBinding(value) {
+  if (typeof value === "string")
+    return value.includes("{{");
+  if (Array.isArray(value))
+    return value.some(containsBinding);
+  return !!record4(value) && Object.values(record4(value)).some(containsBinding);
+}
+var SERVICENOW_ROW_READS = /* @__PURE__ */ new Set(["list_records"]);
+var SERVICENOW_SINGLE_READS = /* @__PURE__ */ new Set(["get_record", "aggregate"]);
+var SERVICENOW_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_tables",
+  "get_table_schema",
+  "get_field_choices",
+  "list_workflows",
+  "list_flows"
+]);
+function assessServiceNow(options2, datasourceId) {
+  const identity = { datasourceKind: "servicenow", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const table = typeof options2.table === "string" ? options2.table.trim() : "";
+  const source2 = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("ServiceNow query has no operation.");
+  if (!SERVICENOW_ROW_READS.has(operation) && !SERVICENOW_SINGLE_READS.has(operation) && !SERVICENOW_METADATA_READS.has(operation)) {
+    return refuse(`ServiceNow operation ${operation} is not a read; it can change ServiceNow state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...source2 ? { source: source2 } : {},
+    ...identity
+  };
+  if (SERVICENOW_SINGLE_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: operation === "aggregate",
+      maxRows: 1,
+      reason: `ServiceNow ${operation} reads remote data and consumes API quota.`
+    };
+  }
+  if (SERVICENOW_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.`
+    };
+  }
+  const maxRows = staticPositiveInteger(options2.sysparm_limit);
+  if (maxRows === void 0) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      reason: "ServiceNow list_records has no static sysparm_limit, so its result size cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `ServiceNow list_records can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return {
+    ...remote,
+    countOnly: false,
+    maxRows,
+    simpleSourceRead: true,
+    reason: "ServiceNow list_records reads remote data and consumes API quota."
+  };
+}
+function assessOpenapi(options2, datasourceId) {
+  const identity = { datasourceKind: "openapi", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const method = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (method !== "get") {
+    return refuse(`OpenAPI method ${method ?? "<missing>"} is not a proven read; only GET queries can be previewed.`);
+  }
+  const path = typeof options2.path === "string" ? options2.path.trim() : "";
+  if (!path || containsBinding(path)) {
+    return refuse("OpenAPI preview requires a non-empty static path; dynamic endpoints must be verified in the viewer.");
+  }
+  if (containsBinding(options2.params) || containsBinding(options2.host)) {
+    return refuse("OpenAPI preview requires static host and parameters; binding-dependent requests must be verified in the viewer.");
+  }
+  const host = typeof options2.host === "string" ? options2.host.trim() : "";
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: `${host}${path}` },
+    reason: "OpenAPI GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
+var INFLUX_ROW_READS = /* @__PURE__ */ new Set(["query_data"]);
+var INFLUX_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_buckets",
+  "retrieve_bucket",
+  "analyze_flux_query",
+  "abstract_syntax_tree",
+  "query_suggestions",
+  "query_suggestions_for_branching"
+]);
+var FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_])(?:[A-Za-z_][A-Za-z0-9_]*\s*\.\s*)?(?:wideTo|to)\s*\(/;
+var FLUX_EGRESS_PACKAGES = [
+  "sql",
+  "kafka",
+  "mqtt",
+  "http",
+  "slack",
+  "pagerduty",
+  "discord",
+  "teams",
+  "telegram",
+  "bigpanda",
+  "opsgenie",
+  "sensu",
+  "servicenow",
+  "victorops",
+  "webexteams",
+  "zenoss",
+  "monitor",
+  "influxdata/influxdb/secrets",
+  "influxdata/influxdb/tasks"
+];
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
+function assessInflux(options2, datasourceId) {
+  const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("InfluxDB query has no operation.");
+  if (!INFLUX_ROW_READS.has(operation) && !INFLUX_METADATA_READS.has(operation)) {
+    return refuse(`InfluxDB operation ${operation} is not a read; it can change InfluxDB state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...identity
+  };
+  if (INFLUX_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `InfluxDB ${operation} reads remote metadata without executing a query.`
+    };
+  }
+  const body = typeof options2.body === "string" ? options2.body : "";
+  if (!body.trim())
+    return refuse("InfluxDB query_data has no Flux body to classify.");
+  if (FLUX_WRITE_CALL.test(body)) {
+    return refuse("InfluxDB query_data body calls to()/wideTo(), which writes points or rows out of the query; that is not a read.");
+  }
+  const egress = body.match(FLUX_EGRESS_IMPORT);
+  if (egress) {
+    return refuse(`InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; that is not a read.`);
+  }
+  const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
+  const source2 = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
+  const bounded = { ...remote, countOnly: false, ...source2 ? { source: source2 } : {} };
+  const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
+  if (maxRows === void 0) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      reason: "InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return { ...bounded, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
+}
+function assessRestGet(options2, datasourceId) {
+  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
+  const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
+  if (method !== "get") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
+      ...identity
+    };
+  }
+  const url2 = typeof options2.url === "string" ? options2.url.trim() : "";
+  if (!url2 || containsBinding(url2)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
+      ...identity
+    };
+  }
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
+  if (requestFields.some(containsBinding)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: url2 },
+    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
+function assessSupabase(options2, datasourceId) {
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options2.count_table_name : options2.get_table_name;
+  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
+  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Supabase operation is not a static row read.",
+      ...identity
+    };
+  }
+  const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === "count_rows") {
+    const countFilters = options2.count_filters;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record4(countFilters) && Object.keys(record4(countFilters)).length === 0;
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source: source2,
+      ...identity
+    };
+  }
+  const maxRows = staticPositiveInteger(options2.get_limit);
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD,
+    requiresRemoteReadConfirmation: true,
+    simpleSourceRead: true,
+    source: source2,
+    maxRows,
+    ...identity
+  };
+}
+function stripSql(sql) {
+  return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
+}
+function normalizeSqlTable(raw) {
+  return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
+}
+function sqlSource(sql) {
+  const match = sql.match(/\bfrom\s+((?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?)/i);
+  return match ? { kind: "sql_table", value: normalizeSqlTable(match[1]) } : void 0;
+}
+function assessSql(sql, datasourceKind, datasourceId) {
+  const compact = stripSql(sql);
+  const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
+  if (!compact || /;\s*\S/.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is empty or contains more than one statement",
+      ...identity
+    };
+  }
+  if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity
+    };
+  }
+  if (!/^select\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is not a single proven read statement",
+      ...identity
+    };
+  }
+  if (/\binto\s+(?:temp(?:orary)?\s+|unlogged\s+)?[`"\[]?[A-Za-z_$]/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SELECT INTO creates or replaces data and is not a read-only query",
+      ...identity
+    };
+  }
+  if (/\bfor\s+(?:no\s+key\s+update|key\s+share|update|share)\b|\block\s+in\s+share\s+mode\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Locking SELECT statements are not side-effect-free reads",
+      ...identity
+    };
+  }
+  const fromIndex = compact.search(/\bfrom\b/i);
+  const selectClause = compact.slice("select".length, fromIndex >= 0 ? fromIndex : compact.length).trim();
+  const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
+  const projectionClause = selectClause.replace(/^top\s*(?:\(\s*\d+\s*\)|\d+)\s+/i, "").trim();
+  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(projectionClause);
+  const source2 = sqlSource(compact);
+  const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
+  const simpleSourceRead = !!source2 && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
+  const limit = compact.match(/\blimit\s+(\d+)\b/i);
+  const top = selectClause.match(/^top\s*(?:\(\s*(\d+)\s*\)|(\d+))\s+/i);
+  const fetch2 = compact.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only\b/i);
+  const maxRows = limit ? Number(limit[1]) : top ? Number(top[1] ?? top[2]) : fetch2 ? Number(fetch2[1]) : void 0;
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(datasourceKind) && fromIndex >= 0;
+  const fullSourceCount = countOnly && /^count\s*\(\s*\*\s*\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause) && simpleSourceRead && !/\b(where|group\s+by|having|limit|offset)\b/i.test(compact);
+  if (selectStar) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: true,
+      requiresCountPreflight: false,
+      source: source2,
+      maxRows,
+      simpleSourceRead,
+      ...identity,
+      reason: "SELECT * is refused. Inspect the schema and select only the required columns."
+    };
+  }
+  if (fromIndex < 0) {
+    if (/\b[A-Za-z_$][\w$.]*\s*\(/.test(selectClause)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "Function-only SELECT statements cannot be proven side-effect-free",
+        ...identity
+      };
+    }
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source: source2,
+      maxRows,
+      ...identity
+    };
+  }
+  if (countOnly) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      fullSourceCount,
+      simpleSourceRead,
+      source: source2,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead,
+      source: source2,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead,
+    source: source2,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function countAggregate(options2) {
+  const listRows = record4(options2.list_rows);
+  const aggregates = record4(listRows?.aggregates);
+  const groupBy = record4(listRows?.group_by);
+  if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
+    return false;
+  return Object.values(aggregates).every((aggregate) => record4(aggregate)?.aggFx === "count");
+}
+function fullToolJetDbCount(options2) {
+  if (!countAggregate(options2))
+    return false;
+  const listRows = record4(options2.list_rows);
+  const aggregates = record4(listRows.aggregates);
+  if (Object.keys(aggregates).length !== 1)
+    return false;
+  const aggregate = record4(Object.values(aggregates)[0]);
+  if (aggregate?.column !== "id")
+    return false;
+  const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
+  return Object.entries(listRows).every(([key, value]) => {
+    if (ignoredForScope.has(key))
+      return true;
+    if (value === void 0 || value === null || value === "")
+      return true;
+    if (Array.isArray(value))
+      return value.length === 0;
+    if (record4(value))
+      return Object.keys(record4(value)).length === 0;
+    return false;
+  });
+}
+function guiSource(kind, options2) {
+  if (kind === "tooljetdb" && typeof options2.table_id === "string") {
+    return { kind: "table_id", value: options2.table_id };
+  }
+  const table = typeof options2.table === "string" ? options2.table : void 0;
+  if (!table)
+    return void 0;
+  const schema = typeof options2.schema === "string" ? `${options2.schema}.` : "";
+  return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
+}
+function assessListRows(kind, options2, datasourceId) {
+  const source2 = guiSource(kind, options2);
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(kind);
+  const identity = { datasourceKind: kind, ...datasourceId ? { datasourceId } : {} };
+  if (kind === "tooljetdb" && countAggregate(options2)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount: fullToolJetDbCount(options2),
+      simpleSourceRead: true,
+      source: source2,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  const listRows = record4(options2.list_rows);
+  const maxRows = staticPositiveInteger(listRows?.limit ?? options2.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead: true,
+      source: source2,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead: true,
+    source: source2,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function assessQueryRead(query2) {
+  const kind = query2.kind?.toLowerCase();
+  const datasourceId = query2.data_source_id;
+  const options2 = record4(query2.options);
+  if (!kind || !options2) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Datasource kind/options are unavailable."
+    };
+  }
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (kind === "restapi")
+    return assessRestGet(options2, datasourceId);
+  if (kind === "openapi")
+    return assessOpenapi(options2, datasourceId);
+  if (kind === "servicenow")
+    return assessServiceNow(options2, datasourceId);
+  if (kind === "influxdb")
+    return assessInflux(options2, datasourceId);
+  if (kind === "supabase")
+    return assessSupabase(options2, datasourceId);
+  if (kind === "tooljetdb") {
+    if (operation === "list_rows")
+      return assessListRows(kind, options2, datasourceId);
+    if (operation === "sql_execution") {
+      const sql = record4(options2.sql_execution)?.sqlQuery;
+      return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "ToolJet DB SQL text is unavailable."
+      };
+    }
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `ToolJet DB operation ${operation ?? "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (SQL_KINDS.has(kind)) {
+    if (operation === "list_rows" || options2.mode === "gui")
+      return assessListRows(kind, options2, datasourceId);
+    const sql = typeof options2.query === "string" ? options2.query : typeof options2.sql === "string" ? options2.sql : void 0;
+    return sql ? assessSql(sql, kind, datasourceId) : {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL text is unavailable."
+    };
+  }
+  return {
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason: `Datasource kind ${kind} has no proven read classifier.`
+  };
+}
+function sameReadSource(target, count) {
+  return !!target.source && !!count.source && target.simpleSourceRead === true && count.fullSourceCount === true && !!target.datasourceId && target.datasourceId === count.datasourceId && target.datasourceKind === count.datasourceKind && target.source.kind === count.source.kind && target.source.value === count.source.value;
+}
+function extractRowCount(result) {
+  if (result.status !== "ok")
+    return void 0;
+  let value = result.data;
+  if (record4(value)?.result !== void 0)
+    value = record4(value).result;
+  if (Array.isArray(value)) {
+    if (value.length !== 1)
+      return void 0;
+    value = value[0];
+  }
+  const row = record4(value);
+  if (!row)
+    return void 0;
+  const numeric = Object.values(row).flatMap((candidate) => {
+    const parsed = typeof candidate === "number" ? candidate : typeof candidate === "string" && /^\d+$/.test(candidate.trim()) ? Number(candidate) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? [parsed] : [];
+  });
+  return numeric.length === 1 ? numeric[0] : void 0;
+}
+
+// dist/queryValidation.js
+var KNOWN_IGNORED_KEYS = {
+  run_on_page_load: "runOnPageLoad"
+};
+function isObject2(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+function isTruthyStatic(value) {
+  return value === true || value === "true" || value === "{{true}}";
+}
+function isDynamicBinding2(value) {
+  return typeof value === "string" && value.includes("{{");
+}
+function valueAtPath(source2, path) {
+  let cursor = source2;
+  for (const segment of path.split(".")) {
+    if (!isObject2(cursor) || !Object.prototype.hasOwnProperty.call(cursor, segment))
+      return void 0;
+    cursor = cursor[segment];
+  }
+  return cursor;
+}
+function operationFromOptions(options2, contracts, defaults) {
+  const operation = options2.operation ?? defaults.operation;
+  if (typeof operation === "string" && operation) {
+    if (Object.prototype.hasOwnProperty.call(contracts, operation))
+      return operation;
+    if (Object.prototype.hasOwnProperty.call(contracts, "default"))
+      return "default";
+    return operation;
+  }
+  const mode = options2.mode ?? defaults.mode;
+  if (typeof mode === "string" && mode && Object.prototype.hasOwnProperty.call(contracts, mode))
+    return mode;
+  if (Object.prototype.hasOwnProperty.call(contracts, "default"))
+    return "default";
+  const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
+    const selectors = Object.entries(variant.when);
+    return selectors.length > 0 && selectors.every(([selector, accepted]) => {
+      const actual = options2[selector] ?? defaults[selector];
+      return typeof actual === "string" && !isDynamicBinding2(actual) && accepted.includes(actual);
+    });
+  }));
+  if (selectorMatches.length === 1)
+    return selectorMatches[0][0];
+  return void 0;
+}
+function variantMatches(variant, options2) {
+  return Object.entries(variant.when).every(([selector, accepted]) => {
+    const actual = options2[selector];
+    return actual === void 0 || isDynamicBinding2(actual) || typeof actual === "string" && accepted.includes(actual);
+  });
+}
+function intersection2(values) {
+  if (!values.length)
+    return [];
+  return values[0].filter((value) => values.every((items) => items.includes(value)));
+}
+function fieldMap(variants) {
+  const fields = { ...COMMON_QUERY_OPTION_FIELDS };
+  for (const variant of variants)
+    Object.assign(fields, variant.fields);
+  return fields;
+}
+function topLevelKeys(fields) {
+  return new Set(Object.keys(fields).map((path) => path.split(".")[0]));
+}
+function nestedChildren(fields, root) {
+  return new Set(Object.keys(fields).filter((path) => path.startsWith(`${root}.`)).map((path) => path.slice(root.length + 1).split(".")[0]));
+}
+function suffixSuggestion(key, fields) {
+  const matches2 = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
+  return matches2.length === 1 ? matches2[0] : void 0;
+}
+function tupleArity(field) {
+  const tuple2 = field.shape?.["<index>"];
+  return Array.isArray(tuple2) && tuple2.length > 0 ? tuple2.length : void 0;
+}
+function bindingStrings(value, path = "") {
+  if (typeof value === "string")
+    return [{ path: path || void 0, value }];
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => bindingStrings(item, `${path}[${index}]`));
+  }
+  if (!isObject2(value))
+    return [];
+  return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
+}
+function tableStateWarnings(options2) {
+  const warnings = [];
+  for (const binding of bindingStrings(options2)) {
+    const match = binding.value.match(/components\.([A-Za-z_$][\w$]*)\.pageIndex\s*-\s*1/);
+    if (!match)
+      continue;
+    warnings.push({
+      code: "unguarded_table_page_index",
+      path: binding.path,
+      message: `Table pageIndex may be undefined when the first page-load query evaluates; "${match[0]}" can produce NaN and an empty table. Use ((components.${match[1]}.pageIndex || 1) - 1) * pageSize (or an equivalent nullish guard).`
+    });
+  }
+  return warnings;
+}
+function unquotedSqlBindingIssues(sql) {
+  const issues = [];
+  const risky = /(=|<>|!=|>|<|>=|<=|\bLIKE\b|\bILIKE\b|,|\()\s*(?!')\{\{/gi;
+  const seen = /* @__PURE__ */ new Set();
+  let match;
+  while ((match = risky.exec(sql)) !== null) {
+    const raw = match[1].toUpperCase();
+    const operator = raw === "," || raw === "(" ? "a function argument" : raw;
+    if (seen.has(operator))
+      continue;
+    seen.add(operator);
+    issues.push({
+      code: "unquoted_sql_binding",
+      path: "query",
+      message: `SQL uses an unquoted binding (as ${operator}). ToolJet splices bindings in as raw text, so when that component is empty \u2014 its state on page load \u2014 the statement becomes nothing at that position and fails with a SQL syntax error; the table then shows "No data" and the page looks broken on first open. Pass it as a parameter instead: put \`:name\` in the statement and the binding in query_params, e.g. \`WHERE priority = :priority\` with query_params [["priority", "{{components.priorityFilter.value}}"]]. That fixes the empty case and the escaping together. Quoting it ('{{...}}') only fixes the empty case and leaves the value spliced into the statement as text.`
+    });
+  }
+  return issues;
+}
+function interpolatedSqlBindingIssues(sql) {
+  const quoted = /'\s*\{\{[^}]*\}\}\s*'/g;
+  if (!quoted.test(sql))
+    return [];
+  return [
+    {
+      code: "interpolated_sql_binding",
+      path: "query",
+      message: 'SQL pastes a binding into the statement as quoted text (\'{{...}}\'). The quotes are the only escaping, so a value containing a quote rewrites the statement. Pass it as a parameter instead: `:name` in the query and the binding in query_params, e.g. `WHERE priority = :priority` with query_params [["priority", "{{components.priorityFilter.value}}"]]. Safe today if the value comes from a fixed dropdown, but the query does not change when someone later binds it to a text input.'
+    }
+  ];
+}
+function transformationWarnings(options2) {
+  const warnings = [];
+  const bag = isObject2(options2.transformations) ? options2.transformations : void 0;
+  const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
+  const hasCode = languages.length > 0 || typeof options2.transformation === "string" && options2.transformation.trim() !== "";
+  if (!hasCode)
+    return warnings;
+  const enabled = isTruthyStatic(options2.enableTransformation);
+  const language = typeof options2.transformationLanguage === "string" ? options2.transformationLanguage : void 0;
+  if (!enabled) {
+    warnings.push({
+      code: "transformation_not_enabled",
+      path: "enableTransformation",
+      message: "A transformation is supplied but enableTransformation is not true, so ToolJet saves the code and never runs it. Set enableTransformation: true and transformationLanguage to the language the code is written in."
+    });
+  }
+  if (!language) {
+    warnings.push({
+      code: "transformation_language_missing",
+      path: "transformationLanguage",
+      message: `A transformation is supplied without transformationLanguage, so ToolJet cannot tell how to run it. Set it to ${languages.length === 1 ? `"${languages[0]}"` : '"javascript" or "python"'}.`
+    });
+  } else if (languages.length > 0 && !languages.includes(language)) {
+    warnings.push({
+      code: "transformation_language_mismatch",
+      path: "transformationLanguage",
+      message: `transformationLanguage is "${language}" but the code is under transformations.${languages.join("/")}. ToolJet runs the entry matching transformationLanguage, so the supplied code is ignored.`
+    });
+  }
+  return warnings;
+}
+function influxTransformWarnings(kind, options2) {
+  if (kind !== "influxdb")
+    return [];
+  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  if (operation !== "query_data")
+    return [];
+  if (isTruthyStatic(options2.enableTransformation))
+    return [];
+  return [{
+    code: "influx_raw_csv_response",
+    path: "enableTransformation",
+    message: 'InfluxDB query_data returns annotated CSV as a single raw string, not rows. Bound directly, a Table renders nothing. Add a transformation that parses the CSV into an array of row objects (skip the #datatype/#group/#default annotation lines and the empty leading columns), with enableTransformation: true and transformationLanguage: "javascript".'
+  }];
+}
+function validateQueryOptions(kind, options2) {
+  const errors = [];
+  const warnings = tableStateWarnings(options2);
+  warnings.push(...transformationWarnings(options2));
+  warnings.push(...influxTransformWarnings(kind, options2));
+  if (typeof options2.query === "string") {
+    errors.push(...unquotedSqlBindingIssues(options2.query));
+    warnings.push(...interpolatedSqlBindingIssues(options2.query));
+  }
+  const readAssessment = assessQueryRead({ id: "<planned-query>", kind, options: options2 });
+  if (readAssessment.selectStar) {
+    warnings.push({
+      code: "select_star_read",
+      path: typeof options2.query === "string" ? "query" : void 0,
+      message: "SELECT * will be refused by run_query. Inspect the table schema and select only the fields the app needs; this avoids unknown/wide columns and accidental sensitive-data reads."
+    });
+  }
+  if (readAssessment.provenRead && readAssessment.requiresCountPreflight) {
+    warnings.push({
+      code: "unbounded_read",
+      path: typeof options2.query === "string" ? "query" : void 0,
+      message: `${readAssessment.reason ?? "This read is not statically bounded"} Count the same table before running it. Prefer a bounded preview and server-side pagination for large or growing datasets.`
+    });
+  }
+  const automaticRead = isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange);
+  if (automaticRead && readAssessment.provenRead && readAssessment.requiresCountPreflight) {
+    errors.push({
+      code: "unsafe_automatic_unbounded_read",
+      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      message: `An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`
+    });
+  }
+  if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
+    errors.push({
+      code: "unsafe_automatic_billable_read",
+      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      message: "A potentially billable warehouse read cannot run automatically. Trigger it through an explicit user action, and use run_query user_confirmed_billable_read:true only after the user approves any MCP-side verification run."
+    });
+  }
+  const schema = getDatasourceQuerySchema(kind);
+  if (!schema) {
+    warnings.push({
+      code: "schema_unavailable",
+      message: `No generated query contract is available for datasource kind "${kind}"; options were not validated.`
+    });
+    return { kind, schemaFound: false, errors, warnings };
+  }
+  const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
+  if (!operation) {
+    errors.push({
+      code: "missing_operation",
+      path: schema.contracts.sql ? "mode" : "operation",
+      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(", ") || "default"}.`
+    });
+    return { kind, schemaFound: true, errors, warnings };
+  }
+  const contract = schema.contracts[operation];
+  if (!contract) {
+    errors.push({
+      code: "invalid_operation",
+      path: typeof options2.operation === "string" ? "operation" : "mode",
+      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(", ")}.`
+    });
+    return { kind, operation, schemaFound: true, errors, warnings };
+  }
+  const matching = contract.variants.filter((variant) => variantMatches(variant, options2));
+  if (!matching.length) {
+    const selectors = /* @__PURE__ */ new Map();
+    for (const variant of contract.variants) {
+      for (const [selector, accepted] of Object.entries(variant.when)) {
+        const values = selectors.get(selector) ?? /* @__PURE__ */ new Set();
+        accepted.forEach((value) => values.add(value));
+        selectors.set(selector, values);
+      }
+    }
+    for (const [selector, accepted] of selectors) {
+      const actual = options2[selector];
+      if (typeof actual === "string" && !accepted.has(actual)) {
+        errors.push({
+          code: "invalid_selector_value",
+          path: selector,
+          message: `Invalid ${selector} "${actual}" for ${kind}/${operation}. Allowed values: ${[...accepted].sort().join(", ")}.`
+        });
+      }
+    }
+    return { kind, operation, schemaFound: true, errors, warnings };
+  }
+  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding2(options2[selector])))];
+  for (const selector of dynamicSelectors) {
+    warnings.push({
+      code: "runtime_selector_binding",
+      path: selector,
+      message: `Selector "${selector}" is a dynamic binding, so MCP validated the fields shared by every possible ${kind}/${operation} variant. Browser-verify any fields required only by the runtime-selected value.`
+    });
+  }
+  const fields = fieldMap(matching);
+  const allowedTopLevel = topLevelKeys(fields);
+  for (const key of Object.keys(options2)) {
+    if (allowedTopLevel.has(key))
+      continue;
+    const exactReplacement = KNOWN_IGNORED_KEYS[key];
+    const nestedReplacement = suffixSuggestion(key, fields);
+    const replacement = exactReplacement ?? nestedReplacement;
+    warnings.push({
+      code: replacement ? "ignored_or_misplaced_option_key" : "unknown_option_key",
+      path: key,
+      message: replacement ? `Option key "${key}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
+    });
+  }
+  for (const root of allowedTopLevel) {
+    const children = nestedChildren(fields, root);
+    const actual = options2[root];
+    if (!children.size || !isObject2(actual))
+      continue;
+    for (const child of Object.keys(actual)) {
+      if (!children.has(child)) {
+        warnings.push({
+          code: "unknown_nested_option_key",
+          path: `${root}.${child}`,
+          message: `Unknown nested option key "${root}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`
+        });
+      }
+    }
+  }
+  const required4 = intersection2(matching.map((variant) => variant.required));
+  for (const path of required4) {
+    const value = valueAtPath(options2, path);
+    if (value === void 0 || value === null || value === "") {
+      errors.push({
+        code: "missing_required_option",
+        path,
+        message: `Missing required option "${path}" for ${kind}/${operation}.`
+      });
+    }
+  }
+  for (const [path, field] of Object.entries(fields)) {
+    const value = valueAtPath(options2, path);
+    const arity = tupleArity(field);
+    if (arity !== void 0 && value !== void 0 && !isDynamicBinding2(value)) {
+      if (!Array.isArray(value)) {
+        errors.push({
+          code: "invalid_option_shape",
+          path,
+          message: `Option "${path}" for ${kind}/${operation} must be an array of ${arity}-item tuples.`
+        });
+      } else {
+        const invalidIndex = value.findIndex((item) => !Array.isArray(item) || item.length !== arity);
+        if (invalidIndex >= 0) {
+          errors.push({
+            code: "invalid_option_shape",
+            path: `${path}[${invalidIndex}]`,
+            message: `Option "${path}" for ${kind}/${operation} must contain ${arity}-item tuples such as [["key", "value"]].`
+          });
+        }
+      }
+    }
+    if (!field.allowedValues?.length)
+      continue;
+    if (typeof value === "string" && !value.includes("{{") && !field.allowedValues.includes(value)) {
+      errors.push({
+        code: "invalid_option_value",
+        path,
+        message: `Invalid value "${value}" for ${kind}/${operation} option "${path}". Allowed values: ${field.allowedValues.join(", ")}.`
+      });
+    }
+  }
+  if (kind === "tooljetdb" && (operation === "create_row" || operation === "update_rows")) {
+    const columnsPath = operation === "create_row" ? "create_row" : "update_rows.columns";
+    const columns = valueAtPath(options2, columnsPath);
+    if (isObject2(columns) && Object.keys(columns).length > 0) {
+      const flat = Object.entries(columns).filter(([, clause]) => !isObject2(clause) || typeof clause.column !== "string" || clause.column === "");
+      if (flat.length > 0) {
+        const example = flat[0][0];
+        errors.push({
+          code: "malformed_write_columns",
+          path: `${columnsPath}.${example}`,
+          message: `ToolJet DB ${operation} "${columnsPath}" must map each entry to a {column, value} record, not a flat {"${example}": <value>} pair. ToolJet reads .column off each entry, so as authored this write sends an empty body and fails at runtime with PGRST102 ("Empty or invalid json") even though the app validates. Use {"0": {"column": "${example}", "value": <value>}, \u2026}.`
+        });
+      }
+    }
+  }
+  if (kind !== "tooljetdb" && operation === "create_row" && isObject2(valueAtPath(options2, "create_row"))) {
+    const createRow = valueAtPath(options2, "create_row");
+    const columns = createRow.columns;
+    const usable = isObject2(columns) && Object.values(columns).some((clause) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "");
+    if (!usable) {
+      const misplaced = !isObject2(columns) && Object.values(createRow).some((clause) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "");
+      errors.push({
+        code: "malformed_write_columns",
+        path: "create_row.columns",
+        message: misplaced ? `${kind} create_row expects the column map under "create_row.columns", not directly on "create_row" (that is the ToolJet DB shape). As authored no column is read, and the driver falls back to INSERT ... DEFAULT VALUES \u2014 inserting a BLANK ROW that reports success.` : `${kind} create_row requires "create_row.columns" as {"0": {"column": "<name>", "value": <v>}, \u2026}. With no usable column entry the driver emits INSERT ... DEFAULT VALUES, inserting a BLANK ROW and reporting success.`
+      });
+    }
+  }
+  if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
+    const filtersPath = `${operation}.where_filters`;
+    const filters = valueAtPath(options2, filtersPath);
+    if (isObject2(filters) || Array.isArray(filters)) {
+      const usable = Object.entries(filters).filter(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
+      if (usable.length === 0) {
+        const example = Object.keys(filters)[0];
+        errors.push({
+          code: "malformed_where_filters",
+          path: filtersPath,
+          message: `ToolJet DB ${operation} "${filtersPath}" has no usable clause: every entry must be a {column, operator, value} record (for example {"0": {"column": "id", "operator": "eq", "value": "{{components.table1.selectedRow.id}}"}}). ToolJet silently drops any clause missing column or operator` + (operation === "update_rows" ? ", and an update with no surviving clause updates EVERY ROW in the table." : ".") + (example ? ` Entry "${example}" is not in that shape.` : "")
+        });
+      }
+    } else if (filters === void 0 && operation === "update_rows") {
+      errors.push({
+        code: "malformed_where_filters",
+        path: filtersPath,
+        message: `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.`
+      });
+    }
+  }
+  if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
+    const filters = valueAtPath(options2, `${operation}.where_filters`);
+    if (isObject2(filters) || Array.isArray(filters)) {
+      for (const [mapKey, rawClause] of Object.entries(filters)) {
+        const aliases = {
+          equals: "eq",
+          equal: "eq",
+          "==": "eq",
+          "===": "eq",
+          "=": "eq",
+          not_equals: "neq",
+          notEquals: "neq",
+          "!=": "neq",
+          "!==": "neq",
+          "<>": "neq",
+          greater_than: "gt",
+          greaterThan: "gt",
+          ">": "gt",
+          greater_than_or_equal: "gte",
+          ">=": "gte",
+          less_than: "lt",
+          lessThan: "lt",
+          "<": "lt",
+          less_than_or_equal: "lte",
+          "<=": "lte"
+        };
+        if (isObject2(rawClause) && typeof rawClause.operator === "string" && Object.hasOwn(aliases, rawClause.operator)) {
+          errors.push({
+            code: "invalid_tooljetdb_filter_operator",
+            path: `${operation}.where_filters.${mapKey}.operator`,
+            message: `ToolJet DB filter operator "${rawClause.operator}" is not a PostgREST builder operator. Use "${aliases[rawClause.operator]}" for this comparison; keep the same column and value. The query was not automatically rewritten. Fetch the datasource operation contract if unsure.`
+          });
+        }
+        if (!isObject2(rawClause) || rawClause.operator !== "eq")
+          continue;
+        const column = typeof rawClause.column === "string" ? rawClause.column : "";
+        const value = typeof rawClause.value === "string" ? rawClause.value : "";
+        const dateLikeColumn = /(^|_)(date|day|time|at|on)$|_date_|timestamp/i.test(column);
+        const dayValue = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) || /format\(\s*['"]YYYY-MM-DD['"]\s*\)/.test(value);
+        if (!dayValue && !dateLikeColumn)
+          continue;
+        if (!dayValue && !/moment\(|new Date|Date\.now/.test(value))
+          continue;
+        warnings.push({
+          code: "date_equality_filter",
+          path: `${operation}.where_filters.${mapKey}`,
+          message: `ToolJet DB ${operation} filter "${column}" uses "eq" against a calendar day. Date and timestamp columns come back as full ISO timestamps ("2026-09-04T00:00:00+00:00"), so equality with "YYYY-MM-DD" matches no rows and the table shows "No data" with no error. Filter a day as a range instead: one clause "gte" the day at 00:00 and one "lt" the next day, or store the day in a text column seeded as YYYY-MM-DD when this build creates the table.`
+        });
+      }
+    }
+  }
+  if (kind === "tooljetdb" && operation === "list_rows") {
+    const orderFilters = valueAtPath(options2, "list_rows.order_filters");
+    if (isObject2(orderFilters)) {
+      for (const [mapKey, rawClause] of Object.entries(orderFilters)) {
+        if (!isObject2(rawClause) || typeof rawClause.id !== "string" || rawClause.id === mapKey)
+          continue;
+        warnings.push({
+          code: "mismatched_record_id",
+          path: `list_rows.order_filters.${mapKey}.id`,
+          message: `ToolJet DB order_filters key "${mapKey}" does not match its inner id "${rawClause.id}"; ToolJet can silently ignore the sort. Use the same stable value for the outer key and inner id.`
+        });
+      }
+    }
+  }
+  return { kind, operation, schemaFound: true, errors, warnings };
+}
+function issueMessages(issues, prefix) {
+  return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
+}
+function normalizeWriteColumnMap(columns) {
+  if (!isObject2(columns) || Object.keys(columns).length === 0)
+    return null;
+  const entries = Object.entries(columns);
+  if (entries.every(([, clause]) => isObject2(clause) && typeof clause.column === "string" && clause.column !== "")) {
+    return null;
+  }
+  const normalized2 = {};
+  entries.forEach(([key, clause], index) => {
+    if (isObject2(clause) && typeof clause.column === "string" && clause.column !== "") {
+      normalized2[String(index)] = clause;
+      return;
+    }
+    normalized2[String(index)] = { column: key, value: clause };
+  });
+  return normalized2;
+}
+function normalizeQueryOptions(kind, options2) {
+  if (kind !== "tooljetdb" || !isObject2(options2))
+    return options2;
+  const operation = typeof options2.operation === "string" ? options2.operation : "";
+  if (operation === "create_row") {
+    const normalized2 = normalizeWriteColumnMap(options2.create_row);
+    return normalized2 ? { ...options2, create_row: normalized2 } : options2;
+  }
+  if (operation === "update_rows") {
+    const updateRows = options2.update_rows;
+    if (!isObject2(updateRows))
+      return options2;
+    const normalized2 = normalizeWriteColumnMap(updateRows.columns);
+    return normalized2 ? { ...options2, update_rows: { ...updateRows, columns: normalized2 } } : options2;
+  }
+  return options2;
 }
 
 // dist/appValidation.js
@@ -50335,12 +50038,12 @@ function normalizeComponentSpec(component, options2 = {}) {
   const aliasTargetFor = (key) => {
     if (knownPropertyKeys?.has(key))
       return void 0;
-    const target2 = PROPERTY_KEY_ALIASES[key.toLowerCase()];
-    if (!target2)
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
       return void 0;
     if (!schema)
-      return target2;
-    return knownStyleKeys.has(target2) || knownPropertyKeys.has(target2) ? target2 : void 0;
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
   };
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
@@ -50405,8 +50108,8 @@ function normalizeComponentSpec(component, options2 = {}) {
     const fields = propValue(properties, "fields");
     if (Array.isArray(fields) && fields.length > 0) {
       const explicitIds = new Set(fields.flatMap((field) => {
-        const id2 = field && typeof field === "object" ? field.id : void 0;
-        return typeof id2 === "string" && id2.length > 0 ? [id2] : [];
+        const id = field && typeof field === "object" ? field.id : void 0;
+        return typeof id === "string" && id.length > 0 ? [id] : [];
       }));
       const demoFields = catalogDefault("KeyValuePair", "fields", []);
       const currentHistory = propValue(properties, "fieldDeletionHistory");
@@ -50416,8 +50119,8 @@ function normalizeComponentSpec(component, options2 = {}) {
         for (const field of demoFields) {
           if (!field || typeof field !== "object")
             continue;
-          const { id: id2, key } = field;
-          if (typeof key === "string" && !explicitIds.has(String(id2 ?? "")))
+          const { id, key } = field;
+          if (typeof key === "string" && !explicitIds.has(String(id ?? "")))
             deletionHistory.add(key);
         }
       }
@@ -50680,25 +50383,25 @@ function lintPlannedApp(spec, existingSummary) {
   const existingQueries = existingSummary?.queries ?? [];
   const existingQueryNames = /* @__PURE__ */ new Set();
   for (const query2 of existingQueries) {
-    const target2 = { id: query2.id, name: query2.name ?? query2.id };
-    queryRefs.set(query2.id, target2);
-    queryIds.set(query2.id, target2);
+    const target = { id: query2.id, name: query2.name ?? query2.id };
+    queryRefs.set(query2.id, target);
+    queryIds.set(query2.id, target);
     if (query2.name) {
       if (existingQueryNames.has(query2.name))
         errors.push(`Existing app has duplicate query name "${query2.name}".`);
       existingQueryNames.add(query2.name);
-      queryRefs.set(query2.name, target2);
+      queryRefs.set(query2.name, target);
     }
   }
   const plannedQueries = (spec.queries ?? []).map((query2, index) => {
     const ref2 = query2.clientRef ?? query2.name;
-    const id2 = `planned-query:${index}:${ref2}`;
+    const id = `planned-query:${index}:${ref2}`;
     if (existingQueryNames.has(query2.name))
       errors.push(`App already has a query named "${query2.name}".`);
-    registerRef(queryRefs, ref2, { id: id2, name: query2.name }, "query", errors);
+    registerRef(queryRefs, ref2, { id, name: query2.name }, "query", errors);
     if (ref2 !== query2.name)
-      registerRef(queryRefs, query2.name, { id: id2, name: query2.name }, "query", errors);
-    queryIds.set(id2, { id: id2, name: query2.name });
+      registerRef(queryRefs, query2.name, { id, name: query2.name }, "query", errors);
+    queryIds.set(id, { id, name: query2.name });
     let options2 = query2.options;
     if (!query2.kind) {
       errors.push(`Query "${query2.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
@@ -50712,7 +50415,7 @@ function lintPlannedApp(spec, existingSummary) {
       warnings.push(...issueMessages(validation.warnings, `Query "${query2.name}"`));
     }
     return {
-      id: id2,
+      id,
       name: query2.name,
       kind: query2.kind,
       data_source_id: query2.datasourceId,
@@ -50736,8 +50439,8 @@ function lintPlannedApp(spec, existingSummary) {
     if (page.handle)
       bindRef(pageRefs, page.handle, { id: page.id, name: page.name ?? page.handle });
     for (const component of page.components) {
-      const target2 = { id: component.id, name: component.name ?? component.id, type: component.type };
-      bindRef(componentRefs, component.id, target2);
+      const target = { id: component.id, name: component.name ?? component.id, type: component.type };
+      bindRef(componentRefs, component.id, target);
       if (component.name)
         componentNameCounts.set(component.name, (componentNameCounts.get(component.name) ?? 0) + 1);
     }
@@ -50776,19 +50479,19 @@ function lintPlannedApp(spec, existingSummary) {
     }
     const componentEntries = expansion.components.map((component, componentIndex) => {
       const ref2 = component.clientRef ?? component.name;
-      const id2 = `planned-component:${pageIndex}:${componentIndex}:${ref2}`;
+      const id = `planned-component:${pageIndex}:${componentIndex}:${ref2}`;
       if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
         errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
       }
       if (localRefs.has(ref2))
         errors.push(`Page "${plannedPage.name}" has duplicate component ref "${ref2}".`);
       else
-        localRefs.set(ref2, id2);
-      registerRef(componentRefs, ref2, { id: id2, name: component.name, type: component.type }, "component", errors);
+        localRefs.set(ref2, id);
+      registerRef(componentRefs, ref2, { id, name: component.name, type: component.type }, "component", errors);
       componentCount += 1;
-      return { component, id: id2 };
+      return { component, id };
     });
-    const plannedComponents = componentEntries.map(({ component, id: id2 }) => {
+    const plannedComponents = componentEntries.map(({ component, id }) => {
       let parent;
       if (component.parentRef) {
         parent = localRefs.get(component.parentRef);
@@ -50802,7 +50505,7 @@ function lintPlannedApp(spec, existingSummary) {
       if (parent)
         parent = encodeComponentParent(parent, component.slotName);
       return {
-        id: id2,
+        id,
         name: component.name,
         type: component.type,
         properties: component.properties,
@@ -50954,22 +50657,22 @@ function resolveAction(raw, queries, pages, components, errors, label2) {
     return action;
   }
   const actionId = action.actionId;
-  const target2 = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
-  if (!target2) {
+  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
+  if (!target) {
     errors.push(`${label2} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
   if (actionId === "run-query")
-    return { ...action, queryId: target2.id, queryName: target2.name };
+    return { ...action, queryId: target.id, queryName: target.name };
   if (actionId === "switch-page")
-    return { ...action, pageId: target2.id };
+    return { ...action, pageId: target.id };
   if (actionId === "show-modal" || actionId === "close-modal")
-    return { ...action, modal: target2.id };
+    return { ...action, modal: target.id };
   if (actionId === "control-component" || actionId === "scroll-component-into-view") {
-    return { ...action, componentId: target2.id };
+    return { ...action, componentId: target.id };
   }
   if (actionId === "set-table-page")
-    return { ...action, table: target2.id };
+    return { ...action, table: target.id };
   return action;
 }
 function resolveRefs(refs2, map2, errors, label2) {
@@ -51161,21 +50864,21 @@ var appPlanSchema = external_exports.object({
 });
 
 // dist/appPlanStore.js
-import { randomUUID as randomUUID4 } from "node:crypto";
+import { randomUUID as randomUUID3 } from "node:crypto";
 var PLAN_TTL_MS = 30 * 60 * 1e3;
 var MAX_PLANS = 20;
-var plans2 = /* @__PURE__ */ new Map();
-function prune2(now = Date.now()) {
-  for (const [token, plan] of plans2)
+var plans = /* @__PURE__ */ new Map();
+function prune(now = Date.now()) {
+  for (const [token, plan] of plans)
     if (plan.expiresAt <= now)
-      plans2.delete(token);
-  while (plans2.size >= MAX_PLANS)
-    plans2.delete(plans2.keys().next().value);
+      plans.delete(token);
+  while (plans.size >= MAX_PLANS)
+    plans.delete(plans.keys().next().value);
 }
 function storeAppPlan(spec, lint2) {
-  prune2();
-  const planToken = randomUUID4();
-  plans2.set(planToken, {
+  prune();
+  const planToken = randomUUID3();
+  plans.set(planToken, {
     spec: structuredClone(spec),
     lint: structuredClone(lint2),
     expiresAt: Date.now() + PLAN_TTL_MS
@@ -51183,11 +50886,11 @@ function storeAppPlan(spec, lint2) {
   return { plan_token: planToken, expires_in_seconds: PLAN_TTL_MS / 1e3 };
 }
 function consumeAppPlan(planToken) {
-  prune2();
-  const plan = plans2.get(planToken);
+  prune();
+  const plan = plans.get(planToken);
   if (!plan)
     throw new Error("Unknown or expired plan_token. Run lint_app_spec again.");
-  plans2.delete(planToken);
+  plans.delete(planToken);
   return plan;
 }
 
@@ -51520,37 +51223,37 @@ function resolveAction2(raw, pages, queries, components) {
   if (typeof targetRef !== "string")
     throw new Error("Event action target_ref must be a string.");
   const actionId = String(action.actionId);
-  const target2 = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(actionId) ? components.get(targetRef) : void 0;
-  if (!target2)
+  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(actionId) ? components.get(targetRef) : void 0;
+  if (!target)
     throw new Error(`Action "${actionId}" has unknown or unsupported target_ref "${targetRef}".`);
   if (actionId === "run-query")
-    return { ...action, queryId: target2.id, queryName: target2.name };
+    return { ...action, queryId: target.id, queryName: target.name };
   if (actionId === "switch-page")
-    return { ...action, pageId: target2.id };
+    return { ...action, pageId: target.id };
   if (actionId === "show-modal" || actionId === "close-modal")
-    return { ...action, modal: target2.id };
+    return { ...action, modal: target.id };
   if (actionId === "control-component" || actionId === "scroll-component-into-view") {
-    return { ...action, componentId: target2.id };
+    return { ...action, componentId: target.id };
   }
   if (actionId === "set-table-page")
-    return { ...action, table: target2.id };
+    return { ...action, table: target.id };
   return action;
 }
 function refs(values, targets, label2) {
   return values?.map((ref2) => {
-    const target2 = targets.get(ref2);
-    if (!target2)
+    const target = targets.get(ref2);
+    if (!target)
       throw new Error(`${label2} ref "${ref2}" does not exist.`);
-    return target2.id;
+    return target.id;
   });
 }
 function oneRef(value, targets, label2) {
   if (!value)
     return void 0;
-  const target2 = targets.get(value);
-  if (!target2)
+  const target = targets.get(value);
+  if (!target)
     throw new Error(`${label2} ref "${value}" does not exist.`);
-  return target2.id;
+  return target.id;
 }
 function appliedSummary(applied) {
   return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(", ");
@@ -51696,10 +51399,10 @@ function applyAppPhaseTool(client) {
           const ref2 = logicalRef(page);
           const existing = plannedPageMatches.get(ref2);
           const created = createdPages.find((candidate) => candidate.name === page.name);
-          const id2 = existing?.id ?? created?.page_id;
-          if (!id2)
+          const id = existing?.id ?? created?.page_id;
+          if (!id)
             throw new Error(`Could not resolve page "${page.name}" after creation.`);
-          pageTargets.set(ref2, { id: id2, name: page.name });
+          pageTargets.set(ref2, { id, name: page.name });
         }
         const pageUpdates = (spec.pages ?? []).flatMap((page) => {
           const existing = plannedPageMatches.get(logicalRef(page));
@@ -51758,13 +51461,13 @@ function applyAppPhaseTool(client) {
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
           if (!page.components?.length)
             return [];
-          const target2 = pageTargets.get(logicalRef(page));
-          if (!target2)
+          const target = pageTargets.get(logicalRef(page));
+          if (!target)
             throw new Error(`Could not resolve component page "${page.name}".`);
           const prepared = prepareComponentBatch(page.components);
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
-          return [{ page, pageId: target2.id, prepared }];
+          return [{ page, pageId: target.id, prepared }];
         });
         const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => ({
           ...page,
@@ -51913,8 +51616,8 @@ function persistedTargets(values) {
 }
 function selectedRefs(targets, refs2) {
   return Object.fromEntries(refs2.flatMap((ref2) => {
-    const target2 = targets.get(ref2);
-    return target2 ? [[ref2, target2.id]] : [];
+    const target = targets.get(ref2);
+    return target ? [[ref2, target.id]] : [];
   }));
 }
 
@@ -52610,7 +52313,7 @@ function deleteComponentsTool(client) {
           throw new Error("delete_components: component_ids must be unique.");
         }
         const targets = page.components.filter((component) => requested.has(component.id));
-        const missing = args.component_ids.filter((id2) => !targets.some((component) => component.id === id2));
+        const missing = args.component_ids.filter((id) => !targets.some((component) => component.id === id));
         if (missing.length) {
           throw new Error(`delete_components: component ids are not on page ${args.page_id}: ${missing.join(", ")}.`);
         }
@@ -52620,24 +52323,24 @@ function deleteComponentsTool(client) {
         }
         const survivingComponents = before.pages.flatMap((candidate) => candidate.components).filter((component) => !requested.has(component.id));
         const references = [];
-        for (const target2 of targets) {
-          if (target2.name) {
+        for (const target of targets) {
+          if (target.name) {
             for (const component of survivingComponents) {
-              if (containsNamedBinding([component.properties, component.styles, component.others], "components", target2.name)) {
-                references.push(`component ${component.name ?? component.id} binds components.${target2.name}`);
+              if (containsNamedBinding([component.properties, component.styles, component.others], "components", target.name)) {
+                references.push(`component ${component.name ?? component.id} binds components.${target.name}`);
               }
             }
             for (const query2 of before.queries) {
-              if (containsNamedBinding(query2.options, "components", target2.name)) {
-                references.push(`query ${query2.name ?? query2.id} binds components.${target2.name}`);
+              if (containsNamedBinding(query2.options, "components", target.name)) {
+                references.push(`query ${query2.name ?? query2.id} binds components.${target.name}`);
               }
             }
           }
           for (const event of before.events) {
             if (requested.has(event.sourceId ?? ""))
               continue;
-            if (containsExactValue(event.event, target2.id) || (target2.name ? containsNamedBinding(event.event, "components", target2.name) : false)) {
-              references.push(`event ${event.name ?? event.id} targets ${target2.name ?? target2.id}`);
+            if (containsExactValue(event.event, target.id) || (target.name ? containsNamedBinding(event.event, "components", target.name) : false)) {
+              references.push(`event ${event.name ?? event.id} targets ${target.name ?? target.id}`);
             }
           }
         }
@@ -53799,7 +53502,7 @@ function manageThemeTool(client) {
             return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
           }
           return ok({
-            themes: themes.map(({ id: id2, name, isDefault, isBasic, isDisabled }) => ({ id: id2, name, isDefault, isBasic, isDisabled })),
+            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
             note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
           });
         }
@@ -54106,6 +53809,525 @@ function manageWorkspaceUsersTool(client) {
   };
 }
 
+// dist/tools/getWorkflowNodeCatalog.js
+function getWorkflowNodeCatalogTool(_client) {
+  return {
+    name: "get_workflow_node_catalog",
+    title: "Get Workflow Node Catalog",
+    description: "Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: {},
+    async handler() {
+      try {
+        return ok({ ...nodeCatalog, spec_schema: external_exports.toJSONSchema(specSchema) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/capabilitySchema.js
+var capabilityRequestSchema = external_exports.object({
+  version_id: external_exports.string().uuid()
+}).strict();
+var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
+var workflowCapabilityReportSchema = external_exports.object({
+  version_id: external_exports.string().uuid(),
+  authorable_node_types: external_exports.array(external_exports.string()),
+  datasources: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    name: external_exports.string(),
+    kind: external_exports.string(),
+    capabilities: external_exports.array(datasourceCapabilitySchema)
+  }).strict())
+}).strict();
+
+// dist/workflows/capabilities.js
+var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
+var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
+function datasourceCapabilities(kind) {
+  const capabilities = ["query"];
+  if (AI_DATASOURCE_KINDS.has(kind))
+    capabilities.push("ai-model");
+  if (EMAIL_DATASOURCE_KINDS.has(kind))
+    capabilities.push("email");
+  return capabilities;
+}
+async function getWorkflowCapabilities(client, input) {
+  const { version_id } = capabilityRequestSchema.parse(input);
+  const datasources = await client.workflows.listDatasources(version_id);
+  return workflowCapabilityReportSchema.parse({
+    version_id,
+    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
+    datasources: datasources.map((datasource) => ({
+      id: datasource.id,
+      name: datasource.name,
+      kind: datasource.kind,
+      capabilities: datasourceCapabilities(datasource.kind)
+    }))
+  });
+}
+
+// dist/tools/getWorkflowCapabilities.js
+function getWorkflowCapabilitiesTool(client) {
+  return {
+    name: "get_workflow_capabilities",
+    title: "Get Workflow Capabilities",
+    description: "List authorable workflow node types and configured datasource capabilities for one workflow version. Does not inspect credentials, create resources, or execute queries.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: capabilityRequestSchema.shape,
+    async handler(args) {
+      try {
+        return ok(await getWorkflowCapabilities(client, capabilityRequestSchema.parse(args)));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/toolSchemas.js
+var workflowIdSchema = external_exports.string().uuid();
+var workflowTargetShape = {
+  workflow_id: workflowIdSchema,
+  version_id: workflowIdSchema
+};
+var listWorkflowsInputSchema = external_exports.object({
+  page: external_exports.number().int().min(1).default(1),
+  search: external_exports.string().default("")
+}).strict();
+var createWorkflowInputSchema = external_exports.object({
+  name: external_exports.string().trim().min(1).max(100).regex(/^[^/]+$/)
+}).strict();
+var getWorkflowInputSchema = external_exports.object({
+  workflow_id: workflowIdSchema,
+  version_id: workflowIdSchema.optional()
+}).strict();
+var lintWorkflowSpecInputSchema = external_exports.object({
+  ...workflowTargetShape,
+  spec: specSchema,
+  allow_draft: external_exports.boolean().default(false)
+}).strict();
+var applyWorkflowSpecInputSchema = external_exports.object({
+  plan_token: workflowIdSchema
+}).strict();
+var deleteWorkflowNodeInputSchema = external_exports.object({
+  ...workflowTargetShape,
+  node_id: workflowIdSchema
+}).strict();
+var validateWorkflowInputSchema = external_exports.object(workflowTargetShape).strict();
+var runWorkflowInputSchema = external_exports.object({
+  ...workflowTargetShape,
+  environment_id: workflowIdSchema,
+  params: external_exports.record(external_exports.string(), external_exports.unknown()).default({})
+}).strict();
+var getWorkflowExecutionInputSchema = external_exports.object({
+  execution_id: workflowIdSchema,
+  page: external_exports.number().int().min(1).default(1),
+  per_page: external_exports.number().int().min(1).max(50).default(20)
+}).strict();
+
+// dist/tools/listWorkflows.js
+function listWorkflowsTool(client) {
+  return {
+    name: "list_workflows",
+    title: "List Workflows",
+    description: "List workflows in the active workspace.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: listWorkflowsInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = listWorkflowsInputSchema.parse(args);
+        return ok(await client.workflows.list(input.page, input.search));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/createWorkflow.js
+function createWorkflowTool(client) {
+  return {
+    name: "create_workflow",
+    title: "Create Workflow",
+    description: "Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    inputSchema: createWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = createWorkflowInputSchema.parse(args);
+        return ok(await client.workflows.create(input.name));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/getWorkflow.js
+function getWorkflowTool(client) {
+  return {
+    name: "get_workflow",
+    title: "Get Workflow",
+    description: "Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: getWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = getWorkflowInputSchema.parse(args);
+        const snapshot2 = await client.workflows.get(input.workflow_id, input.version_id);
+        return ok({ ...snapshot2, queries: await client.workflows.getQueries(snapshot2.version_id) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/planner.js
+import { randomUUID as randomUUID4 } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
+
+// dist/workflows/readiness.js
+function workflowReadiness(graph, structuralErrors) {
+  if (structuralErrors.length)
+    return { runtime_readiness: "blocked", blockers: structuralErrors };
+  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
+  for (const edge of controlFlowEdges(graph))
+    adjacency.get(edge.source)?.push(edge.target);
+  const reachable = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    for (const target of adjacency.get(id) ?? [])
+      visit(target);
+  };
+  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
+    visit(start.id);
+  const blockers = [];
+  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
+    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
+    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
+    const definitionId = child?.data.idOnDefinition;
+    const mapping = typeof definitionId === "string" && graph.queries.find((query2) => query2.idOnDefinition === definitionId);
+    if (!attachment || !child || !mapping)
+      blockers.push({
+        code: "agent_missing_model",
+        path: `nodes.${agent.id}.model`,
+        message: "Reachable Agent requires one configured AI model attachment."
+      });
+  }
+  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+}
+
+// dist/workflows/planner.js
+var plans2 = /* @__PURE__ */ new Map();
+var TTL = 30 * 6e4;
+function prune2() {
+  for (const [key, plan] of plans2)
+    if (plan.expires <= Date.now())
+      plans2.delete(key);
+}
+async function prepare(client, workflowId, versionId, spec, ids) {
+  const snapshot2 = await client.get(workflowId, versionId);
+  if (!snapshot2.editable)
+    throw new Error("Only editable draft workflow versions can be changed.");
+  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
+  const compiled = compileGraph(snapshot2.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
+  const warnings = [];
+  const writes = [];
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
+  const removedDefinitionIds = new Set(snapshot2.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
+  const deletions = [];
+  for (const mapping of snapshot2.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+      continue;
+    if (compiled.graph.nodes.some((node2) => node2.data.idOnDefinition === mapping.idOnDefinition))
+      continue;
+    const node = snapshot2.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node)
+      continue;
+    if (!queries.some((query2) => query2.id === mapping.id))
+      throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
+  const claimedNames = /* @__PURE__ */ new Set();
+  for (const item of compiled.query_nodes) {
+    const existingMapping = snapshot2.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
+    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
+    if (existingMapping && !oldQuery)
+      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
+    if (oldQuery && snapshot2.definition.nodes.filter((n) => snapshot2.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
+      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
+    const input = item.role === "workflow-node" ? item.spec : void 0;
+    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const label2 = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
+    if (!datasource)
+      throw new Error(`Datasource unavailable for ${label2}.`);
+    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
+      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
+    const kind = datasource.kind;
+    const dataSourceId = datasource.id;
+    const name = item.role === "agent-model" ? item.name : input.name;
+    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
+      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name)
+      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
+    if (claimedNames.has(name) || queries.some((q) => q.name === name && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name}`);
+    claimedNames.add(name);
+    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
+    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (item.role === "workflow-node") {
+      const validation2 = validateQueryOptions(kind, options2);
+      if (validation2.errors.length)
+        throw new Error(issueMessages(validation2.errors).join(" "));
+      warnings.push(...issueMessages(validation2.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? "", kind, options: options2 });
+    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
+      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
+  const validation = validateGraph(compiled.graph, queryIds);
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot: snapshot2, compiled, writes, deletions, validation, readiness, warnings };
+}
+async function lint(client, workflowId, versionId, spec, allowDraft = false) {
+  const prepared = await prepare(client, workflowId, versionId, spec);
+  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
+    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
+  prune2();
+  while (plans2.size >= 200)
+    plans2.delete(plans2.keys().next().value);
+  const token = randomUUID4();
+  plans2.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+  return {
+    plan_token: token,
+    expires_in_seconds: TTL / 1e3,
+    node_ids: prepared.compiled.node_ids,
+    edge_ids: prepared.compiled.edge_ids,
+    ...prepared.validation,
+    ...prepared.readiness,
+    query_warnings: prepared.warnings,
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
+  };
+}
+async function apply(client, token) {
+  prune2();
+  const scope = await client.planScope();
+  const plan = plans2.get(token);
+  if (!plan || plan.scope !== scope)
+    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
+  plans2.delete(token);
+  const { compiled, snapshot: snapshot2, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  if (validation.errors.length)
+    throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
+    throw new Error(JSON.stringify(readiness.blockers));
+  const completed = [];
+  let phase = "queries";
+  let attemptedQuery;
+  try {
+    for (const write of writes) {
+      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
+      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
+      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
+      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
+      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
+      attemptedQuery = void 0;
+    }
+    phase = "save";
+    await client.save(snapshot2, compiled.graph);
+    phase = "readback";
+    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
+    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
+    if (!isDeepStrictEqual(saved.definition, compiled.graph))
+      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
+    for (const write of writes) {
+      const id = completed.find((q) => q.node_id === write.node_id).query_id;
+      const persisted = queries.find((q) => q.id === id);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
+        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
+    }
+    if (validation2.errors.length)
+      throw new Error(JSON.stringify(validation2.errors));
+    phase = "query_deletions";
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = void 0;
+    }
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
+  } catch (error51) {
+    return {
+      failed: true,
+      workflow_id: plan.workflowId,
+      version_id: plan.versionId,
+      phase,
+      completed,
+      attempted_query: attemptedQuery,
+      node_ids: compiled.node_ids,
+      edge_ids: compiled.edge_ids,
+      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
+      error: error51 instanceof Error ? error51.message : String(error51),
+      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
+    };
+  }
+}
+async function deleteNode(client, workflowId, versionId, nodeId) {
+  const snapshot2 = await client.get(workflowId, versionId);
+  if (!snapshot2.definition.nodes.some((node) => node.id === nodeId))
+    throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot2.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec);
+  if (!("plan_token" in result))
+    throw new Error(JSON.stringify(result.errors));
+  return apply(client, result.plan_token);
+}
+
+// dist/tools/lintWorkflowSpec.js
+function lintWorkflowSpecTool(client) {
+  return {
+    name: "lint_workflow_spec",
+    title: "Lint Workflow Spec",
+    description: "Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: lintWorkflowSpecInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = lintWorkflowSpecInputSchema.parse(args);
+        return ok(await lint(client.workflows, input.workflow_id, input.version_id, input.spec, input.allow_draft));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/applyWorkflowSpec.js
+function applyWorkflowSpecTool(client) {
+  return {
+    name: "apply_workflow_spec",
+    title: "Apply Workflow Spec",
+    description: "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    inputSchema: applyWorkflowSpecInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = applyWorkflowSpecInputSchema.parse(args);
+        const result = await apply(client.workflows, input.plan_token);
+        return result && typeof result === "object" && "failed" in result && result.failed ? { ...ok(result), isError: true } : ok(result);
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/deleteWorkflowNode.js
+function deleteWorkflowNodeTool(client) {
+  return {
+    name: "delete_workflow_node",
+    title: "Delete Workflow Node",
+    description: "Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    inputSchema: deleteWorkflowNodeInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = deleteWorkflowNodeInputSchema.parse(args);
+        const result = await deleteNode(client.workflows, input.workflow_id, input.version_id, input.node_id);
+        return result && typeof result === "object" && "failed" in result && result.failed ? { ...ok(result), isError: true } : ok(result);
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/validateWorkflow.js
+function validateWorkflowTool(client) {
+  return {
+    name: "validate_workflow",
+    title: "Validate Workflow",
+    description: "Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: validateWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = validateWorkflowInputSchema.parse(args);
+        const snapshot2 = await client.workflows.get(input.workflow_id, input.version_id);
+        const queries = await client.workflows.getQueries(input.version_id);
+        return ok({
+          workflow_id: input.workflow_id,
+          version_id: input.version_id,
+          ...validateGraph(snapshot2.definition, new Set(queries.map((query2) => query2.id)))
+        });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/executionResult.js
+function boundWorkflowExecutionResult(value) {
+  const serialized = JSON.stringify(value);
+  if (serialized.length <= 6e4)
+    return value;
+  const data = value && typeof value === "object" ? value : {};
+  const execution = data.workflowExecution;
+  return {
+    truncated: true,
+    execution_id: data.execution_id ?? execution?.id,
+    message: "Result exceeds 60 KB. Inspect a smaller node-result page or open the workflow in ToolJet."
+  };
+}
+
+// dist/tools/runWorkflow.js
+function runWorkflowTool(client) {
+  return {
+    name: "run_workflow",
+    title: "Run Workflow",
+    description: "Execute the explicitly selected workflow version/environment with real effects, including datasource writes and arbitrary code. Use only when execution is authorized. Never automatically retry a timeout: execution may have completed. Does not enable disabled workflows.",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    inputSchema: runWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = runWorkflowInputSchema.parse(args);
+        const result = await client.workflows.run(input.workflow_id, input.version_id, input.environment_id, input.params);
+        return ok(boundWorkflowExecutionResult(result));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/getWorkflowExecution.js
+function getWorkflowExecutionTool(client) {
+  return {
+    name: "get_workflow_execution",
+    title: "Get Workflow Execution",
+    description: "Inspect execution status and a bounded page of node results. Does not start or retry executions.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: getWorkflowExecutionInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = getWorkflowExecutionInputSchema.parse(args);
+        const result = await client.workflows.execution(input.execution_id, input.page, input.per_page);
+        return ok(boundWorkflowExecutionResult(result));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -54119,7 +54341,17 @@ function includeLegacySingularCreateTools() {
 }
 function registerTools(server, client, runtime = runtimeFreshness) {
   const tools = [
-    ...workflowTools(client),
+    getWorkflowNodeCatalogTool(client),
+    getWorkflowCapabilitiesTool(client),
+    listWorkflowsTool(client),
+    createWorkflowTool(client),
+    getWorkflowTool(client),
+    lintWorkflowSpecTool(client),
+    applyWorkflowSpecTool(client),
+    deleteWorkflowNodeTool(client),
+    validateWorkflowTool(client),
+    runWorkflowTool(client),
+    getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),

@@ -54,8 +54,10 @@ const MUST_BE_READ_ONLY = [
   'list_events', 'list_tables', 'list_workspaces', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app',
   'get_workflow', 'get_workflow_execution', 'get_workflow_node_catalog',
-  'list_workflows', 'lint_workflow_spec', 'validate_workflow',
+  'get_workflow_capabilities', 'list_workflows', 'lint_workflow_spec', 'validate_workflow',
 ];
+
+const MUST_BE_ADDITIVE = ['create_workflow'];
 
 describe('tool annotations', () => {
   const tools = registeredTools();
@@ -101,6 +103,12 @@ describe('tool annotations', () => {
     const tool = tools.find((t) => t.name === name);
     expect(tool, `${name} is no longer registered`).toBeDefined();
     expect(tool!.annotations?.readOnlyHint).toBe(true);
+  });
+
+  it.each(MUST_BE_ADDITIVE)('flags %s as non-destructive', (name) => {
+    const tool = tools.find((t) => t.name === name);
+    expect(tool, `${name} is no longer registered`).toBeDefined();
+    expect(tool!.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
   });
 
   it('keeps titles unique so clients can disambiguate them', () => {
