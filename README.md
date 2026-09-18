@@ -20,10 +20,10 @@ npm run build               # compiles to dist/
 
 `.env`:
 ```
-TOOLJET_URL=http://localhost:3010        # your ToolJet API
+TOOLJET_URL=http://localhost:3000        # your ToolJet deployment
 TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the target workspace
 # Only needed if the UI is served from a different origin than TOOLJET_URL (defaults to it otherwise):
-# TOOLJET_DEPLOYMENT_URL=http://localhost:8090
+# TOOLJET_DEPLOYMENT_URL=http://localhost:8082
 ```
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
