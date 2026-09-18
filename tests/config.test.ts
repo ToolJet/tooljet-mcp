@@ -18,8 +18,8 @@ describe('loadConfig', () => {
   it('applies defaults for URLs and reads the token', () => {
     process.env.TOOLJET_PAT = 'tj_pat_test';
     const c = loadConfig();
-    expect(c.apiUrl).toBe('http://localhost:3010');
-    expect(c.appUrl).toBe('http://localhost:8090');
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
     expect(c.pat).toBe('tj_pat_test');
   });
 
@@ -74,9 +74,9 @@ describe('appUrl defaults to the deployment origin', () => {
     expect(loadConfig().appUrl).toBe('https://tj.example.com');
   });
 
-  it('still defaults to localhost:8090 when TOOLJET_URL itself is unset', () => {
+  it('still defaults to localhost:8082 when TOOLJET_URL itself is unset', () => {
     process.env.TOOLJET_PAT = 'tj_pat_test';
-    expect(loadConfig().appUrl).toBe('http://localhost:8090');
+    expect(loadConfig().appUrl).toBe('http://localhost:8082');
   });
 
   /* TOOLJET_APP_URL is the old name, kept working so nobody's existing config breaks. */
@@ -119,13 +119,13 @@ describe('appUrl defaults to the deployment origin', () => {
   });
 
   /* Local dev with an identity but no request-named apiUrl and nothing configured: appUrl must land
-     on the UI's own dev default (8090), the same as the no-identity/stdio branch below — not on
-     apiUrl's internal 3010 default, which the identity branch would silently inherit via staticApiUrl
+     on the UI's own dev default (8082), the same as the no-identity/stdio branch below — not on
+     apiUrl's internal 3000 default, which the identity branch would silently inherit via staticApiUrl
      if it fell through to that instead of explicitApiUrl. */
-  it('falls back to localhost:8090, not apiUrl\'s own 3010 default, when nothing at all is configured', () => {
+  it('falls back to localhost:8082, not apiUrl\'s own 3000 default, when nothing at all is configured', () => {
     const c = loadConfig({ sessionToken: 'SESSION', workspaceId: 'org-1' });
-    expect(c.apiUrl).toBe('http://localhost:3010');
-    expect(c.appUrl).toBe('http://localhost:8090');
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
   });
 });
 
@@ -167,9 +167,9 @@ describe('apiUrl falls back to the deployment URL', () => {
     expect(loadConfig().apiUrl).toBe('https://api.example.com');
   });
 
-  it('still defaults to localhost:3010 when neither variable is set', () => {
+  it('still defaults to localhost:3000 when neither variable is set', () => {
     process.env.TOOLJET_PAT = 'tj_pat_test';
-    expect(loadConfig().apiUrl).toBe('http://localhost:3010');
+    expect(loadConfig().apiUrl).toBe('http://localhost:3000');
   });
 
   /* Same fallback, reached through the identity branch this time: an older ToolJet backend that
@@ -630,8 +630,8 @@ describe('blank environment variables count as unset', () => {
     process.env.TOOLJET_APP_URL = '';
     process.env.TOOLJET_PAT = 'tj_pat_test';
     const c = loadConfig();
-    expect(c.apiUrl).toBe('http://localhost:3010');
-    expect(c.appUrl).toBe('http://localhost:8090');
+    expect(c.apiUrl).toBe('http://localhost:3000');
+    expect(c.appUrl).toBe('http://localhost:8082');
   });
 
   it('treats a whitespace-only credential as missing rather than authenticating with it', () => {

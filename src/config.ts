@@ -319,7 +319,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   // twice. Let TOOLJET_DEPLOYMENT_URL/TOOLJET_APP_URL double as the API origin when TOOLJET_URL
   // itself is unset, so a single-origin deployment only has to configure one of them. An explicit
   // TOOLJET_URL still always wins when both are set — same override precedence as explicitAppUrl.
-  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? 'http://localhost:3010';
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? 'http://localhost:3000';
 
   if (identity) {
     // The request's own apiUrl wins when present — same precedence as the session/PAT identity
@@ -337,10 +337,10 @@ export function loadConfig(identity?: RequestIdentity): Config {
     // the UI from the same origin, so the request's own apiUrl is the right default here too.
     //
     // Falls through to explicitApiUrl, NOT staticApiUrl: staticApiUrl silently includes apiUrl's own
-    // internal localhost:3010 default, which would make an unconfigured deployment's appUrl land on
-    // the API's dev port instead of the UI's (localhost:8090) — the exact default the no-identity
+    // internal localhost:3000 default, which would make an unconfigured deployment's appUrl land on
+    // the API's dev port instead of the UI's (localhost:8082) — the exact default the no-identity
     // branch below already gets right. Only a genuinely-set TOOLJET_URL should stand in for appUrl.
-    const appUrl = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8090';
+    const appUrl = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
@@ -353,7 +353,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   }
 
   const apiUrl = staticApiUrl;
-  const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8090';
+  const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
   const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');

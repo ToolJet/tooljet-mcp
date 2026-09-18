@@ -40654,10 +40654,10 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
 function loadConfig(identity) {
   const explicitApiUrl = env("TOOLJET_URL");
   const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
-  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3010";
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
-    const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8090";
+    const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
     if (identity.pat)
       return { apiUrl: apiUrl2, appUrl: appUrl2, pat: identity.pat };
     return {
@@ -40669,7 +40669,7 @@ function loadConfig(identity) {
     };
   }
   const apiUrl = staticApiUrl;
-  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8090";
+  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
   const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
