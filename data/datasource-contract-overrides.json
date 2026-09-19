@@ -789,5 +789,44 @@
         ]
       }
     }
-  }
+  },
+    "openrouter": {
+      "operations": {
+        "chat": {
+          "required": [
+            "operation",
+            "model",
+            "prompt"
+          ],
+          "response": {
+            "type": "object",
+            "description": "An object, NOT the bare string the OpenAI plugin returns and NOT an OpenAI chat-completions response: { message: string (the assistant text, bind this), finish_reason, model, provider (which provider actually served it, so it can differ from the model asked for when fallbacks are set), usage, id }."
+          },
+          "notes": [
+            "model is free text: OpenRouter carries hundreds of ids and the list changes. Populate a model picker from a list_models query rather than hard-coding options.",
+            "fallback_models is a comma-separated list of further ids to try when the first is down or rate limited. Every id must be a real model, or OpenRouter rejects the whole request."
+          ]
+        },
+        "generate_embedding": {
+          "required": [
+            "operation",
+            "model",
+            "input"
+          ],
+          "response": {
+            "type": "object",
+            "description": "{ embedding: array<number> for a single input, embeddings: array<array<number>>, model, usage }."
+          }
+        },
+        "list_models": {
+          "required": [
+            "operation"
+          ],
+          "response": {
+            "type": "object",
+            "description": "{ models: array<{ id, name, context_length, pricing }>, count }. Use it to populate a model dropdown rather than hard-coding ids, which change often."
+          }
+        }
+      }
+    }
 }
