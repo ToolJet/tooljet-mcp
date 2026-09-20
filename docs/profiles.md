@@ -1,6 +1,8 @@
 # Profiles and the `tj` CLI
 
-The server owns its credentials. Agents only know how to launch it.
+How the tooljet-mcp server finds its credentials, and the `tj` command that manages them.
+The server owns its credentials; agents only know how to launch it. When this document and the
+code disagree, trust the code — each rule below names its file.
 
 ```text
 tj (terminal) ──writes──▶ ~/.tooljet-mcp/profiles.json   tokens live only here (0600)
@@ -8,13 +10,13 @@ tj (terminal) ──writes──▶ ~/.tooljet-mcp/profiles.json   tokens live o
 agent ──launches──▶ tooljet-mcp ───┘                     one process per chat
 ```
 
-## Why
+## 1. Why profiles exist
 
 - A process reads its environment once, so switching servers meant editing an agent's config and restarting it.
 - Every chat on the machine was forced onto the same server.
 - Codex passes an unset `${TOOLJET_PAT}` through as literal text, so the server got that string as its token. `env()` in `src/config.ts` now treats it as unset; the plugin manifests are unchanged.
 
-## Rules
+## 2. Behavior contract
 
 | Rule | Where |
 |---|---|
@@ -26,7 +28,7 @@ agent ──launches──▶ tooljet-mcp ───┘                     one p
 | Tokens never appear in tool input, output, errors or telemetry, and are never accepted in argv. | masked prompt or `--pat-stdin` |
 | `use_profile` is marked destructive so clients ask first, and is used only on the person's own request. | `src/tools/useProfile.ts` |
 
-## The file
+## 3. The file
 
 ```json
 {
@@ -53,7 +55,7 @@ agent ──launches──▶ tooljet-mcp ───┘                     one p
 - `version` is written by the tool: the newest tooljet-mcp that has saved the file. It only moves up, so an older plugin in another agent never lowers it.
 - Format changes only add fields. Unknown fields are kept on save, so an older version never deletes a newer one's data.
 
-## Existing setups keep working
+## 4. Existing setups keep working
 
 | Case | What happens |
 |---|---|
@@ -63,7 +65,7 @@ agent ──launches──▶ tooljet-mcp ───┘                     one p
 
 The first profile saved becomes the shared default; later ones never take it over.
 
-## Layout
+## 5. Code layout
 
 | Path | Job |
 |---|---|
@@ -76,7 +78,7 @@ The first profile saved becomes the shared default; later ones never take it ove
 
 `node bundle/index.js <cli|auth|agents|install|doctor|help|version>` runs the CLI; anything else starts the server. The CLI is its own file, `bundle/cli/index.js`, loaded only then: its prompt library needs Node 20.12, the server does not.
 
-## Menu rules
+## 6. CLI conventions
 
 - Enter acts on the highlighted row. No checkbox lists, and nothing is pre-selected, so nothing changes unless it is picked.
 - A menu erases itself when left. Only results stay on screen.
@@ -85,7 +87,7 @@ The first profile saved becomes the shared default; later ones never take it ove
 - No quizzes. "My agent is not listed" shows the two steps; it does not ask which format the agent uses.
 - Instructions are the same for every user: placeholder paths (`/path/to/…`), plain `node`. They never use this machine's folders, user name or Node path, and never guess whether the repo is already cloned. Only the OS changes the text (`C:/path/to` on Windows, how to find a path, the Windows note on slashes in JSON).
 
-## Fixed home and automatic setup
+## 7. Fixed home and automatic setup
 
 On its first start the server copies `bundle/` and `data/` to `~/.tooljet-mcp/` and writes the `tj` command (`~/.local/bin/tj`), so adding the MCP is the whole install. Agent configs point at the fixed copy, so they survive plugin updates.
 
@@ -96,7 +98,7 @@ On its first start the server copies `bundle/` and `data/` to `~/.tooljet-mcp/` 
 
 `tj uninstall` undoes it: it removes the `tj` command, the copy, and the ToolJet entry from connected agents, after showing what it will touch. Saved servers are kept unless you also confirm deleting them (or pass `--profiles`) — they are shared, so deleting removes them for **all** coding agents. Remove the plugin from your agents first, or its next chat installs everything again; `tj uninstall` warns when it sees the plugin still connected. Scripts: `tj uninstall --yes [--profiles]`.
 
-## Agents
+## 8. Agent connections
 
 | Agent | How it is connected |
 |---|---|

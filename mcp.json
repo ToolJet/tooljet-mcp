@@ -3,13 +3,18 @@
     "tooljet": {
       "command": "node",
       "args": [
-        "${PLUGIN_ROOT}/bundle/index.js"
+        "./bundle/index.js"
       ],
-      "env": {
-        "TOOLJET_URL": "${TOOLJET_URL}",
-        "TOOLJET_DEPLOYMENT_URL": "${TOOLJET_DEPLOYMENT_URL}",
-        "TOOLJET_PAT": "${TOOLJET_PAT}"
-      }
+      "cwd": ".",
+      "env_vars": [
+        "TOOLJET_URL",
+        "TOOLJET_DEPLOYMENT_URL",
+        "TOOLJET_PAT",
+        "TOOLJET_PROFILE",
+        "TOOLJET_AGENT",
+        "TOOLJET_MCP_HOME",
+        "TOOLJET_MCP_NO_AUTO_SETUP"
+      ]
     }
   }
 }
