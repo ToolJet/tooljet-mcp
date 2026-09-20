@@ -3,7 +3,8 @@ import { loadConfig, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
-import { TOOLJET_MCP_VERSION, runtimeFreshness } from './runtimeFreshness.js';
+import { runtimeFreshness } from './runtimeFreshness.js';
+import { SERVER_INFO } from './brand.js';
 import { createProfileSession } from './profiles/session.js';
 import { autoSetup } from './setup.js';
 
@@ -19,7 +20,7 @@ export function buildServer(identity?: RequestIdentity): McpServer {
   const auth = createAuth(config);
   const client = createClient(auth, config);
 
-  const server = new McpServer({ name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION });
+  const server = new McpServer(SERVER_INFO);
 
   registerTools(server, client);
 
@@ -30,7 +31,7 @@ export function buildServer(identity?: RequestIdentity): McpServer {
 export function buildStdioServer(): McpServer {
   autoSetup();
   const session = createProfileSession();
-  const server = new McpServer({ name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION });
+  const server = new McpServer(SERVER_INFO);
   registerTools(server, session.client, runtimeFreshness, session);
   // The client names itself in the handshake, before any tool call.
   server.server.oninitialized = () => session.onClient(server.server.getClientVersion()?.name);
@@ -49,7 +50,7 @@ export function buildStdioServer(): McpServer {
 export function buildUnconfiguredServer(reason: string): McpServer {
   const message = `tooljet-mcp cannot reach ToolJet: ${reason}`;
   const server = new McpServer(
-    { name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION },
+    SERVER_INFO,
     { instructions: `${message}\n\nFix the configuration and restart this server; no tools will work until then.` }
   );
   server.registerTool(

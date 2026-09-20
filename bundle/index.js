@@ -3095,7 +3095,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3122,7 +3122,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3753,7 +3753,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options2) {
+    function resolve6(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -4037,7 +4037,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve5,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -30055,7 +30055,7 @@ var require_lib2 = __commonJS({
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync as realpathSync2 } from "node:fs";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -46200,12 +46200,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve5();
+        resolve6();
       } else {
-        this._stdout.once("drain", resolve5);
+        this._stdout.once("drain", resolve6);
       }
     });
   }
@@ -46633,7 +46633,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve5, reject) => {
+  const promise2 = new Promise((resolve6, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -46651,7 +46651,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error51 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve5(recovered);
+          resolve6(recovered);
         }
       });
       return true;
@@ -46663,7 +46663,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve5(buffer);
+        resolve6(buffer);
       });
     };
     const onError = (error51) => {
@@ -47188,7 +47188,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve5) => setTimeout(resolve5));
+            await new Promise((resolve6) => setTimeout(resolve6));
             maxReadCount = 3;
             continue;
           }
@@ -47868,9 +47868,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve5) => {
+        return new Promise((resolve6) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve5,
+            resolveJson: resolve6,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -54171,7 +54171,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -54188,7 +54188,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -54266,7 +54266,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -54527,12 +54527,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -55623,7 +55623,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -57254,7 +57254,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve5 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const resolve6 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options2 = q.options && typeof q.options === "object" ? q.options : {};
@@ -57266,7 +57266,7 @@ function queryTriggers(summary) {
     const payload = eventPayload(e.event);
     if (!payload || payload.actionId !== "run-query")
       continue;
-    const target = resolve5(payload.queryId ?? payload.queryName);
+    const target = resolve6(payload.queryId ?? payload.queryName);
     if (!target)
       continue;
     const entry = triggers.get(target.id);
@@ -62362,7 +62362,7 @@ function createClient(auth, config2) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve5) => setTimeout(resolve5, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      await new Promise((resolve6) => setTimeout(resolve6, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
@@ -62424,8 +62424,8 @@ function createClient(auth, config2) {
   async function createQuery(params) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
-    const tail = new Promise((resolve5) => {
-      release = resolve5;
+    const tail = new Promise((resolve6) => {
+      release = resolve6;
     });
     queryCreateTails.set(params.versionId, tail);
     await previous;
@@ -66014,7 +66014,7 @@ function unconditional(action) {
 }
 function queryEventCycleErrors(summary, additions, persisted) {
   const names = new Map(summary.queries.map((q) => [q.id, q.name ?? q.id]));
-  const resolve5 = (value2) => {
+  const resolve6 = (value2) => {
     if (typeof value2 !== "string")
       return void 0;
     if (names.has(value2))
@@ -66025,7 +66025,7 @@ function queryEventCycleErrors(summary, additions, persisted) {
   const edge = (event) => {
     if (event.sourceType !== "data_query" || !names.has(event.sourceId) || event.action.actionId !== "run-query" || !unconditional(event.action))
       return void 0;
-    const target = resolve5(event.action.queryId);
+    const target = resolve6(event.action.queryId);
     return target ? [event.sourceId, target] : void 0;
   };
   const graph = /* @__PURE__ */ new Map();
@@ -70602,7 +70602,7 @@ async function waitForCreatedTables(client, tableNames) {
         const delay = TABLE_READY_DELAYS_MS[attempt];
         if (delay === void 0)
           break;
-        await new Promise((resolve5) => setTimeout(resolve5, delay));
+        await new Promise((resolve6) => setTimeout(resolve6, delay));
       }
     }
     throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
@@ -73615,26 +73615,47 @@ function registerTools(server, client, runtime = runtimeFreshness, session) {
   }
 }
 
+// dist/brand.js
+import { readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname7, resolve as resolve5 } from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
+var iconPath = resolve5(dirname7(fileURLToPath5(import.meta.url)), "../data/icon.png");
+function loadIcons() {
+  try {
+    return [{ src: `data:image/png;base64,${readFileSync7(iconPath).toString("base64")}`, mimeType: "image/png", sizes: ["512x512"] }];
+  } catch {
+    return void 0;
+  }
+}
+var icons2 = loadIcons();
+var SERVER_INFO = {
+  name: "tooljet-mcp",
+  title: "ToolJet",
+  version: TOOLJET_MCP_VERSION,
+  websiteUrl: "https://tooljet.com",
+  ...icons2 ? { icons: icons2 } : {}
+};
+
 // dist/server.js
 function buildServer(identity) {
   const config2 = loadConfig(identity);
   const auth = createAuth(config2);
   const client = createClient(auth, config2);
-  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
+  const server = new McpServer(SERVER_INFO);
   registerTools(server, client);
   return server;
 }
 function buildStdioServer() {
   autoSetup();
   const session = createProfileSession();
-  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
+  const server = new McpServer(SERVER_INFO);
   registerTools(server, session.client, runtimeFreshness, session);
   server.server.oninitialized = () => session.onClient(server.server.getClientVersion()?.name);
   return server;
 }
 function buildUnconfiguredServer(reason) {
   const message = `tooljet-mcp cannot reach ToolJet: ${reason}`;
-  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION }, { instructions: `${message}
+  const server = new McpServer(SERVER_INFO, { instructions: `${message}
 
 Fix the configuration and restart this server; no tools will work until then.` });
   server.registerTool("tooljet_status", {
@@ -73857,9 +73878,9 @@ async function serveHttp() {
   }
   const { server: httpServer, gatewayMode } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
-  await new Promise((resolve5, reject) => {
+  await new Promise((resolve6, reject) => {
     httpServer.once("error", reject);
-    httpServer.listen(port, host, resolve5);
+    httpServer.listen(port, host, resolve6);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
@@ -73894,7 +73915,7 @@ function isEntrypoint() {
   if (!invoked)
     return false;
   try {
-    return realpathSync2(invoked) === realpathSync2(fileURLToPath5(import.meta.url));
+    return realpathSync2(invoked) === realpathSync2(fileURLToPath6(import.meta.url));
   } catch {
     return false;
   }
