@@ -77,7 +77,7 @@ handoff so they know their plan does not include custom themes and that upgradin
 ## Resolve the design source before creating or styling the app
 
 Use this precedence:
-1. Explicit user requirements, user-designated visual references and a supplied design system.
+1. Explicit user requirements and a supplied design system.
 2. The app's existing or explicitly selected ToolJet theme; a requested workspace default counts as selected.
 3. A recognizable brand identity, when no higher-priority choice supplies it.
 4. Use case, industry, audience and working environment.
@@ -87,12 +87,6 @@ Inspect `get_app_settings` / `list_app_themes` or `manage_theme` list as needed 
 choice. Do not replace a selected theme because the industry suggests another colour. When requirements ask
 for a branding change, apply that change at the app scope; do not mutate a shared workspace theme unexpectedly.
 A theme's mere presence in the workspace is not a request to use it.
-
-When asked to match a supplied image or mockup, derive colour roles, typography, surfaces and radii from
-that reference rather than an industry palette or fallback theme. Preserve explicit user constraints
-about which existing styles to retain. Theme tokens alone do not reproduce a design: carry its region
-proportions, spacing and distinctive treatments into native component layouts/styles as described in
-`references/ui-layout.md`, then compare the rendered result with the reference.
 
 A short prompt deserves the same contemporary 2026 quality bar as a detailed one. "Beautiful", "modern" or
 "premium" can steer the mood; they are not prerequisites for a well-designed product. Neither a year label
