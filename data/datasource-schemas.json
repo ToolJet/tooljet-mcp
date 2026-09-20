@@ -55497,6 +55497,148 @@
       }
     ]
   },
+  "typesafe": {
+    "kind": "typesafe",
+    "name": "TypeSafe",
+    "type": "api",
+    "description": "A schema defining TypeSafe datasource",
+    "defaults": {
+      "operation": "evaluate"
+    },
+    "operations": [
+      "evaluate"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "evaluate"
+      ]
+    },
+    "contracts": {
+      "evaluate": {
+        "operation": "evaluate",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "evaluate"
+              ]
+            },
+            "fields": {
+              "model": {
+                "path": "model",
+                "type": "unknown|binding",
+                "label": "Model",
+                "description": "Blank uses jev-latest (TypeSafe) or typesafe/jev-1.13 (OpenRouter)"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select an operation",
+                "allowedValues": [
+                  "evaluate"
+                ]
+              },
+              "questions": {
+                "path": "questions",
+                "type": "unknown|binding",
+                "label": "Questions",
+                "description": "JSON map of question id to a typed question. Answers come back under the same ids as data.answers.<id>.",
+                "required": true
+              },
+              "state": {
+                "path": "state",
+                "type": "unknown|binding",
+                "label": "State",
+                "description": "What to decide about: a ticket, a record, a message. Text is sent as text; JSON is sent as structured state.",
+                "required": true
+              }
+            },
+            "required": [
+              "operation",
+              "questions",
+              "state"
+            ]
+          }
+        ],
+        "response": {
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "{ model, answers, usage }. answers is keyed by the question ids you sent, never by position, and every answer is a typed value, not text. A choice answer is { type: 'choice', choice: string (the winning option key), probabilities: record<option, number>, confidence: number 0-1 }. A noul (yes/no) answer is { type: 'noul', noul: number } where noul is the probability of yes from 0 to 1 and there is no separate confidence. A score answer is { type: 'score', score: number (probability-weighted position from 0 to levels-1), legend: record<index, level text>, probabilities: record<index, number>, confidence: number }. Bind queries.<q>.data.answers.<id>.choice, .noul or .score; show a score's level with data.answers.<id>.legend[Math.round(data.answers.<id>.score)]. usage carries input_tokens, output_tokens and cost."
+        },
+        "notes": [
+          "questions is a JSON map of question id to a typed question { type: 'choice' | 'noul' | 'score', instructions, criteria }. choice needs criteria as a map of at least two option keys to descriptions; score needs criteria as an ordered list of at least two levels written as concrete situations; noul takes instructions only. Question ids are for your bindings and are not sent to the model, so put the full meaning in instructions.",
+          "state is what the questions are about: pass a record or an object of named fields such as {{ { subject: components.table1.selectedRow.subject, body: components.table1.selectedRow.body } }} rather than whole rows or pages; the model reads literally and unrelated detail lowers accuracy. A plain string is sent as text.",
+          "Ask every independent question about the same state in one query: they run in parallel and one call costs a few hundred milliseconds. Use a second query only when an answer decides what state to fetch next.",
+          "Decide thresholds in code or bindings, not in the question: a noul of 0.5 means yes and no are equally likely, not a medium intensity, and a spread choice distribution means several options were acceptable.",
+          "model is optional. Blank uses jev-latest on a TypeSafe credential and typesafe/jev-1.13 on an OpenRouter credential; a bare name such as jev-1.13 is mapped to the right form for either credential.",
+          "The plugin validates question shapes before calling the API, so a malformed question fails with a message naming the question id; a 401 means the key for the selected credential mode is wrong."
+        ]
+      }
+    },
+    "properties": {
+      "operation": {
+        "label": "Operation",
+        "key": "operation",
+        "type": "dropdown-component-flip",
+        "description": "Select an operation",
+        "list": [
+          {
+            "value": "evaluate",
+            "name": "Evaluate"
+          }
+        ]
+      },
+      "evaluate": {
+        "state": {
+          "label": "State",
+          "key": "state",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "description": "What to decide about: a ticket, a record, a message. Text is sent as text; JSON is sent as structured state.",
+          "height": "120px",
+          "mandatory": true,
+          "placeholder": "{{components.table1.selectedRow}}",
+          "tooltip": "Send the fields the questions need, not whole pages. Jev reads literally and large unrelated detail lowers accuracy."
+        },
+        "questions": {
+          "label": "Questions",
+          "key": "questions",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "description": "JSON map of question id to a typed question. Answers come back under the same ids as data.answers.<id>.",
+          "height": "220px",
+          "mandatory": true,
+          "placeholder": "{\n  \"route\": {\n    \"type\": \"choice\",\n    \"instructions\": \"Which team should handle this?\",\n    \"criteria\": { \"billing\": \"Payments, invoicing, refunds\", \"technical\": \"Bugs, outages\", \"sales\": \"Pricing, upgrades\" }\n  },\n  \"urgent\": { \"type\": \"noul\", \"instructions\": \"Is this time-sensitive?\" },\n  \"mood\": { \"type\": \"score\", \"instructions\": \"How frustrated is the customer?\", \"criteria\": [\"Calm\", \"Frustrated\", \"Very angry\"] }\n}",
+          "tooltip": "choice: criteria is a map of option to description. score: criteria is an ordered list of at least two levels. noul: a yes/no question, criteria optional {true, false}."
+        },
+        "model": {
+          "label": "Model",
+          "key": "model",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "description": "Blank uses jev-latest (TypeSafe) or typesafe/jev-1.13 (OpenRouter)",
+          "height": "36px",
+          "mandatory": false,
+          "placeholder": "jev-latest",
+          "editorType": "extendedSingleLine"
+        }
+      }
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": true,
+    "sources": [
+      {
+        "collection": "marketplace",
+        "package": "typesafe"
+      }
+    ]
+  },
   "typesense": {
     "kind": "typesense",
     "name": "TypeSense",
