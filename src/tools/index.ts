@@ -61,6 +61,10 @@ import {
   type RuntimeFreshnessMonitor,
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
+import { listProfilesTool } from './listProfiles.js';
+import { useProfileTool } from './useProfile.js';
+import type { ProfileSession } from '../profiles/session.js';
+import { getActiveScope } from '../profiles/scope.js';
 import { manageThemeTool } from './manageTheme.js';
 import { manageAppPermissionsTool } from './manageAppPermissions.js';
 import {
@@ -84,10 +88,13 @@ function includeLegacySingularCreateTools(): boolean {
 export function registerTools(
   server: McpServer,
   client: ToolJetClient,
-  runtime: RuntimeFreshnessMonitor = runtimeFreshness
+  runtime: RuntimeFreshnessMonitor = runtimeFreshness,
+  /** stdio only: one chat may switch profiles. HTTP acts per request. */
+  session?: ProfileSession
 ): void {
   const tools: ToolDef[] = [
     getRuntimeInfoTool(runtime),
+    ...(session ? [listProfilesTool(session), useProfileTool(session)] : []),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -166,7 +173,10 @@ export function registerTools(
         if (status.restart_required && tool.name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
-        return withRuntimeStatus(await tool.handler(args), status);
+        const result = withRuntimeStatus(await tool.handler(args), status);
+        // Name the server each result came from.
+        const scope = session ? getActiveScope() : undefined;
+        return scope ? { ...result, _meta: { ...(result._meta ?? {}), tooljet_profile: scope } } : result;
       }) as any
     );
   }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
+import type { ProfileSession } from '../src/profiles/session.js';
 import { registerTools } from '../src/tools/index.js';
 
 interface Registered {
@@ -25,7 +26,8 @@ function registeredTools(): Registered[] {
         captured.push({ name, ...config });
       },
     } as unknown as McpServer;
-    registerTools(server, {} as ToolJetClient);
+    // Pass a session so the profile tools are checked too.
+    registerTools(server, {} as ToolJetClient, undefined, {} as ProfileSession);
     return captured;
   } finally {
     if (previous === undefined) delete process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
@@ -43,13 +45,15 @@ const MUST_BE_DESTRUCTIVE = [
   'run_queries', 'run_query',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query',
+  // Moves every later write to another server.
+  'use_profile',
 ];
 
 const MUST_BE_READ_ONLY = [
   'generate_form_schema', 'get_app', 'get_app_settings', 'get_app_summary', 'get_component',
   'get_component_catalog', 'get_datasource_query_schema', 'get_runtime_info', 'get_table_schema',
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
-  'list_events', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
+  'list_events', 'list_profiles', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app', 'verify_page_render',
 ];
 

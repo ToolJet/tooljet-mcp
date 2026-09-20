@@ -3,7 +3,9 @@ import { loadConfig, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
-import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
+import { TOOLJET_MCP_VERSION, runtimeFreshness } from './runtimeFreshness.js';
+import { createProfileSession } from './profiles/session.js';
+import { autoSetup } from './setup.js';
 
 /**
  * One MCP server instance.
@@ -21,6 +23,17 @@ export function buildServer(identity?: RequestIdentity): McpServer {
 
   registerTools(server, client);
 
+  return server;
+}
+
+/** Server for one chat. Never throws for a missing credential, so use_profile can start it without a restart. */
+export function buildStdioServer(): McpServer {
+  autoSetup();
+  const session = createProfileSession();
+  const server = new McpServer({ name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION });
+  registerTools(server, session.client, runtimeFreshness, session);
+  // The client names itself in the handshake, before any tool call.
+  server.server.oninitialized = () => session.onClient(server.server.getClientVersion()?.name);
   return server;
 }
 
