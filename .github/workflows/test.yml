@@ -21,5 +21,7 @@ jobs:
       - run: npm test
       - name: Build shipped bundle and verify MCP initialization
         run: npm run build:plugin
+      - name: Verify committed bundle is current
+        run: git diff --exit-code -- bundle
       - name: Check published package contents
         run: npm pack --dry-run
