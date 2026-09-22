@@ -63634,6 +63634,124 @@ function updateAppSettingsTool(client) {
   };
 }
 
+// dist/datasourceCatalog.js
+import { readFileSync as readFileSync4 } from "node:fs";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { dirname as dirname4, resolve as resolve3 } from "node:path";
+var COMMON_QUERY_OPTION_FIELDS = {
+  runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
+  runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
+  requestConfirmation: { path: "requestConfirmation", type: "boolean|binding" },
+  requestConfirmationFx: { path: "requestConfirmationFx", type: "boolean" },
+  confirmationMessage: { path: "confirmationMessage", type: "string|binding" },
+  showSuccessNotification: { path: "showSuccessNotification", type: "boolean|binding" },
+  successMessage: { path: "successMessage", type: "string|binding" },
+  notificationDuration: { path: "notificationDuration", type: "number|string" },
+  enableTransformation: { path: "enableTransformation", type: "boolean" },
+  transformationLanguage: { path: "transformationLanguage", type: "string", allowedValues: ["javascript", "python"] },
+  transformations: { path: "transformations", type: "object" },
+  transformation: { path: "transformation", type: "string" },
+  query_timeout: { path: "query_timeout", type: "number|string" },
+  disableQuery: { path: "disableQuery", type: "boolean|binding" },
+  disabledMessage: { path: "disabledMessage", type: "string|binding" }
+};
+var dataPath2 = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/datasource-schemas.json");
+var cache2 = null;
+function load2() {
+  if (!cache2)
+    cache2 = JSON.parse(readFileSync4(dataPath2, "utf8"));
+  return cache2;
+}
+function getDatasourceCatalog() {
+  return Object.values(load2()).map(({ kind, name: name2, type, operations }) => ({ kind, name: name2, type, operations }));
+}
+function connectableDatasourceNames() {
+  return [...new Set(Object.values(load2()).map(({ name: name2 }) => name2).filter(Boolean))].sort();
+}
+function getDatasourceQuerySchema(kind) {
+  return load2()[kind] ?? null;
+}
+function operationSummary(contract) {
+  const selectors = {};
+  const required3 = /* @__PURE__ */ new Set();
+  for (const variant of contract.variants) {
+    variant.required.forEach((path) => required3.add(path));
+    for (const [key4, values] of Object.entries(variant.when)) {
+      const collected = selectors[key4] ?? /* @__PURE__ */ new Set();
+      values.forEach((value2) => collected.add(value2));
+      selectors[key4] = collected;
+    }
+  }
+  return {
+    operation: contract.operation,
+    selectors: Object.fromEntries(Object.entries(selectors).map(([key4, values]) => [key4, [...values].sort()])),
+    required: [...required3].sort(),
+    variants: contract.variants.length,
+    ...contract.response ? { response_type: contract.response.type } : {},
+    ...contract.response ? { response_status: contract.response.status } : {}
+  };
+}
+function selectDatasourceQuerySchema(kind, options2 = {}) {
+  const schema = getDatasourceQuerySchema(kind);
+  if (!schema)
+    return null;
+  const sections = new Set(options2.sections ?? (options2.operation ? ["summary", "request", "response"] : ["summary"]));
+  const result = {};
+  if (sections.has("summary")) {
+    Object.assign(result, {
+      kind: schema.kind,
+      name: schema.name,
+      type: schema.type,
+      description: schema.description,
+      defaults: schema.defaults,
+      operations: schema.operations,
+      ...schema.operationSelection ? { operation_selection: schema.operationSelection } : {},
+      ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
+    });
+    if (!options2.operation) {
+      result.operation_summaries = Object.values(schema.contracts).map(operationSummary);
+    }
+  }
+  if (options2.operation) {
+    const contract = schema.contracts[options2.operation];
+    if (!contract) {
+      return {
+        kind,
+        error: `Unknown operation "${options2.operation}" for datasource kind "${kind}".`,
+        operations: schema.operations,
+        ...schema.operationSelection?.mode === "single" ? {
+          operation_selection: schema.operationSelection,
+          available_contracts: Object.keys(schema.contracts),
+          recovery: 'This datasource has one query form, not zero capabilities. Request operation:"default" (or omit operation) to read its contract. Put the command in the documented query option; do not invent an operation selector.'
+        } : {}
+      };
+    }
+    if (sections.has("request")) {
+      result.request = {
+        operation: contract.operation,
+        variants: contract.variants,
+        common_fields: COMMON_QUERY_OPTION_FIELDS,
+        ...contract.notes ? { notes: contract.notes } : {}
+      };
+    }
+    if (sections.has("response")) {
+      result.response = contract.response ?? {
+        type: "unknown",
+        status: "unknown",
+        source: "tooljet-plugin",
+        description: "This plugin does not publish a stable response contract. Run a safe read query and inspect data."
+      };
+    }
+  }
+  if (sections.has("raw")) {
+    result.raw = { properties: schema.properties, sources: schema.sources };
+  }
+  if (sections.has("introspection")) {
+    result.introspection_methods = schema.introspectionMethods ?? [];
+  }
+  return result;
+}
+
 // dist/tools/listDatasources.js
 function listDatasourcesTool(client) {
   return {
@@ -63643,7 +63761,7 @@ function listDatasourcesTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user. Pass the actual app version_id: for a new app, create_app must return it before this call.",
+    description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user. Returns {datasources, connectable}: `datasources` are the connected ones (use their id for add_queries), `connectable` names every source ToolJet CAN connect. A source the user named that is in `connectable` but not in `datasources` needs connecting; one in neither has no ToolJet connector and has to go through a REST API datasource pointed at its HTTP API. Pass the actual app version_id: for a new app, create_app must return it before this call.",
     inputSchema: {
       version_id: external_exports.string().trim().min(1)
     },
@@ -63652,8 +63770,8 @@ function listDatasourcesTool(client) {
         if (typeof args.version_id !== "string" || !args.version_id.trim()) {
           throw new Error("version_id is required. For a new app, call create_app first and use its returned version_id.");
         }
-        const result = await client.listDatasources(args.version_id);
-        return ok(result);
+        const datasources = await client.listDatasources(args.version_id);
+        return ok({ datasources, connectable: connectableDatasourceNames() });
       } catch (err) {
         return fail(err);
       }
@@ -64185,121 +64303,6 @@ function getComponentCatalogTool(_client) {
       }
     }
   };
-}
-
-// dist/datasourceCatalog.js
-import { readFileSync as readFileSync4 } from "node:fs";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
-import { dirname as dirname4, resolve as resolve3 } from "node:path";
-var COMMON_QUERY_OPTION_FIELDS = {
-  runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
-  runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
-  requestConfirmation: { path: "requestConfirmation", type: "boolean|binding" },
-  requestConfirmationFx: { path: "requestConfirmationFx", type: "boolean" },
-  confirmationMessage: { path: "confirmationMessage", type: "string|binding" },
-  showSuccessNotification: { path: "showSuccessNotification", type: "boolean|binding" },
-  successMessage: { path: "successMessage", type: "string|binding" },
-  notificationDuration: { path: "notificationDuration", type: "number|string" },
-  enableTransformation: { path: "enableTransformation", type: "boolean" },
-  transformationLanguage: { path: "transformationLanguage", type: "string", allowedValues: ["javascript", "python"] },
-  transformations: { path: "transformations", type: "object" },
-  transformation: { path: "transformation", type: "string" },
-  query_timeout: { path: "query_timeout", type: "number|string" },
-  disableQuery: { path: "disableQuery", type: "boolean|binding" },
-  disabledMessage: { path: "disabledMessage", type: "string|binding" }
-};
-var dataPath2 = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/datasource-schemas.json");
-var cache2 = null;
-function load2() {
-  if (!cache2)
-    cache2 = JSON.parse(readFileSync4(dataPath2, "utf8"));
-  return cache2;
-}
-function getDatasourceCatalog() {
-  return Object.values(load2()).map(({ kind, name: name2, type, operations }) => ({ kind, name: name2, type, operations }));
-}
-function getDatasourceQuerySchema(kind) {
-  return load2()[kind] ?? null;
-}
-function operationSummary(contract) {
-  const selectors = {};
-  const required3 = /* @__PURE__ */ new Set();
-  for (const variant of contract.variants) {
-    variant.required.forEach((path) => required3.add(path));
-    for (const [key4, values] of Object.entries(variant.when)) {
-      const collected = selectors[key4] ?? /* @__PURE__ */ new Set();
-      values.forEach((value2) => collected.add(value2));
-      selectors[key4] = collected;
-    }
-  }
-  return {
-    operation: contract.operation,
-    selectors: Object.fromEntries(Object.entries(selectors).map(([key4, values]) => [key4, [...values].sort()])),
-    required: [...required3].sort(),
-    variants: contract.variants.length,
-    ...contract.response ? { response_type: contract.response.type } : {},
-    ...contract.response ? { response_status: contract.response.status } : {}
-  };
-}
-function selectDatasourceQuerySchema(kind, options2 = {}) {
-  const schema = getDatasourceQuerySchema(kind);
-  if (!schema)
-    return null;
-  const sections = new Set(options2.sections ?? (options2.operation ? ["summary", "request", "response"] : ["summary"]));
-  const result = {};
-  if (sections.has("summary")) {
-    Object.assign(result, {
-      kind: schema.kind,
-      name: schema.name,
-      type: schema.type,
-      description: schema.description,
-      defaults: schema.defaults,
-      operations: schema.operations,
-      ...schema.operationSelection ? { operation_selection: schema.operationSelection } : {},
-      ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
-    });
-    if (!options2.operation) {
-      result.operation_summaries = Object.values(schema.contracts).map(operationSummary);
-    }
-  }
-  if (options2.operation) {
-    const contract = schema.contracts[options2.operation];
-    if (!contract) {
-      return {
-        kind,
-        error: `Unknown operation "${options2.operation}" for datasource kind "${kind}".`,
-        operations: schema.operations,
-        ...schema.operationSelection?.mode === "single" ? {
-          operation_selection: schema.operationSelection,
-          available_contracts: Object.keys(schema.contracts),
-          recovery: 'This datasource has one query form, not zero capabilities. Request operation:"default" (or omit operation) to read its contract. Put the command in the documented query option; do not invent an operation selector.'
-        } : {}
-      };
-    }
-    if (sections.has("request")) {
-      result.request = {
-        operation: contract.operation,
-        variants: contract.variants,
-        common_fields: COMMON_QUERY_OPTION_FIELDS,
-        ...contract.notes ? { notes: contract.notes } : {}
-      };
-    }
-    if (sections.has("response")) {
-      result.response = contract.response ?? {
-        type: "unknown",
-        status: "unknown",
-        source: "tooljet-plugin",
-        description: "This plugin does not publish a stable response contract. Run a safe read query and inspect data."
-      };
-    }
-  }
-  if (sections.has("raw")) {
-    result.raw = { properties: schema.properties, sources: schema.sources };
-  }
-  if (sections.has("introspection")) {
-    result.introspection_methods = schema.introspectionMethods ?? [];
-  }
-  return result;
 }
 
 // dist/tools/getDatasourceQuerySchema.js
@@ -72701,7 +72704,7 @@ function deleteEventTool(client) {
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.4.0";
+var TOOLJET_MCP_VERSION = "0.5.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
