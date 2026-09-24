@@ -56307,7 +56307,7 @@ async function validateApiUrl(raw, customerId) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
   const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  const verifiedViaGateway = parsed.protocol === "https:" && !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
   if (!inStaticList && !verifiedViaGateway) {
     throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
   }

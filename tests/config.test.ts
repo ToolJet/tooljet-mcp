@@ -505,6 +505,27 @@ describe('per-request target origin — live Gateway fallback', () => {
     ]);
   });
 
+  it.each(['localhost', '127.0.0.1', '[::1]'])(
+    'requires a static allowlist for HTTP %s even when the Gateway would approve',
+    async (host) => {
+      await expect(identityFromHeaders({
+        'x-tooljet-url': `http://${host}:4319`,
+        'x-tooljet-customer-id': 'fixture-loopback-customer',
+      })).rejects.toThrow(/not in MCP_ALLOWED_API_ORIGINS/);
+      expect(receivedRequests).toEqual([]);
+    }
+  );
+
+  it('allows an explicitly trusted HTTP loopback without asking the Gateway', async () => {
+    const origin = 'http://127.0.0.1:4321';
+    process.env.MCP_ALLOWED_API_ORIGINS = origin;
+    expect(await identityFromHeaders({
+      'x-tooljet-url': origin,
+      'x-tooljet-customer-id': 'fixture-local-customer',
+    })).toEqual({ apiUrl: origin });
+    expect(receivedRequests).toEqual([]);
+  });
+
   // Distinct origin per test — the cache is module-scoped, reusing one would hit a stale verdict.
 
   it('rejects when the Gateway says no', async () => {
