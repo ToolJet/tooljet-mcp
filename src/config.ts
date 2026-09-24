@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 export interface Config {
   apiUrl: string;
   /** Where a human opens ToolJet in a browser — used only to build user-facing links (a datasource's
@@ -56,7 +58,7 @@ export const BASE_URL_HEADER = 'x-tooljet-url';
 /** Self-hosted customer ID, forwarded by tooljet-agent — lets validateApiUrl check an origin outside
  *  the static allowlist against the Gateway instead of rejecting it outright. */
 export const CUSTOMER_ID_HEADER = 'x-tooljet-customer-id';
-/** Comma-separated https origins this server will accept as a request-named target. */
+/** Comma-separated HTTPS or loopback HTTP origins accepted as a request-named target. */
 export const ALLOWED_API_ORIGINS_VAR = 'MCP_ALLOWED_API_ORIGINS';
 /** Gateway origin-verification endpoint + bearer secret. Unset means the dynamic check is off. */
 const GATEWAY_URL_VAR = 'MCP_GATEWAY_URL';
@@ -66,6 +68,14 @@ const GATEWAY_TOKEN_VAR = 'MCP_GATEWAY_TOKEN';
 function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
+}
+
+/** URL parsing normalizes IP literals; do not trust hostname suffixes or DNS resolution. */
+function isAllowedApiProtocol(url: URL): boolean {
+  const host = url.hostname;
+  const loopback =
+    host === 'localhost' || host === '[::1]' || (isIP(host) === 4 && host.startsWith('127.'));
+  return url.protocol === 'https:' || (url.protocol === 'http:' && loopback);
 }
 
 /**
@@ -91,11 +101,9 @@ export function allowedApiOrigins(): string[] {
       } catch {
         throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
       }
-      // A request's origin is required to be https (validateApiUrl) before it ever reaches this
-      // allowlist, so a non-https entry here — a typo, e.g. "http://" — could never match anything.
-      // Silently keeping it would leave the operator with a dead entry and no signal it's wrong.
-      if (parsed.protocol !== 'https:') {
-        throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https — it could never match a request.`);
+      // Apply the same protocol policy as request validation so unusable entries fail loudly.
+      if (!isAllowedApiProtocol(parsed)) {
+        throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https unless the host is loopback.`);
       }
       return parsed.origin;
     });
@@ -190,7 +198,7 @@ async function resolveApiUrlFromGateway(customerId: string): Promise<ResolvedOri
  *
  * Gets the caller's session/PAT attached and sent straight to it (auth.ts) — a bearer-grade
  * credential, not just traffic. https alone does not make a host trustworthy: an attacker's own
- * domain has a valid cert too. So beyond parse+scheme (garbage input, http downgrade), the origin
+ * domain has a valid cert too. So beyond parse+scheme (garbage input, non-loopback http), the origin
  * must also appear in MCP_ALLOWED_API_ORIGINS, or — when the request names a customerId — pass a
  * live check against the Gateway. Neither set means "allow anything": a shared deployment must
  * opt in to which backends it will ever write into.
@@ -210,16 +218,18 @@ async function validateApiUrl(
   } catch {
     throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
   }
-  if (parsed.protocol !== 'https:') {
-    throw new Error(`${BASE_URL_HEADER} must use https.`);
+  if (!isAllowedApiProtocol(parsed)) {
+    throw new Error(`${BASE_URL_HEADER} must use https unless the host is loopback.`);
   }
   if (parsed.search || parsed.hash || parsed.username || parsed.password) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
   const inStaticList = allowedApiOrigins().includes(parsed.origin);
+  // HTTP loopback is a local operator exception; a remote license check cannot authorize it.
   // Same Gateway confirmation as resolve mode — a customer verified this way should bypass
   // MCP_REQUIRE_USER_SESSION too, not just the origin check that verified them.
-  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  const verifiedViaGateway = parsed.protocol === 'https:' && !inStaticList && customerId
+    ? await checkOriginWithGateway(customerId, parsed.origin) : false;
   if (!inStaticList && !verifiedViaGateway) {
     throw new Error(
       `${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify ` +
