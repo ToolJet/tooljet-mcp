@@ -72704,7 +72704,7 @@ function deleteEventTool(client) {
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.5.1";
+var TOOLJET_MCP_VERSION = "0.6.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);
