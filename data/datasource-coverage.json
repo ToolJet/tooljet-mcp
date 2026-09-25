@@ -1,7 +1,7 @@
 {
-  "datasource_kinds": 95,
-  "contract_count": 489,
-  "kinds_with_named_operations": 71,
+  "datasource_kinds": 96,
+  "contract_count": 492,
+  "kinds_with_named_operations": 72,
   "default_only_kinds": [
     "aftership",
     "clickup",
@@ -61,12 +61,12 @@
   "unexplained_default_only_kinds": [],
   "spec_driven_kinds_without_spec_ref": [],
   "response_contracts": {
-    "total": 489,
-    "known": 82,
+    "total": 492,
+    "known": 85,
     "runtime_dependent": 36,
     "unknown": 371,
     "missing": 0,
-    "known_percent": 16.8
+    "known_percent": 17.3
   },
   "known_response_kinds": [
     "anthropic",
@@ -76,6 +76,7 @@
     "mssql",
     "mysql",
     "openai",
+    "openrouter",
     "postgresql",
     "servicenow",
     "snowflake",
@@ -188,6 +189,6 @@
     "xero"
   ],
   "kinds_without_contracts": [],
-  "kinds_with_test_connection_flag": 95,
-  "kinds_supporting_test_connection": 67
+  "kinds_with_test_connection_flag": 96,
+  "kinds_supporting_test_connection": 68
 }
