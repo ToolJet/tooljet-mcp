@@ -344,7 +344,18 @@ describe('lintComponentSpec', () => {
         hideSecondary: { value: true },
       },
       layout: { top: 0, left: 0, width: 13, height: 120 },
-    }).warnings.join(' ')).toMatch(/only safe for a short one- or two-word.*Open work orders.*wrap vertically.*at least 18/is);
+    }).warnings).toEqual([]);  // about 325px at 1366px wide: 16 characters fit on one line (vet n1, 2026-09-25)
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: {
+        primaryValue: { value: '42' },
+        primaryValueLabel: { value: 'Open work orders awaiting parts' },
+        hideSecondary: { value: true },
+      },
+      layout: { top: 0, left: 0, width: 13, height: 120 },
+    }).warnings.join(' ')).toMatch(/Open work orders awaiting parts.*wrap vertically.*at least 18/is);
 
     expect(lintComponentSpec({
       name: 'openCases',

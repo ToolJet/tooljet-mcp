@@ -1767,11 +1767,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS &&
       typeof primaryLabel === 'string' &&
       !primaryLabel.includes('{{') &&
-      (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)
+      // About 25px a column at laptop widths and 7-8px a label character: two characters a column stay on one
+      // line (a 13-column tile is ~325px; the old 12-character limit flagged "Arrived / waiting", vet n1).
+      primaryLabel.trim().length > width * 2
     ) {
       warnings.push(
-        `Statistics "${label}": value-only width ${width} columns is only safe for a short one- or two-word ` +
-          `primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. ` +
+        `Statistics "${label}": value-only width ${width} columns fits a label of about ${width * 2} characters, ` +
+          `but "${primaryLabel}" can wrap vertically and hide the value in the viewer. ` +
           'Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.'
       );
     }
