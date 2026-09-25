@@ -2210,7 +2210,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         if (
           c?.columnType === 'string' &&
-          (looksDateLikeField(c.key) || looksDateLikeField(c.name)) &&
+          // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
+          (typeof c.key === 'string' && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) &&
           !authorComputesKey(props?.data, c.key)
         ) {
           warnings.push(

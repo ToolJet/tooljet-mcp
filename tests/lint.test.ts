@@ -777,6 +777,22 @@ describe('lintComponentSpec', () => {
     expect(detailsWarnings).toMatch(/dueDate.*raw ISO timestamp.*fieldType:"datepicker".*dateFormat\/parseDateFormat/is);
   });
 
+  // n1 (2026-09-25): a RunJS query formatted the date into due_display; the header "Due" alone drew this
+  // warning, and the model re-planned and re-applied the page to switch the column to datepicker.
+  it('judges a date-like column by its key when it has one, not by its header', () => {
+    const warn = (key: string, name: string) => lintComponentSpec({
+      name: 'jobs', type: 'Table',
+      properties: {
+        data: { value: '{{queries.jobData.data.rows}}' },
+        columns: { value: [{ id: 'd', name, key, columnType: 'string' }] },
+      },
+    }).warnings.join(' ');
+    expect(warn('due_display', 'Due')).not.toMatch(/date\/time-like/);
+    expect(warn('due_label', 'Due date')).not.toMatch(/date\/time-like/);
+    expect(warn('due_date', 'Due')).toMatch(/date\/time-like/);
+    expect(warn('', 'Created')).toMatch(/date\/time-like/);
+  });
+
   it('warns on the untouched DatePickerV2 demo date but accepts explicit empty/edit values', () => {
     expect(lintComponentSpec({ name: 'scheduledOn', type: 'DatePickerV2', properties: {} }).warnings.join(' '))
       .toMatch(/01\/01\/2022 demo date.*defaultValue.*\{\{null\}\}/i);
