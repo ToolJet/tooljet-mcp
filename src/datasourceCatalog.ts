@@ -119,6 +119,13 @@ export function getDatasourceCatalog(): Array<Pick<DatasourceQuerySchema, 'kind'
   return Object.values(load()).map(({ kind, name, type, operations }) => ({ kind, name, type, operations }));
 }
 
+/** Every source ToolJet can connect, by display name. Lets a caller tell "this source exists but
+ * nobody has connected it" from "ToolJet has no connector for this at all" — the second case has to
+ * go through a REST API datasource, and only this list can distinguish them. */
+export function connectableDatasourceNames(): string[] {
+  return [...new Set(Object.values(load()).map(({ name }) => name).filter(Boolean))].sort();
+}
+
 export function getDatasourceQuerySchema(kind: string): DatasourceQuerySchema | null {
   return load()[kind] ?? null;
 }
