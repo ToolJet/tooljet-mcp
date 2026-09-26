@@ -601,7 +601,9 @@ function sqlSource(sql: string): ReadSource | undefined {
 function assessSql(sql: string, datasourceKind: string, datasourceId?: string): QueryReadAssessment {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...(datasourceId ? { datasourceId } : {}) };
-  if (!compact || /;\s*\S/.test(compact)) {
+  // A ; inside a quoted literal ('%{x}&lt;br&gt;', cx-crm) separates nothing: test the text with literals blanked.
+  const unquoted = compact.replace(/'(?:[^']|'')*'/g, "''").replace(/"(?:[^"]|"")*"/g, '""');
+  if (!compact || /;\s*\S/.test(unquoted)) {
     return {
       provenRead: false, directSafe: false, countOnly: false, selectStar: false,
       requiresCountPreflight: false, reason: 'SQL is empty or contains more than one statement', ...identity,
