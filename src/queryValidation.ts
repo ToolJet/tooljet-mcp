@@ -341,6 +341,9 @@ function influxTransformWarnings(kind: string, options: Record<string, unknown>)
   }];
 }
 
+/** Fields naming what a query acts on. */
+const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
@@ -517,6 +520,17 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
           message: `Unknown nested option key "${root}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`,
         });
       }
+    }
+  }
+
+  // What the query acts on (a table, collection, spreadsheet, base, bucket, index, URL): the catalog marks only the
+  // selector required, so {operation: "get_rows"} with no table looked complete (sweep pilot, 2026-09-26). None set is an
+  // error; some set is a warning, since a sheet tab or similar may be optional.
+  if (options.mode !== 'sql') {
+    const targets = Object.keys(fields).filter((path) => !path.includes('.') && TARGET_FIELD.test(path) && !(path in COMMON_QUERY_OPTION_FIELDS));
+    const set = targets.filter((path) => { const v = options[path]; return v !== undefined && v !== null && v !== ''; });
+    if (targets.length && !set.length) {
+      errors.push({ code: 'missing_target', path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(' or ')}.` });
     }
   }
 

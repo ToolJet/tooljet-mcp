@@ -19,3 +19,18 @@ describe('query options against the datasource catalog', () => {
     expect(codes('restapi', { method: 'get', url: 'https://example.com/x', url_params: [], headers: [] })).toBe('');
   });
 });
+
+// Sweep pilot (2026-09-26): `{operation: "get_rows"}` on Supabase and `{operation: "read"}` on Google Sheets passed: the
+// catalog marks only the selector required, so a query naming no table or spreadsheet looked complete.
+describe('a query that names no target', () => {
+  it('is an error when the operation has target fields and none is set', () => {
+    expect(codes('supabase', { operation: 'get_rows' })).toMatch(/missing_target[\s\S]*get_table_name/);
+    expect(codes('googlesheetsv2', { operation: 'read' })).toMatch(/missing_target[\s\S]*spreadsheet_id/);
+    expect(codes('mongodb', { operation: 'find_many', filter: '{}' })).toMatch(/missing_target[\s\S]*collection/);
+  });
+  it('passes when a target is set, and for operations without targets', () => {
+    expect(codes('supabase', { operation: 'get_rows', get_table_name: 'orders' })).toBe('');
+    expect(codes('googlesheetsv2', { operation: 'read', spreadsheet_id: 'x' })).toBe('');
+    expect(codes('googlesheetsv2', { operation: 'list_all_spreadsheets' })).toBe('');
+  });
+});
