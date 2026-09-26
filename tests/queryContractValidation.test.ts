@@ -34,3 +34,12 @@ describe('a query that names no target', () => {
     expect(codes('googlesheetsv2', { operation: 'list_all_spreadsheets' })).toBe('');
   });
 });
+
+// Sweep (2026-09-26): an unbounded read on page load was refused with "add a static row limit", which does not say that
+// Supabase bounds with get_limit and Google Sheets with an explicit spreadsheet_range.
+describe('an unbounded read on page load', () => {
+  it('names the field that bounds it for this source', () => {
+    expect(codes('supabase', { operation: 'get_rows', get_table_name: 'records', runOnPageLoad: true })).toMatch(/unsafe_automatic_unbounded_read[\s\S]*get_limit/);
+    expect(codes('googlesheetsv2', { operation: 'read', spreadsheet_id: 'x', spreadsheet_range: 'A:Z', runOnPageLoad: true })).toMatch(/unsafe_automatic_unbounded_read[\s\S]*spreadsheet_range/);
+  });
+});

@@ -397,8 +397,9 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
       code: 'unsafe_automatic_unbounded_read',
       path: isTruthyStatic(options.runOnPageLoad) ? 'runOnPageLoad' : 'runOnDependencyChange',
       message:
-        'An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ' +
-        `${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`,
+        'An unbounded read cannot run automatically on page load or dependency change. ' +
+        (readAssessment.reason ? `${readAssessment.reason} ` : `Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD}. `) +
+        'Use server-side pagination for more, or run it only after an explicit user decision.',
     });
   }
   if (automaticRead && readAssessment.requiresBillableReadConfirmation) {

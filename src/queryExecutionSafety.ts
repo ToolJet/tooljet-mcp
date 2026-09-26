@@ -344,9 +344,11 @@ function assessSupabase(options: Record<string, unknown>, datasourceId?: string)
       simpleSourceRead: true, maxRows: 1, source, ...identity };
   }
   const maxRows = staticPositiveInteger(options.get_limit);
+  const unbounded = maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD;
   return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
-    requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
-    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity };
+    requiresCountPreflight: unbounded,
+    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity,
+    ...(unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}) };
 }
 
 /* MongoDB, split by effect: the operation decides it, except for `aggregate`, whose pipeline can
