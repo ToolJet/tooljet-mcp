@@ -92,6 +92,7 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_workspace_users',
     title: 'Manage Workspace Users',
+    strictInput: true,
     // invite is additive, but update overwrites a member's role and archive revokes their access to
     // the workspace, so the hint covers its widest action.
     annotations: {
@@ -106,6 +107,7 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
       'first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet ' +
       'and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. ' +
       'Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. ' +
+      'Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet\'s existing behavior; disclose this before confirmation. ' +
       'Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. ' +
       'Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner\'s ToolJet permissions.',
     inputSchema: schema.shape,
@@ -150,14 +152,15 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
         ) {
           throw new Error('update requires at least one changed field.');
         }
-        const user = await client.updateWorkspaceUser(organizationUserId, {
+        const result = await client.updateWorkspaceUser(organizationUserId, {
           firstName: args.first_name,
           lastName: args.last_name,
           role: args.role,
           addGroupIds: args.group_ids,
           userMetadata: args.user_metadata,
         });
-        return ok({ organization_user_id: organizationUserId, updated: true, user });
+        return ok({ organization_user_id: organizationUserId, ...result,
+          ...(!result.updated ? { already_satisfied: true } : {}) });
       } catch (error) {
         return fail(error);
       }

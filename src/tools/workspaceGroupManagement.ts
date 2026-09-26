@@ -54,6 +54,7 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_workspace_groups',
     title: 'Manage Workspace Groups',
+    strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     description:
       'Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. ' +

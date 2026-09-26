@@ -32,6 +32,8 @@ export interface ToolDef {
    */
   annotations: ToolAnnotations;
   inputSchema: z.ZodRawShape;
+  /** Reject unknown arguments in the SDK before it can strip them from a mutation. */
+  strictInput?: boolean;
   handler: (args: any) => Promise<ToolResult>;
 }
 

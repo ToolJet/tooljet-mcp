@@ -61467,11 +61467,16 @@ function createClient(auth, config2) {
     if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
       throw new Error("Unexpected workspace users response.");
     }
-    const fields = ["id", "user_id", "email", "first_name", "last_name", "name", "role", "status", "groups", "user_metadata"];
+    const fields = ["id", "user_id", "email", "first_name", "last_name", "name", "status", "groups", "user_metadata"];
     return { meta: data.meta, users: data.users.map((user) => {
       if (!user || typeof user.id !== "string")
         throw new Error("Unexpected workspace user response.");
-      return Object.fromEntries(fields.filter((key4) => Object.hasOwn(user, key4)).map((key4) => [key4, user[key4]]));
+      const result = Object.fromEntries(fields.filter((key4) => Object.hasOwn(user, key4)).map((key4) => [key4, user[key4]]));
+      const roles = user.role_group;
+      if (Array.isArray(roles) && roles.length === 1 && ["admin", "builder", "end-user"].includes(roles[0]?.name)) {
+        result.role = roles[0].name;
+      }
+      return result;
     }) };
   }
   const groupPath = "/api/v2/group-permissions";
@@ -61660,6 +61665,8 @@ function createClient(auth, config2) {
     const before = await readUser();
     if (before.status === "archived")
       throw new Error("This workspace user is archived. Unarchive them explicitly before updating them.");
+    if (!before.role)
+      throw new Error("Cannot verify the current workspace role from its default group. No changes were made.");
     if (!Array.isArray(before.groups) || before.groups.some((group) => typeof group?.id !== "string")) {
       throw new Error("Cannot verify existing group memberships. No changes were made.");
     }
@@ -61679,7 +61686,7 @@ function createClient(auth, config2) {
       metadata = { ...before.user_metadata, ...params.userMetadata };
     }
     if (groupIds.length === before.groups.length && (params.role === void 0 || params.role === before.role) && (metadata === void 0 || isDeepStrictEqual(metadata, before.user_metadata)))
-      return before;
+      return { user: before, updated: false };
     const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -61698,7 +61705,7 @@ function createClient(auth, config2) {
       if (!actualIds || actualIds.length !== groupIds.length || groupIds.some((id) => !actualIds.includes(id)) || after.role !== (params.role ?? before.role) || after.first_name !== before.first_name || after.last_name !== before.last_name || after.status !== before.status || !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
         throw new Error("Saved user state does not match the requested changes and preserved fields.");
       }
-      return after;
+      return { user: after, updated: true };
     } catch (error51) {
       throw new Error(`The update was accepted, but its final state could not be verified. Read the user again before retrying: ${error51 instanceof Error ? error51.message : String(error51)}`);
     }
@@ -62966,6 +62973,7 @@ function manageWorkspaceGroupsTool(client) {
   return {
     name: "manage_workspace_groups",
     title: "Manage Workspace Groups",
+    strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
     inputSchema: schema.shape,
@@ -73037,6 +73045,7 @@ function manageWorkspaceUsersTool(client) {
   return {
     name: "manage_workspace_users",
     title: "Manage Workspace Users",
+    strictInput: true,
     // invite is additive, but update overwrites a member's role and archive revokes their access to
     // the workspace, so the hint covers its widest action.
     annotations: {
@@ -73044,7 +73053,7 @@ function manageWorkspaceUsersTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner's ToolJet permissions.",
+    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner's ToolJet permissions.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -73078,14 +73087,18 @@ function manageWorkspaceUsersTool(client) {
         if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
           throw new Error("update requires at least one changed field.");
         }
-        const user = await client.updateWorkspaceUser(organizationUserId, {
+        const result = await client.updateWorkspaceUser(organizationUserId, {
           firstName: args.first_name,
           lastName: args.last_name,
           role: args.role,
           addGroupIds: args.group_ids,
           userMetadata: args.user_metadata
         });
-        return ok({ organization_user_id: organizationUserId, updated: true, user });
+        return ok({
+          organization_user_id: organizationUserId,
+          ...result,
+          ...!result.updated ? { already_satisfied: true } : {}
+        });
       } catch (error51) {
         return fail(error51);
       }
@@ -73171,7 +73184,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     server.registerTool(tool.name, {
       title: tool.title,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: tool.strictInput ? external_exports.object(tool.inputSchema).strict() : tool.inputSchema,
       annotations: tool.annotations
     }, (args) => withToolTelemetry(tool.name, async () => {
       const status = runtime.status();

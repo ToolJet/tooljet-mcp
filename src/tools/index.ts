@@ -1,4 +1,5 @@
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
+import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -158,7 +159,7 @@ export function registerTools(
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: tool.inputSchema,
+        inputSchema: tool.strictInput ? z.object(tool.inputSchema).strict() : tool.inputSchema,
         annotations: tool.annotations,
       },
       (args: any) => withToolTelemetry(tool.name, async () => {

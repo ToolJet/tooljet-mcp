@@ -17,7 +17,9 @@ function fixture() {
   const fetch = vi.fn(async (path: string, init?: RequestInit) => {
     if (path.startsWith('/api/organization-users?')) {
       const page = Number(new URLSearchParams(path.split('?')[1]).get('page'));
-      return Response.json({ users: page === 1 ? [] : [{ ...user, invitation_token: 'private-invitation', account_setup_token: 'private-setup' }],
+      return Response.json({ users: page === 1 ? [] : [{ ...user, role: 'all-users',
+        role_group: [{ id: 'role-group', name: user.role }],
+        invitation_token: 'private-invitation', account_setup_token: 'private-setup' }],
         meta: { total_pages: 2, total_count: 11, current_page: page } });
     }
     if (path === '/api/v2/group-permissions') return Response.json({ groupPermissions: groups });
@@ -51,7 +53,7 @@ describe('workspace user updates preserve unrelated state through the existing A
   it('preserves memberships on role-only updates and merges only supplied metadata keys', async () => {
     const f = fixture();
     const before = structuredClone(f.user());
-    await f.client.updateWorkspaceUser(memberId, { role: 'admin' });
+    expect(await f.client.updateWorkspaceUser(memberId, { role: 'admin' })).toEqual({ user: { ...before, role: 'admin' }, updated: true });
     expect(f.user()).toEqual({ ...before, role: 'admin' });
     await f.client.updateWorkspaceUser(memberId, { userMetadata: { shift: 'Evening' } });
     expect(f.user()).toEqual({ ...before, role: 'admin', user_metadata: { region: 'West', shift: 'Evening' } });
@@ -61,9 +63,20 @@ describe('workspace user updates preserve unrelated state through the existing A
     const f = fixture();
     const before = structuredClone(f.user());
     expect(await f.client.updateWorkspaceUser(memberId, { addGroupIds: [groupIds[0]!], role: 'builder',
-      userMetadata: { shift: 'Morning' } })).toEqual(before);
+      userMetadata: { shift: 'Morning' } })).toEqual({ user: before, updated: false });
+    expect(f.writes()).toHaveLength(0);
+    const result = await f.tool.handler({ action: 'update', organization_user_id: memberId, role: 'builder', confirm: true });
+    expect(JSON.parse(result.content[0]!.text)).toMatchObject({ updated: false, already_satisfied: true, user: before });
     expect(f.writes()).toHaveLength(0);
   });
+
+  it.each([undefined, [], [{ name: 'all-users' }], [{ name: 'admin' }, { name: 'builder' }]])(
+    'refuses unreadable or ambiguous role groups before writing: %j', async role_group => {
+      const f = fixture();
+      f.fetch.mockResolvedValueOnce(Response.json({ users: [{ ...f.user(), role: 'admin', role_group }], meta: { total_pages: 1 } }));
+      await expect(f.client.updateWorkspaceUser(memberId, { role: 'builder' })).rejects.toThrow(/Cannot verify.*role/);
+      expect(f.writes()).toHaveLength(0);
+    });
 
   it.each([{ firstName: 'Taylor' }, { lastName: 'Vega' }, { firstName: 'Taylor', role: 'admin', addGroupIds: [groupIds[2]] }])(
     'rejects the entire name request before reading or writing: %j', async params => {

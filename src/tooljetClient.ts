@@ -542,7 +542,7 @@ export interface ToolJetClient {
   writeWorkspaceGroupAccess(method: 'POST' | 'PUT' | 'DELETE', groupId: string, type: WorkspaceResourceType,
     ruleId?: string, body?: Record<string, unknown>): Promise<void>;
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
-  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<WorkspaceUser>;
+  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
@@ -809,10 +809,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       throw new Error('Unexpected workspace users response.');
     }
     // The API also returns invitation/account-setup tokens. Never send those credentials to a model.
-    const fields = ['id', 'user_id', 'email', 'first_name', 'last_name', 'name', 'role', 'status', 'groups', 'user_metadata'];
+    const fields = ['id', 'user_id', 'email', 'first_name', 'last_name', 'name', 'status', 'groups', 'user_metadata'];
     return { meta: data.meta, users: data.users.map((user: WorkspaceUser) => {
       if (!user || typeof user.id !== 'string') throw new Error('Unexpected workspace user response.');
-      return Object.fromEntries(fields.filter(key => Object.hasOwn(user, key)).map(key => [key, user[key]])) as WorkspaceUser;
+      const result = Object.fromEntries(fields.filter(key => Object.hasOwn(user, key)).map(key => [key, user[key]])) as WorkspaceUser;
+      // The API's legacy role column stays "all-users" even after a role change.
+      // Default-group membership is the authoritative role, as in the ToolJet UI.
+      const roles = user.role_group;
+      if (Array.isArray(roles) && roles.length === 1 && ['admin', 'builder', 'end-user'].includes(roles[0]?.name)) {
+        result.role = roles[0].name;
+      }
+      return result;
     }) };
   }
 
@@ -974,7 +981,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateWorkspaceUser(
     organizationUserId: string,
     params: UpdateWorkspaceUserParams
-  ): Promise<WorkspaceUser> {
+  ): Promise<{ user: WorkspaceUser; updated: boolean }> {
     // Workspace PATs cannot read the caller's instance/Super Admin status. The existing
     // user API silently ignores unauthorized names but still replaces group memberships.
     // Refuse the entire request rather than making a partial, unrelated change.
@@ -994,6 +1001,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
     const before = await readUser();
     if (before.status === 'archived') throw new Error('This workspace user is archived. Unarchive them explicitly before updating them.');
+    if (!before.role) throw new Error('Cannot verify the current workspace role from its default group. No changes were made.');
     if (!Array.isArray(before.groups) || before.groups.some(group => typeof group?.id !== 'string')) {
       throw new Error('Cannot verify existing group memberships. No changes were made.');
     }
@@ -1018,7 +1026,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // Do not churn membership records when the requested state already exists.
     if (groupIds.length === before.groups.length &&
         (params.role === undefined || params.role === before.role) &&
-        (metadata === undefined || isDeepStrictEqual(metadata, before.user_metadata))) return before;
+        (metadata === undefined || isDeepStrictEqual(metadata, before.user_metadata))) return { user: before, updated: false };
     const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -1040,7 +1048,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
         throw new Error('Saved user state does not match the requested changes and preserved fields.');
       }
-      return after;
+      return { user: after, updated: true };
     } catch (error) {
       throw new Error(`The update was accepted, but its final state could not be verified. Read the user again before retrying: ${error instanceof Error ? error.message : String(error)}`);
     }
