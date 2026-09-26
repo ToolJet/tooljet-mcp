@@ -476,11 +476,26 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
 
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
+  // A misnamed field: an unknown key that resembles one of this operation's fields while that field is unset (Supabase
+  // `table` for `get_table_name`; catalog sweep 2026-09-26). The plugin drops the key and runs without the field, so it is
+  // an error. Other unknown keys (an upstream wrapper, a legacy key) stay warnings: the plugin ignores them harmlessly.
+  const own = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
   for (const key of Object.keys(options)) {
     if (allowedTopLevel.has(key)) continue;
     const exactReplacement = KNOWN_IGNORED_KEYS[key];
     const nestedReplacement = suffixSuggestion(key, fields);
     const replacement = exactReplacement ?? nestedReplacement;
+    const meant = key.length >= 4 ? own.filter((f) => f !== key && options[f] === undefined &&
+      (f.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(f.toLowerCase()))) : [];
+    if (!replacement && meant.length === 1) {
+      errors.push({
+        code: 'unknown_option_key',
+        path: key,
+        message: `Option key "${key}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key}" ` +
+          `and the query runs without it.`,
+      });
+      continue;
+    }
     warnings.push({
       code: replacement ? 'ignored_or_misplaced_option_key' : 'unknown_option_key',
       path: key,
