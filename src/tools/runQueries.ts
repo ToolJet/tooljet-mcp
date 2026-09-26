@@ -1,4 +1,4 @@
-import { resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
+import { emptyParamsNote, emptyViewerOnlyParams, resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead, resolvedReadRefusal } from '../queryExecutionSafety.js';
@@ -117,6 +117,8 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             : [];
           try {
             const bindings = resolveStaticBindings(query.options);
+            const emptied = emptyViewerOnlyParams(query.options, bindings);
+            if (emptied.length) warnings.push(emptyParamsNote(emptied));
             const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
             if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });

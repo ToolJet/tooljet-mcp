@@ -160,3 +160,22 @@ describe('static bindings never bend a result', () => {
     expect(unresolved).toEqual(['{{String(1).padStart(1001, "0")}}', '{{(1.5).toFixed(101)}}']);
   });
 });
+
+// ds-refresh d5 (2026-09-26): a Postgres query's :asset_search came from a search box. Outside the viewer the box has no
+// value, the binding reached ToolJet unresolved, and it refused "Undefined binding(s) detected for keys [asset_search]":
+// the build saw its own working query fail.
+describe('a query parameter bound to a component, run outside the viewer', () => {
+  it('runs as null, with a note', async () => {
+    const query = { id: 'q2', name: 'assetPicker', kind: 'postgresql', options: { mode: 'sql', query: 'SELECT id FROM assets WHERE (CAST(:s AS text) IS NULL OR tag = :s) LIMIT 20',
+      query_params: [['s', '{{ (components.assetTagSearch?.value || "") ?? null }}']] } };
+    const client = {
+      getQueries: vi.fn().mockResolvedValue([query]),
+      getDevelopmentEnvironmentId: vi.fn().mockResolvedValue('env1'),
+      runQuery: vi.fn().mockResolvedValue({ status: 'ok', data: [{ id: 1 }] }),
+    } as unknown as ToolJetClient;
+    const result = await runQueriesTool(client).handler({ version_id: 'v1', query_ids: ['q2'] } as never);
+    expect((client.runQuery as ReturnType<typeof vi.fn>).mock.calls[0]![0].resolvedOptions)
+      .toEqual({ '{{ (components.assetTagSearch?.value || "") ?? null }}': null });
+    expect(JSON.stringify(result)).toMatch(/:s[\s\S]*null/);
+  });
+});

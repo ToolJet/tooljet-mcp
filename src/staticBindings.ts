@@ -310,3 +310,28 @@ export function applyResolvedBindings(options: unknown, resolved: Record<string,
 export function resolvedBindingValues(resolved: Record<string, unknown>): unknown[] {
   return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
 }
+
+/**
+ * SQL parameters (query_params) whose binding only the viewer can resolve (a search box, a picked row) run as null outside
+ * it, the "nothing entered yet" state; left unresolved they reached ToolJet as undefined and it refused the whole query
+ * (ds-refresh d5). Returns the parameter names it filled, for a note.
+ */
+export function emptyViewerOnlyParams(options: unknown, resolution: StaticBindingResolution): string[] {
+  const params = options && typeof options === 'object' ? (options as { query_params?: unknown }).query_params : undefined;
+  if (!Array.isArray(params)) return [];
+  const filled: string[] = [];
+  for (const pair of params) {
+    if (!Array.isArray(pair) || typeof pair[1] !== 'string') continue;
+    const key = pair[1].replace(/\n/g, ' ');
+    if (!resolution.unresolved.includes(key)) continue;
+    resolution.resolved[key] = null;
+    resolution.unresolved = resolution.unresolved.filter((b) => b !== key);
+    filled.push(String(pair[0]));
+  }
+  return filled;
+}
+
+export function emptyParamsNote(names: string[]): string {
+  return `Ran with ${names.map((n) => `:${n}`).join(', ')} = null: ${names.length > 1 ? 'they come' : 'it comes'} from the ` +
+    'app (a component or a picked row), which is empty outside the viewer. The query works for the empty case; check a value in the viewer.';
+}
