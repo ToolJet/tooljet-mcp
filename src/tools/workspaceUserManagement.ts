@@ -78,6 +78,17 @@ function required(value: string | undefined, label: string): string {
 }
 
 export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
+  const schema = z.object({
+    action: z.enum(['invite', 'update', 'archive', 'unarchive']),
+    organization_user_id: z.string().uuid().optional(),
+    email: z.string().email().optional(),
+    first_name: z.string().trim().max(99).optional(),
+    last_name: z.string().trim().max(99).optional(),
+    role: userRole.optional(),
+    group_ids: z.array(z.string().uuid()).max(100).optional(),
+    user_metadata: z.record(z.string(), z.unknown()).optional(),
+    confirm: z.boolean().optional(),
+  }).strict();
   return {
     name: 'manage_workspace_users',
     title: 'Manage Workspace Users',
@@ -90,21 +101,25 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive ' +
-      'require confirm:true. Updates can change names/role and add existing custom groups; they cannot ' +
-      'remove groups (use manage_workspace_groups), change passwords, manage other workspaces, or bypass the PAT owner\'s ToolJet permissions.',
-    inputSchema: {
-      action: z.enum(['invite', 'update', 'archive', 'unarchive']),
-      organization_user_id: z.string().uuid().optional(),
-      email: z.string().email().optional(),
-      first_name: z.string().trim().max(99).optional(),
-      last_name: z.string().trim().max(99).optional(),
-      role: userRole.optional(),
-      group_ids: z.array(z.string().uuid()).max(100).optional(),
-      user_metadata: z.record(z.string(), z.unknown()).optional(),
-      confirm: z.boolean().optional(),
-    },
-    async handler(args: ManageWorkspaceUsersArgs) {
+      'require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, ' +
+      'and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. ' +
+      'first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet ' +
+      'and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. ' +
+      'Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. ' +
+      'Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. ' +
+      'Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner\'s ToolJet permissions.',
+    inputSchema: schema.shape,
+    async handler(input: ManageWorkspaceUsersArgs) {
       try {
+        const args = schema.parse(input);
+        const allowed = args.action === 'invite' ? ['email', 'first_name', 'last_name', 'role', 'group_ids'] :
+          args.action === 'update' ? ['organization_user_id', 'first_name', 'last_name', 'role', 'group_ids', 'user_metadata'] : ['organization_user_id'];
+        for (const key of Object.keys(args)) {
+          if (!['action', 'confirm', ...allowed].includes(key)) throw new Error(`${key} is not supported for ${args.action}; no changes were made.`);
+        }
+        if (args.action === 'update' && (args.first_name !== undefined || args.last_name !== undefined)) {
+          throw new Error('Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.');
+        }
         if (args.confirm !== true) {
           throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
         }
@@ -130,19 +145,19 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
           args.first_name === undefined &&
           args.last_name === undefined &&
           args.role === undefined &&
-          args.group_ids === undefined &&
+          !args.group_ids?.length &&
           args.user_metadata === undefined
         ) {
           throw new Error('update requires at least one changed field.');
         }
-        await client.updateWorkspaceUser(organizationUserId, {
+        const user = await client.updateWorkspaceUser(organizationUserId, {
           firstName: args.first_name,
           lastName: args.last_name,
           role: args.role,
           addGroupIds: args.group_ids,
           userMetadata: args.user_metadata,
         });
-        return ok({ organization_user_id: organizationUserId, updated: true });
+        return ok({ organization_user_id: organizationUserId, updated: true, user });
       } catch (error) {
         return fail(error);
       }

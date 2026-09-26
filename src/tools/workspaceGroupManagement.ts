@@ -46,7 +46,9 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
     resource_type: z.enum(['app', 'module', 'workflow', 'data_source']).optional(),
     access: z.object({ name: z.string().trim().min(1).max(255).optional(), is_all: z.boolean().optional(),
       actions: z.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map(key => [key, z.boolean().optional()]))).strict().optional(),
-      resource_ids: z.array(z.string().uuid()).max(1000).optional() }).strict().optional(),
+      resource_ids: z.array(z.string().uuid()).max(1000).optional(),
+      add_resource_ids: z.array(z.string().uuid()).min(1).max(1000).optional(),
+      remove_resource_ids: z.array(z.string().uuid()).min(1).max(1000).optional() }).strict().optional(),
     allow_role_change: z.boolean().optional(),
   }).strict();
   return {
@@ -64,7 +66,9 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
       'create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; ' +
       'update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. ' +
       'For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. ' +
-      'access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. ' +
+      'On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. ' +
+      'access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. ' +
+      'Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. ' +
       'On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. ' +
       'Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. ' +
       'canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. ' +
@@ -131,6 +135,10 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
           }
           const access = args.access!;
           const creating = args.action === 'create_access';
+          const delta = access.add_resource_ids !== undefined || access.remove_resource_ids !== undefined;
+          if (delta && (creating || access.resource_ids !== undefined || access.is_all !== undefined)) {
+            throw new Error('Resource additions/removals only update an existing selected-resource rule; do not combine them with resource_ids or is_all.');
+          }
           if (creating && (!access.name || access.is_all === undefined || !access.actions)) {
             throw new Error('create_access requires access.name, is_all and actions.');
           }
@@ -139,11 +147,20 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
             throw new Error(`Invalid actions for ${type}. Use ${actionKeys.join(', ')}.`);
           }
           const all = access.is_all ?? rule!.is_all;
-          const selected = access.resource_ids ?? (all ? [] : rule?.resources.map(item => item.id) ?? []);
+          const currentIds = rule?.resources.map(item => item.id) ?? [];
+          if (delta && all) throw new Error('An all-resource rule cannot add/remove individual resources. Explicitly choose a replacement selected-resource scope instead.');
+          if (delta && (new Set(access.add_resource_ids).size !== (access.add_resource_ids?.length ?? 0) ||
+              new Set(access.remove_resource_ids).size !== (access.remove_resource_ids?.length ?? 0) ||
+              access.add_resource_ids?.some(id => access.remove_resource_ids?.includes(id)) ||
+              access.remove_resource_ids?.some(id => !currentIds.includes(id)))) {
+            throw new Error('Use unique, non-overlapping resource additions/removals; removed resources must belong to this rule.');
+          }
+          const selected = delta ? [...new Set([...currentIds.filter(id => !access.remove_resource_ids?.includes(id)), ...(access.add_resource_ids ?? [])])] :
+            access.resource_ids ?? (all ? [] : currentIds);
           if (new Set(selected).size !== selected.length || (all && selected.length) || (!all && !selected.length)) {
             throw new Error('Use unique resource_ids for a selected-resource rule; omit them or use [] for is_all:true.');
           }
-          if (access.resource_ids || creating || (rule?.is_all && !all)) {
+          if (access.resource_ids || access.add_resource_ids || creating || (rule?.is_all && !all)) {
             const available = await client.listWorkspaceGroupResources(type);
             if (selected.some(id => !available.some(item => item.id === id))) throw new Error('Resource not found in this workspace/resource type.');
           }

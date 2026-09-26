@@ -1,5 +1,6 @@
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
@@ -73,6 +74,7 @@ export interface WorkspaceUser {
   role?: WorkspaceUserRole;
   status?: WorkspaceUserStatus;
   groups?: Array<{ id: string; name: string }>;
+  user_metadata?: Record<string, unknown> | null;
   [key: string]: unknown;
 }
 
@@ -540,7 +542,7 @@ export interface ToolJetClient {
   writeWorkspaceGroupAccess(method: 'POST' | 'PUT' | 'DELETE', groupId: string, type: WorkspaceResourceType,
     ruleId?: string, body?: Record<string, unknown>): Promise<void>;
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
-  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
+  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<WorkspaceUser>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
@@ -802,7 +804,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     if (params.status) query.set('status', params.status);
     const res = await auth.authedFetch(`/api/organization-users?${query}`);
     await assertOk(res, 'listWorkspaceUsers');
-    return (await res.json()) as WorkspaceUsersPage;
+    const data = await res.json();
+    if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
+      throw new Error('Unexpected workspace users response.');
+    }
+    // The API also returns invitation/account-setup tokens. Never send those credentials to a model.
+    const fields = ['id', 'user_id', 'email', 'first_name', 'last_name', 'name', 'role', 'status', 'groups', 'user_metadata'];
+    return { meta: data.meta, users: data.users.map((user: WorkspaceUser) => {
+      if (!user || typeof user.id !== 'string') throw new Error('Unexpected workspace user response.');
+      return Object.fromEntries(fields.filter(key => Object.hasOwn(user, key)).map(key => [key, user[key]])) as WorkspaceUser;
+    }) };
   }
 
   const groupPath = '/api/v2/group-permissions';
@@ -963,19 +974,76 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateWorkspaceUser(
     organizationUserId: string,
     params: UpdateWorkspaceUserParams
-  ): Promise<void> {
+  ): Promise<WorkspaceUser> {
+    // Workspace PATs cannot read the caller's instance/Super Admin status. The existing
+    // user API silently ignores unauthorized names but still replaces group memberships.
+    // Refuse the entire request rather than making a partial, unrelated change.
+    if (params.firstName !== undefined || params.lastName !== undefined) {
+      throw new Error('Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.');
+    }
+    if (params.role === undefined && !params.addGroupIds?.length && params.userMetadata === undefined) {
+      throw new Error('update requires a role, non-empty group_ids, or user_metadata change. An empty group_ids list never removes memberships.');
+    }
+    async function readUser(): Promise<WorkspaceUser> {
+      for (let page = 1; ; page++) {
+        const result = await listWorkspaceUsers({ page });
+        const user = result.users.find(item => item.id === organizationUserId);
+        if (user) return user;
+        if (page >= result.meta.total_pages) throw new Error('User not found in this workspace. List workspace users again.');
+      }
+    }
+    const before = await readUser();
+    if (before.status === 'archived') throw new Error('This workspace user is archived. Unarchive them explicitly before updating them.');
+    if (!Array.isArray(before.groups) || before.groups.some(group => typeof group?.id !== 'string')) {
+      throw new Error('Cannot verify existing group memberships. No changes were made.');
+    }
+    const groups = await listWorkspaceGroups();
+    // On restricted plans the user listing hides custom memberships. An empty list is
+    // not proof that the user has none, and sending it would destroy hidden memberships.
+    if (groups.some(group => group.type === 'custom' && group.disabled)) {
+      throw new Error('Custom groups are disabled under the current plan; existing memberships cannot be safely preserved. No changes were made.');
+    }
+    const groupIds = [...new Set([...before.groups.map(group => group.id), ...(params.addGroupIds ?? [])])];
+    if (groupIds.some(id => !groups.some(group => group.id === id && group.type === 'custom' && !group.disabled))) {
+      throw new Error('Every group must be an existing, enabled custom group in this workspace. No changes were made.');
+    }
+    let metadata: Record<string, unknown> | undefined;
+    if (params.userMetadata !== undefined) {
+      if (!Object.hasOwn(before, 'user_metadata') ||
+          (before.user_metadata != null && (typeof before.user_metadata !== 'object' || Array.isArray(before.user_metadata)))) {
+        throw new Error('Cannot read existing user metadata safely. No changes were made.');
+      }
+      metadata = { ...before.user_metadata, ...params.userMetadata };
+    }
+    // Do not churn membership records when the requested state already exists.
+    if (groupIds.length === before.groups.length &&
+        (params.role === undefined || params.role === before.role) &&
+        (metadata === undefined || isDeepStrictEqual(metadata, before.user_metadata))) return before;
     const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...(params.firstName !== undefined ? { firstName: params.firstName } : {}),
-        ...(params.lastName !== undefined ? { lastName: params.lastName } : {}),
         ...(params.role !== undefined ? { role: params.role } : {}),
-        addGroups: params.addGroupIds ?? [],
-        ...(params.userMetadata !== undefined ? { userMetadata: params.userMetadata } : {}),
+        // Despite its name, addGroups REPLACES every custom membership in one transaction.
+        // The additive group endpoint is not permitted by existing workspace PAT scopes.
+        addGroups: groupIds,
+        ...(metadata !== undefined ? { userMetadata: metadata } : {}),
       }),
     });
     await assertOk(res, 'updateWorkspaceUser');
+    try {
+      const after = await readUser();
+      const actualIds = after.groups?.map(group => group.id);
+      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some(id => !actualIds.includes(id)) ||
+          after.role !== (params.role ?? before.role) || after.first_name !== before.first_name ||
+          after.last_name !== before.last_name || after.status !== before.status ||
+          !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
+        throw new Error('Saved user state does not match the requested changes and preserved fields.');
+      }
+      return after;
+    } catch (error) {
+      throw new Error(`The update was accepted, but its final state could not be verified. Read the user again before retrying: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async function setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void> {
