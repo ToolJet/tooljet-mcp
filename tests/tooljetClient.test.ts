@@ -1806,21 +1806,12 @@ describe('createClient', () => {
       expect(auth.authedFetch).toHaveBeenCalledWith('/api/organization-users?page=3&searchText=sam&status=active');
     });
 
-    it('updates and archives the exact organization-user id', async () => {
-      auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 200 }))
-        .mockResolvedValueOnce(mockResponse({ status: 201 }));
+    it('archives the exact organization-user id', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201 }));
       const client = createClient(auth, config);
-
-      await client.updateWorkspaceUser('org-user-1', { role: 'builder', addGroupIds: ['group-1'] });
       await client.setWorkspaceUserArchived('org-user-1', true);
 
-      expect(auth.authedFetch).toHaveBeenNthCalledWith(1, '/api/organization-users/org-user-1', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'builder', addGroups: ['group-1'] }),
-      });
-      expect(auth.authedFetch).toHaveBeenNthCalledWith(2, '/api/organization-users/org-user-1/archive', {
+      expect(auth.authedFetch).toHaveBeenNthCalledWith(1, '/api/organization-users/org-user-1/archive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',

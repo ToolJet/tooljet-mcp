@@ -122,6 +122,46 @@ const accessOperations = [
 ];
 
 describe('workspace group permissions and duplication', () => {
+  it('adds a resource without removing existing access or changing unrelated permissions', async () => {
+    const { write, mock } = fixture();
+    const added = '30000000-0000-4000-8000-000000000009';
+    mock.listWorkspaceGroupResources.mockResolvedValue([{ id: resourceId, name: 'Inventory' }, { id: added, name: 'Harbor schedule' }]);
+    const result = await write.handler({ action: 'update_access', group_id: groupId, rule_id: ruleId,
+      access: { add_resource_ids: [added] }, confirm: true });
+    expect(result.isError).not.toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('PUT', groupId, 'app', ruleId, {
+      isAll: false, actions: rule.actions, resourcesToAdd: [{ appId: added }], resourcesToDelete: [], allowRoleChange: false,
+    });
+  });
+  it('removes only the selected resource relation and preserves another resource', async () => {
+    const { write, mock } = fixture();
+    const kept = '30000000-0000-4000-8000-000000000009';
+    mock.listWorkspaceGroupAccess.mockResolvedValue([{ ...rule, resources: [...rule.resources,
+      { id: kept, name: 'Harbor schedule', membership_id: 'kept-membership' }] }]);
+    expect((await write.handler({ action: 'update_access', group_id: groupId, rule_id: ruleId,
+      access: { remove_resource_ids: [resourceId] }, confirm: true })).isError).not.toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).toHaveBeenCalledWith('PUT', groupId, 'app', ruleId,
+      expect.objectContaining({ resourcesToAdd: [], resourcesToDelete: [{ id: membershipId }], actions: rule.actions }));
+  });
+  it.each([
+    { add_resource_ids: [resourceId], resource_ids: [resourceId] },
+    { add_resource_ids: [resourceId], is_all: true },
+    { add_resource_ids: [resourceId], remove_resource_ids: [resourceId] },
+    { add_resource_ids: [resourceId, resourceId] },
+    { remove_resource_ids: ['30000000-0000-4000-8000-000000000009'] },
+    { remove_resource_ids: [resourceId] },
+  ])('refuses conflicting or empty access scope before writing: %j', async access => {
+    const { write, mock } = fixture();
+    expect((await write.handler({ action: 'update_access', group_id: groupId, rule_id: ruleId, access, confirm: true })).isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+  it('does not silently narrow an all-resources rule for an individual-resource change', async () => {
+    const { write, mock } = fixture();
+    mock.listWorkspaceGroupAccess.mockResolvedValue([{ ...rule, is_all: true, resources: [] }]);
+    expect((await write.handler({ action: 'update_access', group_id: groupId, rule_id: ruleId,
+      access: { add_resource_ids: [resourceId] }, confirm: true })).isError).toBe(true);
+    expect(mock.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
   it.each(accessOperations)('requires explicit confirmation for $action', async operation => {
     const { write, mock } = fixture();
     expect((await write.handler(operation)).isError).toBe(true);
