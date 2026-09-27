@@ -1,6 +1,7 @@
 import { assessRedisRead } from './redisReadSafety.js';
 import JSON5 from 'json5';
 import { hubspotQueryIssues } from './hubspotQuery.js';
+import { apiEndpointQueryIssues, singleSpecRef } from './specEndpointKinds.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
 import { applyResolvedBindings, resolvedBindingValues } from './staticBindings.js';
 
@@ -798,6 +799,18 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
       ...assessment, datasourceKind: 'hubspot',
       ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
         : { reason: assessment.reason?.replaceAll('OpenAPI', 'HubSpot') }),
+    };
+  }
+
+  // A single-spec API plugin (Stripe, Gmail, ...): the OpenAPI rule on the plugin's own endpoint; the plugin fixes the
+  // host. run_query refused every Stripe read before this, so no build could check its queries (2026-09-27).
+  if (singleSpecRef(kind)) {
+    const issue = apiEndpointQueryIssues(kind, options)[0];
+    const assessment = assessOpenapi({ ...options, host: kind }, datasourceId);
+    return {
+      ...assessment, datasourceKind: kind,
+      ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
+        : { reason: assessment.reason?.replaceAll('OpenAPI', kind) }),
     };
   }
 

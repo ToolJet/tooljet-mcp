@@ -77,3 +77,18 @@ describe('query options for single-spec plugins', () => {
     expect(paths({ ...good, path: 'https://api.stripe.com/v1/charges' })).toContain('path');
   });
 });
+
+// Same build: run_query refused every Stripe query ("no proven read classifier"), so neither arm could check a single
+// query before handing over. A static GET is a remote read, previewed with confirmation, as HubSpot's is.
+import { assessQueryRead } from '../src/queryExecutionSafety.js';
+describe('previewing single-spec plugin queries', () => {
+  const q = (options: Record<string, unknown>) => ({ id: 'q-pay', kind: 'stripe', options }) as never;
+  const get = { operation: 'get', path: '/v1/customers', params: { path: {}, query: { limit: '100' }, request: {} } };
+  it('a static GET is a proven remote read', () => {
+    expect(assessQueryRead(q(get))).toMatchObject({ provenRead: true, directSafe: false, requiresRemoteReadConfirmation: true, datasourceKind: 'stripe' });
+  });
+  it('a write, a bound path or a malformed query is not', () => {
+    expect(assessQueryRead(q({ ...get, operation: 'post' })).provenRead).toBe(false);
+    expect(assessQueryRead(q({ ...get, params: { query: {} } })).provenRead).toBe(false);
+  });
+});
