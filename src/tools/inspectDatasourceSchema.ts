@@ -299,7 +299,7 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
               delete result.query_options.params?.header;
               delete result.host_warning;
               if (result.buckets?.['params.header']) result.unsupported_headers = result.buckets['params.header'];
-              result.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query.`;
+              result.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
             }
             return { method: request.method, ...(request.table ? { table: request.table } : {}), result };
           }

@@ -164,7 +164,8 @@ function discoverable(schema: DatasourceQuerySchema): boolean {
 const SINGLE_SPEC_DISCOVERY =
   'Operations come from the plugin\'s API spec. Discover them with inspect_datasource_schema: listTables (pass `search`) ' +
   'finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to ' +
-  'copy: operation (lowercase HTTP method), path, and params with path, query and request objects ({} when empty).';
+  'copy: operation (lowercase HTTP method), path, and params with path, query and request objects ({} when empty). Query ' +
+  'values are flat: created[gte], expand[0], never a list or an object.';
 
 export function selectDatasourceQuerySchema(
   kind: string,

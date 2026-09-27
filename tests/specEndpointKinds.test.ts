@@ -92,3 +92,19 @@ describe('previewing single-spec plugin queries', () => {
     expect(assessQueryRead(q({ ...get, params: { query: {} } })).provenRead).toBe(false);
   });
 });
+
+// Stripe apps (2026-09-27): four of five queries failed with "Cannot read properties of undefined (reading 'body')". The
+// plugins hand params.query to got's searchParams, which takes flat values only, so `expand: ["data.customer"]` or
+// `created: { gte: ... }` threw before any request. Stripe's own form is flat: created[gte], expand[0].
+describe('query parameters of single-spec plugins are flat', () => {
+  const base = { operation: 'get', path: '/v1/charges', params: { path: {}, request: {} } };
+  it('rejects a list or an object and gives the flat keys to use', () => {
+    const errors = validateQueryOptions('stripe', { ...base, params: { ...base.params, query: { limit: 100, expand: ['data.customer'], created: { gte: '{{moment().unix()}}' } } } }).errors;
+    const text = errors.map((e) => `${e.path} ${e.message}`).join(' ');
+    expect(text).toMatch(/params\.query\.expand[\s\S]*"expand\[0\]": "data\.customer"/);
+    expect(text).toMatch(/params\.query\.created[\s\S]*"created\[gte\]": "\{\{moment\(\)\.unix\(\)\}\}"/);
+  });
+  it('accepts flat keys', () => {
+    expect(validateQueryOptions('stripe', { ...base, params: { ...base.params, query: { limit: 100, 'expand[0]': 'data.customer', 'created[gte]': '{{moment().unix()}}' } } }).errors).toEqual([]);
+  });
+});
