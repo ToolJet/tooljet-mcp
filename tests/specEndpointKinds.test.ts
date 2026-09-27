@@ -108,3 +108,19 @@ describe('query parameters of single-spec plugins are flat', () => {
     expect(validateQueryOptions('stripe', { ...base, params: { ...base.params, query: { limit: 100, 'expand[0]': 'data.customer', 'created[gte]': '{{moment().unix()}}' } } }).errors).toEqual([]);
   });
 });
+
+// Stripe rerun (2026-09-27): every paged query bound its cursor as {{variables.cursor || ''}}; the plugin sends every key,
+// so the first page asked for starting_after="" and Stripe refused it (parameter_invalid_empty). With `|| undefined` the
+// key is left out of the request (ToolJet sends resolved options as JSON) and the same queries returned data.
+describe('an empty fallback in a single-spec query parameter', () => {
+  const base = { operation: 'get', path: '/v1/charges', params: { path: {}, request: {} } };
+  const paths = (query: Record<string, unknown>) => validateQueryOptions('stripe', { ...base, params: { ...base.params, query } }).errors;
+  it('is refused, with the undefined fallback to use', () => {
+    const errors = paths({ limit: 100, starting_after: "{{variables.cursor || ''}}", customer: '{{variables.id ?? ""}}' });
+    expect(errors.map((e) => e.path)).toEqual(expect.arrayContaining(['params.query.starting_after', 'params.query.customer']));
+    expect(errors.map((e) => e.message).join(' ')).toMatch(/\|\| undefined/);
+  });
+  it('an undefined fallback or a plain value passes', () => {
+    expect(paths({ limit: 100, starting_after: '{{variables.cursor || undefined}}', status: 'paid' })).toEqual([]);
+  });
+});

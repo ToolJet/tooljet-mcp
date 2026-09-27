@@ -78,6 +78,12 @@ export function apiEndpointQueryIssues(kind: string, options: Record<string, unk
   // any request ("Cannot read properties of undefined (reading 'body')", four of five Stripe queries, 2026-09-27).
   if (record(options.params) && record(options.params.query)) {
     for (const [key, value] of Object.entries(options.params.query)) {
+      // The plugin sends every key it is given, so an empty fallback still sends the key, empty: Stripe refused
+      // starting_after="" on every paged query (parameter_invalid_empty). Undefined leaves the key out of the request.
+      if (typeof value === 'string' && /(\|\||\?\?|:)\s*(''|"")\s*\}\}\s*$/.test(value)) {
+        issues.push({ path: `params.query.${key}`, message: `${kind} sends every query key it is given, so an empty fallback still sends ${key}="", which the API refuses. Fall back to undefined instead (such as {{variables.cursor || undefined}}) so the key is left out while it has no value.` });
+        continue;
+      }
       if (value === null || typeof value !== 'object') continue;
       const flat = flattenQueryValue(key, value).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(', ');
       issues.push({ path: `params.query.${key}`, message: `${kind} sends query parameters flat, so a list or an object is not sent at all and the query fails. Write ${flat} instead.` });
