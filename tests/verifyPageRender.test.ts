@@ -104,3 +104,38 @@ describe('render audit network boundary and honest results', () => {
     expect((await auditPages(target, {}, browserFixture().driver))[0].findings).toEqual([]);
   });
 });
+
+// Every build's audit reported "could not open the viewer (private app, no viewer session)" (2026-09-26): nearly all
+// apps are private while they are built, so no page was ever audited. The browser now carries the MCP server's own
+// session, scoped to the audit origins it may visit, and opens the version being edited (a released app's public URL
+// would show the old version).
+describe('render audit with the builder\'s session', () => {
+  it('adds the session cookie for the viewer origin only', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    await auditPages(target, { session: 'tok123' }, f.driver);
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_auth_token', value: 'tok123', url: 'http://viewer.test' }]);
+  });
+  it('opens the edited version of every page with the session', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    const gotoUrls: string[] = [];
+    const page = await f.context.newPage();
+    const goto = page.goto;
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, goto: async (url: string, o: unknown) => { gotoUrls.push(url); return goto(url, o); } });
+    const session = { ...client, viewerSession: async () => 'tok123', editingVersionName: async () => 'v2' };
+    const tool = verifyPageRenderTool(session, () => 'http://viewer.test', f.driver);
+    const res: any = await tool.handler({ app_id: 'app1' });
+    expect(res.isError).toBeFalsy();
+    expect(gotoUrls).toEqual(['http://viewer.test/applications/app1/home?env=development&version=v2', 'http://viewer.test/applications/app1/orders?env=development&version=v2']);
+    expect((f.context as any).addCookies).toHaveBeenCalled();
+  });
+  it('stays unauthenticated when the host turns the session off', async () => {
+    vi.stubEnv('MCP_RENDER_AUDIT_SESSION', 'off');
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    const session = { ...client, viewerSession: async () => 'tok123', editingVersionName: async () => 'v2' };
+    await verifyPageRenderTool(session, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect((f.context as any).addCookies).not.toHaveBeenCalled();
+  });
+});

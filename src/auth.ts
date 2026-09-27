@@ -22,6 +22,8 @@ export interface Auth {
   listWorkspaces(): Promise<Workspace[]>;
   /** Switch the ACTIVE workspace for all subsequent calls; re-issues the session cookie. */
   switchWorkspace(workspaceId: string): Promise<Workspace>;
+  /** The current session token (logging in first), for the render audit's viewer browser. */
+  viewerSession?(): Promise<string | undefined>;
 }
 
 export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
@@ -194,5 +196,10 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return current;
   }
 
-  return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
+  async function viewerSession(): Promise<string | undefined> {
+    if (!token) await login();
+    return token;
+  }
+
+  return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
