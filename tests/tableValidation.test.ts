@@ -58,3 +58,14 @@ describe('validateTableBatch', () => {
     expect(errors.join(' ')).not.toMatch(/fee|active|meta|seen_at/);
   });
 });
+
+// ho-restaurant rg1 (2026-09-26): a money column typed numeric was refused twice with only the list of types, and the
+// build then went looking through the workspace's tables. The refusal says what to use for money.
+describe('an exact-decimal type', () => {
+  it('names what to use for money', () => {
+    for (const type of ['numeric', 'numeric(10,2)', 'money']) {
+      const errors = validateTableBatch([{ tableName: 't_orders', columns: [{ name: 'total', type }] } as never]);
+      expect(errors.join(' ')).toMatch(/money[\s\S]*number[\s\S]*cents/);
+    }
+  });
+});
