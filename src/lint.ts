@@ -28,7 +28,7 @@ import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
+import { decodeComponentParent, isComponentSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
@@ -745,12 +745,12 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
-    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' :
+    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && parent?.type === 'Kanban');
     if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
-          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container; Kanban supports body (card) and modal.`
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container; Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
       );
     }
   }
@@ -1548,8 +1548,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   }
 
   if (spec.slotName !== undefined) {
-    if (!(COMPONENT_SLOT_NAMES as readonly string[]).includes(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, or Kanban modal.`);
+    if (!isComponentSlotName(spec.slotName)) {
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);

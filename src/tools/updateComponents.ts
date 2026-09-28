@@ -12,7 +12,7 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
+import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
@@ -43,7 +43,7 @@ const updateSchema = strictEntry(
     definition: definitionSchema.optional(),
     name: z.string().optional(),
     parent: z.string().optional(),
-    slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+    slot_name: componentSlotSchema.optional(),
   },
   (key) => {
     if ((DEFINITION_SECTIONS as readonly string[]).includes(key)) {
