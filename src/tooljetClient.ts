@@ -488,6 +488,10 @@ export interface AppSummary {
   app_id: string;
   name?: string;
   version_id?: string;
+  /** ToolJet's should_freeze_editor: a promoted (or git-locked) version, where writes are refused. */
+  editor_frozen?: boolean;
+  /** The editing version's environment (development, staging, production). */
+  environment?: string;
   pages: Array<{
     id: string;
     name?: string;
@@ -1050,7 +1054,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       event: e.event,
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
-    return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
+    return {
+      app_id: full.id, name: full.name, version_id: full.editing_version?.id,
+      ...(full.should_freeze_editor === true ? { editor_frozen: true } : {}),
+      ...(typeof full.editorEnvironment?.name === 'string' ? { environment: full.editorEnvironment.name } : {}),
+      pages, queries, events,
+    };
   }
 
   function appPermissionPath(

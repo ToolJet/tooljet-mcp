@@ -28,7 +28,7 @@ export interface AppSummarySelection {
   eventFields?: string[];
 }
 
-const APP_FIELDS = ['app_id', 'name', 'version_id'] as const;
+const APP_FIELDS = ['app_id', 'name', 'version_id', 'editor_frozen', 'environment'] as const;
 const PAGE_FIELDS = ['id', 'name', 'handle', 'icon', 'hidden', 'index', 'is_page_group', 'page_group_id'] as const;
 const COMPONENT_FIELDS = [
   'id',

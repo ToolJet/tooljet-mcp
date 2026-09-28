@@ -1,3 +1,4 @@
+import { frozenAppRefusal } from '../frozenApp.js';
 import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
 import type { AppPlanInput } from '../appPlanSchema.js';
@@ -163,6 +164,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           client.listTables(),
           spec.queries?.length ? client.listDatasources(args.version_id) : Promise.resolve([]),
         ]);
+        const frozen = frozenAppRefusal(initialSummary);
+        if (frozen) return fail(new Error(frozen));
         if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }

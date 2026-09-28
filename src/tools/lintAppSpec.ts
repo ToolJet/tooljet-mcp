@@ -9,6 +9,7 @@ import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
+import { frozenAppRefusal } from '../frozenApp.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -60,6 +61,9 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(undefined),
         ]);
+        // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
+        const frozen = frozenAppRefusal(existingSummary);
+        if (frozen) return fail(new Error(frozen));
         if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
           preflightErrors.push(
             `App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`
