@@ -561,8 +561,9 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   }
 
   const structure = validateAppStructure(summary);
-  errors.push(...structure.errors);
-  warnings.push(...structure.warnings);
+  const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
+  errors.push(...forward.errors);
+  warnings.push(...structure.warnings, ...forward.notes);
 
   // The per-page component lint and the whole-app structure lint both run the render-readiness
   // checks, so an Html height or root error arrived twice: once as `Page "Home": Html "X": …` and
@@ -588,6 +589,34 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       lifecycles: spec.lifecycles?.length ?? 0,
     },
   };
+}
+
+// A persisted query this plan does not touch may read components that a later page will build
+// (the model created every query up front, then builds page by page). This plan cannot fix that,
+// so failing it forced whole-app phases; validate_app still rejects it on the finished app.
+function splitForwardComponentRefs(
+  structureErrors: string[],
+  existingQueryNames: Set<string>
+): { errors: string[]; notes: string[] } {
+  const errors: string[] = [];
+  const missing = new Map<string, string[]>();
+  for (const error of structureErrors) {
+    const m =
+      error.match(/^Query "([^"]+)" references components\.([^,]+), but no component is named /) ??
+      error.match(/^RunJS query "([^"]+)" references components\["([^"]+)"\], but no component is named /);
+    if (m && existingQueryNames.has(m[1]!)) {
+      const names = missing.get(m[1]!) ?? [];
+      if (!names.includes(m[2]!)) names.push(m[2]!);
+      missing.set(m[1]!, names);
+    } else {
+      errors.push(error);
+    }
+  }
+  const notes = [...missing].map(([query, names]) =>
+    `Query "${query}" reads ${names.map((n) => `components.${n}`).join(', ')}, which no page has yet. ` +
+      'Build them on a later page with that exact name, or the query reads undefined.'
+  );
+  return { errors, notes };
 }
 
 function bindRef<T extends { id: string }>(
