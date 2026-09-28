@@ -10,6 +10,7 @@ import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
 import { frozenAppRefusal } from '../frozenApp.js';
+import { mapKeyRefusal } from '../mapKeyGuard.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -52,6 +53,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         }
         const preflightErrors: string[] = [];
         const preflightWarnings: string[] = [];
+        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
+        if (mapRefusal) preflightErrors.push(mapRefusal);
         const needsTables = Boolean(
           args.tables?.length ||
           args.seed_data?.length ||

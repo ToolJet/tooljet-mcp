@@ -609,6 +609,8 @@ export interface ToolJetClient {
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
   /** Whether a ToolJet DB table has at least one row; undefined when it cannot be read. */
   hasRows?(tableId: string): Promise<boolean | undefined>;
+  /** Whether the instance has a Google Maps API key in its public config (the Map component needs it); undefined when unknown. */
+  hasGoogleMapsKey?(): Promise<boolean | undefined>;
 }
 
 /** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
@@ -1644,6 +1646,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { created: events.length };
   }
 
+  let mapsKeyPromise: Promise<boolean | undefined> | undefined;
+  async function hasGoogleMapsKey(): Promise<boolean | undefined> {
+    mapsKeyPromise ??= (async () => {
+      try {
+        const res = await auth.authedFetch('/api/config');
+        if (!res.ok) return undefined;
+        const body = await res.json() as Record<string, unknown>;
+        return typeof body.GOOGLE_MAPS_API_KEY === 'string' && body.GOOGLE_MAPS_API_KEY.trim() !== '';
+      } catch { return undefined; }
+    })();
+    return mapsKeyPromise;
+  }
+
   async function getDevelopmentEnvironmentId(): Promise<string> {
     if (!developmentEnvironmentIdPromise) {
       developmentEnvironmentIdPromise = (async () => {
@@ -2524,6 +2539,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updatePages,
     deletePage,
     createEvents,
+    hasGoogleMapsKey,
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,

@@ -1,3 +1,4 @@
+import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
@@ -55,6 +56,8 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
       const errors = prepared.flatMap((page) =>
         page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`)
       );
+      const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c: { type?: unknown }) => String(c.type))));
+      if (mapRefusal) errors.push(mapRefusal);
       if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
 
       const settled = await Promise.allSettled(prepared.map(async (page) => ({
