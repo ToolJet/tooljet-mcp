@@ -207,7 +207,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           projected.set(current.id, normalizedNext);
           if (update.definition) changedComponents.push({ before: current as LintComponent, after: normalizedNext });
           placementChanged ||= update.parent !== undefined || update.slot_name !== undefined;
-          warnings.push(...normalized.warnings);
+          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized.patch).length) {
             normalizedDefinition = { ...update.definition };
@@ -269,4 +269,23 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+// The merged definition carries untouched persisted keys (ToolJet's own Table default
+// defaultSelectedRow {{{"id":1}}} among them). A note that "}}" was split inside a key this update
+// did not write sends the model off to "repair" it; keep the note to the keys it wrote.
+function onlyTouchedBraceNotes(
+  warnings: string[],
+  definition: { properties?: Record<string, unknown>; styles?: Record<string, unknown> } | undefined
+): string[] {
+  const touched = new Set([
+    ...Object.keys(definition?.properties ?? {}).map((key) => `properties.${key}`),
+    ...Object.keys(definition?.styles ?? {}).map((key) => `styles.${key}`),
+  ]);
+  return warnings.flatMap((warning) => {
+    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
+    if (!m) return [warning];
+    const keys = m[2]!.split(', ').filter((key) => touched.has(key));
+    return keys.length ? [`${m[1]}${keys.join(', ')}${m[3]}`] : [];
+  });
 }

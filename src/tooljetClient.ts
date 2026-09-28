@@ -1028,7 +1028,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       handle: p.handle,
       icon: p.icon,
       hidden: isPageHidden(p),
-      ...(typeof p.index === 'number' ? { index: p.index } : {}),
+      ...(typeof pageOrderIndex(p) === 'number' ? { index: pageOrderIndex(p) } : {}),
       ...(typeof p.isPageGroup === 'boolean' ? { is_page_group: p.isPageGroup } : {}),
       ...(typeof p.pageGroupId === 'string' ? { page_group_id: p.pageGroupId } : {}),
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
@@ -1333,10 +1333,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
     const highestPersistedIndex = existingPages.reduce(
-      (highest: number, page: any) =>
-        typeof page.index === 'number' && Number.isFinite(page.index)
-          ? Math.max(highest, page.index)
-          : highest,
+      (highest: number, page: any) => {
+        const index = pageOrderIndex(page);
+        return typeof index === 'number' && Number.isFinite(index) ? Math.max(highest, index) : highest;
+      },
       0
     );
     // ToolJet's initial Home page starts at index 1. Older payloads can omit index, so fall back
@@ -1570,7 +1570,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
     if (order) {
       for (const [index, pageId] of order.entries()) {
-        if (refreshedById.get(pageId)?.index !== index) {
+        if (pageOrderIndex(refreshedById.get(pageId)) !== index) {
           throw new Error(`ToolJet updatePages failed: page order did not persist at index ${index}.`);
         }
       }
@@ -1581,14 +1581,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       reordered: order !== undefined,
       pages: refreshedPages
         .slice()
-        .sort((left, right) => (left.index ?? 0) - (right.index ?? 0))
+        .sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0))
         .map((page) => ({
           page_id: page.id,
           name: page.name,
           handle: page.handle,
           icon: page.icon,
           hidden: isPageHidden(page),
-          ...(typeof page.index === 'number' ? { index: page.index } : {}),
+          ...(typeof pageOrderIndex(page) === 'number' ? { index: pageOrderIndex(page) } : {}),
         })),
     };
   }
@@ -2527,4 +2527,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updateEvents,
     deleteEvent,
   };
+}
+
+// ToolJet EE with the page-groups licence keeps a page's position in pageGroupIndex and writes
+// index = 999 on create as a placeholder; without the licence pageGroupIndex is null and index is
+// the position. Reporting the placeholder made builds "reorder" pages that were already in order.
+export function pageOrderIndex(page: any): number | undefined {
+  if (typeof page?.pageGroupIndex === 'number' && Number.isFinite(page.pageGroupIndex)) return page.pageGroupIndex;
+  return typeof page?.index === 'number' ? page.index : undefined;
 }
