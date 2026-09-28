@@ -5,6 +5,7 @@ import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 import {
   LARGE_READ_ROW_THRESHOLD,
   assessQueryRead,
+  resolvedReadRefusal,
   extractRowCount,
   sameReadSource,
 } from '../queryExecutionSafety.js';
@@ -269,6 +270,11 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
             `run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? 'not a proven read'}`
           ));
         }
+        const staticBindings = resolveStaticBindings(query.options);
+        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
+        if (bindingRefusal) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
+        }
         if (containsComponentBinding(query.options)) {
           warnings.push(
             'Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.'
@@ -348,7 +354,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         }
         let result;
         try {
-          const bindings = resolveStaticBindings(query.options);
+          const bindings = staticBindings;
           const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
           if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
           result = await client.runQuery({

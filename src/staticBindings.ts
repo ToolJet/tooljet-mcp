@@ -291,3 +291,22 @@ export function unresolvedNote(bindings: string[]): string {
   return `Browser-free run: ${bindings.length} binding(s) read live app state and ran as undefined (${shown}). ` +
     'Empty or failed results here do not show the viewer is wrong; check it in the viewer before rewriting the query.';
 }
+
+/** The options as ToolJet will run them: each string whose bindings all resolved replaced by its resolved value. */
+export function applyResolvedBindings(options: unknown, resolved: Record<string, unknown>): unknown {
+  if (typeof options === 'string') {
+    if (!options.includes('{{') || !options.includes('}}')) return options;
+    const key = options.replace(/\n/g, ' ');
+    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options;
+  }
+  if (Array.isArray(options)) return options.map((value) => applyResolvedBindings(value, resolved));
+  if (options && typeof options === 'object') {
+    return Object.fromEntries(Object.entries(options).map(([k, v]) => [k, applyResolvedBindings(v, resolved)]));
+  }
+  return options;
+}
+
+/** Values of single bindings (`{{...}}` keys), the text a binding contributes to its string. */
+export function resolvedBindingValues(resolved: Record<string, unknown>): unknown[] {
+  return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
+}

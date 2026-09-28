@@ -2,6 +2,7 @@ import { assessRedisRead } from './redisReadSafety.js';
 import JSON5 from 'json5';
 import { hubspotQueryIssues } from './hubspotQuery.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
+import { applyResolvedBindings, resolvedBindingValues } from './staticBindings.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
 
@@ -842,6 +843,34 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
     provenRead: false, directSafe: false, countOnly: false, selectStar: false,
     requiresCountPreflight: false, reason: `Datasource kind ${kind} has no proven read classifier.`,
   };
+}
+
+/**
+ * The read check above judges the saved text with its {{ }} bindings still in it, but a browser-free run hands
+ * ToolJet the statically resolved values, and its SQL plugins splice them into the statement as text. Review
+ * 2026-09-25: `SELECT id FROM orders LIMIT 5 {{"\\u003b DELETE FROM orders"}}` passed as a bounded read and
+ * ran the DELETE. So the resolved options are judged again, and must be at least as safe as the saved ones;
+ * for SQL a resolved value may not carry a statement separator at all.
+ */
+export function resolvedReadRefusal(
+  query: QuerySummary, before: QueryReadAssessment, resolved: Record<string, unknown>
+): string | undefined {
+  if (!Object.keys(resolved).length) return undefined;
+  const kind = query.kind?.toLowerCase() ?? '';
+  const sqlLike = SQL_KINDS.has(kind) || kind === 'tooljetdb';
+  if (sqlLike && resolvedBindingValues(resolved).some((value) => typeof value === 'string' && value.includes(';'))) {
+    return 'after its {{ }} bindings are resolved, a binding value contains a statement separator (;). ' +
+      'Bindings in SQL must supply values, not SQL; move the statement text into the saved query.';
+  }
+  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) as QuerySummary['options'] });
+  const weaker = !after.provenRead || after.selectStar ||
+    (before.directSafe && !after.directSafe) ||
+    (!before.requiresCountPreflight && after.requiresCountPreflight) ||
+    (!before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation) ||
+    (!before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation);
+  if (!weaker) return undefined;
+  return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? 'the resolved text changes the statement'}). ` +
+    'Bindings must supply values, not SQL or query structure; move that text into the saved query.';
 }
 
 export function sameReadSource(target: QueryReadAssessment, count: QueryReadAssessment): boolean {
