@@ -42,6 +42,13 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           return fail(new Error('lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle.'));
         }
 
+        const columnless = (args.tables ?? []).filter((table) => !Array.isArray((table as { columns?: unknown }).columns));
+        if (columnless.length) {
+          return fail(new Error(
+            `tables: ${columnless.map((t) => `"${(t as { table_name?: string }).table_name ?? '?'}"`).join(', ')} has no columns. ` +
+              'List only new tables here, each with its columns; an existing table needs no entry (queries reach it by table_ref).'
+          ));
+        }
         const preflightErrors: string[] = [];
         const preflightWarnings: string[] = [];
         const needsTables = Boolean(
