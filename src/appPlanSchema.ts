@@ -44,6 +44,13 @@ export const plannedPageSchema = z.object({
   name: z.string(),
   icon: pageIconSchema,
   hidden: z.boolean().optional(),
+  /** The existing page of this name is replaced whole: see pageReplace.ts. */
+  replace: z.boolean().optional().describe(
+    'true: the existing page of this name has all its components, and the events on them, replaced by this plan\'s ' +
+      'components (needs app_id). Queries of that page the plan defines again are updated in place, keeping their ids; ' +
+      'events on other pages that act on a replaced component are re-pointed to the recreated one of the same name. ' +
+      'Refused when another page, event or query reads a component the plan drops.'
+  ),
   components: z.array(componentInputSchema).optional(),
 });
 export const plannedEventSchema = z.object({
