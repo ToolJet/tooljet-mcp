@@ -1,4 +1,5 @@
 import { frozenAppRefusal } from '../frozenApp.js';
+import { peekAppPlan } from '../appPlanStore.js';
 import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
 import type { AppPlanInput } from '../appPlanSchema.js';
@@ -141,10 +142,27 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       'and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.',
     inputSchema: {
       app_id: z.string(),
-      version_id: z.string(),
+      version_id: z.string().optional().describe('Defaults to the version the plan was linted for.'),
       plan_token: z.string(),
     },
-    async handler(args: { app_id: string; version_id: string; plan_token: string }) {
+    async handler(input: { app_id: string; version_id?: string; plan_token: string }) {
+      // The ids are checked before the one-time token is spent, so a mistyped id does not cost the linted plan, and
+      // an omitted version is the plan's (h2-receiving: a malformed version id, then none, and the page never applied).
+      const peeked = peekAppPlan(input.plan_token);
+      if (peeked) {
+        const planVersion = peeked.spec.version_id;
+        const mismatch = peeked.spec.app_id && peeked.spec.app_id !== input.app_id
+          ? `Plan app_id "${peeked.spec.app_id}" does not match "${input.app_id}".`
+          : input.version_id && planVersion && planVersion !== input.version_id
+            ? `Plan version_id "${planVersion}" does not match "${input.version_id}". Omit version_id to use the plan's.`
+            : undefined;
+        if (mismatch) return { content: [{ type: 'text' as const, text: `Error: ${mismatch} The plan_token is still valid.` }], isError: true };
+      }
+      const version = input.version_id ?? peeked?.spec.version_id;
+      if (!version) {
+        return { content: [{ type: 'text' as const, text: 'Error: apply_app_phase needs version_id: neither the call nor the plan names one.' }], isError: true };
+      }
+      const args = { ...input, version_id: version };
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = 'consume plan';
       let createdPageIds: string[] = [];
