@@ -747,6 +747,18 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     const parent = placement ? refs.get(placement.parentId) : undefined;
     const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && parent?.type === 'Kanban');
+    // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
+    // with useDynamicOptions the ids come from a binding.
+    if (parent?.type === 'Tabs' && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
+      const items = propVal(parent.properties, 'tabItems');
+      const ids = Array.isArray(items) ? items.map((item) => String((item as Record<string, unknown>)?.id ?? '')) : undefined;
+      if (ids && !ids.includes(slotName.slice('tab-'.length))) {
+        errors.push(
+          `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}", but Tabs "${parent.name ?? parent.id}" ` +
+            `has no tab with that id (its tabItems ids: ${ids.join(', ') || 'none'}). Use one of those slots, or add the tab to tabItems.`
+        );
+      }
+    }
     if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +

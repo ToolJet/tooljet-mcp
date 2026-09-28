@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { containsExactValue, containsNamedBinding } from '../referenceSafety.js';
+import { decodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 export function deleteComponentsTool(client: ToolJetClient): ToolDef {
@@ -45,7 +46,10 @@ export function deleteComponentsTool(client: ToolJetClient): ToolDef {
         }
         const descendants = page.components.filter(
           (component) => component.parent &&
-            [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`)) &&
+            // Header, footer and tab children sit on "<id>-header", "<id>-t1" ...: an exact match missed them, and deleting
+            // a Tabs, Modal or Container orphaned them (review 2026-09-25).
+            [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) ||
+              decodeComponentParent(component.parent!).parentId === targetId) &&
             !requested.has(component.id)
         );
         if (descendants.length) {
