@@ -11,6 +11,11 @@ describe('JavaScript query rules from round eight (2026-09-12)', () => {
     expect(r.errors.some((e) => e.code === 'runjs_syntax_error')).toBe(true);
   });
 
+  it('says where a syntax error is: line, column and an excerpt', () => {
+    const message = runjsSyntaxError("const rows = queries.q.data || [];\nconst total = rows.reduce((s, r) => s + r.amount, 0;\nreturn total;");
+    expect(message).toMatch(/at line 2 column \d+: .*reduce/);
+  });
+
   it('rejects a chart query that reads another query on page load without being chained', () => {
     const spec = {
       queries: [

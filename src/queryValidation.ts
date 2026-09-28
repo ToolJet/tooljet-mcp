@@ -1,3 +1,4 @@
+import { parse as babelParse } from '@babel/parser';
 import { hubspotQueryIssues } from './hubspotQuery.js';
 import {
   COMMON_QUERY_OPTION_FIELDS,
@@ -250,7 +251,20 @@ export function runjsSyntaxError(code: string): string | undefined {
     new Function(`return (async () => {\n${code}\n});`);
     return undefined;
   } catch (error) {
-    return error instanceof SyntaxError ? error.message : undefined;
+    if (!(error instanceof SyntaxError)) return undefined;
+    // Name the place: in a long query "Unexpected token ';'" alone sent the model rereading every line.
+    try {
+      babelParse(`async function f(){\n${code}\n}`, { sourceType: 'script' });
+    } catch (located) {
+      const loc = (located as { loc?: { line: number; column: number } }).loc;
+      const line = loc ? code.split('\n')[loc.line - 2] : undefined;
+      if (loc && line !== undefined) {
+        const from = Math.max(0, loc.column - 60);
+        const excerpt = line.slice(from, loc.column + 20).trim();
+        return `${error.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? '…' : ''}${excerpt}`;
+      }
+    }
+    return error.message;
   }
 }
 
