@@ -2034,7 +2034,9 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     ) {
       const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
       const baseRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const rowHeight = isTruthyBinding(contentWrap) ? Math.max(baseRowHeight, 60) : baseRowHeight;
+      // Measured in the viewer: a wrapped row renders about 8px taller than a plain one, not 60px; a page of long
+      // wrapped rows scrolls inside the table. The flat 60px asked for tables far taller than they need.
+      const rowHeight = isTruthyBinding(contentWrap) ? baseRowHeight + 8 : baseRowHeight;
       const toolbarVisible = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
         .some((key) => isTruthyBinding(catalogValue('Table', props, key)));
       const chromeHeight =

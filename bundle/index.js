@@ -64262,7 +64262,7 @@ function lintComponentSpec(spec) {
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
       const baseRowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const rowHeight2 = isTruthyBinding(contentWrap) ? Math.max(baseRowHeight, 60) : baseRowHeight;
+      const rowHeight2 = isTruthyBinding(contentWrap) ? baseRowHeight + 8 : baseRowHeight;
       const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props, key4)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
