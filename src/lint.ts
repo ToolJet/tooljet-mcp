@@ -3102,8 +3102,11 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;
+      // ToolJet saves references by id (components["<id>"]) and shows names on load: an id that belongs to
+      // an existing entity is valid (merch m9's clean apply failed validation on exactly this).
+      const ids = ref.namespace === 'components' ? componentIds : queryIds;
       const key = `${ref.namespace}.${ref.name}`;
-      if (!names.has(ref.name) && !seen.has(key)) {
+      if (!names.has(ref.name) && !ids.has(ref.name) && !seen.has(key)) {
         seen.add(key);
         errors.push(`${source.label} references ${key}, but no ${ref.namespace === 'components' ? 'component' : 'query'} ` +
           `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
