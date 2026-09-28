@@ -31,3 +31,10 @@ it('warns for default/native cards too, not just custom HTML cards', () => {
   expect(lintKanbanInteractions([{id:'board',type:'Kanban',properties:{openModalOnCardClick:true}},{id:'title',parent:'board',type:'Text'}])).toHaveLength(1);
   expect(lintKanbanInteractions([{id:'board',type:'Kanban',properties:{openModalOnCardClick:false}}])).toEqual([]);
 });
+it('does not call a card child narrow when a sibling shares its row on purpose', () => {
+  const board={id:'board',type:'Kanban',properties:{}};
+  const title={id:'title',type:'Text',parent:'board',layout:{left:2,top:4,width:26,height:30}};
+  const amount={id:'amount',type:'Text',parent:'board',layout:{left:29,top:4,width:12,height:30}};
+  expect(lintKanbanCardChildren([board,title,amount])).toEqual([]);
+  expect(lintKanbanCardChildren([board,{...title,layout:{left:2,top:40,width:26,height:30}},amount])).toHaveLength(2);
+});

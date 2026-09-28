@@ -804,8 +804,14 @@ export function lintKanbanCardChildren(components: LintComponent[]): string[] {
     for (const child of components) {
       if (parentPlacement(child)?.parentId !== key || parentPlacement(child)?.slotName !== 'body') continue;
       if (child.type !== 'Text' && child.type !== 'Html') continue;
-      const width = (child.layouts?.desktop ?? child.layout)?.width;
+      const rect = child.layouts?.desktop ?? child.layout;
+      const width = rect?.width;
       if (typeof width !== 'number' || width >= KANBAN_CARD_CHILD_MIN_COLS) continue;
+      // Side by side on purpose (a value beside a title): a sibling shares its row.
+      const sharesRow = components.some((other) => other !== child && parentPlacement(other)?.parentId === key && parentPlacement(other)?.slotName === 'body' &&
+        (() => { const o = other.layouts?.desktop ?? other.layout; return !!o && o.top !== undefined && o.height !== undefined && rect!.top !== undefined && rect!.height !== undefined &&
+          rect!.top < o.top + o.height && o.top < rect!.top + rect!.height; })());
+      if (sharesRow) continue;
       const px = Math.round((width / 43) * KANBAN_CARD_WIDTH_PX);
       errors.push(
         `Kanban "${board.name ?? board.id ?? 'Kanban'}" card child ${child.type} "${child.name ?? child.id ?? child.type}": width ${width} columns ` +
