@@ -246,12 +246,21 @@ function interpolatedSqlBindingIssues(sql: string): QueryValidationIssue[] {
 /** Parse JavaScript query code the way ToolJet runs it (an async function body). Returns the syntax
  *  error message, or undefined when it parses. A stray quote in a chart query (round eight, 2026-09-12)
  *  failed the query silently and left the chart it fed as empty axes. */
+/** The names ToolJet passes a RunJS query as parameters (frontend queryPanelSlice runJS: fnParams); declaring one of
+ *  them again at the top of the code is a SyntaxError when the query runs (ds-tower d1: `const actions`). */
+const RUNJS_PARAMETERS = ['moment', '_', 'components', 'queries', 'globals', 'page', 'axios', 'variables', 'actions', 'constants'];
+
 export function runjsSyntaxError(code: string): string | undefined {
   try {
-    new Function(`return (async () => {\n${code}\n});`);
+    new Function(`return (async (${RUNJS_PARAMETERS.join(', ')}) => {\n${code}\n});`);
     return undefined;
   } catch (error) {
     if (!(error instanceof SyntaxError)) return undefined;
+    const clash = error.message.match(/Identifier '([\w$]+)' has already been declared/)?.[1];
+    if (clash && RUNJS_PARAMETERS.includes(clash)) {
+      return `the code declares \`${clash}\`, a name ToolJet already gives every RunJS query (${RUNJS_PARAMETERS.join(', ')}), ` +
+        `so the query fails with "Identifier '${clash}' has already been declared" when it runs. Rename it (${clash}List, say).`;
+    }
     // Name the place: in a long query "Unexpected token ';'" alone sent the model rereading every line.
     try {
       babelParse(`async function f(){\n${code}\n}`, { sourceType: 'script' });
