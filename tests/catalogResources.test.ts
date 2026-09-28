@@ -79,3 +79,49 @@ describe('catalog resources', () => {
     await expect(client.readResource({ uri: 'tooljet://catalog/unknown' })).rejects.toThrow(/not found/);
   });
 });
+
+describe('catalog resources over the HTTP server', () => {
+  const headers = { accept: 'application/json, text/event-stream', 'content-type': 'application/json' };
+  let baseUrl: URL;
+  let server: import('node:http').Server;
+
+  beforeAll(async () => {
+    delete process.env.MCP_SHARED_TOKEN; // direct mode: the server's own PAT acts
+    const { createGatewayHttpServer } = await import('../src/index.js');
+    server = createGatewayHttpServer().server;
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Expected an IP listener');
+    baseUrl = new URL(`http://127.0.0.1:${address.port}/`);
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => server?.close(resolve));
+  });
+
+  const post = (message: unknown) => fetch(baseUrl, { method: 'POST', headers, body: JSON.stringify(message) });
+
+  it('answers resources/read with one JSON body, never an SSE event (a catalog can exceed 1 MiB)', async () => {
+    const res = await post({ jsonrpc: '2.0', id: 7, method: 'resources/read', params: { uri: 'tooljet://catalog/datasources' } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/^application\/json/);
+    const reply = await res.json() as { id: number; result: { contents: Array<{ text: string }> } };
+    expect(reply.id).toBe(7);
+    const text = reply.result.contents[0]!.text;
+    expect(text.length).toBeGreaterThan(1024 * 1024);
+    expect(JSON.parse(text).data).toEqual(JSON.parse(dataFile('datasource-schemas.json').toString('utf8')));
+  });
+
+  it('keeps the SSE stream for everything else', async () => {
+    const res = await post({ jsonrpc: '2.0', id: 8, method: 'resources/list' });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/^text\/event-stream/);
+    expect(await res.text()).toContain('tooljet://catalog/components');
+  });
+
+  it('answers a body that is not JSON with a parse error', async () => {
+    const res = await fetch(baseUrl, { method: 'POST', headers, body: '{"jsonrpc":' });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: { code: number } }).error.code).toBe(-32700);
+  });
+});
