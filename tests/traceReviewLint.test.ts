@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { lintRenderedGeometryAdvisory, validateAppStructure } from '../src/lint.js';
+import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
 
 // Trace review, 2026-09-24: "Primary Button ... likely outside the initial desktop viewport" started a re-layout tail
 // every time it appeared (merch m2 two re-plans; update_components on m8: two 14- and 16-component re-layouts and
@@ -34,5 +35,21 @@ describe('validate_app and references saved by id', () => {
     const bad = JSON.parse(JSON.stringify(summary));
     bad.pages[0].components[0].properties.columns.value[0].buttons[0].loadingState = '{{queries.draftPo.isLoading}}';
     expect(validateAppStructure(bad as never).errors.join(' ')).toMatch(/no query is named "draftPo"/);
+  });
+});
+
+// Merch m14 and m16: a table's seed rows split over two entries (each is capped at 40 rows), and the plan
+// lint then refused "targets table more than once": three lint rounds before any page. Entries insert one after
+// another, so a table may take several.
+describe('seed data split across entries', () => {
+  it('lints a table seeded by two entries', async () => {
+    const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `r${i}` }));
+    const out = await lintAppSpecTool({ listTables: async () => [] } as never).handler({
+      tables: [{ table_name: 'mx_hist', columns: [{ name: 'name', type: 'varchar' }] }],
+      seed_data: [{ table_name: 'mx_hist', rows: rows(40) }, { table_name: 'mx_hist', rows: rows(12) }],
+    } as never);
+    const body = JSON.parse(String((out.content[0] as { text?: string }).text));
+    expect(body.errors).toEqual([]);
+    expect(typeof body.plan_token).toBe('string');
   });
 });

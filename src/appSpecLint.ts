@@ -297,12 +297,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   const seedData = spec.seedData ?? [];
   const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
   if (seedData.length) {
-    checked.push('seed batches have unique table targets and non-empty rows');
-    const seen = new Set<string>();
+    // A table may take several entries: each is capped at 40 rows and they insert one after another (merch m14
+    // and m16 split a table's rows and then lost three lint rounds to a "more than once" rule).
+    checked.push('seed batches have non-empty rows');
     for (const seed of seedData) {
-      const key = seed.tableName.toLowerCase();
-      if (seen.has(key)) errors.push(`Seed data targets table "${seed.tableName}" more than once.`);
-      seen.add(key);
       if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
     }
   }
