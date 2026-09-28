@@ -14,7 +14,7 @@ import {
   lintUnguardedSelectionText,
   lintTableColumnsShape,
   lintTextFormat,
-  lintUntriggeredDataQueries,
+  lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
@@ -3243,6 +3243,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   const readiness = lintUntriggeredDataQueries(summary);
   errors.push(...readiness.errors);
   warnings.push(...readiness.warnings);
+  warnings.push(...lintAutomaticWrites(summary));
   warnings.push(...lintStatTileConsistency(summary));
 
   return { errors: uniq(errors), warnings: uniq(warnings) };

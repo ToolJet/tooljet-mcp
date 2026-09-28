@@ -206,6 +206,21 @@ export function lintUntriggeredDataQueries(summary: AppSummary): { errors: strin
   return { errors, warnings };
 }
 
+const TOOLJETDB_WRITES = new Set(['create_row', 'update_rows', 'delete_rows', 'bulk_update_with_primary_key', 'bulk_upsert_with_primary_key', 'bulk_insert']);
+
+/** A ToolJet DB write that runs on its own (page load, or a success chain from a query that does) changes data on every
+ *  visit (cy-venue b8: 14 updates ran on every visit). A warning, since this lint also sees queries a person wrote. */
+export function lintAutomaticWrites(summary: AppSummary): string[] {
+  const triggers = queryTriggers(summary);
+  return summary.queries.flatMap((q) => {
+    const options = (q.options && typeof q.options === 'object' ? q.options : {}) as Record<string, unknown>;
+    const op = String(options.operation ?? '');
+    if (q.kind !== 'tooljetdb' || !TOOLJETDB_WRITES.has(op) || !triggers.get(q.id)?.automatic) return [];
+    return [`Query "${q.name ?? q.id}" writes (${op}) and runs on its own when the page opens, so every visit changes ` +
+      'the data. Run it from a user action instead.'];
+  });
+}
+
 /** Canvas columns to pixels at a typical 1300px canvas (39 columns of content span about 1250px). */
 export const HTML_PX_PER_COLUMN = 32;
 /** The Html widget's box renders about 4px shorter than the authored height (measured 2026-09-05). */
