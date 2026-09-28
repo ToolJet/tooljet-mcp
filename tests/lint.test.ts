@@ -1034,6 +1034,23 @@ describe('lintModalChildren', () => {
     expect(warnings).toMatch(/title-like Text "modalTitle" in the body.*Move.*slot_name:"header"/i);
   });
 
+  // Trace review 2026-09-25: five plans failed "title-like Text in the body" on a bold line naming the selected record
+  // under the modal title ({row.product_name}). That is a record label, not a second title.
+  it('does not take a bold dynamic record label for a second title, and still flags a static bold heading', () => {
+    const titleLike = (text: string, textSize?: number) => lintModalChildren([
+      { name: 'changePrice', type: 'ModalV2', clientRef: 'modal', properties: { showHeader: { value: true } } },
+      { name: 'modalHeader', type: 'Text', parentRef: 'modal', slotName: 'header', properties: { text: { value: 'Change price' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
+      {
+        name: 'recordLabel', type: 'Text', parentRef: 'modal', properties: { text: { value: text } },
+        styles: { fontWeight: { value: 'bold' }, ...(textSize ? { textSize: { value: textSize } } : {}) },
+        layout: { top: 10, left: 2, width: 30, height: 30 },
+      },
+    ]).join(' ').includes('title-like');
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 15)).toBe(false);
+    expect(titleLike('Edit this price', 15)).toBe(true);
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(true);
+  });
+
   it('recognizes explicit and persisted header slots and keeps their geometry separate from the body', () => {
     const components = [
       { id: 'modal-id', name: 'createCase', type: 'ModalV2', properties: { showHeader: { value: true }, showFooter: { value: false } } },

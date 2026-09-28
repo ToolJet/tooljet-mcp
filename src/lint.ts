@@ -2485,12 +2485,15 @@ function isTitleLikeText(component: LintComponent): boolean {
   const text = propVal(component.properties, 'text');
   const fontWeight = propVal(component.styles, 'fontWeight');
   const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
+  // Bold dynamic text below 18px is a record label ("{row.product_name}" under "Change price"), not a second
+  // title: five plans failed on exactly that (trace review, 2026-09-25).
+  const recordLabel = typeof text === 'string' && text.includes('{{') && (textSize === undefined || textSize < 18);
   return (
     /(?:title|heading|header)/i.test(name) ||
     (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
       (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim()))) ||
-    (typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
-    (typeof fontWeight === 'number' && fontWeight >= 600) ||
+    (!recordLabel && typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
+    (!recordLabel && typeof fontWeight === 'number' && fontWeight >= 600) ||
     (textSize !== undefined && textSize >= 18)
   );
 }
