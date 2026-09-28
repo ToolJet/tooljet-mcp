@@ -659,3 +659,16 @@ describe('generated skill is synchronized with the generator', () => {
     });
   }
 });
+
+// 2026-09-24: a reference copied from docs had not been regenerated for a week, so documented guidance never
+// reached a model that read it. The served copies must match their sources.
+describe('references copied from docs are regenerated', () => {
+  const strip = (text: string) => text.replace(/^<!-- GENERATED[^\n]*-->\n\n?/, '');
+  for (const [file, source] of [['migration.md', 'docs/app-migration.md'], ['themes.md', 'docs/theme-api-tool.md']]) {
+    for (const host of ['skill', 'skills/tooljet-app-builder']) {
+      it(`${host}/references/${file} matches ${source} (run npm run generate:skill)`, () => {
+        expect(strip(readFileSync(resolve(root, host, 'references', file), 'utf8'))).toBe(readFileSync(resolve(root, source), 'utf8'));
+      });
+    }
+  }
+});
