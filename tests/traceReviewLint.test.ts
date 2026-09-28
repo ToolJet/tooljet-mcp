@@ -53,3 +53,15 @@ describe('seed data split across entries', () => {
     expect(typeof body.plan_token).toBe('string');
   });
 });
+
+// Merch m18: the tables were seeded by hand, then every plan sent the same rows again, and the apply failed on a
+// unique key ("ME-001 already exists") after creating ten queries. Seed rows for an existing table that already has
+// rows are refused at lint.
+describe('seed data for a table that already has rows', () => {
+  it('is refused before anything is written', async () => {
+    const client = { listTables: async () => [{ id: 't1', table_name: 'mx_products' }, { id: 't2', table_name: 'mx_empty' }], hasRows: async (id: string) => id === 't1' };
+    const run = async (table: string) => JSON.parse(String((await lintAppSpecTool(client as never).handler({ seed_data: [{ table_name: table, rows: [{ sku: 'ME-001' }] }] } as never)).content[0]!.text));
+    expect(JSON.stringify((await run('mx_products')).errors)).toMatch(/mx_products.*already has rows/);
+    expect((await run('mx_empty')).errors ?? []).toEqual([]);
+  });
+});

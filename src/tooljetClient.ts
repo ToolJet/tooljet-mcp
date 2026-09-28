@@ -603,6 +603,8 @@ export interface ToolJetClient {
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
+  /** Whether a ToolJet DB table has at least one row; undefined when it cannot be read. */
+  hasRows?(tableId: string): Promise<boolean | undefined>;
 }
 
 /** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
@@ -1867,6 +1869,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const UNKNOWN_INSERT_OUTCOME = 'Insert outcome unknown: the row may already have been inserted. ' +
     'Verify persisted rows before retrying; do not replay the whole batch.';
 
+  async function hasRows(tableId: string): Promise<boolean | undefined> {
+    try {
+      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}?limit=1`, { signal: AbortSignal.timeout(15_000) });
+      if (!res.ok) return undefined;
+      const body = await res.json();
+      return Array.isArray(body) ? body.length > 0 : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
     let schemaWaits = 0;
     for (;;) {
@@ -2520,6 +2533,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     deleteQuery,
     getQueries,
     getQuery,
+    hasRows,
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,

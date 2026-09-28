@@ -66,6 +66,18 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           );
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        // Seed rows for a table that already exists and already has rows would insert them again: merch m18
+        // hand-seeded its tables, then sent the same rows in every plan, and the apply failed on a unique key
+        // after creating its queries. Unknown (no reader, or the read failed) is not a finding.
+        const plannedNew = new Set((args.tables ?? []).map((table) => table.table_name.toLowerCase()));
+        const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))]
+          .filter((name) => tableIds.has(name.toLowerCase()) && !plannedNew.has(name.toLowerCase()));
+        const withRows = await Promise.all(seededExisting.map(async (name) =>
+          (await client.hasRows?.(tableIds.get(name.toLowerCase())!).catch(() => undefined)) === true ? name : undefined));
+        for (const name of withRows.filter(Boolean)) {
+          preflightErrors.push(`Seed data targets "${name}", which already has rows (seeded earlier), so they would be inserted ` +
+            'again: leave that table out of seed_data.');
+        }
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
           if (tableIds.has(key)) {
