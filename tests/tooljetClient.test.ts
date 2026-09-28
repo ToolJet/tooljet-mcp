@@ -1121,6 +1121,16 @@ describe('createClient', () => {
       expect(result).toEqual({ table_id: 't1', table_name: 'people' });
     });
 
+    it('adds a serial id beside a business primary key (held-out reorder and fleet)', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't3', table_name: 'inventory' } } }));
+      const client = createClient(auth, config);
+      await client.createTable({ tableName: 'inventory', columns: [{ name: 'item_id', type: 'string', primaryKey: true }, { name: 'qty', type: 'number' }] });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.columns.map((c: { column_name: string }) => c.column_name)).toEqual(['item_id', 'qty', 'id']);
+      expect(body.columns[1]).toMatchObject({ data_type: 'double precision' });
+      expect(body.columns[2]).toMatchObject({ data_type: 'serial', constraints_type: { is_primary_key: false, is_unique: true } });
+    });
+
     it('preserves defaults/configurations and creates foreign-key relationships', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't2', table_name: 'orders' } } }));
       const client = createClient(auth, config);

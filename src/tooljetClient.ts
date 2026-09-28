@@ -1695,7 +1695,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
     const orgId = await auth.getOrganizationId();
     let cols = params.columns.map(tableColumnDto);
-    // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`.
+    // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`. A table keyed on a business
+    // column (item_id, plate) still gets a serial id beside it: some deployments append order=id to update_rows, and
+    // held-out reorder and fleet each spent three calls adding it by hand after the compatibility warning.
+    if (params.columns.some((column) => column.primaryKey) && !params.columns.some((column) => column.name.toLowerCase() === 'id')) {
+      cols = [...cols, { column_name: 'id', data_type: 'serial', constraints_type: { is_not_null: true, is_primary_key: false, is_unique: true } }];
+    }
     if (!params.columns.some((column) => column.primaryKey)) {
       cols = [
         {
