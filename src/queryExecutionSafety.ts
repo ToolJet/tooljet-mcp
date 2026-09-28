@@ -603,6 +603,14 @@ function assessSql(sql: string, datasourceKind: string, datasourceId?: string): 
   const identity = { datasourceKind, ...(datasourceId ? { datasourceId } : {}) };
   // A ; inside a quoted literal ('%{x}&lt;br&gt;', cx-crm) separates nothing: test the text with literals blanked.
   const unquoted = compact.replace(/'(?:[^']|'')*'/g, "''").replace(/"(?:[^"]|"")*"/g, '""');
+  // `&lt;` is HTML escaping, not SQL: said as it is, not as a second statement (cy-leases b7).
+  const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
+  if (entity) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+      reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`, ...identity,
+    };
+  }
   if (!compact || /;\s*\S/.test(unquoted)) {
     return {
       provenRead: false, directSafe: false, countOnly: false, selectStar: false,

@@ -12,3 +12,13 @@ describe('a semicolon inside a SQL string literal', () => {
     expect(read("SELECT 1 FROM t LIMIT 1; DELETE FROM t").reason).toMatch(/more than one statement/);
   });
 });
+
+// cy-leases b7: `due_date &lt; '...'` was stored as SQL and refused as a second statement; the refusal names the entity.
+describe('an HTML entity in SQL outside a string', () => {
+  const read = (sql: string) => assessQueryRead({ kind: 'tooljetdb', options: { operation: 'sql_execution', sql_execution: { sqlQuery: sql } } } as never);
+  it('is named, with the character to write instead', () => {
+    const reason = read("SELECT id FROM leases WHERE due_date &lt; '2026-10-01' LIMIT 10").reason ?? '';
+    expect(reason).toMatch(/HTML entity &lt;.*write the character itself/);
+    expect(reason).not.toMatch(/more than one statement/);
+  });
+});
