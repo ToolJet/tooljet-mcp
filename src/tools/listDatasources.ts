@@ -23,7 +23,7 @@ export function listDatasourcesTool(client: ToolJetClient): ToolDef {
       'API datasource pointed at its HTTP API. ' +
       'Pass the actual app version_id: for a new app, create_app must return it before this call.',
     inputSchema: {
-      version_id: z.string().trim().min(1),
+      version_id: z.string().trim().min(1, 'version_id is required: call create_app first and use its version_id, or use the target app\'s.'),
     },
     async handler(args: { version_id: string }) {
       try {
