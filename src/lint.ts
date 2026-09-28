@@ -2612,10 +2612,11 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
   ];
 }
 
-/** Geometry advice: fold, canvas coverage, gutters. Warnings. */
+/** Geometry advice: canvas coverage, gutters. Warnings. The fold rule (lintOperationalViewport) is left out:
+ *  a primary action under a table is a scroll away, and every time a tool reported it the model re-laid out
+ *  the page for nothing (merch m2 two re-plans, m8 two re-layouts and rowsPerPage 4; trace review 2026-09-24). */
 export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
   return [
-    ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
   ];
