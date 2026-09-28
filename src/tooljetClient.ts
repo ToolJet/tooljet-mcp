@@ -595,7 +595,7 @@ export interface ToolJetClient {
   deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }>;
   getQueries(versionId: string): Promise<QuerySummary[]>;
   getQuery(queryId: string, versionId: string): Promise<QuerySummary>;
-  runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
+  runQuery(params: { queryId: string; versionId: string; environmentId?: string; resolvedOptions?: Record<string, unknown> }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
@@ -2304,6 +2304,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     queryId: string;
     versionId: string;
     environmentId?: string;
+    /** Values for the query's {{ }} bindings, keyed as ToolJet looks them up (see staticBindings.ts). */
+    resolvedOptions?: Record<string, unknown>;
   }): Promise<RunQueryResult> {
     const envId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(
@@ -2311,7 +2313,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resolvedOptions: {}, options: {} }),
+        body: JSON.stringify({ resolvedOptions: params.resolvedOptions ?? {}, options: {} }),
       }
     );
     await assertOk(res, 'runQuery');

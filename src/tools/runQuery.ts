@@ -1,3 +1,4 @@
+import { resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
@@ -339,10 +340,14 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         }
         let result;
         try {
+          const bindings = resolveStaticBindings(query.options);
+          const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+          if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
           result = await client.runQuery({
             queryId: args.query_id,
             versionId: args.version_id,
             environmentId: args.environment_id,
+            resolvedOptions: bindings.resolved,
           });
         } catch (error) {
           return ok({

@@ -1,3 +1,4 @@
+import { resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { assessQueryRead } from '../queryExecutionSafety.js';
@@ -112,7 +113,10 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             ? ['Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer.']
             : [];
           try {
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
+            const bindings = resolveStaticBindings(query.options);
+            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+            if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
+            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
             const failed = result.status === 'failed';
             const bindingHint = queryResultBindingHint(query, result as Record<string, unknown>);
             const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
