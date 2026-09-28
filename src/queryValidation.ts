@@ -35,6 +35,18 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+/** The query panel's toggles. ToolJet stores them as booleans and tests them for truthiness without evaluating them
+ *  (dataQuerySlice runOnLoadQueries), so the string "{{false}}" runs a query on every page load: a Ferrow
+ *  build (2026-09-28) ran all fourteen of its writes each time the app opened. */
+const QUERY_TOGGLES = ['runOnPageLoad', 'runOnDependencyChange', 'requestConfirmation', 'showSuccessNotification'];
+const STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
+
+function staticToggle(value: unknown): boolean | undefined {
+  if (typeof value !== 'string') return undefined;
+  const match = STATIC_TOGGLE.exec(value);
+  return match ? (match[1] ?? match[2]) === 'true' : undefined;
+}
+
 function isTruthyStatic(value: unknown): boolean {
   return value === true || value === 'true' || value === '{{true}}';
 }
@@ -348,6 +360,13 @@ const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name
 
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
+  for (const key of QUERY_TOGGLES) {
+    const value = options?.[key];
+    if (typeof value === 'string' && staticToggle(value) === undefined) {
+      errors.push({ code: 'query_toggle_not_boolean', path: key, message: `${key} must be true or false: ToolJet does not evaluate ` +
+        `${JSON.stringify(value)} and treats any text as on. Run the query from an event instead when it depends on state.` });
+    }
+  }
   if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
   errors.push(...apiEndpointQueryIssues(kind, options).map((issue) => ({ code: 'invalid_api_endpoint_query', ...issue })));
   if (kind === 'hubspot' && options.operation !== 'get' &&
@@ -807,7 +826,16 @@ function normalizeWriteColumnMap(columns: unknown): Record<string, unknown> | nu
 /** Normalize a tooljetdb create_row / update_rows column map in place-ish (returns a new options
  * object when something changed, else the original). Call this on every authoring path so a
  * persisted query is never the silently-broken flat shape. */
-export function normalizeQueryOptions(kind: string, options: Record<string, unknown>): Record<string, unknown> {
+export function normalizeQueryOptions(kind: string, rawOptions: Record<string, unknown>): Record<string, unknown> {
+  let options = rawOptions;
+  if (isObject(rawOptions)) {
+    for (const key of QUERY_TOGGLES) {
+      const value = staticToggle(rawOptions[key]);
+      if (value === undefined) continue;
+      if (options === rawOptions) options = { ...rawOptions };
+      options[key] = value;
+    }
+  }
   if (kind === 'mongodb' && isObject(options)) {
     // The plugin's parseEJSON calls JSON5.parse, which receives "[object Object]" for objects.
     // Preserve string bindings and EJSON markers; only serialize already-structured literals.

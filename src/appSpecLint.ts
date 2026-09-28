@@ -335,7 +335,14 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
     } else {
       options = normalizeQueryOptions(query.kind, query.options);
-      if (options !== query.options) {
+      const toggles = ['runOnPageLoad', 'runOnDependencyChange', 'requestConfirmation', 'showSuccessNotification']
+        .filter((key) => query.options?.[key] !== options[key]);
+      if (toggles.length) {
+        warnings.push(`Query "${query.name}": ${toggles.map((key) => `${key} ${JSON.stringify(query.options[key])}`).join(', ')} saved as ` +
+          `${toggles.map((key) => String(options[key])).join(', ')}; ToolJet reads these as true/false and runs any text on load.`);
+      }
+      const withoutToggles = (o: Record<string, unknown>) => JSON.stringify({ ...o, runOnPageLoad: 0, runOnDependencyChange: 0, requestConfirmation: 0, showSuccessNotification: 0 });
+      if (options !== query.options && withoutToggles(options) !== withoutToggles(query.options)) {
         warnings.push(
           query.kind === 'mongodb' ? `Query "${query.name}": serialized MongoDB document fields to the JSON text expected by the plugin.` :
           `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +

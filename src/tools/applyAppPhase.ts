@@ -1,3 +1,4 @@
+import { normalizeQueryOptions } from '../queryValidation.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { peekAppPlan } from '../appPlanStore.js';
 import { tableQuotaError } from '../tableQuotaError.js';
@@ -313,7 +314,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           if (!query.datasource_id) throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
           const kind = datasourceKinds.get(query.datasource_id);
           if (!kind) throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
-          const options = structuredClone(query.options);
+          // The lint validated normalized options; persist the same (a "{{false}}" toggle saved as text ran on load).
+          const options = normalizeQueryOptions(kind, structuredClone(query.options));
           if (query.table_ref) {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
             if (!tableId) throw new Error(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
