@@ -14,3 +14,14 @@ describe('a seed date that is not on the calendar', () => {
     expect(invalidSeedTimestamps(cols, [{ at: '2028-02-29T09:00:00Z' }, { at: '2026-06-30' }, { at: '2026-09-25 18:30:00+05:30' }])).toEqual([]);
   });
 });
+
+// cy-leases b8 (2026-09-26): lease end dates stored as text included 2027-02-30 on three rows; the table showed
+// "Invalid date" and the RunJS view compared it as a string. Date checks only ran for date/timestamp columns.
+describe('an impossible date in a text column', () => {
+  it('is refused like one in a date column', () => {
+    const errors = invalidSeedTimestamps([{ name: 'end_date', type: 'character varying' }, { name: 'code', type: 'text' }],
+      [{ end_date: '2027-02-30', code: 'A' }, { end_date: '2027-02-28', code: '2027-02-30-B' }, { end_date: '2026-06-31T09:00:00Z', code: 'C' }]);
+    expect(errors.join(' ')).toMatch(/end_date[\s\S]*row\(s\) 1, 3/);
+    expect(errors.join(' ')).not.toMatch(/"code"/);
+  });
+});
