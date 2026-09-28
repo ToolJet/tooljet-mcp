@@ -2488,7 +2488,9 @@ function isTitleLikeText(component: LintComponent): boolean {
   const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
   // Bold dynamic text below 18px is a record label ("{row.product_name}" under "Change price"), not a second
   // title: five plans failed on exactly that (trace review, 2026-09-25).
-  const recordLabel = typeof text === 'string' && text.includes('{{') && (textSize === undefined || textSize < 18);
+  // A bold question below 18px ("Mark this invoice as paid?") is the prompt the modal asks, not a title (n1 vet).
+  const recordLabel = typeof text === 'string' && (text.includes('{{') || /\?\s*$/.test(text.trim())) &&
+    (textSize === undefined || textSize < 18);
   return (
     /(?:title|heading|header)/i.test(name) ||
     (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
