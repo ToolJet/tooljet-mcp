@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { lintRenderedGeometryAdvisory, validateAppStructure } from '../src/lint.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
+import { selectAppSummary } from '../src/appSummarySelection.js';
 
 // Trace review, 2026-09-24: "Primary Button ... likely outside the initial desktop viewport" started a re-layout tail
 // every time it appeared (merch m2 two re-plans; update_components on m8: two 14- and 16-component re-layouts and
@@ -63,5 +64,14 @@ describe('seed data for a table that already has rows', () => {
     const run = async (table: string) => JSON.parse(String((await lintAppSpecTool(client as never).handler({ seed_data: [{ table_name: table, rows: [{ sku: 'ME-001' }] }] } as never)).content[0]!.text));
     expect(JSON.stringify((await run('mx_products')).errors)).toMatch(/mx_products.*already has rows/);
     expect((await run('mx_empty')).errors ?? []).toEqual([]);
+  });
+});
+
+// Overnight n1: get_app_summary refused component_fields ["layout"] (the root is "layouts").
+describe('component_fields "layout"', () => {
+  it('reads as layouts', () => {
+    const summary = { app_id: 'a', pages: [{ id: 'p', name: 'P', components: [{ id: 'c', name: 'x', type: 'Text', layouts: { desktop: { top: 1 } } }] }], queries: [], events: [] };
+    const out = selectAppSummary(summary as never, { componentFields: ['name', 'layout'] } as never) as { pages: Array<{ components: Array<Record<string, unknown>> }> };
+    expect(out.pages[0]!.components[0]).toMatchObject({ name: 'x', layouts: { desktop: { top: 1 } } });
   });
 });
