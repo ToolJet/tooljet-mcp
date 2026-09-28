@@ -14,6 +14,7 @@ import type {
   ToolJetClient,
 } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
+import { matchPlannedPage } from '../pageMatch.js';
 
 interface LogicalTarget { id: string; name: string; type?: string }
 
@@ -189,11 +190,10 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           initialSummary.pages[0].components.length === 0
           ? initialSummary.pages[0]
           : undefined;
+        const plannedPageNames = new Set((spec.pages ?? []).map((page) => page.name));
         for (const page of spec.pages ?? []) {
-          let match = initialSummary.pages.find((candidate) =>
-            !claimedPageIds.has(candidate.id) &&
-            (candidate.name === page.name || candidate.handle === (page.name === 'Home' ? 'home' : undefined))
-          );
+          // By name first: "Home" also matching handle home took "Dashboard" over a real Home page (review 2026-09-25).
+          let match = matchPlannedPage(initialSummary.pages, page.name, plannedPageNames, claimedPageIds);
           if (!match && reusableHome && !claimedPageIds.has(reusableHome.id)) match = reusableHome;
           if (match) plannedPageMatches.set(logicalRef(page), match);
           if (match) claimedPageIds.add(match.id);

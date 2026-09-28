@@ -1,4 +1,5 @@
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
+import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
 import { lintComponents, validateAppStructure, type LintComponent } from './lint.js';
 import { issueMessages, normalizeQueryOptions, validateQueryOptions } from './queryValidation.js';
@@ -389,9 +390,8 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
 
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
-    const existingPage = pages.find((page) =>
-      page.name === plannedPage.name || (plannedPage.name === 'Home' && page.handle === 'home')
-    );
+    // The same match apply_app_phase makes: by name, and handle "home" only when no page is named Home.
+    const existingPage = matchPlannedPage(pages, plannedPage.name, new Set((spec.pages ?? []).map((page) => page.name)));
     const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
     const iconError = pageIconError(plannedPage.icon);
