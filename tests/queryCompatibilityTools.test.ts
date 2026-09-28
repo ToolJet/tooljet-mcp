@@ -74,3 +74,14 @@ describe('direct query compatibility diagnostics', () => {
     if (scenario === 'dynamic' || scenario === 'unknown-id') expect(mock.getTableSchema).not.toHaveBeenCalled();
   });
 });
+
+// cy-grants rg3 (2026-09-26): update_query called with name and no query_id failed schema validation and cost a turn.
+describe('update_query picked by name', () => {
+  it('treats a lone name as the query to update, not a rename', async () => {
+    const mock = fixture();
+    const result = await updateQueryTool(mock as unknown as ToolJetClient).handler({ version_id: 'v1', name: 'q1', kind: 'tooljetdb', options: { operation: 'list_rows', table_id: 't1' } } as never);
+    expect(result.isError).toBeFalsy();
+    expect(mock.updateQuery.mock.calls[0]![0]).toMatchObject({ queryId: 'q1' });
+    expect(mock.updateQuery.mock.calls[0]![0].name).toBeUndefined();
+  });
+});

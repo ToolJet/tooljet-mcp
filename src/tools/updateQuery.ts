@@ -20,7 +20,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       'validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, ' +
       'and MCP attempts to roll back the source if the subsequent option update fails.',
     inputSchema: {
-      query_id: z.string(),
+      query_id: z.string().optional().describe('the query id, or its name; with only name given, name picks the query'),
       version_id: z.string(),
       app_id: z.string().optional(),
       datasource_id: z.string().optional(),
@@ -28,8 +28,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       options: z.record(z.string(), z.any()),
       name: z.string().optional(),
     },
-    async handler(args: {
-      query_id: string;
+    async handler(input: {
+      query_id?: string;
       version_id: string;
       app_id?: string;
       datasource_id?: string;
@@ -38,6 +38,10 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       name?: string;
     }) {
       try {
+        // name without query_id picks the query (cy-grants rg3 called update_query with name only and lost a turn to
+        // "expected string, received undefined at query_id"); name beside query_id stays a rename.
+        if (!input.query_id && !input.name) return fail(new Error('update_query needs query_id (the query id or name).'));
+        let args = { ...input, query_id: (input.query_id ?? input.name)!, name: input.query_id ? input.name : undefined };
         if (args.datasource_id && !args.app_id) {
           return fail(new Error('Changing datasource_id requires app_id so MCP can validate and roll back safely.'));
         }
