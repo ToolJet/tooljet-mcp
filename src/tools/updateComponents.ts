@@ -249,7 +249,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           ));
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));
-        if (errors.length) return fail(new Error(errors.join(' ')));
+        if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
         warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
         warnings.push(...introducedForChanged(lintTextGeometry));
         warnings.push(...lintRenderedGeometry(allComponents));

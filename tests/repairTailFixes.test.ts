@@ -57,3 +57,22 @@ describe('add_query_lifecycles accepts names', () => {
     expect(JSON.stringify(events)).toContain('n-uuid');
   });
 });
+
+// cy-leases (2026-09-26): update_components refused a Table binding in its own lint, before saving, but the error did
+// not say so; the agent counted it as a write that may have landed and called a finished, repaired app partial.
+describe('update_components lint refusal', () => {
+  it('says nothing was saved', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({ app_id: 'app1', pages: [{ id: 'p1', components: [
+        { id: 't1', name: 'rentRoll', type: 'Table', properties: { data: { value: '{{[]}}' } }, styles: {} },
+        { id: 'd1', name: 'rentMonth', type: 'DatePickerV2', properties: {}, styles: {} },
+      ] }], queries: [], events: [] }),
+      updateComponents: vi.fn().mockResolvedValue({ updated: 1, warnings: [] }),
+    } as unknown as ToolJetClient;
+    const result = await updateComponentsTool(client).handler({ app_id: 'app1', version_id: 'v1', page_id: 'p1',
+      updates: [{ component_id: 't1', definition: { properties: { data: '{{(queries.rent.data || []).filter(r => r.month === components.rentMonth.value)}}' } } }] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/refused before any write/);
+    expect((client as unknown as { updateComponents: ReturnType<typeof vi.fn> }).updateComponents).not.toHaveBeenCalled();
+  });
+});

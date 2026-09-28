@@ -166,7 +166,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
           ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
           ...introducedForChanged(lintUnusableTextGeometry),
         ];
-        if (errors.length) return fail(new Error(errors.join(' ')));
+        if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
         const warnings = [...new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,

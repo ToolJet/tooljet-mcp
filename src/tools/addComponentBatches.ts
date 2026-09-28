@@ -55,7 +55,7 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
       const errors = prepared.flatMap((page) =>
         page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`)
       );
-      if (errors.length) return fail(new Error(errors.join(' ')));
+      if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
 
       const settled = await Promise.allSettled(prepared.map(async (page) => ({
         page_id: page.page_id,

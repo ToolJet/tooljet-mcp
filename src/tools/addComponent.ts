@@ -83,7 +83,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       const lintResult = lintComponents(expanded.components);
       const errors = lintResult.errors;
       const warnings = [...geometry.warnings, ...lintResult.warnings];
-      if (errors.length) return fail(new Error(errors.join(' ')));
+      if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
       try {
         if (expanded.materializedChildren) {
           const [parent, ...defaultChildren] = await client.createComponents({
