@@ -29,6 +29,11 @@ describe('widget contracts in the linter', () => {
   it('RangeSlider: enableTwoHandle is a mode name, not a boolean', () => {
     expect(errors({ type: 'RangeSliderV2', properties: { enableTwoHandle: { value: '{{true}}' } } })).toMatch(/rangeSlider/);
   });
+  it('Navigation: an item written visible true is hidden', () => {
+    const items = [{ id: 'a', label: 'Overview', visible: { value: true } }];
+    expect(errors({ type: 'Navigation', properties: { menuItems: { value: items } } })).toMatch(/Navigation[\s\S]*\{\{false\}\}/);
+    expect(errors({ type: 'Navigation', properties: { menuItems: { value: [{ id: 'a', label: 'Overview', visible: { value: '{{false}}' } }] } } })).not.toMatch(/Navigation/);
+  });
   it('device and file widgets below their height', () => {
     expect(lintComponents([{ name: 'q', type: 'QrScanner', ...at(170, 20) } as never]).errors.join(' ')).toMatch(/QrScanner[\s\S]*height/);
     expect(lintComponents([{ name: 'c', type: 'Camera', ...at(170, 30) } as never]).errors.join(' ')).toMatch(/Camera[\s\S]*height/);

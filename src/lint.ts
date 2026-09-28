@@ -2705,6 +2705,18 @@ export function lintWidgetContracts(c: LintComponent): string[] {
         'unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.');
     }
   }
+  if (c.type === 'Navigation') {
+    // Navigation stores "hidden" under visible (setVisibility writes visible: !value): true hides the item.
+    const shownAsTrue = (items: unknown): boolean => Array.isArray(items) && items.some((it) => {
+      const o = (it ?? {}) as Record<string, unknown>;
+      const f = o.visible && typeof o.visible === 'object' ? (o.visible as { value?: unknown }).value : o.visible;
+      return f === true || f === 'true' || f === '{{true}}' || shownAsTrue(o.children);
+    });
+    if (shownAsTrue(propVal(props, 'menuItems'))) {
+      errors.push(`${label}: an item with visible true is HIDDEN (Navigation stores "hidden" under visible). Write visible:{value:"{{false}}"} ` +
+        'for an item that shows, and {value:"{{true}}"} only to hide one.');
+    }
+  }
   if (c.type === 'Timer' && propVal(props, 'type') === 'countDown' && /^[0:]*$/.test(String(propVal(props, 'value') ?? ''))) {
     errors.push(`${label}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
   }
