@@ -1,3 +1,4 @@
+import { SPEC_DISCOVERY_METHODS, loadKindSpec, singleSpecRef } from '../specEndpointKinds.js';
 import { hubspotSpecs } from '../hubspotQuery.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
@@ -215,7 +216,8 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
           );
         }
         const contract = getDatasourceQuerySchema(datasource.kind);
-        const methods = contract?.introspectionMethods ?? [];
+        const kindSpec = singleSpecRef(datasource.kind);
+        const methods = [...new Set([...(contract?.introspectionMethods ?? []), ...(kindSpec ? SPEC_DISCOVERY_METHODS : [])])];
         // Coalesce a top-level method and a `requests` batch into one deduped list, so callers
         // can pass either or (as some models do) both without hitting a mutual-exclusion error.
         const topLevel: SchemaRequest[] = args.method
@@ -258,6 +260,7 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
         // Cache per invocation so batched endpoint reads share one fetch, without retaining
         // an installed plugin's old spec across upgrades or across ToolJet instances.
         const hubspotDocuments = new Map<string, Promise<Record<string, any>>>();
+        let kindSpecDocument: Promise<Record<string, any>> | undefined;
         const results = await Promise.all(requests.map(async (request) => {
           if (datasource.kind === 'hubspot') {
             const specs = hubspotSpecs();
@@ -286,6 +289,19 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
               result.notes = 'HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.';
             }
             return { method: request.method, schema: selected.name, specType: selected.specType, result };
+          }
+          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
+            // A single-spec plugin (Stripe, Gmail, ...): the plugin's own spec, fetched once; it fixes host and auth.
+            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
+            const result = openapiIntrospection(await kindSpecDocument, request) as Record<string, any>;
+            if (result.query_options) {
+              delete result.query_options.host;
+              delete result.query_options.params?.header;
+              delete result.host_warning;
+              if (result.buckets?.['params.header']) result.unsupported_headers = result.buckets['params.header'];
+              result.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query.`;
+            }
+            return { method: request.method, ...(request.table ? { table: request.table } : {}), result };
           }
           if (openapiSpec) {
             const result = openapiIntrospection(openapiSpec, request);

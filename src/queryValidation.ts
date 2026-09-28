@@ -1,5 +1,6 @@
 import { parse as babelParse } from '@babel/parser';
 import { hubspotQueryIssues } from './hubspotQuery.js';
+import { SPEC_DISCOVERY_NOTE, apiEndpointQueryIssues, singleSpecRef } from './specEndpointKinds.js';
 import {
   COMMON_QUERY_OPTION_FIELDS,
   getDatasourceQuerySchema,
@@ -56,6 +57,7 @@ function valueAtPath(source: Record<string, unknown>, path: string): unknown {
 // another one.
 function describeOperationSelection(schema: DatasourceQuerySchema): string {
   if (schema.kind === 'hubspot') return 'Use inspect_datasource_schema getEndpointSchema and copy query_options (operation, path, specType and params).';
+  if (singleSpecRef(schema.kind)) return SPEC_DISCOVERY_NOTE;
   const selection = schema.operationSelection;
   if (schema.operations.length) {
     const fields = selection?.fields?.length ? selection.fields.join(' + ') : 'operation';
@@ -347,6 +349,7 @@ const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
+  errors.push(...apiEndpointQueryIssues(kind, options).map((issue) => ({ code: 'invalid_api_endpoint_query', ...issue })));
   if (kind === 'hubspot' && options.operation !== 'get' &&
       (isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange))) {
     errors.push({ code: 'automatic_hubspot_write', message: 'HubSpot writes must run from an explicit user action, not on page load or dependency changes.' });
@@ -480,6 +483,9 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
 
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
+  // A single-spec API-endpoint plugin runs on operation, path and params; its catalog lists only the editor's picker
+  // key (stripe_operation), which the plugin never reads, and "correcting" operation to it broke the query (2026-09-27).
+  if (singleSpecRef(kind)) for (const key of ['operation', 'path', 'params', 'selectedOperation']) allowedTopLevel.add(key);
   // A misnamed field: an unknown key that resembles one of this operation's fields while that field is unset (Supabase
   // `table` for `get_table_name`; catalog sweep 2026-09-26). The plugin drops the key and runs without the field, so it is
   // an error. Other unknown keys (an upstream wrapper, a legacy key) stay warnings: the plugin ignores them harmlessly.
