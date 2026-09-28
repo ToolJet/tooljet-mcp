@@ -445,14 +445,15 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const eventValidation = validateEvents(summaryBeforeEvents, allEvents);
         if (eventValidation.errors.length) throw new Error(eventValidation.errors.join(' '));
         warnings.push(...eventValidation.warnings);
-        if (allEvents.length) {
+        const newEvents = withoutExistingEvents(allEvents, summaryBeforeEvents.events);
+        if (newEvents.length) {
           await client.createEvents({
             appId: args.app_id,
             versionId: args.version_id,
-            events: allEvents,
+            events: newEvents,
             existingEvents: summaryBeforeEvents.events,
           });
-          applied.events = allEvents.length;
+          applied.events = newEvents.length;
         }
 
         stage = 'validate persisted phase';
@@ -537,4 +538,19 @@ function selectedRefs(targets: Map<string, LogicalTarget>, refs: string[]): Reco
     const target = targets.get(ref);
     return target ? [[ref, target.id]] : [];
   }));
+}
+
+/** Planned events the app already has, the same source, trigger and action, dropped: a phase that re-plans the events
+ *  of queries the app keeps created them again, and each then fired twice (ds-tower d1). Only exact matches; a changed
+ *  action is created. */
+export function withoutExistingEvents(planned: EventSpec[], existing: AppSummary['events']): EventSpec[] {
+  const key = (sourceType: unknown, sourceId: unknown, payload: Record<string, unknown>) =>
+    JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
+  const have = new Set(existing.flatMap((e) => {
+    const raw = e.event && typeof e.event === 'object' && !Array.isArray(e.event) ? e.event as Record<string, unknown> : undefined;
+    if (!raw) return [];
+    const { index: _index, name: _name, ...payload } = raw;
+    return [key(e.target, e.sourceId, payload)];
+  }));
+  return planned.filter((e) => !have.has(key(e.sourceType, e.sourceId, { eventId: e.trigger, ...(e.ref ? { ref: e.ref } : {}), ...e.action })));
 }
