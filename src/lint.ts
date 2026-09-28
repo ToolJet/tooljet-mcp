@@ -170,7 +170,7 @@ const TABLE_FOOTER_HEIGHT_PX = 56;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
-const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
+const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container', 'Accordion']);
 /** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
  * primary action above this authored-canvas boundary when it follows an independently scrolling
  * Table/Listview, otherwise users must operate two nested vertical scroll regions. */
@@ -762,7 +762,7 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
-          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container; Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
       );
     }
   }
@@ -1298,7 +1298,9 @@ export function lintRenderedText(spec: LintComponent): string[] {
   }
   const itemsKey = spec.type === 'Tabs' ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
   if (itemsKey) {
-    const items = propVal(props, itemsKey);
+    // Steps (and the like) with advanced on render properties.schema instead (Steps.jsx reads advanced ? schema : steps).
+    const dynamicSchema = isTruthyBinding(propVal(props, 'advanced')) ? propVal(props, 'schema') : undefined;
+    const items = dynamicSchema ?? propVal(props, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === 'string' && items.includes('{{');
     if (!authored) {
       errors.push(
