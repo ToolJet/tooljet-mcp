@@ -626,26 +626,17 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
-  it('blocks statement-body map callbacks in Table data but accepts expression bodies', () => {
-    const broken = lintComponentSpec({
-      name: 'claims',
-      type: 'Table',
-      properties: {
-        data: { value: '{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}' },
-        dataSourceSelector: { value: 'rawJson' },
-      },
-    });
-    expect(broken.errors.join(' ')).toMatch(/statement-body \.map\(\).*silently.*no data.*expression body/is);
-
-    const supported = lintComponentSpec({
-      name: 'claims',
-      type: 'Table',
-      properties: {
-        data: { value: '{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}' },
-        dataSourceSelector: { value: 'rawJson' },
-      },
-    });
-    expect(supported.errors).toEqual([]);
+  // Probed on ToolJet 3.16 (2026-09-24): a Table bound to a statement-body map renders every row, over a
+  // query's data and over static rows. What cuts a binding short is a literal `}}` inside it.
+  it('accepts statement-body map callbacks in Table data unless the code holds a literal }}', () => {
+    const lint = (value: string) => lintComponentSpec({
+      name: 'claims', type: 'Table',
+      properties: { data: { value }, dataSourceSelector: { value: 'rawJson' } },
+    }).errors;
+    expect(lint('{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}')).toEqual([]);
+    expect(lint('{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}')).toEqual([]);
+    expect(lint('{{queries.claims.data.map(c => { return {id:c.id,meta:{age:c.age_days}}; })}}').join(' '))
+      .toMatch(/statement-body \.map\(\).*`}}`.*space/is);
   });
 
   it('gives an actionable repair for function-style Table projections without weakening key checks', () => {

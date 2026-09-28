@@ -224,7 +224,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   });
 
   it('documents the narrow Table statement-body map failure', () => {
-    expect(guidance).toMatch(/Table data bindings.*No data.*map\(row => \{.*expression-body form.*map\(row => \(\{\.\.\.\}\)\)/is);
+    expect(guidance).toMatch(/expression-body form.*map\(row => \(\{\.\.\.\}\)\).*statement-body callback renders.*literal `\}\}`.*No data/is);
     expect(guidance).toMatch(/supported Table lookup joins.*remain valid/is);
   });
 

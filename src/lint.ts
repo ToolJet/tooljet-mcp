@@ -1990,11 +1990,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           'Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. ' +
           'Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.'
       );
-    } else if (statementBodyMapInValue(data)) {
+    } else if (statementBodyMapInValue(data) && typeof data === 'string' && data.trim().slice(2, -2).includes('}}')) {
+      // A statement body alone renders (probed on ToolJet 3.16, 2026-09-24); what cuts the binding short is a
+      // literal `}}` inside it, as a block closing on an object literal does.
       errors.push(
-        `Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ` +
-          'ToolJet can silently evaluate this binding as no data. Use an expression body such as ' +
-          'map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.'
+        `Table "${label}": data uses a statement-body .map() callback whose code contains \`}}\`, which ends the ` +
+          'binding early, so the table shows no data. Put a space between the braces (} }), use an expression ' +
+          'body such as map(row => ({...})), or pre-shape the rows in a RunJS query.'
       );
     }
     if (
