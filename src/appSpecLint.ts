@@ -478,7 +478,13 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   warnings.push(...lintChartNumericBindings(pages, queries));
 
   const eventSpecs: EventSpec[] = [];
+  // QrScanner awaits its onDetect handler before it sets lastDetectedValue: an undelayed action reads the previous scan.
+  const scanners = new Set((spec.pages ?? []).flatMap((p) => (p.components ?? []).filter((c) => c.type === 'QrScanner').flatMap((c) => [c.clientRef, c.name].filter(Boolean) as string[])));
   (spec.events ?? []).forEach((event, index) => {
+    if (event.sourceType === 'component' && event.trigger === 'onDetect' && scanners.has(String(event.sourceRef)) && !(event.action as Record<string, unknown> | undefined)?.debounce) {
+      errors.push(`Event[${index}] (QrScanner "${event.sourceRef}" onDetect): add debounce: "300" to the action. The scanner runs onDetect before it ` +
+        'sets lastDetectedValue, so an undelayed action reads the previous scan (nothing on the first).');
+    }
     const source = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
     if (!source) errors.push(`Event[${index}] has unknown ${event.sourceType} source_ref "${event.sourceRef}".`);
     eventSpecs.push({

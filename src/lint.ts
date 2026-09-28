@@ -2677,6 +2677,58 @@ export function lintUnrenderableHeights(components: LintComponent[]): string[] {
   return errors;
 }
 
+/** Widget contracts from ToolJet's frontend source (2026-09-26) that a plan can break silently. The store unwraps a
+ *  wrapped option flag only when it is falsy (componentsSlice: `if (keyValue?.value) keys.push('value')`), so a static
+ *  {value: true} stays an object. */
+export function lintWidgetContracts(c: LintComponent): string[] {
+  const errors: string[] = [];
+  const label = `${c.type} "${c.name ?? c.id ?? c.type}"`;
+  const props = c.properties;
+  const rect = c.layouts?.desktop ?? c.layout;
+  const nested = Boolean((c as { parentRef?: unknown; parent?: unknown }).parentRef ?? (c as { parent?: unknown }).parent);
+  const wrappedTrue = (v: unknown) => Boolean(v && typeof v === 'object' && (v as { value?: unknown }).value);
+  if (c.type === 'RadioButtonV2' && !isTruthyBinding(propVal(props, 'advanced'))) {
+    const options = propVal(props, 'options');
+    if (Array.isArray(options) && options.some((o) => wrappedTrue((o as Record<string, unknown>)?.default))) {
+      errors.push(`${label}: a static option marked default:{value:true} is never preselected (RadioButtonV2 checks default === true). ` +
+        'Set advanced to "{{true}}" and give schema as [{label, value, default: true, visible: true}] with plain booleans.');
+    }
+  }
+  if (c.type === 'TreeSelect' && !isTruthyBinding(propVal(props, 'advanced'))) {
+    const hasWrapped = (nodes: unknown): boolean => Array.isArray(nodes) && nodes.some((n) => {
+      const o = (n ?? {}) as Record<string, unknown>;
+      return ['visible', 'disable', 'selected', 'expanded'].some((k) => o[k] && typeof o[k] === 'object') || hasWrapped(o.children);
+    });
+    const options = propVal(props, 'options');
+    if (Array.isArray(options) && options.some((o) => hasWrapped((o as Record<string, unknown>)?.children))) {
+      errors.push(`${label}: nested options keep their flags wrapped as {value}, and a wrapped false is truthy (a hidden child shows, an ` +
+        'unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.');
+    }
+  }
+  if (c.type === 'Timer' && propVal(props, 'type') === 'countDown' && /^[0:]*$/.test(String(propVal(props, 'value') ?? ''))) {
+    errors.push(`${label}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
+  }
+  const pages = propVal(props, 'numberOfPages');
+  if (c.type === 'Pagination' && typeof pages === 'string' && !pages.includes('{{')) {
+    errors.push(`${label}: numberOfPages "${pages}" is text, so the last page never matches and next stays enabled; write "{{${pages}}}".`);
+  }
+  const twoHandle = propVal(props, 'enableTwoHandle');
+  if (c.type === 'RangeSliderV2' && twoHandle !== undefined && !['slider', 'rangeSlider'].includes(String(twoHandle))) {
+    errors.push(`${label}: enableTwoHandle is "slider" or "rangeSlider" (two handles read startValue/endValue), not ${JSON.stringify(twoHandle)}.`);
+  }
+  const height = rect?.height;
+  const width = rect?.width;
+  if (typeof height === 'number') {
+    const min = c.type === 'QrScanner' ? (nested || typeof width !== 'number' ? 200 : Math.round(width * 28 * 0.9))
+      : c.type === 'Camera' ? 300 : c.type === 'FilePicker' ? 176 : 0;
+    if (height < min) {
+      errors.push(`${label}: height ${height} cuts it off; use at least ${min} (` +
+        (c.type === 'QrScanner' ? 'its reader is square, as tall as it is wide' : c.type === 'Camera' ? 'the preview and its buttons' : 'the drop zone and the chosen file') + ').');
+    }
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -2691,6 +2743,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
+    errors.push(...lintWidgetContracts(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
