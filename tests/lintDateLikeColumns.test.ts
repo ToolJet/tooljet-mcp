@@ -24,3 +24,20 @@ describe('date-like string columns', () => {
     expect(dateLike('{{ ((queries.m.data?.rows || []).map(r => ({ date: r.date_label }))).map(r => ({ date: r.date })) }}')).toEqual([]);
   });
 });
+
+describe('projected table keys', () => {
+  it('reads the outermost projection when the author maps rows and the binding projects them again', () => {
+    const spec = {
+      name: 't1', type: 'Table',
+      properties: {
+        data: { value: '{{ ((queries.q.data || []).map(r => ({ id: r.id, pct: r.pct, site: r.site })) || []).map(r => ({ id: r.id, site: r.site })) }}' },
+        dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        columns: { value: [{ id: 'c1', name: 'ID', key: 'id', columnType: 'string', columnVisibility: false }, { id: 'c2', name: 'Site', key: 'site', columnType: 'string' }] },
+      },
+      layouts: { desktop: { top: 0, left: 2, width: 39, height: 430 } },
+    };
+    const warnings = lintComponentSpec(spec as never).warnings.filter((w) => /no matching explicit column/.test(w));
+    expect(warnings).toEqual([]);
+  });
+});

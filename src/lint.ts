@@ -251,7 +251,10 @@ export function nearestCatalogKey(value: string, candidates: string[]): string |
 
 function projectedTableDataKeys(value: unknown): string[] | undefined {
   if (typeof value !== 'string' || !/\.map\s*\(/.test(value)) return undefined;
-  const arrowObject = value.match(/=>\s*\(\s*\{/);
+  // The last projection decides the keys: `(rows.map(r => ({ a, b, c })) || []).map(r => ({ a, b }))`
+  // shows a and b, whatever the inner map carried along.
+  const arrowObjects = [...value.matchAll(/=>\s*\(\s*\{/g)];
+  const arrowObject = arrowObjects[arrowObjects.length - 1] ?? null;
   const returnedObject = value.match(/=>\s*\{[\s\S]*?\breturn\s*\{/);
   const projection = arrowObject ?? returnedObject;
   if (projection?.index === undefined) return undefined;
