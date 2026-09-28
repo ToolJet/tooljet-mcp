@@ -400,6 +400,19 @@ function recordValue(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
 
+/**
+ * True when the table's data binding computes this key itself (`date: moment(r.day).format(...)`,
+ * `date: r.date_label`) rather than passing a raw field through (`date: r.date`): the value is then
+ * already formatted text, and a "raw ISO timestamp" warning only sends the author renaming keys.
+ */
+function authorComputesKey(data: unknown, key: unknown): boolean {
+  const binding = String((data as { value?: unknown } | undefined)?.value ?? data ?? '');
+  if (typeof key !== 'string' || !key || !/\.map\s*\(/.test(binding)) return false;
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const assignments = [...binding.matchAll(new RegExp(`(?:^|[{,\\s])${escaped}\\s*:\\s*([^,}]+)`, 'g'))].map((m) => m[1]!.trim());
+  return assignments.some((value) => !new RegExp(`^[A-Za-z_$][\\w$]*\\??\\.${escaped}$`).test(value));
+}
+
 function looksDateLikeField(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   const normalized = value
@@ -2192,7 +2205,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         if (
           c?.columnType === 'string' &&
-          (looksDateLikeField(c.key) || looksDateLikeField(c.name))
+          (looksDateLikeField(c.key) || looksDateLikeField(c.name)) &&
+          !authorComputesKey(props?.data, c.key)
         ) {
           warnings.push(
             `Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses ` +
