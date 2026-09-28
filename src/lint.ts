@@ -154,7 +154,9 @@ export const TOP_ALIGNED_INPUT_TYPES = new Set([
 export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 /** At or below this width (grid columns), a side-aligned label leaves too little room for the input. */
 const NARROW_SIDE_LABEL_COLS = 18;
-const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
+// Four tiles a row: rendered in an 800 px pane (2026-09-28), 9-column tiles fit "Average cost per parcel" over
+// "£12,345.50". The old 12 ("three a row") split every four-figure KPI row into a 2x2 grid of half-page cards.
+const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 9;
 const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 // A value-only tile with an icon needs more width: the icon sits beside the value, and the value font
 // defaults to ~34px and word-wraps then clips (overflow hidden). Below this, a currency/large number
@@ -1750,7 +1752,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       warnings.push(
         `Statistics "${label}": desktop width ${width} columns is too narrow; ` +
           `${secondaryHidden ? 'a value-only tile' : 'a tile with visible secondary content'} needs at least ${minimumWidth} columns ` +
-          `to keep labels and values readable. ${secondaryHidden ? 'Use no more than three tiles per content row.' : 'Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns.'}`
+          `to keep labels and values readable. ${secondaryHidden ? 'Use no more than four tiles per content row.' : `Use a two-column KPI grid, or set hideSecondary:true and use at least ${STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS} columns.`}`
       );
     }
     // Value clipping (blocking): a value-only tile with an icon and the default large value font clips

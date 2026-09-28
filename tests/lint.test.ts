@@ -321,8 +321,18 @@ describe('lintComponentSpec', () => {
       name: 'openCases',
       type: 'Statistics',
       properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
-      layout: { top: 0, left: 0, width: 11, height: 120 },
-    }).warnings.join(' ')).toMatch(/value-only tile.*at least 12.*three tiles per content row/is);
+      layout: { top: 0, left: 0, width: 8, height: 120 },
+    }).warnings.join(' ')).toMatch(/value-only tile.*at least 9.*four tiles per content row/is);
+
+    // Ferrow builds 3 and 4 (2026-09-28): "at least 12 columns, three tiles a row" made the model split four KPI tiles
+    // into a 2x2 grid of half-page cards. Rendered in an 800 px pane, four 9-column tiles fit "Average cost per parcel"
+    // over "£12,345.50" on one line each.
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
+      layout: { top: 0, left: 0, width: 9, height: 120 },
+    }).warnings.join(' ')).not.toMatch(/too narrow/);
 
     expect(lintComponentSpec({
       name: 'openCases',
