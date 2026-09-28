@@ -65,7 +65,7 @@ describe('an exact-decimal type', () => {
   it('names what to use for money', () => {
     for (const type of ['numeric', 'numeric(10,2)', 'money']) {
       const errors = validateTableBatch([{ tableName: 't_orders', columns: [{ name: 'total', type }] } as never]);
-      expect(errors.join(' ')).toMatch(/money[\s\S]*number[\s\S]*cents/);
+      expect(errors.join(' ')).toMatch(/money[\s\S]*cents[\s\S]*number/);
     }
   });
 });

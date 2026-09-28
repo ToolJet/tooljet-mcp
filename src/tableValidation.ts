@@ -62,7 +62,7 @@ export function validateTableBatch(tables: CreateTableParams[]): string[] {
           `Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. ` +
             'Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.' +
             (/^(numeric|money|dec)/i.test(column.type.trim())
-              ? ' For money: number (shown with a currency format) for prices and totals, or integer cents where exact sums matter.'
+              ? ' numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently.'
               : '')
         );
       }
