@@ -1645,6 +1645,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length) continue;
+      if (spec.type === 'Form' && entry.key === 'buttonToSubmit') continue; // names a Button: lintFormSubmitButtons
       const value = propVal(authored, entry.key);
       if (value === undefined || isDynamicBinding(value)) continue;
       if (!entry.allowedValues.some((allowed) => Object.is(allowed, value))) {
@@ -2743,6 +2744,28 @@ export function lintWidgetContracts(c: LintComponent): string[] {
   return errors;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx). A plan names that Button
+ *  by its client_ref (or name), resolved to the id on apply, so it must be a Button of the same batch inside the Form
+ *  (body, header or footer); an id read back from an app, a binding and "none" are kept as they are. */
+export function lintFormSubmitButtons(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const form of components.filter((c) => c.type === 'Form')) {
+    const value = propVal(form.properties ?? {}, 'buttonToSubmit');
+    if (value === undefined || value === 'none' || (typeof value === 'string' && (UUID_RE.test(value) || isDynamicBinding(value)))) continue;
+    const formKeys = new Set([form.clientRef, form.name, form.id].filter(Boolean));
+    const button = components.find((c) => (c.clientRef ?? c.name) === value);
+    const inForm = button && [button.parentRef, button.parent].some((p) => p && formKeys.has(p.replace(/-(header|footer)$/, '')));
+    if (!button || button.type !== 'Button' || !inForm) {
+      errors.push(`Component "${form.name ?? form.clientRef}": buttonToSubmit ${JSON.stringify(value)} must name a Button inside this Form ` +
+        '(its body, header or footer) by its client_ref (or its name when it has none), or be "none"; the form submits when ' +
+        'that Button is clicked.');
+    }
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -2761,6 +2784,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children

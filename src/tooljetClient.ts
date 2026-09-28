@@ -2134,6 +2134,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      // A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx); a plan names that
+      // Button by its client ref (or its name when it has none), as lint checks, and ids are made here.
+      const submit = e.spec.type === 'Form' ? (dto.properties as Record<string, { value?: unknown }> | undefined)?.buttonToSubmit : undefined;
+      const submitId = submit && typeof submit.value === 'string'
+        ? refToId.get(submit.value) ?? entries.find((other) => !other.spec.clientRef && other.spec.name === submit.value)?.id
+        : undefined;
+      if (submit && submitId) {
+        dto.properties = { ...(dto.properties as Record<string, unknown>), buttonToSubmit: { ...submit, value: submitId } };
+      }
       diff[e.id] = dto;
     }
 
