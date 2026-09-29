@@ -1984,3 +1984,14 @@ describe('lintUnrenderableHeights', () => {
     ).toEqual([]);
   });
 });
+
+describe('keys ToolJet stores from the inspector only', () => {
+  it('PhoneInput and CurrencyInput defaultCountry is not an unknown key', () => {
+    // The inspector writes properties.defaultCountry and the widgets read it, but the catalog does not list it; the
+    // page compiler sets it from a phone number's calling code (overnight site inspections, 2026-09-29).
+    for (const type of ['PhoneInput', 'CurrencyInput']) {
+      const r = lintComponentSpec({ name: 'x', type, properties: { label: { value: 'L' }, defaultCountry: { value: 'GB' } }, styles: { alignment: { value: 'top' } } } as never);
+      expect(r.warnings.join(' ')).not.toMatch(/defaultCountry/);
+    }
+  });
+});
