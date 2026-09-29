@@ -840,3 +840,28 @@ describe('a query another page only refreshes', () => {
     expect([...view.queriesToUpdate]).toEqual([['counts', 'q1']]);
   });
 });
+
+// The replaced page's button runs savePatient, whose success runs saveBooking: both are the page's own, so a replace
+// that redefines only saveBooking updates it in place (a clinic booking build lost a compile to "App already has a
+// query named saveBooking", 2026-09-29).
+describe('a query run by a chain from the page’s own query', () => {
+  const chain = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Book', handle: 'book', components: [{ id: 'c1', name: 'saveBtn', type: 'Button', properties: {} }] },
+      { id: 'p2', name: 'Intake', handle: 'intake', components: [{ id: 'c2', name: 'notes', type: 'TextArea', properties: {} }] },
+    ],
+    queries: [
+      { id: 'q1', name: 'savePatient', kind: 'tooljetdb', options: {} },
+      { id: 'q2', name: 'saveBooking', kind: 'tooljetdb', options: {} },
+    ],
+    events: [
+      { id: 'e1', sourceId: 'c1', target: 'onClick', event: { actionId: 'run-query', queryId: 'q1' } },
+      { id: 'e2', sourceId: 'q1', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q2' } },
+    ],
+  };
+  it('is the page’s own too', () => {
+    const view = replaceView(chain as never, { pages: [{ name: 'Book', replace: true }], queries: [{ name: 'saveBooking' }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['saveBooking', 'q2']]);
+  });
+});
