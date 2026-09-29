@@ -114,15 +114,18 @@ export function replaceView(summary: AppSummary, plan: ReplacePlan): ReplaceView
   const readsOf = (text: string) => summary.queries.filter((q) => q.name && readsQuery(text, q.name)).map((q) => q.id);
   const chainedFrom = (id: string) => summary.events.filter((event) => event.sourceId === id).flatMap((event) =>
     summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id));
-  const reachedElsewhere = new Set<string>([
-    ...otherComponents.flatMap((component) => readsOf(componentText(component))),
-    ...summary.events.filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId))))
-      .flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id)),
-  ]);
+  // Success chains carry the reach only from a query another page runs: a list another page merely reads also runs
+  // this page's view after it (after="jobs"), and that did not make the view shared (a dispatch build, 2026-09-29).
+  const runElsewhere = new Set<string>(summary.events
+    .filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId))))
+    .flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id)));
+  const reachedElsewhere = new Set<string>([...otherComponents.flatMap((component) => readsOf(componentText(component))), ...runElsewhere]);
   for (let frontier = [...reachedElsewhere]; frontier.length; ) {
     const next = frontier.flatMap((id) => {
       const query = summary.queries.find((q) => q.id === id);
-      return [...readsOf(JSON.stringify(query?.options ?? {})), ...chainedFrom(id)];
+      const chained = runElsewhere.has(id) ? chainedFrom(id) : [];
+      chained.forEach((c) => runElsewhere.add(c));
+      return [...readsOf(JSON.stringify(query?.options ?? {})), ...chained];
     }).filter((id) => !reachedElsewhere.has(id));
     next.forEach((id) => reachedElsewhere.add(id));
     frontier = next;

@@ -786,3 +786,30 @@ describe('apply_app_phase says a replace is not atomic', () => {
     expect(description).toMatch(/draft|recoverable/i);
   });
 });
+
+// A page's view query runs after a list query another page reads (after="jobs"): the list's success event runs the
+// view. That chain does not make the view another page's, so a replace of its page redefines it in place (a dispatch
+// build lost two compiles to "App already has a query named techCards", 2026-09-29).
+describe('a view run after a list another page reads', () => {
+  const chainedView = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Technicians', handle: 'technicians', components: [{ id: 'c1', name: 'roster', type: 'Listview', properties: { data: { value: '{{queries.techCards.data}}' } } }] },
+      { id: 'p2', name: 'Map', handle: 'map', components: [{ id: 'c2', name: 'jobsTable', type: 'Table', properties: { data: { value: '{{queries.jobs.data}}' } } }] },
+    ],
+    queries: [
+      { id: 'q1', name: 'jobs', kind: 'tooljetdb', options: {} },
+      { id: 'q2', name: 'techCards', kind: 'runjs', options: { code: 'return queries.jobs.data' } },
+    ],
+    events: [{ id: 'e1', sourceId: 'q1', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q2', queryName: 'techCards' } }],
+  };
+  it('is the replaced page’s own', () => {
+    const view = replaceView(chainedView as never, { pages: [{ name: 'Technicians', replace: true }], queries: [{ name: 'techCards' }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['techCards', 'q2']]);
+  });
+  it('is still another page’s when that page runs it', () => {
+    const run = { ...chainedView, events: [...chainedView.events, { id: 'e2', sourceId: 'c2', target: 'onRowClicked', event: { actionId: 'run-query', queryId: 'q2' } }] };
+    const view = replaceView(run as never, { pages: [{ name: 'Technicians', replace: true }], queries: [{ name: 'techCards' }] } as never);
+    expect([...(view?.queriesToUpdate ?? [])]).toEqual([]);
+  });
+});
