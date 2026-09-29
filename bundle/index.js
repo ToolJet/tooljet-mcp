@@ -74698,6 +74698,18 @@ function lintServerSidePaginationRace(pages, queries) {
   }
   return errors;
 }
+function pagesUsingQuery(summary, name2, planPages) {
+  if (!summary)
+    return [];
+  const query = (summary.queries ?? []).find((q) => q.name === name2);
+  const reads = new RegExp(`queries\\??\\.${name2.replace(/[$]/g, "\\$&")}\\b`);
+  return (summary.pages ?? []).filter((page) => {
+    if (!page.name || planPages.has(page.name))
+      return false;
+    const ids = new Set(page.components.map((component) => component.id));
+    return page.components.some((component) => reads.test(JSON.stringify([component.properties ?? {}, component.styles ?? {}]))) || !!query && (summary.events ?? []).some((event) => !!event.sourceId && (ids.has(event.sourceId) || event.sourceId === page.id) && JSON.stringify(event.event ?? {}).includes(`"${query.id}"`));
+  }).map((page) => page.name);
+}
 function lintPlannedApp(spec, existingSummary, options2 = {}) {
   const errors = [];
   const warnings = [];
@@ -74735,7 +74747,8 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     const ref = query.clientRef ?? query.name;
     const id = `planned-query:${index}:${ref}`;
     if (existingQueryNames.has(query.name)) {
-      errors.push(`App already has a query named "${query.name}". To use it as it is, refer to it by name without defining it in this plan; to change it, use update_query, or replace the page that owns it.`);
+      const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
+      errors.push(`App already has a query named "${query.name}"` + (users.length ? `, which page${users.length > 1 ? "s" : ""} ${users.map((u) => `"${u}"`).join(", ")} also read${users.length > 1 ? "" : "s"} or run${users.length > 1 ? "" : "s"}. To change it with this plan, replace ${users.length > 1 ? "those pages" : `"${users[0]}"`} in the same call; or refer to it by name here without defining it, or use update_query.` : ". To use it as it is, refer to it by name without defining it in this plan; to change it, use update_query, or replace the page that owns it."));
     }
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
     if (ref !== query.name)
