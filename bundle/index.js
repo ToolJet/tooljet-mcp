@@ -78783,6 +78783,31 @@ function readData(resource) {
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
 }
+function catalogVersionOf(parts) {
+  const hash2 = createHash2("sha256");
+  for (const part of parts) {
+    hash2.update(`${part.file}
+${part.bytes.length}
+`);
+    hash2.update(part.bytes);
+  }
+  return hash2.digest("hex").slice(0, 12);
+}
+var catalogVersionCache;
+function catalogVersion() {
+  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
+    file: resource.file,
+    bytes: readFileSync5(resolve4(dataDir, resource.file))
+  })));
+  return catalogVersionCache;
+}
+function listedCatalogVersion() {
+  try {
+    return catalogVersion();
+  } catch {
+    return void 0;
+  }
+}
 function listedVersion(resource) {
   try {
     return versions.get(resource.file) ?? readData(resource).dataVersion;
@@ -78795,19 +78820,20 @@ function payload(resource) {
   if (text === void 0) {
     const { bytes, dataVersion } = readData(resource);
     const data = JSON.parse(bytes.toString("utf8"));
-    text = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, data_version: dataVersion, data });
+    text = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
     payloads.set(resource.file, text);
   }
   return text;
 }
 function registerCatalogResources(server) {
+  const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
     const dataVersion = listedVersion(resource);
     server.registerResource(resource.name, resource.uri, {
       title: resource.title,
       description: resource.description,
       mimeType: "application/json",
-      ...dataVersion ? { _meta: { data_version: dataVersion } } : {}
+      ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
     }, async () => ({
       contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
     }));
