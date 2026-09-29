@@ -284,7 +284,7 @@ function lintServerSidePaginationRace(
   return errors;
 }
 
-export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary): AppSpecLintResult {
+export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary, options: { canvasColor?: string } = {}): AppSpecLintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const checked: string[] = [];
@@ -401,7 +401,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     warnings.push(...normalized.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
     warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components);
+    const componentLint = lintComponents(expansion.components, options);
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
@@ -560,7 +560,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     warnings.push(...eventValidation.warnings);
   }
 
-  const structure = validateAppStructure(summary);
+  const structure = validateAppStructure(summary, options);
   const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
   errors.push(...forward.errors);
   warnings.push(...structure.warnings, ...forward.notes);

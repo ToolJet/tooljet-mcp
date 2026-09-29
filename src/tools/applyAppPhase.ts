@@ -19,6 +19,7 @@ import type {
 import { fail, ok, type ToolDef } from './types.js';
 import { matchPlannedPage } from '../pageMatch.js';
 import { danglingAfterReplace, replaceFingerprint, replaceIds, replaceView } from '../pageReplace.js';
+import { literalCanvasColor } from '../appSettings.js';
 
 interface LogicalTarget { id: string; name: string; type?: string }
 
@@ -607,7 +608,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         }
 
         stage = 'validate persisted phase';
-        const validation = validatePersistedAppSummary(await client.getAppSummary(args.app_id));
+        const persisted = await client.getAppSummary(args.app_id);
+        const validation = validatePersistedAppSummary(persisted, { canvasColor: await literalCanvasColor(client, args.app_id, persisted.version_id) });
         warnings.push(...validation.warnings);
         const relevantTableNames = new Set([
           ...(spec.tables ?? []).map((table) => table.table_name),
