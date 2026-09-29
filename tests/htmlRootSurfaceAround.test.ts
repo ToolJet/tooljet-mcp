@@ -58,3 +58,16 @@ describe('the literal canvas colour', () => {
     expect(await literalCanvasColor(client('#F7F3EE'), 'a')).toBeUndefined();
   });
 });
+
+// apply_app_phase re-checks every page before writing: a root painted with the literal canvas linted clean and then
+// failed there, because the pre-write check did not know the canvas (two failed applies in one build, 2026-09-28).
+describe('the pre-write component check', () => {
+  it('accepts the literal canvas colour it is given', async () => {
+    const { prepareComponentBatch } = await import('../src/componentBatch.js');
+    const input = [{ name: 'band', type: 'Html', client_ref: 'band',
+      properties: { rawHtml: { value: '<div style="height:100%;box-sizing:border-box;margin:0;background:#FFFFFF">x</div>' }, dynamicHeight: { value: '{{true}}' } },
+      layouts: { desktop: { top: 0, left: 1, width: 20, height: 60 } } }];
+    expect(rootErrors(prepareComponentBatch(input as never).errors)).toHaveLength(1);
+    expect(rootErrors(prepareComponentBatch(input as never, { canvasColor: '#FFFFFF' }).errors)).toEqual([]);
+  });
+});

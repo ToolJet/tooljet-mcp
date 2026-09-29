@@ -75045,7 +75045,7 @@ function containsListItemBinding(value2) {
   }
   return false;
 }
-function prepareComponentBatch(inputs) {
+function prepareComponentBatch(inputs, options2 = {}) {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,
@@ -75069,7 +75069,7 @@ function prepareComponentBatch(inputs) {
     heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
   }
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
-  const lint = lintComponents(expanded.components);
+  const lint = lintComponents(expanded.components, options2);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
     styles: component.styles,
@@ -76211,11 +76211,12 @@ function applyAppPhaseTool(client) {
           return { ordinaryEvents: ordinaryEvents2, lifecycleSpecs: lifecycleSpecs2 };
         };
         stage = "prepare page components";
+        const canvasColor = await literalCanvasColor(client, args.app_id, initialSummary.version_id ?? args.version_id);
         const preparedBatches = /* @__PURE__ */ new Map();
         for (const page of spec.pages ?? []) {
           if (!page.components?.length)
             continue;
-          const prepared = prepareComponentBatch(page.components);
+          const prepared = prepareComponentBatch(page.components, { canvasColor });
           if (prepared.errors.length)
             throw new Error(`Page "${page.name}": ${prepared.errors.join(" ")}`);
           preparedBatches.set(logicalRef(page), prepared);
@@ -76991,7 +76992,7 @@ function addComponentsTool(client) {
       }
       if (summary)
         pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
-      const prepared = prepareComponentBatch(inputs);
+      const prepared = prepareComponentBatch(inputs, { canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id) });
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
       try {
@@ -77064,7 +77065,8 @@ function addComponentBatchesTool(client) {
           aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
         }
       }
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
+      const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
+      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error51) => `Page ${page.page_id}: ${error51}`));
       const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c) => String(c.type))));
       if (mapRefusal)
