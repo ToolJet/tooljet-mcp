@@ -44,6 +44,12 @@ surface.colors
 Theme colors are normally hex values. The saved definition generates ToolJet's semantic `--cc-*` variables at
 runtime; do not put CSS variable references inside the theme definition itself.
 
+**A dark design lives in the light slot too.** Apps open in light mode unless the viewer switches, so a brief that
+asks for a dark app (a charcoal or near-black canvas, light text) needs its dark palette in the `light` values as well
+as the `dark` ones: appBackground, the surfaces, text and borders. A theme with a light canvas in its light slot and
+components hard-coded for dark renders dark panels on a pale page, with pale headings on the canvas and dark labels
+inside the panels (a gym front-desk build, 2026-09-29).
+
 ## The standard theme (applied by default)
 
 `create_app` applies the skill's standard theme, **"ToolJet Modern"**, to every new app unless told otherwise. It is
