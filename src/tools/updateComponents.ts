@@ -17,6 +17,7 @@ import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
 import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 const DEFINITION_SECTIONS = ['properties', 'styles', 'validation', 'general', 'general_styles', 'others'] as const;
 
@@ -69,6 +70,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
       'Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves ' +
       'under `definition` (properties/styles/validation/others) — ToolJet deep-merges, so untouched ' +
       'values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. ' +
+      COMPONENT_FX_GUIDANCE +
       'NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are ' +
       'REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, ' +
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +

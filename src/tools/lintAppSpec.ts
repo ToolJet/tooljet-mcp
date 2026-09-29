@@ -9,6 +9,7 @@ import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -33,7 +34,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. ' +
       'For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
       'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
-      'Treat this call as an awaited barrier; it never mutates ToolJet.',
+      'Treat this call as an awaited barrier; it never mutates ToolJet. ' + COMPONENT_FX_GUIDANCE,
     inputSchema: appPlanSchema.shape,
     async handler(args: AppPlanInput) {
       try {
