@@ -284,6 +284,20 @@ function lintServerSidePaginationRace(
   return errors;
 }
 
+/** The existing pages (other than the plan's) whose components read queries.<name> or whose events run the query. */
+function pagesUsingQuery(summary: AppSummary | undefined, name: string, planPages: Set<string>): string[] {
+  if (!summary) return [];
+  const query = (summary.queries ?? []).find((q) => q.name === name);
+  const reads = new RegExp(`queries\\??\\.${name.replace(/[$]/g, '\\$&')}\\b`);
+  return (summary.pages ?? []).filter((page) => {
+    if (!page.name || planPages.has(page.name)) return false;
+    const ids = new Set(page.components.map((component) => component.id));
+    return page.components.some((component) => reads.test(JSON.stringify([component.properties ?? {}, component.styles ?? {}]))) ||
+      (!!query && (summary.events ?? []).some((event) => !!event.sourceId && (ids.has(event.sourceId) || event.sourceId === page.id) &&
+        JSON.stringify(event.event ?? {}).includes(`"${query.id}"`)));
+  }).map((page) => page.name as string);
+}
+
 export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary, options: { canvasColor?: string } = {}): AppSpecLintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -325,9 +339,14 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     const id = `planned-query:${index}:${ref}`;
     if (existingQueryNames.has(query.name)) {
       // A replace redefines only the replaced page's own queries (pageReplace.ts); a query another page also reaches
-      // stays a collision, so say how to use or change it instead.
-      errors.push(`App already has a query named "${query.name}". To use it as it is, refer to it by name without ` +
-        'defining it in this plan; to change it, use update_query, or replace the page that owns it.');
+      // stays a collision, so say how to use or change it instead, naming the pages that use it: told only "replace
+      // the page that owns it", a build spent five compiles, three of them probing the compiler (2026-09-29).
+      const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
+      errors.push(`App already has a query named "${query.name}"` +
+        (users.length ? `, which page${users.length > 1 ? 's' : ''} ${users.map((u) => `"${u}"`).join(', ')} also read${users.length > 1 ? '' : 's'} or run${users.length > 1 ? '' : 's'}. ` +
+          `To change it with this plan, replace ${users.length > 1 ? 'those pages' : `"${users[0]}"`} in the same call; ` +
+          'or refer to it by name here without defining it, or use update_query.'
+          : '. To use it as it is, refer to it by name without defining it in this plan; to change it, use update_query, or replace the page that owns it.'));
     }
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
