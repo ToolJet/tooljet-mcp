@@ -75469,15 +75469,14 @@ function replaceView(summary, plan) {
   const pageOwns = (query) => replacedComponents.some((component) => readsQuery(componentText(component), query.name)) || summary.events.some((event) => event.sourceId && removedSources.has(event.sourceId) && runsQuery(event, query.id));
   const usedElsewhere = (query) => otherComponents.some((component) => readsQuery(componentText(component), query.name)) || summary.events.some((event) => event.sourceId !== query.id && !(event.sourceId && removedSources.has(event.sourceId)) && !(event.sourceId && planQueryIds.has(event.sourceId)) && runsQuery(event, query.id)) || summary.queries.some((other) => other.id !== query.id && !planQueryIds.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name));
   const readsOf = (text) => summary.queries.filter((q) => q.name && readsQuery(text, q.name)).map((q) => q.id);
-  const chainedFrom = (id) => summary.events.filter((event) => event.sourceId === id).flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id));
-  const runElsewhere = new Set(summary.events.filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId)))).flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id)));
-  const reachedElsewhere = /* @__PURE__ */ new Set([...otherComponents.flatMap((component) => readsOf(componentText(component))), ...runElsewhere]);
+  const reachedElsewhere = /* @__PURE__ */ new Set([
+    ...otherComponents.flatMap((component) => readsOf(componentText(component))),
+    ...summary.events.filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId)))).flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id))
+  ]);
   for (let frontier = [...reachedElsewhere]; frontier.length; ) {
     const next = frontier.flatMap((id) => {
       const query = summary.queries.find((q) => q.id === id);
-      const chained = runElsewhere.has(id) ? chainedFrom(id) : [];
-      chained.forEach((c) => runElsewhere.add(c));
-      return [...readsOf(JSON.stringify(query?.options ?? {})), ...chained];
+      return readsOf(JSON.stringify(query?.options ?? {}));
     }).filter((id) => !reachedElsewhere.has(id));
     next.forEach((id) => reachedElsewhere.add(id));
     frontier = next;
