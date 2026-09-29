@@ -546,7 +546,6 @@ export interface ToolJetClient {
   /** A short-lived, app-scoped browser session. See createAppScopedSession for why it exists. */
   createAppScopedSession(
     appId: string,
-    email: string,
     expiryMinutes: number
   ): Promise<{ token: string; expires_in_minutes: number; url: string }>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
@@ -1317,7 +1316,6 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
    */
   async function createAppScopedSession(
     appId: string,
-    _email: string,
     expiryMinutes: number
   ): Promise<{ token: string; expires_in_minutes: number; url: string }> {
     /* One call, with the SAME workspace PAT this server already authenticates with:
@@ -1326,16 +1324,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
        own kind plus the app id; PatScopeInterceptor then confines it to the render module list,
        pins it to this app, and makes it read-only apart from running the app's queries.
 
-       This replaces a two-call mint through /api/ext/users/*, which needed
-       EXTERNAL_API_ACCESS_TOKEN — an instance-wide secret able to mint a token for ANY user and ANY
-       app. Deployments only ever set TOOLJET_PAT, so that path could not be relied on; it also
-       resolved the app by slug, which happened to work only because ToolJet defaults an app's slug
-       to its id.
-
-       `email` is no longer used: the old path had to be TOLD whom to impersonate, whereas this
-       session is minted from a PAT that already belongs to someone. In-product that is the
-       requesting user's own per-user service token, so the render is seen as they would see it. The
-       parameter stays in the signature so the caller does not have to change. */
+       The session belongs to whoever owns the PAT. In-product that is the requesting user's own
+       per-user service token, so the render is seen as they would see it. */
     if (!config.pat) {
       throw new Error(
         'A render session needs a personal access token, and this server is running on a ' +

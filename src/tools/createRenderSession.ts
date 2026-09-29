@@ -40,18 +40,11 @@ export function createRenderSessionTool(client: ToolJetClient): ToolDef {
       'general-purpose credential: do not persist it.',
     inputSchema: {
       app_id: z.string(),
-      email: z
-        .string()
-        .optional()
-        .describe(
-          'Ignored. The session is minted from this server\'s own token, so it already belongs to ' +
-            'that user — there is nobody to name. Kept so existing callers do not break.'
-        ),
       expiry_minutes: z.number().int().min(1).max(60).optional(),
     },
-    async handler(args: { app_id: string; email?: string; expiry_minutes?: number }) {
+    async handler(args: { app_id: string; expiry_minutes?: number }) {
       try {
-        const result = await client.createAppScopedSession(args.app_id, args.email ?? '', args.expiry_minutes ?? 15);
+        const result = await client.createAppScopedSession(args.app_id, args.expiry_minutes ?? 15);
         return ok(result);
       } catch (err) {
         return fail(err);
