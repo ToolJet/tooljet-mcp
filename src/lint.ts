@@ -2649,10 +2649,15 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
   return [
     ...detectOverlaps(components),
     ...lintToolbarButtonAlignment(components),
-    ...lintModalChildren(components),
+    ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components),
   ];
 }
+
+/** A modal's header advice (an empty native header, a title-like Text in the body) is about design, not broken
+ *  geometry: a profile titled "Volunteer profile" with the person's name as a large body heading failed six compiles
+ *  overnight (2026-09-29). It stays a warning. */
+const MODAL_HEADER_ADVICE = /native header (?:slot is empty|is visible)/;
 
 /** Geometry advice: canvas coverage, gutters. Warnings. The fold rule (lintOperationalViewport) is left out:
  *  a primary action under a table is a scroll away, and every time a tool reported it the model re-laid out
@@ -2661,6 +2666,7 @@ export function lintRenderedGeometryAdvisory(components: LintComponent[]): strin
   return [
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
+    ...lintModalChildren(components).filter((warning) => MODAL_HEADER_ADVICE.test(warning)),
   ];
 }
 

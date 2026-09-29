@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency, lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -1993,5 +1993,21 @@ describe('keys ToolJet stores from the inspector only', () => {
       const r = lintComponentSpec({ name: 'x', type, properties: { label: { value: 'L' }, defaultCountry: { value: 'GB' } }, styles: { alignment: { value: 'top' } } } as never);
       expect(r.warnings.join(' ')).not.toMatch(/defaultCountry/);
     }
+  });
+});
+
+describe('modal header advice', () => {
+  // Overnight campaign (2026-09-29): six compiles in five apps failed on "title-like Text in the body" for a profile
+  // modal titled "Volunteer profile" with the person's name as a 20-26px heading. That is a design choice, not broken
+  // geometry: it is advice (a warning), while children outside the modal stay blocking.
+  const modal = [
+    { name: 'profile', type: 'ModalV2', clientRef: 'm', properties: { showHeader: { value: true } } },
+    { name: 'hdr', type: 'Text', parentRef: 'm', slotName: 'header', properties: { text: { value: 'Volunteer profile' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
+    { name: 'who', type: 'Text', parentRef: 'm', properties: { text: { value: '{{components.t.selectedRow?.name}}' } },
+      styles: { fontWeight: { value: 'bold' }, textSize: { value: 24 } }, layout: { top: 10, left: 2, width: 30, height: 40 } },
+  ];
+  it('is not blocking', () => {
+    expect(lintRenderedGeometryBlocking(modal as never).join(' ')).not.toMatch(/title-like/);
+    expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).toMatch(/title-like/);
   });
 });
