@@ -103,7 +103,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
               continue;
             }
             // A name already in the workspace used to fail the plan; every model then spent a turn inventing
-            // a prefix (seven of twelve Nordlicht builds, 2026-09-07). Suffix it here and carry the new name
+            // a prefix (seven of twelve order-desk builds, 2026-09-07). Suffix it here and carry the new name
             // into seed data, table_ref and foreign keys, since they all name the table.
             const oldName = table.table_name;
             const newName = nextTableName(oldName, tableIds);
@@ -393,8 +393,8 @@ function nextTableName(name: string, taken: Map<string, string>): string {
 }
 
 /** Raise every short Html block to the height its markup needs and move the components under it down by
- *  the same amount, instead of failing the plan. Roughly a third of all lint rounds on the Nordlicht
- *  benchmark were Html blocks a few pixels short; at max reasoning effort each round cost a minute. */
+ *  the same amount, instead of failing the plan. Roughly a third of all lint rounds on an order-desk
+ *  same-prompt run were Html blocks a few pixels short; at max reasoning effort each round cost a minute. */
 function autoFitHtmlHeights(args: AppPlanInput): string[] {
   const warnings: string[] = [];
   for (const page of args.pages ?? []) {

@@ -324,7 +324,7 @@ describe('lintComponentSpec', () => {
       layout: { top: 0, left: 0, width: 8, height: 120 },
     }).warnings.join(' ')).toMatch(/value-only tile.*at least 9.*four tiles per content row/is);
 
-    // Ferrow builds 3 and 4 (2026-09-28): "at least 12 columns, three tiles a row" made the model split four KPI tiles
+    // Builds 3 and 4 of a parcel-carrier brief (2026-09-28): "at least 12 columns, three tiles a row" made the model split four KPI tiles
     // into a 2x2 grid of half-page cards. Rendered in an 800 px pane, four 9-column tiles fit "Average cost per parcel"
     // over "£12,345.50" on one line each.
     expect(lintComponentSpec({
@@ -1449,7 +1449,7 @@ describe('validateAppStructure', () => {
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 
-  it('rejects a query referenced by bare name, the Haiku Helix case', () => {
+  it('rejects a query referenced by bare name, the Haiku workshop-booking case', () => {
     const withBinding = (binding: string): AppSummary => ({
       ...base,
       pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],

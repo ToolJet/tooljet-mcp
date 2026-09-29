@@ -495,7 +495,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       } catch (error) {
         let recovery = '';
         // A phase that died in its foundation stage leaves empty pages behind, and the next plan then
-        // recreates them under new names (Gemini Pro on the Nordlicht benchmark ended with nine pages, five
+        // recreates them under new names (Gemini Pro on an order-desk same-prompt run ended with nine pages, five
         // empty). Pages with nothing on them are safe to remove; created tables stay, since seed rows may
         // already be in them and the next plan can reuse them through table_ref.
         const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;

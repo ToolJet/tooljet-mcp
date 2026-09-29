@@ -160,10 +160,10 @@ describe('createClient', () => {
         );
 
       const client = createClient(auth, config);
-      const result = await client.createApp('Nordlicht Order Desk');
+      const result = await client.createApp('Coffee Order Desk');
       expect(result.app_id).toBe('app3');
       const names = auth.authedFetch.mock.calls.slice(0, 3).map(([, init]) => JSON.parse((init as RequestInit).body as string).name);
-      expect(names).toEqual(['Nordlicht Order Desk', 'Nordlicht Order Desk 2', 'Nordlicht Order Desk 3']);
+      expect(names).toEqual(['Coffee Order Desk', 'Coffee Order Desk 2', 'Coffee Order Desk 3']);
     });
 
     it('throws when the create call is non-2xx', async () => {

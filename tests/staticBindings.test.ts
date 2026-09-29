@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import moment from 'moment';
 import { resolveStaticBindings } from '../src/staticBindings.js';
 
-// Fernbrook vet build, 2026-09-23: the model replaced a hard-coded date filter with
+// A vet-clinic build, 2026-09-23: the model replaced a hard-coded date filter with
 // {{moment().format('YYYY-MM-DD')}}. run_queries sent empty resolvedOptions, ToolJet resolved every
 // {{...}} to undefined, and the model concluded the filter was broken and moved date filtering into
 // four component bindings. ToolJet's editor sends these resolved values; do the same for bindings that
