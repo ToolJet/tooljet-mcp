@@ -5,11 +5,15 @@
  *
  * Each resource is one data file, served whole as application/json:
  *
- *   { "mcp_version": "<this server's version>", "data_version": "<12 hex chars>", "data": <the file's JSON> }
+ *   { "mcp_version": "<this server's version>", "catalog_version": "<12 hex chars>",
+ *     "data_version": "<12 hex chars>", "data": <the file's JSON> }
  *
  * `data` is the file exactly as this server reads it; `data_version` is the first 12 hex characters of the
- * SHA-256 of the file's bytes, so it changes whenever the data does and not otherwise. The resource list carries
- * the same `data_version` in each entry's `_meta`, so a client that cached a version can skip the read.
+ * SHA-256 of the file's bytes, so it changes whenever the data does and not otherwise. `catalog_version` is the
+ * same kind of hash over every part (each file's name and bytes, in resource order) and is identical in all of
+ * them: a client that reads the parts separately (possibly from different servers during a rolling deployment)
+ * uses it to confirm they form one coherent catalog. The resource list carries both in each entry's `_meta`, so a
+ * client that cached a version can skip the read.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -76,6 +80,36 @@ function readData(resource: CatalogResource): { bytes: Buffer; dataVersion: stri
   return { bytes, dataVersion };
 }
 
+/** One version for the whole set of parts: SHA-256 over each part's file name, byte length and bytes, in order, so
+ *  no change to any part (and no shuffling of bytes between parts) keeps it. First 12 hex characters. */
+export function catalogVersionOf(parts: ReadonlyArray<{ file: string; bytes: Buffer }>): string {
+  const hash = createHash('sha256');
+  for (const part of parts) {
+    hash.update(`${part.file}\n${part.bytes.length}\n`);
+    hash.update(part.bytes);
+  }
+  return hash.digest('hex').slice(0, 12);
+}
+
+let catalogVersionCache: string | undefined;
+
+/** This server's catalog_version. Throws when a part cannot be read: no part is served under a version that does not
+ *  describe the whole catalog. */
+function catalogVersion(): string {
+  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
+    file: resource.file, bytes: readFileSync(resolve(dataDir, resource.file)),
+  })));
+  return catalogVersionCache;
+}
+
+function listedCatalogVersion(): string | undefined {
+  try {
+    return catalogVersion();
+  } catch {
+    return undefined;
+  }
+}
+
 /** The `data_version` a list entry advertises; undefined when the file cannot be read (a read then says why). */
 function listedVersion(resource: CatalogResource): string | undefined {
   try {
@@ -90,13 +124,14 @@ function payload(resource: CatalogResource): string {
   if (text === undefined) {
     const { bytes, dataVersion } = readData(resource);
     const data = JSON.parse(bytes.toString('utf8')) as unknown;
-    text = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, data_version: dataVersion, data });
+    text = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
     payloads.set(resource.file, text);
   }
   return text;
 }
 
 export function registerCatalogResources(server: McpServer): void {
+  const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
     const dataVersion = listedVersion(resource);
     server.registerResource(
@@ -106,7 +141,7 @@ export function registerCatalogResources(server: McpServer): void {
         title: resource.title,
         description: resource.description,
         mimeType: 'application/json',
-        ...(dataVersion ? { _meta: { data_version: dataVersion } } : {}),
+        ...(dataVersion ? { _meta: { data_version: dataVersion, ...(catalog ? { catalog_version: catalog } : {}) } } : {}),
       },
       async () => ({
         contents: [{ uri: resource.uri, mimeType: 'application/json', text: payload(resource) }],
