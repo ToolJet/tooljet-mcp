@@ -1630,7 +1630,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
     for (const key of Object.keys(authored)) {
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
-      if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type]?.includes(key)) continue;
+      if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type ?? '']?.includes(key)) continue;
       const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
       const alias =
         aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))
