@@ -1223,6 +1223,15 @@ describe('lintListviewChildren', () => {
     expect(warnings).toMatch(/only child on its row.*fresh 43-column local canvas.*left:0, width:43.*do not divide/i);
   });
 
+  it('accepts a full-row child one column short of the edge', () => {
+    // ToolJet pads the Listview 7px but lays each row out on its full width, so a 43-column child loses its right edge;
+    // the page compiler places full-row children at width 42 (overnight site inspections, 2026-09-29).
+    expect(lintListviewChildren([
+      parent,
+      { name: 'card', type: 'Html', parentRef: 'fleet', layout: { top: 8, left: 0, width: 42, height: 120 } },
+    ])).toEqual([]);
+  });
+
   it('allows intentional side-by-side composition inside the local item canvas', () => {
     expect(lintListviewChildren([
       parent,

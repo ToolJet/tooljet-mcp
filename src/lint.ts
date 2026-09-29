@@ -1106,7 +1106,8 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
         if (!siblingRect || siblingRect.top === undefined || siblingRect.height === undefined) return false;
         return rect.top! < siblingRect.top + siblingRect.height && siblingRect.top < rect.top! + rect.height!;
       });
-      if (sharesRow || (rect.left === 0 && rect.width === 43)) continue;
+      // 42 is full too: ToolJet pads the list 7px, so a 43-column child loses its right edge.
+      if (sharesRow || (rect.left === 0 && (rect.width === 43 || rect.width === 42))) continue;
       warnings.push(
         `Component "${child.name ?? child.id ?? child.type}" is the only child on its row inside grid-mode ` +
           `Listview "${parent.name ?? parent.id ?? 'Listview'}", but uses left:${rect.left ?? 'unset'}, ` +
