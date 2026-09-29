@@ -813,3 +813,30 @@ describe('a view run after a list another page reads', () => {
     expect([...(view?.queriesToUpdate ?? [])]).toEqual([]);
   });
 });
+
+// Another page's write refreshes a summary only this page reads (check-out logs history, then refreshes the status
+// counts the warranty chart reads). The refresh keeps working when the summary is redefined in place, so it is not
+// another page's (an asset-register build lost two compiles to "App already has a query named", 2026-09-29).
+describe('a query another page only refreshes', () => {
+  const refreshed = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Warranty', handle: 'warranty', components: [{ id: 'c1', name: 'chart', type: 'Chart', properties: { data: { value: '{{queries.counts.data}}' } } }] },
+      { id: 'p2', name: 'Asset', handle: 'asset', components: [{ id: 'c2', name: 'checkOutBtn', type: 'Button', properties: {} }] },
+    ],
+    queries: [
+      { id: 'q1', name: 'counts', kind: 'tooljetdb', options: {} },
+      { id: 'q2', name: 'checkOut', kind: 'tooljetdb', options: {} },
+      { id: 'q3', name: 'logHistory', kind: 'tooljetdb', options: {} },
+    ],
+    events: [
+      { id: 'e1', sourceId: 'c2', target: 'onClick', event: { actionId: 'run-query', queryId: 'q2' } },
+      { id: 'e2', sourceId: 'q2', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q3' } },
+      { id: 'e3', sourceId: 'q3', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q1' } },
+    ],
+  };
+  it('is redefined in place by a replace of the page that reads it', () => {
+    const view = replaceView(refreshed as never, { pages: [{ name: 'Warranty', replace: true }], queries: [{ name: 'counts' }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['counts', 'q1']]);
+  });
+});
