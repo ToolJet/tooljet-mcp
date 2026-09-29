@@ -31,16 +31,22 @@ export const SPEC_DISCOVERY_NOTE =
   'objects (each present, {} when empty). Query values are flat: created[gte], expand[0], never a list or an object. The ' +
   'plugin fixes the host and authentication.';
 
-// A spec is large (Stripe's is several MB) and every getEndpointSchema reads it: fetched once per process, kept an hour.
-const cache = new Map<string, { at: number; spec: Promise<Record<string, any>> }>();
+// A spec is large (Stripe's is several MB) and every getEndpointSchema reads it, so it is kept an hour. Two caches:
+//  - a public remote spec (ref.location "remote") is the same document for everyone and is shared process-wide;
+//  - a bundled spec is read through the calling ToolJet server, whose installed plugin may differ from another
+//    server's, and one shared MCP process serves many servers. It is cached per server (the client's
+//    specCacheScope: API URL + workspace), and not at all for a client that cannot name its server.
+// The spec route carries no plugin revision; the hour bounds how long an upgraded plugin's old spec is served.
+// A failed or invalid load is dropped at once, so the next call retries; concurrent callers share one read.
+type SpecClient = Pick<ToolJetClient, 'getPluginSpec'> & Partial<Pick<ToolJetClient, 'specCacheScope'>>;
+type Entry = { at: number; spec: Promise<Record<string, any>> };
+const publicCache = new Map<string, Entry>();
+const serverCache = new Map<string, Entry>();
 const TTL_MS = 60 * 60 * 1000;
-export function clearKindSpecCache(): void { cache.clear(); }
+export function clearKindSpecCache(): void { publicCache.clear(); serverCache.clear(); }
 
-export function loadKindSpec(client: Pick<ToolJetClient, 'getPluginSpec'>, kind: string, ref: DatasourceSpecRef): Promise<Record<string, any>> {
-  const key = ref.location === 'remote' ? ref.ref : `${ref.plugin}/${ref.name}`;
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.spec;
-  const spec = (async () => {
+function readSpec(client: SpecClient, kind: string, ref: DatasourceSpecRef): Promise<Record<string, any>> {
+  return (async () => {
     const text = ref.location === 'remote'
       ? await fetch(ref.ref, { signal: AbortSignal.timeout(60_000) }).then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -51,11 +57,30 @@ export function loadKindSpec(client: Pick<ToolJetClient, 'getPluginSpec'>, kind:
     if (!parsed) throw new Error('not an OpenAPI document');
     return parsed;
   })().catch((error: unknown) => {
-    cache.delete(key);
     throw new Error(`The ${kind} API spec could not be read (${error instanceof Error ? error.message : String(error)}); do not invent its endpoints.`);
   });
-  cache.set(key, { at: Date.now(), spec });
-  return spec;
+}
+
+function cached(cache: Map<string, Entry>, key: string, load: () => Promise<Record<string, any>>): Promise<Record<string, any>> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.spec;
+  const entry: Entry = { at: Date.now(), spec: load() };
+  // Drop only this entry: a later successful load under the same key must survive an earlier failure.
+  entry.spec.catch(() => { if (cache.get(key) === entry) cache.delete(key); });
+  cache.set(key, entry);
+  return entry.spec;
+}
+
+export async function loadKindSpec(client: SpecClient, kind: string, ref: DatasourceSpecRef): Promise<Record<string, any>> {
+  if (ref.location === 'remote') return cached(publicCache, ref.ref, () => readSpec(client, kind, ref));
+  let scope: string | undefined;
+  try {
+    scope = await client.specCacheScope?.();
+  } catch {
+    scope = undefined;
+  }
+  if (!scope) return readSpec(client, kind, ref);
+  return cached(serverCache, JSON.stringify([scope, ref.plugin, ref.name]), () => readSpec(client, kind, ref));
 }
 
 /** Shape problems the plugin would hit at run time (it reads every params bucket) or that mean a guessed query. */

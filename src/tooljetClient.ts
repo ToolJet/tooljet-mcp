@@ -604,6 +604,9 @@ export interface ToolJetClient {
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
+  /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
+   *  Undefined when it cannot be established; such a client's specs are not cached. */
+  specCacheScope?(): Promise<string | undefined>;
   testDatasourceConnection(params: TestDatasourceConnectionParams): Promise<ConnectionTestResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
@@ -2391,6 +2394,24 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return res.text();
   }
 
+  async function specCacheScope(): Promise<string | undefined> {
+    let workspace: string;
+    try {
+      workspace = await auth.getOrganizationId();
+    } catch {
+      return undefined;
+    }
+    if (!workspace) return undefined;
+    let server: string;
+    try {
+      const url = new URL(config.apiUrl);
+      server = url.origin + (url.pathname === '/' ? '' : url.pathname.replace(/\/+$/, ''));
+    } catch {
+      return undefined;
+    }
+    return JSON.stringify([server, workspace]);
+  }
+
   /** Read one saved datasource's stored connection configuration for an environment.
    *
    *  Deliberately NOT taken from listDatasources: that response passes through ToolJet's
@@ -2577,6 +2598,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
     getPluginSpec,
+    specCacheScope,
     testDatasourceConnection,
     listEvents,
     updateEvents,
