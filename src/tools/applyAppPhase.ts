@@ -146,7 +146,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       'are deleted just before the plan\'s components are created (page events and query events only where the plan declares them ' +
       'again), queries the plan defines again are updated in place keeping their ids, and events on other pages that acted on a ' +
       'replaced component are re-pointed to the recreated component of the same name. A replace is refused before any write if ' +
-      'the page changed since lint. A failure after that deletion leaves the page to be repaired (the result says what was removed). ' +
+      'the page changed since lint (any component, redefined query or related event edited), and every component and event ref ' +
+      'is prepared before the first write. A replace is not atomic: a failure after that deletion leaves the page to be repaired ' +
+      '(the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. ' +
       'The one-time token prevents an accidental retry from duplicating objects.',
     inputSchema: {
       app_id: z.string(),
@@ -239,23 +241,6 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           return { kind, options: prepared.options };
         });
 
-        let renameWarning: string | undefined;
-        if (spec.app_name && spec.app_name !== initialSummary.name) {
-          stage = 'rename target app';
-          try {
-            await client.renameApp(args.app_id, args.version_id, spec.app_name);
-          } catch (error) {
-            // App names are unique per workspace. A collision is not worth failing the whole phase
-            // (and consuming the plan token) over: suffix the name the way ToolJet's own create flow does.
-            const message = error instanceof Error ? error.message : String(error);
-            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message)) throw error;
-            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
-            await client.renameApp(args.app_id, args.version_id, fallback);
-            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
-          }
-          applied.app_metadata = 1;
-        }
-
         const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();
         const claimedPageIds = new Set<string>();
         const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === 'home' &&
@@ -280,6 +265,103 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         if (queryCollision) throw new Error(`App already has a query named "${queryCollision.name}".`);
 
         const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+
+        // Every event and lifecycle ref resolved against the given targets: once with placeholders for what this phase
+        // creates, before the first write, and again with the persisted ids once everything exists.
+        const resolvePlannedEvents = (pageTargets: Map<string, LogicalTarget>, queryTargets: Map<string, LogicalTarget>,
+          targets: Map<string, LogicalTarget>) => {
+          const ordinaryEvents: EventSpec[] = (spec.events ?? []).map((event) => {
+            const source = sourceTarget(event.source_type, event.source_ref, pageTargets, queryTargets, targets);
+            if (!source) throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
+            return {
+              sourceId: source.id,
+              sourceType: event.source_type,
+              ref: event.ref,
+              trigger: event.trigger,
+              action: resolveAction(event.action, pageTargets, queryTargets, targets),
+              name: event.name,
+            };
+          });
+          const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
+            queryId: oneRef(lifecycle.query_ref, queryTargets, 'Lifecycle query')!,
+            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) =>
+              resolveAction(action, pageTargets, queryTargets, targets)
+            ),
+            refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, 'Lifecycle refresh query'),
+            clearComponentIds: refs(lifecycle.clear_component_refs, targets, 'Lifecycle clear component'),
+            closeModalId: oneRef(lifecycle.close_modal_ref, targets, 'Lifecycle modal'),
+            successAlert: lifecycle.success_alert
+              ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type }
+              : undefined,
+            failureAlert: lifecycle.failure_alert
+              ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type }
+              : undefined,
+            successActions: lifecycle.success_actions?.map((action) =>
+              resolveAction(action, pageTargets, queryTargets, targets)
+            ),
+            failureActions: lifecycle.failure_actions?.map((action) =>
+              resolveAction(action, pageTargets, queryTargets, targets)
+            ),
+          }));
+          return { ordinaryEvents, lifecycleSpecs };
+        };
+
+        // Everything the phase will write is prepared before its first write (the rename included): every page's
+        // components, and every event and lifecycle ref against placeholders for the pages, queries and components this
+        // phase creates. A plan that cannot apply fails here with the app untouched; queries used to be created and
+        // updated before the components were prepared, so a plan whose page could not be built still rewrote them.
+        stage = 'prepare page components';
+        const preparedBatches = new Map<string, ReturnType<typeof prepareComponentBatch>>();
+        for (const page of spec.pages ?? []) {
+          if (!page.components?.length) continue;
+          const prepared = prepareComponentBatch(page.components);
+          if (prepared.errors.length) throw new Error(`Page "${page.name}": ${prepared.errors.join(' ')}`);
+          preparedBatches.set(logicalRef(page), prepared);
+        }
+        stage = 'resolve event refs';
+        {
+          const pages = persistedTargets(
+            initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] }))
+          );
+          for (const page of spec.pages ?? []) {
+            const id = plannedPageMatches.get(logicalRef(page))?.id ?? `planned-page:${logicalRef(page)}`;
+            pages.set(logicalRef(page), { id, name: page.name });
+          }
+          const queries = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
+          for (const query of spec.queries ?? []) {
+            const target = { id: replacing?.queriesToUpdate.get(query.name) ?? `planned-query:${query.name}`, name: query.name };
+            queries.set(logicalRef(query), target);
+            queries.set(query.name, target);
+          }
+          const components = persistedTargets(
+            planSummary.pages.flatMap((page) => page.components).map((component) => ({
+              id: component.id, name: component.name ?? component.id, type: component.type,
+            }))
+          );
+          for (const prepared of preparedBatches.values()) {
+            for (const component of prepared.components) {
+              components.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
+            }
+          }
+          resolvePlannedEvents(pages, queries, components);
+        }
+
+        let renameWarning: string | undefined;
+        if (spec.app_name && spec.app_name !== initialSummary.name) {
+          stage = 'rename target app';
+          try {
+            await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          } catch (error) {
+            // App names are unique per workspace. A collision is not worth failing the whole phase
+            // (and consuming the plan token) over: suffix the name the way ToolJet's own create flow does.
+            const message = error instanceof Error ? error.message : String(error);
+            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message)) throw error;
+            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
+            await client.renameApp(args.app_id, args.version_id, fallback);
+            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
+          }
+          applied.app_metadata = 1;
+        }
 
         stage = 'create tables and pages';
         const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
@@ -421,70 +503,13 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           queryTargets.set(query.name, { id: target.query_id, name: target.name });
         });
 
-        stage = 'prepare page components';
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
-          if (!page.components?.length) return [];
+          const prepared = preparedBatches.get(logicalRef(page));
+          if (!prepared) return [];
           const target = pageTargets.get(logicalRef(page));
           if (!target) throw new Error(`Could not resolve component page "${page.name}".`);
-          const prepared = prepareComponentBatch(page.components);
-          if (prepared.errors.length) throw new Error(prepared.errors.join(' '));
           return [{ page, pageId: target.id, prepared }];
         });
-        // Every event and lifecycle ref resolved against the given component targets; run once with the planned
-        // components before anything is removed, so an unknown ref fails while the page is still whole.
-        const resolvePlannedEvents = (targets: Map<string, LogicalTarget>) => {
-          const ordinaryEvents: EventSpec[] = (spec.events ?? []).map((event) => {
-            const source = sourceTarget(event.source_type, event.source_ref, pageTargets, queryTargets, targets);
-            if (!source) throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
-            return {
-              sourceId: source.id,
-              sourceType: event.source_type,
-              ref: event.ref,
-              trigger: event.trigger,
-              action: resolveAction(event.action, pageTargets, queryTargets, targets),
-              name: event.name,
-            };
-          });
-          const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
-            queryId: oneRef(lifecycle.query_ref, queryTargets, 'Lifecycle query')!,
-            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) =>
-              resolveAction(action, pageTargets, queryTargets, targets)
-            ),
-            refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, 'Lifecycle refresh query'),
-            clearComponentIds: refs(lifecycle.clear_component_refs, targets, 'Lifecycle clear component'),
-            closeModalId: oneRef(lifecycle.close_modal_ref, targets, 'Lifecycle modal'),
-            successAlert: lifecycle.success_alert
-              ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type }
-              : undefined,
-            failureAlert: lifecycle.failure_alert
-              ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type }
-              : undefined,
-            successActions: lifecycle.success_actions?.map((action) =>
-              resolveAction(action, pageTargets, queryTargets, targets)
-            ),
-            failureActions: lifecycle.failure_actions?.map((action) =>
-              resolveAction(action, pageTargets, queryTargets, targets)
-            ),
-          }));
-          return { ordinaryEvents, lifecycleSpecs };
-        };
-        // A replace removes the page's old components and events: prepare the new components and resolve every
-        // event ref first, so a plan that cannot apply fails before the page is emptied (a failure after the
-        // removal would leave the page empty and other pages' events pointing at dead ids).
-        {
-          const planned = persistedTargets(
-            planSummary.pages.flatMap((page) => page.components).map((component) => ({
-              id: component.id, name: component.name ?? component.id, type: component.type,
-            }))
-          );
-          for (const page of preparedPages) {
-            for (const component of page.prepared.components) {
-              planned.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
-            }
-          }
-          stage = 'resolve event refs';
-          resolvePlannedEvents(planned);
-        }
 
         if (replacing) {
           stage = 'remove the replaced page\'s components and events';
@@ -563,7 +588,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
 
         stage = 'create events and lifecycles';
         const summaryBeforeEvents = await client.getAppSummary(args.app_id);
-        const { ordinaryEvents, lifecycleSpecs } = resolvePlannedEvents(componentTargets);
+        const { ordinaryEvents, lifecycleSpecs } = resolvePlannedEvents(pageTargets, queryTargets, componentTargets);
         const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
         warnings.push(...expanded.warnings);
         const allEvents = [...ordinaryEvents, ...expanded.events];

@@ -284,18 +284,46 @@ export function danglingAfterReplace(
   return errors;
 }
 
-/** The state a replace plan was linted against: the replaced pages' components, the events on them, and the queries it
- *  redefines. apply refuses when it differs, so an edit made between lint and apply (a component added in the editor)
- *  is never deleted by a plan that never saw it. A pre-write read, so a narrow race remains until the backend can
- *  check a revision atomically. */
+/** JSON with object keys sorted at every level, so the same state read twice (keys in another order) compares equal. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
+    ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, (item as Record<string, unknown>)[key]]))
+    : item);
+}
+
+/** The state a replace plan was linted against, in full: apply refuses when it differs, so an edit made between lint
+ *  and apply (a component added, a label or width changed, a query or event edited in the editor) is never deleted or
+ *  overwritten by a plan that never saw it. It covers
+ *  - every component on a replaced page: id, name, type, parent and slot, properties, styles, layouts, validation, others;
+ *  - every query the plan redefines: name, kind, datasource and options;
+ *  - every event the replace depends on: those sourced by a replaced page, its components or a redefined query, and
+ *    any other event that names one of them (another page's button opening this page's modal, a run of a redefined
+ *    query), with its name, target, order and definition.
+ *  A pre-write read, so a narrow race remains until the backend can check a revision atomically. */
 export function replaceFingerprint(summary: AppSummary, view: ReplaceView): string {
   const pageIds = new Set(view.replacedPageIds);
-  const pages = summary.pages.filter((page) => pageIds.has(page.id))
-    .map((page) => [page.id, page.components.map((c) => [c.id, c.name ?? '', (c as { parent?: string }).parent ?? '']).sort()]);
-  const componentIds = new Set(summary.pages.filter((page) => pageIds.has(page.id)).flatMap((page) => page.components.map((c) => c.id)));
-  const events = summary.events.filter((e) => e.sourceId && (pageIds.has(e.sourceId) || componentIds.has(e.sourceId)))
-    .map((e) => [e.id, JSON.stringify(e.event ?? {})]).sort();
+  const replacedPages = summary.pages.filter((page) => pageIds.has(page.id));
+  const pages = replacedPages.map((page) => ({
+    id: page.id,
+    components: [...page.components].sort((a, b) => a.id.localeCompare(b.id)).map((component) => ({
+      id: component.id, name: component.name ?? null, type: component.type ?? null,
+      parent: component.parent ?? null, slot_name: component.slot_name ?? null,
+      properties: component.properties ?? {}, styles: component.styles ?? {}, layouts: component.layouts ?? {},
+      validation: component.validation ?? {}, others: component.others ?? {},
+    })),
+  })).sort((a, b) => a.id.localeCompare(b.id));
   const redefined = new Set(view.queriesToUpdate.values());
-  const queries = summary.queries.filter((q) => redefined.has(q.id)).map((q) => [q.id, JSON.stringify(q.options ?? {})]).sort();
-  return JSON.stringify([pages, events, queries]);
+  const queries = summary.queries.filter((query) => redefined.has(query.id))
+    .map((query) => ({ id: query.id, name: query.name ?? null, kind: query.kind ?? null,
+      data_source_id: query.data_source_id ?? null, options: query.options ?? {} }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const touched = [...pageIds, ...replacedPages.flatMap((page) => page.components.map((component) => component.id)), ...redefined];
+  const touchedIds = new Set(touched);
+  const names = touched.length ? new RegExp(idPattern(touched).source) : undefined;
+  const events = summary.events.filter((event) =>
+    (event.sourceId && touchedIds.has(event.sourceId)) || !!names?.test(JSON.stringify(event.event ?? {})))
+    .map((event) => ({ id: event.id, name: event.name ?? null, sourceId: event.sourceId ?? null, target: event.target ?? null,
+      index: event.index ?? null, event: event.event ?? {} }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  return canonical({ pages, queries, events });
 }
