@@ -1286,8 +1286,8 @@ export function lintRenderedText(spec: LintComponent): string[] {
     }
   }
   // Tabs has two item surfaces: static tabItems (the default "Tab 1 / Tab 2 / Tab 3") and dynamic tabs, read
-  // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three Chainventory
-  // pages on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
+  // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three pages of an
+  // inventory build on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
   if (spec.type === 'Tabs') {
     const dynamic = isTrueBinding(propVal(props, 'useDynamicOptions'));
     const tabs = propVal(props, 'tabs');
@@ -1398,7 +1398,7 @@ export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []
   if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
   if (!description.includes('layout') && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description)) return [];
   // `data:` set to a mapped list of points ({x, y} per row) instead of a list of traces draws empty axes:
-  // three charts on a 2026-09-12 MedCard build. Plotly wants data: [{ type, x: [...], y: [...] }].
+  // three charts on a 2026-09-12 sales-dashboard build. Plotly wants data: [{ type, x: [...], y: [...] }].
   if (/\bdata\s*:\s*\(?\s*queries\.[\w.$]+\.data\b[^,;]*?\)?\s*\.map\(/.test(description)) {
     return [
       `Chart "${label}": jsonDescription sets data to rows.map(r => ({x, y})), a list of points, so Plotly draws empty axes. ` +
@@ -1517,7 +1517,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintChartHouseStyle(spec, warnings));
 
   // A Text widget holding several lines (eyebrow <br> title, or block tags) in a box sized for one line
-  // clips its last line: MedCard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.
+  // clips its last line: a sales dashboard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.
   if (spec.type === 'Text') {
     const text = propVal(props, 'text');
     const height = (spec.layouts?.desktop ?? spec.layout)?.height;
@@ -1533,7 +1533,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   }
 
   // A ModalV2 keeps its catalog default useDefaultButton:true, so a "Launch Modal" trigger button renders at the
-  // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two Chainventory pages.
+  // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two inventory-build pages.
   if (spec.type === 'ModalV2' && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
     const top = (spec.layouts?.desktop ?? spec.layout)?.top;
     errors.push(
@@ -2470,7 +2470,7 @@ const TOOLBAR_BUTTON_TYPES = new Set(['Button', 'ButtonGroup']);
 /** A button sharing a row with top-labelled inputs must align with their field boxes, not their labels.
  *  A top-labelled input renders its label in the first 20px and its box below (see renderedHeight), so a
  *  button authored at the inputs' top sits on the label band, visibly above the fields. Measured on
- *  2026-09-12 in three Luna builds (todo, vendors, Chainventory): every toolbar button was misaligned. */
+ *  2026-09-12 in three Luna builds (todo, vendors, inventory): every toolbar button was misaligned. */
 export function lintToolbarButtonAlignment(components: LintComponent[]): string[] {
   const errors: string[] = [];
   const items = components
@@ -3103,8 +3103,8 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   // The mirror image: a ToolJet DB sql_execution query returns {results: rows}, so a data-bound component
-  // reading `queries.q.data` gets an object, not rows, and shows No data. Observed live (Nordlicht
-  // benchmark, 2026-09-07): Haiku wrote seven SQL queries and bound every table and KPI to `.data`;
+  // reading `queries.q.data` gets an object, not rows, and shows No data. Observed live (an order-desk
+  // same-prompt run, 2026-09-07): Haiku wrote seven SQL queries and bound every table and KPI to `.data`;
   // all four pages rendered empty although the seeds and the queries were fine.
   for (const component of allComponents) {
     if (!['Table', 'ListView', 'Chart', 'Kanban', 'Statistics', 'Text', 'Html'].includes(component.type ?? '')) continue;
@@ -3149,7 +3149,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
-  // A query referenced by bare name. Observed live (Haiku, Helix benchmark 2026-09-07): `jobsWaitingLongest.data`
+  // A query referenced by bare name. Observed live (Haiku, a workshop-booking same-prompt run 2026-09-07): `jobsWaitingLongest.data`
   // instead of `queries.jobsWaitingLongest.data`, which is an undefined identifier at runtime, so the table
   // showed No data while the query itself was fine. Component references are excluded by the lookbehind
   // (they always follow a dot or bracket).
@@ -3170,7 +3170,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   // A Chart bound straight to query rows plots nothing unless the query itself returns x and y.
-  // Observed live (Nordlicht benchmark, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
+  // Observed live (an order-desk same-prompt run, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
   // returning {order_date, orders_count} and the "orders per day" chart drew an empty axis.
   for (const component of allComponents) {
     if (component.type !== 'Chart') continue;

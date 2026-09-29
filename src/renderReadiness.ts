@@ -250,8 +250,8 @@ export function suggestedHtmlHeight(c: ReadinessComponent): { from: number; to: 
 }
 
 /** A selection panel reads `components.table.selectedRow.field`; before any row is selected that is
- *  `undefined`, and ToolJet prints the word. Observed on three of twelve Nordlicht apps and on the Luna max
- *  Lufthansa build ("undefined · undefined · undefined" under "Select a flight"). Each read needs a fallback. */
+ *  `undefined`, and ToolJet prints the word. Observed on three of twelve order-desk apps and on the Luna max
+ *  airline-operations build ("undefined · undefined · undefined" under "Select a flight"). Each read needs a fallback. */
 const SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
 export function lintUnguardedSelectionText(c: ReadinessComponent): string[] {
   if (c.type !== 'Html' && c.type !== 'Text') return [];
@@ -378,7 +378,7 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  until a filter changes or the page reloads (a Luna clinic build on 2026-09-05 shipped exactly
  *  this). `components.filter?.value` is the shape the skill asks for; this makes it mandatory. */
 /** The Chart widget plots `data` as an array of `{x, y}` points (plus optional `color`/`type`); any other key
- *  names render a blank plot with no error. Observed live on the Nordlicht benchmark (2026-09-07): Terra
+ *  names render a blank plot with no error. Observed live on an order-desk same-prompt run (2026-09-07): Terra
  *  bound `queries.orders_by_day.data` straight from a list_rows query and Luna medium mapped rows to
  *  `{date, orders}`; both "orders per day" charts drew an empty axis. */
 /** Collapse balanced groups to inspect only the outer expression. Strings are opaque; regexes,

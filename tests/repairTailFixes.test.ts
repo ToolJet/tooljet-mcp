@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { updateComponentsTool } from '../src/tools/updateComponents.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 
-// Fernbrook vet build, 2026-09-23: an edit to a Table's data came back with a note that "}}" had
+// A vet-clinic build, 2026-09-23: an edit to a Table's data came back with a note that "}}" had
 // been split inside properties.defaultSelectedRow, a key the model never touched (ToolJet's own
 // default {{{"id":1}}}). The model then spent three calls clearing defaultSelectedRow on every table.
 describe('update_components brace notes', () => {

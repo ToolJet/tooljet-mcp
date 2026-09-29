@@ -4,6 +4,7 @@ import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
@@ -603,6 +604,9 @@ export interface ToolJetClient {
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
+  /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
+   *  Undefined when it cannot be established; such a client's specs are not cached. */
+  specCacheScope?(): Promise<string | undefined>;
   testDatasourceConnection(params: TestDatasourceConnectionParams): Promise<ConnectionTestResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
@@ -2035,6 +2039,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
+    assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
@@ -2278,6 +2283,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   // Update query = PATCH /:id/versions/:versionId. `options` REPLACES the stored options wholesale.
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
+    assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const body: Record<string, unknown> = { options: params.options };
     if (params.name !== undefined) body.name = params.name;
     const res = await auth.authedFetch(
@@ -2395,6 +2401,24 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
     await assertOk(res, 'getPluginSpec');
     return res.text();
+  }
+
+  async function specCacheScope(): Promise<string | undefined> {
+    let workspace: string;
+    try {
+      workspace = await auth.getOrganizationId();
+    } catch {
+      return undefined;
+    }
+    if (!workspace) return undefined;
+    let server: string;
+    try {
+      const url = new URL(config.apiUrl);
+      server = url.origin + (url.pathname === '/' ? '' : url.pathname.replace(/\/+$/, ''));
+    } catch {
+      return undefined;
+    }
+    return JSON.stringify([server, workspace]);
   }
 
   /** Read one saved datasource's stored connection configuration for an environment.
@@ -2583,6 +2607,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
     getPluginSpec,
+    specCacheScope,
     testDatasourceConnection,
     listEvents,
     updateEvents,

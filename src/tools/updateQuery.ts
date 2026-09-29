@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
+import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
@@ -18,7 +18,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       'Change an existing query in place. `options` REPLACES the stored options wholesale — send the ' +
       'FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are ' +
       'validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, ' +
-      'and MCP attempts to roll back the source if the subsequent option update fails.',
+      'and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, ' +
+      'runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.',
     inputSchema: {
       query_id: z.string().optional().describe('the query id, or its name; with only name given, name picks the query'),
       version_id: z.string(),
@@ -78,26 +79,13 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           kind = datasource.kind;
         }
 
-        const warnings: string[] = [...resolutionWarnings];
-        let validation: ReturnType<typeof validateQueryOptions> | undefined;
-        // See addQueries.ts: repair a flat {column: value} write map before validating. Only possible
-        // when the kind is known — without it the options are passed through unvalidated as before.
-        let options = args.options;
-        if (kind) {
-          options = normalizeQueryOptions(kind, args.options);
-          if (options !== args.options) {
-            warnings.push(
-              kind === 'mongodb' ? 'Serialized MongoDB document fields to JSON text expected by the plugin.' :
-              `Rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; ` +
-                'the flat {column: value} form sends an empty body and fails at runtime.'
-            );
-          }
-          validation = validateQueryOptions(kind, options);
-          if (validation.errors.length) return fail(new Error(issueMessages(validation.errors).join(' ')));
-          warnings.push(...issueMessages(validation.warnings));
-        } else {
-          warnings.push('Query options were not contract-validated; pass app_id or kind on update_query.');
-        }
+        // The shared write preparation. Its toggle rules hold with or without a kind; the kind's normalization and
+        // contract only when this call can resolve it (a bare query_id + version_id update cannot).
+        const prepared = prepareQueryOptionsForWrite(kind, args.options);
+        if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
+        const warnings: string[] = [...resolutionWarnings, ...prepared.warnings];
+        const { options, validation } = prepared;
+        if (!kind) warnings.push('Query options were not contract-validated; pass app_id or kind on update_query.');
 
         warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
