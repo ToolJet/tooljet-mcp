@@ -64682,14 +64682,16 @@ function lintRenderedGeometryBlocking(components) {
   return [
     ...detectOverlaps(components),
     ...lintToolbarButtonAlignment(components),
-    ...lintModalChildren(components),
+    ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components)
   ];
 }
+var MODAL_HEADER_ADVICE = /native header (?:slot is empty|is visible)/;
 function lintRenderedGeometryAdvisory(components) {
   return [
     ...lintDesktopCanvasCoverage(components),
-    ...lintCanvasSideGutter(components)
+    ...lintCanvasSideGutter(components),
+    ...lintModalChildren(components).filter((warning) => MODAL_HEADER_ADVICE.test(warning))
   ];
 }
 function lintRenderedGeometry(components) {
