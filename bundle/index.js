@@ -61578,7 +61578,35 @@ function lintHtmlContentHeight(c) {
   ];
 }
 var SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
-function lintHtmlRootSurface(c) {
+var LITERAL_SURFACE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
+var CLEAR_SURFACE = /^(transparent|#[0-9a-f]{3}0|#[0-9a-f]{6}00)$|^rgba\([^)]*,\s*0(\.0+)?\s*\)$/i;
+var sameColour = (a, b) => a.replace(/\s+/g, "").toLowerCase() === b.replace(/\s+/g, "").toLowerCase();
+function surfaceAroundResolver(components, canvasColor) {
+  const find = (key4) => components.find((o) => o.clientRef === key4 || o.id === key4) ?? components.find((o) => typeof o.id === "string" && key4.startsWith(`${o.id}-`)) ?? components.find((o) => o.name === key4);
+  const canvas = typeof canvasColor === "string" && LITERAL_SURFACE.test(canvasColor.trim()) ? canvasColor.trim() : void 0;
+  return (c) => {
+    let current = c;
+    for (let depth = 0; depth < 12; depth++) {
+      const key4 = current.parentRef ?? current.parent;
+      if (!key4)
+        return canvas;
+      const parent = find(key4);
+      if (!parent)
+        return void 0;
+      const slot = current.slotName ?? current.slot_name ?? (typeof parent.id === "string" && key4.startsWith(`${parent.id}-`) ? key4.slice(parent.id.length + 1) : void 0);
+      const own2 = slot === "header" ? propVal(parent.styles, "headerBackgroundColor") : slot === "footer" ? propVal(parent.styles, "footerBackgroundColor") : void 0;
+      const raw = own2 ?? propVal(parent.styles, "backgroundColor");
+      const colour = typeof raw === "string" ? raw.trim() : "";
+      if (CLEAR_SURFACE.test(colour)) {
+        current = parent;
+        continue;
+      }
+      return LITERAL_SURFACE.test(colour) ? colour : void 0;
+    }
+    return void 0;
+  };
+}
+function lintHtmlRootSurface(c, surfaceAround) {
   if (c.type !== "Html")
     return [];
   const raw = propVal(c.properties, "rawHtml");
@@ -61589,7 +61617,7 @@ function lintHtmlRootSurface(c) {
   const roots = tree.children.filter((n) => n.tag !== "#text" || n.text.trim());
   const who = `Html "${label(c)}"`;
   const parented = Boolean(c.parent || c.parentRef);
-  const surface = parented ? "var(--cc-surface1-surface)" : "var(--cc-appBackground-surface)";
+  const surface = surfaceAround ?? (parented ? "var(--cc-surface1-surface)" : "var(--cc-appBackground-surface)");
   const template = `<div style="height:100%;box-sizing:border-box;margin:0;background:${surface}"> ...your markup... </div>`;
   const why = "ToolJet's Html widget paints its box white underneath the markup, so on a tinted canvas anything the root does not cover shows as a white edge.";
   if (roots.length !== 1 || roots[0].tag === "#text") {
@@ -61608,6 +61636,7 @@ function lintHtmlRootSurface(c) {
   const background = (style.background ?? style["background-color"] ?? "").trim();
   if (!background || /^(transparent|none|inherit|initial|unset)$/i.test(background)) {
     problems.push(`it paints no background of its own, so the widget's white shows through; use ${surface}` + (parented ? " (or the surface2 token for a tinted rail)" : ""));
+  } else if (surfaceAround && sameColour(background, surfaceAround)) {
   } else if (parented ? !SURFACE_TOKENS.test(background) : !/var\(--cc-appBackground-surface\)/.test(background)) {
     problems.push(`its background is "${background.slice(0, 60)}" rather than the surface it sits on (${surface}); a tint, gradient or literal colour belongs on a child card so the root still matches the canvas around it`);
   }
@@ -63926,7 +63955,7 @@ function lintChartHouseStyle(spec, warnings = []) {
   }
   return [];
 }
-function lintComponentSpec(spec) {
+function lintComponentSpec(spec, context = {}) {
   const errors = [];
   const warnings = [];
   const props = spec.properties ?? {};
@@ -64232,7 +64261,7 @@ function lintComponentSpec(spec) {
   }
   errors.push(...lintTextFormat(spec));
   errors.push(...lintHtmlContentHeight(spec));
-  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintHtmlRootSurface(spec, context.surfaceAround));
   errors.push(...lintUnguardedComponentRefs(spec));
   errors.push(...lintEmbeddedBindingSyntax(spec));
   errors.push(...lintChartDataShape(spec));
@@ -64744,12 +64773,13 @@ function lintFormSubmitButtons(components) {
   }
   return errors;
 }
-function lintComponents(components) {
+function lintComponents(components, options2 = {}) {
   const errors = [];
   const warnings = [];
+  const around = surfaceAroundResolver(components, options2.canvasColor);
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
-    const r = lintComponentSpec(c);
+    const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
@@ -64769,7 +64799,7 @@ function lintComponents(components) {
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
   for (const c of components)
-    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
+    errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   for (const c of components)
     warnings.push(...lintSurfaceInsets(c));
@@ -64838,7 +64868,7 @@ function lintStatTileConsistency(summary) {
   }
   return warnings;
 }
-function validateAppStructure(summary) {
+function validateAppStructure(summary, options2 = {}) {
   const errors = [];
   const warnings = [];
   warnings.push(...lintEditPrefill(summary));
@@ -64846,6 +64876,7 @@ function validateAppStructure(summary) {
   warnings.push(...lintWhitespaceGuards(summary));
   warnings.push(...lintSelectedRowObjectGuards(summary));
   const allComponents = summary.pages.flatMap((p) => p.components);
+  const around = surfaceAroundResolver(allComponents, options2.canvasColor);
   const componentNames = new Set(allComponents.map((c) => c.name).filter(Boolean));
   const componentIds = new Set(allComponents.map((c) => c.id));
   const queryNames = new Set(summary.queries.map((q) => q.name).filter(Boolean));
@@ -64900,8 +64931,8 @@ function validateAppStructure(summary) {
   }
   const queryByName = new Map(summary.queries.flatMap((query) => query.name ? [[query.name, query]] : []));
   for (const query of summary.queries.filter((candidate) => candidate.kind === "runjs")) {
-    const options2 = recordValue(query.options);
-    const code = options2?.code;
+    const options3 = recordValue(query.options);
+    const code = options3?.code;
     if (typeof code !== "string")
       continue;
     for (const name2 of runjsComponentReferences(code)) {
@@ -64913,7 +64944,7 @@ function validateAppStructure(summary) {
       if (!queryNames.has(name2))
         errors.push(`RunJS query "${query.name ?? query.id}" references queries[${JSON.stringify(name2)}], but no query is named ${JSON.stringify(name2)}. Names are case-sensitive; use the persisted query name exactly (bracket notation for spaces). An empty-array fallback can hide this mistake and make a populated dashboard show zero records.`);
     }
-    if (!isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
+    if (!isTruthyBinding(propVal2(options3, "runOnDependencyChange")))
       continue;
     if (!referencedNames.length)
       continue;
@@ -64938,13 +64969,13 @@ function validateAppStructure(summary) {
     return payload2?.eventId === "onDataQuerySuccess" && payload2.actionId === "run-query" && typeof payload2.queryId === "string" ? [`${event.sourceId}->${payload2.queryId}`] : [];
   }));
   for (const query of summary.queries.filter((candidate) => candidate.kind !== "runjs")) {
-    const options2 = recordValue(query.options);
-    if (!options2)
+    const options3 = recordValue(query.options);
+    if (!options3)
       continue;
-    const automatic = isTruthyBinding(propVal2(options2, "runOnPageLoad")) || isTruthyBinding(propVal2(options2, "runOnDependencyChange"));
+    const automatic = isTruthyBinding(propVal2(options3, "runOnPageLoad")) || isTruthyBinding(propVal2(options3, "runOnDependencyChange"));
     if (!automatic)
       continue;
-    const blob = JSON.stringify(options2);
+    const blob = JSON.stringify(options3);
     const referencedNames = [...new Set([...blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const missing = referencedNames.filter((name2) => {
       const source2 = queryByName.get(name2);
@@ -65032,8 +65063,8 @@ function validateAppStructure(summary) {
     const query = queryByName.get(m[1]);
     if (!query || query.kind === "runjs" || query.kind === "runpy")
       continue;
-    const options2 = recordValue(query.options);
-    const sql = typeof options2?.query === "string" ? options2.query : typeof recordValue(options2?.sql_execution)?.sqlQuery === "string" ? String(recordValue(options2?.sql_execution)?.sqlQuery) : "";
+    const options3 = recordValue(query.options);
+    const sql = typeof options3?.query === "string" ? options3.query : typeof recordValue(options3?.sql_execution)?.sqlQuery === "string" ? String(recordValue(options3?.sql_execution)?.sqlQuery) : "";
     if (sql && /\bas\s+["'`]?x["'`]?\b/i.test(sql) && /\bas\s+["'`]?y["'`]?\b/i.test(sql))
       continue;
     errors.push(`Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query.kind ?? "datasource"} query that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`);
@@ -65088,7 +65119,7 @@ function validateAppStructure(summary) {
       styles: c.styles,
       layouts: c.layouts,
       parent: c.parent
-    });
+    }, { surfaceAround: around(c) });
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
@@ -65109,10 +65140,10 @@ function validateAppStructure(summary) {
     const boundDataQueries = [...new Set([...dataBinding.matchAll(/queries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const hasReactiveDataQuery = (stateName) => boundDataQueries.some((queryName) => {
       const query = queryByName.get(queryName);
-      const options2 = recordValue(query?.options);
-      if (!options2 || !isTruthyBinding(propVal2(options2, "runOnDependencyChange")))
+      const options3 = recordValue(query?.options);
+      if (!options3 || !isTruthyBinding(propVal2(options3, "runOnDependencyChange")))
         return false;
-      return typeof table.name === "string" && JSON.stringify(options2).includes(`components.${table.name}.${stateName}`);
+      return typeof table.name === "string" && JSON.stringify(options3).includes(`components.${table.name}.${stateName}`);
     });
     const requirements = [
       ["serverSidePagination", "onPageChanged", "pageIndex"],
@@ -65154,7 +65185,7 @@ function validateAppStructure(summary) {
     errors.push(...lintUnrenderableHeights(p.components));
     errors.push(...lintOversizedWidths(p.components));
     for (const c of p.components)
-      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
+      errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components));
     for (const c of p.components)
       warnings.push(...lintSurfaceInsets(c));
@@ -67844,6 +67875,17 @@ function projectJavascriptRuntime(snapshot2) {
     runtime_verified: false,
     guidance: "Configuration is not proof of successful loading, export names, worker/CSP compatibility, or deployment support. In ToolJet versions with the native library loader, enabled HTTPS UMD/IIFE library exports are passed to RunJS as lexical parameters by their configured names, not guaranteed globalThis properties. Do not redeclare those parameter names with const/let. Preloaded script exports may add or override names; their code is intentionally omitted here. This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration."
   };
+}
+async function literalCanvasColor(client, appId, versionId) {
+  if (!versionId || typeof client.getAppSettings !== "function")
+    return void 0;
+  try {
+    const snapshot2 = await client.getAppSettings(appId, versionId);
+    const colour = asRecord(snapshot2.global_settings).canvasBackgroundColor;
+    return typeof colour === "string" && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(colour.trim()) ? colour.trim() : void 0;
+  } catch {
+    return void 0;
+  }
 }
 
 // dist/tools/getAppSettings.js
@@ -73326,8 +73368,8 @@ function scratchArtifactWarnings(summary) {
   }
   return warnings;
 }
-function validatePersistedAppSummary(summary) {
-  const structural = validateAppStructure(summary);
+function validatePersistedAppSummary(summary, options2 = {}) {
+  const structural = validateAppStructure(summary, options2);
   const errors = [...structural.errors];
   const warnings = [...structural.warnings];
   warnings.push(...scratchArtifactWarnings(summary));
@@ -73388,7 +73430,7 @@ function validateAppTool(client) {
     async handler(args) {
       try {
         const summary = await client.getAppSummary(args.app_id);
-        return ok(validatePersistedAppSummary(summary));
+        return ok(validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) }));
       } catch (err) {
         return fail(err);
       }
@@ -74598,7 +74640,7 @@ function lintServerSidePaginationRace(pages, queries) {
   }
   return errors;
 }
-function lintPlannedApp(spec, existingSummary) {
+function lintPlannedApp(spec, existingSummary, options2 = {}) {
   const errors = [];
   const warnings = [];
   const checked = [];
@@ -74645,7 +74687,7 @@ function lintPlannedApp(spec, existingSummary) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
     }
     const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
-    const options2 = prepared.options;
+    const options3 = prepared.options;
     errors.push(...prepared.errors);
     warnings.push(...prepared.warnings);
     return {
@@ -74653,7 +74695,7 @@ function lintPlannedApp(spec, existingSummary) {
       name: query.name,
       kind: query.kind,
       data_source_id: query.datasourceId,
-      options: options2
+      options: options3
     };
   });
   const queries = [...existingQueries, ...plannedQueries];
@@ -74708,7 +74750,7 @@ function lintPlannedApp(spec, existingSummary) {
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
     warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components);
+    const componentLint = lintComponents(expansion.components, options2);
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
@@ -74845,7 +74887,7 @@ function lintPlannedApp(spec, existingSummary) {
     errors.push(...eventValidation.errors);
     warnings.push(...eventValidation.warnings);
   }
-  const structure = validateAppStructure(summary);
+  const structure = validateAppStructure(summary, options2);
   const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
   errors.push(...forward.errors);
   warnings.push(...structure.warnings, ...forward.notes);
@@ -75827,6 +75869,7 @@ function lintAppSpecTool(client) {
             }
           }
         }
+        const canvasColor = args.app_id ? await literalCanvasColor(client, args.app_id, existingSummary?.version_id ?? args.version_id) : void 0;
         const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
@@ -75874,7 +75917,7 @@ function lintAppSpecTool(client) {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions
           }))
-        }, existingSummary);
+        }, existingSummary, { canvasColor });
         const result = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
@@ -76425,7 +76468,8 @@ function applyAppPhaseTool(client) {
           applied.events = newEvents.length;
         }
         stage = "validate persisted phase";
-        const validation = validatePersistedAppSummary(await client.getAppSummary(args.app_id));
+        const persisted = await client.getAppSummary(args.app_id);
+        const validation = validatePersistedAppSummary(persisted, { canvasColor: await literalCanvasColor(client, args.app_id, persisted.version_id) });
         warnings.push(...validation.warnings);
         const relevantTableNames = /* @__PURE__ */ new Set([
           ...(spec.tables ?? []).map((table) => table.table_name),
