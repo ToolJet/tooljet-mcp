@@ -75488,7 +75488,8 @@ function replaceView(summary, plan) {
       if (!query.name || owned.has(query.id) || reachedElsewhere.has(query.id))
         continue;
       const readByOwned = summary.queries.some((other) => owned.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name));
-      if (readByOwned) {
+      const chainedByOwned = summary.events.some((event) => !!event.sourceId && owned.has(event.sourceId) && runsQuery(event, query.id));
+      if (readByOwned || chainedByOwned) {
         owned.add(query.id);
         grew = true;
       }
