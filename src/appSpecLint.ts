@@ -2,7 +2,7 @@ import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
 import { lintComponents, validateAppStructure, type LintComponent } from './lint.js';
-import { issueMessages, normalizeQueryOptions, validateQueryOptions } from './queryValidation.js';
+import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
 import { encodeComponentParent } from './componentParent.js';
@@ -332,32 +332,16 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
-    // Repair a flat {column: value} tooljetdb write map before validating, so the phase this lint
-    // hands to apply_app_phase persists the shape ToolJet actually reads. Without this, the plan
-    // lints clean, applies, and then fails only at runtime with PGRST102 when a user clicks.
-    let options = query.options;
+    // The same preparation apply_app_phase and the direct query tools persist through: toggles become booleans (or
+    // are refused) whether or not the kind resolved; with a kind, the write column map is repaired and the contract
+    // checked, so the phase this lint hands to apply persists the shape ToolJet actually reads.
     if (!query.kind) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
-    } else {
-      options = normalizeQueryOptions(query.kind, query.options);
-      const toggles = ['runOnPageLoad', 'runOnDependencyChange', 'requestConfirmation', 'showSuccessNotification']
-        .filter((key) => query.options?.[key] !== options[key]);
-      if (toggles.length) {
-        warnings.push(`Query "${query.name}": ${toggles.map((key) => `${key} ${JSON.stringify(query.options[key])}`).join(', ')} saved as ` +
-          `${toggles.map((key) => String(options[key])).join(', ')}; ToolJet reads these as true/false and runs any text on load.`);
-      }
-      const withoutToggles = (o: Record<string, unknown>) => JSON.stringify({ ...o, runOnPageLoad: 0, runOnDependencyChange: 0, requestConfirmation: 0, showSuccessNotification: 0 });
-      if (options !== query.options && withoutToggles(options) !== withoutToggles(query.options)) {
-        warnings.push(
-          query.kind === 'mongodb' ? `Query "${query.name}": serialized MongoDB document fields to the JSON text expected by the plugin.` :
-          `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
-            '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
-        );
-      }
-      const validation = validateQueryOptions(query.kind, options);
-      errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
-      warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
     }
+    const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
+    const options = prepared.options;
+    errors.push(...prepared.errors);
+    warnings.push(...prepared.warnings);
     return {
       id,
       name: query.name,

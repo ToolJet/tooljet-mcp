@@ -146,7 +146,7 @@ describe('plan token + apply_app_phase', () => {
     expect(client.createQueries).toHaveBeenCalledWith(expect.objectContaining({
       queries: expect.arrayContaining([expect.objectContaining({ name: 'create_case', options: expect.objectContaining({
         create_row: { 0: { column: 'title', value: '{{components["caseTitle"].value}}' } },
-        runOnPageLoad: false, // ToolJet runs any truthy value on load; "{{false}}" ran every write (Ferrow, 2026-09-28)
+        runOnPageLoad: false, // ToolJet runs any truthy value on load; "{{false}}" ran every write (an operations build, 2026-09-28)
       }) })]),
     }));
     expect(persistedEvents[0].action).toMatchObject({ queryId: 'create-id', queryName: 'create_case' });

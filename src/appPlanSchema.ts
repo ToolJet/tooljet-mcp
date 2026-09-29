@@ -49,7 +49,8 @@ export const plannedPageSchema = z.object({
     'true: the existing page of this name has all its components, and the events on them, replaced by this plan\'s ' +
       'components (needs app_id). Queries of that page the plan defines again are updated in place, keeping their ids; ' +
       'events on other pages that act on a replaced component are re-pointed to the recreated one of the same name. ' +
-      'Refused when another page, event or query reads a component the plan drops.'
+      'Refused when another page, event or query reads a component the plan drops. Not atomic (deletes, then recreates): ' +
+      'use it on draft or otherwise recoverable pages.'
   ),
   components: z.array(componentInputSchema).optional(),
 });

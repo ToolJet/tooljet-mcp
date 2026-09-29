@@ -51022,8 +51022,8 @@ var Response$1 = class Response$12 {
   #body;
   #init;
   [getResponseCache]() {
-    const cache4 = this[cacheKey];
-    const liveHeaders = cache4 && cache4[2] instanceof Headers ? cache4[2] : void 0;
+    const cache3 = this[cacheKey];
+    const liveHeaders = cache3 && cache3[2] instanceof Headers ? cache3[2] : void 0;
     delete this[cacheKey];
     return this[responseCache] ||= new GlobalResponse(this.#body, liveHeaders ? {
       status: this.#init?.status,
@@ -51051,10 +51051,10 @@ var Response$1 = class Response$12 {
     ];
   }
   get headers() {
-    const cache4 = this[cacheKey];
-    if (cache4) {
-      if (!(cache4[2] instanceof Headers)) cache4[2] = new Headers(cache4[2] || (cache4[1] === null ? void 0 : { "content-type": defaultContentType }));
-      return cache4[2];
+    const cache3 = this[cacheKey];
+    if (cache3) {
+      if (!(cache3[2] instanceof Headers)) cache3[2] = new Headers(cache3[2] || (cache3[1] === null ? void 0 : { "content-type": defaultContentType }));
+      return cache3[2];
     }
     return this[getResponseCache]().headers;
   }
@@ -60400,9 +60400,9 @@ var gatewayOriginCache = /* @__PURE__ */ new Map();
 var GATEWAY_CACHE_TTL_MS = 6e4;
 async function checkOriginWithGateway(customerId, origin) {
   const cacheKey2 = `${customerId} ${origin}`;
-  const cached3 = gatewayOriginCache.get(cacheKey2);
-  if (cached3 && cached3.expiresAt > Date.now())
-    return cached3.allowed;
+  const cached4 = gatewayOriginCache.get(cacheKey2);
+  if (cached4 && cached4.expiresAt > Date.now())
+    return cached4.allowed;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   if (!gatewayUrl || !gatewayToken)
@@ -60427,9 +60427,9 @@ async function checkOriginWithGateway(customerId, origin) {
 }
 var gatewayResolveCache = /* @__PURE__ */ new Map();
 async function resolveApiUrlFromGateway(customerId) {
-  const cached3 = gatewayResolveCache.get(customerId);
-  if (cached3 && cached3.expiresAt > Date.now())
-    return cached3.result;
+  const cached4 = gatewayResolveCache.get(customerId);
+  if (cached4 && cached4.expiresAt > Date.now())
+    return cached4.result;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   let result = { url: void 0, verified: false };
@@ -65216,6 +65216,79 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 
+// dist/queryToggles.js
+var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
+var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
+function isPlainObject3(value2) {
+  return !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+}
+function staticToggle(value2) {
+  if (typeof value2 !== "string")
+    return void 0;
+  const match = STATIC_TOGGLE.exec(value2);
+  return match ? (match[1] ?? match[2]) === "true" : void 0;
+}
+function normalizeQueryToggles(options2) {
+  if (!isPlainObject3(options2))
+    return options2;
+  let out = options2;
+  for (const key4 of QUERY_TOGGLES) {
+    const value2 = staticToggle(options2[key4]);
+    if (value2 === void 0)
+      continue;
+    if (out === options2)
+      out = { ...options2 };
+    out[key4] = value2;
+  }
+  return out;
+}
+function describe3(value2) {
+  if (value2 === null)
+    return "null";
+  if (Array.isArray(value2))
+    return "an array";
+  if (typeof value2 === "object")
+    return "an object";
+  if (typeof value2 === "string")
+    return JSON.stringify(value2);
+  return `${typeof value2} ${String(value2)}`;
+}
+function queryToggleIssues(options2) {
+  if (!isPlainObject3(options2))
+    return [];
+  const issues = [];
+  for (const key4 of QUERY_TOGGLES) {
+    if (!(key4 in options2))
+      continue;
+    const value2 = options2[key4];
+    if (value2 === void 0 || typeof value2 === "boolean" || staticToggle(value2) !== void 0)
+      continue;
+    const dynamic = typeof value2 === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
+    issues.push({
+      code: "query_toggle_not_boolean",
+      path: key4,
+      message: `${key4} must be true or false (or left out), not ${describe3(value2)}.${dynamic}`
+    });
+  }
+  return issues;
+}
+function toggleRewriteWarning(before, after) {
+  const changed = QUERY_TOGGLES.filter((key4) => before?.[key4] !== after?.[key4]);
+  if (!changed.length)
+    return void 0;
+  return `${changed.map((key4) => `${key4} ${JSON.stringify(before[key4])} saved as ${String(after[key4])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
+}
+function assertPersistableQueryToggles(options2, subject) {
+  const issues = queryToggleIssues(options2);
+  const strings = isPlainObject3(options2) ? QUERY_TOGGLES.filter((key4) => typeof options2[key4] === "string") : [];
+  const messages = [
+    ...issues.map((issue2) => issue2.message),
+    ...strings.filter((key4) => !issues.some((issue2) => issue2.path === key4)).map((key4) => `${key4} must be sent as a boolean, not ${JSON.stringify(options2[key4])}.`)
+  ];
+  if (messages.length)
+    throw new Error(`${subject}: ${messages.join(" ")}`);
+}
+
 // dist/strictEntry.js
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -66722,6 +66795,7 @@ function createClient(auth, config2) {
     }
   }
   async function createQueryUnqueued(params) {
+    assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
       method: "POST",
@@ -66904,6 +66978,7 @@ function createClient(auth, config2) {
     return { updated: params.layouts.length };
   }
   async function updateQuery(params) {
+    assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const body = { options: params.options };
     if (params.name !== void 0)
       body.name = params.name;
@@ -66984,6 +67059,24 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
     await assertOk(res, "getPluginSpec");
     return res.text();
+  }
+  async function specCacheScope() {
+    let workspace;
+    try {
+      workspace = await auth.getOrganizationId();
+    } catch {
+      return void 0;
+    }
+    if (!workspace)
+      return void 0;
+    let server;
+    try {
+      const url2 = new URL(config2.apiUrl);
+      server = url2.origin + (url2.pathname === "/" ? "" : url2.pathname.replace(/\/+$/, ""));
+    } catch {
+      return void 0;
+    }
+    return JSON.stringify([server, workspace]);
   }
   async function getDatasourceConnectionDetails(dataSourceId, environmentId) {
     const envId = environmentId ?? await getDevelopmentEnvironmentId();
@@ -67124,6 +67217,7 @@ function createClient(auth, config2) {
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
     getPluginSpec,
+    specCacheScope,
     testDatasourceConnection,
     listEvents,
     updateEvents,
@@ -68958,14 +69052,11 @@ function singleSpecRef(kind) {
   return ref.location === "remote" || ref.location === "bundled" && ref.plugin && ref.name ? ref : void 0;
 }
 var SPEC_DISCOVERY_NOTE = 'Operations come from the plugin\'s API spec. Discover them with inspect_datasource_schema: listTables (pass `search`, such as "charges") finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to copy as they are: operation (the lowercase HTTP method), path, and params with path, query and request objects (each present, {} when empty). Query values are flat: created[gte], expand[0], never a list or an object. The plugin fixes the host and authentication.';
-var cache3 = /* @__PURE__ */ new Map();
+var publicCache = /* @__PURE__ */ new Map();
+var serverCache = /* @__PURE__ */ new Map();
 var TTL_MS = 60 * 60 * 1e3;
-function loadKindSpec(client, kind, ref) {
-  const key4 = ref.location === "remote" ? ref.ref : `${ref.plugin}/${ref.name}`;
-  const hit = cache3.get(key4);
-  if (hit && Date.now() - hit.at < TTL_MS)
-    return hit.spec;
-  const spec = (async () => {
+function readSpec(client, kind, ref) {
+  return (async () => {
     const text = ref.location === "remote" ? await fetch(ref.ref, { signal: AbortSignal.timeout(6e4) }).then((res) => {
       if (!res.ok)
         throw new Error(`HTTP ${res.status}`);
@@ -68976,11 +69067,33 @@ function loadKindSpec(client, kind, ref) {
       throw new Error("not an OpenAPI document");
     return parsed;
   })().catch((error51) => {
-    cache3.delete(key4);
     throw new Error(`The ${kind} API spec could not be read (${error51 instanceof Error ? error51.message : String(error51)}); do not invent its endpoints.`);
   });
-  cache3.set(key4, { at: Date.now(), spec });
-  return spec;
+}
+function cached3(cache3, key4, load3) {
+  const hit = cache3.get(key4);
+  if (hit && Date.now() - hit.at < TTL_MS)
+    return hit.spec;
+  const entry = { at: Date.now(), spec: load3() };
+  entry.spec.catch(() => {
+    if (cache3.get(key4) === entry)
+      cache3.delete(key4);
+  });
+  cache3.set(key4, entry);
+  return entry.spec;
+}
+async function loadKindSpec(client, kind, ref) {
+  if (ref.location === "remote")
+    return cached3(publicCache, ref.ref, () => readSpec(client, kind, ref));
+  let scope;
+  try {
+    scope = await client.specCacheScope?.();
+  } catch {
+    scope = void 0;
+  }
+  if (!scope)
+    return readSpec(client, kind, ref);
+  return cached3(serverCache, JSON.stringify([scope, ref.plugin, ref.name]), () => readSpec(client, kind, ref));
 }
 function apiEndpointQueryIssues(kind, options2) {
   if (!singleSpecRef(kind))
@@ -70335,7 +70448,7 @@ function htmlFedTextColumns(table, queries) {
 }
 
 // dist/refResolution.js
-function resolveRef2(candidates, ref, kind, scope, describe3 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+function resolveRef2(candidates, ref, kind, scope, describe4 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
   const byId = candidates.find((candidate) => candidate.id === ref);
   if (byId)
     return { ok: true, target: byId };
@@ -70348,7 +70461,7 @@ function resolveRef2(candidates, ref, kind, scope, describe3 = (candidate) => `$
       error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
     };
   }
-  const available = candidates.map(describe3).join(", ");
+  const available = candidates.map(describe4).join(", ");
   return {
     ok: false,
     // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
@@ -72592,16 +72705,8 @@ var KNOWN_IGNORED_KEYS = {
 function isObject2(value2) {
   return !!value2 && typeof value2 === "object" && !Array.isArray(value2);
 }
-var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
-var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
-function staticToggle(value2) {
-  if (typeof value2 !== "string")
-    return void 0;
-  const match = STATIC_TOGGLE.exec(value2);
-  return match ? (match[1] ?? match[2]) === "true" : void 0;
-}
 function isTruthyStatic(value2) {
-  return value2 === true || value2 === "true" || value2 === "{{true}}";
+  return value2 === true || staticToggle(value2) === true;
 }
 function isDynamicBinding2(value2) {
   return typeof value2 === "string" && value2.includes("{{");
@@ -72819,12 +72924,7 @@ function influxTransformWarnings(kind, options2) {
 var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
 function validateQueryOptions(kind, options2) {
   const errors = [];
-  for (const key4 of QUERY_TOGGLES) {
-    const value2 = options2?.[key4];
-    if (typeof value2 === "string" && staticToggle(value2) === void 0) {
-      errors.push({ code: "query_toggle_not_boolean", path: key4, message: `${key4} must be true or false: ToolJet does not evaluate ${JSON.stringify(value2)} and treats any text as on. Run the query from an event instead when it depends on state.` });
-    }
-  }
+  errors.push(...queryToggleIssues(options2));
   if (kind === "hubspot")
     errors.push(...hubspotQueryIssues(options2).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
   errors.push(...apiEndpointQueryIssues(kind, options2).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
@@ -73176,17 +73276,7 @@ function normalizeWriteColumnMap(columns) {
   return normalized2;
 }
 function normalizeQueryOptions(kind, rawOptions) {
-  let options2 = rawOptions;
-  if (isObject2(rawOptions)) {
-    for (const key4 of QUERY_TOGGLES) {
-      const value2 = staticToggle(rawOptions[key4]);
-      if (value2 === void 0)
-        continue;
-      if (options2 === rawOptions)
-        options2 = { ...rawOptions };
-      options2[key4] = value2;
-    }
-  }
+  const options2 = normalizeQueryToggles(rawOptions);
   if (kind === "mongodb" && isObject2(options2)) {
     let result = options2;
     for (const field of ["filter", "options", "pipeline", "document", "documents", "update", "replacement", "operations"]) {
@@ -73754,6 +73844,30 @@ function matchPlannedPage(pages, name2, plannedNames, claimed = /* @__PURE__ */ 
   return pages.find((page) => page.handle === "home" && !claimed.has(page.id) && !plannedNames.has(page.name ?? ""));
 }
 
+// dist/queryPersistence.js
+function prepareQueryOptionsForWrite(kind, raw, subject) {
+  const prefix = subject ? `${subject}: ` : "";
+  const line = (text) => subject ? `${prefix}${text}` : text.charAt(0).toUpperCase() + text.slice(1);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { options: raw, errors: [line("options must be an object.")], warnings: [] };
+  }
+  const toggled = normalizeQueryToggles(raw);
+  const warnings = [];
+  const rewrite = toggleRewriteWarning(raw, toggled);
+  if (rewrite)
+    warnings.push(`${prefix}${rewrite}`);
+  if (!kind) {
+    return { options: toggled, errors: issueMessages(queryToggleIssues(toggled), subject), warnings };
+  }
+  const options2 = normalizeQueryOptions(kind, toggled);
+  if (options2 !== toggled) {
+    warnings.push(line(kind === "mongodb" ? "serialized MongoDB document fields to the JSON text expected by the plugin." : `rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`));
+  }
+  const validation = validateQueryOptions(kind, options2);
+  warnings.push(...issueMessages(validation.warnings, subject));
+  return { options: options2, errors: issueMessages(validation.errors, subject), warnings, validation };
+}
+
 // dist/queryLifecycle.js
 function expandQueryLifecycles(summary, lifecycles) {
   const queries = new Map(summary.queries.map((query) => [query.id, query]));
@@ -73980,10 +74094,10 @@ function normalizeSection(section) {
   const value2 = {};
   const patch = {};
   for (const [key4, entry] of Object.entries(section)) {
-    const canonical2 = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
-    value2[key4] = canonical2;
-    if (canonical2 !== entry)
-      patch[key4] = canonical2;
+    const canonical3 = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
+    value2[key4] = canonical3;
+    if (canonical3 !== entry)
+      patch[key4] = canonical3;
   }
   return {
     value: value2,
@@ -74064,21 +74178,21 @@ function normalizeComponentSpec(component, options2 = {}) {
   };
   for (const key4 of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key4);
-    const canonical2 = aliasTarget ?? key4;
-    const belongsInStyles = canonical2 !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical2) || !!aliasTarget && !!knownStyleKeys?.has(canonical2) && !knownPropertyKeys?.has(canonical2));
+    const canonical3 = aliasTarget ?? key4;
+    const belongsInStyles = canonical3 !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical3) || !!aliasTarget && !!knownStyleKeys?.has(canonical3) && !knownPropertyKeys?.has(canonical3));
     if (!aliasTarget && !belongsInStyles)
       continue;
     if (belongsInStyles) {
-      if (stylesValue[canonical2] === void 0)
-        stylesValue[canonical2] = properties[key4];
+      if (stylesValue[canonical3] === void 0)
+        stylesValue[canonical3] = properties[key4];
       delete properties[key4];
       stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key4}"` : `style key "${key4}"`} to styles.${canonical2} (ToolJet reads it from styles, not properties).`);
-    } else if (canonical2 !== key4) {
-      if (properties[canonical2] === void 0)
-        properties[canonical2] = properties[key4];
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key4}"` : `style key "${key4}"`} to styles.${canonical3} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical3 !== key4) {
+      if (properties[canonical3] === void 0)
+        properties[canonical3] = properties[key4];
       delete properties[key4];
-      warnings.push(`${component.type} "${component.name}": renamed alias "${key4}" to "${canonical2}".`);
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key4}" to "${canonical3}".`);
     }
   }
   if (stylesChanged)
@@ -74527,23 +74641,13 @@ function lintPlannedApp(spec, existingSummary) {
     if (ref !== query.name)
       registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
-    let options2 = query.options;
     if (!query.kind) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
-    } else {
-      options2 = normalizeQueryOptions(query.kind, query.options);
-      const toggles = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"].filter((key4) => query.options?.[key4] !== options2[key4]);
-      if (toggles.length) {
-        warnings.push(`Query "${query.name}": ${toggles.map((key4) => `${key4} ${JSON.stringify(query.options[key4])}`).join(", ")} saved as ${toggles.map((key4) => String(options2[key4])).join(", ")}; ToolJet reads these as true/false and runs any text on load.`);
-      }
-      const withoutToggles = (o) => JSON.stringify({ ...o, runOnPageLoad: 0, runOnDependencyChange: 0, requestConfirmation: 0, showSuccessNotification: 0 });
-      if (options2 !== query.options && withoutToggles(options2) !== withoutToggles(query.options)) {
-        warnings.push(query.kind === "mongodb" ? `Query "${query.name}": serialized MongoDB document fields to the JSON text expected by the plugin.` : `Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-      }
-      const validation = validateQueryOptions(query.kind, options2);
-      errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
-      warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
     }
+    const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
+    const options2 = prepared.options;
+    errors.push(...prepared.errors);
+    warnings.push(...prepared.warnings);
     return {
       id,
       name: query.name,
@@ -74988,7 +75092,7 @@ var plannedPageSchema = external_exports.object({
   icon: pageIconSchema,
   hidden: external_exports.boolean().optional(),
   /** The existing page of this name is replaced whole: see pageReplace.ts. */
-  replace: external_exports.boolean().optional().describe("true: the existing page of this name has all its components, and the events on them, replaced by this plan's components (needs app_id). Queries of that page the plan defines again are updated in place, keeping their ids; events on other pages that act on a replaced component are re-pointed to the recreated one of the same name. Refused when another page, event or query reads a component the plan drops."),
+  replace: external_exports.boolean().optional().describe("true: the existing page of this name has all its components, and the events on them, replaced by this plan's components (needs app_id). Queries of that page the plan defines again are updated in place, keeping their ids; events on other pages that act on a replaced component are re-pointed to the recreated one of the same name. Refused when another page, event or query reads a component the plan drops. Not atomic (deletes, then recreates): use it on draft or otherwise recoverable pages."),
   components: external_exports.array(componentInputSchema).optional()
 });
 var plannedEventSchema = external_exports.object({
@@ -75428,14 +75532,47 @@ function danglingAfterReplace(summary, view, plan) {
   }
   return errors;
 }
+function canonical2(value2) {
+  return JSON.stringify(value2, (_key, item) => item && typeof item === "object" && !Array.isArray(item) ? Object.fromEntries(Object.keys(item).sort().map((key4) => [key4, item[key4]])) : item);
+}
 function replaceFingerprint(summary, view) {
   const pageIds = new Set(view.replacedPageIds);
-  const pages = summary.pages.filter((page) => pageIds.has(page.id)).map((page) => [page.id, page.components.map((c) => [c.id, c.name ?? "", c.parent ?? ""]).sort()]);
-  const componentIds = new Set(summary.pages.filter((page) => pageIds.has(page.id)).flatMap((page) => page.components.map((c) => c.id)));
-  const events = summary.events.filter((e) => e.sourceId && (pageIds.has(e.sourceId) || componentIds.has(e.sourceId))).map((e) => [e.id, JSON.stringify(e.event ?? {})]).sort();
+  const replacedPages = summary.pages.filter((page) => pageIds.has(page.id));
+  const pages = replacedPages.map((page) => ({
+    id: page.id,
+    components: [...page.components].sort((a, b) => a.id.localeCompare(b.id)).map((component) => ({
+      id: component.id,
+      name: component.name ?? null,
+      type: component.type ?? null,
+      parent: component.parent ?? null,
+      slot_name: component.slot_name ?? null,
+      properties: component.properties ?? {},
+      styles: component.styles ?? {},
+      layouts: component.layouts ?? {},
+      validation: component.validation ?? {},
+      others: component.others ?? {}
+    }))
+  })).sort((a, b) => a.id.localeCompare(b.id));
   const redefined = new Set(view.queriesToUpdate.values());
-  const queries = summary.queries.filter((q) => redefined.has(q.id)).map((q) => [q.id, JSON.stringify(q.options ?? {})]).sort();
-  return JSON.stringify([pages, events, queries]);
+  const queries = summary.queries.filter((query) => redefined.has(query.id)).map((query) => ({
+    id: query.id,
+    name: query.name ?? null,
+    kind: query.kind ?? null,
+    data_source_id: query.data_source_id ?? null,
+    options: query.options ?? {}
+  })).sort((a, b) => a.id.localeCompare(b.id));
+  const touched = [...pageIds, ...replacedPages.flatMap((page) => page.components.map((component) => component.id)), ...redefined];
+  const touchedIds = new Set(touched);
+  const names = touched.length ? new RegExp(idPattern(touched).source) : void 0;
+  const events = summary.events.filter((event) => event.sourceId && touchedIds.has(event.sourceId) || !!names?.test(JSON.stringify(event.event ?? {}))).map((event) => ({
+    id: event.id,
+    name: event.name ?? null,
+    sourceId: event.sourceId ?? null,
+    target: event.target ?? null,
+    index: event.index ?? null,
+    event: event.event ?? {}
+  })).sort((a, b) => a.id.localeCompare(b.id));
+  return canonical2({ pages, queries, events });
 }
 
 // dist/frozenApp.js
@@ -75894,7 +76031,7 @@ function applyAppPhaseTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page's existing components and their events are deleted just before the plan's components are created (page events and query events only where the plan declares them again), queries the plan defines again are updated in place keeping their ids, and events on other pages that acted on a replaced component are re-pointed to the recreated component of the same name. A replace is refused before any write if the page changed since lint. A failure after that deletion leaves the page to be repaired (the result says what was removed). The one-time token prevents an accidental retry from duplicating objects.",
+    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page's existing components and their events are deleted just before the plan's components are created (page events and query events only where the plan declares them again), queries the plan defines again are updated in place keeping their ids, and events on other pages that acted on a replaced component are re-pointed to the recreated component of the same name. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure after that deletion leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().optional().describe("Defaults to the version the plan was linted for."),
@@ -75964,21 +76101,22 @@ function applyAppPhaseTool(client) {
         const planSummary = replacing?.summary ?? initialSummary;
         replacedPageNames = replacing?.replacedPageNames ?? [];
         retargetPending = (replacing?.eventsToRetarget ?? []).map((event) => `"${event.name ?? event.id}"`);
-        let renameWarning;
-        if (spec.app_name && spec.app_name !== initialSummary.name) {
-          stage = "rename target app";
-          try {
-            await client.renameApp(args.app_id, args.version_id, spec.app_name);
-          } catch (error51) {
-            const message = error51 instanceof Error ? error51.message : String(error51);
-            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
-              throw error51;
-            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
-            await client.renameApp(args.app_id, args.version_id, fallback);
-            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
-          }
-          applied.app_metadata = 1;
-        }
+        stage = "prepare queries";
+        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
+        const preparedQueryOptions = (spec.queries ?? []).map((query) => {
+          if (!query.datasource_id)
+            throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
+          const kind = datasourceKinds.get(query.datasource_id);
+          if (!kind)
+            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
+          const options2 = structuredClone(query.options);
+          if (query.table_ref)
+            options2.table_id = `planned-table:${query.table_ref}`;
+          const prepared = prepareQueryOptionsForWrite(kind, options2, `Query "${query.name}"`);
+          if (prepared.errors.length)
+            throw new Error(`${prepared.errors.join(" ")} Nothing was written; lint the phase again.`);
+          return { kind, options: prepared.options };
+        });
         const plannedPageMatches = /* @__PURE__ */ new Map();
         const claimedPageIds = /* @__PURE__ */ new Set();
         const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === "home" && initialSummary.pages[0].components.length === 0 ? initialSummary.pages[0] : void 0;
@@ -76002,7 +76140,83 @@ function applyAppPhaseTool(client) {
         if (queryCollision)
           throw new Error(`App already has a query named "${queryCollision.name}".`);
         const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
-        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
+        const resolvePlannedEvents = (pageTargets2, queryTargets2, targets) => {
+          const ordinaryEvents2 = (spec.events ?? []).map((event) => {
+            const source2 = sourceTarget(event.source_type, event.source_ref, pageTargets2, queryTargets2, targets);
+            if (!source2)
+              throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
+            return {
+              sourceId: source2.id,
+              sourceType: event.source_type,
+              ref: event.ref,
+              trigger: event.trigger,
+              action: resolveAction2(event.action, pageTargets2, queryTargets2, targets),
+              name: event.name
+            };
+          });
+          const lifecycleSpecs2 = (spec.lifecycles ?? []).map((lifecycle) => ({
+            queryId: oneRef(lifecycle.query_ref, queryTargets2, "Lifecycle query"),
+            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) => resolveAction2(action, pageTargets2, queryTargets2, targets)),
+            refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets2, "Lifecycle refresh query"),
+            clearComponentIds: refs(lifecycle.clear_component_refs, targets, "Lifecycle clear component"),
+            closeModalId: oneRef(lifecycle.close_modal_ref, targets, "Lifecycle modal"),
+            successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
+            failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
+            successActions: lifecycle.success_actions?.map((action) => resolveAction2(action, pageTargets2, queryTargets2, targets)),
+            failureActions: lifecycle.failure_actions?.map((action) => resolveAction2(action, pageTargets2, queryTargets2, targets))
+          }));
+          return { ordinaryEvents: ordinaryEvents2, lifecycleSpecs: lifecycleSpecs2 };
+        };
+        stage = "prepare page components";
+        const preparedBatches = /* @__PURE__ */ new Map();
+        for (const page of spec.pages ?? []) {
+          if (!page.components?.length)
+            continue;
+          const prepared = prepareComponentBatch(page.components);
+          if (prepared.errors.length)
+            throw new Error(`Page "${page.name}": ${prepared.errors.join(" ")}`);
+          preparedBatches.set(logicalRef(page), prepared);
+        }
+        stage = "resolve event refs";
+        {
+          const pages = persistedTargets(initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] })));
+          for (const page of spec.pages ?? []) {
+            const id = plannedPageMatches.get(logicalRef(page))?.id ?? `planned-page:${logicalRef(page)}`;
+            pages.set(logicalRef(page), { id, name: page.name });
+          }
+          const queries = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
+          for (const query of spec.queries ?? []) {
+            const target = { id: replacing?.queriesToUpdate.get(query.name) ?? `planned-query:${query.name}`, name: query.name };
+            queries.set(logicalRef(query), target);
+            queries.set(query.name, target);
+          }
+          const components = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
+            id: component.id,
+            name: component.name ?? component.id,
+            type: component.type
+          })));
+          for (const prepared of preparedBatches.values()) {
+            for (const component of prepared.components) {
+              components.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
+            }
+          }
+          resolvePlannedEvents(pages, queries, components);
+        }
+        let renameWarning;
+        if (spec.app_name && spec.app_name !== initialSummary.name) {
+          stage = "rename target app";
+          try {
+            await client.renameApp(args.app_id, args.version_id, spec.app_name);
+          } catch (error51) {
+            const message = error51 instanceof Error ? error51.message : String(error51);
+            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
+              throw error51;
+            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
+            await client.renameApp(args.app_id, args.version_id, fallback);
+            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
+          }
+          applied.app_metadata = 1;
+        }
         stage = "create tables and pages";
         const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
         const [tableWrite, pageWrite] = await Promise.allSettled([
@@ -76066,13 +76280,8 @@ function applyAppPhaseTool(client) {
           await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
         }
         stage = "seed data and create queries";
-        const queryInputs = (spec.queries ?? []).map((query) => {
-          if (!query.datasource_id)
-            throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
-          const kind = datasourceKinds.get(query.datasource_id);
-          if (!kind)
-            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
-          const options2 = normalizeQueryOptions(kind, structuredClone(query.options));
+        const queryInputs = (spec.queries ?? []).map((query, index) => {
+          const { kind, options: options2 } = preparedQueryOptions[index];
           if (query.table_ref) {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
             if (!tableId)
@@ -76118,59 +76327,15 @@ function applyAppPhaseTool(client) {
           queryTargets.set(logicalRef(query), { id: target.query_id, name: target.name });
           queryTargets.set(query.name, { id: target.query_id, name: target.name });
         });
-        stage = "prepare page components";
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
-          if (!page.components?.length)
+          const prepared = preparedBatches.get(logicalRef(page));
+          if (!prepared)
             return [];
           const target = pageTargets.get(logicalRef(page));
           if (!target)
             throw new Error(`Could not resolve component page "${page.name}".`);
-          const prepared = prepareComponentBatch(page.components);
-          if (prepared.errors.length)
-            throw new Error(prepared.errors.join(" "));
           return [{ page, pageId: target.id, prepared }];
         });
-        const resolvePlannedEvents = (targets) => {
-          const ordinaryEvents2 = (spec.events ?? []).map((event) => {
-            const source2 = sourceTarget(event.source_type, event.source_ref, pageTargets, queryTargets, targets);
-            if (!source2)
-              throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
-            return {
-              sourceId: source2.id,
-              sourceType: event.source_type,
-              ref: event.ref,
-              trigger: event.trigger,
-              action: resolveAction2(event.action, pageTargets, queryTargets, targets),
-              name: event.name
-            };
-          });
-          const lifecycleSpecs2 = (spec.lifecycles ?? []).map((lifecycle) => ({
-            queryId: oneRef(lifecycle.query_ref, queryTargets, "Lifecycle query"),
-            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) => resolveAction2(action, pageTargets, queryTargets, targets)),
-            refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, "Lifecycle refresh query"),
-            clearComponentIds: refs(lifecycle.clear_component_refs, targets, "Lifecycle clear component"),
-            closeModalId: oneRef(lifecycle.close_modal_ref, targets, "Lifecycle modal"),
-            successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
-            failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
-            successActions: lifecycle.success_actions?.map((action) => resolveAction2(action, pageTargets, queryTargets, targets)),
-            failureActions: lifecycle.failure_actions?.map((action) => resolveAction2(action, pageTargets, queryTargets, targets))
-          }));
-          return { ordinaryEvents: ordinaryEvents2, lifecycleSpecs: lifecycleSpecs2 };
-        };
-        {
-          const planned = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
-            id: component.id,
-            name: component.name ?? component.id,
-            type: component.type
-          })));
-          for (const page of preparedPages) {
-            for (const component of page.prepared.components) {
-              planned.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
-            }
-          }
-          stage = "resolve event refs";
-          resolvePlannedEvents(planned);
-        }
         if (replacing) {
           stage = "remove the replaced page's components and events";
           for (const eventId of replacing.eventsToDelete) {
@@ -76241,7 +76406,7 @@ function applyAppPhaseTool(client) {
           throw new Error(componentFailures.join(" | "));
         stage = "create events and lifecycles";
         const summaryBeforeEvents = await client.getAppSummary(args.app_id);
-        const { ordinaryEvents, lifecycleSpecs } = resolvePlannedEvents(componentTargets);
+        const { ordinaryEvents, lifecycleSpecs } = resolvePlannedEvents(pageTargets, queryTargets, componentTargets);
         const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
         warnings.push(...expanded.warnings);
         const allEvents = [...ordinaryEvents, ...expanded.events];
@@ -76550,14 +76715,11 @@ function addQueryTool(client) {
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const options2 = normalizeQueryOptions(datasource.kind, args.options);
-        const validation = validateQueryOptions(datasource.kind, options2);
-        if (validation.errors.length)
-          return fail(new Error(issueMessages(validation.errors).join(" ")));
-        const warnings = issueMessages(validation.warnings);
-        if (options2 !== args.options) {
-          warnings.push(datasource.kind === "mongodb" ? "Serialized MongoDB document fields to JSON text expected by the plugin." : `Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-        }
+        const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
+        if (prepared.errors.length)
+          return fail(new Error(prepared.errors.join(" ")));
+        const { options: options2, warnings } = prepared;
+        const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
@@ -76623,15 +76785,12 @@ function addQueriesTool(client) {
           if (!datasource) {
             throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          const options2 = normalizeQueryOptions(datasource.kind, query.options);
-          if (options2 !== query.options) {
-            warnings.push(datasource.kind === "mongodb" ? `Query "${query.name}": serialized MongoDB document fields to JSON text expected by the plugin.` : `Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-          }
-          const validation = validateQueryOptions(datasource.kind, options2);
-          if (validation.errors.length) {
-            throw new Error(issueMessages(validation.errors, `Query "${query.name}"`).join(" "));
-          }
-          warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          if (prepared.errors.length)
+            throw new Error(prepared.errors.join(" "));
+          warnings.push(...prepared.warnings);
+          const { options: options2 } = prepared;
+          const validation = prepared.validation;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
           }
@@ -77468,7 +77627,7 @@ function updateQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails.",
+    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.",
     inputSchema: {
       query_id: external_exports.string().optional().describe("the query id, or its name; with only name given, name picks the query"),
       version_id: external_exports.string(),
@@ -77511,21 +77670,13 @@ function updateQueryTool(client) {
           }
           kind = datasource.kind;
         }
-        const warnings = [...resolutionWarnings];
-        let validation;
-        let options2 = args.options;
-        if (kind) {
-          options2 = normalizeQueryOptions(kind, args.options);
-          if (options2 !== args.options) {
-            warnings.push(kind === "mongodb" ? "Serialized MongoDB document fields to JSON text expected by the plugin." : `Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-          }
-          validation = validateQueryOptions(kind, options2);
-          if (validation.errors.length)
-            return fail(new Error(issueMessages(validation.errors).join(" ")));
-          warnings.push(...issueMessages(validation.warnings));
-        } else {
+        const prepared = prepareQueryOptionsForWrite(kind, args.options);
+        if (prepared.errors.length)
+          return fail(new Error(prepared.errors.join(" ")));
+        const warnings = [...resolutionWarnings, ...prepared.warnings];
+        const { options: options2, validation } = prepared;
+        if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        }
         warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({

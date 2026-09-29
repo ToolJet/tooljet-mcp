@@ -558,3 +558,231 @@ describe('apply_app_phase annotations', () => {
     expect(tool.description).toMatch(/marked replace/);
   });
 });
+
+// The replace precondition: lint records the state the plan was checked against and apply refuses when it differs.
+// It recorded only component ids, names and parents, so an ordinary edit (a label, a width, a style) between lint and
+// apply left the fingerprint identical and the replace deleted it while calling the page unchanged.
+describe('the replace fingerprint covers everything the replace depends on', () => {
+  const base = () => ({
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Orders', handle: 'orders', components: [
+        { id: 'c1', name: 'title', type: 'Text', properties: { text: { value: 'Original' } }, styles: { textColor: { value: '#111' } },
+          layouts: { desktop: { top: 0, left: 0, width: 10, height: 40 } }, others: { showOnMobile: { value: false } } },
+        { id: 'c3', name: 'box', type: 'Container', properties: {}, layouts: { desktop: { top: 60, left: 0, width: 20, height: 200 } } },
+        { id: 'c2', name: 'qty', type: 'NumberInput', parent: 'c3', properties: { label: { value: 'Qty' } },
+          validation: { mandatory: { value: false } }, layouts: { desktop: { top: 10, left: 1, width: 8, height: 40 } } },
+      ] },
+      { id: 'p2', name: 'Other', handle: 'other', components: [
+        { id: 'c9', name: 'rename', type: 'Button', properties: { text: { value: 'Rename' } } },
+        { id: 'c8', name: 'elsewhere', type: 'Text', properties: { text: { value: '{{queries.other.data.length}}' } } },
+      ] },
+    ],
+    queries: [
+      { id: 'q1', name: 'rows', kind: 'runjs', data_source_id: 'ds-js', options: { code: 'return [1]' } },
+      { id: 'q2', name: 'other', kind: 'runjs', data_source_id: 'ds-js', options: { code: 'return [2]' } },
+    ],
+    events: [
+      { id: 'e1', name: 'load', target: 'page', sourceId: 'p1', index: 0, event: { eventId: 'onPageLoad', actionId: 'run-query', queryId: 'q1' } },
+      { id: 'e2', target: 'component', sourceId: 'c2', index: 1, event: { eventId: 'onChange', actionId: 'run-query', queryId: 'q1' } },
+      { id: 'e3', target: 'data_query', sourceId: 'q1', index: 2, event: { eventId: 'onDataQuerySuccess', actionId: 'show-alert', message: 'Loaded' } },
+      { id: 'e9', target: 'component', sourceId: 'c9', index: 3, event: { eventId: 'onClick', actionId: 'control-component', componentId: 'c1', componentSpecificActionHandle: 'setText' } },
+      { id: 'e10', target: 'component', sourceId: 'c8', index: 4, event: { eventId: 'onClick', actionId: 'run-query', queryId: 'q2' } },
+    ],
+  });
+  const plan = { pages: [{ name: 'Orders', replace: true, components: [{ name: 'title' }, { name: 'box' }, { name: 'qty' }] }], queries: [{ name: 'rows' }] };
+  const fingerprint = (summary: ReturnType<typeof base>) => replaceFingerprint(summary as never, replaceView(summary as never, plan as never)!);
+  const before = fingerprint(base());
+  type S = ReturnType<typeof base>;
+  const comp = (s: S, id: string) => s.pages.flatMap((p) => p.components).find((c) => c.id === id)! as Record<string, any>;
+  const query = (s: S, id: string) => s.queries.find((q) => q.id === id)! as Record<string, any>;
+  const event = (s: S, id: string) => s.events.find((e) => e.id === id)! as Record<string, any>;
+
+  const detected: Array<[string, (s: S) => void]> = [
+    ['component text', (s) => { comp(s, 'c1').properties.text.value = 'Human edit'; }],
+    ['component width', (s) => { comp(s, 'c1').layouts.desktop.width = 20; }],
+    ['component mobile layout added', (s) => { comp(s, 'c1').layouts.mobile = { top: 0, left: 0, width: 5, height: 40 }; }],
+    ['component style', (s) => { comp(s, 'c1').styles.textColor.value = '#f00'; }],
+    ['component type', (s) => { comp(s, 'c1').type = 'Html'; }],
+    ['component name', (s) => { comp(s, 'c1').name = 'heading'; }],
+    ['component others', (s) => { comp(s, 'c1').others.showOnMobile.value = true; }],
+    ['component validation', (s) => { comp(s, 'c2').validation.mandatory.value = true; }],
+    ['component parent', (s) => { delete comp(s, 'c2').parent; }],
+    ['component slot', (s) => { comp(s, 'c2').slot_name = 'header'; }],
+    ['component added', (s) => { s.pages[0]!.components.push({ id: 'c4', name: 'note', type: 'Text' } as never); }],
+    ['component removed', (s) => { s.pages[0]!.components.splice(0, 1); }],
+    ['redefined query options', (s) => { query(s, 'q1').options.code = 'return [1, 2]'; }],
+    ['redefined query toggle', (s) => { query(s, 'q1').options.runOnPageLoad = true; }],
+    ['redefined query kind', (s) => { query(s, 'q1').kind = 'restapi'; }],
+    ['redefined query datasource', (s) => { query(s, 'q1').data_source_id = 'ds-other'; }],
+    ['page event', (s) => { event(s, 'e1').event.runOnlyIf = '{{variables.ready}}'; }],
+    ['page event name', (s) => { event(s, 'e1').name = 'renamed'; }],
+    ['component event', (s) => { event(s, 'e2').event.debounce = 300; }],
+    ['redefined query event', (s) => { event(s, 'e3').event.message = 'Done'; }],
+    ['another page event acting on a replaced component', (s) => { event(s, 'e9').event.componentSpecificActionHandle = 'clear'; }],
+    ['event order', (s) => { event(s, 'e2').index = 7; }],
+    ['event added on the page', (s) => { s.events.push({ id: 'e11', target: 'page', sourceId: 'p1', index: 5, event: { eventId: 'onPageLoad', actionId: 'show-alert', message: 'hi' } } as never); }],
+    ['event removed from the page', (s) => { s.events.splice(0, 1); }],
+  ];
+  it.each(detected)('detects a change to the %s', (_label, mutate) => {
+    const summary = base();
+    mutate(summary);
+    expect(fingerprint(summary)).not.toBe(before);
+  });
+
+  const ignored: Array<[string, (s: S) => void]> = [
+    ['another page\'s component', (s) => { comp(s, 'c8').properties.text.value = 'Edited elsewhere'; }],
+    ['a query the plan does not redefine', (s) => { query(s, 'q2').options.code = 'return [3]'; }],
+    ['an unrelated event', (s) => { event(s, 'e10').event.debounce = 100; }],
+    ['property key order', (s) => { const c = comp(s, 'c1'); c.properties = { ...c.properties }; c.styles = { textColor: c.styles.textColor }; const { styles, ...rest } = c; Object.keys(rest).forEach((k) => delete c[k]); Object.assign(c, { styles }, rest); }],
+  ];
+  it.each(ignored)('does not change for %s', (_label, mutate) => {
+    const summary = base();
+    mutate(summary);
+    expect(fingerprint(summary)).toBe(before);
+  });
+});
+
+describe('apply refuses a replace after any edit to what it depends on', () => {
+  beforeEach(() => clearAppPlansForTests());
+  const initial = (): State => ({
+    pages: [
+      { id: 'p1', name: 'Products', handle: 'products', components: [
+        { id: 'c1', name: 'title', type: 'Text', properties: { text: { value: '{{queries.rows.data.length}}' } }, styles: { textColor: { value: '#111' } }, layouts: { desktop: at(10) } },
+        { id: 'c2', name: 'qty', type: 'NumberInput', properties: { label: { value: 'Qty' } }, validation: { mandatory: { value: false } }, layouts: { desktop: at(60) } },
+      ] },
+    ],
+    queries: [{ id: 'q1', name: 'rows', kind: 'runjs', data_source_id: 'ds-js', options: { code: 'return [1]' } }],
+    events: [
+      { id: 'e1', target: 'page', sourceId: 'p1', event: { eventId: 'onPageLoad', actionId: 'run-query', queryId: 'q1' } },
+      { id: 'e2', target: 'component', sourceId: 'c2', event: { eventId: 'onChange', actionId: 'run-query', queryId: 'q1' } },
+      { id: 'e3', target: 'data_query', sourceId: 'q1', event: { eventId: 'onDataQuerySuccess', actionId: 'show-alert', message: 'Loaded' } },
+    ],
+  });
+  const spec = {
+    pages: [{ name: 'Products', icon: 'IconBox', replace: true, components: [
+      { name: 'title', type: 'Text', properties: { text: '{{queries.rows.data.length}} rows' }, layout: at(10) },
+      { name: 'qty', type: 'NumberInput', properties: { label: 'Qty' }, layout: at(60) },
+    ] }],
+    queries: [{ name: 'rows', datasource_name: 'runjsdefault', options: { code: 'return [1, 2]' } }],
+  };
+  const edits: Array<[string, (s: State) => void]> = [
+    ['text', (s) => { s.pages[0]!.components[0].properties.text.value = 'Human edit'; }],
+    ['width', (s) => { s.pages[0]!.components[0].layouts.desktop.width = 20; }],
+    ['style', (s) => { s.pages[0]!.components[0].styles.textColor.value = '#f00'; }],
+    ['type', (s) => { s.pages[0]!.components[0].type = 'Html'; }],
+    ['validation', (s) => { s.pages[0]!.components[1].validation.mandatory.value = true; }],
+    ['query options', (s) => { s.queries[0]!.options.code = 'return [9]'; }],
+    ['query datasource', (s) => { s.queries[0]!.data_source_id = 'ds-tjdb'; }],
+    ['query kind', (s) => { s.queries[0]!.kind = 'tooljetdb'; }],
+    ['page event', (s) => { s.events[0]!.event.runOnlyIf = '{{variables.ready}}'; }],
+    ['component event', (s) => { s.events[1]!.event.debounce = 300; }],
+    ['query event', (s) => { s.events[2]!.event.message = 'Done'; }],
+  ];
+  it.each(edits)('refuses before any write after a %s edit', async (_label, edit) => {
+    const state = initial();
+    const client = fakeApp(state);
+    const linted = await lint(client, spec);
+    expect(linted.plan_token, JSON.stringify(linted.errors)).toEqual(expect.any(String));
+    edit(state);
+    const refused = await apply(client, linted.plan_token!);
+    expect(refused.isError).toBe(true);
+    expect(text(refused)).toMatch(/changed since this plan was linted/);
+    for (const write of ['deleteComponents', 'deleteEvent', 'updateQuery', 'updateQueryDatasource', 'createQueries', 'createComponents', 'createEvents'] as const) {
+      expect(client[write], write).not.toHaveBeenCalled();
+    }
+  });
+  it('applies when nothing changed', async () => {
+    const client = fakeApp(initial());
+    const linted = await lint(client, spec);
+    const applied = await apply(client, linted.plan_token!);
+    expect(applied.isError, text(applied)).toBeFalsy();
+  });
+});
+
+// Queries were updated (and tables, pages and seed rows written) before the page's components were prepared and its
+// event refs resolved, so a plan whose components could not be built still rewrote the page's queries.
+describe('apply prepares the whole phase before its first write', () => {
+  beforeEach(() => clearAppPlansForTests());
+  const state = (): State => ({
+    pages: [{ id: 'p1', name: 'Products', handle: 'products', components: [
+      { id: 'c1', name: 'title', type: 'Text', properties: { text: { value: '{{queries.rows.data.length}}' } }, layouts: { desktop: at(10) } },
+    ] }],
+    queries: [{ id: 'q1', name: 'rows', kind: 'runjs', data_source_id: 'ds-js', options: { code: 'return [1]' } }],
+    events: [],
+  });
+  const applyStored = async (client: ReturnType<typeof fakeApp>, spec: Record<string, unknown>) => {
+    const current = await client.getAppSummary();
+    const view = replaceView(current as never, spec as never)!;
+    const { plan_token } = storeAppPlan(spec as never, { ok: true, errors: [], warnings: [] } as never, replaceFingerprint(current as never, view));
+    return apply(client, plan_token);
+  };
+  const phase = (extra: Record<string, unknown>) => ({
+    app_name: 'Renamed',
+    tables: [{ table_name: 'extra', columns: [{ name: 'label', type: 'varchar' }] }],
+    queries: [
+      { name: 'rows', datasource_id: 'ds-js', options: { code: 'return [1, 2]' } },
+      { name: 'fresh', datasource_id: 'ds-js', options: { code: 'return []' } },
+    ],
+    pages: [
+      { name: 'Products', icon: 'IconBox', replace: true, components: [{ name: 'title', type: 'Text', layout: at(10) }] },
+      { name: 'Added', icon: 'IconBox', components: [{ name: 'hello', type: 'Text', layout: at(10) }] },
+    ],
+    ...extra,
+  });
+  const expectNoWrites = (client: ReturnType<typeof fakeApp> & { renameApp?: unknown }) => {
+    for (const write of ['createTables', 'createPages', 'updatePages', 'insertRowsBatch', 'updateQuery', 'updateQueryDatasource',
+      'createQueries', 'deleteEvent', 'deleteComponents', 'createComponents', 'createEvents'] as const) {
+      expect(client[write], write).not.toHaveBeenCalled();
+    }
+  };
+  const withRename = (client: ReturnType<typeof fakeApp>) => Object.assign(client, { renameApp: vi.fn(async () => undefined) });
+
+  it('writes nothing when a component does not prepare', async () => {
+    const client = withRename(fakeApp(state()));
+    const spec = phase({});
+    (spec.pages as Array<Record<string, any>>)[1]!.components = [{ name: 'hello', type: 'Nope', layout: at(10) }];
+    const result = await applyStored(client, spec);
+    expect(result.isError).toBe(true);
+    expect(client.renameApp).not.toHaveBeenCalled();
+    expectNoWrites(client);
+  });
+
+  it('writes nothing when an event names a target the plan does not have', async () => {
+    const client = withRename(fakeApp(state()));
+    const result = await applyStored(client, phase({
+      events: [{ source_ref: 'hello', source_type: 'component', trigger: 'onClick', action: { actionId: 'show-modal', target_ref: 'noSuchModal' } }],
+    }));
+    expect(result.isError).toBe(true);
+    expect(client.renameApp).not.toHaveBeenCalled();
+    expectNoWrites(client);
+  });
+
+  it('writes nothing when a lifecycle names a query the plan does not have', async () => {
+    const client = withRename(fakeApp(state()));
+    const result = await applyStored(client, phase({ lifecycles: [{ query_ref: 'rows', refresh_query_refs: ['missing'] }] }));
+    expect(result.isError).toBe(true);
+    expectNoWrites(client);
+  });
+
+  it('still resolves events on pages, queries and components the phase creates', async () => {
+    const client = withRename(fakeApp(state()));
+    const result = await applyStored(client, phase({
+      events: [
+        { source_ref: 'hello', source_type: 'component', trigger: 'onClick', action: { actionId: 'run-query', target_ref: 'fresh' } },
+        { source_ref: 'Added', source_type: 'page', trigger: 'onPageLoad', action: { actionId: 'run-query', target_ref: 'rows' } },
+        { source_ref: 'fresh', source_type: 'data_query', trigger: 'onDataQuerySuccess', action: { actionId: 'switch-page', target_ref: 'Added' } },
+      ],
+    }));
+    expect(result.isError, text(result)).toBeFalsy();
+    expect(client.createEvents).toHaveBeenCalledOnce();
+  });
+});
+
+describe('apply_app_phase says a replace is not atomic', () => {
+  it('and that it belongs on a draft or recoverable page', () => {
+    const description = applyAppPhaseTool({} as never).description;
+    expect(description).toMatch(/not atomic/i);
+    expect(description).toMatch(/draft|recoverable/i);
+  });
+});
