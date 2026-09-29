@@ -1606,6 +1606,25 @@ describe('createClient', () => {
       expect(JSON.parse(init.body)).toEqual({ options: { a: 1 }, name: 'q' });
     });
 
+    // The tools prepare options first; the client is the last line, so a caller that skipped the preparation step
+    // still cannot send a toggle ToolJet would read as on.
+    it.each([['{{false}}'], ['false'], [[]], [{}], [1], [null]])('refuses to send a non-boolean query toggle %j', async (value) => {
+      const client = createClient(auth, config);
+      await expect(client.updateQuery({ queryId: 'q1', versionId: 'ver1', options: { code: 'x', runOnPageLoad: value } }))
+        .rejects.toThrow(/runOnPageLoad/);
+      await expect(client.createQuery({ versionId: 'ver1', dataSourceId: 'ds', kind: 'runjs', name: 'q',
+        options: { code: 'x', showSuccessNotification: value } })).rejects.toThrow(/showSuccessNotification/);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
+
+    it('sends boolean and omitted toggles', async () => {
+      auth.authedFetch.mockResolvedValue(mockResponse({ status: 200, json: { id: 'q2', name: 'q' } }));
+      const client = createClient(auth, config);
+      await client.updateQuery({ queryId: 'q1', versionId: 'ver1', options: { code: 'x', runOnPageLoad: false } });
+      await client.createQuery({ versionId: 'ver1', dataSourceId: 'ds', kind: 'runjs', name: 'q', options: { code: 'x' } });
+      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
+    });
+
     it('DELETEs a query with no body', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
       const client = createClient(auth, config);
