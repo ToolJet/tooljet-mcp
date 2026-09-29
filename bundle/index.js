@@ -63771,7 +63771,7 @@ function lintListviewChildren(components) {
           return false;
         return rect2.top < siblingRect.top + siblingRect.height && siblingRect.top < rect2.top + rect2.height;
       });
-      if (sharesRow || rect2.left === 0 && rect2.width === 43)
+      if (sharesRow || rect2.left === 0 && (rect2.width === 43 || rect2.width === 42))
         continue;
       warnings.push(`Component "${child.name ?? child.id ?? child.type}" is the only child on its row inside grid-mode Listview "${parent.name ?? parent.id ?? "Listview"}", but uses left:${rect2.left ?? "unset"}, width:${rect2.width ?? "unset"}. Each repeated grid cell has its own fresh 43-column local canvas; for a full-row child use left:0, width:43. Do not divide the child width by the parent grid column count.`);
     }
@@ -63955,6 +63955,10 @@ function lintChartHouseStyle(spec, warnings = []) {
   }
   return [];
 }
+var INSPECTOR_ONLY_PROPERTIES = {
+  PhoneInput: ["defaultCountry"],
+  CurrencyInput: ["defaultCountry"]
+};
 function lintComponentSpec(spec, context = {}) {
   const errors = [];
   const warnings = [];
@@ -64068,6 +64072,8 @@ function lintComponentSpec(spec, context = {}) {
       if (knownKeys.includes(key4))
         continue;
       if (sectionName === "property" && STYLE_KEYS_IN_PROPERTIES.has(key4))
+        continue;
+      if (sectionName === "property" && INSPECTOR_ONLY_PROPERTIES[spec.type ?? ""]?.includes(key4))
         continue;
       const aliasTarget = PROPERTY_KEY_ALIASES[key4.toLowerCase()];
       const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
