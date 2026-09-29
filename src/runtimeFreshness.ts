@@ -3,7 +3,7 @@ import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { ToolResult } from './tools/types.js';
 
-export const TOOLJET_MCP_VERSION = '0.6.0';
+export const TOOLJET_MCP_VERSION = '0.6.1';
 
 interface RuntimeSnapshot {
   buildId: string;
