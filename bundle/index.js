@@ -67743,6 +67743,17 @@ async function resolveTheme(client, choice) {
     throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
   return named;
 }
+function paintsDarkCanvasInLightMode(definition) {
+  const light = definition?.surface?.colors?.appBackground?.light;
+  const hex3 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
+  if (!hex3)
+    return false;
+  const [r, g, b] = [0, 2, 4].map((at) => {
+    const channel = parseInt(hex3.slice(at, at + 2), 16) / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
+}
 function createAppTool(client) {
   return {
     name: "create_app",
@@ -67769,13 +67780,14 @@ function createAppTool(client) {
         const label2 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
+          const dark = typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition);
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme }
+            globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          result.theme = { mode, id: theme.id, name: theme.name };
+          result.theme = { mode, id: theme.id, name: theme.name, ...dark ? { app_mode: "dark" } : {} };
         } catch (themeErr) {
           result.theme = {
             mode: "workspace_default",
