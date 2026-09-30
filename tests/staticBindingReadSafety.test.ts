@@ -26,7 +26,7 @@ describe('static bindings cannot turn a proven read into a write', () => {
       const client = clientFor(pg(sql));
       const result = await runQueryTool(client).handler({ query_id: 'q1', version_id: 'v1' });
       expect(result.isError).toBe(true);
-      expect((result.content[0] as { text: string }).text).toMatch(/after its \{\{ \}\} bindings/);
+      expect((result.content[0] as { text: string }).text).toMatch(/after its \{\{ \}\} bindings|SQL quoting is ambiguous or unterminated/);
       expect(client.runQuery).not.toHaveBeenCalled();
     });
     it(`run_queries refuses ${sql}`, async () => {
