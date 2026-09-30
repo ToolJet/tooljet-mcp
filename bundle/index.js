@@ -3095,7 +3095,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3122,7 +3122,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3753,7 +3753,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options2) {
+    function resolve6(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -4037,7 +4037,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve5,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -34223,7 +34223,7 @@ var require_moment = __commonJS({
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
-import { fileURLToPath as fileURLToPath6 } from "node:url";
+import { fileURLToPath as fileURLToPath7 } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -50368,12 +50368,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve5();
+        resolve6();
       } else {
-        this._stdout.once("drain", resolve5);
+        this._stdout.once("drain", resolve6);
       }
     });
   }
@@ -50801,7 +50801,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve5, reject) => {
+  const promise2 = new Promise((resolve6, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -50819,7 +50819,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error51 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve5(recovered);
+          resolve6(recovered);
         }
       });
       return true;
@@ -50831,7 +50831,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve5(buffer);
+        resolve6(buffer);
       });
     };
     const onError = (error51) => {
@@ -51356,7 +51356,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve5) => setTimeout(resolve5));
+            await new Promise((resolve6) => setTimeout(resolve6));
             maxReadCount = 3;
             continue;
           }
@@ -52036,9 +52036,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve5) => {
+        return new Promise((resolve6) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve5,
+            resolveJson: resolve6,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -58339,7 +58339,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -58356,7 +58356,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -58434,7 +58434,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -58695,12 +58695,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -59791,7 +59791,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -61414,7 +61414,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve5 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const resolve6 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options2 = q.options && typeof q.options === "object" ? q.options : {};
@@ -61426,7 +61426,7 @@ function queryTriggers(summary) {
     const payload2 = eventPayload(e.event);
     if (!payload2 || payload2.actionId !== "run-query")
       continue;
-    const target = resolve5(payload2.queryId ?? payload2.queryName);
+    const target = resolve6(payload2.queryId ?? payload2.queryName);
     if (!target)
       continue;
     const entry = triggers.get(target.id);
@@ -66758,7 +66758,7 @@ function createClient(auth, config2) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve5) => setTimeout(resolve5, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      await new Promise((resolve6) => setTimeout(resolve6, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
@@ -66820,8 +66820,8 @@ function createClient(auth, config2) {
   async function createQuery(params) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
-    const tail = new Promise((resolve5) => {
-      release = resolve5;
+    const tail = new Promise((resolve6) => {
+      release = resolve6;
     });
     queryCreateTails.set(params.versionId, tail);
     await previous;
@@ -66883,7 +66883,7 @@ function createClient(auth, config2) {
     return dto;
   }
   async function createComponents(params) {
-    const entries = params.components.map((spec) => ({ id: randomUUID(), spec }));
+    const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = /* @__PURE__ */ new Map();
     for (const e of entries) {
       if (!e.spec.clientRef)
@@ -70629,7 +70629,7 @@ function unconditional(action) {
 }
 function queryEventCycleErrors(summary, additions, persisted) {
   const names = new Map(summary.queries.map((q) => [q.id, q.name ?? q.id]));
-  const resolve5 = (value2) => {
+  const resolve6 = (value2) => {
     if (typeof value2 !== "string")
       return void 0;
     if (names.has(value2))
@@ -70640,7 +70640,7 @@ function queryEventCycleErrors(summary, additions, persisted) {
   const edge = (event) => {
     if (event.sourceType !== "data_query" || !names.has(event.sourceId) || event.action.actionId !== "run-query" || !unconditional(event.action))
       return void 0;
-    const target = resolve5(event.action.queryId);
+    const target = resolve6(event.action.queryId);
     return target ? [event.sourceId, target] : void 0;
   };
   const graph = /* @__PURE__ */ new Map();
@@ -75213,7 +75213,7 @@ var plannedPageSchema = external_exports.object({
   icon: pageIconSchema,
   hidden: external_exports.boolean().optional(),
   /** The existing page of this name is replaced whole: see pageReplace.ts. */
-  replace: external_exports.boolean().optional().describe("true: the existing page of this name has all its components, and the events on them, replaced by this plan's components (needs app_id). Queries of that page the plan defines again are updated in place, keeping their ids; events on other pages that act on a replaced component are re-pointed to the recreated one of the same name. Refused when another page, event or query reads a component the plan drops. Not atomic (deletes, then recreates): use it on draft or otherwise recoverable pages."),
+  replace: external_exports.boolean().optional().describe("true: the existing page of this name ends up holding exactly this plan's components and the events on them (needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not atomic: use it on draft or otherwise recoverable pages."),
   components: external_exports.array(componentInputSchema).optional()
 });
 var plannedEventSchema = external_exports.object({
@@ -76063,6 +76063,155 @@ function autoFitHtmlHeights(args) {
   return warnings;
 }
 
+// dist/pageReplaceInPlace.js
+import { randomUUID as randomUUID3 } from "node:crypto";
+import { readFileSync as readFileSync5 } from "node:fs";
+import { dirname as dirname5, resolve as resolve4 } from "node:path";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
+var SECTIONS2 = ["properties", "styles", "validation", "others"];
+var bundled;
+function bundledDefinitions() {
+  if (!bundled) {
+    const path = resolve4(dirname5(fileURLToPath4(import.meta.url)), "../data/component-default-definitions.json");
+    try {
+      bundled = JSON.parse(readFileSync5(path, "utf8")).definitions;
+    } catch {
+      bundled = {};
+    }
+  }
+  return bundled;
+}
+var isPlainObject4 = (value2) => Boolean(value2) && typeof value2 === "object" && !Array.isArray(value2);
+var WHOLE_ARRAY_TYPES = /* @__PURE__ */ new Set([
+  "Table",
+  "DropdownV2",
+  "MultiselectV2",
+  "PopoverMenu",
+  "Steps",
+  "Tabs",
+  "RadioButtonV2",
+  "Tags",
+  "TagsInput",
+  "TreeSelect",
+  "Cascader",
+  "Navigation",
+  "ButtonGroupV2"
+]);
+function mergeLikeServer(target, source2, wholeArrays) {
+  if (wholeArrays && Array.isArray(target)) {
+    if (source2 === void 0)
+      return target;
+    if (Array.isArray(source2))
+      return source2;
+    return isPlainObject4(source2) ? Object.values(source2) : source2;
+  }
+  if (Array.isArray(source2)) {
+    const base = Array.isArray(target) ? [...target] : [];
+    source2.forEach((item, index) => {
+      const merged = mergeLikeServer(base[index], item, wholeArrays);
+      if (merged !== void 0 || !(index in base))
+        base[index] = merged;
+    });
+    return base;
+  }
+  if (isPlainObject4(source2)) {
+    const base = isPlainObject4(target) ? { ...target } : {};
+    for (const [key4, value2] of Object.entries(source2)) {
+      const merged = mergeLikeServer(base[key4], value2, wholeArrays);
+      if (merged !== void 0 || !(key4 in base))
+        base[key4] = merged;
+    }
+    return base;
+  }
+  return source2 === void 0 ? target : source2;
+}
+var stable = (value2) => JSON.stringify(value2, (_key, inner) => isPlainObject4(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
+function sectionAsRead(type, section, stored, definitions = bundledDefinitions()) {
+  const wholeArrays = section === "properties" && WHOLE_ARRAY_TYPES.has(type);
+  return mergeLikeServer(definitions[type]?.[section] ?? {}, stored ?? {}, wholeArrays);
+}
+function differingKey(type, section, planned, stored, definitions) {
+  const asRead = sectionAsRead(type, section, planned, definitions);
+  const have = stored ?? {};
+  for (const key4 of /* @__PURE__ */ new Set([...Object.keys(asRead), ...Object.keys(have)])) {
+    if (stable(asRead[key4]) !== stable(have[key4]))
+      return key4;
+  }
+  return void 0;
+}
+var RECT_KEYS = ["top", "left", "width", "height"];
+var sameRect = (planned, stored) => {
+  if (!planned)
+    return true;
+  if (!stored || typeof stored !== "object")
+    return false;
+  return RECT_KEYS.every((key4) => Number(stored[key4]) === Number(planned[key4]));
+};
+function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID3) {
+  const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name, component]));
+  const ids = /* @__PURE__ */ new Map();
+  const idOf = /* @__PURE__ */ new Map();
+  for (const spec of planned) {
+    const id = storedByName.get(spec.name)?.id ?? newId();
+    idOf.set(spec, id);
+    ids.set(spec.name, id);
+    if (spec.clientRef)
+      ids.set(spec.clientRef, id);
+  }
+  const diff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
+  const plannedNames = new Set(planned.map((spec) => spec.name));
+  for (const component of stored)
+    if (!component.name || !plannedNames.has(component.name))
+      diff.deleteIds.push(component.id);
+  for (const spec of planned) {
+    const id = idOf.get(spec);
+    const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
+    const submit = spec.type === "Form" ? spec.properties?.buttonToSubmit : void 0;
+    const submitId = submit && typeof submit.value === "string" ? ids.get(submit.value) : void 0;
+    const properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
+    const resolved = { ...rest, properties, id, ...parent ? { parent } : {} };
+    if (!parent)
+      delete resolved.parent;
+    const existing = storedByName.get(spec.name);
+    if (!existing) {
+      diff.create.push(resolved);
+      continue;
+    }
+    let why;
+    if (existing.type !== spec.type)
+      why = `type ${existing.type} -> ${spec.type}`;
+    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName) : void 0))
+      why = "parent";
+    else if (!definitions[spec.type])
+      why = "no default definition for this widget";
+    else {
+      for (const section of SECTIONS2) {
+        const key4 = differingKey(spec.type, section, section === "properties" ? properties : spec[section], existing[section], definitions);
+        if (key4 !== void 0) {
+          why = `${section}.${key4}`;
+          break;
+        }
+      }
+    }
+    if (why) {
+      diff.deleteIds.push(existing.id);
+      diff.create.push(resolved);
+      diff.recreated.push(spec.name);
+      diff.why[spec.name] = why;
+      continue;
+    }
+    const layouts = existing.layouts ?? {};
+    const desktop = spec.layouts?.desktop ?? spec.layout;
+    const mobile = spec.layouts?.mobile ?? spec.layout;
+    if (sameRect(desktop, layouts.desktop) && sameRect(mobile, layouts.mobile))
+      diff.keep.push(spec.name);
+    else
+      diff.relayout.push({ componentId: existing.id, ...desktop ? { desktop } : {}, ...mobile ? { mobile } : {} });
+  }
+  return diff;
+}
+
 // dist/tools/applyAppPhase.js
 function logicalRef(value2) {
   return value2.client_ref ?? value2.name;
@@ -76135,7 +76284,7 @@ async function waitForCreatedTables(client, tableNames) {
         const delay = TABLE_READY_DELAYS_MS[attempt];
         if (delay === void 0)
           break;
-        await new Promise((resolve5) => setTimeout(resolve5, delay));
+        await new Promise((resolve6) => setTimeout(resolve6, delay));
       }
     }
     throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
@@ -76182,7 +76331,9 @@ function applyAppPhaseTool(client) {
         events: 0,
         queries_updated: 0,
         events_removed: 0,
-        components_removed: 0
+        components_removed: 0,
+        components_kept: 0,
+        components_moved: 0
       };
       let stage = "consume plan";
       let createdPageIds = [];
@@ -76459,6 +76610,15 @@ function applyAppPhaseTool(client) {
             throw new Error(`Could not resolve component page "${page.name}".`);
           return [{ page, pageId: target.id, prepared }];
         });
+        const inPlace = /* @__PURE__ */ new Map();
+        if (replacing) {
+          for (const page of preparedPages) {
+            if (!replacing.replacedPageIds.includes(page.pageId))
+              continue;
+            const held = initialSummary.pages.find((existing) => existing.id === page.pageId)?.components ?? [];
+            inPlace.set(page.pageId, diffPageInPlace(held, page.prepared.components));
+          }
+        }
         if (replacing) {
           stage = "remove the replaced page's components and events";
           for (const eventId of replacing.eventsToDelete) {
@@ -76466,20 +76626,39 @@ function applyAppPhaseTool(client) {
             applied.events_removed += 1;
           }
           for (const { pageId, componentIds } of replacing.componentsToDelete) {
-            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds });
-            applied.components_removed += removed.deleted ?? componentIds.length;
+            const ids = inPlace.get(pageId)?.deleteIds ?? componentIds;
+            if (!ids.length)
+              continue;
+            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds: ids });
+            applied.components_removed += removed.deleted ?? ids.length;
           }
         }
         stage = "create page components";
-        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => ({
-          ...page,
-          created: await client.createComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: page.pageId,
-            components: page.prepared.components
-          })
-        })));
+        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => {
+          const diff = inPlace.get(page.pageId);
+          if (!diff) {
+            const created2 = await client.createComponents({
+              appId: args.app_id,
+              versionId: args.version_id,
+              pageId: page.pageId,
+              components: page.prepared.components
+            });
+            return { ...page, created: created2, written: created2.length };
+          }
+          if (diff.create.length) {
+            await client.createComponents({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, components: diff.create });
+          }
+          if (diff.relayout.length) {
+            await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, layouts: diff.relayout });
+          }
+          applied.components_kept += diff.keep.length;
+          applied.components_moved += diff.relayout.length;
+          const created = page.prepared.components.map((component) => ({
+            component_id: diff.ids.get(component.clientRef ?? component.name),
+            name: component.name
+          }));
+          return { ...page, created, written: diff.create.length };
+        }));
         const componentResults = componentWrites.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
         const componentFailures = componentWrites.flatMap((result, index) => result.status === "rejected" ? [`page ${preparedPages[index].page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
         const componentTargets = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
@@ -76491,7 +76670,7 @@ function applyAppPhaseTool(client) {
         if (renameWarning)
           warnings.push(renameWarning);
         for (const page of componentResults) {
-          applied.components += page.created.length;
+          applied.components += page.written;
           warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
           page.prepared.components.forEach((component, index) => {
             const created = page.created[index];
@@ -76511,13 +76690,14 @@ function applyAppPhaseTool(client) {
           const missingTargets = [];
           for (const event of replacing.eventsToRetarget) {
             const newIds = new Map([...replacing.replacedComponentNames].map(([oldId, name2]) => [oldId, newIdByName.get(name2)]));
-            const swapped = replaceIds(JSON.stringify(event.event ?? {}), newIds);
+            const original = JSON.stringify(event.event ?? {});
+            const swapped = replaceIds(original, newIds);
             const text = swapped.text;
             const missing = swapped.missing.map((id) => replacing.replacedComponentNames.get(id) ?? id);
             if (missing.length) {
               missingTargets.push(`"${event.name ?? event.id}" (${missing.join(", ")})`);
               warnings.push(`Event "${event.name ?? event.id}" targets ${missing.map((n) => `"${n}"`).join(", ")}, which the replaced page no longer has; it was left as it was.`);
-            } else {
+            } else if (text !== original) {
               updates.push({ eventId: event.id, ...event.name ? { name: event.name } : {}, event: JSON.parse(text) });
             }
           }
@@ -77459,7 +77639,7 @@ function deleteComponentsTool(client) {
 
 // dist/tools/updateLayout.js
 var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
-var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var RECT_KEYS2 = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
 var layoutEntrySchema = strictEntry({
   component_id: external_exports.string(),
   desktop: rect.optional(),
@@ -77467,7 +77647,7 @@ var layoutEntrySchema = strictEntry({
   parent: external_exports.string().optional(),
   slot_name: componentSlotSchema.optional()
 }, (key4) => {
-  if (RECT_KEYS.has(key4)) {
+  if (RECT_KEYS2.has(key4)) {
     return `Layout entry key "${key4}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
   }
   if (key4 === "layout" || key4 === "layouts") {
@@ -78464,7 +78644,7 @@ function deleteEventTool(client) {
 // dist/runtimeFreshness.js
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.6.0";
 function snapshot(path) {
   try {
@@ -78483,7 +78663,7 @@ var RuntimeFreshnessMonitor = class {
   artifactPath;
   loaded;
   startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  constructor(artifactPath = fileURLToPath4(import.meta.url)) {
+  constructor(artifactPath = fileURLToPath5(import.meta.url)) {
     this.artifactPath = artifactPath;
     this.loaded = snapshot(artifactPath);
   }
@@ -78865,9 +79045,9 @@ function registerTools(server, client, runtime = runtimeFreshness) {
 
 // dist/catalogResources.js
 import { createHash as createHash2 } from "node:crypto";
-import { readFileSync as readFileSync5 } from "node:fs";
-import { dirname as dirname5, resolve as resolve4 } from "node:path";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
+import { readFileSync as readFileSync6 } from "node:fs";
+import { dirname as dirname6, resolve as resolve5 } from "node:path";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
 var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
 var CATALOG_RESOURCES = [
   {
@@ -78899,11 +79079,11 @@ var CATALOG_RESOURCES = [
     description: `${PREFACE}The icon package, its version and every icon name a page may use.`
   }
 ];
-var dataDir = resolve4(dirname5(fileURLToPath5(import.meta.url)), "../data");
+var dataDir = resolve5(dirname6(fileURLToPath6(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
 function readData(resource) {
-  const bytes = readFileSync5(resolve4(dataDir, resource.file));
+  const bytes = readFileSync6(resolve5(dataDir, resource.file));
   const dataVersion = createHash2("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -78922,7 +79102,7 @@ var catalogVersionCache;
 function catalogVersion() {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file,
-    bytes: readFileSync5(resolve4(dataDir, resource.file))
+    bytes: readFileSync6(resolve5(dataDir, resource.file))
   })));
   return catalogVersionCache;
 }
@@ -79229,9 +79409,9 @@ async function serveHttp() {
   }
   const { server: httpServer, gatewayMode } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
-  await new Promise((resolve5, reject) => {
+  await new Promise((resolve6, reject) => {
     httpServer.once("error", reject);
-    httpServer.listen(port, host, resolve5);
+    httpServer.listen(port, host, resolve6);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
@@ -79255,7 +79435,7 @@ function isEntrypoint() {
   if (!invoked)
     return false;
   try {
-    return realpathSync(invoked) === realpathSync(fileURLToPath6(import.meta.url));
+    return realpathSync(invoked) === realpathSync(fileURLToPath7(import.meta.url));
   } catch {
     return false;
   }
