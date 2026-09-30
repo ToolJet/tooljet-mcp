@@ -176,6 +176,159 @@ describe('createClient', () => {
     });
   });
 
+  describe('app version lifecycle', () => {
+    it('creates a version from an explicit source and maps the response', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+        status: 201,
+        json: {
+          id: 'version-new',
+          name: 'v2',
+          status: 'DRAFT',
+          current_environment_id: 'environment-dev',
+          description: 'Candidate',
+        },
+      }));
+      const client = createClient(auth, config);
+
+      const result = await client.createAppVersion({
+        appId: 'app-1',
+        versionName: 'v2',
+        versionFromId: 'version-old',
+        versionDescription: 'Candidate',
+      });
+
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/apps/app-1/versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          versionName: 'v2',
+          versionFromId: 'version-old',
+          versionDescription: 'Candidate',
+        }),
+      });
+      expect(result).toEqual({
+        app_id: 'app-1',
+        version_id: 'version-new',
+        version_name: 'v2',
+        source_version_id: 'version-old',
+        status: 'DRAFT',
+        current_environment_id: 'environment-dev',
+        description: 'Candidate',
+      });
+    });
+
+    it('releases a version and verifies it through the app readback', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: {
+          environments: [{ id: 'environment-production', name: 'production', is_default: true, priority: 3 }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ json: {
+          versions: [{ id: 'version-2', status: 'PUBLISHED', current_environment_id: 'environment-production' }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-2' } }));
+      const client = createClient(auth, config);
+
+      await expect(client.releaseApp('app-1', 'version-2')).resolves.toEqual({
+        app_id: 'app-1',
+        version_id: 'version-2',
+        released: true,
+        current_version_id: 'version-2',
+        published_for_release: false,
+        promoted_to_environments: [],
+      });
+      expect(auth.authedFetch.mock.calls).toEqual([
+        ['/api/app-environments?app_id=app-1'],
+        ['/api/apps/app-1/versions'],
+        ['/api/apps/app-1/release', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ versionToBeReleased: 'version-2' }),
+        }],
+        ['/api/apps/app-1'],
+      ]);
+    });
+
+    it('publishes a draft and promotes it through every environment before release', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: {
+          environments: [
+            { id: 'environment-dev', name: 'development', is_default: false, priority: 1 },
+            { id: 'environment-stage', name: 'staging', is_default: false, priority: 2 },
+            { id: 'environment-production', name: 'production', is_default: true, priority: 3 },
+          ],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ json: {
+          versions: [{ id: 'version-2', status: 'DRAFT', current_environment_id: 'environment-dev' }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ json: {
+          versions: [{ id: 'version-2', status: 'PUBLISHED', current_environment_id: 'environment-stage' }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ json: {
+          versions: [{ id: 'version-2', status: 'PUBLISHED', current_environment_id: 'environment-production' }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-2' } }));
+      const client = createClient(auth, config);
+
+      await expect(client.releaseApp('app-1', 'version-2')).resolves.toEqual({
+        app_id: 'app-1',
+        version_id: 'version-2',
+        released: true,
+        current_version_id: 'version-2',
+        published_for_release: true,
+        promoted_to_environments: ['staging', 'production'],
+      });
+      expect(auth.authedFetch.mock.calls).toEqual([
+        ['/api/app-environments?app_id=app-1'],
+        ['/api/apps/app-1/versions'],
+        ['/api/v2/apps/app-1/versions/version-2', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'PUBLISHED' }),
+        }],
+        ['/api/v2/apps/app-1/versions/version-2/promote', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentEnvironmentId: 'environment-dev' }),
+        }],
+        ['/api/apps/app-1/versions'],
+        ['/api/v2/apps/app-1/versions/version-2/promote', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentEnvironmentId: 'environment-stage' }),
+        }],
+        ['/api/apps/app-1/versions'],
+        ['/api/apps/app-1/release', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ versionToBeReleased: 'version-2' }),
+        }],
+        ['/api/apps/app-1'],
+      ]);
+    });
+
+    it('does not report a release when the readback points at another version', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: {
+          environments: [{ id: 'environment-production', name: 'production', is_default: true }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ json: {
+          versions: [{ id: 'version-new', status: 'PUBLISHED', current_environment_id: 'environment-production' }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-old' } }));
+      const client = createClient(auth, config);
+
+      await expect(client.releaseApp('app-1', 'version-new')).rejects.toThrow(
+        'expected current version version-new, received version-old'
+      );
+    });
+  });
+
   describe('renameApp', () => {
     it('updates the app name and verifies readback', async () => {
       auth.authedFetch

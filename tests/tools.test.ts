@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
+import { createAppVersionTool } from '../src/tools/createAppVersion.js';
+import { releaseAppTool } from '../src/tools/releaseApp.js';
 import { z } from 'zod';
 import { listDatasourcesTool } from '../src/tools/listDatasources.js';
 import { getComponentCatalogTool } from '../src/tools/getComponentCatalog.js';
@@ -19,6 +21,8 @@ import { getCatalog } from '../src/catalog.js';
 function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } {
   return {
     createApp: vi.fn(),
+    createAppVersion: vi.fn(),
+    releaseApp: vi.fn(),
     getApp: vi.fn(),
     getAppSummary: vi.fn().mockResolvedValue({ version_id: 'v1', pages: [] }),
     getDevelopmentEnvironmentId: vi.fn(),
@@ -208,6 +212,74 @@ describe('create_app tool', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Error:');
     expect(result.content[0]!.text).toContain('boom');
+  });
+});
+
+describe('app version lifecycle tools', () => {
+  it('creates a draft version from the exact source version', async () => {
+    const client = makeClient();
+    client.createAppVersion.mockResolvedValue({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      version_name: 'v2',
+      source_version_id: '33333333-3333-4333-8333-333333333333',
+      status: 'DRAFT',
+    });
+
+    const result = await createAppVersionTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_name: 'v2',
+      version_from_id: '33333333-3333-4333-8333-333333333333',
+      version_description: 'Second release candidate',
+    });
+
+    expect(client.createAppVersion).toHaveBeenCalledWith({
+      appId: '11111111-1111-4111-8111-111111111111',
+      versionName: 'v2',
+      versionFromId: '33333333-3333-4333-8333-333333333333',
+      versionDescription: 'Second release candidate',
+    });
+    expect(textOf(result)).toMatchObject({ version_id: '22222222-2222-4222-8222-222222222222', status: 'DRAFT' });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('releases the exact version after explicit confirmation', async () => {
+    const client = makeClient();
+    client.releaseApp.mockResolvedValue({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      released: true,
+      current_version_id: '22222222-2222-4222-8222-222222222222',
+      published_for_release: true,
+      promoted_to_environments: ['staging', 'production'],
+    });
+
+    const result = await releaseAppTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      confirm: true,
+    });
+
+    expect(client.releaseApp).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222'
+    );
+    expect(textOf(result)).toMatchObject({ released: true, current_version_id: '22222222-2222-4222-8222-222222222222' });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('returns lifecycle failures as MCP errors', async () => {
+    const client = makeClient();
+    client.releaseApp.mockRejectedValue(new Error('promote to production first'));
+
+    const result = await releaseAppTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      confirm: true,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('promote to production first');
   });
 });
 

@@ -80,6 +80,22 @@ Headers: Cookie + tj-workspace-id
 ```
 **`create_app` flow:** POST /apps → get `app_id`; GET /apps/:app_id → `version_id = editing_version.id`, `home_page_id = pages.find(name=='Home').id`. It returns `editor_url = ${appUrl}/${workspaceSlug}/apps/${appSlug}`, `viewer_url = ${appUrl}/applications/${appId}/${homeHandle}?env=development&version=${editingVersionName}`, and the backward-compatible `app_url` editor alias.
 
+### Create another app version
+```
+POST /api/apps/:appId/versions
+Body: { "versionName": "v2", "versionFromId": "<source-version-uuid>", "versionDescription"?: "..." }
+```
+The response is the cloned draft version. MCP returns its `id` as `version_id`; subsequent edits must use that id.
+
+### Release a version
+```
+PUT /api/apps/:appId/release
+Body: { "versionToBeReleased": "<version-uuid>" }
+```
+The endpoint has no useful response body. MCP reads `GET /api/apps/:appId` afterward and succeeds only when
+`current_version_id` matches the requested version. Multi-environment installations enforce ToolJet's existing
+save and promote-to-production steps, which `release_app` performs only after explicit release confirmation.
+
 ---
 
 ## 3. Create query (route + DTO confirmed from source; tjdb options shape from code)
