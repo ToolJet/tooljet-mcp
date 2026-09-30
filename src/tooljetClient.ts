@@ -545,6 +545,8 @@ export interface ToolJetClient {
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
+  /** An app-scoped browser session. See createAppScopedSession for why it exists. */
+  createAppScopedSession(appId: string): Promise<{ token: string; url: string }>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
@@ -1376,6 +1378,64 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       editor_url: editorUrl,
       viewer_url: viewerUrl,
       datasources_url: datasourceManagementUrl(orgSlug),
+    };
+  }
+
+  /* A browser-usable session for ONE app.
+   *
+   * Signed by the same signer as a cookie login, so a browser accepts it as tj_auth_token — unlike
+   * the plain workspace session this server builds with, which PatScopeInterceptor bars from
+   * /api/authorize and which therefore bounces the player to /login.
+   */
+  async function createAppScopedSession(appId: string): Promise<{ token: string; url: string }> {
+    /* One call, with the SAME workspace PAT this server already authenticates with:
+       POST /api/personal-access-tokens/session {appId} returns a session pinned to that one app.
+       ToolJet checks the app is in the token's workspace and stamps the session with the token's
+       own kind plus the app id; PatScopeInterceptor then confines it to the render module list,
+       pins it to this app, and makes it read-only apart from running the app's queries.
+
+       The session belongs to whoever owns the PAT. In-product that is the requesting user's own
+       per-user service token, so the render is seen as they would see it. */
+    if (!config.pat) {
+      throw new Error(
+        'A render session needs a personal access token, and this server is running on a ' +
+          'pre-minted session instead (TOOLJET_SESSION_TOKEN / x-tooljet-session-token). Skip the ' +
+          'render check rather than reporting the app as broken.'
+      );
+    }
+
+    const res = await fetch(`${config.apiUrl}/api/personal-access-tokens/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
+      body: JSON.stringify({ appId }),
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => '')).slice(0, 200);
+      const hint =
+        res.status === 404
+          ? ' — the app is not in this token\'s workspace, or this ToolJet predates app-scoped PAT sessions.'
+          : res.status === 400
+            ? ' — appId was rejected as malformed.'
+            : '';
+      throw new Error(`ToolJet app-scoped session exchange failed: ${res.status}${hint} ${detail}`);
+    }
+
+    const body = (await res.json()) as { authToken?: string };
+    if (!body.authToken) {
+      throw new Error('ToolJet returned no authToken for the render session.');
+    }
+
+    // The editor route, not the viewer one: /applications/<id> serves an unreleased app as
+    // "App URL Unavailable", while the editor renders the current version. Measured.
+    const orgSlug = await auth.getOrganizationSlug();
+    /* No expiry is reported, because this call does not set one and cannot read one back: the
+       exchange takes no expiry argument and the session inherits the parent PAT's lifetime, which
+       for an ordinary workspace token is a 10-day sliding window. An earlier version echoed the
+       caller's requested minutes back as `expires_in_minutes`, which read as a guarantee that
+       nothing enforced. Bounding this properly is server-side work on the PAT session itself. */
+    return {
+      token: body.authToken,
+      url: `${config.appUrl}/${orgSlug}/apps/${appId}`,
     };
   }
 
@@ -2550,6 +2610,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updateWorkspaceUser,
     setWorkspaceUserArchived,
     createApp,
+    createAppScopedSession,
     renameApp,
     getApp,
     getAppSummary,

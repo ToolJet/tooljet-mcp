@@ -61959,6 +61959,30 @@ function createClient(auth, config2) {
       datasources_url: datasourceManagementUrl(orgSlug)
     };
   }
+  async function createAppScopedSession(appId) {
+    if (!config2.pat) {
+      throw new Error("A render session needs a personal access token, and this server is running on a pre-minted session instead (TOOLJET_SESSION_TOKEN / x-tooljet-session-token). Skip the render check rather than reporting the app as broken.");
+    }
+    const res = await fetch(`${config2.apiUrl}/api/personal-access-tokens/session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${config2.pat}` },
+      body: JSON.stringify({ appId })
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 200);
+      const hint = res.status === 404 ? " \u2014 the app is not in this token's workspace, or this ToolJet predates app-scoped PAT sessions." : res.status === 400 ? " \u2014 appId was rejected as malformed." : "";
+      throw new Error(`ToolJet app-scoped session exchange failed: ${res.status}${hint} ${detail}`);
+    }
+    const body = await res.json();
+    if (!body.authToken) {
+      throw new Error("ToolJet returned no authToken for the render session.");
+    }
+    const orgSlug = await auth.getOrganizationSlug();
+    return {
+      token: body.authToken,
+      url: `${config2.appUrl}/${orgSlug}/apps/${appId}`
+    };
+  }
   async function renameApp(appId, versionId, name2) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
       method: "PUT",
@@ -62836,6 +62860,7 @@ function createClient(auth, config2) {
     updateWorkspaceUser,
     setWorkspaceUserArchived,
     createApp,
+    createAppScopedSession,
     renameApp,
     getApp,
     getAppSummary,
@@ -65938,6 +65963,37 @@ function getComponentTool(client) {
     async handler(args) {
       try {
         const result = await client.getComponent(args.app_id, args.component_id);
+        return ok(result);
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+
+// dist/tools/createRenderSession.js
+function createRenderSessionTool(client) {
+  return {
+    name: "create_render_session",
+    title: "Create Render Session",
+    annotations: {
+      // Not read-only: it creates a session row server-side. It destroys nothing, though, and each
+      // call mints a fresh session rather than replacing one.
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true
+    },
+    description: "Mint a browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, url } \u2014 set `token` as the tj_auth_token cookie and navigate to `url`. The token is scoped to this app alone and may only issue GET requests, apart from running the app's own queries \u2014 which DO execute for real, including any that write. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
+    inputSchema: {
+      app_id: external_exports.string()
+    },
+    /* No expiry parameter: the exchange takes none, so accepting one and echoing it back as
+       `expires_in_minutes` advertised a bound that nothing enforced. The session inherits the parent
+       PAT's lifetime. */
+    async handler(args) {
+      try {
+        const result = await client.createAppScopedSession(args.app_id);
         return ok(result);
       } catch (err) {
         return fail(err);
@@ -73154,6 +73210,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     getComponentTool(client),
     validateAppTool(client),
     verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || "http://localhost:8082"),
+    createRenderSessionTool(client),
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
