@@ -25,12 +25,12 @@ describe('verify_page_render', () => {
   });
 });
 
-function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.test/applications/app1/home', resource, redirect }: {
-  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string;
+function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.test/applications/app1/home', resource, redirect, method = 'GET', duringSettle = false }: {
+  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean;
 } = {}) {
   let handler: (route: any) => Promise<void>;
   const route = {
-    request: () => ({ url: () => resource ?? 'http://viewer.test/applications/app1/home' }),
+    request: () => ({ url: () => resource ?? 'http://viewer.test/applications/app1/home', method: () => method }),
     abort: vi.fn().mockResolvedValue(undefined),
     fetch: vi.fn().mockResolvedValue({
       status: () => redirect ? 302 : 200, headers: () => redirect ? { location: redirect } : {},
@@ -43,8 +43,8 @@ function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.tes
     routeWebSocket: vi.fn(),
     close: vi.fn().mockResolvedValue(undefined),
     newPage: vi.fn().mockResolvedValue({
-      goto: async () => { if (resource || redirect) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
-      waitForTimeout: vi.fn(), waitForFunction: vi.fn().mockResolvedValue(undefined),
+      goto: async () => { if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
+      waitForTimeout: vi.fn(async () => { if (duringSettle) await handler(route); }), waitForFunction: vi.fn().mockResolvedValue(undefined),
       url: () => landed, evaluate: vi.fn().mockResolvedValue({ widgets, findings: [] }),
     }),
   };
@@ -53,6 +53,60 @@ function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.tes
   return { route, context, browser, driver };
 }
 const target = [{ page: 'home', url: 'http://viewer.test/applications/app1/home' }];
+
+describe('render audit query execution', () => {
+  const savedQueries = { version_id: 'v-library', queries: [{ id: 'q-shelves', kind: 'postgresql',
+    data_source_id: 'ds-library', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5' } }] };
+  const run = 'http://viewer.test/api/data-queries/q-shelves/versions/v-library/run/env-dev?mode=view';
+
+  it.each([run, 'http://viewer.test/api/data-queries/q-shelves/run'])('allows saved static bounded reads without option overrides: %s', async resource => {
+    const f = browserFixture({ resource, method: 'POST' });
+    const [report] = await auditPages(target, { savedQueries }, f.driver);
+    expect(report.findings).toEqual([]);
+    expect(f.route.fetch).toHaveBeenCalledWith(expect.objectContaining({ postData: '{"resolvedOptions":{}}' }));
+    expect(f.route.fulfill).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['POST', '/api/apps/library/public'],
+    ['PATCH', '/api/data-queries/q-shelves/versions/v-library'],
+    ['DELETE', '/api/apps/library'],
+    ['POST', '/api/data-queries/unknown/run'],
+    ['POST', '/api/data-queries/q-shelves/versions/other/run/env-dev?mode=view'],
+    ['POST', '/api/data-queries/q-shelves/versions/v-library/preview/env-dev'],
+    ['POST', '/api/data-queries/q-shelves/versions/v-library/run/env-dev?mode=edit'],
+  ])('blocks %s %s before dispatch', async (method, path) => {
+    const f = browserFixture({ resource: `http://viewer.test${path}`, method });
+    const [report] = await auditPages(target, { savedQueries }, f.driver);
+    expect(report.findings[0].reason).toBe('blocked_execution');
+    expect(f.route.fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: 'postgresql', options: { query: 'DELETE FROM shelves' } },
+    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves' } },
+    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5 {{variables.tail}}' } },
+    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5', requestConfirmation: true } },
+    { kind: 'bigquery', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5' } },
+    { kind: 'restapi', options: { method: 'get', url: 'https://catalogue.test/shelves?limit=5' } },
+    { kind: 'runjs', options: { code: 'queries.removeShelf.run()' } },
+  ])('blocks unsafe or unverified query events even after navigation: %j', async query => {
+    const f = browserFixture({ resource: run, method: 'POST', duringSettle: true });
+    const saved = { ...savedQueries, queries: [{ ...savedQueries.queries[0], ...query }] };
+    const [report] = await auditPages(target, { savedQueries: saved }, f.driver);
+    expect(report.widgets).toBe(1);
+    expect(report.findings[0].reason).toBe('blocked_execution');
+    expect(f.route.fetch).not.toHaveBeenCalled();
+  });
+
+  it('passes the audited app queries into the authenticated browser gate', async () => {
+    const f = browserFixture({ resource: run, method: 'POST' });
+    const session = { ...client, getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
+    const result = await verifyPageRenderTool(session as any, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(result.isError).toBeFalsy();
+    expect(f.route.fetch).toHaveBeenCalled();
+  });
+});
 
 describe('render audit network boundary and honest results', () => {
   it.each(['file:///etc/passwd', 'javascript:alert(1)', 'http://user:password@viewer.test', 'http://169.254.169.254', 'http://viewer.test.attacker.test'])('rejects untrusted viewer overrides: %s', async (viewer_url) => {

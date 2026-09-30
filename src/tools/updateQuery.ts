@@ -49,14 +49,17 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
         const resolutionWarnings: string[] = [];
         let currentDatasourceId: string | undefined;
         let kind = args.kind;
-        if (args.app_id) {
-          const summary = await client.getAppSummary(args.app_id);
+        if (args.app_id || !input.query_id) {
+          const queries = args.app_id
+            ? (await client.getAppSummary(args.app_id)).queries
+            : await client.getQueries(args.version_id);
           // Accept a query NAME as query_id: the name is the handle the model authored and what every
           // binding uses ({{queries.createVehicle.data}}). Matching on id alone produced a FALSE
           // "was not found" for a query that plainly exists — observed live, where the model then tried
           // to CREATE a duplicate and the next lint answered "App already has a query named X",
           // flatly contradicting the error it had just been given. See src/refResolution.ts.
-          const resolution = resolveRef(summary.queries, args.query_id, 'Query', `in app "${args.app_id}"`);
+          const scope = args.app_id ? `in app "${args.app_id}"` : `in version "${args.version_id}"`;
+          const resolution = resolveRef(queries, args.query_id, 'Query', scope);
           if (!resolution.ok) return fail(new Error(resolution.error));
           if (resolution.warning) resolutionWarnings.push(resolution.warning);
           const query = resolution.target;

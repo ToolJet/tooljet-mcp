@@ -72165,6 +72165,47 @@ function assessCouch(options2, datasourceId) {
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
+function sqlStatementText(sql, backslashEscapes) {
+  let text = "";
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === "`") {
+      const quote2 = char;
+      text += quote2 + quote2;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] !== quote2)
+          continue;
+        if (sql[i + 1] === quote2) {
+          i++;
+          continue;
+        }
+        closed = true;
+        break;
+      }
+      if (!closed)
+        return void 0;
+    } else if (char === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      text += " ";
+    } else if (char === "/" && sql[i + 1] === "*") {
+      if (sql[i + 2] === "!")
+        return void 0;
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return void 0;
+      i = end + 1;
+      text += " ";
+    } else
+      text += char;
+  }
+  return text.trim().replace(/;\s*$/, "").trim();
+}
 function normalizeSqlTable(raw) {
   return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
 }
@@ -72175,7 +72216,18 @@ function sqlSource(sql) {
 function assessSql(sql, datasourceKind, datasourceId) {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
-  const unquoted = compact.replace(/'(?:[^']|'')*'/g, "''").replace(/"(?:[^"]|"")*"/g, '""');
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === void 0 || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters",
+      ...identity
+    };
+  }
   const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
   if (entity) {
     return {
@@ -72188,7 +72240,7 @@ function assessSql(sql, datasourceKind, datasourceId) {
       ...identity
     };
   }
-  if (!compact || /;\s*\S/.test(unquoted)) {
+  if (!compact || unquoted.includes(";")) {
     return {
       provenRead: false,
       directSafe: false,
@@ -73399,6 +73451,37 @@ function renderAuditBase(configuredBase, override) {
     throw new Error("viewer_url must be a base URL without query or fragment");
   return { base: url2.href.replace(/\/$/, ""), origins };
 }
+function hasBinding(value2) {
+  if (typeof value2 === "string")
+    return value2.includes("{{");
+  if (Array.isArray(value2))
+    return value2.some(hasBinding);
+  return !!value2 && typeof value2 === "object" && Object.values(value2).some(hasBinding);
+}
+function renderAuditRequest(url2, method, saved) {
+  if (["GET", "HEAD", "OPTIONS"].includes(method))
+    return { allowed: true };
+  const blocked = (detail) => ({ allowed: false, detail: `${detail}; this behavior was not verified` });
+  if (method !== "POST" || !saved?.version_id)
+    return blocked("A potentially mutating request was blocked");
+  const parsed = httpUrl2(url2);
+  const match = parsed.pathname.match(/\/api\/data-queries\/([A-Za-z0-9_-]+)(?:\/versions\/([A-Za-z0-9_-]+))?\/run(?:\/([A-Za-z0-9_-]+))?$/);
+  if (!match || match[2] && (match[2] !== saved.version_id || !match[3] || parsed.searchParams.get("mode") !== "view") || !match[2] && match[3])
+    return blocked("An unverified query or mutating request was blocked");
+  const query = saved.queries.find((item) => item.id === match[1]);
+  if (!query)
+    return blocked("A query outside the audited app/version was blocked");
+  const options2 = query.options;
+  if (hasBinding(options2))
+    return blocked("A query with dynamic bindings was blocked");
+  if (options2?.requestConfirmation || options2?.request_confirmation)
+    return blocked("A query requiring confirmation was blocked");
+  const read = assessQueryRead(query);
+  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight || read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
+    return blocked("A query that is not a proven bounded read was blocked");
+  }
+  return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
+}
 
 // dist/tools/verifyPageRender.js
 function auditScript() {
@@ -73630,14 +73713,26 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         socket.close();
       });
       await ctx.route("**/*", async (route) => {
-        const url2 = route.request().url();
+        const request = route.request();
+        const url2 = request.url();
         if (!renderAuditUrlAllowed(url2, origins)) {
           blocked ??= { kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" };
           await route.abort();
           return;
         }
         try {
-          const response2 = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 3e4 });
+          const policy = renderAuditRequest(url2, request.method(), options2.savedQueries);
+          if (!policy.allowed) {
+            blocked ??= { kind: "unreachable", component: "-", reason: "blocked_execution", detail: policy.detail };
+            await route.abort();
+            return;
+          }
+          const response2 = await route.fetch({
+            maxRedirects: 0,
+            maxRetries: 0,
+            timeout: 3e4,
+            ...policy.postData === void 0 ? {} : { postData: policy.postData }
+          });
           try {
             if (response2.status() >= 300 && response2.status() < 400 && response2.headers().location) {
               const dest = new URL(response2.headers().location, url2);
@@ -73707,7 +73802,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's own ToolJet session (limited to the viewer origin), so a private app is audited without being made public; queries that run on page load run, as when a user opens it. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
+    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
@@ -73729,6 +73824,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
           allowedOrigins: origins,
+          savedQueries: summary,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : await client.viewerSession?.().catch(() => void 0)
         };
@@ -77244,9 +77340,10 @@ function updateQueryTool(client) {
         const resolutionWarnings = [];
         let currentDatasourceId;
         let kind = args.kind;
-        if (args.app_id) {
-          const summary = await client.getAppSummary(args.app_id);
-          const resolution = resolveRef2(summary.queries, args.query_id, "Query", `in app "${args.app_id}"`);
+        if (args.app_id || !input.query_id) {
+          const queries = args.app_id ? (await client.getAppSummary(args.app_id)).queries : await client.getQueries(args.version_id);
+          const scope = args.app_id ? `in app "${args.app_id}"` : `in version "${args.version_id}"`;
+          const resolution = resolveRef2(queries, args.query_id, "Query", scope);
           if (!resolution.ok)
             return fail(new Error(resolution.error));
           if (resolution.warning)
