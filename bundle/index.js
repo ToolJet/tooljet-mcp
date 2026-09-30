@@ -79629,7 +79629,7 @@ function mintAuthorized(authHeader, secret) {
 }
 
 // dist/httpServer.js
-var DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
+var DEFAULT_MAX_BODY_BYTES = 15 * 1024 * 1024;
 async function readJsonBody(req, maxBodyBytes) {
   const chunks = [];
   let totalBytes = 0;
