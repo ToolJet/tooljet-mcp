@@ -224,7 +224,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   });
 
   it('documents the narrow Table statement-body map failure', () => {
-    expect(guidance).toMatch(/Table data bindings.*No data.*map\(row => \{.*expression-body form.*map\(row => \(\{\.\.\.\}\)\)/is);
+    expect(guidance).toMatch(/expression-body form.*map\(row => \(\{\.\.\.\}\)\).*statement-body callback renders.*literal `\}\}`.*No data/is);
     expect(guidance).toMatch(/supported Table lookup joins.*remain valid/is);
   });
 
@@ -563,7 +563,7 @@ describe('generated skill — selective reads, reuse, and page-level QA', () => 
 
 describe('generated skill — async states & density guardrails', () => {
   it('keeps narrow Statistics labels short enough to preserve the value', () => {
-    expect(guidance).toMatch(/Statistics sizing.*12.?17 columns.*one- or two-word label.*hide the value/is);
+    expect(guidance).toMatch(/Statistics sizing.*at least \*\*9 columns\*\*.*four per content row/is);
   });
 
   it('requires the full set of async/query states incl. no-double-fire', () => {
@@ -657,5 +657,18 @@ describe('generated skill is synchronized with the generator', () => {
       expect(generator).toContain(a);
       expect(both).toContain(a);
     });
+  }
+});
+
+// 2026-09-24: a reference copied from docs had not been regenerated for a week, so documented guidance never
+// reached a model that read it. The served copies must match their sources.
+describe('references copied from docs are regenerated', () => {
+  const strip = (text: string) => text.replace(/^<!-- GENERATED[^\n]*-->\n\n?/, '');
+  for (const [file, source] of [['migration.md', 'docs/app-migration.md'], ['themes.md', 'docs/theme-api-tool.md']]) {
+    for (const host of ['skill', 'skills/tooljet-app-builder']) {
+      it(`${host}/references/${file} matches ${source} (run npm run generate:skill)`, () => {
+        expect(strip(readFileSync(resolve(root, host, 'references', file), 'utf8'))).toBe(readFileSync(resolve(root, source), 'utf8'));
+      });
+    }
   }
 });

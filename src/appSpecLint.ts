@@ -1,7 +1,8 @@
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
+import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
 import { lintComponents, validateAppStructure, type LintComponent } from './lint.js';
-import { issueMessages, normalizeQueryOptions, validateQueryOptions } from './queryValidation.js';
+import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
 import { encodeComponentParent } from './componentParent.js';
@@ -297,12 +298,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   const seedData = spec.seedData ?? [];
   const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
   if (seedData.length) {
-    checked.push('seed batches have unique table targets and non-empty rows');
-    const seen = new Set<string>();
+    // A table may take several entries: each is capped at 40 rows and they insert one after another (merch m14
+    // and m16 split a table's rows and then lost three lint rounds to a "more than once" rule).
+    checked.push('seed batches have non-empty rows');
     for (const seed of seedData) {
-      const key = seed.tableName.toLowerCase();
-      if (seen.has(key)) errors.push(`Seed data targets table "${seed.tableName}" more than once.`);
-      seen.add(key);
       if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
     }
   }
@@ -328,25 +327,16 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
-    // Repair a flat {column: value} tooljetdb write map before validating, so the phase this lint
-    // hands to apply_app_phase persists the shape ToolJet actually reads. Without this, the plan
-    // lints clean, applies, and then fails only at runtime with PGRST102 when a user clicks.
-    let options = query.options;
+    // The same preparation apply_app_phase and the direct query tools persist through: toggles become booleans (or
+    // are refused) whether or not the kind resolved; with a kind, the write column map is repaired and the contract
+    // checked, so the phase this lint hands to apply persists the shape ToolJet actually reads.
     if (!query.kind) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
-    } else {
-      options = normalizeQueryOptions(query.kind, query.options);
-      if (options !== query.options) {
-        warnings.push(
-          query.kind === 'mongodb' ? `Query "${query.name}": serialized MongoDB document fields to the JSON text expected by the plugin.` :
-          `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
-            '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
-        );
-      }
-      const validation = validateQueryOptions(query.kind, options);
-      errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
-      warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
     }
+    const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
+    const options = prepared.options;
+    errors.push(...prepared.errors);
+    warnings.push(...prepared.warnings);
     return {
       id,
       name: query.name,
@@ -391,9 +381,8 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
 
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
-    const existingPage = pages.find((page) =>
-      page.name === plannedPage.name || (plannedPage.name === 'Home' && page.handle === 'home')
-    );
+    // The same match apply_app_phase makes: by name, and handle "home" only when no page is named Home.
+    const existingPage = matchPlannedPage(pages, plannedPage.name, new Set((spec.pages ?? []).map((page) => page.name)));
     const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, 'page', errors);
     const iconError = pageIconError(plannedPage.icon);
@@ -480,7 +469,13 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   warnings.push(...lintChartNumericBindings(pages, queries));
 
   const eventSpecs: EventSpec[] = [];
+  // QrScanner awaits its onDetect handler before it sets lastDetectedValue: an undelayed action reads the previous scan.
+  const scanners = new Set((spec.pages ?? []).flatMap((p) => (p.components ?? []).filter((c) => c.type === 'QrScanner').flatMap((c) => [c.clientRef, c.name].filter(Boolean) as string[])));
   (spec.events ?? []).forEach((event, index) => {
+    if (event.sourceType === 'component' && event.trigger === 'onDetect' && scanners.has(String(event.sourceRef)) && !(event.action as Record<string, unknown> | undefined)?.debounce) {
+      errors.push(`Event[${index}] (QrScanner "${event.sourceRef}" onDetect): add debounce: "300" to the action. The scanner runs onDetect before it ` +
+        'sets lastDetectedValue, so an undelayed action reads the previous scan (nothing on the first).');
+    }
     const source = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
     if (!source) errors.push(`Event[${index}] has unknown ${event.sourceType} source_ref "${event.sourceRef}".`);
     eventSpecs.push({
@@ -561,8 +556,9 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   }
 
   const structure = validateAppStructure(summary);
-  errors.push(...structure.errors);
-  warnings.push(...structure.warnings);
+  const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
+  errors.push(...forward.errors);
+  warnings.push(...structure.warnings, ...forward.notes);
 
   // The per-page component lint and the whole-app structure lint both run the render-readiness
   // checks, so an Html height or root error arrived twice: once as `Page "Home": Html "X": …` and
@@ -588,6 +584,34 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       lifecycles: spec.lifecycles?.length ?? 0,
     },
   };
+}
+
+// A persisted query this plan does not touch may read components that a later page will build
+// (the model created every query up front, then builds page by page). This plan cannot fix that,
+// so failing it forced whole-app phases; validate_app still rejects it on the finished app.
+function splitForwardComponentRefs(
+  structureErrors: string[],
+  existingQueryNames: Set<string>
+): { errors: string[]; notes: string[] } {
+  const errors: string[] = [];
+  const missing = new Map<string, string[]>();
+  for (const error of structureErrors) {
+    const m =
+      error.match(/^Query "([^"]+)" references components\.([^,]+), but no component is named /) ??
+      error.match(/^RunJS query "([^"]+)" references components\["([^"]+)"\], but no component is named /);
+    if (m && existingQueryNames.has(m[1]!)) {
+      const names = missing.get(m[1]!) ?? [];
+      if (!names.includes(m[2]!)) names.push(m[2]!);
+      missing.set(m[1]!, names);
+    } else {
+      errors.push(error);
+    }
+  }
+  const notes = [...missing].map(([query, names]) =>
+    `Query "${query}" reads ${names.map((n) => `components.${n}`).join(', ')}, which no page has yet. ` +
+      'Build them on a later page with that exact name, or the query reads undefined.'
+  );
+  return { errors, notes };
 }
 
 function bindRef<T extends { id: string }>(

@@ -14,7 +14,7 @@ import {
   lintUnguardedSelectionText,
   lintTableColumnsShape,
   lintTextFormat,
-  lintUntriggeredDataQueries,
+  lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
@@ -28,7 +28,7 @@ import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { COMPONENT_SLOT_NAMES, decodeComponentParent, type ComponentSlotName } from './componentParent.js';
+import { decodeComponentParent, isComponentSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
@@ -154,7 +154,9 @@ export const TOP_ALIGNED_INPUT_TYPES = new Set([
 export const TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 /** At or below this width (grid columns), a side-aligned label leaves too little room for the input. */
 const NARROW_SIDE_LABEL_COLS = 18;
-const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
+// Four tiles a row: rendered in an 800 px pane (2026-09-28), 9-column tiles fit "Average cost per parcel" over
+// "£12,345.50". The old 12 ("three a row") split every four-figure KPI row into a 2x2 grid of half-page cards.
+const STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 9;
 const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 // A value-only tile with an icon needs more width: the icon sits beside the value, and the value font
 // defaults to ~34px and word-wraps then clips (overflow hidden). Below this, a currency/large number
@@ -170,7 +172,7 @@ const TABLE_FOOTER_HEIGHT_PX = 56;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
-const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container']);
+const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container', 'Accordion']);
 /** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
  * primary action above this authored-canvas boundary when it follows an independently scrolling
  * Table/Listview, otherwise users must operate two nested vertical scroll regions. */
@@ -251,7 +253,10 @@ export function nearestCatalogKey(value: string, candidates: string[]): string |
 
 function projectedTableDataKeys(value: unknown): string[] | undefined {
   if (typeof value !== 'string' || !/\.map\s*\(/.test(value)) return undefined;
-  const arrowObject = value.match(/=>\s*\(\s*\{/);
+  // The last projection decides the keys: `(rows.map(r => ({ a, b, c })) || []).map(r => ({ a, b }))`
+  // shows a and b, whatever the inner map carried along.
+  const arrowObjects = [...value.matchAll(/=>\s*\(\s*\{/g)];
+  const arrowObject = arrowObjects[arrowObjects.length - 1] ?? null;
   const returnedObject = value.match(/=>\s*\{[\s\S]*?\breturn\s*\{/);
   const projection = arrowObject ?? returnedObject;
   if (projection?.index === undefined) return undefined;
@@ -398,6 +403,19 @@ function mutuallyExclusiveVisibility(a: LintComponent, b: LintComponent): boolea
 
 function recordValue(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+/**
+ * True when the table's data binding computes this key itself (`date: moment(r.day).format(...)`,
+ * `date: r.date_label`) rather than passing a raw field through (`date: r.date`): the value is then
+ * already formatted text, and a "raw ISO timestamp" warning only sends the author renaming keys.
+ */
+function authorComputesKey(data: unknown, key: unknown): boolean {
+  const binding = String((data as { value?: unknown } | undefined)?.value ?? data ?? '');
+  if (typeof key !== 'string' || !key || !/\.map\s*\(/.test(binding)) return false;
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const assignments = [...binding.matchAll(new RegExp(`(?:^|[{,\\s])${escaped}\\s*:\\s*([^,}]+)`, 'g'))].map((m) => m[1]!.trim());
+  return assignments.some((value) => !new RegExp(`^[A-Za-z_$][\\w$]*\\??\\.${escaped}$`).test(value));
 }
 
 function looksDateLikeField(value: unknown): boolean {
@@ -729,12 +747,24 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
-    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' :
+    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && parent?.type === 'Kanban');
+    // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
+    // with useDynamicOptions the ids come from a binding.
+    if (parent?.type === 'Tabs' && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
+      const items = propVal(parent.properties, 'tabItems');
+      const ids = Array.isArray(items) ? items.map((item) => String((item as Record<string, unknown>)?.id ?? '')) : undefined;
+      if (ids && !ids.includes(slotName.slice('tab-'.length))) {
+        errors.push(
+          `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}", but Tabs "${parent.name ?? parent.id}" ` +
+            `has no tab with that id (its tabItems ids: ${ids.join(', ') || 'none'}). Use one of those slots, or add the tab to tabItems.`
+        );
+      }
+    }
     if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
-          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container; Kanban supports body (card) and modal.`
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
       );
     }
   }
@@ -776,8 +806,14 @@ export function lintKanbanCardChildren(components: LintComponent[]): string[] {
     for (const child of components) {
       if (parentPlacement(child)?.parentId !== key || parentPlacement(child)?.slotName !== 'body') continue;
       if (child.type !== 'Text' && child.type !== 'Html') continue;
-      const width = (child.layouts?.desktop ?? child.layout)?.width;
+      const rect = child.layouts?.desktop ?? child.layout;
+      const width = rect?.width;
       if (typeof width !== 'number' || width >= KANBAN_CARD_CHILD_MIN_COLS) continue;
+      // Side by side on purpose (a value beside a title): a sibling shares its row.
+      const sharesRow = components.some((other) => other !== child && parentPlacement(other)?.parentId === key && parentPlacement(other)?.slotName === 'body' &&
+        (() => { const o = other.layouts?.desktop ?? other.layout; return !!o && o.top !== undefined && o.height !== undefined && rect!.top !== undefined && rect!.height !== undefined &&
+          rect!.top < o.top + o.height && o.top < rect!.top + rect!.height; })());
+      if (sharesRow) continue;
       const px = Math.round((width / 43) * KANBAN_CARD_WIDTH_PX);
       errors.push(
         `Kanban "${board.name ?? board.id ?? 'Kanban'}" card child ${child.type} "${child.name ?? child.id ?? child.type}": width ${width} columns ` +
@@ -1250,8 +1286,8 @@ export function lintRenderedText(spec: LintComponent): string[] {
     }
   }
   // Tabs has two item surfaces: static tabItems (the default "Tab 1 / Tab 2 / Tab 3") and dynamic tabs, read
-  // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three Chainventory
-  // pages on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
+  // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three pages of an
+  // inventory build on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
   if (spec.type === 'Tabs') {
     const dynamic = isTrueBinding(propVal(props, 'useDynamicOptions'));
     const tabs = propVal(props, 'tabs');
@@ -1270,7 +1306,9 @@ export function lintRenderedText(spec: LintComponent): string[] {
   }
   const itemsKey = spec.type === 'Tabs' ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
   if (itemsKey) {
-    const items = propVal(props, itemsKey);
+    // Steps (and the like) with advanced on render properties.schema instead (Steps.jsx reads advanced ? schema : steps).
+    const dynamicSchema = isTruthyBinding(propVal(props, 'advanced')) ? propVal(props, 'schema') : undefined;
+    const items = dynamicSchema ?? propVal(props, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === 'string' && items.includes('{{');
     if (!authored) {
       errors.push(
@@ -1360,7 +1398,7 @@ export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []
   if (!description.includes('layout') && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes('data')) return [];
   if (!description.includes('layout') && /^\s*\{\{\s*[\w.]+\s*\}\}\s*$/.test(description)) return [];
   // `data:` set to a mapped list of points ({x, y} per row) instead of a list of traces draws empty axes:
-  // three charts on a 2026-09-12 MedCard build. Plotly wants data: [{ type, x: [...], y: [...] }].
+  // three charts on a 2026-09-12 sales-dashboard build. Plotly wants data: [{ type, x: [...], y: [...] }].
   if (/\bdata\s*:\s*\(?\s*queries\.[\w.$]+\.data\b[^,;]*?\)?\s*\.map\(/.test(description)) {
     return [
       `Chart "${label}": jsonDescription sets data to rows.map(r => ({x, y})), a list of points, so Plotly draws empty axes. ` +
@@ -1479,7 +1517,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   errors.push(...lintChartHouseStyle(spec, warnings));
 
   // A Text widget holding several lines (eyebrow <br> title, or block tags) in a box sized for one line
-  // clips its last line: MedCard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.
+  // clips its last line: a sales dashboard's "Sales control centre" header on 2026-09-12 was 12px + 22px lines in 50px.
   if (spec.type === 'Text') {
     const text = propVal(props, 'text');
     const height = (spec.layouts?.desktop ?? spec.layout)?.height;
@@ -1495,7 +1533,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   }
 
   // A ModalV2 keeps its catalog default useDefaultButton:true, so a "Launch Modal" trigger button renders at the
-  // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two Chainventory pages.
+  // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two inventory-build pages.
   if (spec.type === 'ModalV2' && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
     const top = (spec.layouts?.desktop ?? spec.layout)?.top;
     errors.push(
@@ -1532,8 +1570,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   }
 
   if (spec.slotName !== undefined) {
-    if (!(COMPONENT_SLOT_NAMES as readonly string[]).includes(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, or Kanban modal.`);
+    if (!isComponentSlotName(spec.slotName)) {
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -1714,7 +1752,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       warnings.push(
         `Statistics "${label}": desktop width ${width} columns is too narrow; ` +
           `${secondaryHidden ? 'a value-only tile' : 'a tile with visible secondary content'} needs at least ${minimumWidth} columns ` +
-          `to keep labels and values readable. ${secondaryHidden ? 'Use no more than three tiles per content row.' : 'Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns.'}`
+          `to keep labels and values readable. ${secondaryHidden ? 'Use no more than four tiles per content row.' : `Use a two-column KPI grid, or set hideSecondary:true and use at least ${STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS} columns.`}`
       );
     }
     // Value clipping (blocking): a value-only tile with an icon and the default large value font clips
@@ -1751,11 +1789,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS &&
       typeof primaryLabel === 'string' &&
       !primaryLabel.includes('{{') &&
-      (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)
+      // About 25px a column at laptop widths and 7-8px a label character: two characters a column stay on one
+      // line (a 13-column tile is ~325px; the old 12-character limit flagged "Arrived / waiting", vet n1).
+      primaryLabel.trim().length > width * 2
     ) {
       warnings.push(
-        `Statistics "${label}": value-only width ${width} columns is only safe for a short one- or two-word ` +
-          `primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. ` +
+        `Statistics "${label}": value-only width ${width} columns fits a label of about ${width * 2} characters, ` +
+          `but "${primaryLabel}" can wrap vertically and hide the value in the viewer. ` +
           'Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.'
       );
     }
@@ -1974,11 +2014,13 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
           'Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. ' +
           'Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.'
       );
-    } else if (statementBodyMapInValue(data)) {
+    } else if (statementBodyMapInValue(data) && typeof data === 'string' && data.trim().slice(2, -2).includes('}}')) {
+      // A statement body alone renders (probed on ToolJet 3.16, 2026-09-24); what cuts the binding short is a
+      // literal `}}` inside it, as a block closing on an object literal does.
       errors.push(
-        `Table "${label}": data uses a statement-body .map() callback (for example map(row => { ... })). ` +
-          'ToolJet can silently evaluate this binding as no data. Use an expression body such as ' +
-          'map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.'
+        `Table "${label}": data uses a statement-body .map() callback whose code contains \`}}\`, which ends the ` +
+          'binding early, so the table shows no data. Put a space between the braces (} }), use an expression ' +
+          'body such as map(row => ({...})), or pre-shape the rows in a RunJS query.'
       );
     }
     if (
@@ -2192,7 +2234,9 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         if (
           c?.columnType === 'string' &&
-          (looksDateLikeField(c.key) || looksDateLikeField(c.name))
+          // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
+          (typeof c.key === 'string' && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) &&
+          !authorComputesKey(props?.data, c.key)
         ) {
           warnings.push(
             `Table "${label}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses ` +
@@ -2423,7 +2467,7 @@ const TOOLBAR_BUTTON_TYPES = new Set(['Button', 'ButtonGroup']);
 /** A button sharing a row with top-labelled inputs must align with their field boxes, not their labels.
  *  A top-labelled input renders its label in the first 20px and its box below (see renderedHeight), so a
  *  button authored at the inputs' top sits on the label band, visibly above the fields. Measured on
- *  2026-09-12 in three Luna builds (todo, vendors, Chainventory): every toolbar button was misaligned. */
+ *  2026-09-12 in three Luna builds (todo, vendors, inventory): every toolbar button was misaligned. */
 export function lintToolbarButtonAlignment(components: LintComponent[]): string[] {
   const errors: string[] = [];
   const items = components
@@ -2466,12 +2510,17 @@ function isTitleLikeText(component: LintComponent): boolean {
   const text = propVal(component.properties, 'text');
   const fontWeight = propVal(component.styles, 'fontWeight');
   const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
+  // Bold dynamic text below 18px is a record label ("{row.product_name}" under "Change price"), not a second
+  // title: five plans failed on exactly that (trace review, 2026-09-25).
+  // A bold question below 18px ("Mark this invoice as paid?") is the prompt the modal asks, not a title (n1 vet).
+  const recordLabel = typeof text === 'string' && (text.includes('{{') || /\?\s*$/.test(text.trim())) &&
+    (textSize === undefined || textSize < 18);
   return (
     /(?:title|heading|header)/i.test(name) ||
     (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
       (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim()))) ||
-    (typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
-    (typeof fontWeight === 'number' && fontWeight >= 600) ||
+    (!recordLabel && typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
+    (!recordLabel && typeof fontWeight === 'number' && fontWeight >= 600) ||
     (textSize !== undefined && textSize >= 18)
   );
 }
@@ -2593,10 +2642,11 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
   ];
 }
 
-/** Geometry advice: fold, canvas coverage, gutters. Warnings. */
+/** Geometry advice: canvas coverage, gutters. Warnings. The fold rule (lintOperationalViewport) is left out:
+ *  a primary action under a table is a scroll away, and every time a tool reported it the model re-laid out
+ *  the page for nothing (merch m2 two re-plans, m8 two re-layouts and rowsPerPage 4; trace review 2026-09-24). */
 export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
   return [
-    ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
   ];
@@ -2629,6 +2679,70 @@ export function lintUnrenderableHeights(components: LintComponent[]): string[] {
   return errors;
 }
 
+/** Widget contracts from ToolJet's frontend source (2026-09-26) that a plan can break silently. The store unwraps a
+ *  wrapped option flag only when it is falsy (componentsSlice: `if (keyValue?.value) keys.push('value')`), so a static
+ *  {value: true} stays an object. */
+export function lintWidgetContracts(c: LintComponent): string[] {
+  const errors: string[] = [];
+  const label = `${c.type} "${c.name ?? c.id ?? c.type}"`;
+  const props = c.properties;
+  const rect = c.layouts?.desktop ?? c.layout;
+  const nested = Boolean((c as { parentRef?: unknown; parent?: unknown }).parentRef ?? (c as { parent?: unknown }).parent);
+  const wrappedTrue = (v: unknown) => Boolean(v && typeof v === 'object' && (v as { value?: unknown }).value);
+  if (c.type === 'RadioButtonV2' && !isTruthyBinding(propVal(props, 'advanced'))) {
+    const options = propVal(props, 'options');
+    if (Array.isArray(options) && options.some((o) => wrappedTrue((o as Record<string, unknown>)?.default))) {
+      errors.push(`${label}: a static option marked default:{value:true} is never preselected (RadioButtonV2 checks default === true). ` +
+        'Set advanced to "{{true}}" and give schema as [{label, value, default: true, visible: true}] with plain booleans.');
+    }
+  }
+  if (c.type === 'TreeSelect' && !isTruthyBinding(propVal(props, 'advanced'))) {
+    const hasWrapped = (nodes: unknown): boolean => Array.isArray(nodes) && nodes.some((n) => {
+      const o = (n ?? {}) as Record<string, unknown>;
+      return ['visible', 'disable', 'selected', 'expanded'].some((k) => o[k] && typeof o[k] === 'object') || hasWrapped(o.children);
+    });
+    const options = propVal(props, 'options');
+    if (Array.isArray(options) && options.some((o) => hasWrapped((o as Record<string, unknown>)?.children))) {
+      errors.push(`${label}: nested options keep their flags wrapped as {value}, and a wrapped false is truthy (a hidden child shows, an ` +
+        'unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.');
+    }
+  }
+  if (c.type === 'Navigation') {
+    // Navigation stores "hidden" under visible (setVisibility writes visible: !value): true hides the item.
+    const shownAsTrue = (items: unknown): boolean => Array.isArray(items) && items.some((it) => {
+      const o = (it ?? {}) as Record<string, unknown>;
+      const f = o.visible && typeof o.visible === 'object' ? (o.visible as { value?: unknown }).value : o.visible;
+      return f === true || f === 'true' || f === '{{true}}' || shownAsTrue(o.children);
+    });
+    if (shownAsTrue(propVal(props, 'menuItems'))) {
+      errors.push(`${label}: an item with visible true is HIDDEN (Navigation stores "hidden" under visible). Write visible:{value:"{{false}}"} ` +
+        'for an item that shows, and {value:"{{true}}"} only to hide one.');
+    }
+  }
+  if (c.type === 'Timer' && propVal(props, 'type') === 'countDown' && /^[0:]*$/.test(String(propVal(props, 'value') ?? ''))) {
+    errors.push(`${label}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
+  }
+  const pages = propVal(props, 'numberOfPages');
+  if (c.type === 'Pagination' && typeof pages === 'string' && !pages.includes('{{')) {
+    errors.push(`${label}: numberOfPages "${pages}" is text, so the last page never matches and next stays enabled; write "{{${pages}}}".`);
+  }
+  const twoHandle = propVal(props, 'enableTwoHandle');
+  if (c.type === 'RangeSliderV2' && twoHandle !== undefined && !['slider', 'rangeSlider'].includes(String(twoHandle))) {
+    errors.push(`${label}: enableTwoHandle is "slider" or "rangeSlider" (two handles read startValue/endValue), not ${JSON.stringify(twoHandle)}.`);
+  }
+  const height = rect?.height;
+  const width = rect?.width;
+  if (typeof height === 'number') {
+    const min = c.type === 'QrScanner' ? (nested || typeof width !== 'number' ? 200 : Math.round(width * 28 * 0.9))
+      : c.type === 'Camera' ? 300 : c.type === 'FilePicker' ? 176 : 0;
+    if (height < min) {
+      errors.push(`${label}: height ${height} cuts it off; use at least ${min} (` +
+        (c.type === 'QrScanner' ? 'its reader is square, as tall as it is wide' : c.type === 'Camera' ? 'the preview and its buttons' : 'the drop zone and the chosen file') + ').');
+    }
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
 export function lintComponents(components: LintComponent[]): LintResult {
   const errors: string[] = [];
@@ -2643,6 +2757,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
+    errors.push(...lintWidgetContracts(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
@@ -2962,8 +3077,8 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   // The mirror image: a ToolJet DB sql_execution query returns {results: rows}, so a data-bound component
-  // reading `queries.q.data` gets an object, not rows, and shows No data. Observed live (Nordlicht
-  // benchmark, 2026-09-07): Haiku wrote seven SQL queries and bound every table and KPI to `.data`;
+  // reading `queries.q.data` gets an object, not rows, and shows No data. Observed live (an order-desk
+  // same-prompt run, 2026-09-07): Haiku wrote seven SQL queries and bound every table and KPI to `.data`;
   // all four pages rendered empty although the seeds and the queries were fine.
   for (const component of allComponents) {
     if (!['Table', 'ListView', 'Chart', 'Kanban', 'Statistics', 'Text', 'Html'].includes(component.type ?? '')) continue;
@@ -3008,7 +3123,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     }
   }
 
-  // A query referenced by bare name. Observed live (Haiku, Helix benchmark 2026-09-07): `jobsWaitingLongest.data`
+  // A query referenced by bare name. Observed live (Haiku, a workshop-booking same-prompt run 2026-09-07): `jobsWaitingLongest.data`
   // instead of `queries.jobsWaitingLongest.data`, which is an undefined identifier at runtime, so the table
   // showed No data while the query itself was fine. Component references are excluded by the lookbehind
   // (they always follow a dot or bracket).
@@ -3029,7 +3144,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   }
 
   // A Chart bound straight to query rows plots nothing unless the query itself returns x and y.
-  // Observed live (Nordlicht benchmark, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
+  // Observed live (an order-desk same-prompt run, 2026-09-07): Terra bound a ToolJet DB group_by/aggregate query
   // returning {order_date, orders_count} and the "orders per day" chart drew an empty axis.
   for (const component of allComponents) {
     if (component.type !== 'Chart') continue;
@@ -3082,8 +3197,11 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;
+      // ToolJet saves references by id (components["<id>"]) and shows names on load: an id that belongs to
+      // an existing entity is valid (merch m9's clean apply failed validation on exactly this).
+      const ids = ref.namespace === 'components' ? componentIds : queryIds;
       const key = `${ref.namespace}.${ref.name}`;
-      if (!names.has(ref.name) && !seen.has(key)) {
+      if (!names.has(ref.name) && !ids.has(ref.name) && !seen.has(key)) {
         seen.add(key);
         errors.push(`${source.label} references ${key}, but no ${ref.namespace === 'components' ? 'component' : 'query'} ` +
           `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
@@ -3200,6 +3318,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   const readiness = lintUntriggeredDataQueries(summary);
   errors.push(...readiness.errors);
   warnings.push(...readiness.warnings);
+  warnings.push(...lintAutomaticWrites(summary));
   warnings.push(...lintStatTileConsistency(summary));
 
   return { errors: uniq(errors), warnings: uniq(warnings) };

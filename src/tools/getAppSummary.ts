@@ -79,8 +79,7 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
           }
         }
         const summary = await client.getAppSummary(args.app_id);
-        return ok(
-          selectAppSummary(summary, {
+        const selected = selectAppSummary(summary, {
             sections: args.sections,
             detail: args.detail,
             includeComponents: args.include_components,
@@ -100,11 +99,34 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
             componentFields: args.component_fields,
             queryFields: args.query_fields,
             eventFields: args.event_fields,
-          })
-        );
+          });
+        return ok(await withQueryTables(client, summary, selected, args));
       } catch (err) {
         return fail(err);
       }
     },
   };
+}
+
+/**
+ * The ToolJet DB tables the app's queries use, by name. An edit otherwise searched a workspace of ~1,700 tables with
+ * guessed words, one turn per search, for tables the app already reads (cy-trials, cy-ats, 2026-09-26). Only with the
+ * queries section and no narrowing filter; a failed lookup leaves the summary as it was.
+ */
+async function withQueryTables(client: ToolJetClient, summary: { queries?: unknown[] }, selected: unknown, args: GetAppSummaryArgs): Promise<unknown> {
+  const narrowed = args.sections && !args.sections.includes('queries');
+  const filtered = Object.entries(args).some(([key, value]) => key !== 'app_id' && key !== 'sections' && key !== 'detail' && value !== undefined);
+  if (narrowed || filtered || !selected || typeof selected !== 'object') return selected;
+  const ids = [...new Set((summary.queries ?? []).flatMap((query) => {
+    const q = query as { kind?: string; options?: { table_id?: unknown } };
+    return q.kind === 'tooljetdb' && typeof q.options?.table_id === 'string' ? [q.options.table_id] : [];
+  }))];
+  if (!ids.length) return selected;
+  try {
+    const all = (await client.listTables()) as Array<{ id: string; table_name: string }>;
+    const byId = new Map(all.map((table) => [table.id, table.table_name]));
+    return { ...selected, tables: ids.filter((id) => byId.has(id)).map((id) => ({ id, table_name: byId.get(id) })) };
+  } catch {
+    return selected;
+  }
 }

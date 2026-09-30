@@ -1,6 +1,7 @@
+import { emptyParamsNote, emptyViewerOnlyParams, resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
-import { assessQueryRead } from '../queryExecutionSafety.js';
+import { assessQueryRead, resolvedReadRefusal } from '../queryExecutionSafety.js';
 import { containsComponentBinding, failureRecovery, failureVerification, schemaNameHint, queryResultBindingHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
@@ -15,7 +16,10 @@ import { resolveRef } from '../refResolution.js';
  *  components were bound to queries that had never once executed. */
 export function batchSafeRead(query: QuerySummary): { safe: boolean; reason?: string } {
   const assessment = assessQueryRead(query);
-  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) return { safe: true };
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
+    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
+    return refusal ? { safe: false, reason: refusal } : { safe: true };
+  }
 
   // Proven read, held back only for confirmation: name the tool that can run it.
   if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
@@ -112,7 +116,12 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             ? ['Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer.']
             : [];
           try {
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
+            const bindings = resolveStaticBindings(query.options);
+            const emptied = emptyViewerOnlyParams(query.options, bindings);
+            if (emptied.length) warnings.push(emptyParamsNote(emptied));
+            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+            if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
+            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
             const failed = result.status === 'failed';
             const bindingHint = queryResultBindingHint(query, result as Record<string, unknown>);
             const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
