@@ -543,11 +543,8 @@ export interface ToolJetClient {
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
-  /** A short-lived, app-scoped browser session. See createAppScopedSession for why it exists. */
-  createAppScopedSession(
-    appId: string,
-    expiryMinutes: number
-  ): Promise<{ token: string; expires_in_minutes: number; url: string }>;
+  /** An app-scoped browser session. See createAppScopedSession for why it exists. */
+  createAppScopedSession(appId: string): Promise<{ token: string; url: string }>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
   getAppSummary(appId: string): Promise<AppSummary>;
@@ -1314,10 +1311,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
    * the plain workspace session this server builds with, which PatScopeInterceptor bars from
    * /api/authorize and which therefore bounces the player to /login.
    */
-  async function createAppScopedSession(
-    appId: string,
-    expiryMinutes: number
-  ): Promise<{ token: string; expires_in_minutes: number; url: string }> {
+  async function createAppScopedSession(appId: string): Promise<{ token: string; url: string }> {
     /* One call, with the SAME workspace PAT this server already authenticates with:
        POST /api/personal-access-tokens/session {appId} returns a session pinned to that one app.
        ToolJet checks the app is in the token's workspace and stamps the session with the token's
@@ -1358,11 +1352,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // The editor route, not the viewer one: /applications/<id> serves an unreleased app as
     // "App URL Unavailable", while the editor renders the current version. Measured.
     const orgSlug = await auth.getOrganizationSlug();
+    /* No expiry is reported, because this call does not set one and cannot read one back: the
+       exchange takes no expiry argument and the session inherits the parent PAT's lifetime, which
+       for an ordinary workspace token is a 10-day sliding window. An earlier version echoed the
+       caller's requested minutes back as `expires_in_minutes`, which read as a guarantee that
+       nothing enforced. Bounding this properly is server-side work on the PAT session itself. */
     return {
       token: body.authToken,
-      // Governed by the token's own sessionExpiryMinutes, not by this argument — the exchange takes
-      // no expiry. Reported as asked for so the caller's contract is unchanged.
-      expires_in_minutes: expiryMinutes,
       url: `${config.appUrl}/${orgSlug}/apps/${appId}`,
     };
   }

@@ -61893,7 +61893,7 @@ function createClient(auth, config2) {
       datasources_url: datasourceManagementUrl(orgSlug)
     };
   }
-  async function createAppScopedSession(appId, _email2, expiryMinutes) {
+  async function createAppScopedSession(appId) {
     if (!config2.pat) {
       throw new Error("A render session needs a personal access token, and this server is running on a pre-minted session instead (TOOLJET_SESSION_TOKEN / x-tooljet-session-token). Skip the render check rather than reporting the app as broken.");
     }
@@ -61914,9 +61914,6 @@ function createClient(auth, config2) {
     const orgSlug = await auth.getOrganizationSlug();
     return {
       token: body.authToken,
-      // Governed by the token's own sessionExpiryMinutes, not by this argument — the exchange takes
-      // no expiry. Reported as asked for so the caller's contract is unchanged.
-      expires_in_minutes: expiryMinutes,
       url: `${config2.appUrl}/${orgSlug}/apps/${appId}`
     };
   }
@@ -65902,21 +65899,22 @@ function createRenderSessionTool(client) {
     title: "Create Render Session",
     annotations: {
       // Not read-only: it creates a session row server-side. It destroys nothing, though, and each
-      // call mints a fresh short-lived session rather than replacing one.
+      // call mints a fresh session rather than replacing one.
       readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,
       openWorldHint: true
     },
-    description: "Mint a SHORT-LIVED browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, expires_in_minutes, url } \u2014 set `token` as the tj_auth_token cookie (or header) and navigate to `url`. The token is read-only, scoped to this app alone, and cannot be used to read or write anything else. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
+    description: "Mint a browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, url } \u2014 set `token` as the tj_auth_token cookie and navigate to `url`. The token is scoped to this app alone and may only issue GET requests, apart from running the app's own queries \u2014 which DO execute for real, including any that write. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
     inputSchema: {
-      app_id: external_exports.string(),
-      email: external_exports.string().optional().describe("Ignored. The session is minted from this server's own token, so it already belongs to that user \u2014 there is nobody to name. Kept so existing callers do not break."),
-      expiry_minutes: external_exports.number().int().min(1).max(60).optional()
+      app_id: external_exports.string()
     },
+    /* No expiry parameter: the exchange takes none, so accepting one and echoing it back as
+       `expires_in_minutes` advertised a bound that nothing enforced. The session inherits the parent
+       PAT's lifetime. */
     async handler(args) {
       try {
-        const result = await client.createAppScopedSession(args.app_id, args.email ?? "", args.expiry_minutes ?? 15);
+        const result = await client.createAppScopedSession(args.app_id);
         return ok(result);
       } catch (err) {
         return fail(err);
