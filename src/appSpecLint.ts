@@ -285,7 +285,7 @@ function lintServerSidePaginationRace(
 }
 
 /** The existing pages (other than the plan's) whose components read queries.<name> or whose events run the query. */
-function pagesUsingQuery(summary: AppSummary | undefined, name: string, planPages: Set<string>): string[] {
+export function pagesUsingQuery(summary: AppSummary | undefined, name: string, planPages: Set<string>): string[] {
   if (!summary) return [];
   const query = (summary.queries ?? []).find((q) => q.name === name);
   const reads = new RegExp(`queries\\??\\.${name.replace(/[$]/g, '\\$&')}\\b`);
@@ -344,9 +344,9 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
       errors.push(`App already has a query named "${query.name}"` +
         (users.length ? `, which page${users.length > 1 ? 's' : ''} ${users.map((u) => `"${u}"`).join(', ')} also read${users.length > 1 ? '' : 's'} or run${users.length > 1 ? '' : 's'}. ` +
-          `To change it with this plan, replace ${users.length > 1 ? 'those pages' : `"${users[0]}"`} in the same call; ` +
-          'or refer to it by name here without defining it, or use update_query.'
-          : '. To use it as it is, refer to it by name without defining it in this plan; to change it, use update_query, or replace the page that owns it.'));
+          'To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, ' +
+          'mark this definition update: true.'
+          : '. To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true.'));
     }
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);

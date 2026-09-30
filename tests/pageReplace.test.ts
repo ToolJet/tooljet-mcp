@@ -188,9 +188,9 @@ describe('replace redefines only the page’s own queries', () => {
       pages: [{ name: 'Reports', replace: true }], queries: [{ name: 'rows', datasource_id: 'ds', options: { code: 'return 1' } }] } as never);
     const errors = JSON.parse(String(res.content[0]!.text)).errors.join(' ');
     expect(errors).toMatch(/already has a query named "rows"/);
-    expect(errors).toMatch(/update_query/);
+    expect(errors).toMatch(/refer to it by name/);
   });
-  it('names the other page that uses the query, and says to replace it in the same call', async () => {
+  it('names the other page that uses the query, and says how to change it for every page', async () => {
     // An asset register redefined asset_record with the Asset page while the Assets page ran it; told only "replace
     // the page that owns it", Luna spent five compiles, three of them probing the compiler (2026-09-29).
     const client = { getAppSummary: async () => twoPages, listTables: async () => [], listDatasources: async () => [{ id: 'ds', name: 'runjsdefault', kind: 'runjs' }] };
@@ -198,7 +198,8 @@ describe('replace redefines only the page’s own queries', () => {
       pages: [{ name: 'Reports', replace: true }], queries: [{ name: 'rows', datasource_id: 'ds', options: { code: 'return 1' } }] } as never);
     const errors = JSON.parse(String(res.content[0]!.text)).errors.join(' ');
     expect(errors).toMatch(/"Orders"/);
-    expect(errors).toMatch(/same call/);
+    // Replacing every page that reads it in the same call was the only way; the definition can now say update: true.
+    expect(errors).toMatch(/update: true/);
   });
 });
 
