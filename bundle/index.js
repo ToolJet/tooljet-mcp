@@ -76212,6 +76212,483 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
   return diff;
 }
 
+// dist/tools/runQuery.js
+var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
+function queryResultBindingHint(query, result) {
+  const data = result.data;
+  const options2 = query.options;
+  if (result.status !== "ok" || query.kind !== "tooljetdb" || options2?.operation !== "sql_execution" || !data || !Array.isArray(data.results))
+    return void 0;
+  return {
+    rows_path: "data.results",
+    row_count: data.results.length,
+    guidance: "This ToolJet DB SQL read returned an object containing results. Bind row consumers to queries.<name>.data.results (or data?.results ?? []), not data.map/filter or data[0]. Other operations can return different shapes; preserve the actual returned contract."
+  };
+}
+function truncateRemoteResult(result) {
+  if (!Object.prototype.hasOwnProperty.call(result, "data"))
+    return { result };
+  let serialized;
+  try {
+    serialized = JSON.stringify(result.data);
+  } catch {
+    return {
+      result: { ...result, data: { mcp_truncated: true, preview_json: "<unserializable response>" } },
+      warning: "The REST response data could not be serialized for MCP output; inspect it in ToolJet."
+    };
+  }
+  if (typeof serialized !== "string")
+    return { result };
+  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS)
+    return { result };
+  return {
+    result: {
+      ...result,
+      data: {
+        mcp_truncated: true,
+        original_json_characters: serialized.length,
+        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS)
+      }
+    },
+    warning: `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. The remote request already completed; add API-specific pagination or a smaller limit before another run.`
+  };
+}
+function containsComponentBinding(value2) {
+  if (typeof value2 === "string")
+    return /\bcomponents\s*\./.test(value2);
+  if (Array.isArray(value2))
+    return value2.some(containsComponentBinding);
+  if (value2 && typeof value2 === "object")
+    return Object.values(value2).some(containsComponentBinding);
+  return false;
+}
+function datasourceRecovery(query) {
+  if (!query.datasource_settings_url)
+    return void 0;
+  return {
+    action: "open_datasource_settings",
+    url: query.datasource_settings_url,
+    instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
+  };
+}
+var CONNECTION_SQLSTATE_PREFIXES = ["08", "28", "53", "57P0", "3D000"];
+var SCHEMA_NAME_SQLSTATES = /* @__PURE__ */ new Set(["42P01", "42703", "3F000", "42P02", "42704"]);
+var LEGACY_CONNECTION_CODES = /* @__PURE__ */ new Set([
+  "ELOGIN",
+  "ESOCKET",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ER_ACCESS_DENIED_ERROR",
+  "ER_DBACCESS_DENIED_ERROR",
+  "ER_BAD_DB_ERROR",
+  "PROTOCOL_CONNECTION_LOST"
+]);
+var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR", "ER_NO_SUCH_TABLE"]);
+function classifyQueryFailure(result) {
+  if (!result)
+    return "unknown";
+  const details = result.data;
+  if (details?.name === "SyntaxError" && typeof result.description === "string" && result.description.startsWith("JSON5:"))
+    return "query";
+  const category = result.category;
+  if (category === "authentication" || category === "connection")
+    return "connection";
+  if (category === "schema_name")
+    return "schema_name";
+  if (category === "unknown")
+    return "unknown";
+  if (["timeout", "rate_limit", "transient", "query"].includes(String(category)))
+    return "query";
+  if (typeof category === "string")
+    return "unknown";
+  const data = result.data;
+  const codes = data && typeof data === "object" ? [data.code, data.sqlState, data.sqlstate].map((value2) => String(value2 ?? "").toUpperCase()).filter(Boolean) : [];
+  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) || codes.some((code) => LEGACY_CONNECTION_CODES.has(code)))
+    return "connection";
+  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code)))
+    return "schema_name";
+  return codes.length ? "query" : "unknown";
+}
+function failureRecovery(query, result) {
+  return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
+}
+function failureVerification(query, result) {
+  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
+    return void 0;
+  return {
+    action: "test_datasource_connection",
+    datasource_id: query.data_source_id,
+    instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
+  };
+}
+function introspectedNames(result) {
+  const data = result?.data;
+  if (!Array.isArray(data))
+    return [];
+  return data.map((row) => typeof row === "string" ? row : row?.value ?? row?.label ?? row?.name).filter((value2) => typeof value2 === "string" && value2.length > 0);
+}
+async function availableTableNames(client, query) {
+  if (!query.data_source_id || !query.kind)
+    return void 0;
+  const methods = getDatasourceQuerySchema(query.kind)?.introspectionMethods ?? [];
+  const tableMethod = ["listTables", "list_tables", "getTables", "tables"].find((m) => methods.includes(m));
+  if (!tableMethod)
+    return void 0;
+  let methodArgs;
+  if (methods.includes("listSchemas")) {
+    const schemas = introspectedNames(await client.invokeDatasourceMethod({ dataSourceId: query.data_source_id, method: "listSchemas" }));
+    const schema = schemas.includes("public") ? "public" : schemas[0];
+    if (schema)
+      methodArgs = { schema };
+  }
+  const tableResult = await client.invokeDatasourceMethod({
+    dataSourceId: query.data_source_id,
+    method: tableMethod,
+    ...methodArgs ? { args: methodArgs } : {}
+  });
+  const names = introspectedNames(tableResult);
+  return names.length ? names : void 0;
+}
+async function schemaNameHint(client, query, result) {
+  if (classifyQueryFailure(result) !== "schema_name")
+    return void 0;
+  const data = result.data;
+  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
+  const hint = {
+    kind: "schema_name_error",
+    detail: String(result.description ?? result.message ?? "a table or column named in the query does not exist"),
+    ...code ? { sqlstate: code } : {},
+    guidance: "This is a schema/name error, NOT a connection problem \u2014 the datasource is reachable, so do NOT ask the user to repair or test the connection. A table or column named in the SQL does not exist. Call inspect_datasource_schema (listTables, then listColumns for the target table) to get the EXACT names, correct the query, and retry. Never guess table or column names."
+  };
+  try {
+    const tables = await availableTableNames(client, query);
+    if (tables?.length)
+      hint.available_tables = tables.slice(0, 50);
+  } catch {
+  }
+  return hint;
+}
+function runQueryTool(client) {
+  return {
+    name: "run_query",
+    title: "Run Query",
+    // Executes whatever the query holds against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: <datasource result>, ... }; data may be an array or an object (ToolJet DB SQL uses data.results). Inspect the actual shape before binding components. HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
+    inputSchema: {
+      query_id: external_exports.string(),
+      version_id: external_exports.string(),
+      environment_id: external_exports.string().optional(),
+      count_query_id: external_exports.string().optional(),
+      user_confirmed_large_read: external_exports.boolean().optional(),
+      user_confirmed_billable_read: external_exports.boolean().optional(),
+      user_confirmed_remote_read: external_exports.boolean().optional()
+    },
+    async handler(args) {
+      try {
+        const warnings = [];
+        const query = await client.getQuery(args.query_id, args.version_id).catch(async (error51) => {
+          const saved = await client.getQueries(args.version_id);
+          const resolution = resolveRef2(saved, args.query_id, "Query", `on version "${args.version_id}"`);
+          if (!resolution.ok)
+            throw new Error(resolution.error, { cause: error51 });
+          return resolution.target;
+        });
+        const assessment = assessQueryRead(query);
+        if (!assessment.provenRead || assessment.selectStar) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
+        }
+        const staticBindings = resolveStaticBindings(query.options);
+        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
+        if (bindingRefusal) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
+        }
+        if (containsComponentBinding(query.options)) {
+          warnings.push('Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.');
+        }
+        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
+          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+        }
+        if (assessment.requiresRemoteReadConfirmation) {
+          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
+        }
+        if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
+        }
+        let preflight;
+        if (assessment.requiresCountPreflight) {
+          if (!args.count_query_id) {
+            return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
+          }
+          if (args.count_query_id === args.query_id || args.count_query_id === query.id) {
+            return fail(new Error("count_query_id must be a separate count-only query."));
+          }
+          const countQuery = await client.getQuery(args.count_query_id, args.version_id);
+          const countAssessment = assessQueryRead(countQuery);
+          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true || countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true;
+          if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
+            return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
+          }
+          const countResult = await client.runQuery({
+            queryId: countQuery.id,
+            versionId: args.version_id,
+            environmentId: args.environment_id
+          });
+          const rowCount2 = extractRowCount(countResult);
+          if (rowCount2 === void 0) {
+            return fail(new Error(`Count preflight "${countQuery.name ?? countQuery.id}" did not return one row with exactly one numeric count; target query was not run.`));
+          }
+          preflight = { count_query_id: countQuery.id, row_count: rowCount2, threshold: LARGE_READ_ROW_THRESHOLD };
+          if (rowCount2 > LARGE_READ_ROW_THRESHOLD && !args.user_confirmed_large_read) {
+            return fail(new Error(`Target query was not run: count preflight found ${rowCount2} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row threshold. Recommend server-side pagination. If a full read is still necessary, tell the user the observed count and ask explicitly; retry with user_confirmed_large_read:true only after they approve.`));
+          }
+          if (rowCount2 > LARGE_READ_ROW_THRESHOLD) {
+            warnings.push(`User-confirmed large read: count preflight found ${rowCount2} rows. Server-side pagination remains recommended.`);
+          }
+        }
+        let result;
+        try {
+          const bindings = staticBindings;
+          const emptied = emptyViewerOnlyParams(query.options, bindings);
+          if (emptied.length)
+            warnings.push(emptyParamsNote(emptied));
+          const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+          if (liveOnly.length)
+            warnings.push(unresolvedNote(liveOnly));
+          result = await client.runQuery({
+            queryId: query.id,
+            versionId: args.version_id,
+            environmentId: args.environment_id,
+            resolvedOptions: bindings.resolved
+          });
+        } catch (error51) {
+          return ok({
+            status: "failed",
+            message: error51 instanceof Error ? error51.message : String(error51),
+            ...preflight ? { preflight } : {},
+            ...warnings.length ? { warnings } : {}
+          });
+        }
+        const failed = result.status === "failed";
+        const bindingHint = queryResultBindingHint(query, result);
+        const recovery = failed ? failureRecovery(query, result) : void 0;
+        const verification = failed ? failureVerification(query, result) : void 0;
+        const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
+        const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
+        if (output.warning)
+          warnings.push(output.warning);
+        return ok({
+          ...output.result,
+          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
+          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
+          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
+          ...bindingHint ? { binding_hint: bindingHint } : {},
+          ...preflight ? { preflight } : {},
+          ...warnings.length ? { warnings } : {},
+          ...recovery ? { recovery } : {},
+          ...verification ? { verification } : {},
+          ...schemaHint ? { schema_hint: schemaHint } : {}
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+
+// dist/tools/runQueries.js
+function batchSafeRead(query) {
+  const assessment = assessQueryRead(query);
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
+    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
+    return refusal ? { safe: false, reason: refusal } : { safe: true };
+  }
+  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
+    return {
+      safe: false,
+      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
+    };
+  }
+  return {
+    safe: false,
+    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
+  };
+}
+function runQueriesTool(client) {
+  return {
+    name: "run_queries",
+    title: "Run Queries",
+    // Executes whatever the queries hold against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused \u2014 remote API reads (restapi, openapi, servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
+    inputSchema: {
+      query_ids: external_exports.array(external_exports.string()).min(1).max(10),
+      version_id: external_exports.string(),
+      environment_id: external_exports.string().optional(),
+      include_data: external_exports.boolean().optional().describe("Default true. Set false to verify execution without returning rows: each result keeps status/message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.")
+    },
+    async handler(args) {
+      try {
+        if (new Set(args.query_ids).size !== args.query_ids.length) {
+          return fail(new Error("run_queries query_ids must be unique."));
+        }
+        const saved = await client.getQueries(args.version_id);
+        const byId = new Map(saved.map((query) => [query.id, query]));
+        const resolveWarnings = [];
+        const resolveErrors = [];
+        args = {
+          ...args,
+          query_ids: args.query_ids.map((queryId) => {
+            if (byId.has(queryId))
+              return queryId;
+            const resolution = resolveRef2(saved, queryId, "Query", `on version "${args.version_id}"`);
+            if (!resolution.ok) {
+              resolveErrors.push(resolution.error);
+              return queryId;
+            }
+            if (resolution.warning)
+              resolveWarnings.push(resolution.warning);
+            return resolution.target.id;
+          })
+        };
+        if (resolveErrors.length)
+          return fail(new Error(resolveErrors.join(" ")));
+        const unsafe = args.query_ids.flatMap((queryId) => {
+          const verdict = batchSafeRead(byId.get(queryId));
+          return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
+        });
+        if (unsafe.length) {
+          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? "a query" : "queries"} before execution: ${unsafe.join("; ")}`));
+        }
+        const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
+        const queries = await Promise.all(args.query_ids.map(async (queryId) => {
+          const query = byId.get(queryId);
+          const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
+          try {
+            const bindings = resolveStaticBindings(query.options);
+            const emptied = emptyViewerOnlyParams(query.options, bindings);
+            if (emptied.length)
+              warnings.push(emptyParamsNote(emptied));
+            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+            if (liveOnly.length)
+              warnings.push(unresolvedNote(liveOnly));
+            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
+            const failed = result.status === "failed";
+            const bindingHint = queryResultBindingHint(query, result);
+            const recovery = failed ? failureRecovery(query, result) : void 0;
+            const verification = failed ? failureVerification(query, result) : void 0;
+            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
+            const shaped = args.include_data === false ? (() => {
+              const { data, ...rest } = result;
+              return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
+            })() : result;
+            return {
+              query_id: queryId,
+              ...query.name ? { name: query.name } : {},
+              ...shaped,
+              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
+              ...bindingHint ? { binding_hint: bindingHint } : {},
+              ...warnings.length ? { warnings } : {},
+              ...recovery ? { recovery } : {},
+              ...verification ? { verification } : {},
+              ...schemaHint ? { schema_hint: schemaHint } : {}
+            };
+          } catch (error51) {
+            const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
+            return {
+              query_id: queryId,
+              ...query.name ? { name: query.name } : {},
+              ...failure,
+              ...warnings.length ? { warnings } : {}
+            };
+          }
+        }));
+        return ok({ queries });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+
+// dist/applyReadCheck.js
+var MAX_READS = 10;
+var REASON_CHARS = 160;
+var rowCount = (result) => {
+  const data = result.data;
+  if (Array.isArray(data))
+    return data.length;
+  return void 0;
+};
+async function checkPlanReads(client, params) {
+  const wanted = [...new Set(params.queryIds)];
+  if (!wanted.length)
+    return void 0;
+  const saved = await client.getQueries(params.versionId);
+  const byId = new Map(saved.map((query) => [query.id, query]));
+  const check2 = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [] };
+  const runnable = [];
+  for (const id of wanted) {
+    const query = byId.get(id);
+    if (!query)
+      continue;
+    const name2 = query.name ?? id;
+    const verdict = batchSafeRead(query);
+    if (!verdict.safe) {
+      check2.not_run.push({ name: name2, reason: String(verdict.reason ?? "not a proven bounded read").slice(0, REASON_CHARS) });
+    } else if (runnable.length >= MAX_READS) {
+      check2.not_run.push({ name: name2, reason: `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries` });
+    } else {
+      runnable.push(id);
+    }
+  }
+  if (!runnable.length)
+    return check2;
+  const environmentId = params.environmentId ?? await client.getDevelopmentEnvironmentId();
+  await Promise.all(runnable.map(async (id) => {
+    const query = byId.get(id);
+    const name2 = query.name ?? id;
+    const needsViewer = containsComponentBinding(query.options);
+    let result;
+    try {
+      const bindings = resolveStaticBindings(query.options);
+      emptyViewerOnlyParams(query.options, bindings);
+      result = await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
+    } catch (error51) {
+      result = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
+    }
+    check2.ran += 1;
+    if (result.status !== "failed") {
+      const rows = rowCount(result);
+      if (rows !== void 0)
+        check2.rows[name2] = rows;
+      return;
+    }
+    const message = String(result.message ?? result.description ?? "the query failed").slice(0, 600);
+    if (needsViewer) {
+      check2.inconclusive.push({
+        name: name2,
+        message,
+        note: "This query reads components.*, which a browser-free run leaves empty: the failure may be about the missing value. Check that the query also works when that input is empty, or give the input a default."
+      });
+      return;
+    }
+    const schemaHint = await schemaNameHint(client, query, result).catch(() => void 0);
+    check2.failed.push({ name: name2, message, ...schemaHint ? { schema_hint: schemaHint } : {} });
+  }));
+  return check2;
+}
+
 // dist/tools/applyAppPhase.js
 function logicalRef(value2) {
   return value2.client_ref ?? value2.name;
@@ -76302,11 +76779,12 @@ function applyAppPhaseTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page's existing components and their events are deleted just before the plan's components are created (page events and query events only where the plan declares them again), queries the plan defines again are updated in place keeping their ids, and events on other pages that acted on a replaced component are re-pointed to the recreated component of the same name. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure after that deletion leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
+    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().optional().describe("Defaults to the version the plan was linted for."),
-      plan_token: external_exports.string()
+      plan_token: external_exports.string(),
+      check_reads: external_exports.boolean().optional().describe("Default true: after the phase is written, the proven read queries it created or updated are run once and the result carries read_check {ran, rows, failed, inconclusive, not_run}. Writes, remote or paid calls and RunJS are never run. false skips the check.")
     },
     async handler(input) {
       const peeked = peekAppPlan(input.plan_token);
@@ -76736,8 +77214,22 @@ function applyAppPhaseTool(client) {
           ...(spec.seed_data ?? []).map((seed) => seed.table_name),
           ...(spec.queries ?? []).flatMap((query) => query.table_ref ? [query.table_ref] : [])
         ]);
+        let readCheck;
+        if (input.check_reads !== false) {
+          stage = "check the phase's reads";
+          try {
+            const written = (spec.queries ?? []).flatMap((query) => {
+              const target = queryTargets.get(logicalRef(query));
+              return target ? [target.id] : [];
+            });
+            readCheck = await checkPlanReads(client, { versionId: args.version_id, queryIds: written });
+          } catch (error51) {
+            readCheck = { error: `The phase applied; its reads could not be checked (${error51 instanceof Error ? error51.message : String(error51)}). Run them with run_queries.` };
+          }
+        }
         return ok({
           applied,
+          ...readCheck ? { read_check: readCheck } : {},
           refs: {
             tables: Object.fromEntries([...relevantTableNames].map((name2) => [name2, tableIds.get(name2.toLowerCase())])),
             pages: selectedRefs(pageTargets, (spec.pages ?? []).map(logicalRef)),
@@ -78089,415 +78581,6 @@ function deleteQueryTool(client) {
           query_name: query.name,
           source_events_deleted: sourceEventsDeleted
         });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-
-// dist/tools/runQuery.js
-var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
-function queryResultBindingHint(query, result) {
-  const data = result.data;
-  const options2 = query.options;
-  if (result.status !== "ok" || query.kind !== "tooljetdb" || options2?.operation !== "sql_execution" || !data || !Array.isArray(data.results))
-    return void 0;
-  return {
-    rows_path: "data.results",
-    row_count: data.results.length,
-    guidance: "This ToolJet DB SQL read returned an object containing results. Bind row consumers to queries.<name>.data.results (or data?.results ?? []), not data.map/filter or data[0]. Other operations can return different shapes; preserve the actual returned contract."
-  };
-}
-function truncateRemoteResult(result) {
-  if (!Object.prototype.hasOwnProperty.call(result, "data"))
-    return { result };
-  let serialized;
-  try {
-    serialized = JSON.stringify(result.data);
-  } catch {
-    return {
-      result: { ...result, data: { mcp_truncated: true, preview_json: "<unserializable response>" } },
-      warning: "The REST response data could not be serialized for MCP output; inspect it in ToolJet."
-    };
-  }
-  if (typeof serialized !== "string")
-    return { result };
-  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS)
-    return { result };
-  return {
-    result: {
-      ...result,
-      data: {
-        mcp_truncated: true,
-        original_json_characters: serialized.length,
-        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS)
-      }
-    },
-    warning: `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. The remote request already completed; add API-specific pagination or a smaller limit before another run.`
-  };
-}
-function containsComponentBinding(value2) {
-  if (typeof value2 === "string")
-    return /\bcomponents\s*\./.test(value2);
-  if (Array.isArray(value2))
-    return value2.some(containsComponentBinding);
-  if (value2 && typeof value2 === "object")
-    return Object.values(value2).some(containsComponentBinding);
-  return false;
-}
-function datasourceRecovery(query) {
-  if (!query.datasource_settings_url)
-    return void 0;
-  return {
-    action: "open_datasource_settings",
-    url: query.datasource_settings_url,
-    instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
-  };
-}
-var CONNECTION_SQLSTATE_PREFIXES = ["08", "28", "53", "57P0", "3D000"];
-var SCHEMA_NAME_SQLSTATES = /* @__PURE__ */ new Set(["42P01", "42703", "3F000", "42P02", "42704"]);
-var LEGACY_CONNECTION_CODES = /* @__PURE__ */ new Set([
-  "ELOGIN",
-  "ESOCKET",
-  "ECONNREFUSED",
-  "ECONNRESET",
-  "ETIMEDOUT",
-  "ENOTFOUND",
-  "ER_ACCESS_DENIED_ERROR",
-  "ER_DBACCESS_DENIED_ERROR",
-  "ER_BAD_DB_ERROR",
-  "PROTOCOL_CONNECTION_LOST"
-]);
-var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR", "ER_NO_SUCH_TABLE"]);
-function classifyQueryFailure(result) {
-  if (!result)
-    return "unknown";
-  const details = result.data;
-  if (details?.name === "SyntaxError" && typeof result.description === "string" && result.description.startsWith("JSON5:"))
-    return "query";
-  const category = result.category;
-  if (category === "authentication" || category === "connection")
-    return "connection";
-  if (category === "schema_name")
-    return "schema_name";
-  if (category === "unknown")
-    return "unknown";
-  if (["timeout", "rate_limit", "transient", "query"].includes(String(category)))
-    return "query";
-  if (typeof category === "string")
-    return "unknown";
-  const data = result.data;
-  const codes = data && typeof data === "object" ? [data.code, data.sqlState, data.sqlstate].map((value2) => String(value2 ?? "").toUpperCase()).filter(Boolean) : [];
-  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) || codes.some((code) => LEGACY_CONNECTION_CODES.has(code)))
-    return "connection";
-  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code)))
-    return "schema_name";
-  return codes.length ? "query" : "unknown";
-}
-function failureRecovery(query, result) {
-  return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
-}
-function failureVerification(query, result) {
-  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
-    return void 0;
-  return {
-    action: "test_datasource_connection",
-    datasource_id: query.data_source_id,
-    instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
-  };
-}
-function introspectedNames(result) {
-  const data = result?.data;
-  if (!Array.isArray(data))
-    return [];
-  return data.map((row) => typeof row === "string" ? row : row?.value ?? row?.label ?? row?.name).filter((value2) => typeof value2 === "string" && value2.length > 0);
-}
-async function availableTableNames(client, query) {
-  if (!query.data_source_id || !query.kind)
-    return void 0;
-  const methods = getDatasourceQuerySchema(query.kind)?.introspectionMethods ?? [];
-  const tableMethod = ["listTables", "list_tables", "getTables", "tables"].find((m) => methods.includes(m));
-  if (!tableMethod)
-    return void 0;
-  let methodArgs;
-  if (methods.includes("listSchemas")) {
-    const schemas = introspectedNames(await client.invokeDatasourceMethod({ dataSourceId: query.data_source_id, method: "listSchemas" }));
-    const schema = schemas.includes("public") ? "public" : schemas[0];
-    if (schema)
-      methodArgs = { schema };
-  }
-  const tableResult = await client.invokeDatasourceMethod({
-    dataSourceId: query.data_source_id,
-    method: tableMethod,
-    ...methodArgs ? { args: methodArgs } : {}
-  });
-  const names = introspectedNames(tableResult);
-  return names.length ? names : void 0;
-}
-async function schemaNameHint(client, query, result) {
-  if (classifyQueryFailure(result) !== "schema_name")
-    return void 0;
-  const data = result.data;
-  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
-  const hint = {
-    kind: "schema_name_error",
-    detail: String(result.description ?? result.message ?? "a table or column named in the query does not exist"),
-    ...code ? { sqlstate: code } : {},
-    guidance: "This is a schema/name error, NOT a connection problem \u2014 the datasource is reachable, so do NOT ask the user to repair or test the connection. A table or column named in the SQL does not exist. Call inspect_datasource_schema (listTables, then listColumns for the target table) to get the EXACT names, correct the query, and retry. Never guess table or column names."
-  };
-  try {
-    const tables = await availableTableNames(client, query);
-    if (tables?.length)
-      hint.available_tables = tables.slice(0, 50);
-  } catch {
-  }
-  return hint;
-}
-function runQueryTool(client) {
-  return {
-    name: "run_query",
-    title: "Run Query",
-    // Executes whatever the query holds against the customer datasource — which may write or delete.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: <datasource result>, ... }; data may be an array or an object (ToolJet DB SQL uses data.results). Inspect the actual shape before binding components. HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
-    inputSchema: {
-      query_id: external_exports.string(),
-      version_id: external_exports.string(),
-      environment_id: external_exports.string().optional(),
-      count_query_id: external_exports.string().optional(),
-      user_confirmed_large_read: external_exports.boolean().optional(),
-      user_confirmed_billable_read: external_exports.boolean().optional(),
-      user_confirmed_remote_read: external_exports.boolean().optional()
-    },
-    async handler(args) {
-      try {
-        const warnings = [];
-        const query = await client.getQuery(args.query_id, args.version_id).catch(async (error51) => {
-          const saved = await client.getQueries(args.version_id);
-          const resolution = resolveRef2(saved, args.query_id, "Query", `on version "${args.version_id}"`);
-          if (!resolution.ok)
-            throw new Error(resolution.error, { cause: error51 });
-          return resolution.target;
-        });
-        const assessment = assessQueryRead(query);
-        if (!assessment.provenRead || assessment.selectStar) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
-        }
-        const staticBindings = resolveStaticBindings(query.options);
-        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
-        if (bindingRefusal) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
-        }
-        if (containsComponentBinding(query.options)) {
-          warnings.push('Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.');
-        }
-        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
-        }
-        if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
-        }
-        if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
-        }
-        let preflight;
-        if (assessment.requiresCountPreflight) {
-          if (!args.count_query_id) {
-            return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
-          }
-          if (args.count_query_id === args.query_id || args.count_query_id === query.id) {
-            return fail(new Error("count_query_id must be a separate count-only query."));
-          }
-          const countQuery = await client.getQuery(args.count_query_id, args.version_id);
-          const countAssessment = assessQueryRead(countQuery);
-          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true || countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true;
-          if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
-            return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
-          }
-          const countResult = await client.runQuery({
-            queryId: countQuery.id,
-            versionId: args.version_id,
-            environmentId: args.environment_id
-          });
-          const rowCount = extractRowCount(countResult);
-          if (rowCount === void 0) {
-            return fail(new Error(`Count preflight "${countQuery.name ?? countQuery.id}" did not return one row with exactly one numeric count; target query was not run.`));
-          }
-          preflight = { count_query_id: countQuery.id, row_count: rowCount, threshold: LARGE_READ_ROW_THRESHOLD };
-          if (rowCount > LARGE_READ_ROW_THRESHOLD && !args.user_confirmed_large_read) {
-            return fail(new Error(`Target query was not run: count preflight found ${rowCount} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row threshold. Recommend server-side pagination. If a full read is still necessary, tell the user the observed count and ask explicitly; retry with user_confirmed_large_read:true only after they approve.`));
-          }
-          if (rowCount > LARGE_READ_ROW_THRESHOLD) {
-            warnings.push(`User-confirmed large read: count preflight found ${rowCount} rows. Server-side pagination remains recommended.`);
-          }
-        }
-        let result;
-        try {
-          const bindings = staticBindings;
-          const emptied = emptyViewerOnlyParams(query.options, bindings);
-          if (emptied.length)
-            warnings.push(emptyParamsNote(emptied));
-          const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
-          if (liveOnly.length)
-            warnings.push(unresolvedNote(liveOnly));
-          result = await client.runQuery({
-            queryId: query.id,
-            versionId: args.version_id,
-            environmentId: args.environment_id,
-            resolvedOptions: bindings.resolved
-          });
-        } catch (error51) {
-          return ok({
-            status: "failed",
-            message: error51 instanceof Error ? error51.message : String(error51),
-            ...preflight ? { preflight } : {},
-            ...warnings.length ? { warnings } : {}
-          });
-        }
-        const failed = result.status === "failed";
-        const bindingHint = queryResultBindingHint(query, result);
-        const recovery = failed ? failureRecovery(query, result) : void 0;
-        const verification = failed ? failureVerification(query, result) : void 0;
-        const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
-        const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
-        if (output.warning)
-          warnings.push(output.warning);
-        return ok({
-          ...output.result,
-          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
-          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
-          ...bindingHint ? { binding_hint: bindingHint } : {},
-          ...preflight ? { preflight } : {},
-          ...warnings.length ? { warnings } : {},
-          ...recovery ? { recovery } : {},
-          ...verification ? { verification } : {},
-          ...schemaHint ? { schema_hint: schemaHint } : {}
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-
-// dist/tools/runQueries.js
-function batchSafeRead(query) {
-  const assessment = assessQueryRead(query);
-  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
-    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
-    return refusal ? { safe: false, reason: refusal } : { safe: true };
-  }
-  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
-    return {
-      safe: false,
-      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
-    };
-  }
-  return {
-    safe: false,
-    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
-  };
-}
-function runQueriesTool(client) {
-  return {
-    name: "run_queries",
-    title: "Run Queries",
-    // Executes whatever the queries hold against the customer datasource — which may write or delete.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused \u2014 remote API reads (restapi, openapi, servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
-    inputSchema: {
-      query_ids: external_exports.array(external_exports.string()).min(1).max(10),
-      version_id: external_exports.string(),
-      environment_id: external_exports.string().optional(),
-      include_data: external_exports.boolean().optional().describe("Default true. Set false to verify execution without returning rows: each result keeps status/message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.")
-    },
-    async handler(args) {
-      try {
-        if (new Set(args.query_ids).size !== args.query_ids.length) {
-          return fail(new Error("run_queries query_ids must be unique."));
-        }
-        const saved = await client.getQueries(args.version_id);
-        const byId = new Map(saved.map((query) => [query.id, query]));
-        const resolveWarnings = [];
-        const resolveErrors = [];
-        args = {
-          ...args,
-          query_ids: args.query_ids.map((queryId) => {
-            if (byId.has(queryId))
-              return queryId;
-            const resolution = resolveRef2(saved, queryId, "Query", `on version "${args.version_id}"`);
-            if (!resolution.ok) {
-              resolveErrors.push(resolution.error);
-              return queryId;
-            }
-            if (resolution.warning)
-              resolveWarnings.push(resolution.warning);
-            return resolution.target.id;
-          })
-        };
-        if (resolveErrors.length)
-          return fail(new Error(resolveErrors.join(" ")));
-        const unsafe = args.query_ids.flatMap((queryId) => {
-          const verdict = batchSafeRead(byId.get(queryId));
-          return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
-        });
-        if (unsafe.length) {
-          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? "a query" : "queries"} before execution: ${unsafe.join("; ")}`));
-        }
-        const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
-        const queries = await Promise.all(args.query_ids.map(async (queryId) => {
-          const query = byId.get(queryId);
-          const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
-          try {
-            const bindings = resolveStaticBindings(query.options);
-            const emptied = emptyViewerOnlyParams(query.options, bindings);
-            if (emptied.length)
-              warnings.push(emptyParamsNote(emptied));
-            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
-            if (liveOnly.length)
-              warnings.push(unresolvedNote(liveOnly));
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
-            const failed = result.status === "failed";
-            const bindingHint = queryResultBindingHint(query, result);
-            const recovery = failed ? failureRecovery(query, result) : void 0;
-            const verification = failed ? failureVerification(query, result) : void 0;
-            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
-            const shaped = args.include_data === false ? (() => {
-              const { data, ...rest } = result;
-              return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
-            })() : result;
-            return {
-              query_id: queryId,
-              ...query.name ? { name: query.name } : {},
-              ...shaped,
-              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
-              ...bindingHint ? { binding_hint: bindingHint } : {},
-              ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {},
-              ...verification ? { verification } : {},
-              ...schemaHint ? { schema_hint: schemaHint } : {}
-            };
-          } catch (error51) {
-            const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
-            return {
-              query_id: queryId,
-              ...query.name ? { name: query.name } : {},
-              ...failure,
-              ...warnings.length ? { warnings } : {}
-            };
-          }
-        }));
-        return ok({ queries });
       } catch (err) {
         return fail(err);
       }
