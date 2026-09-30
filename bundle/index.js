@@ -71060,6 +71060,39 @@ function validateEvents(summary, events, options2 = {}) {
     errors.push(`${label2}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
   }
   errors.push(...queryEventCycleErrors(summary, events, options2.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
+  const persistedMode = options2.includePersistedChains === false;
+  const runKey = (sourceId, trigger, ref, queryId) => JSON.stringify([sourceId, trigger, ref ?? null, queryId]);
+  const payloadKey = (payload2) => JSON.stringify(Object.keys(payload2).filter((k) => k !== "index" && k !== "name").sort().map((k) => [k, payload2[k]]));
+  const heldRuns = /* @__PURE__ */ new Map();
+  if (!persistedMode) {
+    for (const held of summary.events ?? []) {
+      const payload2 = held.event && typeof held.event === "object" ? held.event : void 0;
+      if (!payload2 || payload2.actionId !== "run-query" || !held.sourceId)
+        continue;
+      if (held.target !== "component" && held.target !== "table_column")
+        continue;
+      const key4 = runKey(held.sourceId, payload2.eventId, payload2.ref, payload2.queryId);
+      heldRuns.set(key4, [...heldRuns.get(key4) ?? [], { id: held.id, payload: payloadKey(payload2) }]);
+    }
+  }
+  const plannedRuns = /* @__PURE__ */ new Set();
+  for (const event of events) {
+    if (event.action?.actionId !== "run-query")
+      continue;
+    if (event.sourceType !== "component" && event.sourceType !== "table_column")
+      continue;
+    const key4 = runKey(event.sourceId, event.trigger, event.ref, event.action.queryId);
+    const sourceName = components.get(event.sourceId)?.name ?? event.sourceId;
+    const queryName = queryById.get(String(event.action.queryId ?? ""))?.name ?? String(event.action.queryName ?? event.action.queryId);
+    const mine = payloadKey({ eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action });
+    const held = heldRuns.get(key4);
+    if (held && !held.some((h) => h.payload === mine)) {
+      errors.push(`"${sourceName}" ${event.trigger} already runs query "${queryName}" (event ${held[0].id}); a second handler would run it twice on one ${event.trigger}. Change that handler with update_events, or delete it with delete_event before adding this one.`);
+    } else if (plannedRuns.has(key4)) {
+      (persistedMode ? warnings : errors).push(`"${sourceName}" ${event.trigger} runs query "${queryName}" twice: two handlers on it run the same query, so one ${event.trigger} runs it two times. Keep one.`);
+    }
+    plannedRuns.add(key4);
+  }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 function persistedEventSpecs(summary) {
