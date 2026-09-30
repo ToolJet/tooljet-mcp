@@ -74756,7 +74756,7 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     const id = `planned-query:${index}:${ref}`;
     if (existingQueryNames.has(query.name)) {
       const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
-      errors.push(`App already has a query named "${query.name}"` + (users.length ? `, which page${users.length > 1 ? "s" : ""} ${users.map((u) => `"${u}"`).join(", ")} also read${users.length > 1 ? "" : "s"} or run${users.length > 1 ? "" : "s"}. To change it with this plan, replace ${users.length > 1 ? "those pages" : `"${users[0]}"`} in the same call; or refer to it by name here without defining it, or use update_query.` : ". To use it as it is, refer to it by name without defining it in this plan; to change it, use update_query, or replace the page that owns it."));
+      errors.push(`App already has a query named "${query.name}"` + (users.length ? `, which page${users.length > 1 ? "s" : ""} ${users.map((u) => `"${u}"`).join(", ")} also read${users.length > 1 ? "" : "s"} or run${users.length > 1 ? "" : "s"}. To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, mark this definition update: true.` : ". To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true."));
     }
     registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
     if (ref !== query.name)
@@ -75205,7 +75205,9 @@ var plannedQuerySchema = external_exports.object({
   kind: external_exports.string().optional(),
   /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
   table_ref: external_exports.string().optional().describe("Actual table_name of a planned or existing ToolJet DB table, not a client_ref, alias, or UUID."),
-  options: external_exports.record(external_exports.string(), external_exports.any())
+  options: external_exports.record(external_exports.string(), external_exports.any()),
+  /** The app's query of this name is updated in place with this definition: see pageReplace.ts. */
+  update: external_exports.boolean().optional().describe("true: when the app already has a query of this name, it is updated in place with this definition, keeping its id and the events that run it, for every page that reads it (needs app_id). Without it, defining an existing name again is refused unless the definition is identical (then the existing query is used) or a replaced page owns it.")
 });
 var plannedPageSchema = external_exports.object({
   client_ref: external_exports.string().optional(),
@@ -75516,8 +75518,11 @@ function replaceView(summary, plan) {
       }
     }
   }
-  const queriesToUpdate = new Map(summary.queries.filter((query) => query.name && planQueryNames.has(query.name) && !reachedElsewhere.has(query.id) && (owned.has(query.id) || !usedElsewhere(query))).map((query) => [query.name, query.id]));
-  if (!replacedPages.length && (!replacedNames.size || !queriesToUpdate.size))
+  const explicitUpdates = new Set((plan.queries ?? []).filter((query) => query.update).map((query) => query.name));
+  const implicit = replacedNames.size ? summary.queries.filter((query) => query.name && planQueryNames.has(query.name) && !reachedElsewhere.has(query.id) && (owned.has(query.id) || !usedElsewhere(query))) : [];
+  const explicit = summary.queries.filter((query) => query.name && explicitUpdates.has(query.name));
+  const queriesToUpdate = new Map([...implicit, ...explicit].map((query) => [query.name, query.id]));
+  if (!replacedPages.length && !explicit.length && (!replacedNames.size || !queriesToUpdate.size))
     return void 0;
   const redefinedIds = new Set(queriesToUpdate.values());
   const queryNameById = new Map(summary.queries.map((query) => [query.id, query.name ?? ""]));
@@ -75696,6 +75701,35 @@ function replaceFingerprint(summary, view) {
   return canonical2({ pages, queries, events });
 }
 
+// dist/restatedQueries.js
+var stable = (value2) => JSON.stringify(value2, (_key, inner) => inner && typeof inner === "object" && !Array.isArray(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
+function restatedQueryNames(summary, queries, tables, datasources) {
+  const restated = [];
+  for (const query of queries) {
+    const held = summary.queries.filter((existing2) => existing2.name === query.name);
+    if (held.length !== 1)
+      continue;
+    const existing = held[0];
+    const named = query.datasource_name !== void 0 ? datasources.filter((source2) => source2.name === query.datasource_name) : [];
+    const datasource = query.datasource_id !== void 0 ? datasources.find((source2) => source2.id === query.datasource_id) : named.length === 1 ? named[0] : void 0;
+    if (!datasource || datasource.id !== existing.data_source_id)
+      continue;
+    const options2 = structuredClone(query.options ?? {});
+    if (query.table_ref) {
+      const table = tables.find((candidate) => candidate.table_name.toLowerCase() === query.table_ref.toLowerCase());
+      if (!table)
+        continue;
+      options2.table_id = table.id;
+    }
+    const prepared = prepareQueryOptionsForWrite(datasource.kind, options2, `Query "${query.name}"`);
+    if (prepared.errors.length)
+      continue;
+    if (stable(prepared.options) === stable(existing.options ?? {}))
+      restated.push(query.name);
+  }
+  return restated;
+}
+
 // dist/frozenApp.js
 function frozenAppRefusal(summary) {
   if (!summary?.editor_frozen)
@@ -75761,6 +75795,21 @@ function lintAppSpecTool(client) {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen)
           return fail(new Error(frozen));
+        const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
+        if (fetchedSummary && args.queries?.length) {
+          const restated = restatedQueryNames(fetchedSummary, args.queries, existingTables, datasources);
+          if (restated.length) {
+            args.queries = args.queries.filter((query) => !restated.includes(query.name));
+            preflightWarnings.push(`${restated.map((name2) => `"${name2}"`).join(", ")}: already in the app exactly as written here, so the plan uses the existing quer` + (restated.length > 1 ? "ies" : "y") + " and defines nothing again.");
+          }
+          const planPages = new Set((args.pages ?? []).map((page) => page.name));
+          for (const query of args.queries.filter((candidate) => candidate.update)) {
+            const users = pagesUsingQuery(fetchedSummary, query.name, planPages);
+            if (users.length) {
+              preflightWarnings.push(`Query "${query.name}" is updated in place, and page${users.length > 1 ? "s" : ""} ${users.map((user) => `"${user}"`).join(", ")} also read${users.length > 1 ? "" : "s"} it: keep the fields they use.`);
+            }
+          }
+        }
         const view = fetchedSummary ? replaceView(fetchedSummary, args) : void 0;
         const existingSummary = view?.summary ?? fetchedSummary;
         if (view && fetchedSummary)
@@ -75845,7 +75894,6 @@ function lintAppSpecTool(client) {
         if (args.queries?.length && !args.version_id) {
           preflightErrors.push("version_id is required when a plan contains queries.");
         }
-        const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
         const uniqueDatasourceNames = new Map(datasources.filter((source2) => datasources.filter((other) => other.name === source2.name).length === 1).map((source2) => [source2.name, source2.kind]));
         preflightWarnings.push(...normalizePlanBindingAliases(args, existingSummary, datasourceKinds, uniqueDatasourceNames));
@@ -76125,7 +76173,7 @@ function mergeLikeServer(target, source2, wholeArrays) {
   }
   return source2 === void 0 ? target : source2;
 }
-var stable = (value2) => JSON.stringify(value2, (_key, inner) => isPlainObject4(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
+var stable2 = (value2) => JSON.stringify(value2, (_key, inner) => isPlainObject4(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
 function sectionAsRead(type, section, stored, definitions = bundledDefinitions()) {
   const wholeArrays = section === "properties" && WHOLE_ARRAY_TYPES.has(type);
   return mergeLikeServer(definitions[type]?.[section] ?? {}, stored ?? {}, wholeArrays);
@@ -76134,7 +76182,7 @@ function differingKey(type, section, planned, stored, definitions) {
   const asRead = sectionAsRead(type, section, planned, definitions);
   const have = stored ?? {};
   for (const key4 of /* @__PURE__ */ new Set([...Object.keys(asRead), ...Object.keys(have)])) {
-    if (stable(asRead[key4]) !== stable(have[key4]))
+    if (stable2(asRead[key4]) !== stable2(have[key4]))
       return key4;
   }
   return void 0;
