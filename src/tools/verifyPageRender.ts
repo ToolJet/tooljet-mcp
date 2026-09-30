@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed } from '../renderAuditPolicy.js';
+import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
 
 /**
  * Render audit: open a page in a headless browser and report what static checks cannot see. Built from
@@ -14,7 +14,7 @@ export interface RenderFinding {
   kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'unreachable';
   component: string;
   detail: string;
-  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'no_widgets';
+  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
 }
 
 export interface PageRenderReport {
@@ -201,7 +201,7 @@ export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
     /** The builder's ToolJet session (tj_auth_token), set as a cookie for the viewer origin so a private app opens. */
-    session?: string } = {},
+    session?: string; savedQueries?: RenderAuditQueries } = {},
   driver: () => Promise<any | null> = loadPlaywright
 ): Promise<PageRenderReport[]> {
   const unreachable = (p: { page: string; url: string }, reason: RenderFinding['reason'], detail: string): PageRenderReport =>
@@ -243,16 +243,24 @@ export async function auditPages(
       }
       await ctx.routeWebSocket('**/*', (socket: any) => { blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }; socket.close(); });
       await ctx.route('**/*', async (route: any) => {
-        const url = route.request().url();
+        const request = route.request();
+        const url = request.url();
         if (!renderAuditUrlAllowed(url, origins)) {
           blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A navigation or resource outside the configured audit origins was blocked' };
           await route.abort();
           return;
         }
         try {
+          const policy = renderAuditRequest(url, request.method(), options.savedQueries);
+          if (!policy.allowed) {
+            blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_execution', detail: policy.detail! };
+            await route.abort();
+            return;
+          }
           // route.continue() may automatically follow redirects before another interception. Fetch
           // with redirects disabled, and never fulfill a redirect response: use canonical URLs.
-          const response = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 30_000 });
+          const response = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 30_000,
+            ...(policy.postData === undefined ? {} : { postData: policy.postData }) });
           try {
             if (response.status() >= 300 && response.status() < 400 && response.headers().location) {
               const dest = new URL(response.headers().location, url);
@@ -332,7 +340,8 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
       'Run it once per page before the handoff and review every finding; report unverified behavior explicitly. ' +
       'Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is ' +
-      'audited without being made public; queries that run on page load run, as when a user opens it. ' +
+      'audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries ' +
+      'and queries requiring confirmation are blocked and reported as unverified. ' +
       'Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: z.string().regex(/^[A-Za-z0-9_-]+$/),
@@ -356,6 +365,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
           allowedOrigins: origins,
+          savedQueries: summary,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : await client.viewerSession?.().catch(() => undefined),
         };
