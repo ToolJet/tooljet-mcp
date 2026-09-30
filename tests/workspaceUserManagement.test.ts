@@ -53,8 +53,8 @@ describe('workspace management tools', () => {
 
   it('applies an approved role update to the exact organization user', async () => {
     const mock = client();
-    mock.updateWorkspaceUser.mockResolvedValue(undefined);
     const id = '00000000-0000-4000-8000-000000000001';
+    mock.updateWorkspaceUser.mockResolvedValue({ user: { id, role: 'builder' }, updated: true });
     const result = await manageWorkspaceUsersTool(mock as unknown as ToolJetClient).handler({
       action: 'update',
       organization_user_id: id,
@@ -70,7 +70,7 @@ describe('workspace management tools', () => {
       addGroupIds: [],
       userMetadata: undefined,
     });
-    expect(body(result)).toEqual({ organization_user_id: id, updated: true });
+    expect(body(result)).toEqual({ organization_user_id: id, updated: true, user: { id, role: 'builder' } });
   });
 
   it('archives only the requested organization user after confirmation', async () => {
