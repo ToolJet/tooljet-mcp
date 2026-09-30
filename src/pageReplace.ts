@@ -109,11 +109,12 @@ export function replaceView(summary: AppSummary, plan: ReplacePlan): ReplaceView
     summary.queries.some((other) => other.id !== query.id && !planQueryIds.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name!));
   // A query read through the page's own queries is the page's too (a table reads a RunJS view that reads a list
   // query: redefining the list query must not collide with itself), unless any other page reaches it: directly,
-  // through its events, or through its own queries' code and success chains (a query two pages read through their
+  // through its events, or through its own queries' code (a query two pages read through their
   // views must not be claimed, or editing one page rewrites the other's data).
   const readsOf = (text: string) => summary.queries.filter((q) => q.name && readsQuery(text, q.name)).map((q) => q.id);
-  const chainedFrom = (id: string) => summary.events.filter((event) => event.sourceId === id).flatMap((event) =>
-    summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id));
+  // A success chain does not share a query: a list another page reads runs this page's view after it (after="jobs"),
+  // and another page's write refreshes a summary only this page reads. Redefined in place, the query keeps its id,
+  // so the chain still runs it (a dispatch build and an asset-register build, 2026-09-29).
   const reachedElsewhere = new Set<string>([
     ...otherComponents.flatMap((component) => readsOf(componentText(component))),
     ...summary.events.filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId))))
@@ -122,7 +123,7 @@ export function replaceView(summary: AppSummary, plan: ReplacePlan): ReplaceView
   for (let frontier = [...reachedElsewhere]; frontier.length; ) {
     const next = frontier.flatMap((id) => {
       const query = summary.queries.find((q) => q.id === id);
-      return [...readsOf(JSON.stringify(query?.options ?? {})), ...chainedFrom(id)];
+      return readsOf(JSON.stringify(query?.options ?? {}));
     }).filter((id) => !reachedElsewhere.has(id));
     next.forEach((id) => reachedElsewhere.add(id));
     frontier = next;
@@ -134,7 +135,9 @@ export function replaceView(summary: AppSummary, plan: ReplacePlan): ReplaceView
     for (const query of summary.queries) {
       if (!query.name || owned.has(query.id) || reachedElsewhere.has(query.id)) continue;
       const readByOwned = summary.queries.some((other) => owned.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name!));
-      if (readByOwned) {
+      // Run by an owned query's success chain (the page's button runs savePatient, which runs saveBooking): its own too.
+      const chainedByOwned = summary.events.some((event) => !!event.sourceId && owned.has(event.sourceId) && runsQuery(event, query.id));
+      if (readByOwned || chainedByOwned) {
         owned.add(query.id);
         grew = true;
       }

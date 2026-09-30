@@ -74,7 +74,7 @@ function credentialFingerprint(req: IncomingMessage): Buffer {
   return createHash('sha256').update(JSON.stringify(fields)).digest();
 }
 
-async function readJsonBody(req: IncomingMessage, maxBodyBytes: number): Promise<unknown> {
+export async function readJsonBody(req: IncomingMessage, maxBodyBytes: number): Promise<unknown> {
   const chunks: Buffer[] = [];
   let totalBytes = 0;
 

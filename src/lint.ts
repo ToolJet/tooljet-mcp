@@ -9,6 +9,7 @@ import {
   lintChartDataShape,
   lintEmbeddedBindingSyntax,
   lintHtmlRootSurface,
+  surfaceAroundResolver,
   lintOversizedWidths,
   lintUnguardedComponentRefs,
   lintUnguardedSelectionText,
@@ -1105,7 +1106,8 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
         if (!siblingRect || siblingRect.top === undefined || siblingRect.height === undefined) return false;
         return rect.top! < siblingRect.top + siblingRect.height && siblingRect.top < rect.top! + rect.height!;
       });
-      if (sharesRow || (rect.left === 0 && rect.width === 43)) continue;
+      // 42 is full too: ToolJet pads the list 7px, so a 43-column child loses its right edge.
+      if (sharesRow || (rect.left === 0 && (rect.width === 43 || rect.width === 42))) continue;
       warnings.push(
         `Component "${child.name ?? child.id ?? child.type}" is the only child on its row inside grid-mode ` +
           `Listview "${parent.name ?? parent.id ?? 'Listview'}", but uses left:${rect.left ?? 'unset'}, ` +
@@ -1445,7 +1447,13 @@ export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []
   return [];
 }
 
-export function lintComponentSpec(spec: LintComponent): LintResult {
+/** Properties the inspector stores and the widget reads that the catalog does not list. */
+const INSPECTOR_ONLY_PROPERTIES: Record<string, string[]> = {
+  PhoneInput: ['defaultCountry'],
+  CurrencyInput: ['defaultCountry'],
+};
+
+export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?: string } = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const props = spec.properties ?? {};
@@ -1622,6 +1630,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     for (const key of Object.keys(authored)) {
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
+      if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type ?? '']?.includes(key)) continue;
       const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
       const alias =
         aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))
@@ -1980,7 +1989,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   // Text holding markdown in the default html format renders the markdown literally.
   errors.push(...lintTextFormat(spec));
   errors.push(...lintHtmlContentHeight(spec));
-  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintHtmlRootSurface(spec, context.surfaceAround));
   errors.push(...lintUnguardedComponentRefs(spec));
   errors.push(...lintEmbeddedBindingSyntax(spec));
   errors.push(...lintChartDataShape(spec));
@@ -2640,10 +2649,15 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
   return [
     ...detectOverlaps(components),
     ...lintToolbarButtonAlignment(components),
-    ...lintModalChildren(components),
+    ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components),
   ];
 }
+
+/** A modal's header advice (an empty native header, a title-like Text in the body) is about design, not broken
+ *  geometry: a profile titled "Volunteer profile" with the person's name as a large body heading failed six compiles
+ *  overnight (2026-09-29). It stays a warning. */
+const MODAL_HEADER_ADVICE = /native header (?:slot is empty|is visible)/;
 
 /** Geometry advice: canvas coverage, gutters. Warnings. The fold rule (lintOperationalViewport) is left out:
  *  a primary action under a table is a scroll away, and every time a tool reported it the model re-laid out
@@ -2652,6 +2666,7 @@ export function lintRenderedGeometryAdvisory(components: LintComponent[]): strin
   return [
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
+    ...lintModalChildren(components).filter((warning) => MODAL_HEADER_ADVICE.test(warning)),
   ];
 }
 
@@ -2769,12 +2784,13 @@ export function lintFormSubmitButtons(components: LintComponent[]): string[] {
 }
 
 /** Lint a batch: per-component checks + overlap detection across the batch. */
-export function lintComponents(components: LintComponent[]): LintResult {
+export function lintComponents(components: LintComponent[], options: { canvasColor?: string } = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const around = surfaceAroundResolver(components, options.canvasColor);
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
-    const r = lintComponentSpec(c);
+    const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
@@ -2793,7 +2809,7 @@ export function lintComponents(components: LintComponent[]): LintResult {
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
-  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   for (const c of components) warnings.push(...lintSurfaceInsets(c));
   errors.push(...lintRenderedGeometryBlocking(components));
@@ -2908,7 +2924,7 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
 /** Whole-app structural validation over a compact app summary (post-write). Catches dangling
  *  references, ambiguous duplicate names, and bindings to non-existent queries/components, plus
  *  re-runs the per-component render lints against what actually persisted. */
-export function validateAppStructure(summary: AppSummary): LintResult {
+export function validateAppStructure(summary: AppSummary, options: { canvasColor?: string } = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   warnings.push(...lintEditPrefill(summary));
@@ -2917,6 +2933,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   warnings.push(...lintSelectedRowObjectGuards(summary));
 
   const allComponents = summary.pages.flatMap((p) => p.components);
+  const around = surfaceAroundResolver(allComponents, options.canvasColor);
   const componentNames = new Set(allComponents.map((c) => c.name).filter(Boolean) as string[]);
   const componentIds = new Set(allComponents.map((c) => c.id));
   const queryNames = new Set(summary.queries.map((q) => q.name).filter(Boolean) as string[]);
@@ -3254,7 +3271,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       styles: c.styles,
       layouts: c.layouts as LintComponent['layouts'],
       parent: c.parent,
-    });
+    }, { surfaceAround: around(c) });
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
@@ -3332,7 +3349,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
-    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     for (const c of p.components) warnings.push(...lintSurfaceInsets(c));
     errors.push(...lintRenderedGeometryBlocking(p.components as LintComponent[]));

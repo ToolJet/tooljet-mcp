@@ -633,6 +633,35 @@ function sqlSource(sql: string): ReadSource | undefined {
   return match ? { kind: 'sql_table', value: normalizeSqlTable(match[1]!) } : undefined;
 }
 
+/** The same text with every quoted literal blanked to spaces, so positions still line up. */
+function blankQuoted(sql: string): string {
+  return sql.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"|`[^`]*`/g, (m) => ' '.repeat(m.length));
+}
+
+/** The statement after a WITH list (`WITH a AS (...), b AS (...) SELECT ...`), or undefined when it cannot be found. */
+function mainStatementAfterCtes(sql: string): string | undefined {
+  const blank = blankQuoted(sql);
+  const head = /^with\s+(?:recursive\s+)?/i.exec(blank);
+  if (!head) return undefined;
+  let i = head[0].length;
+  for (let guard = 0; guard < 50; guard++) {
+    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name) return undefined;
+    i += name[0].length;
+    let depth = 1;
+    while (i < blank.length && depth > 0) {
+      if (blank[i] === '(') depth++;
+      else if (blank[i] === ')') depth--;
+      i++;
+    }
+    if (depth !== 0) return undefined;
+    const next = /^\s*,/.exec(blank.slice(i));
+    if (!next) return sql.slice(i).trim();
+    i += next[0].length;
+  }
+  return undefined;
+}
+
 function assessSql(sql: string, datasourceKind: string, datasourceId?: string): QueryReadAssessment {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...(datasourceId ? { datasourceId } : {}) };
@@ -657,6 +686,26 @@ function assessSql(sql: string, datasourceKind: string, datasourceId?: string): 
       provenRead: false, directSafe: false, countOnly: false, selectStar: false,
       requiresCountPreflight: false, reason: 'SQL is empty or contains more than one statement', ...identity,
     };
+  }
+  // WITH ... SELECT is the usual shape of analytics SQL (a warehouse dashboard's every read was refused, 2026-09-28): a
+  // read when nothing in it writes, assessed by its final statement (a LIMIT inside a CTE bounds nothing it returns).
+  if (/^with\b/i.test(compact)) {
+    if (/\b(insert|update|delete|merge|upsert|truncate|drop|alter|create|grant|revoke|copy|call|exec|execute)\b/i.test(unquoted)) {
+      return {
+        provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+        requiresCountPreflight: false, reason: 'A WITH statement that writes or runs code is not a read', ...identity,
+      };
+    }
+    const main = mainStatementAfterCtes(compact);
+    if (!main || !/^select\b/i.test(main)) {
+      return {
+        provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+        requiresCountPreflight: false, reason: 'WITH statement: its final statement is not a SELECT that can be proven', ...identity,
+      };
+    }
+    const assessed = assessSql(main, datasourceKind, datasourceId);
+    // The source is a CTE, not a table: never treated as a whole-table count or a simple table read.
+    return { ...assessed, simpleSourceRead: false, ...(assessed.fullSourceCount ? { fullSourceCount: false } : {}) };
   }
   if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
     return {

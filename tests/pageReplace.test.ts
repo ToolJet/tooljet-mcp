@@ -190,6 +190,16 @@ describe('replace redefines only the page’s own queries', () => {
     expect(errors).toMatch(/already has a query named "rows"/);
     expect(errors).toMatch(/update_query/);
   });
+  it('names the other page that uses the query, and says to replace it in the same call', async () => {
+    // An asset register redefined asset_record with the Asset page while the Assets page ran it; told only "replace
+    // the page that owns it", Luna spent five compiles, three of them probing the compiler (2026-09-29).
+    const client = { getAppSummary: async () => twoPages, listTables: async () => [], listDatasources: async () => [{ id: 'ds', name: 'runjsdefault', kind: 'runjs' }] };
+    const res = await lintAppSpecTool(client as never).handler({ app_id: 'a', version_id: 'v',
+      pages: [{ name: 'Reports', replace: true }], queries: [{ name: 'rows', datasource_id: 'ds', options: { code: 'return 1' } }] } as never);
+    const errors = JSON.parse(String(res.content[0]!.text)).errors.join(' ');
+    expect(errors).toMatch(/"Orders"/);
+    expect(errors).toMatch(/same call/);
+  });
 });
 
 // A table reads a RunJS view that reads a list query: redefining the list query with the page must not collide with
@@ -784,5 +794,84 @@ describe('apply_app_phase says a replace is not atomic', () => {
     const description = applyAppPhaseTool({} as never).description;
     expect(description).toMatch(/not atomic/i);
     expect(description).toMatch(/draft|recoverable/i);
+  });
+});
+
+// A page's view query runs after a list query another page reads (after="jobs"): the list's success event runs the
+// view. That chain does not make the view another page's, so a replace of its page redefines it in place (a dispatch
+// build lost two compiles to "App already has a query named techCards", 2026-09-29).
+describe('a view run after a list another page reads', () => {
+  const chainedView = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Technicians', handle: 'technicians', components: [{ id: 'c1', name: 'roster', type: 'Listview', properties: { data: { value: '{{queries.techCards.data}}' } } }] },
+      { id: 'p2', name: 'Map', handle: 'map', components: [{ id: 'c2', name: 'jobsTable', type: 'Table', properties: { data: { value: '{{queries.jobs.data}}' } } }] },
+    ],
+    queries: [
+      { id: 'q1', name: 'jobs', kind: 'tooljetdb', options: {} },
+      { id: 'q2', name: 'techCards', kind: 'runjs', options: { code: 'return queries.jobs.data' } },
+    ],
+    events: [{ id: 'e1', sourceId: 'q1', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q2', queryName: 'techCards' } }],
+  };
+  it('is the replaced page’s own', () => {
+    const view = replaceView(chainedView as never, { pages: [{ name: 'Technicians', replace: true }], queries: [{ name: 'techCards' }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['techCards', 'q2']]);
+  });
+  it('is still another page’s when that page runs it', () => {
+    const run = { ...chainedView, events: [...chainedView.events, { id: 'e2', sourceId: 'c2', target: 'onRowClicked', event: { actionId: 'run-query', queryId: 'q2' } }] };
+    const view = replaceView(run as never, { pages: [{ name: 'Technicians', replace: true }], queries: [{ name: 'techCards' }] } as never);
+    expect([...(view?.queriesToUpdate ?? [])]).toEqual([]);
+  });
+});
+
+// Another page's write refreshes a summary only this page reads (check-out logs history, then refreshes the status
+// counts the warranty chart reads). The refresh keeps working when the summary is redefined in place, so it is not
+// another page's (an asset-register build lost two compiles to "App already has a query named", 2026-09-29).
+describe('a query another page only refreshes', () => {
+  const refreshed = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Warranty', handle: 'warranty', components: [{ id: 'c1', name: 'chart', type: 'Chart', properties: { data: { value: '{{queries.counts.data}}' } } }] },
+      { id: 'p2', name: 'Asset', handle: 'asset', components: [{ id: 'c2', name: 'checkOutBtn', type: 'Button', properties: {} }] },
+    ],
+    queries: [
+      { id: 'q1', name: 'counts', kind: 'tooljetdb', options: {} },
+      { id: 'q2', name: 'checkOut', kind: 'tooljetdb', options: {} },
+      { id: 'q3', name: 'logHistory', kind: 'tooljetdb', options: {} },
+    ],
+    events: [
+      { id: 'e1', sourceId: 'c2', target: 'onClick', event: { actionId: 'run-query', queryId: 'q2' } },
+      { id: 'e2', sourceId: 'q2', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q3' } },
+      { id: 'e3', sourceId: 'q3', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q1' } },
+    ],
+  };
+  it('is redefined in place by a replace of the page that reads it', () => {
+    const view = replaceView(refreshed as never, { pages: [{ name: 'Warranty', replace: true }], queries: [{ name: 'counts' }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['counts', 'q1']]);
+  });
+});
+
+// The replaced page's button runs savePatient, whose success runs saveBooking: both are the page's own, so a replace
+// that redefines only saveBooking updates it in place (a clinic booking build lost a compile to "App already has a
+// query named saveBooking", 2026-09-29).
+describe('a query run by a chain from the page’s own query', () => {
+  const chain = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Book', handle: 'book', components: [{ id: 'c1', name: 'saveBtn', type: 'Button', properties: {} }] },
+      { id: 'p2', name: 'Intake', handle: 'intake', components: [{ id: 'c2', name: 'notes', type: 'TextArea', properties: {} }] },
+    ],
+    queries: [
+      { id: 'q1', name: 'savePatient', kind: 'tooljetdb', options: {} },
+      { id: 'q2', name: 'saveBooking', kind: 'tooljetdb', options: {} },
+    ],
+    events: [
+      { id: 'e1', sourceId: 'c1', target: 'onClick', event: { actionId: 'run-query', queryId: 'q1' } },
+      { id: 'e2', sourceId: 'q1', target: 'onDataQuerySuccess', event: { actionId: 'run-query', queryId: 'q2' } },
+    ],
+  };
+  it('is the page’s own too', () => {
+    const view = replaceView(chain as never, { pages: [{ name: 'Book', replace: true }], queries: [{ name: 'saveBooking' }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['saveBooking', 'q2']]);
   });
 });

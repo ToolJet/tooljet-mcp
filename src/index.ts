@@ -6,6 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
+import { readJsonBody } from './httpServer.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
 import {
@@ -17,6 +18,9 @@ import {
   SESSION_TOKEN_HEADER,
   type RequestIdentity,
 } from './config.js';
+
+/** Upper bound on one MCP request body (a large lint_app_spec plan with seed rows stays far below it). */
+const MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
 
 export interface GatewayHttpServer {
   server: Server;
@@ -213,8 +217,28 @@ export function createGatewayHttpServer(): GatewayHttpServer {
     // one `initialize` handshake for its whole lifetime — reusing one across independent
     // dev clients breaks every client after the first. It also means `identity` cannot leak
     // between users: nothing built here outlives the response.
+    // resources/read is answered with one JSON body instead of an SSE stream: a catalog resource can be larger than
+    // the 1 MiB some clients accept for a single server-sent event (the Python MCP SDK's default), and a JSON body has
+    // no such cap. Every other request keeps its SSE stream. Reading the body here means handing it to the transport
+    // parsed; a body that is not JSON gets the transport's own parse error.
+    let parsedBody: unknown;
+    if (req.method === 'POST' && /^application\/json\b/i.test(req.headers['content-type'] ?? '')) {
+      try {
+        parsedBody = await readJsonBody(req, MAX_REQUEST_BODY_BYTES);
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32700, message: `Parse error: ${err instanceof Error ? err.message : 'invalid JSON'}` },
+          id: null,
+        }));
+        return;
+      }
+    }
+    const readsResource = !!parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody) &&
+      (parsedBody as { method?: unknown }).method === 'resources/read';
+
     const server = buildServer(identity);
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
     res.on('close', () => {
       transport.close();
       server.close();
@@ -222,7 +246,7 @@ export function createGatewayHttpServer(): GatewayHttpServer {
 
     server
       .connect(transport)
-      .then(() => transport.handleRequest(req, res))
+      .then(() => transport.handleRequest(req, res, parsedBody))
       .catch((err) => {
         console.error('tooljet-mcp: request failed', err);
         if (!res.headersSent) {
