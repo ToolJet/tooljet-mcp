@@ -245,6 +245,11 @@ describe('app version lifecycle tools', () => {
 
   it('releases the exact version after explicit confirmation', async () => {
     const client = makeClient();
+    const tool = releaseAppTool(client as unknown as ToolJetClient);
+    expect(z.object(tool.inputSchema).safeParse({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+    }).success).toBe(false);
     client.releaseApp.mockResolvedValue({
       app_id: '11111111-1111-4111-8111-111111111111',
       version_id: '22222222-2222-4222-8222-222222222222',
@@ -254,7 +259,7 @@ describe('app version lifecycle tools', () => {
       promoted_to_environments: ['staging', 'production'],
     });
 
-    const result = await releaseAppTool(client as unknown as ToolJetClient).handler({
+    const result = await tool.handler({
       app_id: '11111111-1111-4111-8111-111111111111',
       version_id: '22222222-2222-4222-8222-222222222222',
       confirm: true,
@@ -1828,8 +1833,8 @@ describe('validate_app tool', () => {
       events: [{ id: 'e1', name: 'run', sourceId: 'GONE', target: 'component', event: {} }],
     });
     const tool = validateAppTool(client as unknown as ToolJetClient);
-    const out = textOf(await tool.handler({ app_id: 'app1' })) as { ok: boolean; errors: string[]; warnings: string[] };
-    expect(client.getAppSummary).toHaveBeenCalledWith('app1');
+    const out = textOf(await tool.handler({ app_id: 'app1', version_id: 'v1' })) as { ok: boolean; errors: string[]; warnings: string[] };
+    expect(client.getAppSummary).toHaveBeenCalledWith('app1', 'v1');
     expect(out.ok).toBe(false); // dangling event source
     expect(out.errors.join(' ')).toMatch(/no longer exists/);
     expect(out.warnings.join(' ')).toMatch(/can clip at dashboard sizes/); // chart title lint

@@ -61742,8 +61742,19 @@ function createClient(auth, config2) {
       ...decodedParent && decodedParent.slotName !== "body" ? { slot_name: decodedParent.slotName } : {}
     };
   }
-  async function getAppSummary(appId) {
-    const full = await getApp(appId);
+  async function getAppSummary(appId, versionId) {
+    let full;
+    if (versionId) {
+      const res = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?mode=edit`);
+      await assertOk(res, "getAppSummary.version");
+      full = await res.json();
+      const returnedVersionId = full.editing_version?.id ?? full.editingVersion?.id;
+      if (returnedVersionId !== versionId) {
+        throw new Error(`ToolJet getAppSummary.version failed: requested version ${versionId}, but the response identified ${String(returnedVersionId)}.`);
+      }
+    } else {
+      full = await getApp(appId);
+    }
     const pages = (full.pages ?? []).map((p) => ({
       id: p.id,
       name: p.name,
@@ -61969,8 +61980,19 @@ function createClient(auth, config2) {
         ...params.versionDescription !== void 0 ? { versionDescription: params.versionDescription } : {}
       })
     });
-    await assertOk(res, "createAppVersion");
-    const created = await res.json();
+    let created;
+    if (res.status === 409) {
+      const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+      await assertOk(versionsRes, "createAppVersion.readAfterConflict");
+      const versionsBody = await versionsRes.json();
+      const recovered = versionsBody.versions?.find((version2) => version2.name === params.versionName && (version2.parent_version_id ?? version2.parentVersionId) === params.versionFromId && (params.versionDescription === void 0 || version2.description === params.versionDescription));
+      if (!recovered)
+        await assertOk(res, "createAppVersion");
+      created = recovered;
+    } else {
+      await assertOk(res, "createAppVersion");
+      created = await res.json();
+    }
     if (typeof created.id !== "string" || typeof created.name !== "string") {
       throw new Error("ToolJet createAppVersion failed: response did not include the new version id and name.");
     }
@@ -61999,19 +62021,6 @@ function createClient(auth, config2) {
         ...typeof version3.current_environment_id === "string" ? { currentEnvironmentId: version3.current_environment_id } : typeof version3.currentEnvironmentId === "string" ? { currentEnvironmentId: version3.currentEnvironmentId } : {}
       };
     };
-    const environmentsRes = await auth.authedFetch(`/api/app-environments?app_id=${encodeURIComponent(appId)}`);
-    await assertOk(environmentsRes, "releaseApp.listEnvironments");
-    const environmentsBody = await environmentsRes.json();
-    const environments = (environmentsBody.environments ?? []).flatMap((environment) => {
-      if (typeof environment.id !== "string" || typeof environment.name !== "string")
-        return [];
-      return [{
-        id: environment.id,
-        name: environment.name,
-        isDefault: environment.default === true || environment.is_default === true || environment.isDefault === true,
-        ...typeof environment.priority === "number" ? { priority: environment.priority } : {}
-      }];
-    });
     let version2 = await readVersion();
     let publishedForRelease = false;
     const promotedToEnvironments = [];
@@ -62025,35 +62034,61 @@ function createClient(auth, config2) {
       publishedForRelease = true;
       version2 = { ...version2, status: "PUBLISHED" };
     }
-    for (let attempts = 0; attempts <= environments.length; attempts++) {
-      const currentEnvironment = environments.find((environment) => environment.id === version2.currentEnvironmentId);
-      if (!currentEnvironment) {
-        throw new Error(`ToolJet releaseApp failed: version ${versionId} references unknown environment ${String(version2.currentEnvironmentId)}.`);
-      }
-      if (currentEnvironment.isDefault)
-        break;
-      if (attempts === environments.length) {
-        throw new Error(`ToolJet releaseApp failed: version ${versionId} did not reach the production environment.`);
-      }
-      const promoteRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}/promote`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentEnvironmentId: currentEnvironment.id })
-      });
-      await assertOk(promoteRes, "releaseApp.promoteVersion");
-      version2 = await readVersion();
-      const promotedEnvironment = environments.find((environment) => environment.id === version2.currentEnvironmentId);
-      if (!promotedEnvironment || promotedEnvironment.id === currentEnvironment.id) {
-        throw new Error(`ToolJet releaseApp could not verify promotion from ${currentEnvironment.name} for version ${versionId}.`);
-      }
-      promotedToEnvironments.push(promotedEnvironment.name);
-    }
-    const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/release`, {
+    const releaseOnce = () => auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/release`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ versionToBeReleased: versionId })
     });
-    await assertOk(res, "releaseApp");
+    let releaseRes = await releaseOnce();
+    if (!releaseRes.ok) {
+      const releaseError = await releaseRes.clone().text();
+      const promotionRequired = releaseRes.status === 400 && /only release when the version is promoted to production/i.test(releaseError);
+      if (!promotionRequired) {
+        const prepared = publishedForRelease ? " The draft was already published; retry release instead of editing it." : "";
+        throw new Error(`ToolJet releaseApp failed (${releaseRes.status}): ${releaseError}${prepared}`);
+      }
+      const environmentsRes = await auth.authedFetch(`/api/app-environments?app_id=${encodeURIComponent(appId)}`);
+      await assertOk(environmentsRes, "releaseApp.listEnvironments");
+      const environmentsBody = await environmentsRes.json();
+      const environments = (environmentsBody.environments ?? []).flatMap((environment) => {
+        if (typeof environment.id !== "string" || typeof environment.name !== "string")
+          return [];
+        return [{
+          id: environment.id,
+          name: environment.name,
+          isDefault: environment.default === true || environment.is_default === true || environment.isDefault === true,
+          ...typeof environment.priority === "number" ? { priority: environment.priority } : {}
+        }];
+      });
+      for (let attempts = 0; attempts <= environments.length; attempts++) {
+        const currentEnvironment = environments.find((environment) => environment.id === version2.currentEnvironmentId);
+        if (!currentEnvironment) {
+          throw new Error(`ToolJet releaseApp failed after publishing the version: version ${versionId} references unknown environment ${String(version2.currentEnvironmentId)}. Retry release after checking its environment.`);
+        }
+        if (currentEnvironment.isDefault)
+          break;
+        if (attempts === environments.length) {
+          throw new Error(`ToolJet releaseApp failed after partial preparation: version ${versionId} did not reach production. Retry the same release to continue safely.`);
+        }
+        const promoteRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}/promote`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentEnvironmentId: currentEnvironment.id })
+        });
+        if (!promoteRes.ok) {
+          const promoteError = await promoteRes.clone().text();
+          throw new Error(`ToolJet releaseApp promotion from ${currentEnvironment.name} failed (${promoteRes.status}): ${promoteError}. The version may already be published or partly promoted; retry the same release.`);
+        }
+        version2 = await readVersion();
+        const promotedEnvironment = environments.find((environment) => environment.id === version2.currentEnvironmentId);
+        if (!promotedEnvironment || promotedEnvironment.id === currentEnvironment.id) {
+          throw new Error(`ToolJet releaseApp could not verify promotion from ${currentEnvironment.name} for version ${versionId}. Retry the same release to continue safely.`);
+        }
+        promotedToEnvironments.push(promotedEnvironment.name);
+      }
+      releaseRes = await releaseOnce();
+    }
+    await assertOk(releaseRes, "releaseApp");
     const app = await getApp(appId);
     const releasedId = app?.current_version_id ?? app?.currentVersionId;
     if (releasedId !== versionId) {
@@ -63579,7 +63614,7 @@ function releaseAppTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. The operation publishes a draft when necessary and promotes it one environment at a time until it reaches production, then releases only that exact version. Returns a verified current_version_id after reading the app back.",
+    description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. The operation publishes a draft when necessary and promotes it one environment at a time until it reaches production when the workspace requires it, then releases only that exact version. It is safe to retry after a transient preparation failure. Returns a verified current_version_id after reading the app back.",
     inputSchema: {
       app_id: external_exports.string().uuid(),
       version_id: external_exports.string().uuid(),
@@ -66021,9 +66056,10 @@ function getAppSummaryTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
+    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" Pass version_id after create_app_version to inspect that exact version instead of whichever version the editor selected. returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
+      version_id: external_exports.string().min(1).optional(),
       sections: external_exports.array(external_exports.enum(["pages", "queries", "events"])).optional(),
       detail: external_exports.enum(["structure", "full"]).optional(),
       include_components: external_exports.boolean().optional(),
@@ -66063,7 +66099,7 @@ function getAppSummaryTool(client) {
             throw new Error(`${key4} contains a placeholder, not an exact selector. Omit unused filters entirely; wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.`);
           }
         }
-        const summary = await client.getAppSummary(args.app_id);
+        const summary = args.version_id ? await client.getAppSummary(args.app_id, args.version_id) : await client.getAppSummary(args.app_id);
         return ok(selectAppSummary(summary, {
           sections: args.sections,
           detail: args.detail,
@@ -68555,13 +68591,14 @@ function validateAppTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references or invalid persisted contracts you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
+    description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Pass version_id after create_app_version to validate that exact version. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references or invalid persisted contracts you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
     inputSchema: {
-      app_id: external_exports.string()
+      app_id: external_exports.string(),
+      version_id: external_exports.string().min(1).optional()
     },
     async handler(args) {
       try {
-        const summary = await client.getAppSummary(args.app_id);
+        const summary = args.version_id ? await client.getAppSummary(args.app_id, args.version_id) : await client.getAppSummary(args.app_id);
         return ok(validatePersistedAppSummary(summary));
       } catch (err) {
         return fail(err);

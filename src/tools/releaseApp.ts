@@ -15,7 +15,8 @@ export function releaseAppTool(client: ToolJetClient): ToolDef {
       'Release a specific ToolJet app version so it becomes the app\'s live released version. ' +
       'Use only when the user explicitly asked to release or publish the app, and pass confirm:true. ' +
       'The operation publishes a draft when necessary and promotes it one environment at a time until it reaches ' +
-      'production, then releases only that exact version. Returns a verified current_version_id after reading the app back.',
+      'production when the workspace requires it, then releases only that exact version. It is safe to retry after a ' +
+      'transient preparation failure. Returns a verified current_version_id after reading the app back.',
     inputSchema: {
       app_id: z.string().uuid(),
       version_id: z.string().uuid(),

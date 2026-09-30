@@ -8,6 +8,7 @@ const fieldList = z.array(z.string()).min(1).optional();
 
 interface GetAppSummaryArgs {
   app_id: string;
+  version_id?: string;
   sections?: AppSummarySection[];
   detail?: 'structure' | 'full';
   include_components?: boolean;
@@ -39,6 +40,7 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Selective, bounded inspection of an app — use this instead of get_app. By default detail="structure" ' +
+      'Pass version_id after create_app_version to inspect that exact version instead of whichever version the editor selected. ' +
       'returns page/component/query/event identity and layout but omits bulky component values, query options, ' +
       'and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted ' +
       'fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. ' +
@@ -49,6 +51,7 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       'returns page metadata only.',
     inputSchema: {
       app_id: z.string(),
+      version_id: z.string().min(1).optional(),
       sections: z.array(z.enum(['pages', 'queries', 'events'])).optional(),
       detail: z.enum(['structure', 'full']).optional(),
       include_components: z.boolean().optional(),
@@ -78,7 +81,9 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
               'wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.');
           }
         }
-        const summary = await client.getAppSummary(args.app_id);
+        const summary = args.version_id
+          ? await client.getAppSummary(args.app_id, args.version_id)
+          : await client.getAppSummary(args.app_id);
         return ok(
           selectAppSummary(summary, {
             sections: args.sections,
