@@ -45,7 +45,7 @@ function fakeClient() {
   const client = {
     listDatasources: vi.fn().mockResolvedValue([{ id: 'js', name: 'runjsdefault', kind: 'runjs' }]),
     listTables: vi.fn().mockResolvedValue([]),
-    getQueries: vi.fn().mockResolvedValue([]),
+    getQueries: vi.fn().mockResolvedValue([{ id: 'q1', name: 'compute', kind: 'runjs' }]),
     getAppSummary: vi.fn().mockResolvedValue({
       app_id: 'app1', name: 'App', version_id: 'v1',
       pages: [{ id: 'home', name: 'Home', handle: 'home', components: [] }],

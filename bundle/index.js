@@ -60758,6 +60758,7 @@ function tableQuotaError(error51) {
 
 // dist/tooljetClient.js
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 
 // dist/pageIcons.js
 import { readFileSync } from "node:fs";
@@ -65830,7 +65831,21 @@ function createClient(auth, config2) {
       query.set("status", params.status);
     const res = await auth.authedFetch(`/api/organization-users?${query}`);
     await assertOk(res, "listWorkspaceUsers");
-    return await res.json();
+    const data = await res.json();
+    if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
+      throw new Error("Unexpected workspace users response.");
+    }
+    const fields = ["id", "user_id", "email", "first_name", "last_name", "name", "status", "groups", "user_metadata"];
+    return { meta: data.meta, users: data.users.map((user) => {
+      if (!user || typeof user.id !== "string")
+        throw new Error("Unexpected workspace user response.");
+      const result = Object.fromEntries(fields.filter((key4) => Object.hasOwn(user, key4)).map((key4) => [key4, user[key4]]));
+      const roles = user.role_group;
+      if (Array.isArray(roles) && roles.length === 1 && ["admin", "builder", "end-user"].includes(roles[0]?.name)) {
+        result.role = roles[0].name;
+      }
+      return result;
+    }) };
   }
   const groupPath = "/api/v2/group-permissions";
   function workspaceGroup(value2) {
@@ -65999,18 +66014,69 @@ function createClient(auth, config2) {
     await assertOk(res, "inviteWorkspaceUser");
   }
   async function updateWorkspaceUser(organizationUserId, params) {
+    if (params.firstName !== void 0 || params.lastName !== void 0) {
+      throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
+    }
+    if (params.role === void 0 && !params.addGroupIds?.length && params.userMetadata === void 0) {
+      throw new Error("update requires a role, non-empty group_ids, or user_metadata change. An empty group_ids list never removes memberships.");
+    }
+    async function readUser() {
+      for (let page = 1; ; page++) {
+        const result = await listWorkspaceUsers({ page });
+        const user = result.users.find((item) => item.id === organizationUserId);
+        if (user)
+          return user;
+        if (page >= result.meta.total_pages)
+          throw new Error("User not found in this workspace. List workspace users again.");
+      }
+    }
+    const before = await readUser();
+    if (before.status === "archived")
+      throw new Error("This workspace user is archived. Unarchive them explicitly before updating them.");
+    if (!before.role)
+      throw new Error("Cannot verify the current workspace role from its default group. No changes were made.");
+    if (!Array.isArray(before.groups) || before.groups.some((group) => typeof group?.id !== "string")) {
+      throw new Error("Cannot verify existing group memberships. No changes were made.");
+    }
+    const groups = await listWorkspaceGroups();
+    if (groups.some((group) => group.type === "custom" && group.disabled)) {
+      throw new Error("Custom groups are disabled under the current plan; existing memberships cannot be safely preserved. No changes were made.");
+    }
+    const groupIds = [.../* @__PURE__ */ new Set([...before.groups.map((group) => group.id), ...params.addGroupIds ?? []])];
+    if (groupIds.some((id) => !groups.some((group) => group.id === id && group.type === "custom" && !group.disabled))) {
+      throw new Error("Every group must be an existing, enabled custom group in this workspace. No changes were made.");
+    }
+    let metadata;
+    if (params.userMetadata !== void 0) {
+      if (!Object.hasOwn(before, "user_metadata") || before.user_metadata != null && (typeof before.user_metadata !== "object" || Array.isArray(before.user_metadata))) {
+        throw new Error("Cannot read existing user metadata safely. No changes were made.");
+      }
+      metadata = { ...before.user_metadata, ...params.userMetadata };
+    }
+    if (groupIds.length === before.groups.length && (params.role === void 0 || params.role === before.role) && (metadata === void 0 || isDeepStrictEqual(metadata, before.user_metadata)))
+      return { user: before, updated: false };
     const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...params.firstName !== void 0 ? { firstName: params.firstName } : {},
-        ...params.lastName !== void 0 ? { lastName: params.lastName } : {},
         ...params.role !== void 0 ? { role: params.role } : {},
-        addGroups: params.addGroupIds ?? [],
-        ...params.userMetadata !== void 0 ? { userMetadata: params.userMetadata } : {}
+        // Despite its name, addGroups REPLACES every custom membership in one transaction.
+        // The additive group endpoint is not permitted by existing workspace PAT scopes.
+        addGroups: groupIds,
+        ...metadata !== void 0 ? { userMetadata: metadata } : {}
       })
     });
     await assertOk(res, "updateWorkspaceUser");
+    try {
+      const after = await readUser();
+      const actualIds = after.groups?.map((group) => group.id);
+      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some((id) => !actualIds.includes(id)) || after.role !== (params.role ?? before.role) || after.first_name !== before.first_name || after.last_name !== before.last_name || after.status !== before.status || !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
+        throw new Error("Saved user state does not match the requested changes and preserved fields.");
+      }
+      return { user: after, updated: true };
+    } catch (error51) {
+      throw new Error(`The update was accepted, but its final state could not be verified. Read the user again before retrying: ${error51 instanceof Error ? error51.message : String(error51)}`);
+    }
   }
   async function setWorkspaceUserArchived(organizationUserId, archived) {
     const action = archived ? "archive" : "unarchive";
@@ -67342,15 +67408,18 @@ function manageWorkspaceGroupsTool(client) {
       name: external_exports.string().trim().min(1).max(255).optional(),
       is_all: external_exports.boolean().optional(),
       actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key4) => [key4, external_exports.boolean().optional()]))).strict().optional(),
-      resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional()
+      resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional(),
+      add_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional(),
+      remove_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional()
     }).strict().optional(),
     allow_role_change: external_exports.boolean().optional()
   }).strict();
   return {
     name: "manage_workspace_groups",
     title: "Manage Workspace Groups",
+    strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
-    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. access.resource_ids replaces the rule selection; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
+    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -67427,6 +67496,10 @@ function manageWorkspaceGroupsTool(client) {
           }
           const access = args.access;
           const creating = args.action === "create_access";
+          const delta = access.add_resource_ids !== void 0 || access.remove_resource_ids !== void 0;
+          if (delta && (creating || access.resource_ids !== void 0 || access.is_all !== void 0)) {
+            throw new Error("Resource additions/removals only update an existing selected-resource rule; do not combine them with resource_ids or is_all.");
+          }
           if (creating && (!access.name || access.is_all === void 0 || !access.actions)) {
             throw new Error("create_access requires access.name, is_all and actions.");
           }
@@ -67435,11 +67508,17 @@ function manageWorkspaceGroupsTool(client) {
             throw new Error(`Invalid actions for ${type}. Use ${actionKeys.join(", ")}.`);
           }
           const all = access.is_all ?? rule.is_all;
-          const selected = access.resource_ids ?? (all ? [] : rule?.resources.map((item) => item.id) ?? []);
+          const currentIds = rule?.resources.map((item) => item.id) ?? [];
+          if (delta && all)
+            throw new Error("An all-resource rule cannot add/remove individual resources. Explicitly choose a replacement selected-resource scope instead.");
+          if (delta && (new Set(access.add_resource_ids).size !== (access.add_resource_ids?.length ?? 0) || new Set(access.remove_resource_ids).size !== (access.remove_resource_ids?.length ?? 0) || access.add_resource_ids?.some((id) => access.remove_resource_ids?.includes(id)) || access.remove_resource_ids?.some((id) => !currentIds.includes(id)))) {
+            throw new Error("Use unique, non-overlapping resource additions/removals; removed resources must belong to this rule.");
+          }
+          const selected = delta ? [.../* @__PURE__ */ new Set([...currentIds.filter((id) => !access.remove_resource_ids?.includes(id)), ...access.add_resource_ids ?? []])] : access.resource_ids ?? (all ? [] : currentIds);
           if (new Set(selected).size !== selected.length || all && selected.length || !all && !selected.length) {
             throw new Error("Use unique resource_ids for a selected-resource rule; omit them or use [] for is_all:true.");
           }
-          if (access.resource_ids || creating || rule?.is_all && !all) {
+          if (access.resource_ids || access.add_resource_ids || creating || rule?.is_all && !all) {
             const available = await client.listWorkspaceGroupResources(type);
             if (selected.some((id) => !available.some((item) => item.id === id)))
               throw new Error("Resource not found in this workspace/resource type.");
@@ -72296,6 +72375,47 @@ function assessCouch(options2, datasourceId) {
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
+function sqlStatementText(sql, backslashEscapes) {
+  let text = "";
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === "`") {
+      const quote2 = char;
+      text += quote2 + quote2;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] !== quote2)
+          continue;
+        if (sql[i + 1] === quote2) {
+          i++;
+          continue;
+        }
+        closed = true;
+        break;
+      }
+      if (!closed)
+        return void 0;
+    } else if (char === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      text += " ";
+    } else if (char === "/" && sql[i + 1] === "*") {
+      if (sql[i + 2] === "!")
+        return void 0;
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return void 0;
+      i = end + 1;
+      text += " ";
+    } else
+      text += char;
+  }
+  return text.trim().replace(/;\s*$/, "").trim();
+}
 function normalizeSqlTable(raw) {
   return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
 }
@@ -72337,7 +72457,18 @@ function mainStatementAfterCtes(sql) {
 function assessSql(sql, datasourceKind, datasourceId) {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
-  const unquoted = compact.replace(/'(?:[^']|'')*'/g, "''").replace(/"(?:[^"]|"")*"/g, '""');
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === void 0 || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters",
+      ...identity
+    };
+  }
   const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
   if (entity) {
     return {
@@ -72350,7 +72481,7 @@ function assessSql(sql, datasourceKind, datasourceId) {
       ...identity
     };
   }
-  if (!compact || /;\s*\S/.test(unquoted)) {
+  if (!compact || unquoted.includes(";")) {
     return {
       provenRead: false,
       directSafe: false,
@@ -73588,6 +73719,37 @@ function renderAuditBase(configuredBase, override) {
     throw new Error("viewer_url must be a base URL without query or fragment");
   return { base: url2.href.replace(/\/$/, ""), origins };
 }
+function hasBinding(value2) {
+  if (typeof value2 === "string")
+    return value2.includes("{{");
+  if (Array.isArray(value2))
+    return value2.some(hasBinding);
+  return !!value2 && typeof value2 === "object" && Object.values(value2).some(hasBinding);
+}
+function renderAuditRequest(url2, method, saved) {
+  if (["GET", "HEAD", "OPTIONS"].includes(method))
+    return { allowed: true };
+  const blocked = (detail) => ({ allowed: false, detail: `${detail}; this behavior was not verified` });
+  if (method !== "POST" || !saved?.version_id)
+    return blocked("A potentially mutating request was blocked");
+  const parsed = httpUrl2(url2);
+  const match = parsed.pathname.match(/\/api\/data-queries\/([A-Za-z0-9_-]+)(?:\/versions\/([A-Za-z0-9_-]+))?\/run(?:\/([A-Za-z0-9_-]+))?$/);
+  if (!match || match[2] && (match[2] !== saved.version_id || !match[3] || parsed.searchParams.get("mode") !== "view") || !match[2] && match[3])
+    return blocked("An unverified query or mutating request was blocked");
+  const query = saved.queries.find((item) => item.id === match[1]);
+  if (!query)
+    return blocked("A query outside the audited app/version was blocked");
+  const options2 = query.options;
+  if (hasBinding(options2))
+    return blocked("A query with dynamic bindings was blocked");
+  if (options2?.requestConfirmation || options2?.request_confirmation)
+    return blocked("A query requiring confirmation was blocked");
+  const read = assessQueryRead(query);
+  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight || read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
+    return blocked("A query that is not a proven bounded read was blocked");
+  }
+  return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
+}
 
 // dist/tools/verifyPageRender.js
 function auditScript() {
@@ -73819,14 +73981,26 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         socket.close();
       });
       await ctx.route("**/*", async (route) => {
-        const url2 = route.request().url();
+        const request = route.request();
+        const url2 = request.url();
         if (!renderAuditUrlAllowed(url2, origins)) {
           blocked ??= { kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" };
           await route.abort();
           return;
         }
         try {
-          const response2 = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 3e4 });
+          const policy = renderAuditRequest(url2, request.method(), options2.savedQueries);
+          if (!policy.allowed) {
+            blocked ??= { kind: "unreachable", component: "-", reason: "blocked_execution", detail: policy.detail };
+            await route.abort();
+            return;
+          }
+          const response2 = await route.fetch({
+            maxRedirects: 0,
+            maxRetries: 0,
+            timeout: 3e4,
+            ...policy.postData === void 0 ? {} : { postData: policy.postData }
+          });
           try {
             if (response2.status() >= 300 && response2.status() < 400 && response2.headers().location) {
               const dest = new URL(response2.headers().location, url2);
@@ -73896,7 +74070,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's own ToolJet session (limited to the viewer origin), so a private app is audited without being made public; queries that run on page load run, as when a user opens it. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
+    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
@@ -73918,6 +74092,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
           allowedOrigins: origins,
+          savedQueries: summary,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : await client.viewerSession?.().catch(() => void 0)
         };
@@ -78550,9 +78725,10 @@ function updateQueryTool(client) {
         const resolutionWarnings = [];
         let currentDatasourceId;
         let kind = args.kind;
-        if (args.app_id) {
-          const summary = await client.getAppSummary(args.app_id);
-          const resolution = resolveRef2(summary.queries, args.query_id, "Query", `in app "${args.app_id}"`);
+        if (args.app_id || !input.query_id) {
+          const queries = args.app_id ? (await client.getAppSummary(args.app_id)).queries : await client.getQueries(args.version_id);
+          const scope = args.app_id ? `in app "${args.app_id}"` : `in version "${args.version_id}"`;
+          const resolution = resolveRef2(queries, args.query_id, "Query", scope);
           if (!resolution.ok)
             return fail(new Error(resolution.error));
           if (resolution.warning)
@@ -78833,7 +79009,7 @@ function deleteEventTool(client) {
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.6.0";
+var TOOLJET_MCP_VERSION = "0.6.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
@@ -79081,9 +79257,21 @@ function required2(value2, label2) {
   return value2;
 }
 function manageWorkspaceUsersTool(client) {
+  const schema = external_exports.object({
+    action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
+    organization_user_id: external_exports.string().uuid().optional(),
+    email: external_exports.string().email().optional(),
+    first_name: external_exports.string().trim().max(99).optional(),
+    last_name: external_exports.string().trim().max(99).optional(),
+    role: userRole.optional(),
+    group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
+    user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+    confirm: external_exports.boolean().optional()
+  }).strict();
   return {
     name: "manage_workspace_users",
     title: "Manage Workspace Users",
+    strictInput: true,
     // invite is additive, but update overwrites a member's role and archive revokes their access to
     // the workspace, so the hint covers its widest action.
     annotations: {
@@ -79091,20 +79279,19 @@ function manageWorkspaceUsersTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change names/role and add existing custom groups; they cannot remove groups (use manage_workspace_groups), change passwords, manage other workspaces, or bypass the PAT owner's ToolJet permissions.",
-    inputSchema: {
-      action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
-      organization_user_id: external_exports.string().uuid().optional(),
-      email: external_exports.string().email().optional(),
-      first_name: external_exports.string().trim().max(99).optional(),
-      last_name: external_exports.string().trim().max(99).optional(),
-      role: userRole.optional(),
-      group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
-      user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
-      confirm: external_exports.boolean().optional()
-    },
-    async handler(args) {
+    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner's ToolJet permissions.",
+    inputSchema: schema.shape,
+    async handler(input) {
       try {
+        const args = schema.parse(input);
+        const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
+        for (const key4 of Object.keys(args)) {
+          if (!["action", "confirm", ...allowed].includes(key4))
+            throw new Error(`${key4} is not supported for ${args.action}; no changes were made.`);
+        }
+        if (args.action === "update" && (args.first_name !== void 0 || args.last_name !== void 0)) {
+          throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
+        }
         if (args.confirm !== true) {
           throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
         }
@@ -79123,17 +79310,21 @@ function manageWorkspaceUsersTool(client) {
           await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
           return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
         }
-        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && args.group_ids === void 0 && args.user_metadata === void 0) {
+        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
           throw new Error("update requires at least one changed field.");
         }
-        await client.updateWorkspaceUser(organizationUserId, {
+        const result = await client.updateWorkspaceUser(organizationUserId, {
           firstName: args.first_name,
           lastName: args.last_name,
           role: args.role,
           addGroupIds: args.group_ids,
           userMetadata: args.user_metadata
         });
-        return ok({ organization_user_id: organizationUserId, updated: true });
+        return ok({
+          organization_user_id: organizationUserId,
+          ...result,
+          ...!result.updated ? { already_satisfied: true } : {}
+        });
       } catch (error51) {
         return fail(error51);
       }
@@ -79219,7 +79410,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     server.registerTool(tool.name, {
       title: tool.title,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: tool.strictInput ? external_exports.object(tool.inputSchema).strict() : tool.inputSchema,
       annotations: tool.annotations
     }, (args) => withToolTelemetry(tool.name, async () => {
       const status = runtime.status();

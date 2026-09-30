@@ -592,6 +592,38 @@ function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
 }
 
+/** Mask literals and comments together, so quotes inside one cannot open the other. */
+function sqlStatementText(sql: string, backslashEscapes: boolean): string | undefined {
+  let text = '';
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      text += quote + quote;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === '\\' && backslashEscapes) { i++; continue; }
+        if (sql[i] !== quote) continue;
+        if (sql[i + 1] === quote) { i++; continue; }
+        closed = true;
+        break;
+      }
+      if (!closed) return undefined;
+    } else if (char === '-' && sql[i + 1] === '-') {
+      while (i < sql.length && sql[i] !== '\n') i++;
+      text += ' ';
+    } else if (char === '/' && sql[i + 1] === '*') {
+      // MySQL executable comments are not inert SQL comments.
+      if (sql[i + 2] === '!') return undefined;
+      const end = sql.indexOf('*/', i + 2);
+      if (end < 0) return undefined;
+      i = end + 1;
+      text += ' ';
+    } else text += char;
+  }
+  return text.trim().replace(/;\s*$/, '').trim();
+}
+
 function normalizeSqlTable(raw: string): string {
   return raw.split('.').map((part) => part.replace(/^[`"\[]|[`"\]]$/g, '')).join('.').toLowerCase();
 }
@@ -633,8 +665,14 @@ function mainStatementAfterCtes(sql: string): string | undefined {
 function assessSql(sql: string, datasourceKind: string, datasourceId?: string): QueryReadAssessment {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...(datasourceId ? { datasourceId } : {}) };
-  // A ; inside a quoted literal ('%{x}&lt;br&gt;', cx-crm) separates nothing: test the text with literals blanked.
-  const unquoted = compact.replace(/'(?:[^']|'')*'/g, "''").replace(/"(?:[^"]|"")*"/g, '""');
+  // SQL escape modes vary by datasource/session. Only mask quotes when both interpretations agree.
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === undefined || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+      reason: 'SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters', ...identity,
+    };
+  }
   // `&lt;` is HTML escaping, not SQL: said as it is, not as a second statement (cy-leases b7).
   const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
   if (entity) {
@@ -643,7 +681,7 @@ function assessSql(sql: string, datasourceKind: string, datasourceId?: string): 
       reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`, ...identity,
     };
   }
-  if (!compact || /;\s*\S/.test(unquoted)) {
+  if (!compact || unquoted.includes(';')) {
     return {
       provenRead: false, directSafe: false, countOnly: false, selectStar: false,
       requiresCountPreflight: false, reason: 'SQL is empty or contains more than one statement', ...identity,
