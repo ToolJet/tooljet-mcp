@@ -8,7 +8,7 @@ import { sectionAsRead } from '../src/pageReplaceInPlace.js';
 // that moved gets a layout update, one that changed is created again under its own id. The fake stores what is sent
 // and reads it back merged over the widget defaults, as ToolJet does.
 type Stored = { id: string; name: string; type: string; properties?: any; styles?: any; validation?: any; others?: any; parent?: string; layouts: any };
-type State = { pages: Array<{ id: string; name: string; handle: string; components: Stored[] }>; queries: any[]; events: any[] };
+type State = { pages: Array<{ id: string; name: string; handle: string; components: Stored[] }>; queries: any[]; events: any[]; failing?: string[] };
 const SECTIONS = ['properties', 'styles', 'validation', 'others'] as const;
 
 function fakeApp(state: State) {
@@ -20,13 +20,22 @@ function fakeApp(state: State) {
         pages: copy.pages.map((page) => ({ icon: 'IconFile', ...page, components: page.components.map((c) => ({ ...c,
           ...Object.fromEntries(SECTIONS.map((section) => [section, sectionAsRead(c.type, section, c[section])])) })) })) };
     }),
-    listDatasources: vi.fn(async () => [{ id: 'ds-js', name: 'runjsdefault', kind: 'runjs' }]),
-    listTables: vi.fn(async () => []),
+    listDatasources: vi.fn(async () => [{ id: 'ds-tjdb', name: 'tooljetdbdefault', kind: 'tooljetdb' }, { id: 'ds-js', name: 'runjsdefault', kind: 'runjs' }]),
+    listTables: vi.fn(async () => [{ id: 'tbl-1', table_name: 'orders' }]),
+    getTableSchema: vi.fn(async () => [{ name: 'id', type: 'integer' }, { name: 'status', type: 'character varying' }]),
+    getQueries: vi.fn(async () => state.queries.map((q) => ({ ...q }))),
+    getDevelopmentEnvironmentId: vi.fn(async () => 'env-dev'),
+    runQuery: vi.fn(async ({ queryId }: { queryId: string }) => (state.failing?.includes(queryId)
+      ? { status: 'failed', message: 'relation does not exist' } : { status: 'ok', data: [{ id: 1 }] })),
     createPages: vi.fn(async ({ pages }: { pages: Array<{ name: string }> }) => pages.map((p, index) => {
       const id = `np${++seq}`; state.pages.push({ id, name: p.name, handle: p.name.toLowerCase(), components: [] }); return { page_id: id, name: p.name, index };
     })),
     updatePages: vi.fn(async () => undefined),
-    createQueries: vi.fn(async () => []),
+    createQueries: vi.fn(async ({ queries }: { queries: Array<{ name: string; dataSourceId?: string; options?: any; kind?: string }> }) => queries.map((q) => {
+      const id = `nq${++seq}`;
+      state.queries.push({ id, name: q.name, kind: q.dataSourceId === 'ds-js' ? 'runjs' : 'tooljetdb', data_source_id: q.dataSourceId, options: q.options ?? {} });
+      return { query_id: id, name: q.name };
+    })),
     deleteEvent: vi.fn(async ({ eventId }: { eventId: string }) => { state.events = state.events.filter((e) => e.id !== eventId); return { deleted: true }; }),
     deleteComponents: vi.fn(async ({ pageId, componentIds }: { pageId: string; componentIds: string[] }) => {
       const page = state.pages.find((p) => p.id === pageId)!;
@@ -56,13 +65,14 @@ function fakeApp(state: State) {
 
 const text = (result: { content: Array<{ text?: string }> }) => String(result.content[0]!.text);
 const at = (top: number, height = 40, width = 20) => ({ top, left: 1, width, height });
-async function applyPlan(client: ReturnType<typeof fakeApp>, spec: Record<string, unknown>) {
+async function applyWhole(client: ReturnType<typeof fakeApp>, spec: Record<string, unknown>, extra: Record<string, unknown> = {}) {
   const linted = JSON.parse(text(await lintAppSpecTool(client as never).handler({ app_id: 'app1', version_id: 'v1', ...spec } as never)));
   expect(linted.plan_token, JSON.stringify(linted.errors)).toEqual(expect.any(String));
-  const applied = await applyAppPhaseTool(client as never).handler({ app_id: 'app1', version_id: 'v1', plan_token: linted.plan_token });
+  const applied = await applyAppPhaseTool(client as never).handler({ app_id: 'app1', version_id: 'v1', plan_token: linted.plan_token, ...extra } as never);
   expect(applied.isError, text(applied)).toBeFalsy();
-  return JSON.parse(text(applied)).applied as Record<string, number>;
+  return JSON.parse(text(applied)) as { applied: Record<string, number>; read_check?: any };
 }
+const applyPlan = async (client: ReturnType<typeof fakeApp>, spec: Record<string, unknown>) => (await applyWhole(client, spec)).applied;
 const page = (components: unknown[], replace = false) => ({ pages: [{ name: 'Orders', icon: 'IconBox', ...(replace ? { replace: true } : {}), components }] });
 const V1 = [
   { name: 'title', type: 'Text', properties: { text: 'Orders' }, layout: at(10) },
@@ -115,5 +125,43 @@ describe('apply_app_phase replacing a page in place', () => {
     expect(client.createComponents).not.toHaveBeenCalled();
     expect(client.updateLayouts).not.toHaveBeenCalled();
     expect(applied).toMatchObject({ components: 0, components_removed: 0, components_kept: 3 });
+  });
+});
+
+describe('apply_app_phase checks the reads it wrote', () => {
+  beforeEach(() => clearAppPlansForTests());
+  const withQueries = {
+    ...page([{ name: 'count', type: 'Text', properties: { text: '{{queries.summary.data ?? 0}} orders' }, layout: at(10) }]),
+    queries: [
+      { name: 'orders', datasource_name: 'tooljetdbdefault', table_ref: 'orders', options: { operation: 'list_rows', list_rows: { limit: 50 }, runOnPageLoad: true } },
+      { name: 'summary', datasource_name: 'runjsdefault', options: { code: 'return (queries.orders.data || []).length' } },
+    ],
+    lifecycles: [{ query_ref: 'orders', refresh_query_refs: ['summary'] }],
+  };
+
+  it('runs the proven reads, names the ones that fail, and never runs RunJS', async () => {
+    const state: State = { pages: [], queries: [], events: [] };
+    const client = fakeApp(state);
+    const result = await applyWhole(client, withQueries);
+    expect(client.runQuery).toHaveBeenCalledTimes(1);
+    expect(result.read_check).toMatchObject({ ran: 1, rows: { orders: 1 }, failed: [] });
+    expect(result.read_check.not_run.map((q: any) => q.name)).toEqual(['summary']);
+  });
+
+  it('reports a failing read without failing the phase', async () => {
+    const state: State = { pages: [], queries: [], events: [], failing: ['nq2'] };
+    const client = fakeApp(state);
+    const result = await applyWhole(client, withQueries);
+    expect(state.queries.find((q) => q.name === 'orders')!.id).toBe('nq2');
+    expect(result.read_check.failed).toEqual([expect.objectContaining({ name: 'orders', message: 'relation does not exist' })]);
+    expect(result.applied.components).toBe(1);
+  });
+
+  it('skips the check when asked', async () => {
+    const state: State = { pages: [], queries: [], events: [] };
+    const client = fakeApp(state);
+    const result = await applyWhole(client, withQueries, { check_reads: false });
+    expect(client.runQuery).not.toHaveBeenCalled();
+    expect(result.read_check).toBeUndefined();
   });
 });
