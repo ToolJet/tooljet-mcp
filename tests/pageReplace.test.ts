@@ -330,10 +330,12 @@ function fakeApp(state: State) {
       const page = state.pages.find((p) => p.id === pageId)!;
       page.components = page.components.filter((c: { id: string }) => !componentIds.includes(c.id)); return { deleted: componentIds.length };
     }),
-    createComponents: vi.fn(async ({ pageId, components }: { pageId: string; components: Array<{ name: string; type: string; layout?: unknown }> }) => components.map((c) => {
-      const id = `nc${++seq}`; state.pages.find((p) => p.id === pageId)!.components.push({ id, name: c.name, type: c.type, layouts: { desktop: c.layout } });
+    // A component replaced in place is created again under the id it had (pageReplaceInPlace.ts).
+    createComponents: vi.fn(async ({ pageId, components }: { pageId: string; components: Array<{ id?: string; name: string; type: string; layout?: unknown }> }) => components.map((c) => {
+      const id = c.id ?? `nc${++seq}`; state.pages.find((p) => p.id === pageId)!.components.push({ id, name: c.name, type: c.type, layouts: { desktop: c.layout } });
       return { component_id: id, name: c.name };
     })),
+    updateLayouts: vi.fn(async ({ layouts }: { layouts: unknown[] }) => ({ updated: layouts.length })),
     createEvents: vi.fn(async ({ events }: { events: Array<{ sourceId: string; sourceType: string; trigger: string; action: Record<string, unknown> }> }) => {
       for (const e of events) state.events.push({ id: `ne${++seq}`, target: e.sourceType, sourceId: e.sourceId, event: { eventId: e.trigger, ...e.action } });
       return { created: events.length };

@@ -46,11 +46,11 @@ export const plannedPageSchema = z.object({
   hidden: z.boolean().optional(),
   /** The existing page of this name is replaced whole: see pageReplace.ts. */
   replace: z.boolean().optional().describe(
-    'true: the existing page of this name has all its components, and the events on them, replaced by this plan\'s ' +
-      'components (needs app_id). Queries of that page the plan defines again are updated in place, keeping their ids; ' +
-      'events on other pages that act on a replaced component are re-pointed to the recreated one of the same name. ' +
-      'Refused when another page, event or query reads a component the plan drops. Not atomic (deletes, then recreates): ' +
-      'use it on draft or otherwise recoverable pages.'
+    'true: the existing page of this name ends up holding exactly this plan\'s components and the events on them ' +
+      '(needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that ' +
+      'only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated ' +
+      'in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not ' +
+      'atomic: use it on draft or otherwise recoverable pages.'
   ),
   components: z.array(componentInputSchema).optional(),
 });

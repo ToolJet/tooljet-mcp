@@ -232,6 +232,9 @@ export interface ComponentSpec {
   layout?: ComponentLayout;
   /** Explicit per-resolution layout; takes precedence over `layout` for the resolution it sets. */
   layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
+  /** Create the component under this id instead of a new one: a page replace recreates a changed component under
+   *  the id it had, so events and bindings that hold the id stay valid (pageReplaceInPlace.ts). */
+  id?: string;
   /** Caller-stable reference used only inside one createComponents batch. */
   clientRef?: string;
   /** Parent another component in the same batch by its clientRef. */
@@ -2114,7 +2117,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createComponents(
     params: CreateComponentsParams
   ): Promise<Array<CreateComponentResult & { name: string }>> {
-    const entries = params.components.map((spec) => ({ id: randomUUID(), spec }));
+    const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map<string, string>();
     for (const e of entries) {
       if (!e.spec.clientRef) continue;

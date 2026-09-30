@@ -19,6 +19,7 @@ import type {
 import { fail, ok, type ToolDef } from './types.js';
 import { matchPlannedPage } from '../pageMatch.js';
 import { danglingAfterReplace, replaceFingerprint, replaceIds, replaceView } from '../pageReplace.js';
+import { diffPageInPlace, type InPlaceDiff } from '../pageReplaceInPlace.js';
 import { literalCanvasColor } from '../appSettings.js';
 
 interface LogicalTarget { id: string; name: string; type?: string }
@@ -175,7 +176,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       }
       const args = { ...input, version_id: version };
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0,
-        queries_updated: 0, events_removed: 0, components_removed: 0 };
+        queries_updated: 0, events_removed: 0, components_removed: 0, components_kept: 0, components_moved: 0 };
       let stage = 'consume plan';
       let createdPageIds: string[] = [];
       let replacedPageNames: string[] = [];
@@ -515,6 +516,18 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           return [{ page, pageId: target.id, prepared }];
         });
 
+        // A replaced page is written as its difference from what it holds (pageReplaceInPlace.ts): a component the
+        // plan leaves as it is is not written, one that moved gets a layout update, and one that changed is created
+        // again under its own id, so ids survive a replace and a one-line change is a small write.
+        const inPlace = new Map<string, InPlaceDiff>();
+        if (replacing) {
+          for (const page of preparedPages) {
+            if (!replacing.replacedPageIds.includes(page.pageId)) continue;
+            const held = initialSummary.pages.find((existing) => existing.id === page.pageId)?.components ?? [];
+            inPlace.set(page.pageId, diffPageInPlace(held, page.prepared.components));
+          }
+        }
+
         if (replacing) {
           stage = 'remove the replaced page\'s components and events';
           for (const eventId of replacing.eventsToDelete) {
@@ -522,21 +535,39 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             applied.events_removed += 1;
           }
           for (const { pageId, componentIds } of replacing.componentsToDelete) {
-            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds });
-            applied.components_removed += removed.deleted ?? componentIds.length;
+            const ids = inPlace.get(pageId)?.deleteIds ?? componentIds;
+            if (!ids.length) continue;
+            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds: ids });
+            applied.components_removed += removed.deleted ?? ids.length;
           }
         }
 
         stage = 'create page components';
-        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => ({
-          ...page,
-          created: await client.createComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: page.pageId,
-            components: page.prepared.components,
-          }),
-        })));
+        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => {
+          const diff = inPlace.get(page.pageId);
+          if (!diff) {
+            const created = await client.createComponents({
+              appId: args.app_id,
+              versionId: args.version_id,
+              pageId: page.pageId,
+              components: page.prepared.components,
+            });
+            return { ...page, created, written: created.length };
+          }
+          if (diff.create.length) {
+            await client.createComponents({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, components: diff.create });
+          }
+          if (diff.relayout.length) {
+            await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, layouts: diff.relayout });
+          }
+          applied.components_kept += diff.keep.length;
+          applied.components_moved += diff.relayout.length;
+          // Every planned component has its id now, written or not: events and other pages refer to them by it.
+          const created = page.prepared.components.map((component) => ({
+            component_id: diff.ids.get(component.clientRef ?? component.name)!, name: component.name,
+          }));
+          return { ...page, created, written: diff.create.length };
+        }));
         const componentResults = componentWrites.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
         const componentFailures = componentWrites.flatMap((result, index) => result.status === 'rejected'
           ? [`page ${preparedPages[index]!.page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
@@ -551,7 +582,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const warnings: string[] = [];
         if (renameWarning) warnings.push(renameWarning);
         for (const page of componentResults) {
-          applied.components += page.created.length;
+          applied.components += page.written;
           warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
           page.prepared.components.forEach((component, index) => {
             const created = page.created[index];
@@ -575,13 +606,15 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           const missingTargets: string[] = [];
           for (const event of replacing.eventsToRetarget) {
             const newIds = new Map([...replacing.replacedComponentNames].map(([oldId, name]) => [oldId, newIdByName.get(name)] as const));
-            const swapped = replaceIds(JSON.stringify(event.event ?? {}), newIds);
+            const original = JSON.stringify(event.event ?? {});
+            const swapped = replaceIds(original, newIds);
             const text = swapped.text;
             const missing = swapped.missing.map((id) => replacing.replacedComponentNames.get(id) ?? id);
             if (missing.length) {
               missingTargets.push(`"${event.name ?? event.id}" (${missing.join(', ')})`);
               warnings.push(`Event "${event.name ?? event.id}" targets ${missing.map((n) => `"${n}"`).join(', ')}, which the replaced page no longer has; it was left as it was.`);
-            } else {
+            } else if (text !== original) {
+              // A component replaced in place kept its id: the event already points at it.
               updates.push({ eventId: event.id, ...(event.name ? { name: event.name } : {}), event: JSON.parse(text) });
             }
           }
