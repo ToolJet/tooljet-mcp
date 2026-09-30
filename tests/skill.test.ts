@@ -410,9 +410,12 @@ describe('generated skill — workspaces', () => {
 });
 
 describe('generated skill — HTML usage, page icons, validation, efficiency', () => {
-  it('nuances HTML usage (built-in for interactive; HTML for display/custom markup)', () => {
-    expect(guidance).toMatch(/HTML where it makes the UI better/i);
-    expect(guidance).toMatch(/Presentational \/ display-only/i);
+  it('prefers native composition while keeping HTML useful for presentation', () => {
+    expect(skill).toMatch(/HTML where it helps/i);
+    expect(uiLayout).toMatch(/Start with ToolJet's native components for both interactive and read-only UI/i);
+    expect(uiLayout).toMatch(/custom markup improves composition, clarity or styling/i);
+    expect(uiLayout).toMatch(/Never imitate an input, button, tab or other control with inert HTML/i);
+    expect(uiLayout).toMatch(/wrapping multi-line Kanban card content/i);
     expect(guidance).toMatch(/Custom markup inside a component'?s own properties/i);
   });
 
@@ -631,7 +634,7 @@ describe('generated skill is synchronized with the generator', () => {
     'getBoundingClientRect()',
     '13–15 columns',
     '110–120px',
-    'HTML where it makes the UI better',
+    'prefer native components, HTML where it helps',
     'give EVERY page a relevant sidebar icon',
     'no per-app datasource attach/link step',
     'validate_app(app_id)',

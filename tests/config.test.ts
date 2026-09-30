@@ -322,12 +322,46 @@ describe('per-request target origin (x-tooljet-url)', () => {
     });
   });
 
-  it('rejects plain http, which would send the session cookie or PAT in plaintext', async () => {
+  it('rejects non-loopback http, which would send the session cookie or PAT in plaintext', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
     await expect(identityFromHeaders({ 'x-tooljet-url': 'http://tj.example.com' })).rejects.toThrow(
       /must use https/
     );
   });
+
+  it.each(['localhost', '127.0.0.1', '127.42.0.7', '[::1]'])(
+    'accepts an explicitly allowlisted HTTP loopback origin: %s',
+    async (host) => {
+      const origin = `http://${host}:4317`;
+      process.env.MCP_ALLOWED_API_ORIGINS = origin;
+      expect(await identityFromHeaders({ 'x-tooljet-url': origin })).toEqual({ apiUrl: origin });
+    }
+  );
+
+  it('still requires an allowlist entry for HTTP loopback', async () => {
+    await expect(identityFromHeaders({ 'x-tooljet-url': 'http://127.0.0.1:4317' })).rejects.toThrow(
+      /not in MCP_ALLOWED_API_ORIGINS/
+    );
+  });
+
+  it.each(['localhost.attacker.test', '127.attacker.test', '192.168.1.7', '[::ffff:127.0.0.1]'])(
+    'rejects non-loopback HTTP even when allowlisted: %s',
+    async (host) => {
+      const origin = `http://${host}:4317`;
+      process.env.MCP_ALLOWED_API_ORIGINS = origin;
+      await expect(identityFromHeaders({ 'x-tooljet-url': origin })).rejects.toThrow(/must use https/);
+    }
+  );
+
+  it.each(['?redirect=elsewhere', '#section', '/?secret=value'])(
+    'rejects query strings and fragments on loopback: %s',
+    async (suffix) => {
+      process.env.MCP_ALLOWED_API_ORIGINS = 'http://localhost:4317';
+      await expect(identityFromHeaders({ 'x-tooljet-url': `http://localhost:4317${suffix}` })).rejects.toThrow(
+        /query, hash, or credentials/
+      );
+    }
+  );
 
   it('rejects a query string', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'https://tj.example.com';
@@ -402,11 +436,8 @@ describe('per-request target origin (x-tooljet-url)', () => {
     );
   });
 
-  /* A request's own origin must already be https before it ever reaches the allowlist check
-     (validateApiUrl), so a non-https allowlist entry — a typo'd "http://" — could never match
-     anything. Silently keeping it would leave the operator with a dead entry and no signal it's
-     wrong, the same shape of failure as the un-normalized entries this file already guards against. */
-  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has a non-https entry', async () => {
+  // Non-loopback HTTP cannot pass request validation, so reject unusable allowlist entries too.
+  it('throws, naming the bad entry, when MCP_ALLOWED_API_ORIGINS has a non-loopback http entry', async () => {
     process.env.MCP_ALLOWED_API_ORIGINS = 'http://tj.example.com';
     await expect(identityFromHeaders({ 'x-tooljet-url': 'https://tj.example.com' })).rejects.toThrow(
       /"http:\/\/tj\.example\.com" must use https/
@@ -472,6 +503,27 @@ describe('per-request target origin — live Gateway fallback', () => {
     expect(receivedRequests).toEqual([
       { authorization: 'gateway-secret', body: { customer_id: 'cust-1', origin: 'https://customer.example.com' } },
     ]);
+  });
+
+  it.each(['localhost', '127.0.0.1', '[::1]'])(
+    'requires a static allowlist for HTTP %s even when the Gateway would approve',
+    async (host) => {
+      await expect(identityFromHeaders({
+        'x-tooljet-url': `http://${host}:4319`,
+        'x-tooljet-customer-id': 'fixture-loopback-customer',
+      })).rejects.toThrow(/not in MCP_ALLOWED_API_ORIGINS/);
+      expect(receivedRequests).toEqual([]);
+    }
+  );
+
+  it('allows an explicitly trusted HTTP loopback without asking the Gateway', async () => {
+    const origin = 'http://127.0.0.1:4321';
+    process.env.MCP_ALLOWED_API_ORIGINS = origin;
+    expect(await identityFromHeaders({
+      'x-tooljet-url': origin,
+      'x-tooljet-customer-id': 'fixture-local-customer',
+    })).toEqual({ apiUrl: origin });
+    expect(receivedRequests).toEqual([]);
   });
 
   // Distinct origin per test — the cache is module-scoped, reusing one would hit a stale verdict.

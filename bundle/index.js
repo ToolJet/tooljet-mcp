@@ -3418,8 +3418,8 @@ var require_utils = __commonJS({
     var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
     var HOST_DELIM_RE = /[@/?#:]/g;
     var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
-    function reescapeHostDelimiters(host, isIP) {
-      const re = isIP ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
+    function reescapeHostDelimiters(host, isIP2) {
+      const re = isIP2 ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
       re.lastIndex = 0;
       return host.replace(re, (ch) => HOST_DELIMS[ch]);
     }
@@ -3908,7 +3908,7 @@ var require_fast_uri = __commonJS({
         fragment: void 0
       };
       let malformedAuthorityOrPort = false;
-      let isIP = false;
+      let isIP2 = false;
       if (options2.reference === "suffix") {
         if (options2.scheme) {
           uri = options2.scheme + ":" + uri;
@@ -3957,9 +3957,9 @@ var require_fast_uri = __commonJS({
           if (ipv4result === false) {
             const ipv6result = normalizeIPv6(parsed.host);
             parsed.host = ipv6result.host.toLowerCase();
-            isIP = ipv6result.isIPV6;
+            isIP2 = ipv6result.isIPV6;
           } else {
-            isIP = true;
+            isIP2 = true;
           }
         }
         if (parsed.scheme === void 0 && parsed.userinfo === void 0 && parsed.host === void 0 && parsed.port === void 0 && parsed.query === void 0 && !parsed.path) {
@@ -3976,7 +3976,7 @@ var require_fast_uri = __commonJS({
         }
         const schemeHandler = getSchemeHandler(options2.scheme || parsed.scheme);
         if (!options2.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
-          if (parsed.host && (options2.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
+          if (parsed.host && (options2.domainHost || schemeHandler && schemeHandler.domainHost) && isIP2 === false && nonSimpleDomain(parsed.host)) {
             try {
               parsed.host = new URL("http://" + parsed.host).hostname;
             } catch (e) {
@@ -3990,7 +3990,7 @@ var require_fast_uri = __commonJS({
               parsed.scheme = unescape(parsed.scheme);
             }
             if (parsed.host !== void 0) {
-              parsed.host = reescapeHostDelimiters(unescape(parsed.host), isIP);
+              parsed.host = reescapeHostDelimiters(unescape(parsed.host), isIP2);
             }
           }
           if (parsed.path) {
@@ -56192,6 +56192,7 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // dist/config.js
+import { isIP } from "node:net";
 var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
@@ -56205,6 +56206,11 @@ function env(name2) {
   const value2 = process.env[name2]?.trim();
   return value2 ? value2 : void 0;
 }
+function isAllowedApiProtocol(url2) {
+  const host = url2.hostname;
+  const loopback = host === "localhost" || host === "[::1]" || isIP(host) === 4 && host.startsWith("127.");
+  return url2.protocol === "https:" || url2.protocol === "http:" && loopback;
+}
 function allowedApiOrigins() {
   const raw = env(ALLOWED_API_ORIGINS_VAR);
   if (!raw)
@@ -56216,8 +56222,8 @@ function allowedApiOrigins() {
     } catch {
       throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
     }
-    if (parsed.protocol !== "https:") {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https \u2014 it could never match a request.`);
+    if (!isAllowedApiProtocol(parsed)) {
+      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https unless the host is loopback.`);
     }
     return parsed.origin;
   });
@@ -56294,14 +56300,14 @@ async function validateApiUrl(raw, customerId) {
   } catch {
     throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
   }
-  if (parsed.protocol !== "https:") {
-    throw new Error(`${BASE_URL_HEADER} must use https.`);
+  if (!isAllowedApiProtocol(parsed)) {
+    throw new Error(`${BASE_URL_HEADER} must use https unless the host is loopback.`);
   }
   if (parsed.search || parsed.hash || parsed.username || parsed.password) {
     throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
   }
   const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  const verifiedViaGateway = parsed.protocol === "https:" && !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
   if (!inStaticList && !verifiedViaGateway) {
     throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
   }

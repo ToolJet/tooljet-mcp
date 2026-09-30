@@ -487,7 +487,7 @@ const RENDERING_HINTS = {
     currentPaddingBehavior: 'In the current ToolJet renderer, styles.padding values "default" and "none" do not add a visible content inset. Do not rely on this property to create card padding.',
     compactSideAlignment: 'The persisted defaults alignment="side", autoLabelWidth=false, and labelWidth=33 reserve one third of a wide component for labels and look broken. For a native horizontal details panel, set styles.autoLabelWidth.value="{{true}}" so the value column starts after the longest label.',
     approximateStaticHeight: 'Rows occupy about 38px plus a 12px gap. For N read-only fields, start near 50*N-12px rather than stretching the component; browser-verify wrapping and date/JSON fields.',
-    polishedReadOnlyAlternative: 'For a display-only details card that needs reliable inset, spacing, and responsive columns, prefer one Html component with an explicitly projected binding and root CSS padding/box-sizing instead of KeyValuePair.',
+    polishedReadOnlyAlternative: 'Prefer KeyValuePair for read-only details too; place it inset within a Container when card padding is needed. A compact Html block can help when richer composition, spacing or styling improves the display; weigh that benefit against visual editability.',
   },
 };
 for (const t of ['TextInput', 'NumberInput', 'CurrencyInput', 'EmailInput', 'TextArea', 'DropdownV2', 'MultiselectV2', 'DatePickerV2', 'DatetimePickerV2']) {
@@ -520,6 +520,14 @@ const SAFE_GENERATED_FORM_FIELD_TYPES = [
   'textinput', 'number', 'emailinput', 'password', 'datepicker', 'checkbox',
 ];
 const AUTHORING_HINTS = {
+  Container: {
+    childLayout: {
+      parentRule: 'Create the Container with a client_ref and its children with the matching parent_ref; ordinary children use the body slot (omit slot_name or use body). Do not place its children at page root.',
+      localCanvasRule: 'The body has its own 43-column local canvas: left:0,width:43 spans its inner width, regardless of the parent width. Child top/height are pixels relative to that body, not page coordinates.',
+      paddingRule: 'The renderer already adds 7px body padding inside a 1px border. Inset child coordinates further only when the design needs more space; account for padding, borders and any header when sizing the card around the lowest child.',
+      headerRule: 'showHeader defaults to true. For a simple metric/detail card set showHeader:false; when a separate header is needed, author its children with slot_name:"header" rather than leaving the header empty.',
+    },
+  },
   Button: {
     outlineContrast: 'styles.type=outline renders a transparent background, ignoring backgroundColor. Set textColor, visible iconColor and loaderColor for contrast against the actual page/card; var(--cc-primary-text) is appropriate on a normal light surface. The primary-button default var(--cc-surface1-surface) can disappear there. Preserve intentional contrasting colors on dark parents; do not assume changing type remaps semantic color tokens.',
   },
@@ -617,8 +625,8 @@ const AUTHORING_HINTS = {
     },
     detailPanelLayout: {
       nativeSideRule: 'Never accept the persisted side-alignment defaults for a wide details panel. Set styles.autoLabelWidth.value="{{true}}"; fixed autoLabelWidth=false with labelWidth=33 creates an oversized empty label column.',
-      paddingCaveat: 'In the current renderer, styles.padding default/none does not create a content inset. Use the native component only when that edge treatment is acceptable and browser-verified.',
-      readOnlyAlternative: 'For a polished read-only details card, prefer Html with a freshly projected object and explicit root padding, gap, and box-sizing. Keep KeyValuePair when native field editing/changeSet behavior is required.',
+      paddingCaveat: 'In the current renderer, styles.padding default/none does not create a content inset. Inset the native component within a Container when padding is needed, and verify the result in the browser.',
+      readOnlyAlternative: 'Prefer KeyValuePair with a freshly projected object for read-only and editable details. Use Html when it improves the read-only presentation; preserve native field editing/changeSet behavior whenever required.',
     },
   },
   Kanban: {
@@ -651,8 +659,8 @@ const AUTHORING_HINTS = {
       bindingContext: ['listItem'],
       atomicBatchRule: 'Create the Listview and every child that reads listItem in the same add_components call using client_ref/parent_ref. A listItem-bound child added later under an existing Listview can mount with empty exposed values.',
       localCanvasRule: 'Every repeated item, including every grid-mode cell, gives its children a fresh 43-column local canvas. A full-row child is left:0,width:43 even when the parent Listview renders several grid columns; do not divide child coordinates by the parent column count. Use smaller widths only to compose multiple children side by side inside one item.',
-      htmlSizingRule: 'For an Html child, make the root element height:100% and box-sizing:border-box. Do not repeat the authored component height as a fixed px CSS height; wrapper chrome can make the inner canvas shorter and create a scrollbar in every item.',
-      actionCompositionRule: 'When a native Button follows an Html card inside each repeated item, keep them visually contiguous (shared surface/border treatment and no arbitrary vertical gap) and set rowHeight to at least the lowest child bottom plus about 10px. A detached button reads as a separate record and an undersized row clips it.',
+      htmlSizingRule: 'Prefer native children for repeated items. When choosing an Html child, make the root element height:100% and box-sizing:border-box. Do not repeat the authored component height as a fixed px CSS height; wrapper chrome can make the inner canvas shorter and create a scrollbar in every item.',
+      actionCompositionRule: 'Prefer native children for repeated items. Keep a native Button visually grouped with its item content (shared surface/border treatment and no arbitrary vertical gap), including when that content is an Html card. Set rowHeight to at least the lowest child bottom plus about 10px. A detached button reads as a separate record and an undersized row clips it.',
     },
     selection: {
       recommendedEvent: 'onRecordClicked',
