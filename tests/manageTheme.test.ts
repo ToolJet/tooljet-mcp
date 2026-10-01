@@ -45,3 +45,45 @@ describe('manage_theme create on an unlicensed instance', () => {
     expect(result.isError).toBe(true);
   });
 });
+
+// The UI creates the app before the build, so create_app (which themes in one call) is not used: builds spent
+// list_app_themes, manage_theme and update_app_settings on it (2026-09-30). create now applies to a given app.
+describe('manage_theme create applied to an app in the same call', () => {
+  const client = () => ({
+    listAppThemes: vi.fn().mockResolvedValue([]),
+    createAppTheme: vi.fn().mockImplementation(async (input: { name: string }) => ({ id: 'th1', name: input.name })),
+    updateAppSettings: vi.fn().mockResolvedValue(undefined),
+  });
+
+  it('creates the theme and sets it on the app version', async () => {
+    const c = client();
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Rialto Foyer', definition, app_id: 'a1', version_id: 'v1' } as never));
+    expect(c.updateAppSettings).toHaveBeenCalledWith({ appId: 'a1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'th1' }) } });
+    expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1' });
+  });
+
+  it('opens the app in dark mode when the theme paints a dark canvas in light mode', async () => {
+    const c = client();
+    const dark = { ...definition, surface: { colors: { ...definition.surface.colors, appBackground: { light: '#0B1020', dark: '#0B1020' } } } };
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Relay console dark', definition: dark, app_id: 'a1', version_id: 'v1' } as never));
+    expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: expect.objectContaining({ appMode: 'dark' }) }));
+    expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'dark' });
+  });
+
+  it('applies a reused theme of the same name too', async () => {
+    const c = client();
+    c.listAppThemes.mockResolvedValue([{ id: 'old', name: 'Rialto Foyer', definition }]);
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Rialto Foyer', definition, app_id: 'a1', version_id: 'v1' } as never));
+    expect(body.reused).toBe(true);
+    expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'old' }) } }));
+  });
+
+  it('does not touch the app without app_id', async () => {
+    const c = client();
+    await manageThemeTool(c as unknown as ToolJetClient).handler({ action: 'create', name: 'Rialto Foyer', definition } as never);
+    expect(c.updateAppSettings).not.toHaveBeenCalled();
+  });
+});
