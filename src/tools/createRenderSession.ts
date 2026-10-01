@@ -37,8 +37,10 @@ export function createRenderSessionTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      'Mint a browser session scoped to one app, for loading it in a headless browser to ' +
-      'check how it rendered. Returns { token, url } — set `token` as the tj_auth_token cookie and ' +
+      'Mint a short-lived browser session scoped to one app, for loading it in a headless browser ' +
+      'to check how it rendered. Returns { token, url, expires_at } — `expires_at` is the expiry ' +
+      'ToolJet stamped on the session, not a requested one, and is absent on older ToolJets. ' +
+      'Set `token` as the tj_auth_token cookie and ' +
       'navigate to `url`. The token is scoped to this app alone and may only issue GET requests, ' +
       'apart from running the app\'s own queries — which DO execute for real, including any that ' +
       'write. Requires this server to ' +
@@ -48,9 +50,7 @@ export function createRenderSessionTool(client: ToolJetClient): ToolDef {
     inputSchema: {
       app_id: z.string(),
     },
-    /* No expiry parameter: the exchange takes none, so accepting one and echoing it back as
-       `expires_in_minutes` advertised a bound that nothing enforced. The session inherits the parent
-       PAT's lifetime. */
+    // No expiry parameter: the bound is the server's to set, and it reports what it chose.
     async handler(args: { app_id: string }) {
       try {
         const result = await client.createAppScopedSession(args.app_id);

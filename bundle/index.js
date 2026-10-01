@@ -61914,7 +61914,8 @@ function createClient(auth, config2) {
     const orgSlug = await auth.getOrganizationSlug();
     return {
       token: body.authToken,
-      url: `${config2.appUrl}/${orgSlug}/apps/${appId}`
+      url: `${config2.appUrl}/${orgSlug}/apps/${appId}`,
+      ...body.expiresAt ? { expires_at: body.expiresAt } : {}
     };
   }
   async function renameApp(appId, versionId, name2) {
@@ -65905,13 +65906,11 @@ function createRenderSessionTool(client) {
       idempotentHint: false,
       openWorldHint: true
     },
-    description: "Mint a browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, url } \u2014 set `token` as the tj_auth_token cookie and navigate to `url`. The token is scoped to this app alone and may only issue GET requests, apart from running the app's own queries \u2014 which DO execute for real, including any that write. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
+    description: "Mint a short-lived browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, url, expires_at } \u2014 `expires_at` is the expiry ToolJet stamped on the session, not a requested one, and is absent on older ToolJets. Set `token` as the tj_auth_token cookie and navigate to `url`. The token is scoped to this app alone and may only issue GET requests, apart from running the app's own queries \u2014 which DO execute for real, including any that write. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
     inputSchema: {
       app_id: external_exports.string()
     },
-    /* No expiry parameter: the exchange takes none, so accepting one and echoing it back as
-       `expires_in_minutes` advertised a bound that nothing enforced. The session inherits the parent
-       PAT's lifetime. */
+    // No expiry parameter: the bound is the server's to set, and it reports what it chose.
     async handler(args) {
       try {
         const result = await client.createAppScopedSession(args.app_id);
