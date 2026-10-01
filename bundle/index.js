@@ -76919,6 +76919,8 @@ function runQueriesTool(client) {
 
 // dist/applyReadCheck.js
 var MAX_READS = 10;
+var CLOCK_SKEW = /JWT issued at future/i;
+var CLOCK_SKEW_RETRY_MS = 1500;
 var REASON_CHARS = 160;
 var rowCount = (result) => {
   const data = result.data;
@@ -76955,13 +76957,19 @@ async function checkPlanReads(client, params) {
     const query = byId.get(id);
     const name2 = query.name ?? id;
     const needsViewer = containsComponentBinding(query.options);
-    let result;
-    try {
-      const bindings = resolveStaticBindings(query.options);
-      emptyViewerOnlyParams(query.options, bindings);
-      result = await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
-    } catch (error51) {
-      result = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
+    const run = async () => {
+      try {
+        const bindings = resolveStaticBindings(query.options);
+        emptyViewerOnlyParams(query.options, bindings);
+        return await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
+      } catch (error51) {
+        return { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
+      }
+    };
+    let result = await run();
+    if (result.status === "failed" && CLOCK_SKEW.test(String(result.message ?? result.description ?? ""))) {
+      await new Promise((resolve6) => setTimeout(resolve6, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
+      result = await run();
     }
     check2.ran += 1;
     if (result.status !== "failed") {
