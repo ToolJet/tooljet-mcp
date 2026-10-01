@@ -52,7 +52,7 @@ export function createTablesTool(client: ToolJetClient): ToolDef {
           foreignKeys: table.foreign_keys,
         }));
         const errors = validateTableBatch(tables);
-        if (errors.length) return fail(new Error(errors.join(' ')));
+        if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
         // A taken name gets a counter instead of a failure, the same way create_app and the plan lint do.
         const warnings: string[] = [];
         const taken = new Set((await client.listTables()).map((table) => table.table_name.toLowerCase()));

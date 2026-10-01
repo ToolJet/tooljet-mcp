@@ -154,7 +154,7 @@ describe('render traps found in the 2026-09-12 reviews', () => {
     const products = estimateTextHeight('<h1>Products</h1><p>Manage products and inventory levels.</p><small>Sample warehouse data</small>', 14);
     expect(products.px).toBeGreaterThanOrEqual(98);
     expect(products.px).toBeLessThan(130);
-    const dashboard = estimateTextHeight("<strong>CHAINVENTORY</strong> · Main Warehouse<br><h1>Dashboard</h1><p>Good afternoon.</p><small>Last updated just now</small>", 14);
+    const dashboard = estimateTextHeight("<strong>STOCK LEDGER</strong> · Main Warehouse<br><h1>Dashboard</h1><p>Good afternoon.</p><small>Last updated just now</small>", 14);
     expect(dashboard.px).toBeGreaterThanOrEqual(119);
     const activity = estimateTextHeight('<strong>Recent activity</strong><br><br><strong>Inbound</strong> · Box · 12 units<br><small>Ana · 8 minutes ago</small><br><br><strong>Outbound</strong> · Tape · 4 units<br><small>Ben · 20 minutes ago</small>', 14);
     expect(activity.px).toBeGreaterThanOrEqual(125);

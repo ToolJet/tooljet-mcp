@@ -8,7 +8,8 @@ import { identityFromHeaders, type RequestIdentity } from './config.js';
 import { bearerValue } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
 
-const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
+// A permitted 10 MiB chat image becomes ~13.4 MiB in an Image component's JSON.
+const DEFAULT_MAX_BODY_BYTES = 15 * 1024 * 1024;
 
 interface Session {
   server: McpServer;
@@ -26,7 +27,7 @@ export interface HttpMcpServerOptions {
   /** Creates one isolated MCP server instance for each Streamable HTTP session. Receives the acting
    *  user parsed from the initialize request's headers, when the caller sent one. */
   serverFactory?: (identity?: RequestIdentity) => McpServer;
-  /** Maximum accepted JSON request size. Defaults to 1 MiB. */
+  /** Maximum accepted JSON request size. Defaults to 15 MiB for embedded image updates. */
   maxBodyBytes?: number;
   maxSessions?: number;
   idleTimeoutMs?: number;

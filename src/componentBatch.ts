@@ -1,6 +1,6 @@
 import { suggestedHtmlHeight, type ReadinessComponent } from './renderReadiness.js';
 import { z } from 'zod';
-import { COMPONENT_SLOT_NAMES } from './componentParent.js';
+import { COMPONENT_SLOT_NAMES, componentSlotSchema } from './componentParent.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { lintComponents } from './lint.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
@@ -26,7 +26,7 @@ export const componentInputSchema = z.object({
   client_ref: z.string().optional(),
   parent_ref: z.string().optional(),
   parent: z.string().optional(),
-  slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+  slot_name: componentSlotSchema.optional(),
 });
 
 export type ComponentInput = z.infer<typeof componentInputSchema>;

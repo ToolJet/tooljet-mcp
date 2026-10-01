@@ -9,6 +9,8 @@ import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
+import { frozenAppRefusal } from '../frozenApp.js';
+import { mapKeyRefusal } from '../mapKeyGuard.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -42,8 +44,17 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           return fail(new Error('lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle.'));
         }
 
+        const columnless = (args.tables ?? []).filter((table) => !Array.isArray((table as { columns?: unknown }).columns));
+        if (columnless.length) {
+          return fail(new Error(
+            `tables: ${columnless.map((t) => `"${(t as { table_name?: string }).table_name ?? '?'}"`).join(', ')} has no columns. ` +
+              'List only new tables here, each with its columns; an existing table needs no entry (queries reach it by table_ref).'
+          ));
+        }
         const preflightErrors: string[] = [];
         const preflightWarnings: string[] = [];
+        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
+        if (mapRefusal) preflightErrors.push(mapRefusal);
         const needsTables = Boolean(
           args.tables?.length ||
           args.seed_data?.length ||
@@ -53,12 +64,27 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(undefined),
         ]);
+        // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
+        const frozen = frozenAppRefusal(existingSummary);
+        if (frozen) return fail(new Error(frozen));
         if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
           preflightErrors.push(
             `App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`
           );
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        // Seed rows for a table that already exists and already has rows would insert them again: merch m18
+        // hand-seeded its tables, then sent the same rows in every plan, and the apply failed on a unique key
+        // after creating its queries. Unknown (no reader, or the read failed) is not a finding.
+        const plannedNew = new Set((args.tables ?? []).map((table) => table.table_name.toLowerCase()));
+        const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))]
+          .filter((name) => tableIds.has(name.toLowerCase()) && !plannedNew.has(name.toLowerCase()));
+        const withRows = await Promise.all(seededExisting.map(async (name) =>
+          (await client.hasRows?.(tableIds.get(name.toLowerCase())!).catch(() => undefined)) === true ? name : undefined));
+        for (const name of withRows.filter(Boolean)) {
+          preflightErrors.push(`Seed data targets "${name}", which already has rows (seeded earlier), so they would be inserted ` +
+            'again: leave that table out of seed_data.');
+        }
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
           if (tableIds.has(key)) {
@@ -77,7 +103,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
               continue;
             }
             // A name already in the workspace used to fail the plan; every model then spent a turn inventing
-            // a prefix (seven of twelve Nordlicht builds, 2026-09-07). Suffix it here and carry the new name
+            // a prefix (seven of twelve order-desk builds, 2026-09-07). Suffix it here and carry the new name
             // into seed data, table_ref and foreign keys, since they all name the table.
             const oldName = table.table_name;
             const newName = nextTableName(oldName, tableIds);
@@ -367,8 +393,8 @@ function nextTableName(name: string, taken: Map<string, string>): string {
 }
 
 /** Raise every short Html block to the height its markup needs and move the components under it down by
- *  the same amount, instead of failing the plan. Roughly a third of all lint rounds on the Nordlicht
- *  benchmark were Html blocks a few pixels short; at max reasoning effort each round cost a minute. */
+ *  the same amount, instead of failing the plan. Roughly a third of all lint rounds on an order-desk
+ *  same-prompt run were Html blocks a few pixels short; at max reasoning effort each round cost a minute. */
 function autoFitHtmlHeights(args: AppPlanInput): string[] {
   const warnings: string[] = [];
   for (const page of args.pages ?? []) {

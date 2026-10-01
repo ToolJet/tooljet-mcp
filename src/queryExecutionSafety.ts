@@ -1,7 +1,9 @@
 import { assessRedisRead } from './redisReadSafety.js';
 import JSON5 from 'json5';
 import { hubspotQueryIssues } from './hubspotQuery.js';
+import { apiEndpointQueryIssues, singleSpecRef } from './specEndpointKinds.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
+import { applyResolvedBindings, resolvedBindingValues } from './staticBindings.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
 
@@ -343,9 +345,11 @@ function assessSupabase(options: Record<string, unknown>, datasourceId?: string)
       simpleSourceRead: true, maxRows: 1, source, ...identity };
   }
   const maxRows = staticPositiveInteger(options.get_limit);
+  const unbounded = maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD;
   return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
-    requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
-    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity };
+    requiresCountPreflight: unbounded,
+    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity,
+    ...(unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}) };
 }
 
 /* MongoDB, split by effect: the operation decides it, except for `aggregate`, whose pipeline can
@@ -588,6 +592,38 @@ function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
 }
 
+/** Mask literals and comments together, so quotes inside one cannot open the other. */
+function sqlStatementText(sql: string, backslashEscapes: boolean): string | undefined {
+  let text = '';
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      text += quote + quote;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === '\\' && backslashEscapes) { i++; continue; }
+        if (sql[i] !== quote) continue;
+        if (sql[i + 1] === quote) { i++; continue; }
+        closed = true;
+        break;
+      }
+      if (!closed) return undefined;
+    } else if (char === '-' && sql[i + 1] === '-') {
+      while (i < sql.length && sql[i] !== '\n') i++;
+      text += ' ';
+    } else if (char === '/' && sql[i + 1] === '*') {
+      // MySQL executable comments are not inert SQL comments.
+      if (sql[i + 2] === '!') return undefined;
+      const end = sql.indexOf('*/', i + 2);
+      if (end < 0) return undefined;
+      i = end + 1;
+      text += ' ';
+    } else text += char;
+  }
+  return text.trim().replace(/;\s*$/, '').trim();
+}
+
 function normalizeSqlTable(raw: string): string {
   return raw.split('.').map((part) => part.replace(/^[`"\[]|[`"\]]$/g, '')).join('.').toLowerCase();
 }
@@ -600,7 +636,23 @@ function sqlSource(sql: string): ReadSource | undefined {
 function assessSql(sql: string, datasourceKind: string, datasourceId?: string): QueryReadAssessment {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...(datasourceId ? { datasourceId } : {}) };
-  if (!compact || /;\s*\S/.test(compact)) {
+  // SQL escape modes vary by datasource/session. Only mask quotes when both interpretations agree.
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === undefined || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+      reason: 'SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters', ...identity,
+    };
+  }
+  // `&lt;` is HTML escaping, not SQL: said as it is, not as a second statement (cy-leases b7).
+  const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
+  if (entity) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+      reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`, ...identity,
+    };
+  }
+  if (!compact || unquoted.includes(';')) {
     return {
       provenRead: false, directSafe: false, countOnly: false, selectStar: false,
       requiresCountPreflight: false, reason: 'SQL is empty or contains more than one statement', ...identity,
@@ -788,6 +840,18 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
     };
   }
 
+  // A single-spec API plugin (Stripe, Gmail, ...): the OpenAPI rule on the plugin's own endpoint; the plugin fixes the
+  // host. run_query refused every Stripe read before this, so no build could check its queries (2026-09-27).
+  if (singleSpecRef(kind)) {
+    const issue = apiEndpointQueryIssues(kind, options)[0];
+    const assessment = assessOpenapi({ ...options, host: kind }, datasourceId);
+    return {
+      ...assessment, datasourceKind: kind,
+      ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
+        : { reason: assessment.reason?.replaceAll('OpenAPI', kind) }),
+    };
+  }
+
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
   if (kind === 'openapi') return assessOpenapi(options, datasourceId);
 
@@ -842,6 +906,34 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
     provenRead: false, directSafe: false, countOnly: false, selectStar: false,
     requiresCountPreflight: false, reason: `Datasource kind ${kind} has no proven read classifier.`,
   };
+}
+
+/**
+ * The read check above judges the saved text with its {{ }} bindings still in it, but a browser-free run hands
+ * ToolJet the statically resolved values, and its SQL plugins splice them into the statement as text. Review
+ * 2026-09-25: `SELECT id FROM orders LIMIT 5 {{"\\u003b DELETE FROM orders"}}` passed as a bounded read and
+ * ran the DELETE. So the resolved options are judged again, and must be at least as safe as the saved ones;
+ * for SQL a resolved value may not carry a statement separator at all.
+ */
+export function resolvedReadRefusal(
+  query: QuerySummary, before: QueryReadAssessment, resolved: Record<string, unknown>
+): string | undefined {
+  if (!Object.keys(resolved).length) return undefined;
+  const kind = query.kind?.toLowerCase() ?? '';
+  const sqlLike = SQL_KINDS.has(kind) || kind === 'tooljetdb';
+  if (sqlLike && resolvedBindingValues(resolved).some((value) => typeof value === 'string' && value.includes(';'))) {
+    return 'after its {{ }} bindings are resolved, a binding value contains a statement separator (;). ' +
+      'Bindings in SQL must supply values, not SQL; move the statement text into the saved query.';
+  }
+  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) as QuerySummary['options'] });
+  const weaker = !after.provenRead || after.selectStar ||
+    (before.directSafe && !after.directSafe) ||
+    (!before.requiresCountPreflight && after.requiresCountPreflight) ||
+    (!before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation) ||
+    (!before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation);
+  if (!weaker) return undefined;
+  return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? 'the resolved text changes the statement'}). ` +
+    'Bindings must supply values, not SQL or query structure; move that text into the saved query.';
 }
 
 export function sameReadSource(target: QueryReadAssessment, count: QueryReadAssessment): boolean {

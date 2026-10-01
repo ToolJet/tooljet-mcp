@@ -267,6 +267,20 @@ describe('list_datasources tool', () => {
 });
 
 describe('run_query tool', () => {
+  // Codex audit: a query name passed to run_query was not resolved, and mistyped UUIDs recurred across a
+  // build (property manager, aesthetic clinic). run_query takes the name, like run_queries and the edit tools.
+  it('runs a query given by its name', async () => {
+    const client = makeClient();
+    const saved = { id: '11111111-2222-3333-4444-555555555555', name: 'products', kind: 'tooljetdb', options: { operation: 'list_rows', list_rows: { limit: 25 } } };
+    client.getQuery.mockRejectedValue(new Error('ToolJet getQuery failed: query products not found in version v1'));
+    (client as any).getQueries = vi.fn().mockResolvedValue([saved]);
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ id: 1 }] });
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({ query_id: 'products', version_id: 'v1' });
+    expect(textOf(result)).toMatchObject({ status: 'ok' });
+    expect(client.runQuery.mock.calls[0]![0]).toMatchObject({ queryId: saved.id });
+    expect(JSON.stringify(textOf(result))).not.toMatch(/matched by name/);
+  });
+
   it('warns when a successful browser-free run cannot resolve component-bound options', async () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
