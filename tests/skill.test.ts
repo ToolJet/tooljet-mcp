@@ -28,6 +28,21 @@ const both = guidance;
 // Unescape them so anchor comparisons match the rendered skill text.
 const generator = readFileSync(resolve(root, 'scripts/generate-skill.mjs'), 'utf8').replace(/\\`/g, '`');
 
+it('keeps raw source codes and refreshed detail-state guidance in both packages and the generator', () => {
+  for (const host of ['skill', 'skills/tooljet-app-builder']) {
+    const workflow = readFileSync(resolve(root, host, 'references/workflows.md'), 'utf8');
+    const event = readFileSync(resolve(root, host, 'references/events.md'), 'utf8');
+    const sourceRule = workflow.split('\n').find(line => line.startsWith('- Before authoring status-dependent'));
+    const detailRule = event.split('\n').find(line => line.startsWith('- **Raw record → display → save:**'));
+    expect(sourceRule).toContain('already-needed approved bounded read');
+    expect(detailRule).toContain('separate display keys');
+    expect(detailRule).toContain('reconcile the selected snapshot');
+    expect(detailRule).toContain('Never update success state when the mutation failed');
+    expect(generator).toContain(sourceRule!);
+    expect(generator).toContain(detailRule!);
+  }
+});
+
 it('publishes source-backed Kanban persistence paths from maintained local rules', () => {
   const rules = JSON.parse(readFileSync(resolve(root, 'data/component-binding-rules.json'), 'utf8'));
   expect(Object.keys(rules)).toHaveLength(22);
@@ -62,7 +77,8 @@ describe('generated skill — progressive disclosure', () => {
     expect(workflows).not.toContain('## ToolJet workflow authoring');
   });
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
-    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_000);
+    // The finish and render-safety rules are always loaded on purpose (2026-09-12 review: 81 of 224 pages broken).
+    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_500);
     expect(skill).toContain('## Load only the references the phase needs');
     for (const name of [
       'workflows.md', 'workflow-builder.md', 'ui-layout.md', 'tables.md', 'forms.md', 'events.md',
@@ -110,8 +126,11 @@ describe('generated skill — progressive disclosure', () => {
     const canonical = resolve(root, 'skill');
     const packaged = resolve(root, 'skills/tooljet-app-builder');
     expect(readFileSync(resolve(packaged, 'SKILL.md'), 'utf8')).toBe(readFileSync(resolve(canonical, 'SKILL.md'), 'utf8'));
-    const canonicalReferences = readdirSync(resolve(canonical, 'references')).sort();
-    expect(readdirSync(resolve(packaged, 'references')).sort()).toEqual(canonicalReferences);
+    // Offline catalogs are rendered from local contracts; compare them separately from Markdown.
+    // Compare the generated markdown, not whatever else a working tree happens to be carrying.
+    const markdown = (dir: string) => readdirSync(dir).filter((name) => name.endsWith('.md')).sort();
+    const canonicalReferences = markdown(resolve(canonical, 'references'));
+    expect(markdown(resolve(packaged, 'references'))).toEqual(canonicalReferences);
     for (const name of canonicalReferences) {
       expect(readFileSync(resolve(packaged, 'references', name), 'utf8')).toBe(
         readFileSync(resolve(canonical, 'references', name), 'utf8')
@@ -134,12 +153,12 @@ describe('generated skill — design decision framework', () => {
     }
   });
 
-  it('requires a dominant region/action, distinct-question components, and an internal critique', () => {
-    expect(designSection).toMatch(/one dominant region and at most one dominant action/i);
+  it('requires task-fit hierarchy without action quotas', () => {
+    expect(designSection).toMatch(/work and action hierarchy clear/i);
     expect(designSection).toMatch(/distinct user question/i);
-    expect(designSection).toMatch(/internal design critique/i);
-    // the critique enumerates its lenses
-    for (const lens of ['hierarchy', 'redundancy', 'density']) {
+    expect(designSection).toMatch(/internal check/i);
+    // The prompt retains task-fit criteria, not a compulsory composition.
+    for (const lens of ['hierarchy', 'decision', 'density']) {
       expect(designSection.toLowerCase()).toContain(lens);
     }
   });
@@ -193,7 +212,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
 
   it('documents the Kanban selection dependency and blank custom-card modal caveat', () => {
     expect(guidance).toMatch(/onCardSelected.*only when.*openModalOnCardClick.*true/is);
-    expect(guidance).toMatch(/custom Html child.*native modal.*blank/is);
+    expect(guidance).toMatch(/custom Html child.*native modal.*blank.*slot_name:"modal"/is);
   });
 
   it('publishes modern component names instead of legacy palette choices', () => {
@@ -214,7 +233,7 @@ describe('generated skill — ToolJet rendering guardrails', () => {
   });
 
   it('documents the narrow Table statement-body map failure', () => {
-    expect(guidance).toMatch(/Table data bindings.*No data.*map\(row => \{.*expression-body form.*map\(row => \(\{\.\.\.\}\)\)/is);
+    expect(guidance).toMatch(/expression-body form.*map\(row => \(\{\.\.\.\}\)\).*statement-body callback renders.*literal `\}\}`.*No data/is);
     expect(guidance).toMatch(/supported Table lookup joins.*remain valid/is);
   });
 
@@ -496,8 +515,7 @@ describe('generated skill — information architecture & phasing (the crowded-pa
   it('requires planning information architecture (pages) before components', () => {
     expect(guidance).toMatch(/information architecture BEFORE any component/i);
     expect(guidance).toMatch(/name a PRODUCT, not a single page/i);
-    expect(guidance).toMatch(/one overview page \+ one focused page per major job/i);
-    expect(guidance).toMatch(/Map every capability to exactly ONE page/i);
+    expect(guidance).toMatch(/add an overview when it helps users orient or compare/i);
   });
 
   it('separates page architecture from phasing (no appending to the overview)', () => {
@@ -554,7 +572,7 @@ describe('generated skill — selective reads, reuse, and page-level QA', () => 
 
 describe('generated skill — async states & density guardrails', () => {
   it('keeps narrow Statistics labels short enough to preserve the value', () => {
-    expect(guidance).toMatch(/Statistics sizing.*12.?17 columns.*one- or two-word label.*hide the value/is);
+    expect(guidance).toMatch(/Statistics sizing.*at least \*\*9 columns\*\*.*four per content row/is);
   });
 
   it('requires the full set of async/query states incl. no-double-fire', () => {
@@ -597,7 +615,7 @@ describe('generated skill is synchronized with the generator', () => {
     '## Workspace — confirm which one first',
     'page mode',
     'Monitor',
-    'internal design critique',
+    'internal check',
     'Chart.title` empty',
     'headerCasing: "none"',
     'Table row-action Button columns',
@@ -648,5 +666,18 @@ describe('generated skill is synchronized with the generator', () => {
       expect(generator).toContain(a);
       expect(both).toContain(a);
     });
+  }
+});
+
+// 2026-09-24: a reference copied from docs had not been regenerated for a week, so documented guidance never
+// reached a model that read it. The served copies must match their sources.
+describe('references copied from docs are regenerated', () => {
+  const strip = (text: string) => text.replace(/^<!-- GENERATED[^\n]*-->\n\n?/, '');
+  for (const [file, source] of [['migration.md', 'docs/app-migration.md'], ['themes.md', 'docs/theme-api-tool.md']]) {
+    for (const host of ['skill', 'skills/tooljet-app-builder']) {
+      it(`${host}/references/${file} matches ${source} (run npm run generate:skill)`, () => {
+        expect(strip(readFileSync(resolve(root, host, 'references', file), 'utf8'))).toBe(readFileSync(resolve(root, source), 'utf8'));
+      });
+    }
   }
 });

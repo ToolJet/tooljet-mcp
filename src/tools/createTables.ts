@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { dbColumnTypeSchema } from '../dbColumnTypeSchema.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { validateTableBatch } from '../tableValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const columnSchema = z.object({
   name: z.string(),
-  type: z.string(),
+  type: dbColumnTypeSchema,
   primaryKey: z.boolean().optional(),
   notNull: z.boolean().optional(),
   unique: z.boolean().optional(),
@@ -40,7 +41,7 @@ export function createTablesTool(client: ToolJetClient): ToolDef {
     description:
       'Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, ' +
       'foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables ' +
-      'created concurrently. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names ' +
+      'created in batches of at most four; a failed batch stops further creation. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names ' +
       'any tables already created; MCP never deletes them automatically.',
     inputSchema: { tables: z.array(tableSchema).min(1).max(50) },
     async handler(args: { tables: TableInput[] }) {
@@ -51,7 +52,7 @@ export function createTablesTool(client: ToolJetClient): ToolDef {
           foreignKeys: table.foreign_keys,
         }));
         const errors = validateTableBatch(tables);
-        if (errors.length) return fail(new Error(errors.join(' ')));
+        if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
         // A taken name gets a counter instead of a failure, the same way create_app and the plan lint do.
         const warnings: string[] = [];
         const taken = new Set((await client.listTables()).map((table) => table.table_name.toLowerCase()));

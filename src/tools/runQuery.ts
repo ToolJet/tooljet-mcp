@@ -1,13 +1,16 @@
+import { emptyParamsNote, emptyViewerOnlyParams, resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 import {
   LARGE_READ_ROW_THRESHOLD,
   assessQueryRead,
+  resolvedReadRefusal,
   extractRowCount,
   sameReadSource,
 } from '../queryExecutionSafety.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { resolveRef } from '../refResolution.js';
 
 const REMOTE_RESULT_MAX_JSON_CHARS = 30_000;
 
@@ -92,6 +95,9 @@ const LEGACY_SCHEMA_CODES = new Set(['ER_BAD_FIELD_ERROR', 'ER_BAD_TABLE_ERROR',
  *  names — never the misleading "go fix your datasource" prompt for a plain SQL name error. */
 export function classifyQueryFailure(result: Record<string, unknown> | undefined): QueryFailureClass {
   if (!result) return 'unknown';
+  // A malformed MongoDB JSON5 query is an authoring error, not a broken connection.
+  const details = result.data as { name?: unknown } | undefined;
+  if (details?.name === 'SyntaxError' && typeof result.description === 'string' && result.description.startsWith('JSON5:')) return 'query';
   const category = result.category;
   if (category === 'authentication' || category === 'connection') return 'connection';
   if (category === 'schema_name') return 'schema_name';
@@ -250,16 +256,28 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
     }) {
       try {
         const warnings: string[] = [];
-        const query = await client.getQuery(args.query_id, args.version_id);
+        // The query's name works as well as its id (Codex audit: a name was refused here, and mistyped UUIDs
+        // recurred): an unknown id falls back to a unique name on the version.
+        const query = await client.getQuery(args.query_id, args.version_id).catch(async (error) => {
+          const saved = await client.getQueries(args.version_id);
+          const resolution = resolveRef(saved, args.query_id, 'Query', `on version "${args.version_id}"`);
+          if (!resolution.ok) throw new Error(resolution.error, { cause: error });
+          return resolution.target;
+        });
         const assessment = assessQueryRead(query);
         if (!assessment.provenRead || assessment.selectStar) {
           return fail(new Error(
             `run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? 'not a proven read'}`
           ));
         }
+        const staticBindings = resolveStaticBindings(query.options);
+        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
+        if (bindingRefusal) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
+        }
         if (containsComponentBinding(query.options)) {
           warnings.push(
-            'Saved query options reference components.*. Browser-free run_query does not resolve live component state, so status:"ok" validates only the static datasource path; verify pagination/filter values in the viewer.'
+            'Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.'
           );
         }
 
@@ -293,7 +311,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
                 `Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`
             ));
           }
-          if (args.count_query_id === args.query_id) {
+          if (args.count_query_id === args.query_id || args.count_query_id === query.id) {
             return fail(new Error('count_query_id must be a separate count-only query.'));
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
@@ -336,10 +354,16 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         }
         let result;
         try {
+          const bindings = staticBindings;
+          const emptied = emptyViewerOnlyParams(query.options, bindings);
+          if (emptied.length) warnings.push(emptyParamsNote(emptied));
+          const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+          if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
           result = await client.runQuery({
-            queryId: args.query_id,
+            queryId: query.id,
             versionId: args.version_id,
             environmentId: args.environment_id,
+            resolvedOptions: bindings.resolved,
           });
         } catch (error) {
           return ok({
@@ -360,6 +384,9 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         if (output.warning) warnings.push(output.warning);
         return ok({
           ...output.result,
+          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
+          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
+          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
           ...(bindingHint ? { binding_hint: bindingHint } : {}),
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),

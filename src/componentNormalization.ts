@@ -72,6 +72,9 @@ function isStrippableUnknownKey(
   knownKeys: string[]
 ): boolean {
   if (knownKeys.includes(key)) return false;
+  // These are not harmless cruft: stripping an attempted edit preselection
+  // silently opens a blank selector and can erase a foreign key on Save.
+  if (type === 'DropdownV2' && section === 'properties' && ['value', 'defaultValue'].includes(key)) return false;
   if (section === 'properties' && STYLE_KEYS_IN_PROPERTIES.has(key)) return false;
   const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
   if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))) return false;
@@ -139,7 +142,8 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== 'styles' && STYLE_KEYS_IN_PROPERTIES.has(canonical);
+    const belongsInStyles = canonical !== 'styles' && (STYLE_KEYS_IN_PROPERTIES.has(canonical) ||
+      (!!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical)));
     if (!aliasTarget && !belongsInStyles) continue;
     if (belongsInStyles) {
       if (stylesValue[canonical] === undefined) stylesValue[canonical] = properties[key];
@@ -156,6 +160,23 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     }
   }
   if (stylesChanged) normalizedSections.styles.value = stylesValue;
+
+  // New definitions only: these NumberInput bounds have one source-verified destination.
+  // Never choose between conflicting constraints or reinterpret a legacy persisted update.
+  if (options.stripUnknownKeys && component.type === 'NumberInput') {
+    for (const key of ['minValue', 'maxValue']) {
+      const value = propValue(properties, key);
+      if (value == null || (typeof value === 'string' && !value.trim())) continue;
+      const validation = normalizedSections.validation.value ?? {};
+      const current = propValue(validation, key);
+      if (validation[key] !== undefined && current !== value) continue;
+      validation[key] = properties[key];
+      normalizedSections.validation.value = validation;
+      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key]: validation[key] };
+      delete properties[key];
+      warnings.push(`NumberInput "${component.name}": moved properties.${key} to validation.${key}, where the renderer reads the bound.`);
+    }
+  }
 
   // Older catalog snapshots exposed clientServerSwitch's editor labels as enum values even
   // though ToolJet persists these controls as booleans. Accept the common model-authored form
@@ -187,6 +208,13 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     const columns = propValue(properties, 'columns');
     const dynamicColumns = isTruthy(propValue(properties, 'useDynamicColumn'));
     const autogenerateColumns = propValue(properties, 'autogenerateColumns');
+    if (options.stripUnknownKeys && columns === undefined && !dynamicColumns && isTruthy(autogenerateColumns) &&
+        typeof propValue(properties, 'data') === 'string' && /\bqueries(?:\.|\[)/.test(String(propValue(properties, 'data')))) {
+      // New query-bound tables have no authored columns yet. Override the widget's demo columns;
+      // the browser will generate real columns when the query returns. Otherwise server-side
+      // verification compares fields like photo/email with unrelated datasource rows.
+      setProperty('columns', []);
+    }
     if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
       setProperty('autogenerateColumns', true);
       if (autogenerateColumns !== undefined) {
@@ -204,15 +232,28 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     // isDateSelectionEnabled:false thinking it means "read-only"; re-enable date selection so the value
     // displays. Only touches this exact blank-rendering combination.
     if (Array.isArray(columns)) {
-      let fixedDateColumn = false;
+      let changedColumns = false;
       const repairedColumns = columns.map((column) => {
+        if (options.stripUnknownKeys && column && typeof column === 'object' && !Array.isArray(column) &&
+            column.columnType === 'button' && Array.isArray(column.buttons)) {
+          const buttons = column.buttons.map((button: unknown) => {
+            if (!button || typeof button !== 'object' || Array.isArray(button)) return button;
+            const b = button as Record<string, unknown>;
+            if (typeof b.label !== 'string' || b.buttonLabel !== undefined) return button;
+            const { label, ...rest } = b;
+            changedColumns = true;
+            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
+            return { ...rest, buttonLabel: label };
+          });
+          column = { ...column, buttons };
+        }
         if (
           column && typeof column === 'object' && !Array.isArray(column) &&
           (column as Record<string, unknown>).columnType === 'datepicker' &&
           (column as Record<string, unknown>).isDateSelectionEnabled === false &&
           (column as Record<string, unknown>).isTimeChecked !== true
         ) {
-          fixedDateColumn = true;
+          changedColumns = true;
           const entry = column as Record<string, unknown>;
           warnings.push(
             `Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection — a ` +
@@ -222,7 +263,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
         return column;
       });
-      if (fixedDateColumn) setProperty('columns', repairedColumns);
+      if (changedColumns) setProperty('columns', repairedColumns);
     }
   }
 

@@ -1,13 +1,23 @@
+import { assessRedisRead } from './redisReadSafety.js';
+import JSON5 from 'json5';
+import { hubspotQueryIssues } from './hubspotQuery.js';
+import { apiEndpointQueryIssues, singleSpecRef } from './specEndpointKinds.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
+import { applyResolvedBindings, resolvedBindingValues } from './staticBindings.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
 
 const SQL_KINDS = new Set([
   'postgresql', 'mysql', 'mariadb', 'mssql', 'sqlserver', 'cockroachdb', 'redshift',
   'snowflake', 'bigquery', 'clickhouse', 'oracle', 'oracledb', 'sqlite',
+  'databricks', 'athena', 'awsredshift', 'harperdb', 'ibmdb', 'saphana',
+  // SQL dialects assessSql already parses; each keeps its SQL in one operation, and the write
+  // operations carry no SQL field, so they still fall through to a refusal.
+  'spanner', 'presto', 'cosmosdb', 'couchbase', 'salesforce',
 ]);
 
-const BILLABLE_SCAN_SQL_KINDS = new Set(['bigquery', 'snowflake', 'redshift']);
+// ToolJet's kind string is `awsredshift`; the bare `redshift` entry never matched a real datasource.
+const BILLABLE_SCAN_SQL_KINDS = new Set(['bigquery', 'snowflake', 'redshift', 'awsredshift', 'athena', 'databricks']);
 
 interface ReadSource {
   kind: 'sql_table' | 'table_id' | 'gui_table' | 'remote_endpoint';
@@ -335,13 +345,283 @@ function assessSupabase(options: Record<string, unknown>, datasourceId?: string)
       simpleSourceRead: true, maxRows: 1, source, ...identity };
   }
   const maxRows = staticPositiveInteger(options.get_limit);
+  const unbounded = maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD;
   return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
-    requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
-    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity };
+    requiresCountPreflight: unbounded,
+    requiresRemoteReadConfirmation: true, simpleSourceRead: true, source, maxRows, ...identity,
+    ...(unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}) };
+}
+
+/* MongoDB, split by effect: the operation decides it, except for `aggregate`, whose pipeline can
+   end in a $out/$merge write. Those are refused structurally rather than proven safe. A bounded
+   read is directSafe — this is a database the workspace owns, not a remote API. */
+const MONGO_ROW_READS = new Set(['find_many']);
+const MONGO_SINGLE_READS = new Set(['find_one']);
+const MONGO_COUNT_READS = new Set(['count', 'count_total']);
+const MONGO_WRITE_STAGES = ['$out', '$merge'];
+
+/** Authoring normalizes objects to text; the plugin parses JSON5, not only strict JSON. */
+function mongoOptions(raw: unknown): Record<string, unknown> | undefined {
+  const direct = record(raw);
+  if (direct) return direct;
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    if (containsBinding(raw)) return undefined;
+    return record(JSON5.parse(raw));
+  } catch {
+    return undefined;
+  }
+}
+
+function mongoPipelineWrites(pipeline: unknown): boolean {
+  if (Array.isArray(pipeline)) return pipeline.some(mongoPipelineWrites);
+  const obj = record(pipeline);
+  return !!obj && Object.entries(obj).some(([key, value]) =>
+    MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
+}
+
+function assessMongo(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const identity = { datasourceKind: 'mongodb', ...(datasourceId ? { datasourceId } : {}) };
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity,
+  });
+
+  const collection = options.collection;
+  if (typeof collection !== 'string' || !collection.trim() || containsBinding(collection)) {
+    return refuse('MongoDB collection is missing or not statically known.');
+  }
+  const source = { kind: 'gui_table' as const, value: collection };
+
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options.filter;
+    // An unfiltered count bounds the whole collection, so it can upper-bound a later read.
+    const fullSourceCount = filter == null || filter === '' ||
+      (!!record(filter) && Object.keys(record(filter)!).length === 0) ||
+      (typeof filter === 'string' && ['{}', '{ }'].includes(filter.trim()));
+    return {
+      provenRead: true, directSafe: true, countOnly: true, selectStar: false,
+      requiresCountPreflight: false, fullSourceCount, simpleSourceRead: true,
+      maxRows: 1, source, ...identity,
+    };
+  }
+
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, simpleSourceRead: true, maxRows: 1, source, ...identity,
+    };
+  }
+
+  if (operation === 'aggregate') {
+    // The driver appends a $out stage from options.out, even when the supplied pipeline
+    // only reads. Prove the options as well as the pipeline before allowing execution.
+    const rawOptions = options.options;
+    const aggregateOptions = rawOptions == null || rawOptions === '' ? {} : mongoOptions(rawOptions);
+    if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
+      return refuse('MongoDB aggregate options must be a statically known JSON5 object.');
+    }
+    if ('out' in aggregateOptions) {
+      return refuse('MongoDB aggregate options.out adds a $out stage, which writes a collection.');
+    }
+    let pipeline: unknown = options.pipeline;
+    if (containsBinding(pipeline)) return refuse('MongoDB aggregate pipeline is not statically known.');
+    if (typeof pipeline === 'string') {
+      try { pipeline = JSON5.parse(pipeline); } catch { return refuse('MongoDB aggregate pipeline must be valid JSON5 array text.'); }
+    }
+    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record(stage))) {
+      return refuse('MongoDB aggregate pipeline must be a statically known array of stages.');
+    }
+    if (mongoPipelineWrites(pipeline)) {
+      return refuse('MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.');
+    }
+    // An aggregation reshapes rows, so no simpleSourceRead: a collection count cannot bound it.
+    // Driver options.limit is ignored by aggregate. Only a final pipeline $limit bounds output;
+    // a later $unwind/$unionWith can expand an earlier limit again.
+    const last = record(pipeline.at(-1));
+    const maxRows = last && Object.keys(last).length === 1 && typeof last.$limit === 'number'
+      ? staticPositiveInteger(last.$limit) : undefined;
+    return {
+      provenRead: true, directSafe: maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false, selectStar: false,
+      requiresCountPreflight: maxRows === undefined || maxRows > LARGE_READ_ROW_THRESHOLD,
+      source, maxRows, ...identity,
+      ...(maxRows === undefined
+        ? { reason: 'MongoDB aggregate has no statically provable row limit; add a final {$limit: N} pipeline stage. options.limit does not bound aggregation output.' }
+        : {}),
+    };
+  }
+
+  if (operation === 'distinct') {
+    return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: true, source, ...identity,
+      reason: 'MongoDB distinct ignores options.limit and array fields can yield multiple values per document. Use a bounded aggregate with a final $limit stage.' };
+  }
+
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(
+      `MongoDB operation ${operation || '<missing>'} is not a proven bounded read.`
+    );
+  }
+
+  const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
+  if (maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, simpleSourceRead: true, maxRows, source, ...identity,
+    };
+  }
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: true, simpleSourceRead: true, maxRows, source, ...identity,
+    reason: maxRows === undefined
+      ? `MongoDB ${operation} has no statically provable row limit; set options.limit.`
+      : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+  };
+}
+
+/* Google Sheets v2. Reads cross into Google, so they are never directSafe. A bound comes only
+   from an explicit A1 row range; `read` without one, and `list_all`, can return a whole sheet. */
+const SHEETS_METADATA_READS = new Set(['info', 'list_all_spreadsheets']);
+const A1_ROW_RANGE = /^(?:[^!]*!)?[A-Z]*(\d+):[A-Z]*(\d+)$/i;
+
+function sheetsRangeRows(range: unknown): number | undefined {
+  if (typeof range !== 'string' || containsBinding(range)) return undefined;
+  const match = range.trim().match(A1_ROW_RANGE);
+  if (!match) return undefined;
+  const rows = Number(match[2]) - Number(match[1]) + 1;
+  return rows > 0 ? rows : undefined;
+}
+
+function assessSheets(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const identity = { datasourceKind: 'googlesheetsv2', ...(datasourceId ? { datasourceId } : {}) };
+  const spreadsheet = options.spreadsheet_id;
+
+  if (SHEETS_METADATA_READS.has(operation)) {
+    return { provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, requiresRemoteReadConfirmation: true, maxRows: 1, ...identity };
+  }
+  if (operation !== 'read' && operation !== 'list_all') {
+    return { provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, ...identity,
+      reason: `Google Sheets operation ${operation || '<missing>'} is not a proven bounded read.` };
+  }
+  if (typeof spreadsheet !== 'string' || !spreadsheet.trim() || containsBinding(spreadsheet)) {
+    return { provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, ...identity,
+      reason: 'Google Sheets spreadsheet_id is missing or not statically known.' };
+  }
+  const sheet = typeof options.sheet === 'string' && options.sheet.trim() ? `:${options.sheet.trim()}` : '';
+  const source = { kind: 'remote_endpoint' as const, value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === 'read' ? sheetsRangeRows(options.spreadsheet_range) : undefined;
+  const bounded = maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: !bounded, requiresRemoteReadConfirmation: true, source, maxRows, ...identity,
+    ...(bounded ? {} : { reason: maxRows === undefined
+      ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.`
+      : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }),
+  };
+}
+
+/* DynamoDB. `scan_table` reads the whole table and DynamoDB publishes no static row bound, so it
+   is proven but always needs a preflight; `query_table` is key-bounded but still unbounded in row
+   count. Neither is remote in the billing sense the API kinds are. */
+function assessDynamo(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const identity = { datasourceKind: 'dynamodb', ...(datasourceId ? { datasourceId } : {}) };
+  const table = options.table;
+  const refuse = (reason: string): QueryReadAssessment => ({
+    provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: false, reason, ...identity });
+
+  if (!['get_item', 'query_table', 'scan_table', 'describe_table'].includes(operation)) {
+    return refuse(`DynamoDB operation ${operation || '<missing>'} is not a proven bounded read.`);
+  }
+  if (typeof table !== 'string' || !table.trim() || containsBinding(table)) {
+    return refuse('DynamoDB table is missing or not statically known.');
+  }
+  const source = { kind: 'gui_table' as const, value: table.trim().toLowerCase() };
+  if (operation === 'get_item' || operation === 'describe_table') {
+    return { provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, simpleSourceRead: true, maxRows: 1, source, ...identity };
+  }
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: true, simpleSourceRead: true, source, ...identity,
+    reason: `DynamoDB ${operation} has no statically provable row limit.`,
+  };
+}
+
+/* CouchDB. Same shape as Mongo, minus a collection field — the database lives on the datasource
+   connection, so a query names no static source and nothing can count it ahead of time. */
+function assessCouch(options: Record<string, unknown>, datasourceId?: string): QueryReadAssessment {
+  const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : '';
+  const identity = { datasourceKind: 'couchdb', ...(datasourceId ? { datasourceId } : {}) };
+
+  if (operation === 'retrieve_record') {
+    return { provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, maxRows: 1, ...identity };
+  }
+  if (!['list_records', 'get_view', 'find'].includes(operation)) {
+    return { provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, ...identity,
+      reason: `CouchDB operation ${operation || '<missing>'} is not a proven bounded read.` };
+  }
+  // `find` is a Mango query whose limit sits inside the request body.
+  const limit = operation === 'find'
+    ? mongoOptions(options.body)?.limit
+    : options.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return { provenRead: true, directSafe: true, countOnly: false, selectStar: false,
+      requiresCountPreflight: false, maxRows, ...identity };
+  }
+  return {
+    provenRead: true, directSafe: false, countOnly: false, selectStar: false,
+    requiresCountPreflight: true, maxRows, ...identity,
+    reason: maxRows === undefined
+      ? `CouchDB ${operation} has no statically provable row limit; set ${operation === 'find' ? 'limit in the request body' : 'limit'}.`
+      : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
+  };
 }
 
 function stripSql(sql: string): string {
   return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;\s*$/, '').trim();
+}
+
+/** Mask literals and comments together, so quotes inside one cannot open the other. */
+function sqlStatementText(sql: string, backslashEscapes: boolean): string | undefined {
+  let text = '';
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      text += quote + quote;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === '\\' && backslashEscapes) { i++; continue; }
+        if (sql[i] !== quote) continue;
+        if (sql[i + 1] === quote) { i++; continue; }
+        closed = true;
+        break;
+      }
+      if (!closed) return undefined;
+    } else if (char === '-' && sql[i + 1] === '-') {
+      while (i < sql.length && sql[i] !== '\n') i++;
+      text += ' ';
+    } else if (char === '/' && sql[i + 1] === '*') {
+      // MySQL executable comments are not inert SQL comments.
+      if (sql[i + 2] === '!') return undefined;
+      const end = sql.indexOf('*/', i + 2);
+      if (end < 0) return undefined;
+      i = end + 1;
+      text += ' ';
+    } else text += char;
+  }
+  return text.trim().replace(/;\s*$/, '').trim();
 }
 
 function normalizeSqlTable(raw: string): string {
@@ -356,7 +636,23 @@ function sqlSource(sql: string): ReadSource | undefined {
 function assessSql(sql: string, datasourceKind: string, datasourceId?: string): QueryReadAssessment {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...(datasourceId ? { datasourceId } : {}) };
-  if (!compact || /;\s*\S/.test(compact)) {
+  // SQL escape modes vary by datasource/session. Only mask quotes when both interpretations agree.
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === undefined || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+      reason: 'SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters', ...identity,
+    };
+  }
+  // `&lt;` is HTML escaping, not SQL: said as it is, not as a second statement (cy-leases b7).
+  const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
+  if (entity) {
+    return {
+      provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+      reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`, ...identity,
+    };
+  }
+  if (!compact || unquoted.includes(';')) {
     return {
       provenRead: false, directSafe: false, countOnly: false, selectStar: false,
       requiresCountPreflight: false, reason: 'SQL is empty or contains more than one statement', ...identity,
@@ -534,6 +830,28 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   }
   const operation = typeof options.operation === 'string' ? options.operation.toLowerCase() : undefined;
 
+  if (kind === 'hubspot') {
+    const issue = hubspotQueryIssues(options)[0];
+    const assessment = assessOpenapi({ ...options, host: 'https://api.hubapi.com' }, datasourceId);
+    return {
+      ...assessment, datasourceKind: 'hubspot',
+      ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
+        : { reason: assessment.reason?.replaceAll('OpenAPI', 'HubSpot') }),
+    };
+  }
+
+  // A single-spec API plugin (Stripe, Gmail, ...): the OpenAPI rule on the plugin's own endpoint; the plugin fixes the
+  // host. run_query refused every Stripe read before this, so no build could check its queries (2026-09-27).
+  if (singleSpecRef(kind)) {
+    const issue = apiEndpointQueryIssues(kind, options)[0];
+    const assessment = assessOpenapi({ ...options, host: kind }, datasourceId);
+    return {
+      ...assessment, datasourceKind: kind,
+      ...(issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message }
+        : { reason: assessment.reason?.replaceAll('OpenAPI', kind) }),
+    };
+  }
+
   if (kind === 'restapi') return assessRestGet(options, datasourceId);
   if (kind === 'openapi') return assessOpenapi(options, datasourceId);
 
@@ -542,6 +860,15 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   if (kind === 'influxdb') return assessInflux(options, datasourceId);
 
   if (kind === 'supabase') return assessSupabase(options, datasourceId);
+
+  if (kind === 'mongodb') return assessMongo(options, datasourceId);
+  if (kind === 'redis') return assessRedisRead(options, datasourceId);
+
+  if (kind === 'googlesheetsv2') return assessSheets(options, datasourceId);
+
+  if (kind === 'dynamodb') return assessDynamo(options, datasourceId);
+
+  if (kind === 'couchdb') return assessCouch(options, datasourceId);
 
   if (kind === 'tooljetdb') {
     if (operation === 'list_rows') return assessListRows(kind, options, datasourceId);
@@ -563,11 +890,10 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
 
   if (SQL_KINDS.has(kind)) {
     if (operation === 'list_rows' || options.mode === 'gui') return assessListRows(kind, options, datasourceId);
-    const sql = typeof options.query === 'string'
-      ? options.query
-      : typeof options.sql === 'string'
-        ? options.sql
-        : undefined;
+    // Plugins disagree on the field name; databricks, awsredshift and harperdb use `sql_query`.
+    const sql = ['query', 'sql_query', 'sql', 'presto_sql_query', 'soql_query']
+      .map((field) => options[field])
+      .find((value): value is string => typeof value === 'string' && !!value.trim());
     return sql
       ? assessSql(sql, kind, datasourceId)
       : {
@@ -582,6 +908,34 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   };
 }
 
+/**
+ * The read check above judges the saved text with its {{ }} bindings still in it, but a browser-free run hands
+ * ToolJet the statically resolved values, and its SQL plugins splice them into the statement as text. Review
+ * 2026-09-25: `SELECT id FROM orders LIMIT 5 {{"\\u003b DELETE FROM orders"}}` passed as a bounded read and
+ * ran the DELETE. So the resolved options are judged again, and must be at least as safe as the saved ones;
+ * for SQL a resolved value may not carry a statement separator at all.
+ */
+export function resolvedReadRefusal(
+  query: QuerySummary, before: QueryReadAssessment, resolved: Record<string, unknown>
+): string | undefined {
+  if (!Object.keys(resolved).length) return undefined;
+  const kind = query.kind?.toLowerCase() ?? '';
+  const sqlLike = SQL_KINDS.has(kind) || kind === 'tooljetdb';
+  if (sqlLike && resolvedBindingValues(resolved).some((value) => typeof value === 'string' && value.includes(';'))) {
+    return 'after its {{ }} bindings are resolved, a binding value contains a statement separator (;). ' +
+      'Bindings in SQL must supply values, not SQL; move the statement text into the saved query.';
+  }
+  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) as QuerySummary['options'] });
+  const weaker = !after.provenRead || after.selectStar ||
+    (before.directSafe && !after.directSafe) ||
+    (!before.requiresCountPreflight && after.requiresCountPreflight) ||
+    (!before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation) ||
+    (!before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation);
+  if (!weaker) return undefined;
+  return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? 'the resolved text changes the statement'}). ` +
+    'Bindings must supply values, not SQL or query structure; move that text into the saved query.';
+}
+
 export function sameReadSource(target: QueryReadAssessment, count: QueryReadAssessment): boolean {
   return !!target.source && !!count.source &&
     target.simpleSourceRead === true && count.fullSourceCount === true &&
@@ -594,6 +948,8 @@ export function sameReadSource(target: QueryReadAssessment, count: QueryReadAsse
 export function extractRowCount(result: RunQueryResult): number | undefined {
   if (result.status !== 'ok') return undefined;
   let value: unknown = result.data;
+  // MongoDB count/count_total return a scalar, unlike SQL's one-row result.
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? value : undefined;
   if (record(value)?.result !== undefined) value = record(value)!.result;
   if (Array.isArray(value)) {
     if (value.length !== 1) return undefined;

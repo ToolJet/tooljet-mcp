@@ -451,6 +451,7 @@ const RENDERING_HINTS = {
   Text: {
     minimumSingleLineHeight: 'ceil(textSize * lineHeight + 6px) for static height; round up to ToolJet\'s 10px grid',
     headingExamples: { '24px at 1.5 line-height': '50px authored height', '32px at 1.5 line-height': '60px authored height' },
+    surfaceInset: 'Text styles.padding does not provide inner content padding. On a colored card surface, use an HTML wrapper with padding inside textFormat:html, inset native Text within a Container, or center a compact value when appropriate. Include the inset in the authored height; plain transparent labels need no card treatment.',
     note: 'The canvas wrapper and Text border consume 6px. A 24px Text at the default 1.5 line-height needs 42px, so the default 40px component clips glyphs/descenders. Use 50px, or dynamicHeight for wrapping content.',
   },
   Chart: {
@@ -634,7 +635,8 @@ const AUTHORING_HINTS = {
       widthRule: 'Do not infer the rendered Kanban column width from cardWidth. Pin the Html content width/max-width explicitly in CSS and verify it in the viewer; current columns can retain a wider minimum than the card canvas.',
       interactionRule: {
         selectionDependency: 'onCardSelected fires only when openModalOnCardClick is true; ToolJet returns before setting lastSelectedCard or firing the event when it is false. MCP rejects that dead event binding.',
-        customHtmlModal: 'A custom Html card child can render correctly while the enabled built-in card modal opens blank. Prefer openModalOnCardClick=false for a read-only board, or browser-verify a separate supported detail flow.',
+        selectedRecord: 'Read components.<board>.lastSelectedCard (not selectedCard) in onCardSelected. Preserve its id and raw fields before switching pages; use the id to find the source query record when cards contain display projections.',
+        customHtmlModal: 'Card children (native or Html) do not populate the card-click modal. Author its detail/edit controls with parent_ref pointing to the Kanban and slot_name:"modal"; bind cardData or lastSelectedCard. Page-root controls remain behind the modal backdrop. For a board without selection, disable openModalOnCardClick and omit onCardSelected.',
       },
     },
   },

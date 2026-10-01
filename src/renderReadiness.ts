@@ -206,6 +206,21 @@ export function lintUntriggeredDataQueries(summary: AppSummary): { errors: strin
   return { errors, warnings };
 }
 
+const TOOLJETDB_WRITES = new Set(['create_row', 'update_rows', 'delete_rows', 'bulk_update_with_primary_key', 'bulk_upsert_with_primary_key', 'bulk_insert']);
+
+/** A ToolJet DB write that runs on its own (page load, or a success chain from a query that does) changes data on every
+ *  visit (cy-venue b8: 14 updates ran on every visit). A warning, since this lint also sees queries a person wrote. */
+export function lintAutomaticWrites(summary: AppSummary): string[] {
+  const triggers = queryTriggers(summary);
+  return summary.queries.flatMap((q) => {
+    const options = (q.options && typeof q.options === 'object' ? q.options : {}) as Record<string, unknown>;
+    const op = String(options.operation ?? '');
+    if (q.kind !== 'tooljetdb' || !TOOLJETDB_WRITES.has(op) || !triggers.get(q.id)?.automatic) return [];
+    return [`Query "${q.name ?? q.id}" writes (${op}) and runs on its own when the page opens, so every visit changes ` +
+      'the data. Run it from a user action instead.'];
+  });
+}
+
 /** Canvas columns to pixels at a typical 1300px canvas (39 columns of content span about 1250px). */
 export const HTML_PX_PER_COLUMN = 32;
 /** The Html widget's box renders about 4px shorter than the authored height (measured 2026-09-05). */
@@ -235,8 +250,8 @@ export function suggestedHtmlHeight(c: ReadinessComponent): { from: number; to: 
 }
 
 /** A selection panel reads `components.table.selectedRow.field`; before any row is selected that is
- *  `undefined`, and ToolJet prints the word. Observed on three of twelve Nordlicht apps and on the Luna max
- *  Lufthansa build ("undefined · undefined · undefined" under "Select a flight"). Each read needs a fallback. */
+ *  `undefined`, and ToolJet prints the word. Observed on three of twelve order-desk apps and on the Luna max
+ *  airline-operations build ("undefined · undefined · undefined" under "Select a flight"). Each read needs a fallback. */
 const SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
 export function lintUnguardedSelectionText(c: ReadinessComponent): string[] {
   if (c.type !== 'Html' && c.type !== 'Text') return [];
@@ -255,7 +270,7 @@ export function lintUnguardedSelectionText(c: ReadinessComponent): string[] {
   return [
     `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(', ')} without a fallback. Until a row is selected that ` +
       "value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') " +
-      'or wrap the panel in a ternary on components.table?.selectedRow.',
+      'or wrap the panel in a ternary on a stable selected-row key such as components.table?.selectedRow?.id. The row object itself may be empty but truthy.',
   ];
 }
 
@@ -363,7 +378,7 @@ const COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)
  *  until a filter changes or the page reloads (a Luna clinic build on 2026-09-05 shipped exactly
  *  this). `components.filter?.value` is the shape the skill asks for; this makes it mandatory. */
 /** The Chart widget plots `data` as an array of `{x, y}` points (plus optional `color`/`type`); any other key
- *  names render a blank plot with no error. Observed live on the Nordlicht benchmark (2026-09-07): Terra
+ *  names render a blank plot with no error. Observed live on an order-desk same-prompt run (2026-09-07): Terra
  *  bound `queries.orders_by_day.data` straight from a list_rows query and Luna medium mapped rows to
  *  `{date, orders}`; both "orders per day" charts drew an empty axis. */
 /** Collapse balanced groups to inspect only the outer expression. Strings are opaque; regexes,

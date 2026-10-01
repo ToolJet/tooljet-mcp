@@ -10,7 +10,7 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
+import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 import { strictEntry } from '../strictEntry.js';
@@ -27,7 +27,7 @@ const layoutEntrySchema = strictEntry(
     desktop: rect.optional(),
     mobile: rect.optional(),
     parent: z.string().optional(),
-    slot_name: z.enum(COMPONENT_SLOT_NAMES).optional(),
+    slot_name: componentSlotSchema.optional(),
   },
   (key) => {
     if (RECT_KEYS.has(key)) {
@@ -56,7 +56,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       'Move / resize existing components (batch) without touching their properties. `left`/`width` are ' +
       'in grid columns (43 desktop), `top`/`height` in grid rows. Provide desktop and/or mobile per ' +
       'component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` ' +
-      '(header/body/footer) for native ModalV2/Form/Container regions. `slot_name` alone keeps the current parent.',
+      '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -72,7 +72,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
         desktop?: { top: number; left: number; width: number; height: number };
         mobile?: { top: number; left: number; width: number; height: number };
         parent?: string;
-        slot_name?: 'body' | 'header' | 'footer';
+        slot_name?: 'body' | 'header' | 'footer' | 'modal';
       }>;
     }) {
       try {
@@ -166,7 +166,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
           ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
           ...introducedForChanged(lintUnusableTextGeometry),
         ];
-        if (errors.length) return fail(new Error(errors.join(' ')));
+        if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
         const warnings = [...new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,

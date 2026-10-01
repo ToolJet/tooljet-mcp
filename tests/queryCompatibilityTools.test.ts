@@ -74,3 +74,37 @@ describe('direct query compatibility diagnostics', () => {
     if (scenario === 'dynamic' || scenario === 'unknown-id') expect(mock.getTableSchema).not.toHaveBeenCalled();
   });
 });
+
+describe('update_query picked by name', () => {
+  it('treats a lone name as the query to update, not a rename', async () => {
+    const mock = { ...fixture(), getQueries: vi.fn().mockResolvedValue([{ id: 'q1', name: 'readShelves', kind: 'tooljetdb' }]) };
+    const result = await updateQueryTool(mock as unknown as ToolJetClient).handler({ version_id: 'v1', name: 'readShelves', options: { operation: 'list_rows', table_id: 't1' } });
+    expect(result.isError).toBeFalsy();
+    expect(mock.getQueries).toHaveBeenCalledExactlyOnceWith('v1');
+    expect(mock.updateQuery.mock.calls[0]![0]).toMatchObject({ queryId: 'q1' });
+    expect(mock.updateQuery.mock.calls[0]![0].name).toBeUndefined();
+  });
+
+  it.each(['missing', 'ambiguous', 'unavailable'])('does not write when name lookup is %s', async scenario => {
+    const getQueries = vi.fn().mockResolvedValue(scenario === 'ambiguous'
+      ? [{ id: 'q1', name: 'readShelves' }, { id: 'q2', name: 'readShelves' }] : []);
+    if (scenario === 'unavailable') getQueries.mockRejectedValue(new Error('lookup unavailable'));
+    const mock = { ...fixture(), getQueries };
+    const result = await updateQueryTool(mock as unknown as ToolJetClient).handler({
+      version_id: 'v1', name: 'readShelves', options: { operation: 'list_rows', table_id: 't1' },
+    });
+    expect(result.isError).toBe(true);
+    expect(mock.updateQuery).not.toHaveBeenCalled();
+  });
+
+  it('keeps query_id plus name as a rename', async () => {
+    const mock = { ...fixture(), getQueries: vi.fn() };
+    const result = await updateQueryTool(mock as unknown as ToolJetClient).handler({
+      version_id: 'v1', query_id: 'q1', name: 'renamedShelves', kind: 'tooljetdb',
+      options: { operation: 'list_rows', table_id: 't1' },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(mock.getQueries).not.toHaveBeenCalled();
+    expect(mock.updateQuery).toHaveBeenCalledWith(expect.objectContaining({ queryId: 'q1', name: 'renamedShelves' }));
+  });
+});

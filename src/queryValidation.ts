@@ -1,11 +1,18 @@
+import { normalizeQueryToggles, queryToggleIssues, staticToggle } from './queryToggles.js';
+import { parse as babelParse } from '@babel/parser';
+import { hubspotQueryIssues } from './hubspotQuery.js';
+import { SPEC_DISCOVERY_NOTE, apiEndpointQueryIssues, singleSpecRef } from './specEndpointKinds.js';
 import {
   COMMON_QUERY_OPTION_FIELDS,
   getDatasourceQuerySchema,
   type DatasourceOperationContract,
   type DatasourceContractVariant,
   type DatasourceFieldContract,
+  type DatasourceQuerySchema,
 } from './datasourceCatalog.js';
 import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafety.js';
+import { primitiveWriteBindingEntries } from './writeBindingShape.js';
+import { conditionalWriteWarning } from './arithmeticWriteContract.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -30,7 +37,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isTruthyStatic(value: unknown): boolean {
-  return value === true || value === 'true' || value === '{{true}}';
+  return value === true || staticToggle(value) === true;
 }
 
 function isDynamicBinding(value: unknown): value is string {
@@ -44,6 +51,26 @@ function valueAtPath(source: Record<string, unknown>, path: string): unknown {
     cursor = cursor[segment];
   }
   return cursor;
+}
+
+// An empty `operations` list is not "this kind has no operations" — see DatasourceOperationSelection.
+// Saying so keeps a caller from concluding the datasource is unsupported and silently substituting
+// another one.
+function describeOperationSelection(schema: DatasourceQuerySchema): string {
+  if (schema.kind === 'hubspot') return 'Use inspect_datasource_schema getEndpointSchema and copy query_options (operation, path, specType and params).';
+  if (singleSpecRef(schema.kind)) return SPEC_DISCOVERY_NOTE;
+  const selection = schema.operationSelection;
+  if (schema.operations.length) {
+    const fields = selection?.fields?.length ? selection.fields.join(' + ') : 'operation';
+    return `Set ${fields}. Valid operations: ${schema.operations.join(', ')}.`;
+  }
+  if (selection?.mode === 'remote-spec') {
+    return (
+      `This kind takes its operation from the remote API spec${selection.specUrl ? ` (${selection.specUrl})` : ''}, ` +
+      `not from a fixed list; set ${selection.field ?? 'the operation field'} to an operation id from that spec.`
+    );
+  }
+  return 'This kind has a single unnamed query form; author it against the default contract.';
 }
 
 function operationFromOptions(
@@ -219,6 +246,40 @@ function interpolatedSqlBindingIssues(sql: string): QueryValidationIssue[] {
   ];
 }
 
+/** Parse JavaScript query code the way ToolJet runs it (an async function body). Returns the syntax
+ *  error message, or undefined when it parses. A stray quote in a chart query (round eight, 2026-09-12)
+ *  failed the query silently and left the chart it fed as empty axes. */
+/** The names ToolJet passes a RunJS query as parameters (frontend queryPanelSlice runJS: fnParams); declaring one of
+ *  them again at the top of the code is a SyntaxError when the query runs (ds-tower d1: `const actions`). */
+const RUNJS_PARAMETERS = ['moment', '_', 'components', 'queries', 'globals', 'page', 'axios', 'variables', 'actions', 'constants'];
+
+export function runjsSyntaxError(code: string): string | undefined {
+  try {
+    new Function(`return (async (${RUNJS_PARAMETERS.join(', ')}) => {\n${code}\n});`);
+    return undefined;
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) return undefined;
+    const clash = error.message.match(/Identifier '([\w$]+)' has already been declared/)?.[1];
+    if (clash && RUNJS_PARAMETERS.includes(clash)) {
+      return `the code declares \`${clash}\`, a name ToolJet already gives every RunJS query (${RUNJS_PARAMETERS.join(', ')}), ` +
+        `so the query fails with "Identifier '${clash}' has already been declared" when it runs. Rename it (${clash}List, say).`;
+    }
+    // Name the place: in a long query "Unexpected token ';'" alone sent the model rereading every line.
+    try {
+      babelParse(`async function f(){\n${code}\n}`, { sourceType: 'script' });
+    } catch (located) {
+      const loc = (located as { loc?: { line: number; column: number } }).loc;
+      const line = loc ? code.split('\n')[loc.line - 2] : undefined;
+      if (loc && line !== undefined) {
+        const from = Math.max(0, loc.column - 60);
+        const excerpt = line.slice(from, loc.column + 20).trim();
+        return `${error.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? '…' : ''}${excerpt}`;
+      }
+    }
+    return error.message;
+  }
+}
+
 /* A transformation is three fields, not one. `transformations` / `transformation` carries the code,
    but ToolJet only runs it when `enableTransformation` is true and `transformationLanguage` names the
    language the code is under. Writing the code alone saves a transformation that never executes, and
@@ -283,9 +344,33 @@ function influxTransformWarnings(kind: string, options: Record<string, unknown>)
   }];
 }
 
+/** Fields naming what a query acts on. */
+const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
+
 export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
+  errors.push(...queryToggleIssues(options));
+  if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
+  errors.push(...apiEndpointQueryIssues(kind, options).map((issue) => ({ code: 'invalid_api_endpoint_query', ...issue })));
+  if (kind === 'hubspot' && options.operation !== 'get' &&
+      (isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange))) {
+    errors.push({ code: 'automatic_hubspot_write', message: 'HubSpot writes must run from an explicit user action, not on page load or dependency changes.' });
+  }
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  const conditionalWrite = conditionalWriteWarning(kind, options);
+  if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
+  if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
+    const syntax = runjsSyntaxError(options.code);
+    if (syntax) {
+      errors.push({
+        code: 'runjs_syntax_error',
+        path: 'code',
+        message:
+          `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; ` +
+          'fix the code before writing it.',
+      });
+    }
+  }
   warnings.push(...transformationWarnings(options));
   warnings.push(...influxTransformWarnings(kind, options));
   if (typeof options.query === "string") {
@@ -317,8 +402,9 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
       code: 'unsafe_automatic_unbounded_read',
       path: isTruthyStatic(options.runOnPageLoad) ? 'runOnPageLoad' : 'runOnDependencyChange',
       message:
-        'An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ' +
-        `${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`,
+        'An unbounded read cannot run automatically on page load or dependency change. ' +
+        (readAssessment.reason ? `${readAssessment.reason} ` : `Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD}. `) +
+        'Use server-side pagination for more, or run it only after an explicit user decision.',
     });
   }
   if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
@@ -339,12 +425,13 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     return { kind, schemaFound: false, errors, warnings };
   }
 
+  const operationHint = describeOperationSelection(schema);
   const operation = operationFromOptions(options, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: 'missing_operation',
       path: schema.contracts.sql ? 'mode' : 'operation',
-      message: `Datasource "${kind}" needs an operation/mode. Valid operations: ${schema.operations.join(', ') || 'default'}.`,
+      message: `Datasource "${kind}" needs an operation/mode. ${operationHint}`,
     });
     return { kind, schemaFound: true, errors, warnings };
   }
@@ -354,7 +441,7 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     errors.push({
       code: 'invalid_operation',
       path: typeof options.operation === 'string' ? 'operation' : 'mode',
-      message: `Unknown operation/mode "${operation}" for datasource "${kind}". Valid operations: ${schema.operations.join(', ')}.`,
+      message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`,
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }
@@ -398,11 +485,29 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
 
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
+  // A single-spec API-endpoint plugin runs on operation, path and params; its catalog lists only the editor's picker
+  // key (stripe_operation), which the plugin never reads, and "correcting" operation to it broke the query (2026-09-27).
+  if (singleSpecRef(kind)) for (const key of ['operation', 'path', 'params', 'selectedOperation']) allowedTopLevel.add(key);
+  // A misnamed field: an unknown key that resembles one of this operation's fields while that field is unset (Supabase
+  // `table` for `get_table_name`; catalog sweep 2026-09-26). The plugin drops the key and runs without the field, so it is
+  // an error. Other unknown keys (an upstream wrapper, a legacy key) stay warnings: the plugin ignores them harmlessly.
+  const own = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
   for (const key of Object.keys(options)) {
     if (allowedTopLevel.has(key)) continue;
     const exactReplacement = KNOWN_IGNORED_KEYS[key];
     const nestedReplacement = suffixSuggestion(key, fields);
     const replacement = exactReplacement ?? nestedReplacement;
+    const meant = key.length >= 4 ? own.filter((f) => f !== key && options[f] === undefined &&
+      (f.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(f.toLowerCase()))) : [];
+    if (!replacement && meant.length === 1) {
+      errors.push({
+        code: 'unknown_option_key',
+        path: key,
+        message: `Option key "${key}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key}" ` +
+          `and the query runs without it.`,
+      });
+      continue;
+    }
     warnings.push({
       code: replacement ? 'ignored_or_misplaced_option_key' : 'unknown_option_key',
       path: key,
@@ -424,6 +529,17 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
           message: `Unknown nested option key "${root}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`,
         });
       }
+    }
+  }
+
+  // What the query acts on (a table, collection, spreadsheet, base, bucket, index, URL): the catalog marks only the
+  // selector required, so {operation: "get_rows"} with no table looked complete (sweep pilot, 2026-09-26). None set is an
+  // error; some set is a warning, since a sheet tab or similar may be optional.
+  if (options.mode !== 'sql') {
+    const targets = Object.keys(fields).filter((path) => !path.includes('.') && TARGET_FIELD.test(path) && !(path in COMMON_QUERY_OPTION_FIELDS));
+    const set = targets.filter((path) => { const v = options[path]; return v !== undefined && v !== null && v !== ''; });
+    if (targets.length && !set.length) {
+      errors.push({ code: 'missing_target', path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(' or ')}.` });
     }
   }
 
@@ -483,6 +599,13 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     // This is an error, not a warning: the query is guaranteed to be broken as authored.
     const columnsPath = operation === 'create_row' ? 'create_row' : 'update_rows.columns';
     const columns = valueAtPath(options, columnsPath);
+    const primitiveEntries = primitiveWriteBindingEntries(columns);
+    if (primitiveEntries.length) errors.push({
+      code: 'malformed_write_columns', path: columnsPath,
+      message: `ToolJet DB ${operation} "${columnsPath}" binds a flat object with primitive entry values at ${primitiveEntries.map(k=>JSON.stringify(k)).join(', ')}. ` +
+        'ToolJet reads {column, value} records, so these fields are omitted or the write fails. ' +
+        'Use a literal column map with bound values, e.g. {"0":{"column":"status","value":"{{components.status.value}}"}}, or make the binding return that same record-map shape. Do not change the intended field values.',
+    });
     if (isObject(columns) && Object.keys(columns).length > 0) {
       const flat = Object.entries(columns).filter(
         ([, clause]) => !isObject(clause) || typeof clause.column !== 'string' || clause.column === ''
@@ -686,7 +809,21 @@ function normalizeWriteColumnMap(columns: unknown): Record<string, unknown> | nu
 /** Normalize a tooljetdb create_row / update_rows column map in place-ish (returns a new options
  * object when something changed, else the original). Call this on every authoring path so a
  * persisted query is never the silently-broken flat shape. */
-export function normalizeQueryOptions(kind: string, options: Record<string, unknown>): Record<string, unknown> {
+export function normalizeQueryOptions(kind: string, rawOptions: Record<string, unknown>): Record<string, unknown> {
+  const options = normalizeQueryToggles(rawOptions);
+  if (kind === 'mongodb' && isObject(options)) {
+    // The plugin's parseEJSON calls JSON5.parse, which receives "[object Object]" for objects.
+    // Preserve string bindings and EJSON markers; only serialize already-structured literals.
+    let result = options;
+    for (const field of ['filter', 'options', 'pipeline', 'document', 'documents', 'update', 'replacement', 'operations']) {
+      const value = options[field];
+      if (value !== null && typeof value === 'object') {
+        if (result === options) result = { ...options };
+        result[field] = JSON.stringify(value);
+      }
+    }
+    return result;
+  }
   if (kind !== 'tooljetdb' || !isObject(options)) return options;
   const operation = typeof options.operation === 'string' ? options.operation : '';
 

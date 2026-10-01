@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { pageIconSchema } from '../pageIcons.js';
 
 const pageSchema = z.object({
   name: z.string(),
-  icon: z.string().min(1),
+  icon: pageIconSchema,
   hidden: z.boolean().optional(),
 });
 

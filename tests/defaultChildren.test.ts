@@ -20,15 +20,15 @@ describe('materializeRequiredDefaultChildren', () => {
       parentRef: kanban.clientRef,
       properties: { text: { value: '{{cardData.title}}' } },
       styles: { fontWeight: { value: 'bold' }, textSize: { value: 16 } },
-      layout: { top: 20, left: 4, height: 30 },
+      // Card children live on the card's own 43-column grid; the catalog's 14-column defaults cut names.
+      layout: { top: 12, left: 2, width: 39, height: 30 },
     });
-    expect(title.layout?.width).toBeCloseTo((6 * 100) / 43);
     expect(description).toMatchObject({
       name: 'ticketBoardCardDescription',
       type: 'Text',
       parentRef: kanban.clientRef,
       properties: { text: { value: '{{cardData.description}}' } },
-      layout: { top: 50, left: 4, height: 30 },
+      layout: { top: 44, left: 2, width: 39, height: 30 },
     });
     expect(result.warnings.join(' ')).toMatch(/materialized 2 catalog default children/i);
   });

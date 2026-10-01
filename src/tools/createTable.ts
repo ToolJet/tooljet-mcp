@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { dbColumnTypeSchema } from '../dbColumnTypeSchema.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { validateTableBatch } from '../tableValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const columnSchema = z.object({
   name: z.string(),
-  type: z.string(),
+  type: dbColumnTypeSchema,
   primaryKey: z.boolean().optional(),
   notNull: z.boolean().optional(),
   unique: z.boolean().optional(),
@@ -64,7 +65,7 @@ export function createTableTool(client: ToolJetClient): ToolDef {
     }) {
       try {
         const errors = validateTableBatch([{ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys }]);
-        if (errors.length) return fail(new Error(errors.join(' ')));
+        if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
         return ok(
           await client.createTable({ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys })
         );

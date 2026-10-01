@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
-import { createAppTool } from '../src/tools/createApp.js';
+import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
+import { z } from 'zod';
 import { listDatasourcesTool } from '../src/tools/listDatasources.js';
 import { getComponentCatalogTool } from '../src/tools/getComponentCatalog.js';
 import { getAppTool } from '../src/tools/getApp.js';
@@ -19,7 +20,7 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
   return {
     createApp: vi.fn(),
     getApp: vi.fn(),
-    getAppSummary: vi.fn(),
+    getAppSummary: vi.fn().mockResolvedValue({ version_id: 'v1', pages: [] }),
     getDevelopmentEnvironmentId: vi.fn(),
     listDatasources: vi.fn(),
     createQuery: vi.fn(),
@@ -137,7 +138,7 @@ describe('create_app tool', () => {
     client.listAppThemes.mockResolvedValue([{ id: 'theme-std', name: 'ToolJet Modern', definition: {} }]);
     client.createAppTheme.mockResolvedValue({ id: 'theme-pizza', name: 'Bernal Fire Pizza theme', definition: {} });
     client.updateAppSettings.mockResolvedValue(undefined);
-    const definition = { brand: { colors: { primary: { light: '#B91C1C', dark: '#F87171' } } } };
+    const definition = { ...loadStandardTheme().definition, brand: { colors: { primary: { light: '#B91C1C', dark: '#F87171' } } } };
 
     const result = await createAppTool(client as unknown as ToolJetClient).handler({
       name: 'Pizza Ops',
@@ -177,6 +178,26 @@ describe('create_app tool', () => {
     expect(body.theme.warning).toContain('licence required');
   });
 
+  it('rejects font-only and incomplete derived palettes before creating any resources', async () => {
+    for (const definition of [{ text: { font: 'Inter' } }, { brand: { colors: { primary: { light: '#AA7788' } } } }]) {
+      const client = makeClient();
+      const tool = createAppTool(client as unknown as ToolJetClient);
+      const args = { name: 'Appointments', theme: { name: 'Warm Ivory Rose', definition } };
+      expect(z.object(tool.inputSchema).safeParse(args).success).toBe(false);
+      expect((await tool.handler(args)).isError).toBe(true);
+      expect(client.createApp).not.toHaveBeenCalled();
+      expect(client.createAppTheme).not.toHaveBeenCalled();
+    }
+  });
+
+  it('accepts a complete derived theme and existing-theme choices through the MCP schema', () => {
+    const tool = createAppTool(makeClient() as unknown as ToolJetClient);
+    const { name, definition } = loadStandardTheme();
+    for (const theme of ['workspace_default', 'Customer palette', { name, definition }]) {
+      expect(z.object(tool.inputSchema).safeParse({ name: 'Appointments', theme }).success).toBe(true);
+    }
+  });
+
   it('returns isError with an Error: message when the client throws', async () => {
     const client = makeClient();
     client.createApp.mockRejectedValue(new Error('boom'));
@@ -191,6 +212,16 @@ describe('create_app tool', () => {
 });
 
 describe('list_datasources tool', () => {
+  it.each(['', '   ', '\t\n'])('rejects an empty version without a deployment request: %j', async (version_id) => {
+    const client = makeClient();
+    const tool = listDatasourcesTool(client as unknown as ToolJetClient);
+    expect(tool.inputSchema.version_id.safeParse(version_id).success).toBe(false);
+    const result = await tool.handler({ version_id });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('create_app first');
+    expect(client.listDatasources).not.toHaveBeenCalled();
+  });
+
   it('calls client.listDatasources with version_id and returns the result', async () => {
     const client = makeClient();
     const datasources = [{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }];
@@ -201,7 +232,26 @@ describe('list_datasources tool', () => {
     const result = await tool.handler({ version_id: 'v1' });
 
     expect(client.listDatasources).toHaveBeenCalledWith('v1');
-    expect(textOf(result)).toEqual(datasources);
+    expect((textOf(result) as { datasources: unknown }).datasources).toEqual(datasources);
+  });
+
+  it('lists what ToolJet can connect, so an absent source can be told from an unsupported one', async () => {
+    // Without this the model can only see what IS connected: Pipedrive and Google Sheets both look
+    // like "not in the list", though one needs connecting and the other has no ToolJet connector at
+    // all and has to go through a REST API datasource instead.
+    const client = makeClient();
+    client.listDatasources.mockResolvedValue([{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }]);
+
+    const tool = listDatasourcesTool(client as unknown as ToolJetClient);
+    const result = textOf(await tool.handler({ version_id: 'v1' })) as {
+      datasources: unknown[];
+      connectable: string[];
+    };
+
+    expect(result.datasources).toHaveLength(1);
+    expect(result.connectable).toEqual(expect.arrayContaining(['Google Sheets 2.0', 'HubSpot', 'REST API']));
+    expect(result.connectable).not.toContain('Pipedrive');
+    expect(tool.description).toMatch(/connectable/i);
   });
 
   it('returns isError on client failure', async () => {
@@ -217,6 +267,20 @@ describe('list_datasources tool', () => {
 });
 
 describe('run_query tool', () => {
+  // Codex audit: a query name passed to run_query was not resolved, and mistyped UUIDs recurred across a
+  // build (property manager, aesthetic clinic). run_query takes the name, like run_queries and the edit tools.
+  it('runs a query given by its name', async () => {
+    const client = makeClient();
+    const saved = { id: '11111111-2222-3333-4444-555555555555', name: 'products', kind: 'tooljetdb', options: { operation: 'list_rows', list_rows: { limit: 25 } } };
+    client.getQuery.mockRejectedValue(new Error('ToolJet getQuery failed: query products not found in version v1'));
+    (client as any).getQueries = vi.fn().mockResolvedValue([saved]);
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ id: 1 }] });
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({ query_id: 'products', version_id: 'v1' });
+    expect(textOf(result)).toMatchObject({ status: 'ok' });
+    expect(client.runQuery.mock.calls[0]![0]).toMatchObject({ queryId: saved.id });
+    expect(JSON.stringify(textOf(result))).not.toMatch(/matched by name/);
+  });
+
   it('warns when a successful browser-free run cannot resolve component-bound options', async () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
@@ -254,7 +318,10 @@ describe('run_query tool', () => {
       version_id: 'v1',
     });
 
-    expect(textOf(result)).toEqual({ status: 'ok', data: [{ '?column?': 1 }] });
+    expect(textOf(result)).toEqual({
+      status: 'ok', data: [{ '?column?': 1 }],
+      execution: { query_id: 'q1', datasource_kind: 'postgresql', read_only: true },
+    });
   });
 
   it('returns a user-operated datasource repair link after a runtime connection failure', async () => {
@@ -527,6 +594,7 @@ describe('run_query tool', () => {
     expect(textOf(approved)).toMatchObject({
       status: 'ok',
       data: { tag_name: 'v19.2.8' },
+      execution: { query_id: 'latest-release', datasource_kind: 'restapi', read_only: true },
       metadata: {
         request: { params: { per_page: '3' } },
         response: { statusCode: 200 },
@@ -587,7 +655,8 @@ describe('run_queries tool', () => {
     expect(client.getDevelopmentEnvironmentId).toHaveBeenCalledOnce();
     expect(client.runQuery).toHaveBeenCalledTimes(2);
     expect(textOf(result)).toEqual({ queries: [
-      { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }] },
+      { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }],
+        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', read_only: true } },
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
@@ -1173,7 +1242,7 @@ describe('get_app_summary tool', () => {
             type: 'Table',
             layouts: { desktop: { top: 10, left: 2, width: 40, height: 300 } },
             properties: {
-              data: { value: '{{queries.listOrders.data}}' },
+              data: { value: '{{queries.listOrders.data.map(r => ({name: r.name}))}}' },
               columns: { value: [{ key: 'id' }, { key: 'status' }] },
             },
             styles: { borderRadius: { value: 8 } },
@@ -1251,7 +1320,7 @@ describe('get_app_summary tool', () => {
             {
               id: 'c1',
               name: 'ordersTable',
-              properties: { data: { value: '{{queries.listOrders.data}}' } },
+              properties: { data: { value: '{{queries.listOrders.data.map(r => ({name: r.name}))}}' } },
               styles: { borderRadius: { value: 8 } },
             },
           ],
@@ -1408,7 +1477,7 @@ describe('add_component tool', () => {
         autogenerateColumns: { value: false },
         columns: { value: [{ id: 'name', name: 'Name', key: 'name', columnType: 'string' }] },
       },
-      layout: { top: 0, left: 0, width: 20, height: 300 },
+      layout: { top: 0, left: 0, width: 20, height: 600 },
     });
 
     expect(client.createComponent).toHaveBeenCalledWith(expect.objectContaining({
@@ -1450,7 +1519,7 @@ describe('add_component tool', () => {
     const tool = addComponentTool(client as unknown as ToolJetClient);
     // lint-clean Table (rawJson + autogenerateColumns) so no warnings are attached
     const properties = {
-      data: { value: '{{queries.getUsers.data}}' },
+      data: { value: '{{queries.getUsers.data.map(r => ({name: r.name}))}}' },
       dataSourceSelector: { value: 'rawJson' },
       autogenerateColumns: { value: true },
     };
@@ -1495,7 +1564,7 @@ describe('add_component tool', () => {
       page_id: 'p1',
       name: 't',
       type: 'Table',
-      properties: { data: { value: '{{queries.q.data}}' } },
+      properties: { data: { value: '{{queries.q.data.map(r => ({name: r.name}))}}' } },
       layout: { top: 0, left: 0, width: 10, height: 300 },
     });
     expect(client.createComponent).toHaveBeenCalled(); // not blocked
@@ -1539,7 +1608,7 @@ describe('add_component tool', () => {
         { component_id: 'title-id', name: 'ticketBoardCardTitle' },
         { component_id: 'description-id', name: 'ticketBoardCardDescription' },
       ],
-      warnings: [expect.stringMatching(/materialized 2 catalog default children/i)],
+      warnings: expect.arrayContaining([expect.stringMatching(/materialized 2 catalog default children/i)]),
     });
   });
 
@@ -1598,7 +1667,7 @@ describe('add_components tool', () => {
           columns: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }],
         },
         styles: { borderRadius: 10 },
-        layout: { top: 0, left: 0, width: 40, height: 400 },
+        layout: { top: 0, left: 0, width: 40, height: 600 },
       }],
     });
 
@@ -1643,7 +1712,7 @@ describe('add_components tool', () => {
           autogenerateColumns: { value: false },
           columns: { value: [{ id: 'id', name: 'ID', key: 'id', columnType: 'string' }] },
         },
-        layout: { top: 0, left: 0, width: 40, height: 400 },
+        layout: { top: 0, left: 0, width: 40, height: 600 },
       }],
     });
 
@@ -1669,7 +1738,7 @@ describe('add_components tool', () => {
       components: [
         {
           client_ref: 'modal', name: 'createCase', type: 'ModalV2',
-          properties: { showHeader: { value: true }, showFooter: { value: false }, modalHeight: { value: 300 } },
+          properties: { showHeader: { value: true }, showFooter: { value: false }, modalHeight: { value: 300 }, useDefaultButton: { value: '{{false}}' } },
           layout: { top: 0, left: 0, width: 10, height: 40 },
         },
         {

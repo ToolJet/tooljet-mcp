@@ -60,7 +60,10 @@ export function validateTableBatch(tables: CreateTableParams[]): string[] {
       if (!TOOLJET_DB_DATA_TYPES.has(dataType)) {
         errors.push(
           `Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. ` +
-            'Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.'
+            'Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.' +
+            (/^(numeric|money|dec)/i.test(column.type.trim())
+              ? ' numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently.'
+              : '')
         );
       }
     }
@@ -94,6 +97,25 @@ export function validateTableBatch(tables: CreateTableParams[]): string[] {
           `Table "${table.tableName}" foreign key references missing columns on ` +
             `"${foreignKey.referencedTable}": ${missing.join(', ')}.`
         );
+      }
+      if (foreignKey.columns.length !== foreignKey.referencedColumns.length) continue;
+      for (let index = 0; index < foreignKey.columns.length; index++) {
+        const local = table.columns.find(column => normalized(column.name) === normalized(foreignKey.columns[index]!));
+        const remoteName = foreignKey.referencedColumns[index]!;
+        const remote = referenced.columns.find(column => normalized(column.name) === normalized(remoteName));
+        const remoteType = remote ? normalizeType(remote.type) :
+          normalized(remoteName) === 'id' && !referenced.columns.some(column => column.primaryKey) ? 'serial' : undefined;
+        // Reproduced PostgreSQL 42804: number means double precision, not an
+        // integer ID. Keep this check narrow; do not reject supported cross-type
+        // integer keys or guess the schema of a table outside this batch.
+        if (local && normalizeType(local.type) === 'double precision' &&
+            remoteType && ['serial', 'integer', 'bigint'].includes(remoteType)) {
+          errors.push(
+            `Table "${table.tableName}" foreign-key column "${local.name}" uses "${local.type}" (double precision), ` +
+            `but "${referenced.tableName}.${remoteName}" is ${remoteType}. Use an integer-compatible foreign-key type ` +
+            `(integer for serial/integer IDs, bigint for bigint IDs); number is not an integer ID. No types were changed.`
+          );
+        }
       }
     }
   }

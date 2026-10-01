@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
+import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
+import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 
 const querySchema = z.object({
+  client_ref: z.string().optional(),
   datasource_id: z.string(),
   name: z.string(),
   options: z.record(z.string(), z.any()),
@@ -25,7 +27,9 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
       'when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema ' +
       'for the operations you use before constructing those options. The batch resolves datasource kinds once, ' +
       'contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk ' +
-      'transaction: a rare partial failure names every persisted query; do not retry the whole batch.',
+      'transaction: a rare partial failure names every persisted query; do not retry the whole batch. ' +
+      'Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch ' +
+      'are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence.',
     inputSchema: {
       version_id: z.string(),
       queries: z
@@ -34,33 +38,35 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: {
       version_id: string;
-      queries: Array<{ datasource_id: string; name: string; options: Record<string, unknown>; kind?: string }>;
+      queries: Array<{ client_ref?: string; datasource_id: string; name: string; options: Record<string, unknown>; kind?: string }>;
     }) {
       try {
         const datasources = await client.listDatasources(args.version_id);
         const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
         const warnings: string[] = [];
+        const queries = structuredClone(args.queries);
+        if (queries.some(query => query.client_ref && query.client_ref !== query.name)) {
+          // Never assume the namespace is empty if the read fails; preserve existing names.
+          try {
+            const existing = await client.getQueries(args.version_id);
+            warnings.push(...normalizePlanBindingAliases({ queries }, { pages: [], queries: existing },
+              new Map(datasources.map(ds => [ds.id, ds.kind]))));
+          } catch {
+            warnings.push('Batch query aliases were not normalized because existing query names could not be read. Use exact runtime names.');
+          }
+        }
         const validations: Array<{ name: string; kind: string; operation?: string; schema_found: boolean }> = [];
-        const resolved = args.queries.map((query) => {
+        const resolved = queries.map((query) => {
           const datasource = datasourceById.get(query.datasource_id);
           if (!datasource) {
             throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          // Repair a flat {column: value} write map before validating, so an unambiguous authoring
-          // slip is fixed here instead of costing a build turn (the validator still errors on
-          // anything this cannot confidently normalize).
-          const options = normalizeQueryOptions(datasource.kind, query.options);
-          if (options !== query.options) {
-            warnings.push(
-              `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
-                '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
-            );
-          }
-          const validation = validateQueryOptions(datasource.kind, options);
-          if (validation.errors.length) {
-            throw new Error(issueMessages(validation.errors, `Query "${query.name}"`).join(' '));
-          }
-          warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
+          // The shared write preparation (toggles, the kind's normalization, its contract), for every query before any write.
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          if (prepared.errors.length) throw new Error(prepared.errors.join(' '));
+          warnings.push(...prepared.warnings);
+          const { options } = prepared;
+          const validation = prepared.validation!;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(
               `Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`

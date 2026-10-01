@@ -1,12 +1,17 @@
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
+import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
+import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
+import { invalidSeedTimestamps } from './seedTimestampValidation.js';
 
 export interface CreateAppResult {
   app_id: string;
@@ -71,7 +76,50 @@ export interface WorkspaceUser {
   role?: WorkspaceUserRole;
   status?: WorkspaceUserStatus;
   groups?: Array<{ id: string; name: string }>;
+  user_metadata?: Record<string, unknown> | null;
   [key: string]: unknown;
+}
+
+export const WORKSPACE_PERMISSION_KEYS = [
+  'appCreate', 'appDelete', 'moduleCreate', 'moduleDelete', 'workflowCreate', 'workflowDelete',
+  'folderCRUD', 'orgConstantCRUD', 'tjdbCRUD', 'dataSourceCreate', 'dataSourceDelete', 'appPromote', 'appRelease',
+] as const;
+export const WORKSPACE_ACCESS_KEYS = [
+  'canEdit', 'canView', 'hideFromDashboard', 'canAccessDevelopment', 'canAccessStaging',
+  'canAccessProduction', 'canAccessReleased', 'canConfigure', 'canUse',
+] as const;
+export type WorkspaceResourceType = 'app' | 'module' | 'workflow' | 'data_source';
+export function workspaceAccessKeys(type: WorkspaceResourceType): readonly string[] {
+  if (type === 'data_source') return ['canConfigure', 'canUse'];
+  if (type === 'module') return ['canEdit', 'canView', 'hideFromDashboard'];
+  if (type === 'workflow') return ['canEdit', 'canView'];
+  return WORKSPACE_ACCESS_KEYS.filter(key => !['canConfigure', 'canUse'].includes(key));
+}
+export interface WorkspaceAccessRule {
+  id?: string;
+  read_only?: boolean;
+  read_only_reason?: string;
+  name: string;
+  type: WorkspaceResourceType;
+  is_all: boolean;
+  actions: Record<string, boolean>;
+  resources: Array<{ id: string; name: string; membership_id: string }>;
+}
+
+export interface WorkspaceGroup {
+  id: string;
+  name: string;
+  type: 'default' | 'custom';
+  disabled?: boolean;
+  permissions?: Record<string, boolean>;
+}
+
+export interface WorkspaceGroupMember {
+  group_user_id: string;
+  user_id: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface WorkspaceUsersPage {
@@ -130,10 +178,11 @@ export class PartialWriteError<T> extends Error {
   readonly completed: T[];
   readonly failures: string[];
 
-  constructor(operation: string, completed: T[], failures: string[]) {
+  constructor(operation: string, completed: T[], failures: string[], cause?: unknown) {
     super(
       `ToolJet ${operation} partially failed. Persisted before failure: ${JSON.stringify(completed)}. ` +
-        `Failed: ${failures.join(' | ')}. Persisted resources were not deleted automatically.`
+        `Failed: ${failures.join(' | ')}. Persisted resources were not deleted automatically.`,
+      { cause }
     );
     this.name = 'PartialWriteError';
     this.completed = completed;
@@ -297,7 +346,7 @@ export interface CreatePageParams {
   appId: string;
   versionId: string;
   name: string;
-  /** Tabler icon name, e.g. "IconLayoutDashboard". Defaults to ToolJet's "IconFile" if omitted. */
+  /** Exact Tabler export, e.g. "IconLayoutDashboard". ToolJet renders a generic fallback if omitted. */
   icon?: string;
   /** Hide the page from the auto-generated sidebar nav (still reachable via switch-page). For detail/sub-pages. */
   hidden?: boolean;
@@ -443,6 +492,10 @@ export interface AppSummary {
   app_id: string;
   name?: string;
   version_id?: string;
+  /** ToolJet's should_freeze_editor: a promoted (or git-locked) version, where writes are refused. */
+  editor_frozen?: boolean;
+  /** The editing version's environment (development, staging, production). */
+  environment?: string;
   pages: Array<{
     id: string;
     name?: string;
@@ -467,6 +520,10 @@ export interface QuerySummary {
   options?: unknown;
 }
 
+/* There is deliberately no setAppPublic here. Publishing an app makes it world-readable, and nothing
+   this server does is worth that: the render audit used to flip it to reach a private page and flip it
+   back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
+   An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
   workflows: WorkflowClient;
   listWorkspaces(): Promise<Workspace[]>;
@@ -477,8 +534,21 @@ export interface ToolJetClient {
     searchText?: string;
     status?: WorkspaceUserStatus;
   }): Promise<WorkspaceUsersPage>;
+  listWorkspaceGroups(): Promise<WorkspaceGroup[]>;
+  getWorkspaceGroup(groupId: string): Promise<WorkspaceGroup>;
+  listWorkspaceGroupMembers(groupId: string): Promise<WorkspaceGroupMember[]>;
+  createWorkspaceGroup(name: string): Promise<WorkspaceGroup>;
+  renameWorkspaceGroup(groupId: string, name: string): Promise<void>;
+  deleteWorkspaceGroup(groupId: string): Promise<void>;
+  removeWorkspaceGroupMember(groupUserId: string): Promise<void>;
+  updateWorkspaceGroupPermissions(groupId: string, permissions: Record<string, boolean>, allowRoleChange?: boolean): Promise<void>;
+  duplicateWorkspaceGroup(groupId: string, options: Record<string, boolean>): Promise<WorkspaceGroup>;
+  listWorkspaceGroupAccess(groupId: string): Promise<WorkspaceAccessRule[]>;
+  listWorkspaceGroupResources(type: WorkspaceResourceType): Promise<Array<{ id: string; name: string }>>;
+  writeWorkspaceGroupAccess(method: 'POST' | 'PUT' | 'DELETE', groupId: string, type: WorkspaceResourceType,
+    ruleId?: string, body?: Record<string, unknown>): Promise<void>;
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
-  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<void>;
+  updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
@@ -533,13 +603,25 @@ export interface ToolJetClient {
   deleteQuery(params: { queryId: string; versionId: string }): Promise<{ deleted: boolean }>;
   getQueries(versionId: string): Promise<QuerySummary[]>;
   getQuery(queryId: string, versionId: string): Promise<QuerySummary>;
-  runQuery(params: { queryId: string; versionId: string; environmentId?: string }): Promise<RunQueryResult>;
+  runQuery(params: { queryId: string; versionId: string; environmentId?: string; resolvedOptions?: Record<string, unknown> }): Promise<RunQueryResult>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  getPluginSpec(pluginKind: string, specName: string): Promise<string>;
+  /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
+   *  Undefined when it cannot be established; such a client's specs are not cached. */
+  specCacheScope?(): Promise<string | undefined>;
   testDatasourceConnection(params: TestDatasourceConnectionParams): Promise<ConnectionTestResult>;
   listEvents(params: { appId: string; versionId: string; sourceId?: string }): Promise<EventSummary[]>;
   updateEvents(params: UpdateEventsParams): Promise<{ updated: number }>;
   deleteEvent(params: { appId: string; versionId: string; eventId: string }): Promise<{ deleted: boolean }>;
+  /** Whether a ToolJet DB table has at least one row; undefined when it cannot be read. */
+  hasRows?(tableId: string): Promise<boolean | undefined>;
+  /** Whether the instance has a Google Maps API key in its public config (the Map component needs it); undefined when unknown. */
+  hasGoogleMapsKey?(): Promise<boolean | undefined>;
+  /** The builder's session token, for the render audit's browser. */
+  viewerSession?(): Promise<string | undefined>;
+  /** The name of the version being edited (the preview's version= parameter). */
+  editingVersionName?(appId: string): Promise<string | undefined>;
 }
 
 /** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
@@ -658,7 +740,9 @@ function pageHiddenNeedsUpdate(page: any, expected: boolean): boolean {
 
 async function assertOk(res: Response, method: string): Promise<void> {
   if (!res.ok) {
-    throw new ToolJetHttpError(res.status, method, await res.text());
+    const detail = await res.text();
+    if (method === 'createTable' && res.status === 451) throw new TableQuotaError();
+    throw new ToolJetHttpError(res.status, method, detail);
   }
 }
 
@@ -737,7 +821,163 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     if (params.status) query.set('status', params.status);
     const res = await auth.authedFetch(`/api/organization-users?${query}`);
     await assertOk(res, 'listWorkspaceUsers');
-    return (await res.json()) as WorkspaceUsersPage;
+    const data = await res.json();
+    if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
+      throw new Error('Unexpected workspace users response.');
+    }
+    // The API also returns invitation/account-setup tokens. Never send those credentials to a model.
+    const fields = ['id', 'user_id', 'email', 'first_name', 'last_name', 'name', 'status', 'groups', 'user_metadata'];
+    return { meta: data.meta, users: data.users.map((user: WorkspaceUser) => {
+      if (!user || typeof user.id !== 'string') throw new Error('Unexpected workspace user response.');
+      const result = Object.fromEntries(fields.filter(key => Object.hasOwn(user, key)).map(key => [key, user[key]])) as WorkspaceUser;
+      // The API's legacy role column stays "all-users" even after a role change.
+      // Default-group membership is the authoritative role, as in the ToolJet UI.
+      const roles = user.role_group;
+      if (Array.isArray(roles) && roles.length === 1 && ['admin', 'builder', 'end-user'].includes(roles[0]?.name)) {
+        result.role = roles[0].name;
+      }
+      return result;
+    }) };
+  }
+
+  const groupPath = '/api/v2/group-permissions';
+
+  function workspaceGroup(value: any): WorkspaceGroup {
+    if (!value || typeof value.id !== 'string' || typeof value.name !== 'string' ||
+        !['default', 'custom'].includes(value.type)) {
+      throw new Error('Unexpected workspace group response.');
+    }
+    const permissions = booleanFields(value, WORKSPACE_PERMISSION_KEYS);
+    return { id: value.id, name: value.name, type: value.type,
+      ...(typeof value.disabled === 'boolean' ? { disabled: value.disabled } : {}),
+      ...(Object.keys(permissions).length ? { permissions } : {}) };
+
+  }
+
+  function booleanFields(value: any, keys: readonly string[]): Record<string, boolean> {
+    return Object.fromEntries(keys.filter(key => typeof value?.[key] === 'boolean').map(key => [key, value[key]]));
+  }
+
+  async function updateWorkspaceGroupPermissions(groupId: string, permissions: Record<string, boolean>, allowRoleChange = false) {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}`, { method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...permissions, allowRoleChange }) });
+    await assertOk(res, 'updateWorkspaceGroupPermissions');
+  }
+
+  async function duplicateWorkspaceGroup(groupId: string, options: Record<string, boolean>): Promise<WorkspaceGroup> {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/duplicate`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options) });
+    await assertOk(res, 'duplicateWorkspaceGroup');
+    const created = await res.json();
+    if (typeof created?.id !== 'string') throw new Error('Unexpected duplicated group response.');
+    return getWorkspaceGroup(created.id);
+  }
+
+  async function listWorkspaceGroupResources(type: WorkspaceResourceType): Promise<Array<{ id: string; name: string }>> {
+    const res = await auth.authedFetch(`${groupPath}/granular-permissions/addable-${type === 'data_source' ? 'data-sources' : 'apps'}`);
+    await assertOk(res, 'listWorkspaceGroupResources');
+    const items = await res.json();
+    if (!Array.isArray(items)) throw new Error('Unexpected group resources response.');
+    const appType = { app: 'front-end', module: 'module', workflow: 'workflow' };
+    return items.filter(item => type === 'data_source' || item.type === appType[type])
+      .map(item => {
+        if (typeof item.id !== 'string' || typeof item.name !== 'string') throw new Error('Unexpected group resource.');
+        return { id: item.id, name: item.name };
+      });
+  }
+
+  async function listWorkspaceGroupAccess(groupId: string): Promise<WorkspaceAccessRule[]> {
+    const res = await auth.authedFetch(`${groupPath}/${groupId}/granular-permissions`);
+    await assertOk(res, 'listWorkspaceGroupAccess');
+    const items = await res.json();
+    if (!Array.isArray(items)) throw new Error('Unexpected granular permissions response.');
+    return items.map(item => {
+      if (!item || (item.id != null && typeof item.id !== 'string') || typeof item.name !== 'string' || typeof item.isAll !== 'boolean' ||
+          !['app', 'module', 'workflow', 'data_source'].includes(item.type)) throw new Error('Unexpected granular permission.');
+      // Restricted plans return synthetic, all-resource rules without persisted IDs.
+      // Expose their effective permissions, but never invent an ID usable for a mutation.
+      const synthetic = item.id == null;
+      if (synthetic && !item.isAll) throw new Error('Unexpected granular permission without a persisted ID.');
+      const ds = item.type === 'data_source';
+      const detail = ds ? item.dataSourcesGroupPermission : item.appsGroupPermissions;
+      return { ...(synthetic ? { read_only: true,
+          read_only_reason: 'These effective permissions are supplied by the current license/plan and cannot be edited.' } : { id: item.id }),
+        name: item.name, type: item.type, is_all: item.isAll,
+        actions: booleanFields(detail, workspaceAccessKeys(item.type)),
+        resources: (detail?.[ds ? 'groupDataSources' : 'groupApps'] ?? []).map((link: any) => {
+          const resource = link[ds ? 'dataSource' : 'app'];
+          if (!resource || typeof resource.id !== 'string' || typeof resource.name !== 'string' || typeof link.id !== 'string') {
+            throw new Error('Unexpected granular permission resource.');
+          }
+          return { id: resource.id, name: resource.name, membership_id: link.id };
+        }) };
+    });
+  }
+
+  async function writeWorkspaceGroupAccess(method: 'POST' | 'PUT' | 'DELETE', groupId: string,
+    type: WorkspaceResourceType, ruleId?: string, body?: Record<string, unknown>): Promise<void> {
+    // The UI routes workflow/module payloads through the data-source endpoint as well.
+    const route = type === 'app' ? 'app' : 'data-source';
+    const path = method === 'POST' ? `${groupId}/granular-permissions/${route}` : `granular-permissions/${route}/${ruleId}`;
+    const res = await auth.authedFetch(`${groupPath}/${path}`, { method,
+      ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
+    await assertOk(res, 'writeWorkspaceGroupAccess');
+  }
+
+  async function listWorkspaceGroups(): Promise<WorkspaceGroup[]> {
+    const res = await auth.authedFetch(groupPath);
+    await assertOk(res, 'listWorkspaceGroups');
+    const data = await res.json();
+    if (!Array.isArray(data.groupPermissions)) throw new Error('Unexpected workspace groups response.');
+    return data.groupPermissions.map(workspaceGroup);
+  }
+
+  async function getWorkspaceGroup(groupId: string): Promise<WorkspaceGroup> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`);
+    await assertOk(res, 'getWorkspaceGroup');
+    return workspaceGroup((await res.json()).group);
+  }
+
+  async function listWorkspaceGroupMembers(groupId: string): Promise<WorkspaceGroupMember[]> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}/users`);
+    await assertOk(res, 'listWorkspaceGroupMembers');
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('Unexpected workspace group members response.');
+    return data.map((entry: any) => {
+      if (typeof entry?.id !== 'string' || typeof entry?.userId !== 'string') {
+        throw new Error('Unexpected workspace group member response.');
+      }
+      return { group_user_id: entry.id, user_id: entry.userId,
+        email: entry.user?.email, first_name: entry.user?.firstName, last_name: entry.user?.lastName };
+    });
+  }
+
+  async function createWorkspaceGroup(name: string): Promise<WorkspaceGroup> {
+    const res = await auth.authedFetch(groupPath, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    });
+    await assertOk(res, 'createWorkspaceGroup');
+    // TypeORM's insert response omits the database-default group type. Read the persisted entity.
+    const created = await res.json();
+    if (typeof created?.id !== 'string') throw new Error('Create group response did not include an id.');
+    return getWorkspaceGroup(created.id);
+  }
+
+  async function renameWorkspaceGroup(groupId: string, name: string): Promise<void> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    });
+    await assertOk(res, 'renameWorkspaceGroup');
+  }
+
+  async function deleteWorkspaceGroup(groupId: string): Promise<void> {
+    const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, { method: 'DELETE' });
+    await assertOk(res, 'deleteWorkspaceGroup');
+  }
+
+  async function removeWorkspaceGroupMember(groupUserId: string): Promise<void> {
+    const res = await auth.authedFetch(`${groupPath}/users/${encodeURIComponent(groupUserId)}`, { method: 'DELETE' });
+    await assertOk(res, 'removeWorkspaceGroupMember');
   }
 
   async function inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void> {
@@ -758,19 +998,77 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateWorkspaceUser(
     organizationUserId: string,
     params: UpdateWorkspaceUserParams
-  ): Promise<void> {
+  ): Promise<{ user: WorkspaceUser; updated: boolean }> {
+    // Workspace PATs cannot read the caller's instance/Super Admin status. The existing
+    // user API silently ignores unauthorized names but still replaces group memberships.
+    // Refuse the entire request rather than making a partial, unrelated change.
+    if (params.firstName !== undefined || params.lastName !== undefined) {
+      throw new Error('Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.');
+    }
+    if (params.role === undefined && !params.addGroupIds?.length && params.userMetadata === undefined) {
+      throw new Error('update requires a role, non-empty group_ids, or user_metadata change. An empty group_ids list never removes memberships.');
+    }
+    async function readUser(): Promise<WorkspaceUser> {
+      for (let page = 1; ; page++) {
+        const result = await listWorkspaceUsers({ page });
+        const user = result.users.find(item => item.id === organizationUserId);
+        if (user) return user;
+        if (page >= result.meta.total_pages) throw new Error('User not found in this workspace. List workspace users again.');
+      }
+    }
+    const before = await readUser();
+    if (before.status === 'archived') throw new Error('This workspace user is archived. Unarchive them explicitly before updating them.');
+    if (!before.role) throw new Error('Cannot verify the current workspace role from its default group. No changes were made.');
+    if (!Array.isArray(before.groups) || before.groups.some(group => typeof group?.id !== 'string')) {
+      throw new Error('Cannot verify existing group memberships. No changes were made.');
+    }
+    const groups = await listWorkspaceGroups();
+    // On restricted plans the user listing hides custom memberships. An empty list is
+    // not proof that the user has none, and sending it would destroy hidden memberships.
+    if (groups.some(group => group.type === 'custom' && group.disabled)) {
+      throw new Error('Custom groups are disabled under the current plan; existing memberships cannot be safely preserved. No changes were made.');
+    }
+    const groupIds = [...new Set([...before.groups.map(group => group.id), ...(params.addGroupIds ?? [])])];
+    if (groupIds.some(id => !groups.some(group => group.id === id && group.type === 'custom' && !group.disabled))) {
+      throw new Error('Every group must be an existing, enabled custom group in this workspace. No changes were made.');
+    }
+    let metadata: Record<string, unknown> | undefined;
+    if (params.userMetadata !== undefined) {
+      if (!Object.hasOwn(before, 'user_metadata') ||
+          (before.user_metadata != null && (typeof before.user_metadata !== 'object' || Array.isArray(before.user_metadata)))) {
+        throw new Error('Cannot read existing user metadata safely. No changes were made.');
+      }
+      metadata = { ...before.user_metadata, ...params.userMetadata };
+    }
+    // Do not churn membership records when the requested state already exists.
+    if (groupIds.length === before.groups.length &&
+        (params.role === undefined || params.role === before.role) &&
+        (metadata === undefined || isDeepStrictEqual(metadata, before.user_metadata))) return { user: before, updated: false };
     const res = await auth.authedFetch(`/api/organization-users/${encodeURIComponent(organizationUserId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...(params.firstName !== undefined ? { firstName: params.firstName } : {}),
-        ...(params.lastName !== undefined ? { lastName: params.lastName } : {}),
         ...(params.role !== undefined ? { role: params.role } : {}),
-        addGroups: params.addGroupIds ?? [],
-        ...(params.userMetadata !== undefined ? { userMetadata: params.userMetadata } : {}),
+        // Despite its name, addGroups REPLACES every custom membership in one transaction.
+        // The additive group endpoint is not permitted by existing workspace PAT scopes.
+        addGroups: groupIds,
+        ...(metadata !== undefined ? { userMetadata: metadata } : {}),
       }),
     });
     await assertOk(res, 'updateWorkspaceUser');
+    try {
+      const after = await readUser();
+      const actualIds = after.groups?.map(group => group.id);
+      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some(id => !actualIds.includes(id)) ||
+          after.role !== (params.role ?? before.role) || after.first_name !== before.first_name ||
+          after.last_name !== before.last_name || after.status !== before.status ||
+          !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
+        throw new Error('Saved user state does not match the requested changes and preserved fields.');
+      }
+      return { user: after, updated: true };
+    } catch (error) {
+      throw new Error(`The update was accepted, but its final state could not be verified. Read the user again before retrying: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async function setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void> {
@@ -823,7 +1121,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       handle: p.handle,
       icon: p.icon,
       hidden: isPageHidden(p),
-      ...(typeof p.index === 'number' ? { index: p.index } : {}),
+      ...(typeof pageOrderIndex(p) === 'number' ? { index: pageOrderIndex(p) } : {}),
       ...(typeof p.isPageGroup === 'boolean' ? { is_page_group: p.isPageGroup } : {}),
       ...(typeof p.pageGroupId === 'string' ? { page_group_id: p.pageGroupId } : {}),
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry)),
@@ -843,7 +1141,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       event: e.event,
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
-    return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
+    return {
+      app_id: full.id, name: full.name, version_id: full.editing_version?.id,
+      ...(full.should_freeze_editor === true ? { editor_frozen: true } : {}),
+      ...(typeof full.editorEnvironment?.name === 'string' ? { environment: full.editorEnvironment.name } : {}),
+      pages, queries, events,
+    };
   }
 
   function appPermissionPath(
@@ -1120,14 +1423,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createPages(params: CreatePagesParams): Promise<CreatePageResult[]> {
+    // Validate every supplied icon before reads/writes: direct/hybrid callers can bypass Zod.
+    for (const page of params.pages) {
+      if (page.icon !== undefined) assertPageIcon(page.icon, `Page "${page.name}"`);
+    }
     // Page order = append after existing pages. Precompute ids/indexes and create the batch concurrently.
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
     const highestPersistedIndex = existingPages.reduce(
-      (highest: number, page: any) =>
-        typeof page.index === 'number' && Number.isFinite(page.index)
-          ? Math.max(highest, page.index)
-          : highest,
+      (highest: number, page: any) => {
+        const index = pageOrderIndex(page);
+        return typeof index === 'number' && Number.isFinite(index) ? Math.max(highest, index) : highest;
+      },
       0
     );
     // ToolJet's initial Home page starts at index 1. Older payloads can omit index, so fall back
@@ -1244,6 +1551,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   async function updatePages(params: UpdatePagesParams): Promise<UpdatePagesResult> {
     const updates = params.updates ?? [];
+    for (const update of updates) {
+      if (update.icon !== undefined) assertPageIcon(update.icon, `Page "${update.pageId}"`);
+    }
     const order = params.order;
     if (!updates.length && !order) {
       throw new Error('ToolJet updatePages failed: provide at least one page update or a complete page order.');
@@ -1358,7 +1668,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
     if (order) {
       for (const [index, pageId] of order.entries()) {
-        if (refreshedById.get(pageId)?.index !== index) {
+        if (pageOrderIndex(refreshedById.get(pageId)) !== index) {
           throw new Error(`ToolJet updatePages failed: page order did not persist at index ${index}.`);
         }
       }
@@ -1369,14 +1679,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       reordered: order !== undefined,
       pages: refreshedPages
         .slice()
-        .sort((left, right) => (left.index ?? 0) - (right.index ?? 0))
+        .sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0))
         .map((page) => ({
           page_id: page.id,
           name: page.name,
           handle: page.handle,
           icon: page.icon,
           hidden: isPageHidden(page),
-          ...(typeof page.index === 'number' ? { index: page.index } : {}),
+          ...(typeof pageOrderIndex(page) === 'number' ? { index: pageOrderIndex(page) } : {}),
         })),
     };
   }
@@ -1419,6 +1729,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
     await assertOk(res, 'createEvents');
     return { created: events.length };
+  }
+
+  let mapsKeyPromise: Promise<boolean | undefined> | undefined;
+  async function hasGoogleMapsKey(): Promise<boolean | undefined> {
+    mapsKeyPromise ??= (async () => {
+      try {
+        const res = await auth.authedFetch('/api/config');
+        if (!res.ok) return undefined;
+        const body = await res.json() as Record<string, unknown>;
+        return typeof body.GOOGLE_MAPS_API_KEY === 'string' && body.GOOGLE_MAPS_API_KEY.trim() !== '';
+      } catch { return undefined; }
+    })();
+    return mapsKeyPromise;
   }
 
   async function getDevelopmentEnvironmentId(): Promise<string> {
@@ -1481,7 +1804,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
     const orgId = await auth.getOrganizationId();
     let cols = params.columns.map(tableColumnDto);
-    // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`.
+    // Every tjdb table needs a primary key; if none was specified, prepend a serial `id`. A table keyed on a business
+    // column (item_id, plate) still gets a serial id beside it: some deployments append order=id to update_rows, and
+    // held-out reorder and fleet each spent three calls adding it by hand after the compatibility warning.
+    if (params.columns.some((column) => column.primaryKey) && !params.columns.some((column) => column.name.toLowerCase() === 'id')) {
+      cols = [...cols, { column_name: 'id', data_type: 'serial', constraints_type: { is_not_null: true, is_primary_key: false, is_unique: true } }];
+    }
     if (!params.columns.some((column) => column.primaryKey)) {
       cols = [
         {
@@ -1514,14 +1842,21 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const levels = tableCreationLevels(params.tables);
     const created: CreateTableResult[] = [];
     for (const level of levels) {
-      const settled = await Promise.allSettled(level.map((table) => createTable(table)));
-      const failures: string[] = [];
-      settled.forEach((result, index) => {
-        if (result.status === 'fulfilled') created.push(result.value);
-        else failures.push(`${level[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      });
-      if (failures.length) {
-        throw new PartialWriteError('createTables', created, failures);
+      // Bound in-flight writes and stop scheduling after a failed batch. Already-started
+      // requests must settle so every persisted table remains available for recovery.
+      for (let start = 0; start < level.length; start += 4) {
+        const batch = level.slice(start, start + 4);
+        const settled = await Promise.allSettled(batch.map((table) => createTable(table)));
+        const failures: string[] = [];
+        let quota: TableQuotaError | undefined;
+        settled.forEach((result, index) => {
+          if (result.status === 'fulfilled') created.push(result.value);
+          else {
+            quota ??= tableQuotaError(result.reason);
+            failures.push(`${batch[index].tableName}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+          }
+        });
+        if (failures.length) throw new PartialWriteError('createTables', created, failures, quota);
       }
     }
     const byName = new Map(created.map((table) => [table.table_name.toLowerCase(), table]));
@@ -1648,6 +1983,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   const UNKNOWN_INSERT_OUTCOME = 'Insert outcome unknown: the row may already have been inserted. ' +
     'Verify persisted rows before retrying; do not replay the whole batch.';
 
+  async function hasRows(tableId: string): Promise<boolean | undefined> {
+    try {
+      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}?limit=1`, { signal: AbortSignal.timeout(15_000) });
+      if (!res.ok) return undefined;
+      const body = await res.json();
+      return Array.isArray(body) ? body.length > 0 : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
     let schemaWaits = 0;
     for (;;) {
@@ -1670,7 +2016,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw error;
       }
       // Only retry explicit schema-cache rejections, where PostgREST did not execute the insert.
-      if (res.status !== 400 && res.status !== 404) return res;
+      // The BODY is the discriminator, not the status: ToolJet's proxy wraps PGRST205 as a 409, so
+      // gating on 400/404 meant this retry never ran for the case it was written for. Measured
+      // 2026-09-14: six partial applies across two models, every one "failed during seed data and
+      // create queries" with the table created and zero rows seeded, all carrying PGRST205 in a 409.
+      // A 409 is normally a real conflict (duplicate key), which is why the body check stays: only a
+      // response that actually names the schema cache is retried.
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
@@ -1683,6 +2034,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     if (!params.rows.length) return { processed_rows: 0 };
     const schema = await getTableSchema(params.tableName);
     const rows = params.rows.map((r) => ({ ...r }));
+    const timestampErrors = invalidSeedTimestamps(schema, rows);
+    if (timestampErrors.length) throw new Error(`insertRows preflight for "${params.tableName}": ${timestampErrors.join(' ')} No rows in this table batch were inserted.`);
     const generatedPrimaryKey = schema.find(
       (column) => column.isPrimaryKey && (
         /serial/i.test(column.type) || /^nextval\(/i.test(String(column.defaultValue ?? ''))
@@ -1744,7 +2097,26 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return ds.kind;
   }
 
+  // Query creates contend on version-scoped backend locks. Keep one in flight per version
+  // in this client, including overlapping single/batch calls. Other versions remain independent.
+  // This is not a distributed lock; separate MCP processes can still contend.
+  const queryCreateTails = new Map<string, Promise<void>>();
   async function createQuery(params: CreateQueryParams): Promise<CreateQueryResult> {
+    const previous = queryCreateTails.get(params.versionId);
+    let release!: () => void;
+    const tail = new Promise<void>(resolve => { release = resolve; });
+    queryCreateTails.set(params.versionId, tail);
+    await previous;
+    try {
+      return await createQueryUnqueued(params);
+    } finally {
+      release();
+      if (queryCreateTails.get(params.versionId) === tail) queryCreateTails.delete(params.versionId);
+    }
+  }
+
+  async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
+    assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
@@ -1759,10 +2131,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return { query_id: body.id, name: body.name };
   }
 
-  // Batch: create many queries in one tool call. No native bulk-create endpoint, so fan out
-  // (in parallel) to the single-create route — saves model round-trips even though it's N HTTP calls.
+  // One model call, N ordered HTTP writes. Preserve partial-write reporting without replaying
+  // successful or uncertain writes; serial execution avoids this client's own lock contention.
   async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
-    // Resolve datasource kinds once for the whole batch (only if any query omitted its kind), then fan out.
+    // Resolve datasource kinds once; createQuery queues the writes per version.
     const needResolve = params.queries.some((q) => !q.kind);
     const dsList = needResolve ? await listDatasources(params.versionId) : [];
     const kindOf = (id: string): string | undefined => dsList.find((d) => d.id === id)?.kind;
@@ -1979,6 +2351,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   // Update query = PATCH /:id/versions/:versionId. `options` REPLACES the stored options wholesale.
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
+    assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const body: Record<string, unknown> = { options: params.options };
     if (params.name !== undefined) body.name = params.name;
     const res = await auth.authedFetch(
@@ -2060,6 +2433,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     queryId: string;
     versionId: string;
     environmentId?: string;
+    /** Values for the query's {{ }} bindings, keyed as ToolJet looks them up (see staticBindings.ts). */
+    resolvedOptions?: Record<string, unknown>;
   }): Promise<RunQueryResult> {
     const envId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(
@@ -2067,7 +2442,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resolvedOptions: {}, options: {} }),
+        body: JSON.stringify({ resolvedOptions: params.resolvedOptions ?? {}, options: {} }),
       }
     );
     await assertOk(res, 'runQuery');
@@ -2087,6 +2462,31 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
     await assertOk(res, 'invokeDatasourceMethod');
     return (await res.json()) as RunQueryResult;
+  }
+
+  /** Read installed plugin API metadata through the authenticated spec route. */
+  async function getPluginSpec(pluginKind: string, specName: string): Promise<string> {
+    const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
+    await assertOk(res, 'getPluginSpec');
+    return res.text();
+  }
+
+  async function specCacheScope(): Promise<string | undefined> {
+    let workspace: string;
+    try {
+      workspace = await auth.getOrganizationId();
+    } catch {
+      return undefined;
+    }
+    if (!workspace) return undefined;
+    let server: string;
+    try {
+      const url = new URL(config.apiUrl);
+      server = url.origin + (url.pathname === '/' ? '' : url.pathname.replace(/\/+$/, ''));
+    } catch {
+      return undefined;
+    }
+    return JSON.stringify([server, workspace]);
   }
 
   /** Read one saved datasource's stored connection configuration for an environment.
@@ -2208,6 +2608,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     useWorkspace,
     listWorkspaceApps,
     listWorkspaceUsers,
+    listWorkspaceGroups,
+    getWorkspaceGroup,
+    listWorkspaceGroupMembers,
+    createWorkspaceGroup,
+    renameWorkspaceGroup,
+    deleteWorkspaceGroup,
+    removeWorkspaceGroupMember,
+    updateWorkspaceGroupPermissions,
+    duplicateWorkspaceGroup,
+    listWorkspaceGroupAccess,
+    listWorkspaceGroupResources,
+    writeWorkspaceGroupAccess,
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
@@ -2233,6 +2645,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updatePages,
     deletePage,
     createEvents,
+    hasGoogleMapsKey,
+    viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(undefined),
+    editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
@@ -2256,12 +2671,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     deleteQuery,
     getQueries,
     getQuery,
+    hasRows,
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    getPluginSpec,
+    specCacheScope,
     testDatasourceConnection,
     listEvents,
     updateEvents,
     deleteEvent,
   };
+}
+
+// ToolJet EE with the page-groups licence keeps a page's position in pageGroupIndex and writes
+// index = 999 on create as a placeholder; without the licence pageGroupIndex is null and index is
+// the position. Reporting the placeholder made builds "reorder" pages that were already in order.
+export function pageOrderIndex(page: any): number | undefined {
+  if (typeof page?.pageGroupIndex === 'number' && Number.isFinite(page.pageGroupIndex)) return page.pageGroupIndex;
+  return typeof page?.index === 'number' ? page.index : undefined;
 }

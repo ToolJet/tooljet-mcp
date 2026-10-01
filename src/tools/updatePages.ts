@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { strictEntry } from '../strictEntry.js';
+import { pageIconSchema } from '../pageIcons.js';
 
 // Unknown entry keys are rejected, never stripped, so a misspelt field is an error rather than a
 // page update that quietly changes nothing (see src/strictEntry.ts).
@@ -9,7 +10,7 @@ const updateSchema = strictEntry(
   {
     page_id: z.string().min(1),
     name: z.string().min(1).optional(),
-    icon: z.string().min(1).optional(),
+    icon: pageIconSchema.optional(),
     hidden: z.boolean().optional().describe(
       'Hide or show only this non-Home page in the generated navigation menu. ' +
       'This does not hide the whole menu; use update_app_settings.navigation_hidden for that.'

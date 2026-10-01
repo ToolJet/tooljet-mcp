@@ -1,3 +1,5 @@
+import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
+import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -23,10 +25,12 @@ import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
 import { testDatasourceConnectionTool } from './testDatasourceConnection.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
 import { generateFormSchemaTool } from './generateFormSchema.js';
+import { generateEditContractTool } from './generateEditContract.js';
 import { getAppTool } from './getApp.js';
 import { getAppSummaryTool } from './getAppSummary.js';
 import { getComponentTool } from './getComponent.js';
 import { validateAppTool } from './validateApp.js';
+import { verifyPageRenderTool } from './verifyPageRender.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
 import { applyAppPhaseTool } from './applyAppPhase.js';
 import { addPageTool } from './addPage.js';
@@ -113,6 +117,8 @@ export function registerTools(
     listWorkspaceAppsTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
+    listWorkspaceGroupsTool(client),
+    manageWorkspaceGroupsTool(client),
     createAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
@@ -132,11 +138,13 @@ export function registerTools(
     testDatasourceConnectionTool(client),
     prepareSqlDiscoveryQueriesTool(client),
     generateFormSchemaTool(client),
+    generateEditContractTool(),
     getComponentCatalogTool(client),
     getAppTool(client),
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
+    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082'),
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
@@ -173,7 +181,7 @@ export function registerTools(
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: tool.inputSchema,
+        inputSchema: tool.strictInput ? z.object(tool.inputSchema).strict() : tool.inputSchema,
         annotations: tool.annotations,
       },
       (args: any) => withToolTelemetry(tool.name, async () => {

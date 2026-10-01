@@ -12,6 +12,8 @@ export interface QueryLifecycleSpec {
   closeModalId?: string;
   successAlert?: LifecycleAlert;
   failureAlert?: LifecycleAlert;
+  /** Ordered before refresh; dispatch order is not a transaction or an async completion guarantee. */
+  beforeRefreshActions?: Array<Record<string, unknown>>;
   successActions?: Array<Record<string, unknown>>;
   failureActions?: Array<Record<string, unknown>>;
 }
@@ -42,7 +44,20 @@ export function expandQueryLifecycles(
     const sourceName = query.name ?? lifecycle.queryId;
 
     const refreshIds = unique(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
+    if (refreshIds.includes(lifecycle.queryId)) {
+      throw new Error(`Query "${sourceName}" cannot refresh itself after success: this repeats the query indefinitely, including any writes. Refresh a separate read query instead.`);
+    }
     const clearIds = unique(lifecycle.clearComponentIds ?? [], `clear component`, sourceName, warnings);
+
+    (lifecycle.beforeRefreshActions ?? []).forEach((action, index) => {
+      events.push({
+        sourceId: lifecycle.queryId,
+        sourceType: 'data_query',
+        trigger: 'onDataQuerySuccess',
+        action,
+        name: `${sourceName} before refresh action ${index + 1}`,
+      });
+    });
 
     for (const queryId of refreshIds) {
       const refresh = queries.get(queryId);

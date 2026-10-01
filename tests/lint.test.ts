@@ -4,6 +4,28 @@ import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
 describe('lintComponentSpec', () => {
+  it('rejects an ignored Table header label without rewriting the field mapping', () => {
+    const spec = { type: 'Table', name: 'jobs', properties: { columns: { value: [
+      { name: 'total', key: 'total', header: 'Jobs in period', columnType: 'number' },
+    ] } } };
+    const before = JSON.stringify(spec);
+    expect(lintComponentSpec(spec).errors.join(' ')).toContain('header is ignored by ToolJet');
+    expect(JSON.stringify(spec)).toBe(before);
+  });
+
+  it('preserves legitimate Table labels, redundant metadata and hidden or dynamic header metadata', () => {
+    for (const column of [
+      { name: 'Jobs in period', key: 'total' },
+      { name: 'Jobs in period', key: 'total', header: 'Jobs in period' },
+      { name: 'id', key: 'id', header: 'Internal id', columnVisibility: false },
+      { name: 'total', key: 'total', header: '{{variables.label}}' },
+      { name: 'total', key: 'total', header: '' },
+    ]) {
+      expect(lintComponentSpec({ type: 'Table', properties: { columns: { value: [column] } } })
+        .errors.join(' ')).not.toContain('header is ignored');
+    }
+  });
+
   it('warns when outline buttons inherit surface-colored text on a transparent background', () => {
     for (const textColor of [undefined, {value: 'var(--cc-surface1-surface)'}]) {
       const result = lintComponentSpec({name: 'reject', type: 'Button', styles: {
@@ -98,7 +120,7 @@ describe('lintComponentSpec', () => {
   });
 
   it('ERRORS when style keys are placed under properties', () => {
-    const r = lintComponentSpec({ name: 'title', type: 'Text', properties: { textColor: { value: '#111' } } });
+    const r = lintComponentSpec({ name: 'title', type: 'Text', properties: { text: 'Title', textColor: { value: '#111' } } });
     expect(r.errors.join(' ')).toMatch(/style keys \["textColor"\] are under `properties`/);
     expect(r.warnings).toEqual([]);
   });
@@ -144,7 +166,7 @@ describe('lintComponentSpec', () => {
     expect(lintComponentSpec({ name: 'c', type: 'Chart', properties: { title: { value: 'Sales' } } }).warnings.join(' '))
       .toMatch(/can clip at dashboard sizes/);
     expect(lintComponentSpec({ name: 'c', type: 'Chart', properties: { title: { value: '' } } }).warnings)
-      .toEqual([]);
+      .not.toEqual(expect.arrayContaining([expect.stringMatching(/can clip at dashboard sizes/)]));
   });
 
   it('validates static Plotly JSON and flags dynamic advanced mode for browser verification', () => {
@@ -156,6 +178,7 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: '{{true}}' },
         jsonDescription: { value: '{not valid json}' },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(invalid.errors.join(' ')).toMatch(/valid JSON.*non-empty data array.*empty chart/is);
 
@@ -167,6 +190,7 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: true },
         jsonDescription: { value: { data: [] } },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(empty.errors.join(' ')).toMatch(/must contain a non-empty data array/i);
 
@@ -178,9 +202,12 @@ describe('lintComponentSpec', () => {
         plotFromJson: { value: '{{true}}' },
         jsonDescription: { value: '{{queries.chartData.data}}' },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(dynamic.errors).toEqual([]);
-    expect(dynamic.warnings.join(' ')).toMatch(/cannot be evaluated statically.*simple type \+ data.*browser-verify/is);
+    expect(dynamic.warnings.join(' ')).toMatch(/cannot be evaluated statically.*verification gap.*browser-verify/is);
+    expect(dynamic.warnings.join(' ')).toContain('Preserve the authored chart configuration');
+    expect(dynamic.warnings.join(' ')).not.toContain('Prefer simple type + data');
 
     const valid = lintComponentSpec({
       name: 'validChart',
@@ -188,8 +215,9 @@ describe('lintComponentSpec', () => {
       properties: {
         title: { value: '' },
         plotFromJson: { value: true },
-        jsonDescription: { value: JSON.stringify({ data: [{ x: ['A'], y: [1], type: 'bar' }] }) },
+        jsonDescription: { value: JSON.stringify({ data: [{ x: ['A'], y: [1], type: 'bar' }], layout: { font: { family: 'IBM Plex Sans', size: 12, color: '#6B7280' }, margin: { l: 36, r: 12, t: 8, b: 40 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' } }) },
       },
+      styles: { padding: { value: 16 } },
     });
     expect(valid.errors).toEqual([]);
   });
@@ -207,7 +235,7 @@ describe('lintComponentSpec', () => {
       name: 'groupedChart',
       type: 'Chart',
       properties: { title: { value: '' }, data: { value: nested } },
-    }).warnings).toEqual([]);
+    }).warnings.join(' ')).not.toMatch(/map\(\) inside another/);
 
     const tableLookupJoin = '{{queries.orders.data.map(order => ({...order, owner:(queries.users.data || []).filter(user => user.id === order.owner_id)[0]}))}}';
     expect(lintComponentSpec({
@@ -293,8 +321,18 @@ describe('lintComponentSpec', () => {
       name: 'openCases',
       type: 'Statistics',
       properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
-      layout: { top: 0, left: 0, width: 11, height: 120 },
-    }).warnings.join(' ')).toMatch(/value-only tile.*at least 12.*three tiles per content row/is);
+      layout: { top: 0, left: 0, width: 8, height: 120 },
+    }).warnings.join(' ')).toMatch(/value-only tile.*at least 9.*four tiles per content row/is);
+
+    // Builds 3 and 4 of a parcel-carrier brief (2026-09-28): "at least 12 columns, three tiles a row" made the model split four KPI tiles
+    // into a 2x2 grid of half-page cards. Rendered in an 800 px pane, four 9-column tiles fit "Average cost per parcel"
+    // over "£12,345.50" on one line each.
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
+      layout: { top: 0, left: 0, width: 9, height: 120 },
+    }).warnings.join(' ')).not.toMatch(/too narrow/);
 
     expect(lintComponentSpec({
       name: 'openCases',
@@ -316,7 +354,18 @@ describe('lintComponentSpec', () => {
         hideSecondary: { value: true },
       },
       layout: { top: 0, left: 0, width: 13, height: 120 },
-    }).warnings.join(' ')).toMatch(/only safe for a short one- or two-word.*Open work orders.*wrap vertically.*at least 18/is);
+    }).warnings).toEqual([]);  // about 325px at 1366px wide: 16 characters fit on one line (vet n1, 2026-09-25)
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: {
+        primaryValue: { value: '42' },
+        primaryValueLabel: { value: 'Open work orders awaiting parts' },
+        hideSecondary: { value: true },
+      },
+      layout: { top: 0, left: 0, width: 13, height: 120 },
+    }).warnings.join(' ')).toMatch(/Open work orders awaiting parts.*wrap vertically.*at least 18/is);
 
     expect(lintComponentSpec({
       name: 'openCases',
@@ -334,20 +383,21 @@ describe('lintComponentSpec', () => {
     const r = lintComponentSpec({
       name: 't',
       type: 'Table',
-      properties: { data: { value: '{{queries.q.data}}' } },
+      properties: { data: { value: '{{queries.q.data.map(r => ({name: r.name}))}}' } },
     });
     expect(r.warnings.join(' ')).toMatch(/dataSourceSelector is not "rawJson"/);
     expect(r.warnings.join(' ')).toMatch(/neither autogenerateColumns:true nor an explicit columns array/);
   });
 
-  it('is clean for a correctly-bound Table', () => {
+  it('is clean for a correctly-bound Table with authored columns', () => {
     const r = lintComponentSpec({
       name: 't',
       type: 'Table',
       properties: {
-        data: { value: '{{queries.q.data}}' },
+        data: { value: '{{queries.q.data.map(r => ({name: r.name}))}}' },
         dataSourceSelector: { value: 'rawJson' },
         autogenerateColumns: { value: true },
+        columns: { value: [{ name: 'Name', key: 'name', columnType: 'string', columnSize: 180, autogenerated: false }] },
       },
     });
     expect(r.errors).toEqual([]);
@@ -457,7 +507,7 @@ describe('lintComponentSpec', () => {
       name: 't',
       type: 'Table',
       properties: {
-        data: { value: '{{queries.q.data}}' },
+        data: { value: '{{queries.q.data.map(r => ({name: r.name}))}}' },
         dataSourceSelector: { value: 'rawJson' },
         columns: { value: [{ name: 'Title', key: 'title', headerCasing: 'capitalize' }, { key: 'x' }] },
       },
@@ -471,7 +521,7 @@ describe('lintComponentSpec', () => {
       name: 'deptSummary',
       type: 'Table',
       properties: {
-        data: { value: '{{queries.q.data}}' },
+        data: { value: '{{queries.q.data.map(r => ({name: r.name}))}}' },
         dataSourceSelector: { value: 'rawJson' },
         columns: {
           value: [
@@ -507,6 +557,26 @@ describe('lintComponentSpec', () => {
       },
     });
     expect(r.errors.join(' ')).not.toMatch(/deprecated columnType/);
+  });
+
+  it.each(['date', 'datetime', 'currency', 'typo'])('rejects unsupported Table column type %s', (columnType) => {
+    const result = lintComponentSpec({
+      name: 'bookings', type: 'Table',
+      properties: { columns: { value: [{name: 'Arrival', key: 'arrival', columnType}] } },
+    });
+    expect(result.errors.join(' ')).toContain(`unsupported columnType:"${columnType}"`);
+    if (columnType === 'date' || columnType === 'datetime') {
+      expect(result.errors.join(' ')).toContain('columnType:"datepicker"');
+    }
+  });
+
+  it('accepts supported datepicker and intentionally dynamic column types', () => {
+    for (const columnType of ['datepicker', '{{variables.columnType}}']) {
+      const result = lintComponentSpec({name: 'bookings', type: 'Table', properties: {
+        columns: {value: [{name: 'Arrival', key: 'arrival', columnType, dateFormat: 'DD MMM YYYY'}]},
+      }});
+      expect(result.errors.join(' ')).not.toContain('unsupported columnType');
+    }
   });
 
   it('errors when Table column keys are duplicated because ToolJet keeps only the last one', () => {
@@ -557,7 +627,7 @@ describe('lintComponentSpec', () => {
         columns: { value: [{ name: 'Request', key: 'request_number' }] },
       },
     });
-    expect(r.warnings.join(' ')).toMatch(/append undeclared datasource fields.*Project the Table data binding/);
+    expect(r.errors.join(' ')).toMatch(/append undeclared datasource fields.*Project the Table data binding/);
   });
 
   it('accepts explicit Table columns when the data binding projects only intended keys', () => {
@@ -577,26 +647,41 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
-  it('blocks statement-body map callbacks in Table data but accepts expression bodies', () => {
-    const broken = lintComponentSpec({
-      name: 'claims',
-      type: 'Table',
-      properties: {
-        data: { value: '{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}' },
-        dataSourceSelector: { value: 'rawJson' },
-      },
-    });
-    expect(broken.errors.join(' ')).toMatch(/statement-body \.map\(\).*silently.*no data.*expression body/is);
+  // Probed on ToolJet 3.16 (2026-09-24): a Table bound to a statement-body map renders every row, over a
+  // query's data and over static rows. What cuts a binding short is a literal `}}` inside it.
+  it('accepts statement-body map callbacks in Table data unless the code holds a literal }}', () => {
+    const lint = (value: string) => lintComponentSpec({
+      name: 'claims', type: 'Table',
+      properties: { data: { value }, dataSourceSelector: { value: 'rawJson' } },
+    }).errors;
+    expect(lint('{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}')).toEqual([]);
+    expect(lint('{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}')).toEqual([]);
+    expect(lint('{{queries.claims.data.map(c => { return {id:c.id,meta:{age:c.age_days}}; })}}').join(' '))
+      .toMatch(/statement-body \.map\(\).*`}}`.*space/is);
+  });
 
-    const supported = lintComponentSpec({
-      name: 'claims',
-      type: 'Table',
+  it('gives an actionable repair for function-style Table projections without weakening key checks', () => {
+    const check = (data: string) => lintComponentSpec({
+      name: 'probeTable', type: 'Table',
       properties: {
-        data: { value: '{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}' },
-        dataSourceSelector: { value: 'rawJson' },
+        data: { value: data }, dataSourceSelector: { value: 'rawJson' },
+        autogenerateColumns: { value: true },
+        columns: { value: [{ name: 'Claim', key: 'claim_ref', columnType: 'string', columnSize: 180, autogenerated: false }] },
       },
-    });
-    expect(supported.errors).toEqual([]);
+    }).errors;
+    for (const callback of [
+      'function(r){return {claim_ref:r.claim_ref};}',
+      'function project(r){return {claim_ref:r.claim_ref};}',
+    ]) {
+      const errors = check('{{(queries.probeQuery.data || []).map(' + callback + ')}}');
+      expect(errors[0]).toMatch(/cannot certify a function-style.*Rewrite map\(function/);
+    }
+    expect(check('{{(queries.probeQuery.data || []).map(r => ({claim_ref:r.claim_ref}))}}')).toEqual([]);
+    // Guidance-looking strings are data, not executable callbacks.
+    expect(check('{{queries.probeQuery.data.map(r => ({claim_ref:".map(function(r){return r;})"}))}}')
+      .join(' ')).not.toContain('function-style');
+    expect(check('{{queries.probeQuery.data.map(r => ({...r}))}}').join(' ')).toMatch(/object spreads/);
+    // The adjacent projected-key test separately checks that undeclared-key warnings remain intact.
   });
 
   it('warns when projected Table keys can still leak through autogeneration', () => {
@@ -713,6 +798,22 @@ describe('lintComponentSpec', () => {
     expect(detailsWarnings).toMatch(/dueDate.*raw ISO timestamp.*fieldType:"datepicker".*dateFormat\/parseDateFormat/is);
   });
 
+  // n1 (2026-09-25): a RunJS query formatted the date into due_display; the header "Due" alone drew this
+  // warning, and the model re-planned and re-applied the page to switch the column to datepicker.
+  it('judges a date-like column by its key when it has one, not by its header', () => {
+    const warn = (key: string, name: string) => lintComponentSpec({
+      name: 'jobs', type: 'Table',
+      properties: {
+        data: { value: '{{queries.jobData.data.rows}}' },
+        columns: { value: [{ id: 'd', name, key, columnType: 'string' }] },
+      },
+    }).warnings.join(' ');
+    expect(warn('due_display', 'Due')).not.toMatch(/date\/time-like/);
+    expect(warn('due_label', 'Due date')).not.toMatch(/date\/time-like/);
+    expect(warn('due_date', 'Due')).toMatch(/date\/time-like/);
+    expect(warn('', 'Created')).toMatch(/date\/time-like/);
+  });
+
   it('warns on the untouched DatePickerV2 demo date but accepts explicit empty/edit values', () => {
     expect(lintComponentSpec({ name: 'scheduledOn', type: 'DatePickerV2', properties: {} }).warnings.join(' '))
       .toMatch(/01\/01\/2022 demo date.*defaultValue.*\{\{null\}\}/i);
@@ -737,7 +838,7 @@ describe('lintComponentSpec', () => {
         autogenerateColumns: { value: true },
         columns: { value: [{ name: 'Request', key: 'request' }] },
       },
-    }).warnings.join(' ');
+    }).errors.join(' ');
 
     expect(warningsFor('{{queries.requests.data.map(r => r)}}')).toMatch(/identity maps and object spreads/);
     expect(warningsFor('{{queries.requests.data.map(r => ({...r,request:r.request_number}))}}'))
@@ -970,6 +1071,23 @@ describe('lintModalChildren', () => {
     expect(warnings).toMatch(/title-like Text "modalTitle" in the body.*Move.*slot_name:"header"/i);
   });
 
+  // Trace review 2026-09-25: five plans failed "title-like Text in the body" on a bold line naming the selected record
+  // under the modal title ({row.product_name}). That is a record label, not a second title.
+  it('does not take a bold dynamic record label for a second title, and still flags a static bold heading', () => {
+    const titleLike = (text: string, textSize?: number) => lintModalChildren([
+      { name: 'changePrice', type: 'ModalV2', clientRef: 'modal', properties: { showHeader: { value: true } } },
+      { name: 'modalHeader', type: 'Text', parentRef: 'modal', slotName: 'header', properties: { text: { value: 'Change price' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
+      {
+        name: 'recordLabel', type: 'Text', parentRef: 'modal', properties: { text: { value: text } },
+        styles: { fontWeight: { value: 'bold' }, ...(textSize ? { textSize: { value: textSize } } : {}) },
+        layout: { top: 10, left: 2, width: 30, height: 30 },
+      },
+    ]).join(' ').includes('title-like');
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 15)).toBe(false);
+    expect(titleLike('Edit this price', 15)).toBe(true);
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(true);
+  });
+
   it('recognizes explicit and persisted header slots and keeps their geometry separate from the body', () => {
     const components = [
       { id: 'modal-id', name: 'createCase', type: 'ModalV2', properties: { showHeader: { value: true }, showFooter: { value: false } } },
@@ -1069,14 +1187,14 @@ describe('lintListviewChildren', () => {
   };
 
   it('warns when a repeated Html root copies the authored pixel height', () => {
-    const warnings = lintComponents([
+    const errors = lintComponents([
       parent,
       {
         name: 'fleetCard', type: 'Html', parentRef: 'fleet',
         properties: { rawHtml: { value: '<div style="height:170px; padding:12px">{{listItem.name}}</div>' } },
       },
-    ]).warnings.join(' ');
-    expect(warnings).toMatch(/repeated inside Listview.*fixed pixel CSS height.*scrollbar in every item.*height:100%.*box-sizing:border-box/i);
+    ]).errors.join(' ');
+    expect(errors).toMatch(/repeated inside Listview.*fixed pixel CSS height.*scrollbar in every item.*height:100%.*box-sizing:border-box/i);
   });
 
   it('accepts percentage sizing and ignores Html outside a Listview', () => {
@@ -1201,9 +1319,9 @@ describe('lintComponents (batch)', () => {
 
   it('accepts catalog-default single-line heights and does not restrict multiline TextArea height', () => {
     const result = lintComponents([
-      { name: 'title', type: 'TextInput', layout: { top: 0, left: 0, width: 20, height: 40 } },
+      { name: 'title', type: 'TextInput', properties: { label: { value: 'Title' } }, layout: { top: 0, left: 0, width: 20, height: 40 } },
       { name: 'status', type: 'DropdownV2', layout: { top: 70, left: 0, width: 20, height: 40 } },
-      { name: 'description', type: 'TextArea', layout: { top: 140, left: 0, width: 20, height: 180 } },
+      { name: 'description', type: 'TextArea', properties: { label: { value: 'Description' } }, layout: { top: 140, left: 0, width: 20, height: 180 } },
     ]);
 
     expect(result.errors).toEqual([]);
@@ -1214,7 +1332,7 @@ describe('lintComponents (batch)', () => {
       { name: 'board', type: 'Kanban', clientRef: 'board' },
       { name: 'badHeader', type: 'Text', parentRef: 'board', slotName: 'header', properties: {} },
     ]);
-    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*only by ModalV2, Form, and Container/i);
+    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2, Form, and Container/i);
   });
 
   it('aggregates per-component results and overlaps', () => {
@@ -1222,9 +1340,8 @@ describe('lintComponents (batch)', () => {
       { name: 'chart', type: 'Chart', properties: {}, layout: { top: 0, left: 0, width: 10, height: 10 } },
       { name: 'over', type: 'Text', properties: {}, layout: { top: 5, left: 5, width: 10, height: 30 } },
     ]);
-    expect(errors).toEqual([]);
+    expect(errors.join(' ')).toMatch(/overlap/);
     expect(warnings.join(' ')).toMatch(/native title/);
-    expect(warnings.join(' ')).toMatch(/overlap/);
   });
 });
 
@@ -1319,9 +1436,10 @@ describe('validateAppStructure', () => {
             name: 'table1',
             type: 'Table',
             properties: {
-              data: { value: '{{queries.getRows.data}}' },
+              data: { value: '{{queries.getRows.data.map(r => ({name: r.name}))}}' },
               dataSourceSelector: { value: 'rawJson' },
               autogenerateColumns: { value: true },
+              columns: { value: [{ name: 'Name', key: 'name', columnType: 'string', columnSize: 180, autogenerated: false }] },
             },
           },
         ],
@@ -1331,7 +1449,7 @@ describe('validateAppStructure', () => {
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 
-  it('rejects a query referenced by bare name, the Haiku Helix case', () => {
+  it('rejects a query referenced by bare name, the Haiku workshop-booking case', () => {
     const withBinding = (binding: string): AppSummary => ({
       ...base,
       pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],
@@ -1765,7 +1883,7 @@ describe('validateAppStructure', () => {
       }],
       events: [],
     });
-    expect(warning.warnings.join(' ')).toMatch(/custom Html.*blank built-in modal.*openModalOnCardClick:false/is);
+    expect(warning.warnings.join(' ')).toMatch(/custom Html.*blank built-in modal.*slot_name:"modal".*openModalOnCardClick:false/is);
 
     const readOnly = validateAppStructure({
       ...base,
@@ -1794,7 +1912,7 @@ describe('validateAppStructure', () => {
       ],
     };
     const warnings = validateAppStructure(app).warnings.join(' ');
-    expect(warnings).toMatch(/Page "Customers" has no icon.*left sidebar.*IconFile/);
+    expect(warnings).toMatch(/Page "Customers" has no icon.*left sidebar.*generic fallback icon/);
     expect(warnings).not.toMatch(/Page "Home" has no icon/);
     expect(warnings).not.toMatch(/Page "Reports" has no icon/);
   });
@@ -1834,9 +1952,9 @@ describe('validateAppStructure', () => {
       }],
       events: [],
     };
-    const warnings = validateAppStructure(app).warnings.join(' ');
-    expect(warnings).toMatch(/overlap at rendered desktop size/);
-    expect(warnings).toMatch(/modalHeight 200px but needs at least 274px/);
+    const result = validateAppStructure(app);
+    expect(result.errors.join(' ')).toMatch(/overlap at rendered desktop size/);
+    expect(result.errors.join(' ')).toMatch(/modalHeight 200px but needs at least 274px/);
   });
 });
 

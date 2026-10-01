@@ -10,6 +10,9 @@ export interface DatasourceQuerySchema {
   description?: string;
   defaults: Record<string, unknown>;
   operations: string[];
+  /** Why `operations` looks the way it does. An empty list means `remote-spec` (the operation set
+   *  lives in the remote API spec) or `single` (one unnamed query form) — never "unsupported". */
+  operationSelection?: DatasourceOperationSelection;
   properties: Record<string, unknown>;
   contracts: Record<string, DatasourceOperationContract>;
   introspectionMethods?: string[];
@@ -18,6 +21,33 @@ export interface DatasourceQuerySchema {
   supportsTestConnection?: boolean;
   sources?: Array<{ collection: string; package: string }>;
   paginationStrategies?: string[];
+}
+
+export interface DatasourceOperationSelection {
+  mode: 'enumerated' | 'remote-spec' | 'single' | 'user-supplied-schema';
+  /** Query-option keys that select the operation (`enumerated`). */
+  fields?: string[];
+  values?: string[];
+  /** Query-option key holding the spec-driven operation (`remote-spec`). */
+  field?: string;
+  /** Present only when the kind's single spec is fetched from the vendor. Prefer `specs`. */
+  specUrl?: string;
+  /** Every OpenAPI spec the kind selects operations from. `bundled` specs ship inside the ToolJet
+   *  repo at `path` and are served by the ToolJet server at GET /plugins/specs/<plugin>/<name>;
+   *  `remote` ones are fetched from `ref` at query-authoring time. */
+  specs?: DatasourceSpecRef[];
+  description?: string;
+}
+
+export interface DatasourceSpecRef {
+  /** Plugin-supplied group name when a kind declares several specs (HubSpot "Blog Posts"). */
+  label?: string;
+  ref: string;
+  location: 'bundled' | 'remote';
+  plugin?: string;
+  name?: string;
+  /** ToolJet-repo-relative path, extension included. Absent only for an unresolved reference. */
+  path?: string;
 }
 
 export interface DatasourceFieldContract {
@@ -89,6 +119,13 @@ export function getDatasourceCatalog(): Array<Pick<DatasourceQuerySchema, 'kind'
   return Object.values(load()).map(({ kind, name, type, operations }) => ({ kind, name, type, operations }));
 }
 
+/** Every source ToolJet can connect, by display name. Lets a caller tell "this source exists but
+ * nobody has connected it" from "ToolJet has no connector for this at all" — the second case has to
+ * go through a REST API datasource, and only this list can distinguish them. */
+export function connectableDatasourceNames(): string[] {
+  return [...new Set(Object.values(load()).map(({ name }) => name).filter(Boolean))].sort();
+}
+
 export function getDatasourceQuerySchema(kind: string): DatasourceQuerySchema | null {
   return load()[kind] ?? null;
 }
@@ -116,6 +153,20 @@ function operationSummary(contract: DatasourceOperationContract): Record<string,
   };
 }
 
+// A single-spec API-endpoint plugin (Stripe, Gmail, ...): inspect_datasource_schema discovers its endpoints (see
+// specEndpointKinds.ts, which imports this module; the test is repeated here to keep the import one-way).
+function discoverable(schema: DatasourceQuerySchema): boolean {
+  const selection = schema.operationSelection;
+  if (schema.kind === 'hubspot' || selection?.mode !== 'remote-spec' || selection.specs?.length !== 1) return false;
+  const ref = selection.specs[0]!;
+  return ref.location === 'remote' || (ref.location === 'bundled' && !!ref.plugin && !!ref.name);
+}
+const SINGLE_SPEC_DISCOVERY =
+  'Operations come from the plugin\'s API spec. Discover them with inspect_datasource_schema: listTables (pass `search`) ' +
+  'finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to ' +
+  'copy: operation (lowercase HTTP method), path, and params with path, query and request objects ({} when empty). Query ' +
+  'values are flat: created[gte], expand[0], never a list or an object.';
+
 export function selectDatasourceQuerySchema(
   kind: string,
   options: { operation?: string; sections?: DatasourceSchemaSection[] } = {}
@@ -135,6 +186,10 @@ export function selectDatasourceQuerySchema(
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
+      ...(schema.operationSelection ? { operation_selection: discoverable(schema)
+        ? { ...schema.operationSelection, field: 'operation + path + params', description: SINGLE_SPEC_DISCOVERY,
+            introspection_methods: ['listTables', 'getEndpointSchema'] }
+        : schema.operationSelection } : {}),
       ...(typeof schema.supportsTestConnection === 'boolean'
         ? { supports_test_connection: schema.supportsTestConnection }
         : {}),
@@ -151,6 +206,11 @@ export function selectDatasourceQuerySchema(
         kind,
         error: `Unknown operation "${options.operation}" for datasource kind "${kind}".`,
         operations: schema.operations,
+        ...(schema.operationSelection?.mode === 'single' ? {
+          operation_selection: schema.operationSelection,
+          available_contracts: Object.keys(schema.contracts),
+          recovery: 'This datasource has one query form, not zero capabilities. Request operation:"default" (or omit operation) to read its contract. Put the command in the documented query option; do not invent an operation selector.',
+        } : {}),
       };
     }
     if (sections.has('request')) {
