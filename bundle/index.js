@@ -74982,6 +74982,18 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     for (const seed of seedData) {
       if (!seed.rows.length)
         errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+      const columns = tables.find((table) => table.tableName === seed.tableName)?.columns ?? [];
+      for (const column of columns) {
+        if (!/^jsonb?$/i.test(String(column.type ?? "")))
+          continue;
+        const bad = seed.rows.flatMap((row, index) => {
+          const value2 = row[column.name];
+          return value2 === void 0 || value2 === null || typeof value2 === "object" ? [] : [index + 1];
+        });
+        if (bad.length) {
+          errors.push(`Seed data for table "${seed.tableName}": column "${column.name}" is jsonb, so each value must be an object or an array (or null), not ${typeof seed.rows[bad[0] - 1][column.name]}; row(s) ${bad.slice(0, 8).join(", ")}. Store a list as ["a","b"], or make the column string if it holds text.`);
+        }
+      }
     }
   }
   const queryRefs = /* @__PURE__ */ new Map();
