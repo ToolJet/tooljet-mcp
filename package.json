@@ -13,7 +13,7 @@
     "start:http": "node dist/http.js",
     "test": "npm run check:datasource-catalog && npm run render:catalog && vitest run",
     "check:datasource-catalog": "node scripts/datasource-coverage.mjs --check",
-    "generate:catalogs": "node scripts/generate-catalog.mjs && node scripts/generate-datasource-catalog.mjs",
+    "generate:catalogs": "node scripts/generate-catalog.mjs && node scripts/generate-datasource-catalog.mjs && node scripts/generate-default-definitions.mjs",
     "generate:page-icons": "node scripts/generate-page-icons.mjs",
     "generate:skill": "node scripts/generate-skill.mjs && npm run render:catalog",
     "render:catalog": "npm run build && node scripts/render-component-catalog.mjs",

@@ -57,9 +57,21 @@ function resolveCatalogType(requestedType: string): {
   alias?: { requested_type: string; note: string };
 } {
   const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, '').toLowerCase());
-  return alias
-    ? { type: alias.type, alias: { requested_type: requestedType, note: alias.note } }
+  if (alias) return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
+  if (getComponentSchema(requestedType)) return { type: requestedType };
+  // A name that differs only in case, or lacks the current widget's version suffix ("Dropdown" for DropdownV2).
+  const wanted = requestedType.replace(/[\s_-]+/g, '').toLowerCase();
+  const types = getCatalog().map((entry) => entry.type);
+  const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, '') === wanted);
+  return near
+    ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } }
     : { type: requestedType };
+}
+
+/** Catalog types whose name shares a word with an unknown one, for the error that names it. */
+function nearbyTypes(requestedType: string): string[] {
+  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
+  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
 }
 
 function selectEntries(
@@ -183,7 +195,8 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
           const resolved = resolveCatalogType(singleType);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.` });
+            const near = nearbyTypes(singleType);
+            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...(near.length ? { did_you_mean: near } : {}) });
           }
           return ok({
             ...selectSchema(schema, args),

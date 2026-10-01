@@ -285,7 +285,7 @@ function lintServerSidePaginationRace(
 }
 
 /** The existing pages (other than the plan's) whose components read queries.<name> or whose events run the query. */
-function pagesUsingQuery(summary: AppSummary | undefined, name: string, planPages: Set<string>): string[] {
+export function pagesUsingQuery(summary: AppSummary | undefined, name: string, planPages: Set<string>): string[] {
   if (!summary) return [];
   const query = (summary.queries ?? []).find((q) => q.name === name);
   const reads = new RegExp(`queries\\??\\.${name.replace(/[$]/g, '\\$&')}\\b`);
@@ -317,6 +317,21 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     checked.push('seed batches have non-empty rows');
     for (const seed of seedData) {
       if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+      // ToolJet DB takes an object or an array for a jsonb column and refuses anything else at insert, after the plan
+      // token is spent (rn50, 2026-10-01: plain strings, refused twice).
+      const columns = tables.find((table) => table.tableName === seed.tableName)?.columns ?? [];
+      for (const column of columns) {
+        if (!/^jsonb?$/i.test(String((column as { type?: unknown }).type ?? ''))) continue;
+        const bad = seed.rows.flatMap((row, index) => {
+          const value = row[column.name];
+          return value === undefined || value === null || typeof value === 'object' ? [] : [index + 1];
+        });
+        if (bad.length) {
+          errors.push(`Seed data for table "${seed.tableName}": column "${column.name}" is jsonb, so each value must be an ` +
+            `object or an array (or null), not ${typeof seed.rows[bad[0]! - 1]![column.name]}; row(s) ${bad.slice(0, 8).join(', ')}. ` +
+            'Store a list as ["a","b"], or make the column string if it holds text.');
+        }
+      }
     }
   }
 
@@ -344,9 +359,9 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
       errors.push(`App already has a query named "${query.name}"` +
         (users.length ? `, which page${users.length > 1 ? 's' : ''} ${users.map((u) => `"${u}"`).join(', ')} also read${users.length > 1 ? '' : 's'} or run${users.length > 1 ? '' : 's'}. ` +
-          `To change it with this plan, replace ${users.length > 1 ? 'those pages' : `"${users[0]}"`} in the same call; ` +
-          'or refer to it by name here without defining it, or use update_query.'
-          : '. To use it as it is, refer to it by name without defining it in this plan; to change it, use update_query, or replace the page that owns it.'));
+          'To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, ' +
+          'mark this definition update: true.'
+          : '. To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true.'));
     }
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
