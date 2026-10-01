@@ -1,3 +1,4 @@
+import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
@@ -524,8 +525,8 @@ export interface QuerySummary {
    back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
    An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
+  workflows: WorkflowClient;
   listWorkspaces(): Promise<Workspace[]>;
-  /** Toggle the app's public viewer (PUT /api/apps/:id/public). Used by the render audit when allowed. */
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
   listWorkspaceUsers(params?: {
@@ -2602,6 +2603,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    workflows: createWorkflowClient(auth, config, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,

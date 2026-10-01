@@ -41,6 +41,8 @@ const MUST_BE_DESTRUCTIVE = [
   'delete_components', 'delete_event', 'delete_page', 'delete_query',
   'drop_table', 'drop_table_column', 'manage_theme', 'manage_workspace_groups',
   'run_queries', 'run_query',
+  'apply_workflow_spec', 'run_workflow',
+  'delete_workflow_node',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query',
 ];
@@ -51,7 +53,11 @@ const MUST_BE_READ_ONLY = [
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
   'list_events', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app', 'verify_page_render',
+  'get_workflow', 'get_workflow_execution', 'get_workflow_node_catalog',
+  'get_workflow_capabilities', 'list_workflows', 'lint_workflow_spec', 'validate_workflow',
 ];
+
+const MUST_BE_ADDITIVE = ['create_workflow'];
 
 describe('tool annotations', () => {
   const tools = registeredTools();
@@ -97,6 +103,12 @@ describe('tool annotations', () => {
     const tool = tools.find((t) => t.name === name);
     expect(tool, `${name} is no longer registered`).toBeDefined();
     expect(tool!.annotations?.readOnlyHint).toBe(true);
+  });
+
+  it.each(MUST_BE_ADDITIVE)('flags %s as non-destructive', (name) => {
+    const tool = tools.find((t) => t.name === name);
+    expect(tool, `${name} is no longer registered`).toBeDefined();
+    expect(tool!.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
   });
 
   it('keeps titles unique so clients can disambiguate them', () => {

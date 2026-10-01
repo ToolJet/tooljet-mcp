@@ -52,6 +52,7 @@ for (const f of ['component-schemas.json', 'component-compatibility.json', 'data
 for (const f of [
   'SKILL.md',
   'references/workflows.md',
+  'references/workflow-builder.md',
   'references/migration.md',
   'references/ui-layout.md',
   'references/tables.md',
