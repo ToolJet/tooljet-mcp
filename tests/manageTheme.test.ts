@@ -58,7 +58,7 @@ describe('manage_theme create applied to an app in the same call', () => {
   it('creates the theme and sets it on the app version', async () => {
     const c = client();
     const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
-      { action: 'create', name: 'Rialto Foyer', definition, app_id: 'a1', version_id: 'v1' } as never));
+      { action: 'create', name: 'Warm Foyer theme', definition, app_id: 'a1', version_id: 'v1' } as never));
     expect(c.updateAppSettings).toHaveBeenCalledWith({ appId: 'a1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'th1' }) } });
     expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1' });
   });
@@ -67,23 +67,23 @@ describe('manage_theme create applied to an app in the same call', () => {
     const c = client();
     const dark = { ...definition, surface: { colors: { ...definition.surface.colors, appBackground: { light: '#0B1020', dark: '#0B1020' } } } };
     const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
-      { action: 'create', name: 'Relay console dark', definition: dark, app_id: 'a1', version_id: 'v1' } as never));
+      { action: 'create', name: 'Console dark theme', definition: dark, app_id: 'a1', version_id: 'v1' } as never));
     expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: expect.objectContaining({ appMode: 'dark' }) }));
     expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'dark' });
   });
 
   it('applies a reused theme of the same name too', async () => {
     const c = client();
-    c.listAppThemes.mockResolvedValue([{ id: 'old', name: 'Rialto Foyer', definition }]);
+    c.listAppThemes.mockResolvedValue([{ id: 'old', name: 'Warm Foyer theme', definition }]);
     const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
-      { action: 'create', name: 'Rialto Foyer', definition, app_id: 'a1', version_id: 'v1' } as never));
+      { action: 'create', name: 'Warm Foyer theme', definition, app_id: 'a1', version_id: 'v1' } as never));
     expect(body.reused).toBe(true);
     expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'old' }) } }));
   });
 
   it('does not touch the app without app_id', async () => {
     const c = client();
-    await manageThemeTool(c as unknown as ToolJetClient).handler({ action: 'create', name: 'Rialto Foyer', definition } as never);
+    await manageThemeTool(c as unknown as ToolJetClient).handler({ action: 'create', name: 'Warm Foyer theme', definition } as never);
     expect(c.updateAppSettings).not.toHaveBeenCalled();
   });
 });
