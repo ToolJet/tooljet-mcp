@@ -67676,6 +67676,17 @@ var themeDefinition = external_exports.object({
     }).strict()
   }).strict()
 }).strict();
+async function applyToApp(client, theme, args, definition) {
+  if (!args.app_id || !args.version_id)
+    return void 0;
+  const dark = paintsDarkCanvasInLightMode(definition);
+  await client.updateAppSettings({
+    appId: args.app_id,
+    versionId: args.version_id,
+    globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
+  });
+  return { app_id: args.app_id, version_id: args.version_id, ...dark ? { app_mode: "dark" } : {} };
+}
 function requireValue(value2, label2) {
   if (value2 === void 0)
     throw new Error(`manage_theme requires ${label2} for this action.`);
@@ -67697,7 +67708,7 @@ function manageThemeTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
       theme_id: external_exports.string().uuid().optional(),
@@ -67705,7 +67716,9 @@ function manageThemeTool(client) {
       definition: themeDefinition.optional(),
       is_default: external_exports.boolean().optional(),
       confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional()
+      include_definitions: external_exports.boolean().optional(),
+      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to")
     },
     async handler(args) {
       try {
@@ -67730,11 +67743,13 @@ function manageThemeTool(client) {
             throw new Error('The reserved theme name "ToolJet" cannot be used.');
           const existing = (await client.listAppThemes()).find((theme) => theme.name === name2 && !theme.isDisabled);
           if (existing) {
+            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
             return ok({
               theme: existing,
               reused: true,
+              ...applied ? { applied } : {},
               warnings: [
-                `Theme "${name2}" already exists in this workspace; returned it instead of creating a duplicate. Apply it with update_app_settings, or use update_definition to change it.`
+                `Theme "${name2}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
               ]
             });
           }
@@ -67744,7 +67759,8 @@ function manageThemeTool(client) {
               definition: requireValue(args.definition, "definition"),
               isDefault: args.is_default ?? false
             });
-            return ok({ theme: created });
+            const applied = await applyToApp(client, created, args, args.definition);
+            return ok({ theme: created, ...applied ? { applied } : {} });
           } catch (error51) {
             if (error51 instanceof ToolJetHttpError && error51.status === 451) {
               return ok({
