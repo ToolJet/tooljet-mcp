@@ -317,6 +317,21 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     checked.push('seed batches have non-empty rows');
     for (const seed of seedData) {
       if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+      // ToolJet DB takes an object or an array for a jsonb column and refuses anything else at insert, after the plan
+      // token is spent (rn50, 2026-10-01: plain strings, refused twice).
+      const columns = tables.find((table) => table.tableName === seed.tableName)?.columns ?? [];
+      for (const column of columns) {
+        if (!/^jsonb?$/i.test(String((column as { type?: unknown }).type ?? ''))) continue;
+        const bad = seed.rows.flatMap((row, index) => {
+          const value = row[column.name];
+          return value === undefined || value === null || typeof value === 'object' ? [] : [index + 1];
+        });
+        if (bad.length) {
+          errors.push(`Seed data for table "${seed.tableName}": column "${column.name}" is jsonb, so each value must be an ` +
+            `object or an array (or null), not ${typeof seed.rows[bad[0]! - 1]![column.name]}; row(s) ${bad.slice(0, 8).join(', ')}. ` +
+            'Store a list as ["a","b"], or make the column string if it holds text.');
+        }
+      }
     }
   }
 
