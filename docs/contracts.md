@@ -94,7 +94,8 @@ Body: { "versionToBeReleased": "<version-uuid>" }
 ```
 The endpoint has no useful response body. MCP reads `GET /api/apps/:appId` afterward and succeeds only when
 `current_version_id` matches the requested version. Multi-environment installations enforce ToolJet's existing
-save and promote-to-production steps, which `release_app` performs only after explicit release confirmation.
+save and promote-to-production steps, which `release_app` performs when ToolJet reports that production promotion
+is required and only after explicit release confirmation.
 
 ---
 

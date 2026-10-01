@@ -30,6 +30,7 @@ export interface AppVersionResult {
   source_version_id?: string;
   current_environment_id?: string;
   description?: string | null;
+  recovered?: true;
 }
 
 export interface CreateAppVersionParams {
@@ -1436,19 +1437,30 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }),
     });
     let created: Record<string, unknown>;
-    if (res.status === 409) {
+    let recoveredExisting = false;
+    const conflictText = res.ok ? '' : await res.clone().text();
+    const duplicateConflict = res.status === 409
+      || (res.status === 422 && /already exists/i.test(conflictText));
+    if (duplicateConflict) {
       // A timeout after ToolJet committed the clone is safe to retry: recover only the exact
-      // same name/source/description tuple. Never adopt an unrelated same-name version.
+      // same draft name/source/description tuple. Never adopt the released version or an
+      // unrelated same-name version.
       const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
       await assertOk(versionsRes, 'createAppVersion.readAfterConflict');
       const versionsBody = (await versionsRes.json()) as { versions?: Array<Record<string, unknown>> };
+      const app = await getApp(params.appId);
+      const currentVersionId = app.current_version_id ?? app.currentVersionId;
+      const expectedDescription = params.versionDescription ?? '';
       const recovered = versionsBody.versions?.find((version) =>
         version.name === params.versionName
         && (version.parent_version_id ?? version.parentVersionId) === params.versionFromId
-        && (params.versionDescription === undefined || version.description === params.versionDescription)
+        && String(version.description ?? '') === expectedDescription
+        && version.status === 'DRAFT'
+        && version.id !== currentVersionId
       );
       if (!recovered) await assertOk(res, 'createAppVersion');
       created = recovered!;
+      recoveredExisting = true;
     } else {
       await assertOk(res, 'createAppVersion');
       created = (await res.json()) as Record<string, unknown>;
@@ -1468,6 +1480,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       ...(created.description === null || typeof created.description === 'string'
         ? { description: created.description as string | null }
         : {}),
+      ...(recoveredExisting ? { recovered: true as const } : {}),
     };
   }
 

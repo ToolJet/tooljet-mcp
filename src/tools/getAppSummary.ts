@@ -39,9 +39,9 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      'Selective, bounded inspection of an app — use this instead of get_app. By default detail="structure" ' +
-      'Pass version_id after create_app_version to inspect that exact version instead of whichever version the editor selected. ' +
-      'returns page/component/query/event identity and layout but omits bulky component values, query options, ' +
+      'Selective, bounded inspection of an app — use this instead of get_app. Pass version_id after ' +
+      'create_app_version to inspect that exact version instead of whichever version the editor selected. ' +
+      'By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, ' +
       'and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted ' +
       'fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. ' +
       'Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never ' +

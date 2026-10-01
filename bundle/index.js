@@ -61981,14 +61981,21 @@ function createClient(auth, config2) {
       })
     });
     let created;
-    if (res.status === 409) {
+    let recoveredExisting = false;
+    const conflictText = res.ok ? "" : await res.clone().text();
+    const duplicateConflict = res.status === 409 || res.status === 422 && /already exists/i.test(conflictText);
+    if (duplicateConflict) {
       const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
       await assertOk(versionsRes, "createAppVersion.readAfterConflict");
       const versionsBody = await versionsRes.json();
-      const recovered = versionsBody.versions?.find((version2) => version2.name === params.versionName && (version2.parent_version_id ?? version2.parentVersionId) === params.versionFromId && (params.versionDescription === void 0 || version2.description === params.versionDescription));
+      const app = await getApp(params.appId);
+      const currentVersionId = app.current_version_id ?? app.currentVersionId;
+      const expectedDescription = params.versionDescription ?? "";
+      const recovered = versionsBody.versions?.find((version2) => version2.name === params.versionName && (version2.parent_version_id ?? version2.parentVersionId) === params.versionFromId && String(version2.description ?? "") === expectedDescription && version2.status === "DRAFT" && version2.id !== currentVersionId);
       if (!recovered)
         await assertOk(res, "createAppVersion");
       created = recovered;
+      recoveredExisting = true;
     } else {
       await assertOk(res, "createAppVersion");
       created = await res.json();
@@ -62003,7 +62010,8 @@ function createClient(auth, config2) {
       source_version_id: params.versionFromId,
       ...typeof created.status === "string" ? { status: created.status } : {},
       ...typeof created.current_environment_id === "string" ? { current_environment_id: created.current_environment_id } : {},
-      ...created.description === null || typeof created.description === "string" ? { description: created.description } : {}
+      ...created.description === null || typeof created.description === "string" ? { description: created.description } : {},
+      ...recoveredExisting ? { recovered: true } : {}
     };
   }
   async function releaseApp(appId, versionId) {
@@ -63581,7 +63589,7 @@ function createAppVersionTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Create a new draft version of an existing ToolJet app by cloning a specified source version. Returns the app_id, new version_id, version_name, source_version_id, and available version metadata. Continue all edits against the returned version_id. Version names must be unique within the app.",
+    description: "Create a new draft version of an existing ToolJet app by cloning a specified source version. Returns the app_id, new version_id, version_name, source_version_id, and available version metadata; recovered:true means an exact draft from a retry was reused. Before editing, inspect that returned version_id for its cloned resource IDs. Version names must be unique within the app.",
     inputSchema: {
       app_id: external_exports.string().uuid(),
       version_name: external_exports.string().trim().min(1).max(25),
@@ -66056,7 +66064,7 @@ function getAppSummaryTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" Pass version_id after create_app_version to inspect that exact version instead of whichever version the editor selected. returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
+    description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of whichever version the editor selected. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().min(1).optional(),

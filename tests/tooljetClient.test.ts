@@ -219,16 +219,35 @@ describe('createClient', () => {
 
     it('recovers an exact version clone after a conflict from a timed-out first attempt', async () => {
       auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 409, text: 'Version name already exists.' }))
+        .mockResolvedValueOnce(mockResponse({ status: 422, text: 'Already exists!' }))
         .mockResolvedValueOnce(mockResponse({ json: { versions: [{
           id: 'version-new', name: 'v2', parent_version_id: 'version-old', status: 'DRAFT',
           current_environment_id: 'environment-dev', description: 'Candidate',
-        }] } }));
+        }] } }))
+        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-live' } }));
       const client = createClient(auth, config);
 
       await expect(client.createAppVersion({
         appId: 'app-1', versionName: 'v2', versionFromId: 'version-old', versionDescription: 'Candidate',
-      })).resolves.toMatchObject({ version_id: 'version-new', source_version_id: 'version-old' });
+      })).resolves.toMatchObject({
+        version_id: 'version-new', source_version_id: 'version-old', recovered: true,
+      });
+    });
+
+    it('does not recover a published, released, or differently described same-name version', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 422, text: 'Already exists!' }))
+        .mockResolvedValueOnce(mockResponse({ json: { versions: [
+          { id: 'published', name: 'v2', parent_version_id: 'version-old', status: 'PUBLISHED', description: '' },
+          { id: 'released', name: 'v2', parent_version_id: 'version-old', status: 'DRAFT', description: '' },
+          { id: 'described', name: 'v2', parent_version_id: 'version-old', status: 'DRAFT', description: 'Older work' },
+        ] } }))
+        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'released' } }));
+      const client = createClient(auth, config);
+
+      await expect(client.createAppVersion({
+        appId: 'app-1', versionName: 'v2', versionFromId: 'version-old',
+      })).rejects.toThrow(/422.*Already exists/i);
     });
 
     it('releases a version and verifies it through the app readback', async () => {
