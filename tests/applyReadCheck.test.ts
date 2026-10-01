@@ -61,3 +61,27 @@ describe('the reads a phase wrote are run after it is applied', () => {
     expect(c.getQueries).not.toHaveBeenCalled();
   });
 });
+
+// s61 (2026-09-30): four reads run at once, and one came back "JWT issued at future": ToolJet minted the token a
+// moment ahead of PostgREST's clock. The model then re-ran that query to find nothing wrong with it.
+describe('a read refused for clock skew', () => {
+  it('is run again once and reported by its second answer', async () => {
+    const c = client({});
+    let calls = 0;
+    c.runQuery.mockImplementation(async ({ queryId }: { queryId: string }) => {
+      if (queryId === 'q-bad' && calls++ === 0) return { status: 'failed', message: 'JWT issued at future' };
+      return { status: 'ok', data: [{ id: 1 }] };
+    });
+    const check = await checkPlanReads(c as never, { versionId: 'v1', queryIds: ['q-bad'], retryDelayMs: 0 } as never);
+    expect(check.failed).toEqual([]);
+    expect(check.rows).toEqual({ returns: 1 });
+    expect(c.runQuery).toHaveBeenCalledTimes(2);
+  });
+
+  it('is reported as failed when the second run is refused as well', async () => {
+    const c = client({ 'q-bad': { status: 'failed', message: 'JWT issued at future' } });
+    const check = await checkPlanReads(c as never, { versionId: 'v1', queryIds: ['q-bad'], retryDelayMs: 0 } as never);
+    expect(check.failed).toEqual([expect.objectContaining({ name: 'returns' })]);
+    expect(c.runQuery).toHaveBeenCalledTimes(2);
+  });
+});

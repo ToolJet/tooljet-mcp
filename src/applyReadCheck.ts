@@ -29,6 +29,8 @@ export interface ReadCheck {
 }
 
 const MAX_READS = 10;
+const CLOCK_SKEW = /JWT issued at future/i;
+const CLOCK_SKEW_RETRY_MS = 1500;
 const REASON_CHARS = 160;
 
 const rowCount = (result: Record<string, unknown>): number | undefined => {
@@ -39,7 +41,7 @@ const rowCount = (result: Record<string, unknown>): number | undefined => {
 
 export async function checkPlanReads(
   client: ToolJetClient,
-  params: { versionId: string; queryIds: string[]; environmentId?: string },
+  params: { versionId: string; queryIds: string[]; environmentId?: string; retryDelayMs?: number },
 ): Promise<ReadCheck | undefined> {
   const wanted = [...new Set(params.queryIds)];
   if (!wanted.length) return undefined;
@@ -66,13 +68,21 @@ export async function checkPlanReads(
     const query = byId.get(id)!;
     const name = query.name ?? id;
     const needsViewer = containsComponentBinding(query.options);
-    let result: Record<string, unknown>;
-    try {
-      const bindings = resolveStaticBindings(query.options);
-      emptyViewerOnlyParams(query.options, bindings);
-      result = await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved }) as Record<string, unknown>;
-    } catch (error) {
-      result = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
+    const run = async (): Promise<Record<string, unknown>> => {
+      try {
+        const bindings = resolveStaticBindings(query.options);
+        emptyViewerOnlyParams(query.options, bindings);
+        return await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved }) as Record<string, unknown>;
+      } catch (error) {
+        return { status: 'failed', message: error instanceof Error ? error.message : String(error) };
+      }
+    };
+    let result = await run();
+    // ToolJet mints the ToolJet DB token a moment ahead of PostgREST's clock now and then, and the read is refused as
+    // "JWT issued at future" (s61, 2026-09-30): not the query's fault, so it is asked again once before it is reported.
+    if (result.status === 'failed' && CLOCK_SKEW.test(String(result.message ?? result.description ?? ''))) {
+      await new Promise((resolve) => setTimeout(resolve, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
+      result = await run();
     }
     check.ran += 1;
     if (result.status !== 'failed') {
