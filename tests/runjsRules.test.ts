@@ -88,3 +88,44 @@ describe('names a JavaScript query uses but never declares', () => {
     expect(runjsUndeclaredNames('return [a, b, a];')).toEqual(['a', 'b']);
   });
 });
+
+// A site inspection build (2026-10-04) bound a table to queries.findings.data.filter(r.status === "Open").map(r => ...):
+// the filter lost its "r =>", so r is undefined there and the table stayed empty. The later .map(r => ...) declares
+// an r of its own, which must not count for the filter: a name is declared only inside the function that declares it.
+describe('names are resolved in the function that declares them', () => {
+  it('reports a parameter used outside its arrow', () => {
+    expect(runjsUndeclaredNames('return rows.filter(r.status === "Open").map(r => r.id);')).toEqual(['rows', 'r']);
+  });
+  it('accepts parameters, closures, hoisted functions and catch params in scope', () => {
+    expect(runjsUndeclaredNames(`
+      const rows = [];
+      const byId = (id) => rows.find((row) => row.id === id);
+      function later() { return helper(); }
+      function helper() { const inner = 1; return [inner, byId(1)]; }
+      try { later(); } catch (err) { return err.message; }
+      return rows.map((r, i) => ({ r, i, f: function named() { return named; } }));
+    `)).toEqual([]);
+  });
+  it('does not let one function see another function\'s locals', () => {
+    expect(runjsUndeclaredNames('function a() { const secret = 1; return secret; }\nreturn [a(), secret];')).toEqual(['secret']);
+  });
+});
+
+describe('a {{ }} binding that reads a name nothing declares', () => {
+  it('is reported with the property path and the name', async () => {
+    const { lintBindingNames } = await import('../src/queryValidation.js');
+    const props = { data: { value: '{{ (queries.findings.data || []).filter(r.status === "Open").map(r => r.id) }}' }, visible: { value: '{{ allJobs.data.length > 0 }}' } };
+    const errors = lintBindingNames(props, 'Component "openFindings"');
+    expect(errors.join('\n')).toMatch(/openFindings.*data.*`r`/);
+    expect(errors.join('\n')).toMatch(/visible.*`allJobs`.*queries\.allJobs/);
+  });
+  it('accepts ToolJet state, column and list context names, and saved id references', async () => {
+    const { lintBindingNames } = await import('../src/queryValidation.js');
+    expect(lintBindingNames({
+      a: { value: '{{ components.t.selectedRow.id + queries.q.data.length + variables.x + globals.currentUser.email + page.handle }}' },
+      b: { value: '{{ rowData.status === "Late" ? cellValue : listItem.name ?? cardData.title }}' },
+      c: { value: '{{ components.d883eafc-af1c-4381-bdf1-bb7d5ace80e5.value }}' },
+      d: { value: 'plain text with no binding' },
+    }, 'x')).toEqual([]);
+  });
+});
