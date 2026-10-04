@@ -62226,19 +62226,33 @@ function lintComponentStateBindings(value2, components, path) {
       return;
     if (node2.type === "VariableDeclarator" && bindsComponents(node2.id) || /^(Function|Class)(Declaration|Expression)$/.test(node2.type) && bindsComponents(node2.id) || Array.isArray(node2.params) && node2.params.some(bindsComponents) || node2.type === "CatchClause" && bindsComponents(node2.param) || node2.type === "WithStatement" || node2.type === "CallExpression" && isNode2(node2.callee) && node2.callee.type === "Identifier" && node2.callee.name === "eval")
       shadowed = true;
-    if (isMember(node2) && memberName(node2) === "selectedCard" && isMember(node2.object)) {
+    const prop2 = isMember(node2) ? memberName(node2) : void 0;
+    if (prop2 && isMember(node2.object)) {
       const owner = node2.object;
       if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
         const name2 = memberName(owner);
-        if (name2 && components.some((c) => c.name === name2 && c.type === "Kanban"))
-          wrongNames.add(name2);
+        const type = name2 ? components.find((c) => c.name === name2)?.type : void 0;
+        if (name2 && type && WRONG_ALIASES[type]?.[prop2])
+          wrongNames.add(`${name2}\0${type}\0${prop2}`);
       }
     }
     Object.values(node2).forEach(visit);
   };
   visit(root);
-  return shadowed ? [] : [...wrongNames].map((name2) => `${path}: Kanban "${name2}" does not expose selectedCard. Use components.${name2}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`);
+  return shadowed ? [] : [...wrongNames].map((key4) => {
+    const [name2, type, prop2] = key4.split("\0");
+    return `${path}: ${WRONG_ALIASES[type][prop2](name2)}`;
+  });
 }
+var WRONG_ALIASES = {
+  Kanban: {
+    selectedCard: (name2) => `Kanban "${name2}" does not expose selectedCard. Use components.${name2}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`
+  },
+  // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
+  RadioButtonV2: {
+    label: (name2) => `RadioButton "${name2}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name2}.value for the selection.`
+  }
+};
 
 // dist/bindingSyntax.js
 function lintBindingSyntax(value2, path, wholeValueRequired = false) {
