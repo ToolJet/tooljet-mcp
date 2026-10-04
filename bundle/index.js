@@ -128,14 +128,14 @@ var require_content_type = __commonJS({
       return header;
     }
     function qstring(val) {
-      var str = String(val);
-      if (TOKEN_REGEXP.test(str)) {
-        return str;
+      var str2 = String(val);
+      if (TOKEN_REGEXP.test(str2)) {
+        return str2;
       }
-      if (str.length > 0 && !TEXT_REGEXP.test(str)) {
+      if (str2.length > 0 && !TEXT_REGEXP.test(str2)) {
         throw new TypeError("invalid parameter value");
       }
-      return '"' + str.replace(QUOTE_REGEXP, "\\$1") + '"';
+      return '"' + str2.replace(QUOTE_REGEXP, "\\$1") + '"';
     }
     function ContentType(type) {
       this.parameters = /* @__PURE__ */ Object.create(null);
@@ -212,7 +212,7 @@ var require_code = __commonJS({
     }
     exports._ = _;
     var plus = new _Code("+");
-    function str(strs, ...args) {
+    function str2(strs, ...args) {
       const expr = [safeStringify(strs[0])];
       let i = 0;
       while (i < args.length) {
@@ -223,7 +223,7 @@ var require_code = __commonJS({
       optimize(expr);
       return new _Code(expr);
     }
-    exports.str = str;
+    exports.str = str2;
     function addCodeArg(code, arg) {
       if (arg instanceof _Code)
         code.push(...arg._items);
@@ -266,7 +266,7 @@ var require_code = __commonJS({
       return;
     }
     function strConcat(c1, c2) {
-      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str`${c1}${c2}`;
+      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str2`${c1}${c2}`;
     }
     exports.strConcat = strConcat;
     function interpolate(x) {
@@ -1228,22 +1228,22 @@ var require_util = __commonJS({
       return (0, codegen_1._)`${topSchemaRef}${schemaPath}${(0, codegen_1.getProperty)(keyword)}`;
     }
     exports.schemaRefOrVal = schemaRefOrVal;
-    function unescapeFragment(str) {
-      return unescapeJsonPointer(decodeURIComponent(str));
+    function unescapeFragment(str2) {
+      return unescapeJsonPointer(decodeURIComponent(str2));
     }
     exports.unescapeFragment = unescapeFragment;
-    function escapeFragment(str) {
-      return encodeURIComponent(escapeJsonPointer(str));
+    function escapeFragment(str2) {
+      return encodeURIComponent(escapeJsonPointer(str2));
     }
     exports.escapeFragment = escapeFragment;
-    function escapeJsonPointer(str) {
-      if (typeof str == "number")
-        return `${str}`;
-      return str.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPointer(str2) {
+      if (typeof str2 == "number")
+        return `${str2}`;
+      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
     }
     exports.escapeJsonPointer = escapeJsonPointer;
-    function unescapeJsonPointer(str) {
-      return str.replace(/~1/g, "/").replace(/~0/g, "~");
+    function unescapeJsonPointer(str2) {
+      return str2.replace(/~1/g, "/").replace(/~0/g, "~");
     }
     exports.unescapeJsonPointer = unescapeJsonPointer;
     function eachItem(xs, f) {
@@ -2268,8 +2268,8 @@ var require_json_schema_traverse = __commonJS({
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
       }
     }
-    function escapeJsonPtr(str) {
-      return str.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPtr(str2) {
+      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
     }
   }
 });
@@ -3333,10 +3333,10 @@ var require_utils = __commonJS({
         return { host, isIPV6: false };
       }
     }
-    function findToken(str, token) {
+    function findToken(str2, token) {
       let ind = 0;
-      for (let i = 0; i < str.length; i++) {
-        if (str[i] === token) ind++;
+      for (let i = 0; i < str2.length; i++) {
+        if (str2[i] === token) ind++;
       }
       return ind;
     }
@@ -4099,7 +4099,7 @@ var require_core = __commonJS({
     var util_1 = require_util();
     var $dataRefSchema = require_data();
     var uri_1 = require_uri();
-    var defaultRegExp = (str, flags) => new RegExp(str, flags);
+    var defaultRegExp = (str2, flags) => new RegExp(str2, flags);
     defaultRegExp.code = "new RegExp";
     var META_IGNORE_OPTIONS = ["removeAdditional", "useDefaults", "coerceTypes"];
     var EXT_SCOPE_NAMES = /* @__PURE__ */ new Set([
@@ -4894,16 +4894,16 @@ var require_ucs2length = __commonJS({
   "node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function ucs2length(str) {
-      const len = str.length;
+    function ucs2length(str2) {
+      const len = str2.length;
       let length = 0;
       let pos = 0;
       let value2;
       while (pos < len) {
         length++;
-        value2 = str.charCodeAt(pos++);
+        value2 = str2.charCodeAt(pos++);
         if (value2 >= 55296 && value2 <= 56319 && pos < len) {
-          value2 = str.charCodeAt(pos);
+          value2 = str2.charCodeAt(pos);
           if ((value2 & 64512) === 56320)
             pos++;
         }
@@ -6786,8 +6786,8 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date5(str) {
-      const matches2 = DATE.exec(str);
+    function date5(str2) {
+      const matches2 = DATE.exec(str2);
       if (!matches2)
         return false;
       const year = +matches2[1];
@@ -6806,8 +6806,8 @@ var require_formats = __commonJS({
     }
     var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
     function getTime(strictTimeZone) {
-      return function time3(str) {
-        const matches2 = TIME.exec(str);
+      return function time3(str2) {
+        const matches2 = TIME.exec(str2);
         if (!matches2)
           return false;
         const hr = +matches2[1];
@@ -6853,8 +6853,8 @@ var require_formats = __commonJS({
     var DATE_TIME_SEPARATOR = /t|\s/i;
     function getDateTime(strictTimeZone) {
       const time3 = getTime(strictTimeZone);
-      return function date_time(str) {
-        const dateTime = str.split(DATE_TIME_SEPARATOR);
+      return function date_time(str2) {
+        const dateTime = str2.split(DATE_TIME_SEPARATOR);
         return dateTime.length === 2 && date5(dateTime[0]) && time3(dateTime[1]);
       };
     }
@@ -6879,13 +6879,13 @@ var require_formats = __commonJS({
     }
     var NOT_URI_FRAGMENT = /\/|:/;
     var URI = /^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
-    function uri(str) {
-      return NOT_URI_FRAGMENT.test(str) && URI.test(str);
+    function uri(str2) {
+      return NOT_URI_FRAGMENT.test(str2) && URI.test(str2);
     }
     var BYTE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/gm;
-    function byte(str) {
+    function byte(str2) {
       BYTE.lastIndex = 0;
-      return BYTE.test(str);
+      return BYTE.test(str2);
     }
     var MIN_INT32 = -(2 ** 31);
     var MAX_INT32 = 2 ** 31 - 1;
@@ -6899,11 +6899,11 @@ var require_formats = __commonJS({
       return true;
     }
     var Z_ANCHOR = /[^\\]\\Z/;
-    function regex(str) {
-      if (Z_ANCHOR.test(str))
+    function regex(str2) {
+      if (Z_ANCHOR.test(str2))
         return false;
       try {
-        new RegExp(str);
+        new RegExp(str2);
         return true;
       } catch (e) {
         return false;
@@ -13357,9 +13357,9 @@ var require_lib = __commonJS({
         });
       }
       finishOp(type, size) {
-        const str = this.input.slice(this.state.pos, this.state.pos + size);
+        const str2 = this.input.slice(this.state.pos, this.state.pos + size);
         this.state.pos += size;
-        this.finishToken(type, str);
+        this.finishToken(type, str2);
       }
       readRegexp() {
         const startLoc = this.state.startLoc;
@@ -13453,8 +13453,8 @@ var require_lib = __commonJS({
           throw this.raise(Errors.NumberIdentifier, this.state.curPosition());
         }
         if (isBigInt) {
-          const str = this.input.slice(start, this.state.pos).replace(/[_n]/g, "");
-          this.finishToken(136, str);
+          const str2 = this.input.slice(start, this.state.pos).replace(/[_n]/g, "");
+          this.finishToken(136, str2);
           return;
         }
         this.finishToken(135, val);
@@ -13518,16 +13518,16 @@ var require_lib = __commonJS({
         if (isIdentifierStart(this.codePointAtPos(this.state.pos))) {
           throw this.raise(Errors.NumberIdentifier, this.state.curPosition());
         }
-        const str = this.input.slice(start, this.state.pos).replace(/[_mn]/g, "");
+        const str2 = this.input.slice(start, this.state.pos).replace(/[_mn]/g, "");
         if (isBigInt) {
-          this.finishToken(136, str);
+          this.finishToken(136, str2);
           return;
         }
         if (isDecimal) {
-          this.finishToken(137, str);
+          this.finishToken(137, str2);
           return;
         }
-        const val = isOctal ? parseInt(str, 8) : parseFloat(str);
+        const val = isOctal ? parseInt(str2, 8) : parseFloat(str2);
         this.finishToken(135, val);
       }
       readCodePoint(throwOnInvalid) {
@@ -13540,7 +13540,7 @@ var require_lib = __commonJS({
       }
       readString(quote2) {
         const {
-          str,
+          str: str2,
           pos,
           curLine,
           lineStart
@@ -13548,7 +13548,7 @@ var require_lib = __commonJS({
         this.state.pos = pos + 1;
         this.state.lineStart = lineStart;
         this.state.curLine = curLine;
-        this.finishToken(134, str);
+        this.finishToken(134, str2);
       }
       readTemplateContinuation() {
         if (!this.match(8)) {
@@ -13560,7 +13560,7 @@ var require_lib = __commonJS({
       readTemplateToken() {
         const opening = this.input[this.state.pos];
         const {
-          str,
+          str: str2,
           firstInvalidLoc,
           pos,
           curLine,
@@ -13573,10 +13573,10 @@ var require_lib = __commonJS({
           this.state.firstInvalidTemplateEscapePos = new Position(firstInvalidLoc.curLine, firstInvalidLoc.pos - firstInvalidLoc.lineStart, this.sourceToOffsetPos(firstInvalidLoc.pos));
         }
         if (this.input.codePointAt(pos) === 96) {
-          this.finishToken(24, firstInvalidLoc ? null : opening + str + "`");
+          this.finishToken(24, firstInvalidLoc ? null : opening + str2 + "`");
         } else {
           this.state.pos++;
-          this.finishToken(25, firstInvalidLoc ? null : opening + str + "${");
+          this.finishToken(25, firstInvalidLoc ? null : opening + str2 + "${");
         }
       }
       recordStrictModeErrors(toParseError, at) {
@@ -21553,7 +21553,7 @@ var require_lib = __commonJS({
         return getParser(options2, input).parse();
       }
     }
-    function parseExpression13(input, options2) {
+    function parseExpression14(input, options2) {
       const parser = getParser(options2, input);
       if (parser.options.strictMode) {
         parser.state.strict = true;
@@ -21608,7 +21608,7 @@ var require_lib = __commonJS({
       return cls;
     }
     exports.parse = parse4;
-    exports.parseExpression = parseExpression13;
+    exports.parseExpression = parseExpression14;
     exports.tokTypes = tokTypes;
   }
 });
@@ -22558,13 +22558,13 @@ var require_Collection = __commonJS({
 var require_stringifyComment = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
     "use strict";
-    var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
+    var stringifyComment = (str2) => str2.replace(/^(?!$)(?: $)?/gm, "#");
     function indentComment(comment, indent) {
       if (/^\n+$/.test(comment))
         return comment.substring(1);
       return indent ? comment.replace(/^(?! *$)/gm, indent) : comment;
     }
-    var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
+    var lineComment = (str2, indent, comment) => str2.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str2.endsWith(" ") ? "" : " ") + comment;
     exports.indentComment = indentComment;
     exports.lineComment = lineComment;
     exports.stringifyComment = stringifyComment;
@@ -22718,16 +22718,16 @@ var require_stringifyString = __commonJS({
       lineWidth: ctx.options.lineWidth,
       minContentWidth: ctx.options.minContentWidth
     });
-    var containsDocumentMarker = (str) => /^(%|---|\.\.\.)/m.test(str);
-    function lineLengthOverLimit(str, lineWidth, indentLength) {
+    var containsDocumentMarker = (str2) => /^(%|---|\.\.\.)/m.test(str2);
+    function lineLengthOverLimit(str2, lineWidth, indentLength) {
       if (!lineWidth || lineWidth < 0)
         return false;
       const limit = lineWidth - indentLength;
-      const strLen = str.length;
+      const strLen = str2.length;
       if (strLen <= limit)
         return false;
       for (let i = 0, start = 0; i < strLen; ++i) {
-        if (str[i] === "\n") {
+        if (str2[i] === "\n") {
           if (i - start > limit)
             return true;
           start = i + 1;
@@ -22744,11 +22744,11 @@ var require_stringifyString = __commonJS({
       const { implicitKey } = ctx;
       const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
       const indent = ctx.indent || (containsDocumentMarker(value2) ? "  " : "");
-      let str = "";
+      let str2 = "";
       let start = 0;
       for (let i = 0, ch = json3[i]; ch; ch = json3[++i]) {
         if (ch === " " && json3[i + 1] === "\\" && json3[i + 2] === "n") {
-          str += json3.slice(start, i) + "\\ ";
+          str2 += json3.slice(start, i) + "\\ ";
           i += 1;
           start = i;
           ch = "\\";
@@ -22757,38 +22757,38 @@ var require_stringifyString = __commonJS({
           switch (json3[i + 1]) {
             case "u":
               {
-                str += json3.slice(start, i);
+                str2 += json3.slice(start, i);
                 const code = json3.substr(i + 2, 4);
                 switch (code) {
                   case "0000":
-                    str += "\\0";
+                    str2 += "\\0";
                     break;
                   case "0007":
-                    str += "\\a";
+                    str2 += "\\a";
                     break;
                   case "000b":
-                    str += "\\v";
+                    str2 += "\\v";
                     break;
                   case "001b":
-                    str += "\\e";
+                    str2 += "\\e";
                     break;
                   case "0085":
-                    str += "\\N";
+                    str2 += "\\N";
                     break;
                   case "00a0":
-                    str += "\\_";
+                    str2 += "\\_";
                     break;
                   case "2028":
-                    str += "\\L";
+                    str2 += "\\L";
                     break;
                   case "2029":
-                    str += "\\P";
+                    str2 += "\\P";
                     break;
                   default:
                     if (code.substr(0, 2) === "00")
-                      str += "\\x" + code.substr(2);
+                      str2 += "\\x" + code.substr(2);
                     else
-                      str += json3.substr(i, 6);
+                      str2 += json3.substr(i, 6);
                 }
                 i += 5;
                 start = i + 1;
@@ -22798,14 +22798,14 @@ var require_stringifyString = __commonJS({
               if (implicitKey || json3[i + 2] === '"' || json3.length < minMultiLineLength) {
                 i += 1;
               } else {
-                str += json3.slice(start, i) + "\n\n";
+                str2 += json3.slice(start, i) + "\n\n";
                 while (json3[i + 2] === "\\" && json3[i + 3] === "n" && json3[i + 4] !== '"') {
-                  str += "\n";
+                  str2 += "\n";
                   i += 2;
                 }
-                str += indent;
+                str2 += indent;
                 if (json3[i + 2] === " ")
-                  str += "\\";
+                  str2 += "\\";
                 i += 1;
                 start = i + 1;
               }
@@ -22814,8 +22814,8 @@ var require_stringifyString = __commonJS({
               i += 1;
           }
       }
-      str = start ? str + json3.slice(start) : json3;
-      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
+      str2 = start ? str2 + json3.slice(start) : json3;
+      return implicitKey ? str2 : foldFlowLines.foldFlowLines(str2, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
     }
     function singleQuotedString(value2, ctx) {
       if (ctx.options.singleQuote === false || ctx.implicitKey && value2.includes("\n") || /[ \t]\n|\n[ \t]/.test(value2))
@@ -22943,15 +22943,15 @@ ${indent}${start}${value2}${end}`;
           return quotedString(value2, ctx);
         }
       }
-      const str = value2.replace(/\n+/g, `$&
+      const str2 = value2.replace(/\n+/g, `$&
 ${indent}`);
       if (actualString) {
-        const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str);
+        const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str2);
         const { compat, tags } = ctx.doc.schema;
         if (tags.some(test) || compat?.some(test))
           return quotedString(value2, ctx);
       }
-      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
+      return implicitKey ? str2 : foldFlowLines.foldFlowLines(str2, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
     }
     function stringifyString(item, ctx, onComment, onChompKeep) {
       const { implicitKey, inFlow } = ctx;
@@ -23103,11 +23103,11 @@ var require_stringify = __commonJS({
       const props = stringifyProps(node2, tagObj, ctx);
       if (props.length > 0)
         ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
-      const str = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
+      const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
       if (!props)
-        return str;
-      return identity.isScalar(node2) || str[0] === "{" || str[0] === "[" ? `${props} ${str}` : `${props}
-${ctx.indent}${str}`;
+        return str2;
+      return identity.isScalar(node2) || str2[0] === "{" || str2[0] === "[" ? `${props} ${str2}` : `${props}
+${ctx.indent}${str2}`;
     }
     exports.createStringifyContext = createStringifyContext;
     exports.stringify = stringify;
@@ -23142,8 +23142,8 @@ var require_stringifyPair = __commonJS({
       });
       let keyCommentDone = false;
       let chompKeep = false;
-      let str = stringify.stringify(key4, ctx, () => keyCommentDone = true, () => chompKeep = true);
-      if (!explicitKey && !ctx.inFlow && str.length > 1024) {
+      let str2 = stringify.stringify(key4, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      if (!explicitKey && !ctx.inFlow && str2.length > 1024) {
         if (simpleKeys)
           throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
         explicitKey = true;
@@ -23152,27 +23152,27 @@ var require_stringifyPair = __commonJS({
         if (allNullValues || value2 == null) {
           if (keyCommentDone && onComment)
             onComment();
-          return str === "" ? "?" : explicitKey ? `? ${str}` : str;
+          return str2 === "" ? "?" : explicitKey ? `? ${str2}` : str2;
         }
       } else if (allNullValues && !simpleKeys || value2 == null && explicitKey) {
-        str = `? ${str}`;
+        str2 = `? ${str2}`;
         if (keyComment && !keyCommentDone) {
-          str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
+          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
         } else if (chompKeep && onChompKeep)
           onChompKeep();
-        return str;
+        return str2;
       }
       if (keyCommentDone)
         keyComment = null;
       if (explicitKey) {
         if (keyComment)
-          str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
-        str = `? ${str}
+          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
+        str2 = `? ${str2}
 ${indent}:`;
       } else {
-        str = `${str}:`;
+        str2 = `${str2}:`;
         if (keyComment)
-          str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
+          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
       }
       let vsb, vcb, valueComment;
       if (identity.isNode(value2)) {
@@ -23188,7 +23188,7 @@ ${indent}:`;
       }
       ctx.implicitKey = false;
       if (!explicitKey && !keyComment && identity.isScalar(value2))
-        ctx.indentAtStart = str.length + 1;
+        ctx.indentAtStart = str2.length + 1;
       chompKeep = false;
       if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && identity.isSeq(value2) && !value2.flow && !value2.tag && !value2.anchor) {
         ctx.indent = ctx.indent.substring(2);
@@ -23232,16 +23232,16 @@ ${ctx.indent}`;
       } else if (valueStr === "" || valueStr[0] === "\n") {
         ws = "";
       }
-      str += ws + valueStr;
+      str2 += ws + valueStr;
       if (ctx.inFlow) {
         if (valueCommentDone && onComment)
           onComment();
       } else if (valueComment && !valueCommentDone) {
-        str += stringifyComment.lineComment(str, ctx.indent, commentString(valueComment));
+        str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(valueComment));
       } else if (chompKeep && onChompKeep) {
         onChompKeep();
       }
-      return str;
+      return str2;
     }
     exports.stringifyPair = stringifyPair;
   }
@@ -23468,31 +23468,31 @@ var require_stringifyCollection = __commonJS({
           }
         }
         chompKeep = false;
-        let str2 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        let str3 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
         if (comment2)
-          str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
+          str3 += stringifyComment.lineComment(str3, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
           chompKeep = false;
-        lines.push(blockItemPrefix + str2);
+        lines.push(blockItemPrefix + str3);
       }
-      let str;
+      let str2;
       if (lines.length === 0) {
-        str = flowChars.start + flowChars.end;
+        str2 = flowChars.start + flowChars.end;
       } else {
-        str = lines[0];
+        str2 = lines[0];
         for (let i = 1; i < lines.length; ++i) {
           const line = lines[i];
-          str += line ? `
+          str2 += line ? `
 ${indent}${line}` : "\n";
         }
       }
       if (comment) {
-        str += "\n" + stringifyComment.indentComment(commentString(comment), indent);
+        str2 += "\n" + stringifyComment.indentComment(commentString(comment), indent);
         if (onComment)
           onComment();
       } else if (chompKeep && onChompKeep)
         onChompKeep();
-      return str;
+      return str2;
     }
     function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
       const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
@@ -23535,21 +23535,21 @@ ${indent}${line}` : "\n";
         }
         if (comment)
           reqNewline = true;
-        let str = stringify.stringify(item, itemCtx, () => comment = null);
-        reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
+        let str2 = stringify.stringify(item, itemCtx, () => comment = null);
+        reqNewline || (reqNewline = lines.length > linesAtValue || str2.includes("\n"));
         if (i < items.length - 1) {
-          str += ",";
+          str2 += ",";
         } else if (ctx.options.trailingComma) {
           if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
+            reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str2.length + 2) > ctx.options.lineWidth);
           }
           if (reqNewline) {
-            str += ",";
+            str2 += ",";
           }
         }
         if (comment)
-          str += stringifyComment.lineComment(str, itemIndent, commentString(comment));
-        lines.push(str);
+          str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment));
+        lines.push(str2);
         linesAtValue = lines.length;
       }
       const { start, end } = flowChars;
@@ -23561,11 +23561,11 @@ ${indent}${line}` : "\n";
           reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
         }
         if (reqNewline) {
-          let str = start;
+          let str2 = start;
           for (const line of lines)
-            str += line ? `
+            str2 += line ? `
 ${indentStep}${indent}${line}` : "\n";
-          return `${str}
+          return `${str2}
 ${indent}${end}`;
         } else {
           return `${start}${fcPadding}${lines.join(" ")}${fcPadding}${end}`;
@@ -23897,7 +23897,7 @@ var require_string = __commonJS({
       identify: (value2) => typeof value2 === "string",
       default: true,
       tag: "tag:yaml.org,2002:str",
-      resolve: (str) => str,
+      resolve: (str2) => str2,
       stringify(item, ctx, onComment, onChompKeep) {
         ctx = Object.assign({ actualString: true }, ctx);
         return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
@@ -23935,7 +23935,7 @@ var require_bool = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:bool",
       test: /^(?:[Tt]rue|TRUE|[Ff]alse|FALSE)$/,
-      resolve: (str) => new Scalar.Scalar(str[0] === "t" || str[0] === "T"),
+      resolve: (str2) => new Scalar.Scalar(str2[0] === "t" || str2[0] === "T"),
       stringify({ source: source2, value: value2 }, ctx) {
         if (source2 && boolTag.test.test(source2)) {
           const sv = source2[0] === "t" || source2[0] === "T";
@@ -23956,9 +23956,9 @@ var require_stringifyNumber = __commonJS({
     function stringifyNumber({ format, minFractionDigits, tag, value: value2 }) {
       if (typeof value2 === "bigint")
         return String(value2);
-      const num = typeof value2 === "number" ? value2 : Number(value2);
-      if (!isFinite(num))
-        return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
+      const num2 = typeof value2 === "number" ? value2 : Number(value2);
+      if (!isFinite(num2))
+        return isNaN(num2) ? ".nan" : num2 < 0 ? "-.inf" : ".inf";
       let n = Object.is(value2, -0) ? "-0" : JSON.stringify(value2);
       if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
         let i = n.indexOf(".");
@@ -23987,7 +23987,7 @@ var require_float = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-      resolve: (str) => str.slice(-3).toLowerCase() === "nan" ? NaN : str[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+      resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
       stringify: stringifyNumber.stringifyNumber
     };
     var floatExp = {
@@ -23996,10 +23996,10 @@ var require_float = __commonJS({
       tag: "tag:yaml.org,2002:float",
       format: "EXP",
       test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
-      resolve: (str) => parseFloat(str),
+      resolve: (str2) => parseFloat(str2),
       stringify(node2) {
-        const num = Number(node2.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node2);
+        const num2 = Number(node2.value);
+        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node2);
       }
     };
     var float = {
@@ -24007,11 +24007,11 @@ var require_float = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)$/,
-      resolve(str) {
-        const node2 = new Scalar.Scalar(parseFloat(str));
-        const dot = str.indexOf(".");
-        if (dot !== -1 && str[str.length - 1] === "0")
-          node2.minFractionDigits = str.length - dot - 1;
+      resolve(str2) {
+        const node2 = new Scalar.Scalar(parseFloat(str2));
+        const dot = str2.indexOf(".");
+        if (dot !== -1 && str2[str2.length - 1] === "0")
+          node2.minFractionDigits = str2.length - dot - 1;
         return node2;
       },
       stringify: stringifyNumber.stringifyNumber
@@ -24028,7 +24028,7 @@ var require_int = __commonJS({
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value2) => typeof value2 === "bigint" || Number.isInteger(value2);
-    var intResolve = (str, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str.substring(offset), radix);
+    var intResolve = (str2, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2.substring(offset), radix);
     function intStringify(node2, radix, prefix) {
       const { value: value2 } = node2;
       if (intIdentify(value2) && value2 >= 0)
@@ -24041,7 +24041,7 @@ var require_int = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "OCT",
       test: /^0o[0-7]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 8, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 8, opt),
       stringify: (node2) => intStringify(node2, 8, "0o")
     };
     var int2 = {
@@ -24049,7 +24049,7 @@ var require_int = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:int",
       test: /^[-+]?[0-9]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 0, 10, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
       stringify: stringifyNumber.stringifyNumber
     };
     var intHex = {
@@ -24058,7 +24058,7 @@ var require_int = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "HEX",
       test: /^0x[0-9a-fA-F]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
       stringify: (node2) => intStringify(node2, 16, "0x")
     };
     exports.int = int2;
@@ -24111,7 +24111,7 @@ var require_schema2 = __commonJS({
         identify: (value2) => typeof value2 === "string",
         default: true,
         tag: "tag:yaml.org,2002:str",
-        resolve: (str) => str,
+        resolve: (str2) => str2,
         stringify: stringifyJSON
       },
       {
@@ -24128,7 +24128,7 @@ var require_schema2 = __commonJS({
         default: true,
         tag: "tag:yaml.org,2002:bool",
         test: /^true$|^false$/,
-        resolve: (str) => str === "true",
+        resolve: (str2) => str2 === "true",
         stringify: stringifyJSON
       },
       {
@@ -24136,7 +24136,7 @@ var require_schema2 = __commonJS({
         default: true,
         tag: "tag:yaml.org,2002:int",
         test: /^-?(?:0|[1-9][0-9]*)$/,
-        resolve: (str, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str, 10),
+        resolve: (str2, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2, 10),
         stringify: ({ value: value2 }) => intIdentify(value2) ? value2.toString() : JSON.stringify(value2)
       },
       {
@@ -24144,7 +24144,7 @@ var require_schema2 = __commonJS({
         default: true,
         tag: "tag:yaml.org,2002:float",
         test: /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?$/,
-        resolve: (str) => parseFloat(str),
+        resolve: (str2) => parseFloat(str2),
         stringify: stringifyJSON
       }
     ];
@@ -24152,9 +24152,9 @@ var require_schema2 = __commonJS({
       default: true,
       tag: "",
       test: /^/,
-      resolve(str, onError) {
-        onError(`Unresolved plain scalar ${JSON.stringify(str)}`);
-        return str;
+      resolve(str2, onError) {
+        onError(`Unresolved plain scalar ${JSON.stringify(str2)}`);
+        return str2;
       }
     };
     var schema = [map2.map, seq.seq].concat(jsonScalars, jsonError);
@@ -24186,10 +24186,10 @@ var require_binary = __commonJS({
         if (typeof node_buffer.Buffer === "function") {
           return node_buffer.Buffer.from(src, "base64");
         } else if (typeof atob === "function") {
-          const str = atob(src.replace(/[\n\r]/g, ""));
-          const buffer = new Uint8Array(str.length);
-          for (let i = 0; i < str.length; ++i)
-            buffer[i] = str.charCodeAt(i);
+          const str2 = atob(src.replace(/[\n\r]/g, ""));
+          const buffer = new Uint8Array(str2.length);
+          for (let i = 0; i < str2.length; ++i)
+            buffer[i] = str2.charCodeAt(i);
           return buffer;
         } else {
           onError("This environment does not support reading binary tags; either Buffer or atob is required");
@@ -24200,28 +24200,28 @@ var require_binary = __commonJS({
         if (!value2)
           return "";
         const buf = value2;
-        let str;
+        let str2;
         if (typeof node_buffer.Buffer === "function") {
-          str = buf instanceof node_buffer.Buffer ? buf.toString("base64") : node_buffer.Buffer.from(buf.buffer).toString("base64");
+          str2 = buf instanceof node_buffer.Buffer ? buf.toString("base64") : node_buffer.Buffer.from(buf.buffer).toString("base64");
         } else if (typeof btoa === "function") {
           let s = "";
           for (let i = 0; i < buf.length; ++i)
             s += String.fromCharCode(buf[i]);
-          str = btoa(s);
+          str2 = btoa(s);
         } else {
           throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
         }
         type ?? (type = Scalar.Scalar.BLOCK_LITERAL);
         if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
           const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
-          const n = Math.ceil(str.length / lineWidth);
+          const n = Math.ceil(str2.length / lineWidth);
           const lines = new Array(n);
           for (let i = 0, o = 0; i < n; ++i, o += lineWidth) {
-            lines[i] = str.substr(o, lineWidth);
+            lines[i] = str2.substr(o, lineWidth);
           }
-          str = lines.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
+          str2 = lines.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
         }
-        return stringifyString.stringifyString({ comment, type, value: str }, ctx, onComment, onChompKeep);
+        return stringifyString.stringifyString({ comment, type, value: str2 }, ctx, onComment, onChompKeep);
       }
     };
     exports.binary = binary;
@@ -24427,7 +24427,7 @@ var require_float2 = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-      resolve: (str) => str.slice(-3).toLowerCase() === "nan" ? NaN : str[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+      resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
       stringify: stringifyNumber.stringifyNumber
     };
     var floatExp = {
@@ -24436,10 +24436,10 @@ var require_float2 = __commonJS({
       tag: "tag:yaml.org,2002:float",
       format: "EXP",
       test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
-      resolve: (str) => parseFloat(str.replace(/_/g, "")),
+      resolve: (str2) => parseFloat(str2.replace(/_/g, "")),
       stringify(node2) {
-        const num = Number(node2.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node2);
+        const num2 = Number(node2.value);
+        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node2);
       }
     };
     var float = {
@@ -24447,11 +24447,11 @@ var require_float2 = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^[-+]?(?:[0-9][0-9_]*)?\.[0-9_]*$/,
-      resolve(str) {
-        const node2 = new Scalar.Scalar(parseFloat(str.replace(/_/g, "")));
-        const dot = str.indexOf(".");
+      resolve(str2) {
+        const node2 = new Scalar.Scalar(parseFloat(str2.replace(/_/g, "")));
+        const dot = str2.indexOf(".");
         if (dot !== -1) {
-          const f = str.substring(dot + 1).replace(/_/g, "");
+          const f = str2.substring(dot + 1).replace(/_/g, "");
           if (f[f.length - 1] === "0")
             node2.minFractionDigits = f.length;
         }
@@ -24471,34 +24471,34 @@ var require_int2 = __commonJS({
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value2) => typeof value2 === "bigint" || Number.isInteger(value2);
-    function intResolve(str, offset, radix, { intAsBigInt }) {
-      const sign = str[0];
+    function intResolve(str2, offset, radix, { intAsBigInt }) {
+      const sign = str2[0];
       if (sign === "-" || sign === "+")
         offset += 1;
-      str = str.substring(offset).replace(/_/g, "");
+      str2 = str2.substring(offset).replace(/_/g, "");
       if (intAsBigInt) {
         switch (radix) {
           case 2:
-            str = `0b${str}`;
+            str2 = `0b${str2}`;
             break;
           case 8:
-            str = `0o${str}`;
+            str2 = `0o${str2}`;
             break;
           case 16:
-            str = `0x${str}`;
+            str2 = `0x${str2}`;
             break;
         }
-        const n2 = BigInt(str);
+        const n2 = BigInt(str2);
         return sign === "-" ? BigInt(-1) * n2 : n2;
       }
-      const n = parseInt(str, radix);
+      const n = parseInt(str2, radix);
       return sign === "-" ? -1 * n : n;
     }
     function intStringify(node2, radix, prefix) {
       const { value: value2 } = node2;
       if (intIdentify(value2)) {
-        const str = value2.toString(radix);
-        return value2 < 0 ? "-" + prefix + str.substr(1) : prefix + str;
+        const str2 = value2.toString(radix);
+        return value2 < 0 ? "-" + prefix + str2.substr(1) : prefix + str2;
       }
       return stringifyNumber.stringifyNumber(node2);
     }
@@ -24508,7 +24508,7 @@ var require_int2 = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "BIN",
       test: /^[-+]?0b[0-1_]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 2, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 2, opt),
       stringify: (node2) => intStringify(node2, 2, "0b")
     };
     var intOct = {
@@ -24517,7 +24517,7 @@ var require_int2 = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "OCT",
       test: /^[-+]?0[0-7_]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 1, 8, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 1, 8, opt),
       stringify: (node2) => intStringify(node2, 8, "0")
     };
     var int2 = {
@@ -24525,7 +24525,7 @@ var require_int2 = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:int",
       test: /^[-+]?[0-9][0-9_]*$/,
-      resolve: (str, _onError, opt) => intResolve(str, 0, 10, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
       stringify: stringifyNumber.stringifyNumber
     };
     var intHex = {
@@ -24534,7 +24534,7 @@ var require_int2 = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "HEX",
       test: /^[-+]?0x[0-9a-fA-F_]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
       stringify: (node2) => intStringify(node2, 16, "0x")
     };
     exports.int = int2;
@@ -24638,26 +24638,26 @@ var require_timestamp = __commonJS({
   "node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
-    function parseSexagesimal(str, asBigInt) {
-      const sign = str[0];
-      const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
-      const num = (n) => asBigInt ? BigInt(n) : Number(n);
-      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
-      return sign === "-" ? num(-1) * res : res;
+    function parseSexagesimal(str2, asBigInt) {
+      const sign = str2[0];
+      const parts = sign === "-" || sign === "+" ? str2.substring(1) : str2;
+      const num2 = (n) => asBigInt ? BigInt(n) : Number(n);
+      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num2(60) + num2(p), num2(0));
+      return sign === "-" ? num2(-1) * res : res;
     }
     function stringifySexagesimal(node2) {
       let { value: value2 } = node2;
-      let num = (n) => n;
+      let num2 = (n) => n;
       if (typeof value2 === "bigint")
-        num = (n) => BigInt(n);
+        num2 = (n) => BigInt(n);
       else if (isNaN(value2) || !isFinite(value2))
         return stringifyNumber.stringifyNumber(node2);
       let sign = "";
       if (value2 < 0) {
         sign = "-";
-        value2 *= num(-1);
+        value2 *= num2(-1);
       }
-      const _60 = num(60);
+      const _60 = num2(60);
       const parts = [value2 % _60];
       if (value2 < 60) {
         parts.unshift(0);
@@ -24677,7 +24677,7 @@ var require_timestamp = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "TIME",
       test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+$/,
-      resolve: (str, _onError, { intAsBigInt }) => parseSexagesimal(str, intAsBigInt),
+      resolve: (str2, _onError, { intAsBigInt }) => parseSexagesimal(str2, intAsBigInt),
       stringify: stringifySexagesimal
     };
     var floatTime = {
@@ -24686,7 +24686,7 @@ var require_timestamp = __commonJS({
       tag: "tag:yaml.org,2002:float",
       format: "TIME",
       test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*$/,
-      resolve: (str) => parseSexagesimal(str, false),
+      resolve: (str2) => parseSexagesimal(str2, false),
       stringify: stringifySexagesimal
     };
     var timestamp = {
@@ -24697,8 +24697,8 @@ var require_timestamp = __commonJS({
       // may be omitted altogether, resulting in a date format. In such a case, the time part is
       // assumed to be 00:00:00Z (start of day, UTC).
       test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
-      resolve(str) {
-        const match = str.match(timestamp.test);
+      resolve(str2) {
+        const match = str2.match(timestamp.test);
         if (!match)
           throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
         const [, year, month, day, hour, minute, second] = match.map(Number);
@@ -30052,6 +30052,4174 @@ var require_lib2 = __commonJS({
   }
 });
 
+// node_modules/moment/moment.js
+var require_moment = __commonJS({
+  "node_modules/moment/moment.js"(exports, module) {
+    (function(global2, factory) {
+      typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global2.moment = factory();
+    })(exports, (function() {
+      "use strict";
+      var hookCallback;
+      function hooks() {
+        return hookCallback.apply(null, arguments);
+      }
+      function setHookCallback(callback) {
+        hookCallback = callback;
+      }
+      function isArray(input) {
+        return input instanceof Array || Object.prototype.toString.call(input) === "[object Array]";
+      }
+      function isObject3(input) {
+        return input != null && Object.prototype.toString.call(input) === "[object Object]";
+      }
+      function hasOwnProp(a, b) {
+        return Object.prototype.hasOwnProperty.call(a, b);
+      }
+      function isObjectEmpty(obj3) {
+        if (Object.getOwnPropertyNames) {
+          return Object.getOwnPropertyNames(obj3).length === 0;
+        } else {
+          var k;
+          for (k in obj3) {
+            if (hasOwnProp(obj3, k)) {
+              return false;
+            }
+          }
+          return true;
+        }
+      }
+      function isUndefined(input) {
+        return input === void 0;
+      }
+      function isNumber(input) {
+        return typeof input === "number" || Object.prototype.toString.call(input) === "[object Number]";
+      }
+      function isDate(input) {
+        return input instanceof Date || Object.prototype.toString.call(input) === "[object Date]";
+      }
+      function map2(arr, fn) {
+        var res = [], i, arrLen = arr.length;
+        for (i = 0; i < arrLen; ++i) {
+          res.push(fn(arr[i], i));
+        }
+        return res;
+      }
+      function extend2(a, b) {
+        for (var i in b) {
+          if (hasOwnProp(b, i)) {
+            a[i] = b[i];
+          }
+        }
+        if (hasOwnProp(b, "toString")) {
+          a.toString = b.toString;
+        }
+        if (hasOwnProp(b, "valueOf")) {
+          a.valueOf = b.valueOf;
+        }
+        return a;
+      }
+      function createUTC(input, format2, locale2, strict) {
+        return createLocalOrUTC(input, format2, locale2, strict, true).utc();
+      }
+      function defaultParsingFlags() {
+        return {
+          empty: false,
+          unusedTokens: [],
+          unusedInput: [],
+          overflow: -2,
+          charsLeftOver: 0,
+          nullInput: false,
+          invalidEra: null,
+          invalidMonth: null,
+          invalidOffset: null,
+          invalidFormat: false,
+          userInvalidated: false,
+          iso: false,
+          parsedDateParts: [],
+          era: null,
+          meridiem: null,
+          rfc2822: false,
+          weekdayMismatch: false
+        };
+      }
+      function getParsingFlags(m) {
+        if (m._pf == null) {
+          m._pf = defaultParsingFlags();
+        }
+        return m._pf;
+      }
+      var some;
+      if (Array.prototype.some) {
+        some = Array.prototype.some;
+      } else {
+        some = function(fun) {
+          var t = Object(this), len = t.length >>> 0, i;
+          for (i = 0; i < len; i++) {
+            if (i in t && fun.call(this, t[i], i, t)) {
+              return true;
+            }
+          }
+          return false;
+        };
+      }
+      function isValid$2(m) {
+        var flags = null, parsedParts = false, isNowValid = m._d && !isNaN(m._d.getTime());
+        if (isNowValid) {
+          flags = getParsingFlags(m);
+          parsedParts = some.call(flags.parsedDateParts, function(i) {
+            return i != null;
+          });
+          isNowValid = flags.overflow < 0 && !flags.empty && !flags.invalidEra && !flags.invalidMonth && !flags.invalidOffset && !flags.invalidWeekday && !flags.weekdayMismatch && !flags.nullInput && !flags.invalidFormat && !flags.userInvalidated && (!flags.meridiem || flags.meridiem && parsedParts);
+          if (m._strict) {
+            isNowValid = isNowValid && flags.charsLeftOver === 0 && flags.unusedTokens.length === 0 && flags.bigHour === void 0;
+          }
+        }
+        if (Object.isFrozen == null || !Object.isFrozen(m)) {
+          m._isValid = isNowValid;
+        } else {
+          return isNowValid;
+        }
+        return m._isValid;
+      }
+      function createInvalid$1(flags) {
+        var m = createUTC(NaN);
+        if (flags != null) {
+          extend2(getParsingFlags(m), flags);
+        } else {
+          getParsingFlags(m).userInvalidated = true;
+        }
+        return m;
+      }
+      var momentProperties = hooks.momentProperties = [], updateInProgress = false;
+      function copyConfig(to2, from2) {
+        var i, prop2, val, momentPropertiesLen = momentProperties.length;
+        if (!isUndefined(from2._isAMomentObject)) {
+          to2._isAMomentObject = from2._isAMomentObject;
+        }
+        if (!isUndefined(from2._i)) {
+          to2._i = from2._i;
+        }
+        if (!isUndefined(from2._f)) {
+          to2._f = from2._f;
+        }
+        if (!isUndefined(from2._l)) {
+          to2._l = from2._l;
+        }
+        if (!isUndefined(from2._strict)) {
+          to2._strict = from2._strict;
+        }
+        if (!isUndefined(from2._tzm)) {
+          to2._tzm = from2._tzm;
+        }
+        if (!isUndefined(from2._isUTC)) {
+          to2._isUTC = from2._isUTC;
+        }
+        if (!isUndefined(from2._offset)) {
+          to2._offset = from2._offset;
+        }
+        if (!isUndefined(from2._pf)) {
+          to2._pf = getParsingFlags(from2);
+        }
+        if (!isUndefined(from2._locale)) {
+          to2._locale = from2._locale;
+        }
+        if (momentPropertiesLen > 0) {
+          for (i = 0; i < momentPropertiesLen; i++) {
+            prop2 = momentProperties[i];
+            val = from2[prop2];
+            if (!isUndefined(val)) {
+              to2[prop2] = val;
+            }
+          }
+        }
+        return to2;
+      }
+      function Moment(config2) {
+        copyConfig(this, config2);
+        this._d = new Date(config2._d != null ? config2._d.getTime() : NaN);
+        if (!this.isValid()) {
+          this._d = /* @__PURE__ */ new Date(NaN);
+        }
+        if (updateInProgress === false) {
+          updateInProgress = true;
+          hooks.updateOffset(this);
+          updateInProgress = false;
+        }
+      }
+      function isMoment2(obj3) {
+        return obj3 instanceof Moment || obj3 != null && obj3._isAMomentObject != null;
+      }
+      function warn(msg) {
+        if (hooks.suppressDeprecationWarnings === false && typeof console !== "undefined" && console.warn) {
+          console.warn("Deprecation warning: " + msg);
+        }
+      }
+      function deprecate(msg, fn) {
+        var firstTime = true;
+        return extend2(function() {
+          if (hooks.deprecationHandler != null) {
+            hooks.deprecationHandler(null, msg);
+          }
+          if (firstTime) {
+            var args = [], arg, i, key4, argLen = arguments.length;
+            for (i = 0; i < argLen; i++) {
+              arg = "";
+              if (typeof arguments[i] === "object") {
+                arg += "\n[" + i + "] ";
+                for (key4 in arguments[0]) {
+                  if (hasOwnProp(arguments[0], key4)) {
+                    arg += key4 + ": " + arguments[0][key4] + ", ";
+                  }
+                }
+                arg = arg.slice(0, -2);
+              } else {
+                arg = arguments[i];
+              }
+              args.push(arg);
+            }
+            warn(
+              msg + "\nArguments: " + Array.prototype.slice.call(args).join("") + "\n" + new Error().stack
+            );
+            firstTime = false;
+          }
+          return fn.apply(this, arguments);
+        }, fn);
+      }
+      var deprecations = {};
+      function deprecateSimple(name2, msg) {
+        if (hooks.deprecationHandler != null) {
+          hooks.deprecationHandler(name2, msg);
+        }
+        if (!deprecations[name2]) {
+          warn(msg + "\n" + new Error().stack);
+          deprecations[name2] = true;
+        }
+      }
+      hooks.suppressDeprecationWarnings = false;
+      hooks.deprecationHandler = null;
+      function isFunction(input) {
+        return typeof Function !== "undefined" && input instanceof Function || Object.prototype.toString.call(input) === "[object Function]";
+      }
+      var aliases = {
+        D: "date",
+        dates: "date",
+        date: "date",
+        d: "day",
+        days: "day",
+        day: "day",
+        e: "weekday",
+        weekdays: "weekday",
+        weekday: "weekday",
+        E: "isoWeekday",
+        isoweekdays: "isoWeekday",
+        isoweekday: "isoWeekday",
+        DDD: "dayOfYear",
+        dayofyears: "dayOfYear",
+        dayofyear: "dayOfYear",
+        h: "hour",
+        hours: "hour",
+        hour: "hour",
+        ms: "millisecond",
+        milliseconds: "millisecond",
+        millisecond: "millisecond",
+        m: "minute",
+        minutes: "minute",
+        minute: "minute",
+        M: "month",
+        months: "month",
+        month: "month",
+        Q: "quarter",
+        quarters: "quarter",
+        quarter: "quarter",
+        s: "second",
+        seconds: "second",
+        second: "second",
+        gg: "weekYear",
+        weekyears: "weekYear",
+        weekyear: "weekYear",
+        GG: "isoWeekYear",
+        isoweekyears: "isoWeekYear",
+        isoweekyear: "isoWeekYear",
+        w: "week",
+        weeks: "week",
+        week: "week",
+        W: "isoWeek",
+        isoweeks: "isoWeek",
+        isoweek: "isoWeek",
+        y: "year",
+        years: "year",
+        year: "year"
+      };
+      function normalizeUnits(units) {
+        return typeof units === "string" ? aliases[units] || aliases[units.toLowerCase()] : void 0;
+      }
+      function normalizeObjectUnits(inputObject) {
+        var normalizedInput = {}, normalizedProp, prop2;
+        for (prop2 in inputObject) {
+          if (hasOwnProp(inputObject, prop2)) {
+            normalizedProp = normalizeUnits(prop2);
+            if (normalizedProp) {
+              normalizedInput[normalizedProp] = inputObject[prop2];
+            }
+          }
+        }
+        return normalizedInput;
+      }
+      var priorities = {
+        date: 9,
+        day: 11,
+        weekday: 11,
+        isoWeekday: 11,
+        dayOfYear: 4,
+        hour: 13,
+        millisecond: 16,
+        minute: 14,
+        month: 8,
+        quarter: 7,
+        second: 15,
+        weekYear: 1,
+        isoWeekYear: 1,
+        week: 5,
+        isoWeek: 5,
+        year: 1
+      };
+      function getPrioritizedUnits(unitsObj) {
+        var units = [], u;
+        for (u in unitsObj) {
+          if (hasOwnProp(unitsObj, u)) {
+            units.push({ unit: u, priority: priorities[u] });
+          }
+        }
+        units.sort(function(a, b) {
+          return a.priority - b.priority;
+        });
+        return units;
+      }
+      function zeroFill(number4, targetLength, forceSign) {
+        var absNumber = "" + Math.abs(number4), zerosToFill = targetLength - absNumber.length, sign2 = number4 >= 0;
+        return (sign2 ? forceSign ? "+" : "" : "-") + Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) + absNumber;
+      }
+      var formattingTokens = /(\[[^\[]*\])|(\\e)|(\\)?(eHHmm|[Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g, localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g, formatFunctions = {}, formatTokenFunctions = {};
+      function addFormatToken(token2, padded, ordinal2, callback) {
+        var func = callback;
+        if (typeof callback === "string") {
+          func = function() {
+            return this[callback]();
+          };
+        }
+        if (token2) {
+          formatTokenFunctions[token2] = func;
+        }
+        if (padded) {
+          formatTokenFunctions[padded[0]] = function() {
+            return zeroFill(func.apply(this, arguments), padded[1], padded[2]);
+          };
+        }
+        if (ordinal2) {
+          formatTokenFunctions[ordinal2] = function() {
+            return this.localeData().ordinal(
+              func.apply(this, arguments),
+              token2
+            );
+          };
+        }
+      }
+      function removeFormattingTokens(input) {
+        if (input.match(/\[[\s\S]/)) {
+          return input.replace(/^\[|\]$/g, "");
+        }
+        return input.replace(/\\/g, "");
+      }
+      function makeFormatFunction(format2) {
+        var array2 = format2.match(formattingTokens), i, length;
+        for (i = 0, length = array2.length; i < length; i++) {
+          if (formatTokenFunctions[array2[i]]) {
+            array2[i] = formatTokenFunctions[array2[i]];
+          } else {
+            array2[i] = removeFormattingTokens(array2[i]);
+          }
+        }
+        return function(mom) {
+          var output = "", i2;
+          for (i2 = 0; i2 < length; i2++) {
+            output += isFunction(array2[i2]) ? array2[i2].call(mom, format2) : array2[i2];
+          }
+          return output;
+        };
+      }
+      function formatMoment(m, format2) {
+        if (!m.isValid()) {
+          return m.localeData().invalidDate();
+        }
+        format2 = expandFormat(format2, m.localeData());
+        var cacheKey2 = "$" + format2;
+        if (!hasOwnProp(formatFunctions, cacheKey2)) {
+          formatFunctions[cacheKey2] = makeFormatFunction(format2);
+        }
+        return formatFunctions[cacheKey2](m);
+      }
+      function expandFormat(format2, locale2) {
+        var i = 5;
+        function replaceLongDateFormatTokens(input) {
+          return locale2.longDateFormat(input) || input;
+        }
+        localFormattingTokens.lastIndex = 0;
+        while (i >= 0 && localFormattingTokens.test(format2)) {
+          format2 = format2.replace(
+            localFormattingTokens,
+            replaceLongDateFormatTokens
+          );
+          localFormattingTokens.lastIndex = 0;
+          i -= 1;
+        }
+        return format2;
+      }
+      var match1 = /\d/, match2 = /\d\d/, match3 = /\d{3}/, match4 = /\d{4}/, match6 = /[+-]?\d{6}/, match1to2 = /\d\d?/, match3to4 = /\d\d\d\d?/, match5to6 = /\d\d\d\d\d\d?/, match1to3 = /\d{1,3}/, match1to4 = /\d{1,4}/, match1to6 = /[+-]?\d{1,6}/, matchUnsigned = /\d+/, matchSigned = /[+-]?\d+/, matchOffset = /Z|[+-]\d\d:?\d\d/gi, matchShortOffset = /Z|[+-]\d\d(?::?\d\d)?/gi, matchTimestamp = /[+-]?\d+(\.\d{1,3})?/, matchWord = /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i, match1to2NoLeadingZero = /^[1-9]\d?/, match1to2HasZero = /^([1-9]\d|\d)/, regexes;
+      regexes = {};
+      function addRegexToken(token2, regex, strictRegex) {
+        regexes[token2] = isFunction(regex) ? regex : function(isStrict, localeData2) {
+          return isStrict && strictRegex ? strictRegex : regex;
+        };
+      }
+      function getParseRegexForToken(token2, config2) {
+        if (!hasOwnProp(regexes, token2)) {
+          return new RegExp(unescapeFormat(token2));
+        }
+        return regexes[token2](config2._strict, config2._locale);
+      }
+      function unescapeFormat(s) {
+        return regexEscape(
+          s.replace("\\", "").replace(
+            /\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g,
+            function(matched, p1, p2, p3, p4) {
+              return p1 || p2 || p3 || p4;
+            }
+          )
+        );
+      }
+      function regexEscape(s) {
+        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+      }
+      function absFloor(number4) {
+        if (number4 < 0) {
+          return Math.ceil(number4) || 0;
+        } else {
+          return Math.floor(number4);
+        }
+      }
+      function toInt(argumentForCoercion) {
+        var coercedNumber = +argumentForCoercion, value2 = 0;
+        if (coercedNumber !== 0 && isFinite(coercedNumber)) {
+          value2 = absFloor(coercedNumber);
+        }
+        return value2;
+      }
+      var tokens = {};
+      function addParseToken(token2, callback) {
+        var i, func = callback, tokenLen;
+        if (typeof token2 === "string") {
+          token2 = [token2];
+        }
+        if (isNumber(callback)) {
+          func = function(input, array2) {
+            array2[callback] = toInt(input);
+          };
+        }
+        tokenLen = token2.length;
+        for (i = 0; i < tokenLen; i++) {
+          tokens[token2[i]] = func;
+        }
+      }
+      function addWeekParseToken(token2, callback) {
+        addParseToken(token2, function(input, array2, config2, token3) {
+          config2._w = config2._w || {};
+          callback(input, config2._w, config2, token3);
+        });
+      }
+      function addTimeToArrayFromToken(token2, input, config2) {
+        if (input != null && hasOwnProp(tokens, token2)) {
+          tokens[token2](input, config2._a, config2, token2);
+        }
+      }
+      function isLeapYear(year) {
+        return year % 4 === 0 && year % 100 !== 0 || year % 400 === 0;
+      }
+      var YEAR = 0, MONTH = 1, DATE = 2, HOUR = 3, MINUTE = 4, SECOND = 5, MILLISECOND = 6, WEEK = 7, WEEKDAY = 8;
+      addFormatToken("Y", 0, 0, function() {
+        var y = this.year();
+        return y <= 9999 ? zeroFill(y, 4) : "+" + y;
+      });
+      addFormatToken(0, ["YY", 2], 0, function() {
+        return this.year() % 100;
+      });
+      addFormatToken(0, ["YYYY", 4], 0, "year");
+      addFormatToken(0, ["YYYYY", 5], 0, "year");
+      addFormatToken(0, ["YYYYYY", 6, true], 0, "year");
+      addRegexToken("Y", matchSigned);
+      addRegexToken("YY", match1to2, match2);
+      addRegexToken("YYYY", match1to4, match4);
+      addRegexToken("YYYYY", match1to6, match6);
+      addRegexToken("YYYYYY", match1to6, match6);
+      addParseToken(["YYYYY", "YYYYYY"], YEAR);
+      addParseToken("YYYY", function(input, array2) {
+        array2[YEAR] = input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
+      });
+      addParseToken("YY", function(input, array2) {
+        array2[YEAR] = hooks.parseTwoDigitYear(input);
+      });
+      addParseToken("Y", function(input, array2) {
+        array2[YEAR] = parseInt(input, 10);
+      });
+      function daysInYear(year) {
+        return isLeapYear(year) ? 366 : 365;
+      }
+      hooks.parseTwoDigitYear = function(input) {
+        return toInt(input) + (toInt(input) > 68 ? 1900 : 2e3);
+      };
+      var getSetYear = makeGetSet("FullYear", true);
+      function getIsLeapYear() {
+        return isLeapYear(this.year());
+      }
+      function makeGetSet(unit, keepTime) {
+        return function(value2) {
+          if (value2 != null) {
+            set$1(this, unit, value2);
+            hooks.updateOffset(this, keepTime);
+            return this;
+          } else {
+            return get$2(this, unit);
+          }
+        };
+      }
+      function get$2(mom, unit) {
+        if (!mom.isValid()) {
+          return NaN;
+        }
+        var d = mom._d, isUTC = mom._isUTC;
+        switch (unit) {
+          case "Milliseconds":
+            return isUTC ? d.getUTCMilliseconds() : d.getMilliseconds();
+          case "Seconds":
+            return isUTC ? d.getUTCSeconds() : d.getSeconds();
+          case "Minutes":
+            return isUTC ? d.getUTCMinutes() : d.getMinutes();
+          case "Hours":
+            return isUTC ? d.getUTCHours() : d.getHours();
+          case "Date":
+            return isUTC ? d.getUTCDate() : d.getDate();
+          case "Day":
+            return isUTC ? d.getUTCDay() : d.getDay();
+          case "Month":
+            return isUTC ? d.getUTCMonth() : d.getMonth();
+          case "FullYear":
+            return isUTC ? d.getUTCFullYear() : d.getFullYear();
+          default:
+            return NaN;
+        }
+      }
+      function set$1(mom, unit, value2) {
+        var d, isUTC, year, month, date5;
+        if (!mom.isValid() || isNaN(value2)) {
+          return;
+        }
+        d = mom._d;
+        isUTC = mom._isUTC;
+        switch (unit) {
+          case "Milliseconds":
+            return void (isUTC ? d.setUTCMilliseconds(value2) : d.setMilliseconds(value2));
+          case "Seconds":
+            return void (isUTC ? d.setUTCSeconds(value2) : d.setSeconds(value2));
+          case "Minutes":
+            return void (isUTC ? d.setUTCMinutes(value2) : d.setMinutes(value2));
+          case "Hours":
+            return void (isUTC ? d.setUTCHours(value2) : d.setHours(value2));
+          case "Date":
+            return void (isUTC ? d.setUTCDate(value2) : d.setDate(value2));
+          // case 'Day': // Not real
+          //    return void (isUTC ? d.setUTCDay(value) : d.setDay(value));
+          // case 'Month': // Not used because we need to pass two variables
+          //     return void (isUTC ? d.setUTCMonth(value) : d.setMonth(value));
+          case "FullYear":
+            break;
+          // See below ...
+          default:
+            return;
+        }
+        year = value2;
+        month = mom.month();
+        date5 = mom.date();
+        date5 = date5 === 29 && month === 1 && !isLeapYear(year) ? 28 : date5;
+        void (isUTC ? d.setUTCFullYear(year, month, date5) : d.setFullYear(year, month, date5));
+      }
+      function stringGet(units) {
+        units = normalizeUnits(units);
+        if (isFunction(this[units])) {
+          return this[units]();
+        }
+        return this;
+      }
+      function stringSet(units, value2) {
+        if (typeof units === "object") {
+          units = normalizeObjectUnits(units);
+          var prioritized = getPrioritizedUnits(units), i, prioritizedLen = prioritized.length;
+          for (i = 0; i < prioritizedLen; i++) {
+            this[prioritized[i].unit](units[prioritized[i].unit]);
+          }
+        } else {
+          units = normalizeUnits(units);
+          if (isFunction(this[units])) {
+            return this[units](value2);
+          }
+        }
+        return this;
+      }
+      function mod$1(n, x) {
+        return (n % x + x) % x;
+      }
+      var indexOf;
+      if (Array.prototype.indexOf) {
+        indexOf = Array.prototype.indexOf;
+      } else {
+        indexOf = function(o) {
+          var i;
+          for (i = 0; i < this.length; ++i) {
+            if (this[i] === o) {
+              return i;
+            }
+          }
+          return -1;
+        };
+      }
+      function daysInMonth(year, month) {
+        if (isNaN(year) || isNaN(month)) {
+          return NaN;
+        }
+        var modMonth = mod$1(month, 12);
+        year += (month - modMonth) / 12;
+        return modMonth === 1 ? isLeapYear(year) ? 29 : 28 : 31 - modMonth % 7 % 2;
+      }
+      addFormatToken("M", ["MM", 2], "Mo", function() {
+        return this.month() + 1;
+      });
+      addFormatToken("MMM", 0, 0, function(format2) {
+        return this.localeData().monthsShort(this, format2);
+      });
+      addFormatToken("MMMM", 0, 0, function(format2) {
+        return this.localeData().months(this, format2);
+      });
+      addRegexToken("M", match1to2, match1to2NoLeadingZero);
+      addRegexToken("MM", match1to2, match2);
+      addRegexToken("MMM", function(isStrict, locale2) {
+        return locale2.monthsShortRegex(isStrict);
+      });
+      addRegexToken("MMMM", function(isStrict, locale2) {
+        return locale2.monthsRegex(isStrict);
+      });
+      addParseToken(["M", "MM"], function(input, array2) {
+        array2[MONTH] = toInt(input) - 1;
+      });
+      addParseToken(["MMM", "MMMM"], function(input, array2, config2, token2) {
+        var month = config2._locale.monthsParse(input, token2, config2._strict);
+        if (month != null) {
+          array2[MONTH] = month;
+        } else {
+          getParsingFlags(config2).invalidMonth = input;
+        }
+      });
+      var defaultLocaleMonths = "January_February_March_April_May_June_July_August_September_October_November_December".split(
+        "_"
+      ), defaultLocaleMonthsShort = "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"), MONTHS_IN_FORMAT = /D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/, defaultMonthsShortRegex = matchWord, defaultMonthsRegex = matchWord, monthsParseProperties = [
+        "monthsParse",
+        "longMonthsParse",
+        "shortMonthsParse",
+        "monthsRegex",
+        "monthsShortRegex",
+        "monthsStrictRegex",
+        "monthsShortStrictRegex"
+      ];
+      function clearMonthsParseCache(locale2, config2) {
+        var i, prop2;
+        for (i = 0; i < monthsParseProperties.length; i++) {
+          prop2 = monthsParseProperties[i];
+          if (!hasOwnProp(config2, prop2)) {
+            delete locale2["_" + prop2];
+          }
+        }
+      }
+      function localeMonths(m, format2) {
+        if (!m) {
+          return isArray(this._months) ? this._months : this._months["standalone"];
+        }
+        return isArray(this._months) ? this._months[m.month()] : this._months[(this._months.isFormat || MONTHS_IN_FORMAT).test(format2) ? "format" : "standalone"][m.month()];
+      }
+      function localeMonthsShort(m, format2) {
+        if (!m) {
+          return isArray(this._monthsShort) ? this._monthsShort : this._monthsShort["standalone"];
+        }
+        return isArray(this._monthsShort) ? this._monthsShort[m.month()] : this._monthsShort[MONTHS_IN_FORMAT.test(format2) ? "format" : "standalone"][m.month()];
+      }
+      function handleStrictParse$1(monthName, format2, strict) {
+        var i, ii, mom, llc = monthName.toLocaleLowerCase();
+        if (!this._monthsParse) {
+          this._monthsParse = [];
+          this._longMonthsParse = [];
+          this._shortMonthsParse = [];
+          for (i = 0; i < 12; ++i) {
+            mom = createUTC([2e3, i]);
+            this._shortMonthsParse[i] = this.monthsShort(
+              mom,
+              ""
+            ).toLocaleLowerCase();
+            this._longMonthsParse[i] = this.months(mom, "").toLocaleLowerCase();
+          }
+        }
+        if (strict) {
+          if (format2 === "MMM") {
+            ii = indexOf.call(this._shortMonthsParse, llc);
+            return ii !== -1 ? ii : null;
+          } else {
+            ii = indexOf.call(this._longMonthsParse, llc);
+            return ii !== -1 ? ii : null;
+          }
+        } else {
+          if (format2 === "MMM") {
+            ii = indexOf.call(this._shortMonthsParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._longMonthsParse, llc);
+            return ii !== -1 ? ii : null;
+          } else {
+            ii = indexOf.call(this._longMonthsParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._shortMonthsParse, llc);
+            return ii !== -1 ? ii : null;
+          }
+        }
+      }
+      function localeMonthsParse(monthName, format2, strict) {
+        var i, mom, regex;
+        if (this._monthsParseExact) {
+          return handleStrictParse$1.call(this, monthName, format2, strict);
+        }
+        if (!this._monthsParse) {
+          this._monthsParse = [];
+          this._longMonthsParse = [];
+          this._shortMonthsParse = [];
+        }
+        for (i = 0; i < 12; i++) {
+          mom = createUTC([2e3, i]);
+          if (strict && !this._longMonthsParse[i]) {
+            this._longMonthsParse[i] = new RegExp(
+              "^" + this.months(mom, "").replace(".", "") + "$",
+              "i"
+            );
+            this._shortMonthsParse[i] = new RegExp(
+              "^" + this.monthsShort(mom, "").replace(".", "") + "$",
+              "i"
+            );
+          }
+          if (!strict && !this._monthsParse[i]) {
+            regex = "^" + this.months(mom, "") + "|^" + this.monthsShort(mom, "");
+            this._monthsParse[i] = new RegExp(regex.replace(".", ""), "i");
+          }
+          if (strict && format2 === "MMMM" && this._longMonthsParse[i].test(monthName)) {
+            return i;
+          } else if (strict && format2 === "MMM" && this._shortMonthsParse[i].test(monthName)) {
+            return i;
+          } else if (!strict && this._monthsParse[i].test(monthName)) {
+            return i;
+          }
+        }
+      }
+      function setMonth(mom, value2) {
+        if (!mom.isValid()) {
+          return mom;
+        }
+        if (typeof value2 === "string") {
+          if (/^\d+$/.test(value2)) {
+            value2 = toInt(value2);
+          } else {
+            value2 = mom.localeData().monthsParse(value2);
+            if (!isNumber(value2)) {
+              return mom;
+            }
+          }
+        }
+        var month = value2, date5 = mom.date();
+        date5 = date5 < 29 ? date5 : Math.min(date5, daysInMonth(mom.year(), month));
+        void (mom._isUTC ? mom._d.setUTCMonth(month, date5) : mom._d.setMonth(month, date5));
+        return mom;
+      }
+      function getSetMonth(value2) {
+        if (value2 != null) {
+          setMonth(this, value2);
+          hooks.updateOffset(this, true);
+          return this;
+        } else {
+          return get$2(this, "Month");
+        }
+      }
+      function getDaysInMonth() {
+        return daysInMonth(this.year(), this.month());
+      }
+      function monthsShortRegex(isStrict) {
+        if (this._monthsParseExact) {
+          if (!hasOwnProp(this, "_monthsRegex")) {
+            computeMonthsParse.call(this);
+          }
+          if (isStrict) {
+            return this._monthsShortStrictRegex;
+          } else {
+            return this._monthsShortRegex;
+          }
+        } else {
+          if (!hasOwnProp(this, "_monthsShortRegex")) {
+            this._monthsShortRegex = defaultMonthsShortRegex;
+          }
+          return this._monthsShortStrictRegex && isStrict ? this._monthsShortStrictRegex : this._monthsShortRegex;
+        }
+      }
+      function monthsRegex(isStrict) {
+        if (this._monthsParseExact) {
+          if (!hasOwnProp(this, "_monthsRegex")) {
+            computeMonthsParse.call(this);
+          }
+          if (isStrict) {
+            return this._monthsStrictRegex;
+          } else {
+            return this._monthsRegex;
+          }
+        } else {
+          if (!hasOwnProp(this, "_monthsRegex")) {
+            this._monthsRegex = defaultMonthsRegex;
+          }
+          return this._monthsStrictRegex && isStrict ? this._monthsStrictRegex : this._monthsRegex;
+        }
+      }
+      function computeMonthsParse() {
+        function cmpLenRev(a, b) {
+          return b.length - a.length;
+        }
+        var shortPieces = [], longPieces = [], mixedPieces = [], i, mom, shortP, longP;
+        for (i = 0; i < 12; i++) {
+          mom = createUTC([2e3, i]);
+          shortP = regexEscape(this.monthsShort(mom, ""));
+          longP = regexEscape(this.months(mom, ""));
+          shortPieces.push(shortP);
+          longPieces.push(longP);
+          mixedPieces.push(longP);
+          mixedPieces.push(shortP);
+        }
+        shortPieces.sort(cmpLenRev);
+        longPieces.sort(cmpLenRev);
+        mixedPieces.sort(cmpLenRev);
+        this._monthsRegex = new RegExp("^(" + mixedPieces.join("|") + ")", "i");
+        this._monthsShortRegex = this._monthsRegex;
+        this._monthsStrictRegex = new RegExp(
+          "^(" + longPieces.join("|") + ")",
+          "i"
+        );
+        this._monthsShortStrictRegex = new RegExp(
+          "^(" + shortPieces.join("|") + ")",
+          "i"
+        );
+      }
+      addFormatToken("d", 0, "do", "day");
+      addFormatToken("dd", 0, 0, function(format2) {
+        return this.localeData().weekdaysMin(this, format2);
+      });
+      addFormatToken("ddd", 0, 0, function(format2) {
+        return this.localeData().weekdaysShort(this, format2);
+      });
+      addFormatToken("dddd", 0, 0, function(format2) {
+        return this.localeData().weekdays(this, format2);
+      });
+      addFormatToken("e", 0, 0, "weekday");
+      addFormatToken("E", 0, 0, "isoWeekday");
+      addFormatToken("eHHmm", 0, 0, function() {
+        return "" + this.weekday() + zeroFill(this.hours(), 2) + zeroFill(this.minutes(), 2);
+      });
+      addRegexToken("d", match1to2);
+      addRegexToken("e", match1to2);
+      addRegexToken("E", match1to2);
+      addRegexToken("eHHmm", match5to6);
+      addRegexToken("dd", function(isStrict, locale2) {
+        return locale2.weekdaysMinRegex(isStrict);
+      });
+      addRegexToken("ddd", function(isStrict, locale2) {
+        return locale2.weekdaysShortRegex(isStrict);
+      });
+      addRegexToken("dddd", function(isStrict, locale2) {
+        return locale2.weekdaysRegex(isStrict);
+      });
+      addWeekParseToken(["dd", "ddd", "dddd"], function(input, week, config2, token2) {
+        var weekday = config2._locale.weekdaysParse(input, token2, config2._strict);
+        if (weekday != null) {
+          week.d = weekday;
+        } else {
+          getParsingFlags(config2).invalidWeekday = input;
+        }
+      });
+      addWeekParseToken(["d", "e", "E"], function(input, week, config2, token2) {
+        week[token2] = toInt(input);
+      });
+      addWeekParseToken("eHHmm", function(input, week, config2) {
+        var weekdayEnd = input.length - 4;
+        week.e = toInt(input.substr(0, weekdayEnd));
+        config2._a[HOUR] = toInt(input.substr(weekdayEnd, 2));
+        config2._a[MINUTE] = toInt(input.substr(weekdayEnd + 2));
+      });
+      function parseWeekday(input, locale2) {
+        if (typeof input !== "string") {
+          return input;
+        }
+        if (!isNaN(input)) {
+          return parseInt(input, 10);
+        }
+        input = locale2.weekdaysParse(input);
+        if (typeof input === "number") {
+          return input;
+        }
+        return null;
+      }
+      function parseIsoWeekday(input, locale2) {
+        if (typeof input === "string") {
+          return locale2.weekdaysParse(input) % 7 || 7;
+        }
+        return isNaN(input) ? null : input;
+      }
+      function shiftWeekdays(ws, n) {
+        return ws.slice(n, 7).concat(ws.slice(0, n));
+      }
+      var defaultLocaleWeekdays = "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), defaultLocaleWeekdaysShort = "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"), defaultLocaleWeekdaysMin = "Su_Mo_Tu_We_Th_Fr_Sa".split("_"), defaultWeekdaysRegex = matchWord, defaultWeekdaysShortRegex = matchWord, defaultWeekdaysMinRegex = matchWord, weekdaysParseProperties = [
+        "weekdaysParse",
+        "fullWeekdaysParse",
+        "shortWeekdaysParse",
+        "minWeekdaysParse",
+        "weekdaysRegex",
+        "weekdaysShortRegex",
+        "weekdaysMinRegex",
+        "weekdaysStrictRegex",
+        "weekdaysShortStrictRegex",
+        "weekdaysMinStrictRegex"
+      ];
+      function clearWeekdaysParseCache(locale2, config2) {
+        var i, prop2;
+        for (i = 0; i < weekdaysParseProperties.length; i++) {
+          prop2 = weekdaysParseProperties[i];
+          if (!hasOwnProp(config2, prop2)) {
+            delete locale2["_" + prop2];
+          }
+        }
+      }
+      function localeWeekdays(m, format2) {
+        var weekdays = isArray(this._weekdays) ? this._weekdays : this._weekdays[m && m !== true && this._weekdays.isFormat.test(format2) ? "format" : "standalone"];
+        return m === true ? shiftWeekdays(weekdays, this._week.dow) : m ? weekdays[m.day()] : weekdays;
+      }
+      function localeWeekdaysShort(m) {
+        return m === true ? shiftWeekdays(this._weekdaysShort, this._week.dow) : m ? this._weekdaysShort[m.day()] : this._weekdaysShort;
+      }
+      function localeWeekdaysMin(m) {
+        return m === true ? shiftWeekdays(this._weekdaysMin, this._week.dow) : m ? this._weekdaysMin[m.day()] : this._weekdaysMin;
+      }
+      function handleStrictParse(weekdayName, format2, strict) {
+        var i, ii, mom, llc = weekdayName.toLocaleLowerCase();
+        if (!this._weekdaysParse) {
+          this._weekdaysParse = [];
+          this._shortWeekdaysParse = [];
+          this._minWeekdaysParse = [];
+          for (i = 0; i < 7; ++i) {
+            mom = createUTC([2e3, 1]).day(i);
+            this._minWeekdaysParse[i] = this.weekdaysMin(
+              mom,
+              ""
+            ).toLocaleLowerCase();
+            this._shortWeekdaysParse[i] = this.weekdaysShort(
+              mom,
+              ""
+            ).toLocaleLowerCase();
+            this._weekdaysParse[i] = this.weekdays(mom, "").toLocaleLowerCase();
+          }
+        }
+        if (strict) {
+          if (format2 === "dddd") {
+            ii = indexOf.call(this._weekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+          } else if (format2 === "ddd") {
+            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+          } else {
+            ii = indexOf.call(this._minWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+          }
+        } else {
+          if (format2 === "dddd") {
+            ii = indexOf.call(this._weekdaysParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._minWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+          } else if (format2 === "ddd") {
+            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._weekdaysParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._minWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+          } else {
+            ii = indexOf.call(this._minWeekdaysParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._weekdaysParse, llc);
+            if (ii !== -1) {
+              return ii;
+            }
+            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+          }
+        }
+      }
+      function localeWeekdaysParse(weekdayName, format2, strict) {
+        var i, mom, regex;
+        if (this._weekdaysParseExact) {
+          return handleStrictParse.call(this, weekdayName, format2, strict);
+        }
+        if (!this._weekdaysParse) {
+          this._weekdaysParse = [];
+          this._minWeekdaysParse = [];
+          this._shortWeekdaysParse = [];
+          this._fullWeekdaysParse = [];
+        }
+        for (i = 0; i < 7; i++) {
+          mom = createUTC([2e3, 1]).day(i);
+          if (strict && !this._fullWeekdaysParse[i]) {
+            this._fullWeekdaysParse[i] = new RegExp(
+              "^" + this.weekdays(mom, "").replace(".", "\\.?") + "$",
+              "i"
+            );
+            this._shortWeekdaysParse[i] = new RegExp(
+              "^" + this.weekdaysShort(mom, "").replace(".", "\\.?") + "$",
+              "i"
+            );
+            this._minWeekdaysParse[i] = new RegExp(
+              "^" + this.weekdaysMin(mom, "").replace(".", "\\.?") + "$",
+              "i"
+            );
+          }
+          if (!this._weekdaysParse[i]) {
+            regex = "^" + this.weekdays(mom, "") + "|^" + this.weekdaysShort(mom, "") + "|^" + this.weekdaysMin(mom, "");
+            this._weekdaysParse[i] = new RegExp(regex.replace(".", ""), "i");
+          }
+          if (strict && format2 === "dddd" && this._fullWeekdaysParse[i].test(weekdayName)) {
+            return i;
+          } else if (strict && format2 === "ddd" && this._shortWeekdaysParse[i].test(weekdayName)) {
+            return i;
+          } else if (strict && format2 === "dd" && this._minWeekdaysParse[i].test(weekdayName)) {
+            return i;
+          } else if (!strict && this._weekdaysParse[i].test(weekdayName)) {
+            return i;
+          }
+        }
+      }
+      function getSetDayOfWeek(input) {
+        if (!this.isValid()) {
+          return input != null ? this : NaN;
+        }
+        var day = get$2(this, "Day");
+        if (input != null) {
+          input = parseWeekday(input, this.localeData());
+          return this.add(input - day, "d");
+        } else {
+          return day;
+        }
+      }
+      function getSetLocaleDayOfWeek(input) {
+        if (!this.isValid()) {
+          return input != null ? this : NaN;
+        }
+        var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
+        return input == null ? weekday : this.add(input - weekday, "d");
+      }
+      function getSetISODayOfWeek(input) {
+        if (!this.isValid()) {
+          return input != null ? this : NaN;
+        }
+        if (input != null) {
+          var weekday = parseIsoWeekday(input, this.localeData());
+          return this.day(this.day() % 7 ? weekday : weekday - 7);
+        } else {
+          return this.day() || 7;
+        }
+      }
+      function weekdaysRegex(isStrict) {
+        if (this._weekdaysParseExact) {
+          if (!hasOwnProp(this, "_weekdaysRegex")) {
+            computeWeekdaysParse.call(this);
+          }
+          if (isStrict) {
+            return this._weekdaysStrictRegex;
+          } else {
+            return this._weekdaysRegex;
+          }
+        } else {
+          if (!hasOwnProp(this, "_weekdaysRegex")) {
+            this._weekdaysRegex = defaultWeekdaysRegex;
+          }
+          return this._weekdaysStrictRegex && isStrict ? this._weekdaysStrictRegex : this._weekdaysRegex;
+        }
+      }
+      function weekdaysShortRegex(isStrict) {
+        if (this._weekdaysParseExact) {
+          if (!hasOwnProp(this, "_weekdaysRegex")) {
+            computeWeekdaysParse.call(this);
+          }
+          if (isStrict) {
+            return this._weekdaysShortStrictRegex;
+          } else {
+            return this._weekdaysShortRegex;
+          }
+        } else {
+          if (!hasOwnProp(this, "_weekdaysShortRegex")) {
+            this._weekdaysShortRegex = defaultWeekdaysShortRegex;
+          }
+          return this._weekdaysShortStrictRegex && isStrict ? this._weekdaysShortStrictRegex : this._weekdaysShortRegex;
+        }
+      }
+      function weekdaysMinRegex(isStrict) {
+        if (this._weekdaysParseExact) {
+          if (!hasOwnProp(this, "_weekdaysRegex")) {
+            computeWeekdaysParse.call(this);
+          }
+          if (isStrict) {
+            return this._weekdaysMinStrictRegex;
+          } else {
+            return this._weekdaysMinRegex;
+          }
+        } else {
+          if (!hasOwnProp(this, "_weekdaysMinRegex")) {
+            this._weekdaysMinRegex = defaultWeekdaysMinRegex;
+          }
+          return this._weekdaysMinStrictRegex && isStrict ? this._weekdaysMinStrictRegex : this._weekdaysMinRegex;
+        }
+      }
+      function computeWeekdaysParse() {
+        function cmpLenRev(a, b) {
+          return b.length - a.length;
+        }
+        var minPieces = [], shortPieces = [], longPieces = [], mixedPieces = [], i, mom, minp, shortp, longp;
+        for (i = 0; i < 7; i++) {
+          mom = createUTC([2e3, 1]).day(i);
+          minp = regexEscape(this.weekdaysMin(mom, ""));
+          shortp = regexEscape(this.weekdaysShort(mom, ""));
+          longp = regexEscape(this.weekdays(mom, ""));
+          minPieces.push(minp);
+          shortPieces.push(shortp);
+          longPieces.push(longp);
+          mixedPieces.push(minp);
+          mixedPieces.push(shortp);
+          mixedPieces.push(longp);
+        }
+        minPieces.sort(cmpLenRev);
+        shortPieces.sort(cmpLenRev);
+        longPieces.sort(cmpLenRev);
+        mixedPieces.sort(cmpLenRev);
+        this._weekdaysRegex = new RegExp("^(" + mixedPieces.join("|") + ")", "i");
+        this._weekdaysShortRegex = this._weekdaysRegex;
+        this._weekdaysMinRegex = this._weekdaysRegex;
+        this._weekdaysStrictRegex = new RegExp(
+          "^(" + longPieces.join("|") + ")",
+          "i"
+        );
+        this._weekdaysShortStrictRegex = new RegExp(
+          "^(" + shortPieces.join("|") + ")",
+          "i"
+        );
+        this._weekdaysMinStrictRegex = new RegExp(
+          "^(" + minPieces.join("|") + ")",
+          "i"
+        );
+      }
+      function set2(config2) {
+        var prop2, i;
+        clearMonthsParseCache(this, config2);
+        clearWeekdaysParseCache(this, config2);
+        for (i in config2) {
+          if (hasOwnProp(config2, i)) {
+            prop2 = config2[i];
+            if (isFunction(prop2)) {
+              this[i] = prop2;
+            } else {
+              this["_" + i] = prop2;
+            }
+          }
+        }
+        this._config = config2;
+        this._dayOfMonthOrdinalParseLenient = new RegExp(
+          (this._dayOfMonthOrdinalParse.source || this._ordinalParse.source) + "|" + /\d{1,2}/.source
+        );
+      }
+      function mergeConfigs(parentConfig, childConfig) {
+        var res = extend2({}, parentConfig), prop2;
+        for (prop2 in childConfig) {
+          if (hasOwnProp(childConfig, prop2)) {
+            if (isObject3(parentConfig[prop2]) && isObject3(childConfig[prop2])) {
+              res[prop2] = {};
+              extend2(res[prop2], parentConfig[prop2]);
+              extend2(res[prop2], childConfig[prop2]);
+            } else if (childConfig[prop2] != null) {
+              res[prop2] = childConfig[prop2];
+            } else {
+              delete res[prop2];
+            }
+          }
+        }
+        for (prop2 in parentConfig) {
+          if (hasOwnProp(parentConfig, prop2) && !hasOwnProp(childConfig, prop2) && isObject3(parentConfig[prop2])) {
+            res[prop2] = extend2({}, res[prop2]);
+          }
+        }
+        return res;
+      }
+      function Locale(config2) {
+        if (config2 != null) {
+          this.set(config2);
+        }
+      }
+      var keys;
+      if (Object.keys) {
+        keys = Object.keys;
+      } else {
+        keys = function(obj3) {
+          var i, res = [];
+          for (i in obj3) {
+            if (hasOwnProp(obj3, i)) {
+              res.push(i);
+            }
+          }
+          return res;
+        };
+      }
+      var defaultCalendar = {
+        sameDay: "[Today at] LT",
+        nextDay: "[Tomorrow at] LT",
+        nextWeek: "dddd [at] LT",
+        lastDay: "[Yesterday at] LT",
+        lastWeek: "[Last] dddd [at] LT",
+        sameElse: "L"
+      };
+      function calendar$1(key4, mom, now2) {
+        var output = this._calendar[key4] || this._calendar["sameElse"];
+        return isFunction(output) ? output.call(mom, now2) : output;
+      }
+      var defaultLongDateFormat = {
+        LTS: "h:mm:ss A",
+        LT: "h:mm A",
+        L: "MM/DD/YYYY",
+        LL: "MMMM D, YYYY",
+        LLL: "MMMM D, YYYY h:mm A",
+        LLLL: "dddd, MMMM D, YYYY h:mm A"
+      };
+      function longDateFormat(key4) {
+        var format2 = this._longDateFormat[key4], formatUpper = this._longDateFormat[key4.toUpperCase()], formatCache = this._longDateFormatCache;
+        if (format2 || !formatUpper) {
+          return format2;
+        }
+        if (formatCache && formatCache[key4] && formatCache[key4].formatUpper === formatUpper) {
+          return formatCache[key4].format;
+        }
+        format2 = formatUpper.match(formattingTokens).map(function(tok) {
+          if (tok === "MMMM" || tok === "MM" || tok === "DD" || tok === "dddd") {
+            return tok.slice(1);
+          }
+          return tok;
+        }).join("");
+        if (!formatCache) {
+          formatCache = this._longDateFormatCache = {};
+        }
+        formatCache[key4] = {
+          formatUpper,
+          format: format2
+        };
+        return format2;
+      }
+      var defaultInvalidDate = "Invalid date";
+      function invalidDate() {
+        return this._invalidDate;
+      }
+      var defaultOrdinal = "%d", defaultDayOfMonthOrdinalParse = /\d{1,2}/;
+      function ordinal(number4) {
+        return this._ordinal.replace("%d", number4);
+      }
+      var defaultRelativeTime = {
+        future: "in %s",
+        past: "%s ago",
+        s: "a few seconds",
+        ss: "%d seconds",
+        m: "a minute",
+        mm: "%d minutes",
+        h: "an hour",
+        hh: "%d hours",
+        d: "a day",
+        dd: "%d days",
+        w: "a week",
+        ww: "%d weeks",
+        M: "a month",
+        MM: "%d months",
+        y: "a year",
+        yy: "%d years"
+      };
+      function relativeTimeWithoutPostformat(number4, withoutSuffix, string4, isFuture) {
+        var output = this._relativeTime[string4];
+        return isFunction(output) ? output(number4, withoutSuffix, string4, isFuture) : output.replace(/%d/i, number4);
+      }
+      function relativeTime$1(number4, withoutSuffix, string4, isFuture) {
+        return this.postformat(
+          relativeTimeWithoutPostformat.call(
+            this,
+            number4,
+            withoutSuffix,
+            string4,
+            isFuture
+          )
+        );
+      }
+      function pastFutureWithoutPostformat(diff2, output) {
+        var format2 = this._relativeTime[diff2 > 0 ? "future" : "past"];
+        return isFunction(format2) ? format2(output) : format2.replace(/%s/i, output);
+      }
+      function pastFuture(diff2, output) {
+        return this.postformat(
+          pastFutureWithoutPostformat.call(this, diff2, output)
+        );
+      }
+      function createDate(y, m, d, h, M, s, ms) {
+        var date5;
+        if (y < 100 && y >= 0) {
+          date5 = new Date(y + 400, m, d, h, M, s, ms);
+          if (isFinite(date5.getFullYear())) {
+            date5.setFullYear(y);
+          }
+        } else {
+          date5 = new Date(y, m, d, h, M, s, ms);
+        }
+        return date5;
+      }
+      function createUTCDate(y) {
+        var date5, args;
+        if (y < 100 && y >= 0) {
+          args = Array.prototype.slice.call(arguments);
+          args[0] = y + 400;
+          date5 = new Date(Date.UTC.apply(null, args));
+          if (isFinite(date5.getUTCFullYear())) {
+            date5.setUTCFullYear(y);
+          }
+        } else {
+          date5 = new Date(Date.UTC.apply(null, arguments));
+        }
+        return date5;
+      }
+      function firstWeekOffset(year, dow, doy) {
+        var fwd = 7 + dow - doy, fwdlw = (7 + createUTCDate(year, 0, fwd).getUTCDay() - dow) % 7;
+        return -fwdlw + fwd - 1;
+      }
+      function dayOfYearFromWeeks(year, week, weekday, dow, doy) {
+        var localWeekday = (7 + weekday - dow) % 7, weekOffset = firstWeekOffset(year, dow, doy), dayOfYear = 1 + 7 * (week - 1) + localWeekday + weekOffset, resYear, resDayOfYear;
+        if (dayOfYear <= 0) {
+          resYear = year - 1;
+          resDayOfYear = daysInYear(resYear) + dayOfYear;
+        } else if (dayOfYear > daysInYear(year)) {
+          resYear = year + 1;
+          resDayOfYear = dayOfYear - daysInYear(year);
+        } else {
+          resYear = year;
+          resDayOfYear = dayOfYear;
+        }
+        return {
+          year: resYear,
+          dayOfYear: resDayOfYear
+        };
+      }
+      function weekOfYearFromDayOfYear(year, dayOfYear, dow, doy) {
+        var weekOffset = firstWeekOffset(year, dow, doy), week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1, resWeek, resYear;
+        if (week < 1) {
+          resYear = year - 1;
+          resWeek = week + weeksInYear(resYear, dow, doy);
+        } else if (week > weeksInYear(year, dow, doy)) {
+          resWeek = week - weeksInYear(year, dow, doy);
+          resYear = year + 1;
+        } else {
+          resYear = year;
+          resWeek = week;
+        }
+        return {
+          week: resWeek,
+          year: resYear
+        };
+      }
+      function weekOfYear(mom, dow, doy) {
+        return weekOfYearFromDayOfYear(mom.year(), mom.dayOfYear(), dow, doy);
+      }
+      function weekOfYearFromDate(year, month, date5, dow, doy) {
+        var dayOfYear = Math.round(
+          (createUTCDate(year, month, date5) - createUTCDate(year, 0, 1)) / 864e5
+        ) + 1;
+        return weekOfYearFromDayOfYear(year, dayOfYear, dow, doy);
+      }
+      function weeksInYear(year, dow, doy) {
+        var weekOffset = firstWeekOffset(year, dow, doy), weekOffsetNext = firstWeekOffset(year + 1, dow, doy);
+        return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
+      }
+      addFormatToken("w", ["ww", 2], "wo", "week");
+      addFormatToken("W", ["WW", 2], "Wo", "isoWeek");
+      addRegexToken("w", match1to2, match1to2NoLeadingZero);
+      addRegexToken("ww", match1to2, match2);
+      addRegexToken("W", match1to2, match1to2NoLeadingZero);
+      addRegexToken("WW", match1to2, match2);
+      addWeekParseToken(
+        ["w", "ww", "W", "WW"],
+        function(input, week, config2, token2) {
+          week[token2.substr(0, 1)] = toInt(input);
+        }
+      );
+      function localeWeek(mom) {
+        return weekOfYear(mom, this._week.dow, this._week.doy).week;
+      }
+      var defaultLocaleWeek = {
+        dow: 0,
+        // Sunday is the first day of the week.
+        doy: 6
+        // The week that contains Jan 6th is the first week of the year.
+      };
+      function localeFirstDayOfWeek() {
+        return this._week.dow;
+      }
+      function localeFirstDayOfYear() {
+        return this._week.doy;
+      }
+      function getSetWeek(input) {
+        var week = this.localeData().week(this);
+        return input == null ? week : this.add((input - week) * 7, "d");
+      }
+      function getSetISOWeek(input) {
+        var week = weekOfYear(this, 1, 4).week;
+        return input == null ? week : this.add((input - week) * 7, "d");
+      }
+      function hFormat() {
+        return this.hours() % 12 || 12;
+      }
+      function kFormat() {
+        return this.hours() || 24;
+      }
+      addFormatToken("H", ["HH", 2], 0, "hour");
+      addFormatToken("h", ["hh", 2], 0, hFormat);
+      addFormatToken("k", ["kk", 2], 0, kFormat);
+      addFormatToken("hmm", 0, 0, function() {
+        return "" + hFormat.apply(this) + zeroFill(this.minutes(), 2);
+      });
+      addFormatToken("hmmss", 0, 0, function() {
+        return "" + hFormat.apply(this) + zeroFill(this.minutes(), 2) + zeroFill(this.seconds(), 2);
+      });
+      addFormatToken("Hmm", 0, 0, function() {
+        return "" + this.hours() + zeroFill(this.minutes(), 2);
+      });
+      addFormatToken("Hmmss", 0, 0, function() {
+        return "" + this.hours() + zeroFill(this.minutes(), 2) + zeroFill(this.seconds(), 2);
+      });
+      function meridiem(token2, lowercase2) {
+        addFormatToken(token2, 0, 0, function() {
+          return this.localeData().meridiem(
+            this.hours(),
+            this.minutes(),
+            lowercase2
+          );
+        });
+      }
+      meridiem("a", true);
+      meridiem("A", false);
+      function matchMeridiem(isStrict, locale2) {
+        return locale2._meridiemParse;
+      }
+      addRegexToken("a", matchMeridiem);
+      addRegexToken("A", matchMeridiem);
+      addRegexToken("H", match1to2, match1to2HasZero);
+      addRegexToken("h", match1to2, match1to2NoLeadingZero);
+      addRegexToken("k", match1to2, match1to2NoLeadingZero);
+      addRegexToken("HH", match1to2, match2);
+      addRegexToken("hh", match1to2, match2);
+      addRegexToken("kk", match1to2, match2);
+      addRegexToken("hmm", match3to4);
+      addRegexToken("hmmss", match5to6);
+      addRegexToken("Hmm", match3to4);
+      addRegexToken("Hmmss", match5to6);
+      addParseToken(["H", "HH"], HOUR);
+      addParseToken(["k", "kk"], function(input, array2, config2) {
+        var kInput = toInt(input);
+        array2[HOUR] = kInput === 24 ? 0 : kInput;
+      });
+      addParseToken(["a", "A"], function(input, array2, config2) {
+        config2._isPm = config2._locale.isPM(input);
+        config2._meridiem = input;
+      });
+      addParseToken(["h", "hh"], function(input, array2, config2) {
+        array2[HOUR] = toInt(input);
+        getParsingFlags(config2).bigHour = true;
+      });
+      addParseToken("hmm", function(input, array2, config2) {
+        var pos = input.length - 2;
+        array2[HOUR] = toInt(input.substr(0, pos));
+        array2[MINUTE] = toInt(input.substr(pos));
+        getParsingFlags(config2).bigHour = true;
+      });
+      addParseToken("hmmss", function(input, array2, config2) {
+        var pos1 = input.length - 4, pos2 = input.length - 2;
+        array2[HOUR] = toInt(input.substr(0, pos1));
+        array2[MINUTE] = toInt(input.substr(pos1, 2));
+        array2[SECOND] = toInt(input.substr(pos2));
+        getParsingFlags(config2).bigHour = true;
+      });
+      addParseToken("Hmm", function(input, array2, config2) {
+        var pos = input.length - 2;
+        array2[HOUR] = toInt(input.substr(0, pos));
+        array2[MINUTE] = toInt(input.substr(pos));
+      });
+      addParseToken("Hmmss", function(input, array2, config2) {
+        var pos1 = input.length - 4, pos2 = input.length - 2;
+        array2[HOUR] = toInt(input.substr(0, pos1));
+        array2[MINUTE] = toInt(input.substr(pos1, 2));
+        array2[SECOND] = toInt(input.substr(pos2));
+      });
+      function localeIsPM(input) {
+        return (input + "").toLowerCase().charAt(0) === "p";
+      }
+      var defaultLocaleMeridiemParse = /[ap]\.?m?\.?/i, getSetHour = makeGetSet("Hours", true);
+      function localeMeridiem(hours2, minutes2, isLower) {
+        if (hours2 > 11) {
+          return isLower ? "pm" : "PM";
+        } else {
+          return isLower ? "am" : "AM";
+        }
+      }
+      var baseConfig = {
+        calendar: defaultCalendar,
+        longDateFormat: defaultLongDateFormat,
+        invalidDate: defaultInvalidDate,
+        ordinal: defaultOrdinal,
+        dayOfMonthOrdinalParse: defaultDayOfMonthOrdinalParse,
+        relativeTime: defaultRelativeTime,
+        months: defaultLocaleMonths,
+        monthsShort: defaultLocaleMonthsShort,
+        week: defaultLocaleWeek,
+        weekdays: defaultLocaleWeekdays,
+        weekdaysMin: defaultLocaleWeekdaysMin,
+        weekdaysShort: defaultLocaleWeekdaysShort,
+        meridiemParse: defaultLocaleMeridiemParse
+      };
+      var locales = {}, localeFamilies = {}, globalLocale;
+      function commonPrefix(arr1, arr2) {
+        var i, minl = Math.min(arr1.length, arr2.length);
+        for (i = 0; i < minl; i += 1) {
+          if (arr1[i] !== arr2[i]) {
+            return i;
+          }
+        }
+        return minl;
+      }
+      function normalizeLocale(key4) {
+        return key4 ? key4.toLowerCase().replace("_", "-") : key4;
+      }
+      function chooseLocale(names) {
+        var i = 0, j, next, locale2, split;
+        while (i < names.length) {
+          split = normalizeLocale(names[i]).split("-");
+          j = split.length;
+          next = normalizeLocale(names[i + 1]);
+          next = next ? next.split("-") : null;
+          while (j > 0) {
+            locale2 = loadLocale(split.slice(0, j).join("-"));
+            if (locale2) {
+              return locale2;
+            }
+            if (next && next.length >= j && commonPrefix(split, next) >= j - 1) {
+              break;
+            }
+            j--;
+          }
+          i++;
+        }
+        return globalLocale;
+      }
+      function isLocaleNameSane(name2) {
+        return typeof name2 === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name2);
+      }
+      function loadLocale(name2) {
+        var oldLocale = null, aliasedRequire, normalizedName2;
+        if (hasOwnProp(locales, name2)) {
+          return locales[name2];
+        }
+        normalizedName2 = normalizeLocale(name2);
+        if (hasOwnProp(locales, normalizedName2)) {
+          return locales[normalizedName2];
+        }
+        if (typeof module !== "undefined" && module && module.exports && isLocaleNameSane(normalizedName2)) {
+          try {
+            oldLocale = globalLocale._abbr;
+            aliasedRequire = __require;
+            aliasedRequire("./locale/" + normalizedName2);
+            getSetGlobalLocale(oldLocale);
+          } catch (e) {
+            locales[normalizedName2] = null;
+          }
+        }
+        if (hasOwnProp(locales, normalizedName2)) {
+          return locales[normalizedName2];
+        }
+      }
+      function getSetGlobalLocale(key4, values) {
+        var data;
+        if (key4) {
+          if (isUndefined(values)) {
+            data = getLocale(key4);
+          } else {
+            data = defineLocale(key4, values);
+          }
+          if (data) {
+            globalLocale = data;
+          } else {
+            if (typeof console !== "undefined" && console.warn) {
+              console.warn(
+                "Locale " + key4 + " not found. Did you forget to load it?"
+              );
+            }
+          }
+        }
+        return globalLocale._abbr;
+      }
+      function defineLocale(name2, config2) {
+        if (config2 !== null) {
+          var locale2, parentConfig = baseConfig;
+          config2.abbr = name2;
+          if (locales[name2] != null) {
+            deprecateSimple(
+              "defineLocaleOverride",
+              "use moment.updateLocale(localeName, config) to change an existing locale. moment.defineLocale(localeName, config) should only be used for creating a new locale See http://momentjs.com/guides/#/warnings/define-locale/ for more info."
+            );
+            parentConfig = locales[name2]._config;
+          } else if (config2.parentLocale != null) {
+            if (locales[config2.parentLocale] != null) {
+              parentConfig = locales[config2.parentLocale]._config;
+            } else {
+              locale2 = loadLocale(config2.parentLocale);
+              if (locale2 != null) {
+                parentConfig = locale2._config;
+              } else {
+                if (!localeFamilies[config2.parentLocale]) {
+                  localeFamilies[config2.parentLocale] = [];
+                }
+                localeFamilies[config2.parentLocale].push({
+                  name: name2,
+                  config: config2
+                });
+                return null;
+              }
+            }
+          }
+          locales[name2] = new Locale(mergeConfigs(parentConfig, config2));
+          if (localeFamilies[name2]) {
+            localeFamilies[name2].forEach(function(x) {
+              defineLocale(x.name, x.config);
+            });
+          }
+          getSetGlobalLocale(name2);
+          return locales[name2];
+        } else {
+          delete locales[name2];
+          return null;
+        }
+      }
+      function updateLocale(name2, config2) {
+        var locale2, tmpLocale = loadLocale(name2), parentConfig = baseConfig;
+        if (tmpLocale != null) {
+          name2 = tmpLocale._abbr;
+        }
+        if (config2 != null) {
+          if (locales[name2] != null && locales[name2].parentLocale != null) {
+            locales[name2].set(mergeConfigs(locales[name2]._config, config2));
+          } else {
+            if (tmpLocale != null) {
+              parentConfig = tmpLocale._config;
+            }
+            config2 = mergeConfigs(parentConfig, config2);
+            if (tmpLocale == null) {
+              config2.abbr = name2;
+            }
+            locale2 = new Locale(config2);
+            locale2.parentLocale = locales[name2];
+            locales[name2] = locale2;
+          }
+          getSetGlobalLocale(name2);
+        } else {
+          if (locales[name2] != null) {
+            if (locales[name2].parentLocale != null) {
+              locales[name2] = locales[name2].parentLocale;
+              if (name2 === getSetGlobalLocale()) {
+                getSetGlobalLocale(name2);
+              }
+            } else if (locales[name2] != null) {
+              delete locales[name2];
+            }
+          }
+        }
+        return locales[name2];
+      }
+      function getLocale(key4) {
+        var locale2;
+        if (key4 && key4._locale && key4._locale._abbr) {
+          key4 = key4._locale._abbr;
+        }
+        if (!key4) {
+          return globalLocale;
+        }
+        if (!isArray(key4)) {
+          locale2 = loadLocale(key4);
+          if (locale2) {
+            return locale2;
+          }
+          key4 = [key4];
+        }
+        return chooseLocale(key4);
+      }
+      function listLocales() {
+        return keys(locales);
+      }
+      function checkOverflow(m) {
+        var overflow, a = m._a;
+        if (a && getParsingFlags(m).overflow === -2) {
+          overflow = a[MONTH] < 0 || a[MONTH] > 11 ? MONTH : a[DATE] < 1 || a[DATE] > daysInMonth(a[YEAR], a[MONTH]) ? DATE : a[HOUR] < 0 || a[HOUR] > 24 || a[HOUR] === 24 && (a[MINUTE] !== 0 || a[SECOND] !== 0 || a[MILLISECOND] !== 0) ? HOUR : a[MINUTE] < 0 || a[MINUTE] > 59 ? MINUTE : a[SECOND] < 0 || a[SECOND] > 59 ? SECOND : a[MILLISECOND] < 0 || a[MILLISECOND] > 999 ? MILLISECOND : -1;
+          if (getParsingFlags(m)._overflowDayOfYear && (overflow < YEAR || overflow > DATE)) {
+            overflow = DATE;
+          }
+          if (getParsingFlags(m)._overflowWeeks && overflow === -1) {
+            overflow = WEEK;
+          }
+          if (getParsingFlags(m)._overflowWeekday && overflow === -1) {
+            overflow = WEEKDAY;
+          }
+          getParsingFlags(m).overflow = overflow;
+        }
+        return m;
+      }
+      var extendedIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/, basicIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/, tzRegex = /Z|[+-]\d\d(?::?\d\d)?/, isoDates = [
+        ["YYYYYY-MM-DD", /[+-]\d{6}-\d\d-\d\d/],
+        ["YYYY-MM-DD", /\d{4}-\d\d-\d\d/],
+        ["GGGG-[W]WW-E", /\d{4}-W\d\d-\d/],
+        ["GGGG-[W]WW", /\d{4}-W\d\d/, false],
+        ["YYYY-DDD", /\d{4}-\d{3}/],
+        ["YYYY-MM", /\d{4}-\d\d/, false],
+        ["YYYYYYMMDD", /[+-]\d{10}/],
+        ["YYYYMMDD", /\d{8}/],
+        ["GGGG[W]WWE", /\d{4}W\d{3}/],
+        ["GGGG[W]WW", /\d{4}W\d{2}/, false],
+        ["YYYYDDD", /\d{7}/],
+        ["YYYYMM", /\d{6}/, false],
+        ["YYYY", /\d{4}/, false]
+      ], isoTimes = [
+        ["HH:mm:ss.SSSS", /\d\d:\d\d:\d\d\.\d+/],
+        ["HH:mm:ss,SSSS", /\d\d:\d\d:\d\d,\d+/],
+        ["HH:mm:ss", /\d\d:\d\d:\d\d/],
+        ["HH:mm", /\d\d:\d\d/],
+        ["HHmmss.SSSS", /\d\d\d\d\d\d\.\d+/],
+        ["HHmmss,SSSS", /\d\d\d\d\d\d,\d+/],
+        ["HHmmss", /\d\d\d\d\d\d/],
+        ["HHmm", /\d\d\d\d/],
+        ["HH", /\d\d/]
+      ], aspNetJsonRegex = /^\/?Date\((-?\d+)/i, rfc2822 = /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/, obsOffsets = {
+        UT: 0,
+        GMT: 0,
+        EDT: -4 * 60,
+        EST: -5 * 60,
+        CDT: -5 * 60,
+        CST: -6 * 60,
+        MDT: -6 * 60,
+        MST: -7 * 60,
+        PDT: -7 * 60,
+        PST: -8 * 60
+      };
+      function configFromISO(config2) {
+        var i, l, string4 = config2._i, match = extendedIsoRegex.exec(string4) || basicIsoRegex.exec(string4), allowTime, dateFormat, timeFormat, tzFormat, isoDatesLen = isoDates.length, isoTimesLen = isoTimes.length;
+        if (match) {
+          getParsingFlags(config2).iso = true;
+          for (i = 0, l = isoDatesLen; i < l; i++) {
+            if (isoDates[i][1].exec(match[1])) {
+              dateFormat = isoDates[i][0];
+              allowTime = isoDates[i][2] !== false;
+              break;
+            }
+          }
+          if (dateFormat == null) {
+            config2._isValid = false;
+            return;
+          }
+          if (match[3]) {
+            for (i = 0, l = isoTimesLen; i < l; i++) {
+              if (isoTimes[i][1].exec(match[3])) {
+                timeFormat = (match[2] || " ") + isoTimes[i][0];
+                break;
+              }
+            }
+            if (timeFormat == null) {
+              config2._isValid = false;
+              return;
+            }
+          }
+          if (!allowTime && timeFormat != null) {
+            config2._isValid = false;
+            return;
+          }
+          if (match[4]) {
+            if (tzRegex.exec(match[4])) {
+              tzFormat = "Z";
+            } else {
+              config2._isValid = false;
+              return;
+            }
+          }
+          config2._f = dateFormat + (timeFormat || "") + (tzFormat || "");
+          configFromStringAndFormat(config2);
+        } else {
+          config2._isValid = false;
+        }
+      }
+      function extractFromRFC2822Strings(yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr) {
+        var result = [
+          untruncateYear(yearStr),
+          defaultLocaleMonthsShort.indexOf(monthStr),
+          parseInt(dayStr, 10),
+          parseInt(hourStr, 10),
+          parseInt(minuteStr, 10)
+        ];
+        if (secondStr) {
+          result.push(parseInt(secondStr, 10));
+        }
+        return result;
+      }
+      function untruncateYear(yearStr) {
+        var year = parseInt(yearStr, 10);
+        if (year <= 49) {
+          return 2e3 + year;
+        } else if (year <= 999) {
+          return 1900 + year;
+        }
+        return year;
+      }
+      function preprocessRFC2822(s) {
+        return s.replace(/\([^()]*\)|[\n\t]/g, " ").replace(/(\s\s+)/g, " ").replace(/^\s\s*/, "").replace(/\s\s*$/, "");
+      }
+      function checkWeekday(weekdayStr, parsedInput, config2) {
+        if (weekdayStr) {
+          var weekdayProvided = defaultLocaleWeekdaysShort.indexOf(weekdayStr), weekdayActual = new Date(
+            parsedInput[0],
+            parsedInput[1],
+            parsedInput[2]
+          ).getDay();
+          if (weekdayProvided !== weekdayActual) {
+            getParsingFlags(config2).weekdayMismatch = true;
+            config2._isValid = false;
+            return false;
+          }
+        }
+        return true;
+      }
+      function calculateOffset(obsOffset, militaryOffset, numOffset) {
+        if (obsOffset) {
+          return obsOffsets[obsOffset];
+        } else if (militaryOffset) {
+          return 0;
+        } else {
+          var hm = parseInt(numOffset, 10), m = hm % 100, h = (hm - m) / 100;
+          return h * 60 + m;
+        }
+      }
+      function configFromRFC2822(config2) {
+        var match = rfc2822.exec(preprocessRFC2822(config2._i)), parsedArray;
+        if (match) {
+          parsedArray = extractFromRFC2822Strings(
+            match[4],
+            match[3],
+            match[2],
+            match[5],
+            match[6],
+            match[7]
+          );
+          if (!checkWeekday(match[1], parsedArray, config2)) {
+            return;
+          }
+          config2._a = parsedArray;
+          config2._tzm = calculateOffset(match[8], match[9], match[10]);
+          config2._d = createUTCDate.apply(null, config2._a);
+          config2._d.setUTCMinutes(config2._d.getUTCMinutes() - config2._tzm);
+          getParsingFlags(config2).rfc2822 = true;
+        } else {
+          config2._isValid = false;
+        }
+      }
+      function configFromString(config2) {
+        var matched = aspNetJsonRegex.exec(config2._i);
+        if (matched !== null) {
+          config2._d = /* @__PURE__ */ new Date(+matched[1]);
+          return;
+        }
+        configFromISO(config2);
+        if (config2._isValid === false) {
+          delete config2._isValid;
+        } else {
+          return;
+        }
+        configFromRFC2822(config2);
+        if (config2._isValid === false) {
+          delete config2._isValid;
+        } else {
+          return;
+        }
+        if (config2._strict) {
+          config2._isValid = false;
+        } else {
+          hooks.createFromInputFallback(config2);
+        }
+      }
+      hooks.createFromInputFallback = deprecate(
+        "value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are discouraged. Please refer to http://momentjs.com/guides/#/warnings/js-date/ for more info.",
+        function(config2) {
+          config2._d = /* @__PURE__ */ new Date(config2._i + (config2._useUTC ? " UTC" : ""));
+        }
+      );
+      function defaults(a, b, c) {
+        if (a != null) {
+          return a;
+        }
+        if (b != null) {
+          return b;
+        }
+        return c;
+      }
+      function currentDateArray(config2, now2, forWeek) {
+        var hadWeekContext = Object.prototype.hasOwnProperty.call(
+          config2,
+          "_isDefaultDatePartsForWeek"
+        ), weekContext = config2._isDefaultDatePartsForWeek;
+        config2._isDefaultDatePartsForWeek = !!forWeek;
+        try {
+          return hooks._getDefaultDateParts(config2, now2, forWeek);
+        } finally {
+          if (hadWeekContext) {
+            config2._isDefaultDatePartsForWeek = weekContext;
+          } else {
+            delete config2._isDefaultDatePartsForWeek;
+          }
+        }
+      }
+      function currentDateNow(config2) {
+        var now2 = config2._defaultDatePartsNow;
+        if (!now2) {
+          return hooks.now();
+        }
+        if (!now2.hasValue) {
+          now2.value = hooks.now();
+          now2.hasValue = true;
+        }
+        return now2.value;
+      }
+      function getDefaultDateParts(config2, now2, forWeek) {
+        var useWeekDefaults = forWeek || config2._isDefaultDatePartsForWeek, nowValue = useWeekDefaults ? createLocal(now2) : new Date(now2);
+        if (useWeekDefaults) {
+          return [nowValue.year(), nowValue.month(), nowValue.date()];
+        }
+        if (config2._useUTC) {
+          return [
+            nowValue.getUTCFullYear(),
+            nowValue.getUTCMonth(),
+            nowValue.getUTCDate()
+          ];
+        }
+        return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
+      }
+      hooks._getDefaultDateParts = getDefaultDateParts;
+      function configFromArray(config2) {
+        var i, date5, input = [], now2, currentDate, expectedWeekday, yearToUse, dateIsDefaulted;
+        if (config2._d) {
+          return;
+        }
+        if (config2._a[YEAR] == null || config2._a[MONTH] == null || config2._a[DATE] == null) {
+          now2 = currentDateNow(config2);
+          currentDate = currentDateArray(config2, now2);
+        }
+        if (config2._w && config2._a[DATE] == null && config2._a[MONTH] == null) {
+          dayOfYearFromWeekInfo(config2, currentDateArray(config2, now2, true));
+        }
+        if (config2._dayOfYear != null) {
+          yearToUse = config2._a[YEAR] != null ? config2._a[YEAR] : currentDate[YEAR];
+          if (config2._dayOfYear > daysInYear(yearToUse) || config2._dayOfYear === 0) {
+            getParsingFlags(config2)._overflowDayOfYear = true;
+          }
+          date5 = createUTCDate(yearToUse, 0, config2._dayOfYear);
+          config2._a[MONTH] = date5.getUTCMonth();
+          config2._a[DATE] = date5.getUTCDate();
+        }
+        dateIsDefaulted = config2._a[YEAR] == null || config2._a[MONTH] == null || config2._a[DATE] == null;
+        for (i = 0; i < 3 && config2._a[i] == null; ++i) {
+          config2._a[i] = input[i] = currentDate[i];
+        }
+        for (; i < 7; i++) {
+          config2._a[i] = input[i] = config2._a[i] == null ? i === 2 ? 1 : 0 : config2._a[i];
+        }
+        if (config2._a[HOUR] === 24 && config2._a[MINUTE] === 0 && config2._a[SECOND] === 0 && config2._a[MILLISECOND] === 0) {
+          config2._nextDay = true;
+          config2._a[HOUR] = 0;
+        }
+        config2._d = (config2._useUTC ? createUTCDate : createDate).apply(
+          null,
+          input
+        );
+        expectedWeekday = config2._useUTC ? config2._d.getUTCDay() : config2._d.getDay();
+        if (config2._tzm != null) {
+          config2._d.setUTCMinutes(config2._d.getUTCMinutes() - config2._tzm);
+        }
+        if (config2._nextDay) {
+          config2._a[HOUR] = 24;
+        }
+        if (config2._w && typeof config2._w.d !== "undefined" && !dateIsDefaulted && config2._w.d !== expectedWeekday) {
+          getParsingFlags(config2).weekdayMismatch = true;
+        }
+      }
+      function dayOfYearFromWeekInfo(config2, currentDate) {
+        var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow, curWeek;
+        w = config2._w;
+        if (w.GG != null || w.W != null || w.E != null) {
+          dow = 1;
+          doy = 4;
+          weekYear = defaults(
+            w.GG,
+            config2._a[YEAR],
+            weekOfYearFromDate(
+              currentDate[YEAR],
+              currentDate[MONTH],
+              currentDate[DATE],
+              1,
+              4
+            ).year
+          );
+          week = defaults(w.W, 1);
+          weekday = defaults(w.E, 1);
+          if (weekday < 1 || weekday > 7) {
+            weekdayOverflow = true;
+          }
+        } else {
+          dow = config2._locale._week.dow;
+          doy = config2._locale._week.doy;
+          curWeek = weekOfYearFromDate(
+            currentDate[YEAR],
+            currentDate[MONTH],
+            currentDate[DATE],
+            dow,
+            doy
+          );
+          weekYear = defaults(w.gg, config2._a[YEAR], curWeek.year);
+          week = defaults(w.w, curWeek.week);
+          if (w.d != null) {
+            weekday = w.d;
+            if (weekday < 0 || weekday > 6) {
+              weekdayOverflow = true;
+            }
+          } else if (w.e != null) {
+            weekday = w.e + dow;
+            if (w.e < 0 || w.e > 6) {
+              weekdayOverflow = true;
+            }
+          } else {
+            weekday = dow;
+          }
+        }
+        if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
+          getParsingFlags(config2)._overflowWeeks = true;
+        } else if (weekdayOverflow != null) {
+          getParsingFlags(config2)._overflowWeekday = true;
+        } else {
+          temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
+          config2._a[YEAR] = temp.year;
+          config2._dayOfYear = temp.dayOfYear;
+        }
+      }
+      hooks.ISO_8601 = function() {
+      };
+      hooks.RFC_2822 = function() {
+      };
+      function configFromStringAndFormat(config2) {
+        if (config2._f === hooks.ISO_8601) {
+          configFromISO(config2);
+          return;
+        }
+        if (config2._f === hooks.RFC_2822) {
+          configFromRFC2822(config2);
+          return;
+        }
+        config2._a = [];
+        getParsingFlags(config2).empty = true;
+        var string4 = "" + config2._i, i, parsedInput, tokens2, token2, skipped, stringLength = string4.length, totalParsedInputLength = 0, era, tokenLen;
+        tokens2 = expandFormat(config2._f, config2._locale).match(formattingTokens) || [];
+        tokenLen = tokens2.length;
+        for (i = 0; i < tokenLen; i++) {
+          token2 = tokens2[i];
+          parsedInput = (string4.match(getParseRegexForToken(token2, config2)) || [])[0];
+          if (parsedInput) {
+            skipped = string4.substr(0, string4.indexOf(parsedInput));
+            if (skipped.length > 0) {
+              getParsingFlags(config2).unusedInput.push(skipped);
+            }
+            string4 = string4.slice(
+              string4.indexOf(parsedInput) + parsedInput.length
+            );
+            totalParsedInputLength += parsedInput.length;
+          }
+          if (formatTokenFunctions[token2]) {
+            if (parsedInput) {
+              getParsingFlags(config2).empty = false;
+            } else {
+              getParsingFlags(config2).unusedTokens.push(token2);
+            }
+            addTimeToArrayFromToken(token2, parsedInput, config2);
+          } else if (config2._strict && !parsedInput) {
+            getParsingFlags(config2).unusedTokens.push(token2);
+          }
+        }
+        getParsingFlags(config2).charsLeftOver = stringLength - totalParsedInputLength;
+        if (string4.length > 0) {
+          getParsingFlags(config2).unusedInput.push(string4);
+        }
+        if (config2._a[HOUR] <= 12 && getParsingFlags(config2).bigHour === true && config2._a[HOUR] > 0) {
+          getParsingFlags(config2).bigHour = void 0;
+        }
+        getParsingFlags(config2).parsedDateParts = config2._a.slice(0);
+        getParsingFlags(config2).meridiem = config2._meridiem;
+        config2._a[HOUR] = meridiemFixWrap(
+          config2._locale,
+          config2._a[HOUR],
+          config2._meridiem
+        );
+        era = getParsingFlags(config2).era;
+        if (era !== null) {
+          config2._a[YEAR] = config2._locale.erasConvertYear(era, config2._a[YEAR]);
+        }
+        configFromArray(config2);
+        checkOverflow(config2);
+      }
+      function meridiemFixWrap(locale2, hour, meridiem2) {
+        var isPm;
+        if (meridiem2 == null) {
+          return hour;
+        }
+        if (locale2.meridiemHour != null) {
+          return locale2.meridiemHour(hour, meridiem2);
+        } else if (locale2.isPM != null) {
+          isPm = locale2.isPM(meridiem2);
+          if (isPm && hour < 12) {
+            hour += 12;
+          }
+          if (!isPm && hour === 12) {
+            hour = 0;
+          }
+          return hour;
+        } else {
+          return hour;
+        }
+      }
+      function configFromStringAndArray(config2) {
+        var tempConfig, bestMoment, scoreToBeat, i, currentScore, validFormatFound, bestFormatIsValid = false, defaultDatePartsNow = {}, configfLen = config2._f.length;
+        if (configfLen === 0) {
+          getParsingFlags(config2).invalidFormat = true;
+          config2._d = /* @__PURE__ */ new Date(NaN);
+          return;
+        }
+        for (i = 0; i < configfLen; i++) {
+          currentScore = 0;
+          validFormatFound = false;
+          tempConfig = copyConfig({}, config2);
+          if (config2._useUTC != null) {
+            tempConfig._useUTC = config2._useUTC;
+          }
+          tempConfig._defaultDatePartsNow = defaultDatePartsNow;
+          tempConfig._f = config2._f[i];
+          configFromStringAndFormat(tempConfig);
+          if (isValid$2(tempConfig)) {
+            validFormatFound = true;
+          }
+          currentScore += getParsingFlags(tempConfig).charsLeftOver;
+          currentScore += getParsingFlags(tempConfig).unusedTokens.length * 10;
+          getParsingFlags(tempConfig).score = currentScore;
+          if (!bestFormatIsValid) {
+            if (scoreToBeat == null || currentScore < scoreToBeat || validFormatFound) {
+              scoreToBeat = currentScore;
+              bestMoment = tempConfig;
+              if (validFormatFound) {
+                bestFormatIsValid = true;
+              }
+            }
+          } else {
+            if (currentScore < scoreToBeat) {
+              scoreToBeat = currentScore;
+              bestMoment = tempConfig;
+            }
+          }
+        }
+        extend2(config2, bestMoment || tempConfig);
+      }
+      function configFromObject(config2) {
+        if (config2._d) {
+          return;
+        }
+        var i = normalizeObjectUnits(config2._i), dayOrDate = i.day === void 0 ? i.date : i.day;
+        config2._a = map2(
+          [i.year, i.month, dayOrDate, i.hour, i.minute, i.second, i.millisecond],
+          function(obj3) {
+            return obj3 && parseInt(obj3, 10);
+          }
+        );
+        configFromArray(config2);
+      }
+      function createFromConfig(config2) {
+        var res = new Moment(checkOverflow(prepareConfig(config2)));
+        if (res._nextDay) {
+          res.add(1, "d");
+          res._nextDay = void 0;
+        }
+        return res;
+      }
+      function prepareConfig(config2) {
+        var input = config2._i, format2 = config2._f;
+        config2._locale = config2._locale || getLocale(config2._l);
+        if (input === null || format2 === void 0 && input === "") {
+          return createInvalid$1({ nullInput: true });
+        }
+        if (typeof input === "string") {
+          config2._i = input = config2._locale.preparse(input);
+        }
+        if (isMoment2(input)) {
+          return new Moment(checkOverflow(input));
+        } else if (isDate(input)) {
+          config2._d = input;
+        } else if (isArray(format2)) {
+          configFromStringAndArray(config2);
+        } else if (format2) {
+          configFromStringAndFormat(config2);
+        } else {
+          configFromInput(config2);
+        }
+        if (!isValid$2(config2)) {
+          config2._d = null;
+        }
+        return config2;
+      }
+      function configFromInput(config2) {
+        var input = config2._i;
+        if (isUndefined(input)) {
+          config2._d = new Date(hooks.now());
+        } else if (isDate(input)) {
+          config2._d = new Date(input.valueOf());
+        } else if (typeof input === "string") {
+          configFromString(config2);
+        } else if (isArray(input)) {
+          config2._a = map2(input.slice(0), function(obj3) {
+            return parseInt(obj3, 10);
+          });
+          configFromArray(config2);
+        } else if (isObject3(input)) {
+          configFromObject(config2);
+        } else if (isNumber(input)) {
+          config2._d = new Date(input);
+        } else {
+          hooks.createFromInputFallback(config2);
+        }
+      }
+      function createLocalOrUTC(input, format2, locale2, strict, isUTC) {
+        var c = {};
+        if (format2 === true || format2 === false) {
+          strict = format2;
+          format2 = void 0;
+        }
+        if (locale2 === true || locale2 === false) {
+          strict = locale2;
+          locale2 = void 0;
+        }
+        if (isObject3(input) && isObjectEmpty(input) || isArray(input) && input.length === 0) {
+          input = void 0;
+        }
+        c._isAMomentObject = true;
+        c._useUTC = c._isUTC = isUTC;
+        c._l = locale2;
+        c._i = input;
+        c._f = format2;
+        c._strict = strict;
+        return createFromConfig(c);
+      }
+      function createLocal(input, format2, locale2, strict) {
+        return createLocalOrUTC(input, format2, locale2, strict, false);
+      }
+      var prototypeMin = deprecate(
+        "moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/",
+        function() {
+          var other = createLocal.apply(null, arguments);
+          if (this.isValid() && other.isValid()) {
+            return other < this ? this : other;
+          } else {
+            return createInvalid$1();
+          }
+        }
+      ), prototypeMax = deprecate(
+        "moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/",
+        function() {
+          var other = createLocal.apply(null, arguments);
+          if (this.isValid() && other.isValid()) {
+            return other > this ? this : other;
+          } else {
+            return createInvalid$1();
+          }
+        }
+      );
+      function pickBy(fn, moments) {
+        var res, i;
+        if (moments.length === 1 && isArray(moments[0])) {
+          moments = moments[0];
+        }
+        if (!moments.length) {
+          return createLocal();
+        }
+        for (i = 0; i < moments.length; ++i) {
+          if (isMoment2(moments[i])) {
+            res = moments[i];
+            break;
+          }
+        }
+        if (!res) {
+          return createInvalid$1();
+        }
+        for (++i; i < moments.length; ++i) {
+          if (isMoment2(moments[i]) && (!moments[i].isValid() || moments[i][fn](res))) {
+            res = moments[i];
+          }
+        }
+        return res;
+      }
+      function min() {
+        var args = [].slice.call(arguments, 0);
+        return pickBy("isBefore", args);
+      }
+      function max() {
+        var args = [].slice.call(arguments, 0);
+        return pickBy("isAfter", args);
+      }
+      var now = function() {
+        return Date.now ? Date.now() : +/* @__PURE__ */ new Date();
+      };
+      var ordering = [
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
+        "hour",
+        "minute",
+        "second",
+        "millisecond"
+      ];
+      function isDurationValid(m) {
+        var key4, unitHasDecimal = false, i, orderLen = ordering.length;
+        for (key4 in m) {
+          if (hasOwnProp(m, key4) && !(indexOf.call(ordering, key4) !== -1 && (m[key4] == null || !isNaN(m[key4])))) {
+            return false;
+          }
+        }
+        for (i = 0; i < orderLen; ++i) {
+          if (m[ordering[i]]) {
+            if (unitHasDecimal) {
+              return false;
+            }
+            if (parseFloat(m[ordering[i]]) !== toInt(m[ordering[i]])) {
+              unitHasDecimal = true;
+            }
+          }
+        }
+        return true;
+      }
+      function isValid$1() {
+        return this._isValid;
+      }
+      function createInvalid() {
+        return createDuration(NaN);
+      }
+      function Duration(duration3) {
+        var normalizedInput = normalizeObjectUnits(duration3), years2 = normalizedInput.year || 0, quarters = normalizedInput.quarter || 0, months2 = normalizedInput.month || 0, weeks2 = normalizedInput.week || normalizedInput.isoWeek || 0, days2 = normalizedInput.day || 0, hours2 = normalizedInput.hour || 0, minutes2 = normalizedInput.minute || 0, seconds2 = normalizedInput.second || 0, milliseconds2 = normalizedInput.millisecond || 0;
+        this._isValid = isDurationValid(normalizedInput);
+        this._milliseconds = +milliseconds2 + seconds2 * 1e3 + // 1000
+        minutes2 * 6e4 + // 1000 * 60
+        hours2 * 1e3 * 60 * 60;
+        this._days = +days2 + weeks2 * 7;
+        this._months = +months2 + quarters * 3 + years2 * 12;
+        this._data = {};
+        this._locale = getLocale();
+        this._bubble();
+      }
+      function isDuration(obj3) {
+        return obj3 instanceof Duration;
+      }
+      function absRound(number4) {
+        if (number4 < 0) {
+          return Math.round(-1 * number4) * -1;
+        } else {
+          return Math.round(number4);
+        }
+      }
+      function compareArrays(array1, array2, dontConvert) {
+        var len = Math.min(array1.length, array2.length), lengthDiff = Math.abs(array1.length - array2.length), diffs = 0, i;
+        for (i = 0; i < len; i++) {
+          if (toInt(array1[i]) !== toInt(array2[i])) {
+            diffs++;
+          }
+        }
+        return diffs + lengthDiff;
+      }
+      function offset(token2, separator) {
+        addFormatToken(token2, 0, 0, function() {
+          var offset2 = this.utcOffset(), sign2 = "+";
+          if (offset2 < 0) {
+            offset2 = -offset2;
+            sign2 = "-";
+          }
+          return sign2 + zeroFill(~~(offset2 / 60), 2) + separator + zeroFill(~~offset2 % 60, 2);
+        });
+      }
+      offset("Z", ":");
+      offset("ZZ", "");
+      addRegexToken("Z", matchShortOffset);
+      addRegexToken("ZZ", matchShortOffset);
+      addParseToken(["Z", "ZZ"], function(input, array2, config2) {
+        var offset2 = offsetFromString(matchShortOffset, input);
+        config2._useUTC = true;
+        config2._tzm = offset2;
+        if (offset2 === null) {
+          getParsingFlags(config2).invalidOffset = input;
+        }
+      });
+      var chunkOffset = /([\+\-]|\d\d)/gi;
+      function offsetFromString(matcher, string4) {
+        var matches2 = (string4 || "").match(matcher), chunk, parts, minutes2;
+        if (matches2 === null) {
+          return null;
+        }
+        chunk = matches2[matches2.length - 1] || [];
+        parts = (chunk + "").match(chunkOffset) || ["-", 0, 0];
+        minutes2 = +(parts[1] * 60) + toInt(parts[2]);
+        if (toInt(parts[2]) > 59 || (parts[0] === "+" ? minutes2 > 14 * 60 : minutes2 > 12 * 60)) {
+          return null;
+        }
+        return minutes2 === 0 ? 0 : parts[0] === "+" ? minutes2 : -minutes2;
+      }
+      function cloneWithOffset(input, model) {
+        var res, diff2;
+        if (model._isUTC) {
+          res = model.clone();
+          diff2 = (isMoment2(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
+          res._d.setTime(res._d.valueOf() + diff2);
+          hooks.updateOffset(res, false);
+          return res;
+        } else {
+          return createLocal(input).local();
+        }
+      }
+      function getDateOffset(m) {
+        return -Math.round(m._d.getTimezoneOffset());
+      }
+      hooks.updateOffset = function() {
+      };
+      function getSetOffset(input, keepLocalTime, keepMinutes) {
+        var offset2 = this._offset || 0, localAdjust;
+        if (!this.isValid()) {
+          return input != null ? this : NaN;
+        }
+        if (input != null) {
+          if (typeof input === "string") {
+            input = offsetFromString(matchShortOffset, input);
+            if (input === null) {
+              return this;
+            }
+          } else if (Math.abs(input) < 16 && !keepMinutes) {
+            input = input * 60;
+          }
+          if (!this._isUTC && keepLocalTime) {
+            localAdjust = getDateOffset(this);
+          }
+          this._offset = input;
+          this._isUTC = true;
+          if (localAdjust != null) {
+            this.add(localAdjust, "m");
+          }
+          if (offset2 !== input) {
+            if (!keepLocalTime || this._changeInProgress) {
+              addSubtract$1(
+                this,
+                createDuration(input - offset2, "m"),
+                1,
+                false
+              );
+            } else if (!this._changeInProgress) {
+              this._changeInProgress = true;
+              hooks.updateOffset(this, true);
+              this._changeInProgress = null;
+            }
+          }
+          return this;
+        } else {
+          return this._isUTC ? offset2 : getDateOffset(this);
+        }
+      }
+      function getSetZone(input, keepLocalTime) {
+        if (input != null) {
+          if (typeof input !== "string") {
+            input = -input;
+          }
+          this.utcOffset(input, keepLocalTime);
+          return this;
+        } else {
+          return -this.utcOffset();
+        }
+      }
+      function setOffsetToUTC(keepLocalTime) {
+        return this.utcOffset(0, keepLocalTime);
+      }
+      function setOffsetToLocal(keepLocalTime) {
+        if (this._isUTC) {
+          this.utcOffset(0, keepLocalTime);
+          this._isUTC = false;
+          if (keepLocalTime) {
+            this.subtract(getDateOffset(this), "m");
+          }
+        }
+        return this;
+      }
+      function setOffsetToParsedOffset() {
+        if (this._tzm != null) {
+          this.utcOffset(this._tzm, false, true);
+        } else if (typeof this._i === "string") {
+          var tZone = offsetFromString(matchOffset, this._i);
+          if (tZone != null) {
+            this.utcOffset(tZone);
+          } else {
+            this.utcOffset(0, true);
+          }
+        }
+        return this;
+      }
+      function hasAlignedHourOffset(input) {
+        if (!this.isValid()) {
+          return false;
+        }
+        input = input ? createLocal(input).utcOffset() : 0;
+        return (this.utcOffset() - input) % 60 === 0;
+      }
+      function isDaylightSavingTime() {
+        return this.utcOffset() > this.clone().month(0).utcOffset() || this.utcOffset() > this.clone().month(5).utcOffset();
+      }
+      function isDaylightSavingTimeShifted() {
+        if (!isUndefined(this._isDSTShifted)) {
+          return this._isDSTShifted;
+        }
+        var c = {}, other;
+        copyConfig(c, this);
+        c = prepareConfig(c);
+        if (c._a) {
+          other = c._isUTC ? createUTC(c._a) : createLocal(c._a);
+          this._isDSTShifted = this.isValid() && compareArrays(c._a, other.toArray()) > 0;
+        } else {
+          this._isDSTShifted = false;
+        }
+        return this._isDSTShifted;
+      }
+      function isLocal() {
+        return this.isValid() ? !this._isUTC : false;
+      }
+      function isUtcOffset() {
+        return this.isValid() ? this._isUTC : false;
+      }
+      function isUtc() {
+        return this.isValid() ? this._isUTC && this._offset === 0 : false;
+      }
+      var aspNetRegex = /^(-|\+)?(?:(\d*)[. ])?(\d+):(\d+)(?::(\d+)(\.\d*)?)?$/, isoRegex = /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
+      function createDuration(input, key4) {
+        var duration3 = input, match = null, sign2, ret, diffRes;
+        if (isDuration(input)) {
+          duration3 = {
+            ms: input._milliseconds,
+            d: input._days,
+            M: input._months
+          };
+        } else if (isNumber(input) || !isNaN(+input)) {
+          duration3 = {};
+          if (key4) {
+            duration3[key4] = +input;
+          } else {
+            duration3.milliseconds = +input;
+          }
+        } else if (match = aspNetRegex.exec(input)) {
+          sign2 = match[1] === "-" ? -1 : 1;
+          duration3 = {
+            y: 0,
+            d: toInt(match[DATE]) * sign2,
+            h: toInt(match[HOUR]) * sign2,
+            m: toInt(match[MINUTE]) * sign2,
+            s: toInt(match[SECOND]) * sign2,
+            ms: toInt(absRound(match[MILLISECOND] * 1e3)) * sign2
+            // the millisecond decimal point is included in the match
+          };
+        } else if (match = isoRegex.exec(input)) {
+          sign2 = match[1] === "-" ? -1 : 1;
+          duration3 = {
+            y: parseIso(match[2], sign2),
+            M: parseIso(match[3], sign2),
+            w: parseIso(match[4], sign2),
+            d: parseIso(match[5], sign2),
+            h: parseIso(match[6], sign2),
+            m: parseIso(match[7], sign2),
+            s: parseIso(match[8], sign2)
+          };
+        } else if (duration3 == null) {
+          duration3 = {};
+        } else if (typeof duration3 === "object" && ("from" in duration3 || "to" in duration3)) {
+          diffRes = momentsDifference(
+            createLocal(duration3.from),
+            createLocal(duration3.to)
+          );
+          duration3 = {};
+          duration3.ms = diffRes.milliseconds;
+          duration3.M = diffRes.months;
+        }
+        ret = new Duration(duration3);
+        if (isDuration(input) && hasOwnProp(input, "_locale")) {
+          ret._locale = input._locale;
+        }
+        if (isDuration(input) && hasOwnProp(input, "_isValid")) {
+          ret._isValid = input._isValid;
+        }
+        return ret;
+      }
+      createDuration.fn = Duration.prototype;
+      createDuration.invalid = createInvalid;
+      function parseIso(inp, sign2) {
+        var res = inp && parseFloat(inp.replace(",", "."));
+        return (isNaN(res) ? 0 : res) * sign2;
+      }
+      function positiveMomentsDifference(base, other) {
+        var res = {};
+        res.months = other.month() - base.month() + (other.year() - base.year()) * 12;
+        if (base.clone().add(res.months, "M").isAfter(other)) {
+          --res.months;
+        }
+        res.milliseconds = +other - +base.clone().add(res.months, "M");
+        return res;
+      }
+      function momentsDifference(base, other) {
+        var res;
+        if (!(base.isValid() && other.isValid())) {
+          return { milliseconds: 0, months: 0 };
+        }
+        other = cloneWithOffset(other, base);
+        if (base.isBefore(other)) {
+          res = positiveMomentsDifference(base, other);
+        } else {
+          res = positiveMomentsDifference(other, base);
+          res.milliseconds = -res.milliseconds;
+          res.months = -res.months;
+        }
+        return res;
+      }
+      function createAdder(direction, name2) {
+        return function(val, period) {
+          var dur, tmp;
+          if (period !== null && !isNaN(+period)) {
+            deprecateSimple(
+              name2,
+              "moment()." + name2 + "(period, number) is deprecated. Please use moment()." + name2 + "(number, period). See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info."
+            );
+            tmp = val;
+            val = period;
+            period = tmp;
+          }
+          dur = createDuration(val, period);
+          addSubtract$1(this, dur, direction);
+          return this;
+        };
+      }
+      function addSubtract$1(mom, duration3, isAdding, updateOffset) {
+        var milliseconds2 = duration3._milliseconds, days2 = absRound(duration3._days), months2 = absRound(duration3._months);
+        if (!mom.isValid()) {
+          return;
+        }
+        updateOffset = updateOffset == null ? true : updateOffset;
+        if (months2) {
+          setMonth(mom, get$2(mom, "Month") + months2 * isAdding);
+        }
+        if (days2) {
+          set$1(mom, "Date", get$2(mom, "Date") + days2 * isAdding);
+        }
+        if (milliseconds2) {
+          mom._d.setTime(mom._d.valueOf() + milliseconds2 * isAdding);
+        }
+        if (updateOffset) {
+          hooks.updateOffset(mom, days2 || months2);
+        }
+      }
+      var add$1 = createAdder(1, "add"), subtract$1 = createAdder(-1, "subtract");
+      function isString(input) {
+        return typeof input === "string" || input instanceof String;
+      }
+      function isMomentInput(input) {
+        return isMoment2(input) || isDate(input) || isString(input) || isNumber(input) || isNumberOrStringArray(input) || isMomentInputObject(input) || input === null || input === void 0;
+      }
+      function isMomentInputObject(input) {
+        var objectTest = isObject3(input) && !isObjectEmpty(input), propertyTest = false, properties = [
+          "years",
+          "year",
+          "y",
+          "months",
+          "month",
+          "M",
+          "days",
+          "day",
+          "d",
+          "dates",
+          "date",
+          "D",
+          "hours",
+          "hour",
+          "h",
+          "minutes",
+          "minute",
+          "m",
+          "seconds",
+          "second",
+          "s",
+          "milliseconds",
+          "millisecond",
+          "ms"
+        ], i, property2, propertyLen = properties.length;
+        for (i = 0; i < propertyLen; i += 1) {
+          property2 = properties[i];
+          propertyTest = propertyTest || hasOwnProp(input, property2);
+        }
+        return objectTest && propertyTest;
+      }
+      function isNumberOrStringArray(input) {
+        var arrayTest = isArray(input), dataTypeTest = false;
+        if (arrayTest) {
+          dataTypeTest = input.filter(function(item) {
+            return !isNumber(item) && isString(input);
+          }).length === 0;
+        }
+        return arrayTest && dataTypeTest;
+      }
+      function isCalendarSpec(input) {
+        var objectTest = isObject3(input) && !isObjectEmpty(input), propertyTest = false, properties = [
+          "sameDay",
+          "nextDay",
+          "lastDay",
+          "nextWeek",
+          "lastWeek",
+          "sameElse"
+        ], i, property2;
+        for (i = 0; i < properties.length; i += 1) {
+          property2 = properties[i];
+          propertyTest = propertyTest || hasOwnProp(input, property2);
+        }
+        return objectTest && propertyTest;
+      }
+      function getCalendarFormat(myMoment, now2) {
+        var diff2 = myMoment.diff(now2, "days", true);
+        return diff2 < -6 ? "sameElse" : diff2 < -1 ? "lastWeek" : diff2 < 0 ? "lastDay" : diff2 < 1 ? "sameDay" : diff2 < 2 ? "nextDay" : diff2 < 7 ? "nextWeek" : "sameElse";
+      }
+      function calendar(time3, formats) {
+        if (arguments.length === 1) {
+          if (!arguments[0]) {
+            time3 = void 0;
+            formats = void 0;
+          } else if (isMomentInput(arguments[0])) {
+            time3 = arguments[0];
+            formats = void 0;
+          } else if (isCalendarSpec(arguments[0])) {
+            formats = arguments[0];
+            time3 = void 0;
+          }
+        }
+        var now2 = time3 || createLocal(), sod = cloneWithOffset(now2, this).startOf("day"), format2 = hooks.calendarFormat(this, sod) || "sameElse", output = formats && (isFunction(formats[format2]) ? formats[format2].call(this, now2) : formats[format2]);
+        return this.format(
+          output || this.localeData().calendar(format2, this, createLocal(now2))
+        );
+      }
+      function clone$1() {
+        return new Moment(this);
+      }
+      function isAfter(input, units) {
+        var localInput = isMoment2(input) ? input : createLocal(input);
+        if (!(this.isValid() && localInput.isValid())) {
+          return false;
+        }
+        units = normalizeUnits(units) || "millisecond";
+        if (units === "millisecond") {
+          return this.valueOf() > localInput.valueOf();
+        } else {
+          return localInput.valueOf() < this.clone().startOf(units).valueOf();
+        }
+      }
+      function isBefore(input, units) {
+        var localInput = isMoment2(input) ? input : createLocal(input);
+        if (!(this.isValid() && localInput.isValid())) {
+          return false;
+        }
+        units = normalizeUnits(units) || "millisecond";
+        if (units === "millisecond") {
+          return this.valueOf() < localInput.valueOf();
+        } else {
+          return this.clone().endOf(units).valueOf() < localInput.valueOf();
+        }
+      }
+      function isBetween(from2, to2, units, inclusivity) {
+        var localFrom = isMoment2(from2) ? from2 : createLocal(from2), localTo = isMoment2(to2) ? to2 : createLocal(to2);
+        if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
+          return false;
+        }
+        inclusivity = inclusivity || "()";
+        return (inclusivity[0] === "(" ? this.isAfter(localFrom, units) : !this.isBefore(localFrom, units)) && (inclusivity[1] === ")" ? this.isBefore(localTo, units) : !this.isAfter(localTo, units));
+      }
+      function isSame(input, units) {
+        var localInput = isMoment2(input) ? input : createLocal(input), inputMs;
+        if (!(this.isValid() && localInput.isValid())) {
+          return false;
+        }
+        units = normalizeUnits(units) || "millisecond";
+        if (units === "millisecond") {
+          return this.valueOf() === localInput.valueOf();
+        } else {
+          inputMs = localInput.valueOf();
+          return this.clone().startOf(units).valueOf() <= inputMs && inputMs <= this.clone().endOf(units).valueOf();
+        }
+      }
+      function isSameOrAfter(input, units) {
+        return this.isSame(input, units) || this.isAfter(input, units);
+      }
+      function isSameOrBefore(input, units) {
+        return this.isSame(input, units) || this.isBefore(input, units);
+      }
+      function diff(input, units, asFloat) {
+        var that, zoneDelta, output;
+        if (!this.isValid()) {
+          return NaN;
+        }
+        that = cloneWithOffset(input, this);
+        if (!that.isValid()) {
+          return NaN;
+        }
+        zoneDelta = (that.utcOffset() - this.utcOffset()) * 6e4;
+        units = normalizeUnits(units);
+        switch (units) {
+          case "year":
+            output = monthDiff(this, that) / 12;
+            break;
+          case "month":
+            output = monthDiff(this, that);
+            break;
+          case "quarter":
+            output = monthDiff(this, that) / 3;
+            break;
+          case "second":
+            output = (this - that) / 1e3;
+            break;
+          // 1000
+          case "minute":
+            output = (this - that) / 6e4;
+            break;
+          // 1000 * 60
+          case "hour":
+            output = (this - that) / 36e5;
+            break;
+          // 1000 * 60 * 60
+          case "day":
+            output = (this - that - zoneDelta) / 864e5;
+            break;
+          // 1000 * 60 * 60 * 24, negate dst
+          case "week":
+            output = (this - that - zoneDelta) / 6048e5;
+            break;
+          // 1000 * 60 * 60 * 24 * 7, negate dst
+          default:
+            output = this - that;
+        }
+        return asFloat ? output : absFloor(output);
+      }
+      function monthDiff(a, b) {
+        if (a.date() < b.date()) {
+          return -monthDiff(b, a);
+        }
+        var wholeMonthDiff = (b.year() - a.year()) * 12 + (b.month() - a.month()), anchor = a.clone().add(wholeMonthDiff, "months"), anchor2, adjust;
+        if (b - anchor < 0) {
+          anchor2 = a.clone().add(wholeMonthDiff - 1, "months");
+          adjust = (b - anchor) / (anchor - anchor2);
+        } else {
+          anchor2 = a.clone().add(wholeMonthDiff + 1, "months");
+          adjust = (b - anchor) / (anchor2 - anchor);
+        }
+        return -(wholeMonthDiff + adjust) || 0;
+      }
+      hooks.defaultFormat = "YYYY-MM-DDTHH:mm:ssZ";
+      hooks.defaultFormatUtc = "YYYY-MM-DDTHH:mm:ss[Z]";
+      function toString() {
+        return this.clone().locale("en").format("ddd MMM DD YYYY HH:mm:ss [GMT]ZZ");
+      }
+      function toISOString$1(keepOffset) {
+        if (!this.isValid()) {
+          return null;
+        }
+        var utc = keepOffset !== true, m = utc ? this.clone().utc() : this;
+        if (m.year() < 0 || m.year() > 9999) {
+          return formatMoment(
+            m,
+            utc ? "YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]" : "YYYYYY-MM-DD[T]HH:mm:ss.SSSZ"
+          );
+        }
+        if (isFunction(Date.prototype.toISOString)) {
+          if (utc) {
+            return this.toDate().toISOString();
+          } else {
+            return new Date(this.valueOf() + this.utcOffset() * 60 * 1e3).toISOString().replace("Z", formatMoment(m, "Z"));
+          }
+        }
+        return formatMoment(
+          m,
+          utc ? "YYYY-MM-DD[T]HH:mm:ss.SSS[Z]" : "YYYY-MM-DD[T]HH:mm:ss.SSSZ"
+        );
+      }
+      function inspect() {
+        if (!this.isValid()) {
+          return "moment.invalid(/* " + this._i + " */)";
+        }
+        var func = "moment", zone = "", prefix, year, datetime3, suffix;
+        if (!this.isLocal()) {
+          func = this.utcOffset() === 0 ? "moment.utc" : "moment.parseZone";
+          zone = "Z";
+        }
+        prefix = "[" + func + '("]';
+        year = 0 <= this.year() && this.year() <= 9999 ? "YYYY" : "YYYYYY";
+        datetime3 = "-MM-DD[T]HH:mm:ss.SSS";
+        suffix = zone + '[")]';
+        return this.format(prefix + year + datetime3 + suffix);
+      }
+      function format(inputString) {
+        if (!inputString) {
+          inputString = this.isUtc() ? hooks.defaultFormatUtc : hooks.defaultFormat;
+        }
+        var output = formatMoment(this, inputString);
+        return this.localeData().postformat(output);
+      }
+      function from(time3, withoutSuffix) {
+        if (this.isValid() && (isMoment2(time3) && time3.isValid() || createLocal(time3).isValid())) {
+          return createDuration({ to: this, from: time3 }).locale(this.locale()).humanize(!withoutSuffix);
+        } else {
+          return this.localeData().invalidDate();
+        }
+      }
+      function fromNow(withoutSuffix) {
+        return this.from(createLocal(), withoutSuffix);
+      }
+      function to(time3, withoutSuffix) {
+        if (this.isValid() && (isMoment2(time3) && time3.isValid() || createLocal(time3).isValid())) {
+          return createDuration({ from: this, to: time3 }).locale(this.locale()).humanize(!withoutSuffix);
+        } else {
+          return this.localeData().invalidDate();
+        }
+      }
+      function toNow(withoutSuffix) {
+        return this.to(createLocal(), withoutSuffix);
+      }
+      function locale(key4) {
+        var newLocaleData;
+        if (key4 === void 0) {
+          return this._locale._abbr;
+        } else {
+          newLocaleData = getLocale(key4);
+          if (newLocaleData != null) {
+            this._locale = newLocaleData;
+          }
+          return this;
+        }
+      }
+      var lang = deprecate(
+        "moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.",
+        function(key4) {
+          if (key4 === void 0) {
+            return this.localeData();
+          } else {
+            return this.locale(key4);
+          }
+        }
+      );
+      function localeData() {
+        return this._locale;
+      }
+      var MS_PER_SECOND = 1e3, MS_PER_MINUTE = 60 * MS_PER_SECOND, MS_PER_HOUR = 60 * MS_PER_MINUTE, MS_PER_400_YEARS = (365 * 400 + 97) * 24 * MS_PER_HOUR;
+      function mod(dividend, divisor) {
+        return (dividend % divisor + divisor) % divisor;
+      }
+      function localStartOfDate(y, m, d) {
+        if (y < 100 && y >= 0) {
+          return new Date(y + 400, m, d) - MS_PER_400_YEARS;
+        } else {
+          return new Date(y, m, d).valueOf();
+        }
+      }
+      function utcStartOfDate(y, m, d) {
+        if (y < 100 && y >= 0) {
+          return Date.UTC(y + 400, m, d) - MS_PER_400_YEARS;
+        } else {
+          return Date.UTC(y, m, d);
+        }
+      }
+      function startOf(units) {
+        var time3, startOfDate;
+        units = normalizeUnits(units);
+        if (units === void 0 || units === "millisecond" || !this.isValid()) {
+          return this;
+        }
+        startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
+        switch (units) {
+          case "year":
+            time3 = startOfDate(this.year(), 0, 1);
+            break;
+          case "quarter":
+            time3 = startOfDate(
+              this.year(),
+              this.month() - this.month() % 3,
+              1
+            );
+            break;
+          case "month":
+            time3 = startOfDate(this.year(), this.month(), 1);
+            break;
+          case "week":
+            time3 = startOfDate(
+              this.year(),
+              this.month(),
+              this.date() - this.weekday()
+            );
+            break;
+          case "isoWeek":
+            time3 = startOfDate(
+              this.year(),
+              this.month(),
+              this.date() - (this.isoWeekday() - 1)
+            );
+            break;
+          case "day":
+          case "date":
+            time3 = startOfDate(this.year(), this.month(), this.date());
+            break;
+          case "hour":
+            time3 = this._d.valueOf();
+            time3 -= mod(
+              time3 + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE),
+              MS_PER_HOUR
+            );
+            break;
+          case "minute":
+            time3 = this._d.valueOf();
+            time3 -= mod(time3, MS_PER_MINUTE);
+            break;
+          case "second":
+            time3 = this._d.valueOf();
+            time3 -= mod(time3, MS_PER_SECOND);
+            break;
+        }
+        this._d.setTime(time3);
+        hooks.updateOffset(this, true);
+        return this;
+      }
+      function endOf(units) {
+        var time3, startOfDate;
+        units = normalizeUnits(units);
+        if (units === void 0 || units === "millisecond" || !this.isValid()) {
+          return this;
+        }
+        startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
+        switch (units) {
+          case "year":
+            time3 = startOfDate(this.year() + 1, 0, 1) - 1;
+            break;
+          case "quarter":
+            time3 = startOfDate(
+              this.year(),
+              this.month() - this.month() % 3 + 3,
+              1
+            ) - 1;
+            break;
+          case "month":
+            time3 = startOfDate(this.year(), this.month() + 1, 1) - 1;
+            break;
+          case "week":
+            time3 = startOfDate(
+              this.year(),
+              this.month(),
+              this.date() - this.weekday() + 7
+            ) - 1;
+            break;
+          case "isoWeek":
+            time3 = startOfDate(
+              this.year(),
+              this.month(),
+              this.date() - (this.isoWeekday() - 1) + 7
+            ) - 1;
+            break;
+          case "day":
+          case "date":
+            time3 = startOfDate(this.year(), this.month(), this.date() + 1) - 1;
+            break;
+          case "hour":
+            time3 = this._d.valueOf();
+            time3 += MS_PER_HOUR - mod(
+              time3 + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE),
+              MS_PER_HOUR
+            ) - 1;
+            break;
+          case "minute":
+            time3 = this._d.valueOf();
+            time3 += MS_PER_MINUTE - mod(time3, MS_PER_MINUTE) - 1;
+            break;
+          case "second":
+            time3 = this._d.valueOf();
+            time3 += MS_PER_SECOND - mod(time3, MS_PER_SECOND) - 1;
+            break;
+        }
+        this._d.setTime(time3);
+        hooks.updateOffset(this, true);
+        return this;
+      }
+      function valueOf$1() {
+        return this._d.valueOf() - (this._offset || 0) * 6e4;
+      }
+      function unix() {
+        return Math.floor(this.valueOf() / 1e3);
+      }
+      function toDate() {
+        return new Date(this.valueOf());
+      }
+      function toArray() {
+        var m = this;
+        return [
+          m.year(),
+          m.month(),
+          m.date(),
+          m.hour(),
+          m.minute(),
+          m.second(),
+          m.millisecond()
+        ];
+      }
+      function toObject() {
+        var m = this;
+        return {
+          years: m.year(),
+          months: m.month(),
+          date: m.date(),
+          hours: m.hours(),
+          minutes: m.minutes(),
+          seconds: m.seconds(),
+          milliseconds: m.milliseconds()
+        };
+      }
+      function toJSON() {
+        return this.isValid() ? this.toISOString() : null;
+      }
+      function isValid2() {
+        return isValid$2(this);
+      }
+      function parsingFlags() {
+        return extend2({}, getParsingFlags(this));
+      }
+      function invalidAt() {
+        return getParsingFlags(this).overflow;
+      }
+      function creationData() {
+        return {
+          input: this._i,
+          format: this._f,
+          locale: this._locale,
+          isUTC: this._isUTC,
+          strict: this._strict
+        };
+      }
+      addFormatToken("N", 0, 0, "eraAbbr");
+      addFormatToken("NN", 0, 0, "eraAbbr");
+      addFormatToken("NNN", 0, 0, "eraAbbr");
+      addFormatToken("NNNN", 0, 0, "eraName");
+      addFormatToken("NNNNN", 0, 0, "eraNarrow");
+      addFormatToken("y", ["y", 1], "yo", "eraYear");
+      addFormatToken("y", ["yy", 2], 0, "eraYear");
+      addFormatToken("y", ["yyy", 3], 0, "eraYear");
+      addFormatToken("y", ["yyyy", 4], 0, "eraYear");
+      addRegexToken("N", matchEraAbbr);
+      addRegexToken("NN", matchEraAbbr);
+      addRegexToken("NNN", matchEraAbbr);
+      addRegexToken("NNNN", matchEraName);
+      addRegexToken("NNNNN", matchEraNarrow);
+      addParseToken(
+        ["N", "NN", "NNN", "NNNN", "NNNNN"],
+        function(input, array2, config2, token2) {
+          var era = config2._locale.erasParse(input, token2, config2._strict);
+          if (era) {
+            getParsingFlags(config2).era = era;
+          } else {
+            getParsingFlags(config2).invalidEra = input;
+          }
+        }
+      );
+      addRegexToken("y", matchUnsigned);
+      addRegexToken("yy", matchUnsigned);
+      addRegexToken("yyy", matchUnsigned);
+      addRegexToken("yyyy", matchUnsigned);
+      addRegexToken("yo", matchEraYearOrdinal);
+      addParseToken(["y", "yy", "yyy", "yyyy"], YEAR);
+      addParseToken(["yo"], function(input, array2, config2, token2) {
+        var match;
+        if (config2._locale._eraYearOrdinalRegex) {
+          match = input.match(config2._locale._eraYearOrdinalRegex);
+        }
+        if (config2._locale.eraYearOrdinalParse) {
+          array2[YEAR] = config2._locale.eraYearOrdinalParse(input, match);
+        } else {
+          array2[YEAR] = parseInt(input, 10);
+        }
+      });
+      function localeEras(m, format2) {
+        var i, l, date5, eras = this._eras || getLocale("en")._eras;
+        for (i = 0, l = eras.length; i < l; ++i) {
+          switch (typeof eras[i].since) {
+            case "string":
+              date5 = hooks(eras[i].since).startOf("day");
+              eras[i].since = date5.valueOf();
+              break;
+          }
+          switch (typeof eras[i].until) {
+            case "undefined":
+              eras[i].until = Infinity;
+              break;
+            case "string":
+              date5 = hooks(eras[i].until).startOf("day").valueOf();
+              eras[i].until = date5.valueOf();
+              break;
+          }
+        }
+        return eras;
+      }
+      function localeErasParse(eraName, format2, strict) {
+        var i, l, eras = this.eras(), name2, abbr, narrow;
+        eraName = eraName.toUpperCase();
+        for (i = 0, l = eras.length; i < l; ++i) {
+          name2 = eras[i].name.toUpperCase();
+          abbr = eras[i].abbr.toUpperCase();
+          narrow = eras[i].narrow.toUpperCase();
+          if (strict) {
+            switch (format2) {
+              case "N":
+              case "NN":
+              case "NNN":
+                if (abbr === eraName) {
+                  return eras[i];
+                }
+                break;
+              case "NNNN":
+                if (name2 === eraName) {
+                  return eras[i];
+                }
+                break;
+              case "NNNNN":
+                if (narrow === eraName) {
+                  return eras[i];
+                }
+                break;
+            }
+          } else if ([name2, abbr, narrow].indexOf(eraName) >= 0) {
+            return eras[i];
+          }
+        }
+      }
+      function localeErasConvertYear(era, year) {
+        var dir = era.since <= era.until ? 1 : -1;
+        if (year === void 0) {
+          return hooks(era.since).year();
+        } else {
+          return hooks(era.since).year() + (year - era.offset) * dir;
+        }
+      }
+      function getEraName() {
+        var i, l, val, eras = this.localeData().eras();
+        for (i = 0, l = eras.length; i < l; ++i) {
+          val = this.clone().startOf("day").valueOf();
+          if (eras[i].since <= val && val <= eras[i].until) {
+            return eras[i].name;
+          }
+          if (eras[i].until <= val && val <= eras[i].since) {
+            return eras[i].name;
+          }
+        }
+        return "";
+      }
+      function getEraNarrow() {
+        var i, l, val, eras = this.localeData().eras();
+        for (i = 0, l = eras.length; i < l; ++i) {
+          val = this.clone().startOf("day").valueOf();
+          if (eras[i].since <= val && val <= eras[i].until) {
+            return eras[i].narrow;
+          }
+          if (eras[i].until <= val && val <= eras[i].since) {
+            return eras[i].narrow;
+          }
+        }
+        return "";
+      }
+      function getEraAbbr() {
+        var i, l, val, eras = this.localeData().eras();
+        for (i = 0, l = eras.length; i < l; ++i) {
+          val = this.clone().startOf("day").valueOf();
+          if (eras[i].since <= val && val <= eras[i].until) {
+            return eras[i].abbr;
+          }
+          if (eras[i].until <= val && val <= eras[i].since) {
+            return eras[i].abbr;
+          }
+        }
+        return "";
+      }
+      function getEraYear() {
+        var i, l, dir, val, eras = this.localeData().eras();
+        for (i = 0, l = eras.length; i < l; ++i) {
+          dir = eras[i].since <= eras[i].until ? 1 : -1;
+          val = this.clone().startOf("day").valueOf();
+          if (eras[i].since <= val && val <= eras[i].until || eras[i].until <= val && val <= eras[i].since) {
+            return (this.year() - hooks(eras[i].since).year()) * dir + eras[i].offset;
+          }
+        }
+        return this.year();
+      }
+      function erasNameRegex(isStrict) {
+        if (!hasOwnProp(this, "_erasNameRegex")) {
+          computeErasParse.call(this);
+        }
+        return isStrict ? this._erasNameRegex : this._erasRegex;
+      }
+      function erasAbbrRegex(isStrict) {
+        if (!hasOwnProp(this, "_erasAbbrRegex")) {
+          computeErasParse.call(this);
+        }
+        return isStrict ? this._erasAbbrRegex : this._erasRegex;
+      }
+      function erasNarrowRegex(isStrict) {
+        if (!hasOwnProp(this, "_erasNarrowRegex")) {
+          computeErasParse.call(this);
+        }
+        return isStrict ? this._erasNarrowRegex : this._erasRegex;
+      }
+      function matchEraAbbr(isStrict, locale2) {
+        return locale2.erasAbbrRegex(isStrict);
+      }
+      function matchEraName(isStrict, locale2) {
+        return locale2.erasNameRegex(isStrict);
+      }
+      function matchEraNarrow(isStrict, locale2) {
+        return locale2.erasNarrowRegex(isStrict);
+      }
+      function matchEraYearOrdinal(isStrict, locale2) {
+        return locale2._eraYearOrdinalRegex || matchUnsigned;
+      }
+      function computeErasParse() {
+        var abbrPieces = [], namePieces = [], narrowPieces = [], mixedPieces = [], i, l, erasName, erasAbbr, erasNarrow, eras = this.eras();
+        for (i = 0, l = eras.length; i < l; ++i) {
+          erasName = regexEscape(eras[i].name);
+          erasAbbr = regexEscape(eras[i].abbr);
+          erasNarrow = regexEscape(eras[i].narrow);
+          namePieces.push(erasName);
+          abbrPieces.push(erasAbbr);
+          narrowPieces.push(erasNarrow);
+          mixedPieces.push(erasName);
+          mixedPieces.push(erasAbbr);
+          mixedPieces.push(erasNarrow);
+        }
+        this._erasRegex = new RegExp("^(" + mixedPieces.join("|") + ")", "i");
+        this._erasNameRegex = new RegExp("^(" + namePieces.join("|") + ")", "i");
+        this._erasAbbrRegex = new RegExp("^(" + abbrPieces.join("|") + ")", "i");
+        this._erasNarrowRegex = new RegExp(
+          "^(" + narrowPieces.join("|") + ")",
+          "i"
+        );
+      }
+      addFormatToken(0, ["gg", 2], 0, function() {
+        return this.weekYear() % 100;
+      });
+      addFormatToken(0, ["GG", 2], 0, function() {
+        return this.isoWeekYear() % 100;
+      });
+      function addWeekYearFormatToken(token2, getter) {
+        addFormatToken(0, [token2, token2.length], 0, getter);
+      }
+      addWeekYearFormatToken("gggg", "weekYear");
+      addWeekYearFormatToken("ggggg", "weekYear");
+      addWeekYearFormatToken("GGGG", "isoWeekYear");
+      addWeekYearFormatToken("GGGGG", "isoWeekYear");
+      addRegexToken("G", matchSigned);
+      addRegexToken("g", matchSigned);
+      addRegexToken("GG", match1to2, match2);
+      addRegexToken("gg", match1to2, match2);
+      addRegexToken("GGGG", match1to4, match4);
+      addRegexToken("gggg", match1to4, match4);
+      addRegexToken("GGGGG", match1to6, match6);
+      addRegexToken("ggggg", match1to6, match6);
+      addWeekParseToken(
+        ["gggg", "ggggg", "GGGG", "GGGGG"],
+        function(input, week, config2, token2) {
+          week[token2.substr(0, 2)] = toInt(input);
+        }
+      );
+      addWeekParseToken(["gg", "GG"], function(input, week, config2, token2) {
+        week[token2] = hooks.parseTwoDigitYear(input);
+      });
+      function getSetWeekYear(input) {
+        return getSetWeekYearHelper.call(
+          this,
+          input,
+          this.week(),
+          this.weekday() + this.localeData()._week.dow,
+          this.localeData()._week.dow,
+          this.localeData()._week.doy
+        );
+      }
+      function getSetISOWeekYear(input) {
+        return getSetWeekYearHelper.call(
+          this,
+          input,
+          this.isoWeek(),
+          this.isoWeekday(),
+          1,
+          4
+        );
+      }
+      function getISOWeeksInYear() {
+        return weeksInYear(this.year(), 1, 4);
+      }
+      function getISOWeeksInISOWeekYear() {
+        return weeksInYear(this.isoWeekYear(), 1, 4);
+      }
+      function getWeeksInYear() {
+        var weekInfo = this.localeData()._week;
+        return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
+      }
+      function getWeeksInWeekYear() {
+        var weekInfo = this.localeData()._week;
+        return weeksInYear(this.weekYear(), weekInfo.dow, weekInfo.doy);
+      }
+      function getSetWeekYearHelper(input, week, weekday, dow, doy) {
+        var weeksTarget;
+        if (input == null) {
+          return weekOfYear(this, dow, doy).year;
+        } else {
+          weeksTarget = weeksInYear(input, dow, doy);
+          if (week > weeksTarget) {
+            week = weeksTarget;
+          }
+          return setWeekAll.call(this, input, week, weekday, dow, doy);
+        }
+      }
+      function setWeekAll(weekYear, week, weekday, dow, doy) {
+        var dayOfYearData = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy), date5 = createUTCDate(dayOfYearData.year, 0, dayOfYearData.dayOfYear);
+        this.year(date5.getUTCFullYear());
+        this.month(date5.getUTCMonth());
+        this.date(date5.getUTCDate());
+        return this;
+      }
+      addFormatToken("Q", 0, "Qo", "quarter");
+      addRegexToken("Q", match1);
+      addParseToken("Q", function(input, array2) {
+        array2[MONTH] = (toInt(input) - 1) * 3;
+      });
+      function getSetQuarter(input) {
+        return input == null ? Math.ceil((this.month() + 1) / 3) : this.month((input - 1) * 3 + this.month() % 3);
+      }
+      addFormatToken("D", ["DD", 2], "Do", "date");
+      addRegexToken("D", match1to2, match1to2NoLeadingZero);
+      addRegexToken("DD", match1to2, match2);
+      addRegexToken("Do", function(isStrict, locale2) {
+        return isStrict ? locale2._dayOfMonthOrdinalParse || locale2._ordinalParse : locale2._dayOfMonthOrdinalParseLenient;
+      });
+      addParseToken(["D", "DD"], DATE);
+      addParseToken("Do", function(input, array2) {
+        array2[DATE] = toInt(input.match(match1to2)[0]);
+      });
+      var getSetDayOfMonth = makeGetSet("Date", true);
+      addFormatToken("DDD", ["DDDD", 3], "DDDo", "dayOfYear");
+      addRegexToken("DDD", match1to3);
+      addRegexToken("DDDD", match3);
+      addParseToken(["DDD", "DDDD"], function(input, array2, config2) {
+        config2._dayOfYear = toInt(input);
+      });
+      function getSetDayOfYear(input) {
+        var dayOfYear = Math.round(
+          (this.clone().startOf("day") - this.clone().startOf("year")) / 864e5
+        ) + 1;
+        return input == null ? dayOfYear : this.add(input - dayOfYear, "d");
+      }
+      addFormatToken("m", ["mm", 2], 0, "minute");
+      addRegexToken("m", match1to2, match1to2HasZero);
+      addRegexToken("mm", match1to2, match2);
+      addParseToken(["m", "mm"], MINUTE);
+      var getSetMinute = makeGetSet("Minutes", false);
+      addFormatToken("s", ["ss", 2], 0, "second");
+      addRegexToken("s", match1to2, match1to2HasZero);
+      addRegexToken("ss", match1to2, match2);
+      addParseToken(["s", "ss"], SECOND);
+      var getSetSecond = makeGetSet("Seconds", false);
+      addFormatToken("S", 0, 0, function() {
+        return ~~(this.millisecond() / 100);
+      });
+      addFormatToken(0, ["SS", 2], 0, function() {
+        return ~~(this.millisecond() / 10);
+      });
+      addFormatToken(0, ["SSS", 3], 0, "millisecond");
+      addFormatToken(0, ["SSSS", 4], 0, function() {
+        return this.millisecond() * 10;
+      });
+      addFormatToken(0, ["SSSSS", 5], 0, function() {
+        return this.millisecond() * 100;
+      });
+      addFormatToken(0, ["SSSSSS", 6], 0, function() {
+        return this.millisecond() * 1e3;
+      });
+      addFormatToken(0, ["SSSSSSS", 7], 0, function() {
+        return this.millisecond() * 1e4;
+      });
+      addFormatToken(0, ["SSSSSSSS", 8], 0, function() {
+        return this.millisecond() * 1e5;
+      });
+      addFormatToken(0, ["SSSSSSSSS", 9], 0, function() {
+        return this.millisecond() * 1e6;
+      });
+      addRegexToken("S", match1to3, match1);
+      addRegexToken("SS", match1to3, match2);
+      addRegexToken("SSS", match1to3, match3);
+      var token, getSetMillisecond;
+      for (token = "SSSS"; token.length <= 9; token += "S") {
+        addRegexToken(token, matchUnsigned);
+      }
+      function parseMs(input, array2) {
+        array2[MILLISECOND] = toInt(("0." + input) * 1e3);
+      }
+      for (token = "S"; token.length <= 9; token += "S") {
+        addParseToken(token, parseMs);
+      }
+      getSetMillisecond = makeGetSet("Milliseconds", false);
+      addFormatToken("z", 0, 0, "zoneAbbr");
+      addFormatToken("zz", 0, 0, "zoneName");
+      function getZoneAbbr() {
+        return this._isUTC ? "UTC" : "";
+      }
+      function getZoneName() {
+        return this._isUTC ? "Coordinated Universal Time" : "";
+      }
+      var proto$2 = Moment.prototype;
+      proto$2.add = add$1;
+      proto$2.calendar = calendar;
+      proto$2.clone = clone$1;
+      proto$2.diff = diff;
+      proto$2.endOf = endOf;
+      proto$2.format = format;
+      proto$2.from = from;
+      proto$2.fromNow = fromNow;
+      proto$2.to = to;
+      proto$2.toNow = toNow;
+      proto$2.get = stringGet;
+      proto$2.invalidAt = invalidAt;
+      proto$2.isAfter = isAfter;
+      proto$2.isBefore = isBefore;
+      proto$2.isBetween = isBetween;
+      proto$2.isSame = isSame;
+      proto$2.isSameOrAfter = isSameOrAfter;
+      proto$2.isSameOrBefore = isSameOrBefore;
+      proto$2.isValid = isValid2;
+      proto$2.lang = lang;
+      proto$2.locale = locale;
+      proto$2.localeData = localeData;
+      proto$2.max = prototypeMax;
+      proto$2.min = prototypeMin;
+      proto$2.parsingFlags = parsingFlags;
+      proto$2.set = stringSet;
+      proto$2.startOf = startOf;
+      proto$2.subtract = subtract$1;
+      proto$2.toArray = toArray;
+      proto$2.toObject = toObject;
+      proto$2.toDate = toDate;
+      proto$2.toISOString = toISOString$1;
+      proto$2.inspect = inspect;
+      if (typeof Symbol !== "undefined" && Symbol.for != null) {
+        proto$2[/* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom")] = function() {
+          return "Moment<" + this.format() + ">";
+        };
+      }
+      proto$2.toJSON = toJSON;
+      proto$2.toString = toString;
+      proto$2.unix = unix;
+      proto$2.valueOf = valueOf$1;
+      proto$2.creationData = creationData;
+      proto$2.eraName = getEraName;
+      proto$2.eraNarrow = getEraNarrow;
+      proto$2.eraAbbr = getEraAbbr;
+      proto$2.eraYear = getEraYear;
+      proto$2.year = getSetYear;
+      proto$2.isLeapYear = getIsLeapYear;
+      proto$2.weekYear = getSetWeekYear;
+      proto$2.isoWeekYear = getSetISOWeekYear;
+      proto$2.quarter = proto$2.quarters = getSetQuarter;
+      proto$2.month = getSetMonth;
+      proto$2.daysInMonth = getDaysInMonth;
+      proto$2.week = proto$2.weeks = getSetWeek;
+      proto$2.isoWeek = proto$2.isoWeeks = getSetISOWeek;
+      proto$2.weeksInYear = getWeeksInYear;
+      proto$2.weeksInWeekYear = getWeeksInWeekYear;
+      proto$2.isoWeeksInYear = getISOWeeksInYear;
+      proto$2.isoWeeksInISOWeekYear = getISOWeeksInISOWeekYear;
+      proto$2.date = getSetDayOfMonth;
+      proto$2.day = proto$2.days = getSetDayOfWeek;
+      proto$2.weekday = getSetLocaleDayOfWeek;
+      proto$2.isoWeekday = getSetISODayOfWeek;
+      proto$2.dayOfYear = getSetDayOfYear;
+      proto$2.hour = proto$2.hours = getSetHour;
+      proto$2.minute = proto$2.minutes = getSetMinute;
+      proto$2.second = proto$2.seconds = getSetSecond;
+      proto$2.millisecond = proto$2.milliseconds = getSetMillisecond;
+      proto$2.utcOffset = getSetOffset;
+      proto$2.utc = setOffsetToUTC;
+      proto$2.local = setOffsetToLocal;
+      proto$2.parseZone = setOffsetToParsedOffset;
+      proto$2.hasAlignedHourOffset = hasAlignedHourOffset;
+      proto$2.isDST = isDaylightSavingTime;
+      proto$2.isLocal = isLocal;
+      proto$2.isUtcOffset = isUtcOffset;
+      proto$2.isUtc = isUtc;
+      proto$2.isUTC = isUtc;
+      proto$2.zoneAbbr = getZoneAbbr;
+      proto$2.zoneName = getZoneName;
+      proto$2.dates = deprecate(
+        "dates accessor is deprecated. Use date instead.",
+        getSetDayOfMonth
+      );
+      proto$2.months = deprecate(
+        "months accessor is deprecated. Use month instead",
+        getSetMonth
+      );
+      proto$2.years = deprecate(
+        "years accessor is deprecated. Use year instead",
+        getSetYear
+      );
+      proto$2.zone = deprecate(
+        "moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/",
+        getSetZone
+      );
+      proto$2.isDSTShifted = deprecate(
+        "isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information",
+        isDaylightSavingTimeShifted
+      );
+      function createUnix(input) {
+        return createLocal(input * 1e3);
+      }
+      function createInZone() {
+        return createLocal.apply(null, arguments).parseZone();
+      }
+      function preParsePostFormat(string4) {
+        return string4;
+      }
+      var proto$1 = Locale.prototype;
+      proto$1.calendar = calendar$1;
+      proto$1.longDateFormat = longDateFormat;
+      proto$1.invalidDate = invalidDate;
+      proto$1.ordinal = ordinal;
+      proto$1.preparse = preParsePostFormat;
+      proto$1.postformat = preParsePostFormat;
+      proto$1.relativeTime = relativeTime$1;
+      proto$1.pastFuture = pastFuture;
+      proto$1.set = set2;
+      proto$1.eras = localeEras;
+      proto$1.erasParse = localeErasParse;
+      proto$1.erasConvertYear = localeErasConvertYear;
+      proto$1.erasAbbrRegex = erasAbbrRegex;
+      proto$1.erasNameRegex = erasNameRegex;
+      proto$1.erasNarrowRegex = erasNarrowRegex;
+      proto$1.months = localeMonths;
+      proto$1.monthsShort = localeMonthsShort;
+      proto$1.monthsParse = localeMonthsParse;
+      proto$1.monthsRegex = monthsRegex;
+      proto$1.monthsShortRegex = monthsShortRegex;
+      proto$1.week = localeWeek;
+      proto$1.firstDayOfYear = localeFirstDayOfYear;
+      proto$1.firstDayOfWeek = localeFirstDayOfWeek;
+      proto$1.weekdays = localeWeekdays;
+      proto$1.weekdaysMin = localeWeekdaysMin;
+      proto$1.weekdaysShort = localeWeekdaysShort;
+      proto$1.weekdaysParse = localeWeekdaysParse;
+      proto$1.weekdaysRegex = weekdaysRegex;
+      proto$1.weekdaysShortRegex = weekdaysShortRegex;
+      proto$1.weekdaysMinRegex = weekdaysMinRegex;
+      proto$1.isPM = localeIsPM;
+      proto$1.meridiem = localeMeridiem;
+      function get$1(format2, index, field, setter) {
+        var locale2 = getLocale(), utc = createUTC().set(setter, index);
+        return locale2[field](utc, format2);
+      }
+      function listMonthsImpl(format2, index, field) {
+        if (isNumber(format2)) {
+          index = format2;
+          format2 = void 0;
+        }
+        format2 = format2 || "";
+        if (index != null) {
+          return get$1(format2, index, field, "month");
+        }
+        var i, out = [];
+        for (i = 0; i < 12; i++) {
+          out[i] = get$1(format2, i, field, "month");
+        }
+        return out;
+      }
+      function listWeekdaysImpl(localeSorted, format2, index, field) {
+        if (typeof localeSorted === "boolean") {
+          if (isNumber(format2)) {
+            index = format2;
+            format2 = void 0;
+          }
+          format2 = format2 || "";
+        } else {
+          format2 = localeSorted;
+          index = format2;
+          localeSorted = false;
+          if (isNumber(format2)) {
+            index = format2;
+            format2 = void 0;
+          }
+          format2 = format2 || "";
+        }
+        var locale2 = getLocale(), shift = localeSorted ? locale2._week.dow : 0, i, out = [];
+        if (index != null) {
+          return get$1(format2, (index + shift) % 7, field, "day");
+        }
+        for (i = 0; i < 7; i++) {
+          out[i] = get$1(format2, (i + shift) % 7, field, "day");
+        }
+        return out;
+      }
+      function listMonths(format2, index) {
+        return listMonthsImpl(format2, index, "months");
+      }
+      function listMonthsShort(format2, index) {
+        return listMonthsImpl(format2, index, "monthsShort");
+      }
+      function listWeekdays(localeSorted, format2, index) {
+        return listWeekdaysImpl(localeSorted, format2, index, "weekdays");
+      }
+      function listWeekdaysShort(localeSorted, format2, index) {
+        return listWeekdaysImpl(localeSorted, format2, index, "weekdaysShort");
+      }
+      function listWeekdaysMin(localeSorted, format2, index) {
+        return listWeekdaysImpl(localeSorted, format2, index, "weekdaysMin");
+      }
+      getSetGlobalLocale("en", {
+        eras: [
+          {
+            since: "0001-01-01",
+            until: Infinity,
+            offset: 1,
+            name: "Anno Domini",
+            narrow: "AD",
+            abbr: "AD"
+          },
+          {
+            since: "0000-12-31",
+            until: -Infinity,
+            offset: 1,
+            name: "Before Christ",
+            narrow: "BC",
+            abbr: "BC"
+          }
+        ],
+        dayOfMonthOrdinalParse: /\d{1,2}(th|st|nd|rd)/,
+        ordinal: function(number4) {
+          var b = number4 % 10, output = toInt(number4 % 100 / 10) === 1 ? "th" : b === 1 ? "st" : b === 2 ? "nd" : b === 3 ? "rd" : "th";
+          return number4 + output;
+        }
+      });
+      hooks.lang = deprecate(
+        "moment.lang is deprecated. Use moment.locale instead.",
+        getSetGlobalLocale
+      );
+      hooks.langData = deprecate(
+        "moment.langData is deprecated. Use moment.localeData instead.",
+        getLocale
+      );
+      var mathAbs = Math.abs;
+      function abs$1() {
+        var data = this._data;
+        this._milliseconds = mathAbs(this._milliseconds);
+        this._days = mathAbs(this._days);
+        this._months = mathAbs(this._months);
+        data.milliseconds = mathAbs(data.milliseconds);
+        data.seconds = mathAbs(data.seconds);
+        data.minutes = mathAbs(data.minutes);
+        data.hours = mathAbs(data.hours);
+        data.months = mathAbs(data.months);
+        data.years = mathAbs(data.years);
+        return this;
+      }
+      function addSubtract(duration3, input, value2, direction) {
+        var other = createDuration(input, value2);
+        duration3._milliseconds += direction * other._milliseconds;
+        duration3._days += direction * other._days;
+        duration3._months += direction * other._months;
+        return duration3._bubble();
+      }
+      function add(input, value2) {
+        return addSubtract(this, input, value2, 1);
+      }
+      function subtract(input, value2) {
+        return addSubtract(this, input, value2, -1);
+      }
+      function absCeil(number4) {
+        if (number4 < 0) {
+          return Math.floor(number4);
+        } else {
+          return Math.ceil(number4);
+        }
+      }
+      function bubble() {
+        var milliseconds2 = this._milliseconds, days2 = this._days, months2 = this._months, data = this._data, seconds2, minutes2, hours2, years2, monthsFromDays;
+        if (!(milliseconds2 >= 0 && days2 >= 0 && months2 >= 0 || milliseconds2 <= 0 && days2 <= 0 && months2 <= 0)) {
+          milliseconds2 += absCeil(monthsToDays(months2) + days2) * 864e5;
+          days2 = 0;
+          months2 = 0;
+        }
+        data.milliseconds = milliseconds2 % 1e3;
+        seconds2 = absFloor(milliseconds2 / 1e3);
+        data.seconds = seconds2 % 60;
+        minutes2 = absFloor(seconds2 / 60);
+        data.minutes = minutes2 % 60;
+        hours2 = absFloor(minutes2 / 60);
+        data.hours = hours2 % 24;
+        days2 += absFloor(hours2 / 24);
+        monthsFromDays = absFloor(daysToMonths(days2));
+        months2 += monthsFromDays;
+        days2 -= absCeil(monthsToDays(monthsFromDays));
+        years2 = absFloor(months2 / 12);
+        months2 %= 12;
+        data.days = days2;
+        data.months = months2;
+        data.years = years2;
+        return this;
+      }
+      function daysToMonths(days2) {
+        return days2 * 4800 / 146097;
+      }
+      function monthsToDays(months2) {
+        return months2 * 146097 / 4800;
+      }
+      function as(units) {
+        if (!this.isValid()) {
+          return NaN;
+        }
+        var days2, months2, milliseconds2 = this._milliseconds;
+        units = normalizeUnits(units);
+        if (units === "month" || units === "quarter" || units === "year") {
+          days2 = this._days + milliseconds2 / 864e5;
+          months2 = this._months + daysToMonths(days2);
+          switch (units) {
+            case "month":
+              return months2;
+            case "quarter":
+              return months2 / 3;
+            case "year":
+              return months2 / 12;
+          }
+        } else {
+          days2 = this._days + Math.round(monthsToDays(this._months));
+          switch (units) {
+            case "week":
+              return days2 / 7 + milliseconds2 / 6048e5;
+            case "day":
+              return days2 + milliseconds2 / 864e5;
+            case "hour":
+              return days2 * 24 + milliseconds2 / 36e5;
+            case "minute":
+              return days2 * 1440 + milliseconds2 / 6e4;
+            case "second":
+              return days2 * 86400 + milliseconds2 / 1e3;
+            // Math.floor prevents floating point math errors here
+            case "millisecond":
+              return Math.floor(days2 * 864e5) + milliseconds2;
+            default:
+              throw new Error("Unknown unit " + units);
+          }
+        }
+      }
+      function makeAs(alias) {
+        return function() {
+          return this.as(alias);
+        };
+      }
+      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf2 = asMilliseconds;
+      function clone2() {
+        return createDuration(this);
+      }
+      function get(units) {
+        units = normalizeUnits(units);
+        return this.isValid() ? this[units + "s"]() : NaN;
+      }
+      function makeGetter(name2) {
+        return function() {
+          return this.isValid() ? this._data[name2] : NaN;
+        };
+      }
+      var milliseconds = makeGetter("milliseconds"), seconds = makeGetter("seconds"), minutes = makeGetter("minutes"), hours = makeGetter("hours"), days = makeGetter("days"), months = makeGetter("months"), years = makeGetter("years");
+      function weeks() {
+        return absFloor(this.days() / 7);
+      }
+      var round = Math.round, thresholds = {
+        ss: 44,
+        // a few seconds to seconds
+        s: 45,
+        // seconds to minute
+        m: 45,
+        // minutes to hour
+        h: 22,
+        // hours to day
+        d: 26,
+        // days to month/week
+        w: null,
+        // weeks to month
+        M: 11
+        // months to year
+      };
+      function substituteTimeAgo(string4, number4, withoutSuffix, isFuture, locale2) {
+        return relativeTimeWithoutPostformat.call(
+          locale2,
+          number4 || 1,
+          !!withoutSuffix,
+          string4,
+          isFuture
+        );
+      }
+      function relativeTime(posNegDuration, withoutSuffix, thresholds2, locale2) {
+        var duration3 = createDuration(posNegDuration).abs(), seconds2 = round(duration3.as("s")), minutes2 = round(duration3.as("m")), hours2 = round(duration3.as("h")), days2 = round(duration3.as("d")), months2 = round(duration3.as("M")), weeks2 = round(duration3.as("w")), years2 = round(duration3.as("y")), a = seconds2 <= thresholds2.ss && ["s", seconds2] || seconds2 < thresholds2.s && ["ss", seconds2] || minutes2 <= 1 && ["m"] || minutes2 < thresholds2.m && ["mm", minutes2] || hours2 <= 1 && ["h"] || hours2 < thresholds2.h && ["hh", hours2] || days2 <= 1 && ["d"] || days2 < thresholds2.d && ["dd", days2];
+        if (thresholds2.w != null) {
+          a = a || weeks2 <= 1 && ["w"] || weeks2 < thresholds2.w && ["ww", weeks2];
+        }
+        a = a || months2 <= 1 && ["M"] || months2 < thresholds2.M && ["MM", months2] || years2 <= 1 && ["y"] || ["yy", years2];
+        a[2] = withoutSuffix;
+        a[3] = +posNegDuration > 0;
+        a[4] = locale2;
+        return substituteTimeAgo.apply(null, a);
+      }
+      function getSetRelativeTimeRounding(roundingFunction) {
+        if (roundingFunction === void 0) {
+          return round;
+        }
+        if (typeof roundingFunction === "function") {
+          round = roundingFunction;
+          return true;
+        }
+        return false;
+      }
+      function getSetRelativeTimeThreshold(threshold, limit) {
+        if (thresholds[threshold] === void 0) {
+          return false;
+        }
+        if (limit === void 0) {
+          return thresholds[threshold];
+        }
+        thresholds[threshold] = limit;
+        if (threshold === "s") {
+          thresholds.ss = limit - 1;
+        }
+        return true;
+      }
+      function humanize2(argWithSuffix, argThresholds) {
+        if (!this.isValid()) {
+          return this.localeData().invalidDate();
+        }
+        var withSuffix = false, th = thresholds, locale2, output;
+        if (typeof argWithSuffix === "object") {
+          argThresholds = argWithSuffix;
+          argWithSuffix = false;
+        }
+        if (typeof argWithSuffix === "boolean") {
+          withSuffix = argWithSuffix;
+        }
+        if (typeof argThresholds === "object") {
+          th = extend2(extend2({}, thresholds), argThresholds || {});
+          if (argThresholds.s != null && argThresholds.ss == null) {
+            th.ss = argThresholds.s - 1;
+          }
+        }
+        locale2 = this.localeData();
+        output = relativeTime(this, !withSuffix, th, locale2);
+        if (withSuffix) {
+          output = pastFutureWithoutPostformat.call(locale2, +this, output);
+        }
+        return locale2.postformat(output);
+      }
+      var abs = Math.abs;
+      function sign(x) {
+        return (x > 0) - (x < 0) || +x;
+      }
+      function toISOString() {
+        if (!this.isValid()) {
+          return this.localeData().invalidDate();
+        }
+        var seconds2 = abs(this._milliseconds) / 1e3, days2 = abs(this._days), months2 = abs(this._months), minutes2, hours2, years2, s, total = this.asSeconds(), totalSign, ymSign, daysSign, hmsSign;
+        if (!total) {
+          return "P0D";
+        }
+        minutes2 = absFloor(seconds2 / 60);
+        hours2 = absFloor(minutes2 / 60);
+        seconds2 %= 60;
+        minutes2 %= 60;
+        years2 = absFloor(months2 / 12);
+        months2 %= 12;
+        s = seconds2 ? seconds2.toFixed(3).replace(/\.?0+$/, "") : "";
+        totalSign = total < 0 ? "-" : "";
+        ymSign = sign(this._months) !== sign(total) ? "-" : "";
+        daysSign = sign(this._days) !== sign(total) ? "-" : "";
+        hmsSign = sign(this._milliseconds) !== sign(total) ? "-" : "";
+        return totalSign + "P" + (years2 ? ymSign + years2 + "Y" : "") + (months2 ? ymSign + months2 + "M" : "") + (days2 ? daysSign + days2 + "D" : "") + (hours2 || minutes2 || seconds2 ? "T" : "") + (hours2 ? hmsSign + hours2 + "H" : "") + (minutes2 ? hmsSign + minutes2 + "M" : "") + (seconds2 ? hmsSign + s + "S" : "");
+      }
+      var proto = Duration.prototype;
+      proto.isValid = isValid$1;
+      proto.abs = abs$1;
+      proto.add = add;
+      proto.subtract = subtract;
+      proto.as = as;
+      proto.asMilliseconds = asMilliseconds;
+      proto.asSeconds = asSeconds;
+      proto.asMinutes = asMinutes;
+      proto.asHours = asHours;
+      proto.asDays = asDays;
+      proto.asWeeks = asWeeks;
+      proto.asMonths = asMonths;
+      proto.asQuarters = asQuarters;
+      proto.asYears = asYears;
+      proto.valueOf = valueOf2;
+      proto._bubble = bubble;
+      proto.clone = clone2;
+      proto.get = get;
+      proto.milliseconds = milliseconds;
+      proto.seconds = seconds;
+      proto.minutes = minutes;
+      proto.hours = hours;
+      proto.days = days;
+      proto.weeks = weeks;
+      proto.months = months;
+      proto.years = years;
+      proto.humanize = humanize2;
+      proto.toISOString = toISOString;
+      proto.toString = toISOString;
+      proto.toJSON = toISOString;
+      proto.locale = locale;
+      proto.localeData = localeData;
+      proto.toIsoString = deprecate(
+        "toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)",
+        toISOString
+      );
+      proto.lang = lang;
+      addFormatToken("X", 0, 0, "unix");
+      addFormatToken("x", 0, 0, "valueOf");
+      addRegexToken("x", matchSigned);
+      addRegexToken("X", matchTimestamp);
+      addParseToken("X", function(input, array2, config2) {
+        config2._d = new Date(parseFloat(input) * 1e3);
+      });
+      addParseToken("x", function(input, array2, config2) {
+        config2._d = new Date(toInt(input));
+      });
+      hooks.version = "2.31.0";
+      setHookCallback(createLocal);
+      hooks.fn = proto$2;
+      hooks.min = min;
+      hooks.max = max;
+      hooks.now = now;
+      hooks.utc = createUTC;
+      hooks.unix = createUnix;
+      hooks.months = listMonths;
+      hooks.isDate = isDate;
+      hooks.locale = getSetGlobalLocale;
+      hooks.invalid = createInvalid$1;
+      hooks.duration = createDuration;
+      hooks.isMoment = isMoment2;
+      hooks.weekdays = listWeekdays;
+      hooks.parseZone = createInZone;
+      hooks.localeData = getLocale;
+      hooks.isDuration = isDuration;
+      hooks.monthsShort = listMonthsShort;
+      hooks.weekdaysMin = listWeekdaysMin;
+      hooks.defineLocale = defineLocale;
+      hooks.updateLocale = updateLocale;
+      hooks.locales = listLocales;
+      hooks.weekdaysShort = listWeekdaysShort;
+      hooks.normalizeUnits = normalizeUnits;
+      hooks.relativeTimeRounding = getSetRelativeTimeRounding;
+      hooks.relativeTimeThreshold = getSetRelativeTimeThreshold;
+      hooks.calendarFormat = getCalendarFormat;
+      hooks.prototype = proto$2;
+      hooks.HTML5_FMT = {
+        DATETIME_LOCAL: "YYYY-MM-DDTHH:mm",
+        // <input type="datetime-local" />
+        DATETIME_LOCAL_SECONDS: "YYYY-MM-DDTHH:mm:ss",
+        // <input type="datetime-local" step="1" />
+        DATETIME_LOCAL_MS: "YYYY-MM-DDTHH:mm:ss.SSS",
+        // <input type="datetime-local" step="0.001" />
+        DATE: "YYYY-MM-DD",
+        // <input type="date" />
+        TIME: "HH:mm",
+        // <input type="time" />
+        TIME_SECONDS: "HH:mm:ss",
+        // <input type="time" step="1" />
+        TIME_MS: "HH:mm:ss.SSS",
+        // <input type="time" step="0.001" />
+        WEEK: "GGGG-[W]WW",
+        // <input type="week" />
+        MONTH: "YYYY-MM"
+        // <input type="month" />
+      };
+      return hooks;
+    }));
+  }
+});
+
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
@@ -30844,14 +35012,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str = "";
+  let str2 = "";
   for (let i = 0; i < length; i++) {
-    str += chars[Math.floor(Math.random() * chars.length)];
+    str2 += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str;
+  return str2;
 }
-function esc(str) {
-  return JSON.stringify(str);
+function esc(str2) {
+  return JSON.stringify(str2);
 }
 function slugify(input) {
   return input.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -30965,8 +35133,8 @@ var primitiveTypes = /* @__PURE__ */ new Set([
   "symbol",
   "undefined"
 ]);
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str2) {
+  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -56232,9 +60400,9 @@ var gatewayOriginCache = /* @__PURE__ */ new Map();
 var GATEWAY_CACHE_TTL_MS = 6e4;
 async function checkOriginWithGateway(customerId, origin) {
   const cacheKey2 = `${customerId} ${origin}`;
-  const cached3 = gatewayOriginCache.get(cacheKey2);
-  if (cached3 && cached3.expiresAt > Date.now())
-    return cached3.allowed;
+  const cached4 = gatewayOriginCache.get(cacheKey2);
+  if (cached4 && cached4.expiresAt > Date.now())
+    return cached4.allowed;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   if (!gatewayUrl || !gatewayToken)
@@ -56259,9 +60427,9 @@ async function checkOriginWithGateway(customerId, origin) {
 }
 var gatewayResolveCache = /* @__PURE__ */ new Map();
 async function resolveApiUrlFromGateway(customerId) {
-  const cached3 = gatewayResolveCache.get(customerId);
-  if (cached3 && cached3.expiresAt > Date.now())
-    return cached3.result;
+  const cached4 = gatewayResolveCache.get(customerId);
+  if (cached4 && cached4.expiresAt > Date.now())
+    return cached4.result;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   let result = { url: void 0, verified: false };
@@ -56559,7 +60727,12 @@ function createAuth(config2, fetchImpl = fetch) {
     }
     return current;
   }
-  return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace };
+  async function viewerSession() {
+    if (!token)
+      await login();
+    return token;
+  }
+  return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
 
 // dist/tableQuotaError.js
@@ -57320,6 +61493,17 @@ function lintUntriggeredDataQueries(summary) {
     }
   }
   return { errors, warnings };
+}
+var TOOLJETDB_WRITES = /* @__PURE__ */ new Set(["create_row", "update_rows", "delete_rows", "bulk_update_with_primary_key", "bulk_upsert_with_primary_key", "bulk_insert"]);
+function lintAutomaticWrites(summary) {
+  const triggers = queryTriggers(summary);
+  return summary.queries.flatMap((q) => {
+    const options2 = q.options && typeof q.options === "object" ? q.options : {};
+    const op = String(options2.operation ?? "");
+    if (q.kind !== "tooljetdb" || !TOOLJETDB_WRITES.has(op) || !triggers.get(q.id)?.automatic)
+      return [];
+    return [`Query "${q.name ?? q.id}" writes (${op}) and runs on its own when the page opens, so every visit changes the data. Run it from a user action instead.`];
+  });
 }
 var HTML_PX_PER_COLUMN = 32;
 var HTML_WIDGET_HEIGHT_LOSS = 4;
@@ -58532,6 +62716,15 @@ function getLegacyComponentReplacement(type) {
 
 // dist/componentParent.js
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
+var TAB_SLOT = /^tab-(t\d+)$/;
+var TAB_CANVAS_SUFFIX = /-(t\d+)$/;
+function isComponentSlotName(value2) {
+  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2));
+}
+function isTabSlot(value2) {
+  return typeof value2 === "string" && TAB_SLOT.test(value2);
+}
+var componentSlotSchema = external_exports.union([external_exports.enum(COMPONENT_SLOT_NAMES), external_exports.string().regex(TAB_SLOT)]);
 var ENCODED_SLOT_SUFFIXES = ["header", "footer", "modal"];
 function encodeComponentParent(parentId, slotName) {
   if (!slotName)
@@ -58539,7 +62732,8 @@ function encodeComponentParent(parentId, slotName) {
   if (slotName === "body")
     return decodeComponentParent(parentId).parentId;
   const base = decodeComponentParent(parentId).parentId;
-  return `${base}-${slotName}`;
+  const tab = TAB_SLOT.exec(slotName);
+  return tab ? `${base}-${tab[1]}` : `${base}-${slotName}`;
 }
 function decodeComponentParent(parentId) {
   for (const slotName of ENCODED_SLOT_SUFFIXES) {
@@ -58548,6 +62742,9 @@ function decodeComponentParent(parentId) {
       return { parentId: parentId.slice(0, -suffix.length), slotName };
     }
   }
+  const tab = TAB_CANVAS_SUFFIX.exec(parentId);
+  if (tab)
+    return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` };
   return { parentId, slotName: "body" };
 }
 
@@ -58683,7 +62880,7 @@ var TOP_ALIGNED_INPUT_TYPES = /* @__PURE__ */ new Set([
 ]);
 var TOP_ALIGNMENT_HEIGHT_INCREMENT = 20;
 var NARROW_SIDE_LABEL_COLS = 18;
-var STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 12;
+var STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 9;
 var STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 var STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
 var STATISTICS_SAFE_VALUE_FONT_PX = 22;
@@ -58694,10 +62891,7 @@ var TABLE_TOOLBAR_HEIGHT_PX = 56;
 var TABLE_FOOTER_HEIGHT_PX = 56;
 var TABLE_BORDER_PX = 2;
 var TABLE_VISIBLE_COLUMN_WARN = 10;
-var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container"]);
-var DEFAULT_DESKTOP_CONTENT_FOLD_PX = 720;
-var BOUNDED_OPERATIONAL_SURFACE_TYPES = /* @__PURE__ */ new Set(["Table", "Listview"]);
-var MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX = 240;
+var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container", "Accordion"]);
 var CANVAS_COLUMN_PX = 28;
 var CONTENT_COLUMNS = 39;
 var TABLE_UNSIZED_COLUMN_MIN_PX = 100;
@@ -58753,7 +62947,8 @@ function nearestCatalogKey(value2, candidates) {
 function projectedTableDataKeys(value2) {
   if (typeof value2 !== "string" || !/\.map\s*\(/.test(value2))
     return void 0;
-  const arrowObject = value2.match(/=>\s*\(\s*\{/);
+  const arrowObjects = [...value2.matchAll(/=>\s*\(\s*\{/g)];
+  const arrowObject = arrowObjects[arrowObjects.length - 1] ?? null;
   const returnedObject = value2.match(/=>\s*\{[\s\S]*?\breturn\s*\{/);
   const projection = arrowObject ?? returnedObject;
   if (projection?.index === void 0)
@@ -58900,6 +63095,14 @@ function mutuallyExclusiveVisibility(a, b) {
 }
 function recordValue(value2) {
   return value2 && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
+}
+function authorComputesKey(data, key4) {
+  const binding = String(data?.value ?? data ?? "");
+  if (typeof key4 !== "string" || !key4 || !/\.map\s*\(/.test(binding))
+    return false;
+  const escaped = key4.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignments = [...binding.matchAll(new RegExp(`(?:^|[{,\\s])${escaped}\\s*:\\s*([^,}]+)`, "g"))].map((m) => m[1].trim());
+  return assignments.some((value2) => !new RegExp(`^[A-Za-z_$][\\w$]*\\??\\.${escaped}$`).test(value2));
 }
 function looksDateLikeField(value2) {
   if (typeof value2 !== "string")
@@ -59192,9 +63395,16 @@ function lintComponentSlots(components) {
       continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs2.get(placement.parentId) : void 0;
-    const validParent = slotName === "modal" ? parent?.type === "Kanban" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && parent?.type === "Kanban";
+    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? parent?.type === "Tabs" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && parent?.type === "Kanban";
+    if (parent?.type === "Tabs" && isTabSlot(slotName) && !isTruthyBinding(propVal2(parent.properties, "useDynamicOptions"))) {
+      const items = propVal2(parent.properties, "tabItems");
+      const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
+      if (ids && !ids.includes(slotName.slice("tab-".length))) {
+        errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}", but Tabs "${parent.name ?? parent.id}" has no tab with that id (its tabItems ids: ${ids.join(", ") || "none"}). Use one of those slots, or add the tab to tabItems.`);
+      }
+    }
     if (parent && !validParent) {
-      errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container; Kanban supports body (card) and modal.`);
+      errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`);
     }
   }
   return errors;
@@ -59231,8 +63441,15 @@ function lintKanbanCardChildren(components) {
         continue;
       if (child.type !== "Text" && child.type !== "Html")
         continue;
-      const width = (child.layouts?.desktop ?? child.layout)?.width;
+      const rect2 = child.layouts?.desktop ?? child.layout;
+      const width = rect2?.width;
       if (typeof width !== "number" || width >= KANBAN_CARD_CHILD_MIN_COLS)
+        continue;
+      const sharesRow = components.some((other) => other !== child && parentPlacement(other)?.parentId === key4 && parentPlacement(other)?.slotName === "body" && (() => {
+        const o = other.layouts?.desktop ?? other.layout;
+        return !!o && o.top !== void 0 && o.height !== void 0 && rect2.top !== void 0 && rect2.height !== void 0 && rect2.top < o.top + o.height && o.top < rect2.top + rect2.height;
+      })());
+      if (sharesRow)
         continue;
       const px2 = Math.round(width / 43 * KANBAN_CARD_WIDTH_PX);
       errors.push(`Kanban "${board.name ?? board.id ?? "Kanban"}" card child ${child.type} "${child.name ?? child.id ?? child.type}": width ${width} columns is about ${px2}px of the ${KANBAN_CARD_WIDTH_PX}px card (card children use the card's own 43-column grid), so a name or title is cut after a few characters. For long titles prefer left 2, width 39; short badges or metadata may stay compact after checking their actual text.`);
@@ -59544,64 +63761,6 @@ function lintListviewChildren(components) {
   }
   return warnings;
 }
-function lintOperationalViewport(components) {
-  const refs2 = new Map(components.flatMap((component) => {
-    const key4 = componentKey(component);
-    return key4 ? [[key4, component]] : [];
-  }));
-  const absoluteTop = (component, seen = /* @__PURE__ */ new Set()) => {
-    const rect2 = component.layouts?.desktop ?? component.layout;
-    const localTop = rect2?.top ?? 0;
-    const placement = parentPlacement(component);
-    if (!placement || seen.has(placement.parentId))
-      return localTop;
-    const parent = refs2.get(placement.parentId);
-    if (!parent)
-      return localTop;
-    return localTop + absoluteTop(parent, /* @__PURE__ */ new Set([...seen, placement.parentId]));
-  };
-  const hasBoundedAncestor = (component) => {
-    let placement = parentPlacement(component);
-    const seen = /* @__PURE__ */ new Set();
-    while (placement && !seen.has(placement.parentId)) {
-      seen.add(placement.parentId);
-      const parent = refs2.get(placement.parentId);
-      if (!parent)
-        return false;
-      if (BOUNDED_OPERATIONAL_SURFACE_TYPES.has(parent.type ?? ""))
-        return true;
-      placement = parentPlacement(parent);
-    }
-    return false;
-  };
-  const surfaces = components.flatMap((component) => {
-    if (!BOUNDED_OPERATIONAL_SURFACE_TYPES.has(component.type ?? ""))
-      return [];
-    const rect2 = component.layouts?.desktop ?? component.layout;
-    if (!rect2 || (rect2.height ?? 0) < MIN_BOUNDED_OPERATIONAL_SURFACE_HEIGHT_PX)
-      return [];
-    return [{ component, bottom: absoluteTop(component) + (rect2.height ?? 0) }];
-  });
-  if (!surfaces.length)
-    return [];
-  const warnings = [];
-  for (const button of components.filter((component) => component.type === "Button" && !hasBoundedAncestor(component))) {
-    if (propVal2(button.styles, "type") !== "primary")
-      continue;
-    const rect2 = button.layouts?.desktop ?? button.layout;
-    if (!rect2)
-      continue;
-    const buttonTop = absoluteTop(button);
-    const buttonBottom = buttonTop + (rect2.height ?? 0);
-    if (buttonBottom <= DEFAULT_DESKTOP_CONTENT_FOLD_PX)
-      continue;
-    const precedingSurface = surfaces.find(({ bottom }) => buttonTop >= bottom);
-    const surface = precedingSurface ?? surfaces[0];
-    const relation = precedingSurface ? "below" : "on a page with";
-    warnings.push(`Primary Button "${button.name ?? button.id ?? "Button"}" ends at ${buttonBottom}px ${relation} a bounded ${surface.component.type} "${surface.component.name ?? surface.component.id ?? surface.component.type}" and is likely outside the initial desktop viewport. This creates page scrolling on top of the data pane's inner scrolling. Move the primary action above about ${DEFAULT_DESKTOP_CONTENT_FOLD_PX}px, shorten the pane/header, or browser-verify that the extra page scroll is deliberate.`);
-  }
-  return warnings;
-}
 function lintCanvasSideGutter(components) {
   const MIN_LEFT = 2;
   const MAX_RIGHT = 41;
@@ -59670,7 +63829,8 @@ function lintRenderedText(spec) {
   }
   const itemsKey = spec.type === "Tabs" ? void 0 : CONTAINER_ITEMS[spec.type ?? ""];
   if (itemsKey) {
-    const items = propVal2(props, itemsKey);
+    const dynamicSchema = isTruthyBinding(propVal2(props, "advanced")) ? propVal2(props, "schema") : void 0;
+    const items = dynamicSchema ?? propVal2(props, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === "string" && items.includes("{{");
     if (!authored) {
       errors.push(`${spec.type} "${label2}" has no properties.${itemsKey}: it renders ToolJet's placeholder items ("Tab 1 / Tab 2 / Tab 3"). Author ${itemsKey} with the real titles, or use a different component.`);
@@ -59840,8 +64000,8 @@ function lintComponentSpec(spec) {
     }
   }
   if (spec.slotName !== void 0) {
-    if (!COMPONENT_SLOT_NAMES.includes(spec.slotName)) {
-      errors.push(`Component "${label2}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, or Kanban modal.`);
+    if (!isComponentSlotName(spec.slotName)) {
+      errors.push(`Component "${label2}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
@@ -59949,7 +64109,7 @@ function lintComponentSpec(spec) {
     const secondaryHidden = isTruthyBinding(propVal2(props, "hideSecondary"));
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
-      warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than three tiles per content row." : "Use a two-column KPI grid, or set hideSecondary:true and use at least 12 columns."}`);
+      warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than four tiles per content row." : `Use a two-column KPI grid, or set hideSecondary:true and use at least ${STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS} columns.`}`);
     }
     const iconName = catalogValue("Statistics", props, "icon");
     const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props, "iconVisibility") !== false && propVal2(props, "iconVisibility") !== "{{false}}";
@@ -59959,8 +64119,10 @@ function lintComponentSpec(spec) {
       errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
     const primaryLabel = catalogValue("Statistics", props, "primaryValueLabel");
-    if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && (primaryLabel.trim().length > 12 || primaryLabel.trim().split(/\s+/).length > 2)) {
-      warnings.push(`Statistics "${label2}": value-only width ${width} columns is only safe for a short one- or two-word primaryValueLabel, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
+    if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && // About 25px a column at laptop widths and 7-8px a label character: two characters a column stay on one
+    // line (a 13-column tile is ~325px; the old 12-character limit flagged "Arrived / waiting", vet n1).
+    primaryLabel.trim().length > width * 2) {
+      warnings.push(`Statistics "${label2}": value-only width ${width} columns fits a label of about ${width * 2} characters, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
     }
   }
   if (spec.type === "DropdownV2") {
@@ -60093,8 +64255,8 @@ function lintComponentSpec(spec) {
     const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props, "serverSideRowsPerPage") : catalogValue("Table", props, "rowsPerPage"));
     if (functionStyleTableMap(data)) {
       errors.push(`Table "${label2}": the projection checker cannot certify a function-style .map() callback. Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.`);
-    } else if (statementBodyMapInValue(data)) {
-      errors.push(`Table "${label2}": data uses a statement-body .map() callback (for example map(row => { ... })). ToolJet can silently evaluate this binding as no data. Use an expression body such as map(row => ({...})) or pre-shape multi-statement logic in the datasource/RunJS query.`);
+    } else if (statementBodyMapInValue(data) && typeof data === "string" && data.trim().slice(2, -2).includes("}}")) {
+      errors.push(`Table "${label2}": data uses a statement-body .map() callback whose code contains \`}}\`, which ends the binding early, so the table shows no data. Put a space between the braces (} }), use an expression body such as map(row => ({...})), or pre-shape the rows in a RunJS query.`);
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
@@ -60206,7 +64368,8 @@ function lintComponentSpec(spec) {
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
           warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
-        if (c?.columnType === "string" && (looksDateLikeField(c.key) || looksDateLikeField(c.name))) {
+        if (c?.columnType === "string" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
+        (typeof c.key === "string" && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) && !authorComputesKey(props?.data, c.key)) {
           warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
@@ -60400,7 +64563,8 @@ function isTitleLikeText(component) {
   const text = propVal2(component.properties, "text");
   const fontWeight = propVal2(component.styles, "fontWeight");
   const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
-  return /(?:title|heading|header)/i.test(name2) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
+  const recordLabel = typeof text === "string" && (text.includes("{{") || /\?\s*$/.test(text.trim())) && (textSize === void 0 || textSize < 18);
+  return /(?:title|heading|header)/i.test(name2) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || !recordLabel && typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || !recordLabel && typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
 }
 function lintModalChildren(components) {
   const warnings = [];
@@ -60488,7 +64652,6 @@ function lintRenderedGeometryBlocking(components) {
 }
 function lintRenderedGeometryAdvisory(components) {
   return [
-    ...lintOperationalViewport(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components)
   ];
@@ -60510,6 +64673,60 @@ function lintUnrenderableHeights(components) {
   }
   return errors;
 }
+function lintWidgetContracts(c) {
+  const errors = [];
+  const label2 = `${c.type} "${c.name ?? c.id ?? c.type}"`;
+  const props = c.properties;
+  const rect2 = c.layouts?.desktop ?? c.layout;
+  const nested = Boolean(c.parentRef ?? c.parent);
+  const wrappedTrue = (v) => Boolean(v && typeof v === "object" && v.value);
+  if (c.type === "RadioButtonV2" && !isTruthyBinding(propVal2(props, "advanced"))) {
+    const options2 = propVal2(props, "options");
+    if (Array.isArray(options2) && options2.some((o) => wrappedTrue(o?.default))) {
+      errors.push(`${label2}: a static option marked default:{value:true} is never preselected (RadioButtonV2 checks default === true). Set advanced to "{{true}}" and give schema as [{label, value, default: true, visible: true}] with plain booleans.`);
+    }
+  }
+  if (c.type === "TreeSelect" && !isTruthyBinding(propVal2(props, "advanced"))) {
+    const hasWrapped = (nodes) => Array.isArray(nodes) && nodes.some((n) => {
+      const o = n ?? {};
+      return ["visible", "disable", "selected", "expanded"].some((k) => o[k] && typeof o[k] === "object") || hasWrapped(o.children);
+    });
+    const options2 = propVal2(props, "options");
+    if (Array.isArray(options2) && options2.some((o) => hasWrapped(o?.children))) {
+      errors.push(`${label2}: nested options keep their flags wrapped as {value}, and a wrapped false is truthy (a hidden child shows, an unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.`);
+    }
+  }
+  if (c.type === "Navigation") {
+    const shownAsTrue = (items) => Array.isArray(items) && items.some((it) => {
+      const o = it ?? {};
+      const f = o.visible && typeof o.visible === "object" ? o.visible.value : o.visible;
+      return f === true || f === "true" || f === "{{true}}" || shownAsTrue(o.children);
+    });
+    if (shownAsTrue(propVal2(props, "menuItems"))) {
+      errors.push(`${label2}: an item with visible true is HIDDEN (Navigation stores "hidden" under visible). Write visible:{value:"{{false}}"} for an item that shows, and {value:"{{true}}"} only to hide one.`);
+    }
+  }
+  if (c.type === "Timer" && propVal2(props, "type") === "countDown" && /^[0:]*$/.test(String(propVal2(props, "value") ?? ""))) {
+    errors.push(`${label2}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
+  }
+  const pages = propVal2(props, "numberOfPages");
+  if (c.type === "Pagination" && typeof pages === "string" && !pages.includes("{{")) {
+    errors.push(`${label2}: numberOfPages "${pages}" is text, so the last page never matches and next stays enabled; write "{{${pages}}}".`);
+  }
+  const twoHandle = propVal2(props, "enableTwoHandle");
+  if (c.type === "RangeSliderV2" && twoHandle !== void 0 && !["slider", "rangeSlider"].includes(String(twoHandle))) {
+    errors.push(`${label2}: enableTwoHandle is "slider" or "rangeSlider" (two handles read startValue/endValue), not ${JSON.stringify(twoHandle)}.`);
+  }
+  const height = rect2?.height;
+  const width = rect2?.width;
+  if (typeof height === "number") {
+    const min = c.type === "QrScanner" ? nested || typeof width !== "number" ? 200 : Math.round(width * 28 * 0.9) : c.type === "Camera" ? 300 : c.type === "FilePicker" ? 176 : 0;
+    if (height < min) {
+      errors.push(`${label2}: height ${height} cuts it off; use at least ${min} (` + (c.type === "QrScanner" ? "its reader is square, as tall as it is wide" : c.type === "Camera" ? "the preview and its buttons" : "the drop zone and the chosen file") + ").");
+    }
+  }
+  return errors;
+}
 function lintComponents(components) {
   const errors = [];
   const warnings = [];
@@ -60523,6 +64740,7 @@ function lintComponents(components) {
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
+    errors.push(...lintWidgetContracts(c));
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
@@ -60824,8 +65042,9 @@ function validateAppStructure(summary) {
     const seen = /* @__PURE__ */ new Set();
     for (const ref of bindingReferences(source2.value)) {
       const names = ref.namespace === "components" ? componentNames : queryNames;
+      const ids = ref.namespace === "components" ? componentIds : queryIds;
       const key4 = `${ref.namespace}.${ref.name}`;
-      if (!names.has(ref.name) && !seen.has(key4)) {
+      if (!names.has(ref.name) && !ids.has(ref.name) && !seen.has(key4)) {
         seen.add(key4);
         errors.push(`${source2.label} references ${key4}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
       }
@@ -60929,6 +65148,7 @@ function validateAppStructure(summary) {
   const readiness = lintUntriggeredDataQueries(summary);
   errors.push(...readiness.errors);
   warnings.push(...readiness.warnings);
+  warnings.push(...lintAutomaticWrites(summary));
   warnings.push(...lintStatTileConsistency(summary));
   return { errors: uniq(errors), warnings: uniq(warnings) };
 }
@@ -60976,6 +65196,79 @@ function lintInnerPageBands(summary) {
     }
   });
   return warnings;
+}
+
+// dist/queryToggles.js
+var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
+var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
+function isPlainObject3(value2) {
+  return !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+}
+function staticToggle(value2) {
+  if (typeof value2 !== "string")
+    return void 0;
+  const match = STATIC_TOGGLE.exec(value2);
+  return match ? (match[1] ?? match[2]) === "true" : void 0;
+}
+function normalizeQueryToggles(options2) {
+  if (!isPlainObject3(options2))
+    return options2;
+  let out = options2;
+  for (const key4 of QUERY_TOGGLES) {
+    const value2 = staticToggle(options2[key4]);
+    if (value2 === void 0)
+      continue;
+    if (out === options2)
+      out = { ...options2 };
+    out[key4] = value2;
+  }
+  return out;
+}
+function describe3(value2) {
+  if (value2 === null)
+    return "null";
+  if (Array.isArray(value2))
+    return "an array";
+  if (typeof value2 === "object")
+    return "an object";
+  if (typeof value2 === "string")
+    return JSON.stringify(value2);
+  return `${typeof value2} ${String(value2)}`;
+}
+function queryToggleIssues(options2) {
+  if (!isPlainObject3(options2))
+    return [];
+  const issues = [];
+  for (const key4 of QUERY_TOGGLES) {
+    if (!(key4 in options2))
+      continue;
+    const value2 = options2[key4];
+    if (value2 === void 0 || typeof value2 === "boolean" || staticToggle(value2) !== void 0)
+      continue;
+    const dynamic = typeof value2 === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
+    issues.push({
+      code: "query_toggle_not_boolean",
+      path: key4,
+      message: `${key4} must be true or false (or left out), not ${describe3(value2)}.${dynamic}`
+    });
+  }
+  return issues;
+}
+function toggleRewriteWarning(before, after) {
+  const changed = QUERY_TOGGLES.filter((key4) => before?.[key4] !== after?.[key4]);
+  if (!changed.length)
+    return void 0;
+  return `${changed.map((key4) => `${key4} ${JSON.stringify(before[key4])} saved as ${String(after[key4])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
+}
+function assertPersistableQueryToggles(options2, subject) {
+  const issues = queryToggleIssues(options2);
+  const strings = isPlainObject3(options2) ? QUERY_TOGGLES.filter((key4) => typeof options2[key4] === "string") : [];
+  const messages = [
+    ...issues.map((issue2) => issue2.message),
+    ...strings.filter((key4) => !issues.some((issue2) => issue2.path === key4)).map((key4) => `${key4} must be sent as a boolean, not ${JSON.stringify(options2[key4])}.`)
+  ];
+  if (messages.length)
+    throw new Error(`${subject}: ${messages.join(" ")}`);
 }
 
 // dist/strictEntry.js
@@ -61192,7 +65485,7 @@ function validateTableBatch(tables) {
       }
       const dataType = normalizeType(column.type);
       if (!TOOLJET_DB_DATA_TYPES.has(dataType)) {
-        errors.push(`Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.`);
+        errors.push(`Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.` + (/^(numeric|money|dec)/i.test(column.type.trim()) ? " numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently." : ""));
       }
     }
     for (const foreignKey of table.foreignKeys ?? []) {
@@ -61291,13 +65584,30 @@ function invalidSeedTimestamps(columns, rows) {
       if (value2 == null)
         continue;
       const obvious = typeof value2 === "boolean" || typeof value2 === "object" || typeof value2 === "number" && (!Number.isFinite(value2) || Math.abs(value2) < 100) || typeof value2 === "string" && (!value2.trim() || /^[+-]?\d{1,2}$/.test(value2.trim()));
-      if (obvious)
+      if (obvious || typeof value2 === "string" && notOnCalendar(value2))
         invalid.push(index + 1);
     }
     if (invalid.length)
       errors.push(`Column "${column.name}" (${column.type}) has non-date literals in seed row(s) ${invalid.slice(0, 12).join(", ")}${invalid.length > 12 ? ` and ${invalid.length - 12} more` : ""}. Supply actual date/timestamp values (prefer ISO 8601), or null only when permitted. No values were rewritten.`);
   }
+  for (const column of columns.filter((c) => /^(text|character varying|varchar)(\(\d+\))?$/i.test(c.type.trim()))) {
+    const invalid = rows.flatMap((row, index) => {
+      const value2 = row[column.name];
+      return typeof value2 === "string" && /^\d{4}-\d{2}-\d{2}(?:[T ][\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(value2.trim()) && notOnCalendar(value2) ? [index + 1] : [];
+    });
+    if (invalid.length)
+      errors.push(`Column "${column.name}" (${column.type}) has dates that do not exist in seed row(s) ${invalid.slice(0, 12).join(", ")}${invalid.length > 12 ? ` and ${invalid.length - 12} more` : ""} (a month has no such day). Supply real dates. No values were rewritten.`);
+  }
   return errors;
+}
+function notOnCalendar(value2) {
+  const m = value2.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?![\d])/);
+  if (!m)
+    return false;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (month < 1 || month > 12 || day < 1)
+    return true;
+  return day > new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 // dist/tooljetClient.js
@@ -61750,7 +66060,7 @@ function createClient(auth, config2) {
       handle: p.handle,
       icon: p.icon,
       hidden: isPageHidden(p),
-      ...typeof p.index === "number" ? { index: p.index } : {},
+      ...typeof pageOrderIndex(p) === "number" ? { index: pageOrderIndex(p) } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
       components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry))
@@ -61770,7 +66080,16 @@ function createClient(auth, config2) {
       event: e.event,
       ...typeof e.index === "number" ? { index: e.index } : {}
     }));
-    return { app_id: full.id, name: full.name, version_id: full.editing_version?.id, pages, queries, events };
+    return {
+      app_id: full.id,
+      name: full.name,
+      version_id: full.editing_version?.id,
+      ...full.should_freeze_editor === true ? { editor_frozen: true } : {},
+      ...typeof full.editorEnvironment?.name === "string" ? { environment: full.editorEnvironment.name } : {},
+      pages,
+      queries,
+      events
+    };
   }
   function appPermissionPath(appId, resourceType, resourceId) {
     const segment = resourceType === "page" ? "pages" : resourceType === "query" ? "queries" : "components";
@@ -61985,7 +66304,10 @@ function createClient(auth, config2) {
     }
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
-    const highestPersistedIndex = existingPages.reduce((highest, page) => typeof page.index === "number" && Number.isFinite(page.index) ? Math.max(highest, page.index) : highest, 0);
+    const highestPersistedIndex = existingPages.reduce((highest, page) => {
+      const index = pageOrderIndex(page);
+      return typeof index === "number" && Number.isFinite(index) ? Math.max(highest, index) : highest;
+    }, 0);
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
     const handleOf = (name2) => name2.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
     const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
@@ -62177,7 +66499,7 @@ function createClient(auth, config2) {
     }
     if (order) {
       for (const [index, pageId] of order.entries()) {
-        if (refreshedById.get(pageId)?.index !== index) {
+        if (pageOrderIndex(refreshedById.get(pageId)) !== index) {
           throw new Error(`ToolJet updatePages failed: page order did not persist at index ${index}.`);
         }
       }
@@ -62185,13 +66507,13 @@ function createClient(auth, config2) {
     return {
       updated_fields: fieldUpdates.length,
       reordered: order !== void 0,
-      pages: refreshedPages.slice().sort((left, right) => (left.index ?? 0) - (right.index ?? 0)).map((page) => ({
+      pages: refreshedPages.slice().sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0)).map((page) => ({
         page_id: page.id,
         name: page.name,
         handle: page.handle,
         icon: page.icon,
         hidden: isPageHidden(page),
-        ...typeof page.index === "number" ? { index: page.index } : {}
+        ...typeof pageOrderIndex(page) === "number" ? { index: pageOrderIndex(page) } : {}
       }))
     };
   }
@@ -62226,6 +66548,21 @@ function createClient(auth, config2) {
     });
     await assertOk(res, "createEvents");
     return { created: events.length };
+  }
+  let mapsKeyPromise;
+  async function hasGoogleMapsKey() {
+    mapsKeyPromise ??= (async () => {
+      try {
+        const res = await auth.authedFetch("/api/config");
+        if (!res.ok)
+          return void 0;
+        const body = await res.json();
+        return typeof body.GOOGLE_MAPS_API_KEY === "string" && body.GOOGLE_MAPS_API_KEY.trim() !== "";
+      } catch {
+        return void 0;
+      }
+    })();
+    return mapsKeyPromise;
   }
   async function getDevelopmentEnvironmentId() {
     if (!developmentEnvironmentIdPromise) {
@@ -62276,6 +66613,9 @@ function createClient(auth, config2) {
     }
     const orgId = await auth.getOrganizationId();
     let cols = params.columns.map(tableColumnDto);
+    if (params.columns.some((column) => column.primaryKey) && !params.columns.some((column) => column.name.toLowerCase() === "id")) {
+      cols = [...cols, { column_name: "id", data_type: "serial", constraints_type: { is_not_null: true, is_primary_key: false, is_unique: true } }];
+    }
     if (!params.columns.some((column) => column.primaryKey)) {
       cols = [
         {
@@ -62388,6 +66728,17 @@ function createClient(auth, config2) {
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
   const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
   const UNKNOWN_INSERT_OUTCOME = "Insert outcome unknown: the row may already have been inserted. Verify persisted rows before retrying; do not replay the whole batch.";
+  async function hasRows(tableId) {
+    try {
+      const res = await auth.authedFetch(`/api/tooljet-db/proxy/${encodeURIComponent(tableId)}?limit=1`, { signal: AbortSignal.timeout(15e3) });
+      if (!res.ok)
+        return void 0;
+      const body = await res.json();
+      return Array.isArray(body) ? body.length > 0 : void 0;
+    } catch {
+      return void 0;
+    }
+  }
   async function insertRowViaProxy(tableId, row) {
     let schemaWaits = 0;
     for (; ; ) {
@@ -62491,6 +66842,7 @@ function createClient(auth, config2) {
     }
   }
   async function createQueryUnqueued(params) {
+    assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
       method: "POST",
@@ -62668,6 +67020,7 @@ function createClient(auth, config2) {
     return { updated: params.layouts.length };
   }
   async function updateQuery(params) {
+    assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const body = { options: params.options };
     if (params.name !== void 0)
       body.name = params.name;
@@ -62725,7 +67078,7 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/data-queries/${params.queryId}/versions/${params.versionId}/run/${envId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resolvedOptions: {}, options: {} })
+      body: JSON.stringify({ resolvedOptions: params.resolvedOptions ?? {}, options: {} })
     });
     await assertOk(res, "runQuery");
     return await res.json();
@@ -62748,6 +67101,24 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/plugins/specs/${encodeURIComponent(pluginKind)}/${encodeURIComponent(specName)}`);
     await assertOk(res, "getPluginSpec");
     return res.text();
+  }
+  async function specCacheScope() {
+    let workspace;
+    try {
+      workspace = await auth.getOrganizationId();
+    } catch {
+      return void 0;
+    }
+    if (!workspace)
+      return void 0;
+    let server;
+    try {
+      const url2 = new URL(config2.apiUrl);
+      server = url2.origin + (url2.pathname === "/" ? "" : url2.pathname.replace(/\/+$/, ""));
+    } catch {
+      return void 0;
+    }
+    return JSON.stringify([server, workspace]);
   }
   async function getDatasourceConnectionDetails(dataSourceId, environmentId) {
     const envId = environmentId ?? await getDevelopmentEnvironmentId();
@@ -62857,6 +67228,9 @@ function createClient(auth, config2) {
     updatePages,
     deletePage,
     createEvents,
+    hasGoogleMapsKey,
+    viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(void 0),
+    editingVersionName: async (appId) => (await getApp(appId))?.editing_version?.name ?? void 0,
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
@@ -62880,15 +67254,22 @@ function createClient(auth, config2) {
     deleteQuery,
     getQueries,
     getQuery,
+    hasRows,
     runQuery,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
     getPluginSpec,
+    specCacheScope,
     testDatasourceConnection,
     listEvents,
     updateEvents,
     deleteEvent
   };
+}
+function pageOrderIndex(page) {
+  if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
+    return page.pageGroupIndex;
+  return typeof page?.index === "number" ? page.index : void 0;
 }
 
 // dist/tools/types.js
@@ -63532,12 +67913,15 @@ function getAppSettingsTool(client) {
     description: "Read the current editing version's compact app-wide visual settings: canvas background/width/mode, selected theme, header/logo/title, and navigation visibility/layout. Use before update_app_settings; this omits theme definitions and other large raw app data. Set include_libraries for bounded, read-only JavaScript library configuration and RunJS scope guidance before authoring library-dependent queries; this never loads or executes code.",
     inputSchema: {
       app_id: external_exports.string().min(1),
-      version_id: external_exports.string().min(1),
+      version_id: external_exports.string().min(1).optional().describe("Defaults to the app's editing version."),
       include_libraries: external_exports.boolean().optional().describe("Inspect stored JavaScript dependencies, not runtime readiness. Omitted by default.")
     },
     async handler(args) {
       try {
-        const snapshot2 = await client.getAppSettings(args.app_id, args.version_id);
+        const versionId = args.version_id ?? (await client.getAppSummary(args.app_id)).version_id;
+        if (!versionId)
+          throw new Error("get_app_settings needs version_id: the app has no editing version.");
+        const snapshot2 = await client.getAppSettings(args.app_id, versionId);
         return ok({
           ...projectAppSettings(snapshot2),
           ...args.include_libraries ? { javascript_runtime: projectJavascriptRuntime(snapshot2) } : {}
@@ -63770,6 +68154,14 @@ function operationSummary(contract) {
     ...contract.response ? { response_status: contract.response.status } : {}
   };
 }
+function discoverable(schema) {
+  const selection = schema.operationSelection;
+  if (schema.kind === "hubspot" || selection?.mode !== "remote-spec" || selection.specs?.length !== 1)
+    return false;
+  const ref = selection.specs[0];
+  return ref.location === "remote" || ref.location === "bundled" && !!ref.plugin && !!ref.name;
+}
+var SINGLE_SPEC_DISCOVERY = "Operations come from the plugin's API spec. Discover them with inspect_datasource_schema: listTables (pass `search`) finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to copy: operation (lowercase HTTP method), path, and params with path, query and request objects ({} when empty). Query values are flat: created[gte], expand[0], never a list or an object.";
 function selectDatasourceQuerySchema(kind, options2 = {}) {
   const schema = getDatasourceQuerySchema(kind);
   if (!schema)
@@ -63784,7 +68176,12 @@ function selectDatasourceQuerySchema(kind, options2 = {}) {
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
-      ...schema.operationSelection ? { operation_selection: schema.operationSelection } : {},
+      ...schema.operationSelection ? { operation_selection: discoverable(schema) ? {
+        ...schema.operationSelection,
+        field: "operation + path + params",
+        description: SINGLE_SPEC_DISCOVERY,
+        introspection_methods: ["listTables", "getEndpointSchema"]
+      } : schema.operationSelection } : {},
       ...typeof schema.supportsTestConnection === "boolean" ? { supports_test_connection: schema.supportsTestConnection } : {}
     });
     if (!options2.operation) {
@@ -63842,7 +68239,7 @@ function listDatasourcesTool(client) {
     },
     description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user. Returns {datasources, connectable}: `datasources` are the connected ones (use their id for add_queries), `connectable` names every source ToolJet CAN connect. A source the user named that is in `connectable` but not in `datasources` needs connecting; one in neither has no ToolJet connector and has to go through a REST API datasource pointed at its HTTP API. Pass the actual app version_id: for a new app, create_app must return it before this call.",
     inputSchema: {
-      version_id: external_exports.string().trim().min(1)
+      version_id: external_exports.string().trim().min(1, "version_id is required: call create_app first and use its version_id, or use the target app's.")
     },
     async handler(args) {
       try {
@@ -63898,7 +68295,7 @@ function listTablesTool(client) {
 
 // dist/dbColumnTypeSchema.js
 var dbColumnTypeSchema = external_exports.string().describe("ToolJet DB types: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb. Existing aliases text/varchar/int/float/decimal/double/bool/datetime/date/json and canonical API type names are accepted. numeric is unsupported; number/decimal are floating-point, not exact decimal. For money consider integer minor units.").refine((value2) => TOOLJET_DB_DATA_TYPES.has(normalizeType(value2)), {
-  message: "Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported; do not silently replace exact decimals with floating-point."
+  message: "Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently."
 });
 
 // dist/tools/createTable.js
@@ -63938,7 +68335,7 @@ function createTableTool(client) {
       try {
         const errors = validateTableBatch([{ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys }]);
         if (errors.length)
-          return fail(new Error(errors.join(" ")));
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
         return ok(await client.createTable({ tableName: args.table_name, columns: args.columns, foreignKeys: args.foreign_keys }));
       } catch (err) {
         return fail(err);
@@ -63990,7 +68387,7 @@ function createTablesTool(client) {
         }));
         const errors = validateTableBatch(tables);
         if (errors.length)
-          return fail(new Error(errors.join(" ")));
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
         const warnings = [];
         const taken = new Set((await client.listTables()).map((table) => table.table_name.toLowerCase()));
         for (const table of tables) {
@@ -64484,46 +68881,6 @@ function getDatasourceQuerySchemaTool(client) {
   };
 }
 
-// dist/hubspotQuery.js
-function hubspotSpecs() {
-  return (getDatasourceQuerySchema("hubspot")?.operationSelection?.specs ?? []).filter((spec) => spec.location === "bundled" && spec.plugin === "hubspot" && spec.name && spec.label).map((spec) => ({
-    name: spec.name,
-    label: spec.label,
-    specType: spec.label.split(/(?=[A-Z])/).join("_").toLowerCase()
-  }));
-}
-function hubspotQueryIssues(options2) {
-  const issues = [];
-  const issue2 = (path, message) => issues.push({ path, message });
-  const record5 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
-  if (!["get", "post", "patch", "put", "delete"].includes(String(options2.operation))) {
-    issue2("operation", "HubSpot operation must be a lowercase HTTP method from getEndpointSchema, not an object name or create/update action.");
-  }
-  if (typeof options2.path !== "string" || !/^\/(?!\/)[^\s?#]*$/.test(options2.path) || options2.path.includes("{{")) {
-    issue2("path", "HubSpot needs the static endpoint path returned by getEndpointSchema; put record IDs in params.path.");
-  }
-  if (!hubspotSpecs().some((spec) => spec.specType === options2.specType)) {
-    issue2("specType", "Use the exact specType returned by inspect_datasource_schema so the HubSpot editor retains the selected endpoint.");
-  }
-  for (const bucket of ["path", "query", "request"]) {
-    if (!record5(options2.params) || !record5(options2.params[bucket])) {
-      issue2(`params.${bucket}`, `HubSpot requires params.${bucket} as an object; use {} when empty.`);
-    }
-  }
-  for (const misplaced of ["objectId", "properties"]) {
-    if (misplaced in options2)
-      issue2(misplaced, `HubSpot ignores top-level ${misplaced}; use params.path for IDs and params.request for the JSON body.`);
-  }
-  if (typeof options2.path === "string" && record5(options2.params) && record5(options2.params.path)) {
-    for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
-      const value2 = options2.params.path[match[1]];
-      if (value2 === void 0 || value2 === null || value2 === "")
-        issue2(`params.path.${match[1]}`, "Provide a value for every endpoint path placeholder.");
-    }
-  }
-  return issues;
-}
-
 // dist/openapiSpec.js
 var import_yaml = __toESM(require_dist2(), 1);
 var HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
@@ -64737,6 +69094,146 @@ function endpointTagCounts(spec, endpoints) {
   return Object.fromEntries([...counts.entries()].sort((left, right) => right[1] - left[1]));
 }
 
+// dist/specEndpointKinds.js
+var SPEC_DISCOVERY_METHODS = ["listTables", "getEndpointSchema"];
+var HTTP_METHODS2 = ["get", "post", "put", "patch", "delete"];
+function singleSpecRef(kind) {
+  if (kind === "hubspot")
+    return void 0;
+  const selection = getDatasourceQuerySchema(kind)?.operationSelection;
+  if (selection?.mode !== "remote-spec" || selection.specs?.length !== 1)
+    return void 0;
+  const ref = selection.specs[0];
+  return ref.location === "remote" || ref.location === "bundled" && ref.plugin && ref.name ? ref : void 0;
+}
+var SPEC_DISCOVERY_NOTE = 'Operations come from the plugin\'s API spec. Discover them with inspect_datasource_schema: listTables (pass `search`, such as "charges") finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to copy as they are: operation (the lowercase HTTP method), path, and params with path, query and request objects (each present, {} when empty). Query values are flat: created[gte], expand[0], never a list or an object. The plugin fixes the host and authentication.';
+var publicCache = /* @__PURE__ */ new Map();
+var serverCache = /* @__PURE__ */ new Map();
+var TTL_MS = 60 * 60 * 1e3;
+function readSpec(client, kind, ref) {
+  return (async () => {
+    const text = ref.location === "remote" ? await fetch(ref.ref, { signal: AbortSignal.timeout(6e4) }).then((res) => {
+      if (!res.ok)
+        throw new Error(`HTTP ${res.status}`);
+      return res.text();
+    }) : await client.getPluginSpec(ref.plugin, ref.name);
+    const parsed = extractSpec({ spec: text });
+    if (!parsed)
+      throw new Error("not an OpenAPI document");
+    return parsed;
+  })().catch((error51) => {
+    throw new Error(`The ${kind} API spec could not be read (${error51 instanceof Error ? error51.message : String(error51)}); do not invent its endpoints.`);
+  });
+}
+function cached3(cache3, key4, load3) {
+  const hit = cache3.get(key4);
+  if (hit && Date.now() - hit.at < TTL_MS)
+    return hit.spec;
+  const entry = { at: Date.now(), spec: load3() };
+  entry.spec.catch(() => {
+    if (cache3.get(key4) === entry)
+      cache3.delete(key4);
+  });
+  cache3.set(key4, entry);
+  return entry.spec;
+}
+async function loadKindSpec(client, kind, ref) {
+  if (ref.location === "remote")
+    return cached3(publicCache, ref.ref, () => readSpec(client, kind, ref));
+  let scope;
+  try {
+    scope = await client.specCacheScope?.();
+  } catch {
+    scope = void 0;
+  }
+  if (!scope)
+    return readSpec(client, kind, ref);
+  return cached3(serverCache, JSON.stringify([scope, ref.plugin, ref.name]), () => readSpec(client, kind, ref));
+}
+function apiEndpointQueryIssues(kind, options2) {
+  if (!singleSpecRef(kind))
+    return [];
+  const issues = [];
+  const record5 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+  if (!HTTP_METHODS2.includes(String(options2.operation))) {
+    issues.push({ path: "operation", message: `${kind} operation is the endpoint's lowercase HTTP method (get, post, ...) from getEndpointSchema.` });
+  }
+  if (typeof options2.path !== "string" || !/^\/(?!\/)[^\s?#]*$/.test(options2.path) || options2.path.includes("{{")) {
+    issues.push({ path: "path", message: `${kind} needs the static endpoint path from getEndpointSchema (such as /v1/charges), not a URL; put IDs in params.path.` });
+  }
+  for (const bucket of ["path", "query", "request"]) {
+    if (!record5(options2.params) || !record5(options2.params[bucket])) {
+      issues.push({ path: `params.${bucket}`, message: `${kind} reads params.${bucket} on every run; give it as an object, {} when empty.` });
+    }
+  }
+  if (record5(options2.params) && record5(options2.params.query)) {
+    for (const [key4, value2] of Object.entries(options2.params.query)) {
+      if (typeof value2 === "string" && /(\|\||\?\?|:)\s*(''|"")\s*\}\}\s*$/.test(value2)) {
+        issues.push({ path: `params.query.${key4}`, message: `${kind} sends every query key it is given, so an empty fallback still sends ${key4}="", which the API refuses. Fall back to undefined instead (such as {{variables.cursor || undefined}}) so the key is left out while it has no value.` });
+        continue;
+      }
+      if (value2 === null || typeof value2 !== "object")
+        continue;
+      const flat = flattenQueryValue(key4, value2).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(", ");
+      issues.push({ path: `params.query.${key4}`, message: `${kind} sends query parameters flat, so a list or an object is not sent at all and the query fails. Write ${flat} instead.` });
+    }
+  }
+  if (typeof options2.path === "string" && record5(options2.params) && record5(options2.params.path)) {
+    for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
+      const value2 = options2.params.path[match[1]];
+      if (value2 === void 0 || value2 === null || value2 === "")
+        issues.push({ path: `params.path.${match[1]}`, message: "Provide a value for every endpoint path placeholder." });
+    }
+  }
+  return issues;
+}
+function flattenQueryValue(key4, value2) {
+  if (value2 === null || typeof value2 !== "object")
+    return [[key4, value2]];
+  const entries = Array.isArray(value2) ? value2.map((v, i) => [String(i), v]) : Object.entries(value2);
+  return entries.flatMap(([k, v]) => flattenQueryValue(`${key4}[${k}]`, v));
+}
+
+// dist/hubspotQuery.js
+function hubspotSpecs() {
+  return (getDatasourceQuerySchema("hubspot")?.operationSelection?.specs ?? []).filter((spec) => spec.location === "bundled" && spec.plugin === "hubspot" && spec.name && spec.label).map((spec) => ({
+    name: spec.name,
+    label: spec.label,
+    specType: spec.label.split(/(?=[A-Z])/).join("_").toLowerCase()
+  }));
+}
+function hubspotQueryIssues(options2) {
+  const issues = [];
+  const issue2 = (path, message) => issues.push({ path, message });
+  const record5 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+  if (!["get", "post", "patch", "put", "delete"].includes(String(options2.operation))) {
+    issue2("operation", "HubSpot operation must be a lowercase HTTP method from getEndpointSchema, not an object name or create/update action.");
+  }
+  if (typeof options2.path !== "string" || !/^\/(?!\/)[^\s?#]*$/.test(options2.path) || options2.path.includes("{{")) {
+    issue2("path", "HubSpot needs the static endpoint path returned by getEndpointSchema; put record IDs in params.path.");
+  }
+  if (!hubspotSpecs().some((spec) => spec.specType === options2.specType)) {
+    issue2("specType", "Use the exact specType returned by inspect_datasource_schema so the HubSpot editor retains the selected endpoint.");
+  }
+  for (const bucket of ["path", "query", "request"]) {
+    if (!record5(options2.params) || !record5(options2.params[bucket])) {
+      issue2(`params.${bucket}`, `HubSpot requires params.${bucket} as an object; use {} when empty.`);
+    }
+  }
+  for (const misplaced of ["objectId", "properties"]) {
+    if (misplaced in options2)
+      issue2(misplaced, `HubSpot ignores top-level ${misplaced}; use params.path for IDs and params.request for the JSON body.`);
+  }
+  if (typeof options2.path === "string" && record5(options2.params) && record5(options2.params.path)) {
+    for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
+      const value2 = options2.params.path[match[1]];
+      if (value2 === void 0 || value2 === null || value2 === "")
+        issue2(`params.path.${match[1]}`, "Provide a value for every endpoint path placeholder.");
+    }
+  }
+  return issues;
+}
+
 // dist/tools/inspectDatasourceSchema.js
 var requestSchema2 = external_exports.object({
   method: external_exports.string().min(1),
@@ -64881,7 +69378,8 @@ function inspectDatasourceSchemaTool(client) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
         const contract = getDatasourceQuerySchema(datasource.kind);
-        const methods = contract?.introspectionMethods ?? [];
+        const kindSpec = singleSpecRef(datasource.kind);
+        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
         const topLevel = args.method ? [{
           method: args.method,
           schema: args.schema,
@@ -64905,9 +69403,9 @@ function inspectDatasourceSchemaTool(client) {
           return fail(new Error("Provide a `method` or a `requests` batch."));
         }
         const asBatch = !!args.requests?.length || requests.length > 1;
-        const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
-        if (unsupported.length) {
-          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
+        const unsupported2 = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
+        if (unsupported2.length) {
+          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported2.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
         }
         let openapiSpec;
         if (datasource.kind === "openapi") {
@@ -64918,6 +69416,7 @@ function inspectDatasourceSchemaTool(client) {
           }
         }
         const hubspotDocuments = /* @__PURE__ */ new Map();
+        let kindSpecDocument;
         const results = await Promise.all(requests.map(async (request) => {
           if (datasource.kind === "hubspot") {
             const specs = hubspotSpecs();
@@ -64951,6 +69450,19 @@ function inspectDatasourceSchemaTool(client) {
               result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
             }
             return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
+          }
+          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
+            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
+            const result2 = openapiIntrospection(await kindSpecDocument, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params?.header;
+              delete result2.host_warning;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
+            }
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
           }
           if (openapiSpec) {
             const result2 = openapiIntrospection(openapiSpec, request);
@@ -65203,7 +69715,7 @@ function prepareSqlDiscoveryQueries(args) {
   const from = args.table ? source(kind, args.schema, args.table) : void 0;
   const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
   const queries = [];
-  const unsupported = [];
+  const unsupported2 = [];
   for (const purpose of [...new Set(args.purposes)]) {
     let sql;
     if (purpose === "count")
@@ -65215,7 +69727,7 @@ function prepareSqlDiscoveryQueries(args) {
     } else {
       sql = metadataSql(kind, purpose, args.schema, args.table);
       if (!sql) {
-        unsupported.push({
+        unsupported2.push({
           purpose,
           reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
         });
@@ -65230,7 +69742,7 @@ function prepareSqlDiscoveryQueries(args) {
       options: options(kind, sql)
     });
   }
-  return { queries, unsupported };
+  return { queries, unsupported: unsupported2 };
 }
 
 // dist/tools/prepareSqlDiscoveryQueries.js
@@ -65727,7 +70239,7 @@ function getAppTool(client) {
 }
 
 // dist/appSummarySelection.js
-var APP_FIELDS = ["app_id", "name", "version_id"];
+var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment"];
 var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
@@ -65807,7 +70319,7 @@ function selectAppSummary(summary, selection = {}) {
   const sections = new Set(selection.sections ?? ["pages", "queries", "events"]);
   const appFields = selection.appFields ?? [...APP_FIELDS];
   const pageFields = selection.pageFields ?? [...PAGE_FIELDS];
-  const componentFields = selection.componentFields ?? (detail === "full" ? [...COMPONENT_FIELDS] : STRUCTURE_COMPONENT_FIELDS);
+  const componentFields = selection.componentFields?.map((path) => path.replace(/^layout(?=\.|$)/, "layouts")) ?? (detail === "full" ? [...COMPONENT_FIELDS] : STRUCTURE_COMPONENT_FIELDS);
   const queryFields = selection.queryFields ?? (detail === "full" ? [...QUERY_FIELDS] : STRUCTURE_QUERY_FIELDS);
   const eventFields = selection.eventFields ?? (detail === "full" ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
   validatePaths(appFields, APP_FIELDS, "app_fields");
@@ -65893,7 +70405,7 @@ function getAppSummaryTool(client) {
           }
         }
         const summary = await client.getAppSummary(args.app_id);
-        return ok(selectAppSummary(summary, {
+        const selected = selectAppSummary(summary, {
           sections: args.sections,
           detail: args.detail,
           includeComponents: args.include_components,
@@ -65913,12 +70425,32 @@ function getAppSummaryTool(client) {
           componentFields: args.component_fields,
           queryFields: args.query_fields,
           eventFields: args.event_fields
-        }));
+        });
+        return ok(await withQueryTables(client, summary, selected, args));
       } catch (err) {
         return fail(err);
       }
     }
   };
+}
+async function withQueryTables(client, summary, selected, args) {
+  const narrowed = args.sections && !args.sections.includes("queries");
+  const filtered = Object.entries(args).some(([key4, value2]) => key4 !== "app_id" && key4 !== "sections" && key4 !== "detail" && value2 !== void 0);
+  if (narrowed || filtered || !selected || typeof selected !== "object")
+    return selected;
+  const ids = [...new Set((summary.queries ?? []).flatMap((query) => {
+    const q = query;
+    return q.kind === "tooljetdb" && typeof q.options?.table_id === "string" ? [q.options.table_id] : [];
+  }))];
+  if (!ids.length)
+    return selected;
+  try {
+    const all = await client.listTables();
+    const byId = new Map(all.map((table) => [table.id, table.table_name]));
+    return { ...selected, tables: ids.filter((id) => byId.has(id)).map((id) => ({ id, table_name: byId.get(id) })) };
+  } catch {
+    return selected;
+  }
 }
 
 // dist/tools/getComponent.js
@@ -65946,26 +70478,45 @@ function getComponentTool(client) {
   };
 }
 
+// dist/htmlColumns.js
+var valueOf = (prop2) => prop2 && typeof prop2 === "object" && "value" in prop2 ? prop2.value : prop2;
+function htmlFedTextColumns(table, queries) {
+  if (table.type !== "Table")
+    return [];
+  const columns = valueOf(table.properties?.columns);
+  if (!Array.isArray(columns))
+    return [];
+  const data = String(valueOf(table.properties?.data) ?? "");
+  const read = new Set([...data.matchAll(/queries\.(\w+)/g)].map((m) => m[1]));
+  const code = queries.filter((q) => q.kind === "runjs" && read.has(String(q.name))).map((q) => String(q.options?.code ?? "")).join("\n");
+  if (!code)
+    return [];
+  return columns.filter((col) => {
+    if ((col.columnType ?? "string") !== "string" || typeof col.key !== "string" || !col.key)
+      return false;
+    const key4 = col.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${key4}\\s*:[^,;{}]*?['"\`]\\s*<[a-zA-Z]`).test(code))
+      return true;
+    const idents = [...code.matchAll(new RegExp(`\\b${key4}\\s*:\\s*([A-Za-z_$][\\w$]*)\\s*[,}]`, "g"))].map((m) => m[1]);
+    return idents.some((id) => new RegExp(`\\b${id}\\s*=(?!=)[^;]*?['"\`]\\s*<[a-zA-Z]`).test(code));
+  });
+}
+
 // dist/refResolution.js
-function resolveRef2(candidates, ref, kind, scope, describe3 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+function resolveRef2(candidates, ref, kind, scope, describe4 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
   const byId = candidates.find((candidate) => candidate.id === ref);
   if (byId)
     return { ok: true, target: byId };
   const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1) {
-    return {
-      ok: true,
-      target: byName[0],
-      warning: `${kind} "${ref}" was matched by name to id "${byName[0].id}". Pass the id (from get_app_summary) to avoid ambiguity.`
-    };
-  }
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
   if (byName.length > 1) {
     return {
       ok: false,
       error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
     };
   }
-  const available = candidates.map(describe3).join(", ");
+  const available = candidates.map(describe4).join(", ");
   return {
     ok: false,
     // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
@@ -66535,6 +71086,9 @@ function persistedEventSpecs(summary) {
   });
 }
 
+// dist/queryValidation.js
+var import_parser15 = __toESM(require_lib(), 1);
+
 // dist/redisReadSafety.js
 function assessRedisRead(options2, datasourceId) {
   const base = {
@@ -66616,6 +71170,410 @@ function assessRedisRead(options2, datasourceId) {
 
 // dist/queryExecutionSafety.js
 var import_json5 = __toESM(require_lib2(), 1);
+
+// dist/staticBindings.js
+var import_moment = __toESM(require_moment(), 1);
+var import_parser12 = __toESM(require_lib(), 1);
+var Unsupported = class extends Error {
+};
+var MAX_EXPRESSION_CHARS = 600;
+var MAX_PAD = 1e3;
+var MATH_FNS = {
+  floor: Math.floor,
+  ceil: Math.ceil,
+  round: Math.round,
+  abs: Math.abs,
+  trunc: Math.trunc,
+  sign: Math.sign,
+  min: Math.min,
+  max: Math.max,
+  pow: Math.pow,
+  sqrt: Math.sqrt
+};
+var MATH_CONSTANTS = { PI: Math.PI, E: Math.E };
+var UNITS = /* @__PURE__ */ new Set([
+  "year",
+  "years",
+  "y",
+  "quarter",
+  "quarters",
+  "Q",
+  "month",
+  "months",
+  "M",
+  "week",
+  "weeks",
+  "w",
+  "isoWeek",
+  "isoWeeks",
+  "day",
+  "days",
+  "d",
+  "date",
+  "hour",
+  "hours",
+  "h",
+  "minute",
+  "minutes",
+  "m",
+  "second",
+  "seconds",
+  "s",
+  "millisecond",
+  "milliseconds",
+  "ms"
+]);
+var none = (a) => a.length === 0;
+var MOMENT_METHODS = {
+  add: (a) => a.length === 2 && typeof a[0] === "number" && isUnit(a[1]),
+  subtract: (a) => a.length === 2 && typeof a[0] === "number" && isUnit(a[1]),
+  startOf: (a) => a.length === 1 && isUnit(a[0]),
+  endOf: (a) => a.length === 1 && isUnit(a[0]),
+  format: (a) => a.length === 0 || a.length === 1 && typeof a[0] === "string",
+  toISOString: none,
+  valueOf: none,
+  unix: none,
+  utc: none,
+  local: none,
+  clone: none,
+  isValid: none,
+  year: none,
+  quarter: none,
+  month: none,
+  date: none,
+  day: none,
+  isoWeekday: none,
+  week: none,
+  isoWeek: none,
+  hour: none,
+  minute: none,
+  second: none,
+  daysInMonth: none,
+  diff: (a) => a.length >= 1 && a.length <= 3 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])) && (a[2] === void 0 || typeof a[2] === "boolean"),
+  isBefore: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])),
+  isAfter: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])),
+  isSame: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1]))
+};
+var STRING_METHODS = {
+  toUpperCase: (s, a) => a.length ? unsupported() : s.toUpperCase(),
+  toLowerCase: (s, a) => a.length ? unsupported() : s.toLowerCase(),
+  trim: (s, a) => a.length ? unsupported() : s.trim(),
+  // A length past the cap is not resolved: shortening it would give a different answer than JavaScript.
+  padStart: (s, a) => s.padStart(capped(a[0], MAX_PAD), str(a[1] ?? " ")),
+  padEnd: (s, a) => s.padEnd(capped(a[0], MAX_PAD), str(a[1] ?? " ")),
+  slice: (s, a) => s.slice(num(a[0] ?? 0), a[1] === void 0 ? void 0 : num(a[1])),
+  substring: (s, a) => s.substring(num(a[0] ?? 0), a[1] === void 0 ? void 0 : num(a[1]))
+};
+function unsupported() {
+  throw new Unsupported();
+}
+function own(table, name2) {
+  return typeof name2 === "string" && Object.prototype.hasOwnProperty.call(table, name2) ? table[name2] : void 0;
+}
+function isUnit(v) {
+  return typeof v === "string" && UNITS.has(v);
+}
+function isDateLike(v) {
+  return isMoment(v) || typeof v === "string" || typeof v === "number";
+}
+function isMoment(v) {
+  return typeof v === "object" && v !== null && v.kind === "moment";
+}
+function num(v) {
+  if (typeof v !== "number" || !Number.isFinite(v) || Math.abs(v) > 1e9)
+    unsupported();
+  return v;
+}
+function capped(v, max) {
+  const n = num(v);
+  if (n < 0 || n > max)
+    unsupported();
+  return n;
+}
+function str(v) {
+  if (typeof v !== "string")
+    unsupported();
+  return v;
+}
+function primitive(v) {
+  if (isMoment(v))
+    unsupported();
+  return v;
+}
+function box(m) {
+  return { kind: "moment", m };
+}
+function momentArgs(args) {
+  if (args.length > 2)
+    unsupported();
+  return args.map((a) => typeof a === "string" || typeof a === "number" ? a : unsupported());
+}
+function interpret(node2) {
+  switch (node2?.type) {
+    case "StringLiteral":
+    case "NumericLiteral":
+    case "BooleanLiteral":
+      return node2.value;
+    case "NullLiteral":
+      return null;
+    case "Identifier":
+      if (node2.name === "undefined")
+        return void 0;
+      if (node2.name === "NaN")
+        return NaN;
+      if (node2.name === "Infinity")
+        return Infinity;
+      return unsupported();
+    case "TemplateLiteral": {
+      let out = "";
+      node2.quasis.forEach((q, i) => {
+        out += q.value.cooked ?? "";
+        if (i < node2.expressions.length)
+          out += String(primitive(interpret(node2.expressions[i])));
+      });
+      return out;
+    }
+    case "UnaryExpression": {
+      const v = primitive(interpret(node2.argument));
+      if (node2.operator === "!")
+        return !v;
+      if (node2.operator === "-")
+        return -num(v);
+      if (node2.operator === "+")
+        return typeof v === "string" ? Number(v) : num(v);
+      if (node2.operator === "typeof")
+        return typeof v;
+      return unsupported();
+    }
+    case "BinaryExpression": {
+      const a = primitive(interpret(node2.left));
+      const b = primitive(interpret(node2.right));
+      switch (node2.operator) {
+        case "+":
+          return typeof a === "string" || typeof b === "string" ? String(a) + String(b) : num(a) + num(b);
+        case "-":
+          return num(a) - num(b);
+        case "*":
+          return num(a) * num(b);
+        case "/":
+          return num(a) / num(b);
+        case "%":
+          return num(a) % num(b);
+        case "===":
+          return a === b;
+        case "!==":
+          return a !== b;
+        case "==":
+          return a == b;
+        // eslint-disable-line eqeqeq
+        case "!=":
+          return a != b;
+        // eslint-disable-line eqeqeq
+        case "<":
+          return a < b;
+        case ">":
+          return a > b;
+        case "<=":
+          return a <= b;
+        case ">=":
+          return a >= b;
+        default:
+          return unsupported();
+      }
+    }
+    case "LogicalExpression": {
+      const l = interpret(node2.left);
+      if (node2.operator === "&&")
+        return l ? interpret(node2.right) : l;
+      if (node2.operator === "||")
+        return l ? l : interpret(node2.right);
+      if (node2.operator === "??")
+        return l ?? interpret(node2.right);
+      return unsupported();
+    }
+    case "ConditionalExpression":
+      return interpret(node2.test) ? interpret(node2.consequent) : interpret(node2.alternate);
+    case "MemberExpression": {
+      if (node2.computed)
+        return unsupported();
+      const name2 = node2.property?.name;
+      if (node2.object?.type === "Identifier" && node2.object.name === "Math") {
+        const constant = own(MATH_CONSTANTS, name2);
+        return constant ?? unsupported();
+      }
+      const target = interpret(node2.object);
+      if (typeof target === "string" && name2 === "length")
+        return target.length;
+      return unsupported();
+    }
+    case "CallExpression": {
+      const args = node2.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
+      const callee = node2.callee;
+      if (callee.type === "Identifier") {
+        if (callee.name === "moment")
+          return box((0, import_moment.default)(...momentArgs(args)));
+        if (callee.name === "String" && args.length === 1)
+          return String(primitive(args[0]));
+        if (callee.name === "Number" && args.length === 1)
+          return Number(primitive(args[0]));
+        if (callee.name === "parseInt" && args.length === 1)
+          return parseInt(str(args[0]));
+        if (callee.name === "parseInt" && args.length === 2)
+          return parseInt(str(args[0]), capped(args[1], 36));
+        if (callee.name === "parseFloat" && args.length === 1)
+          return parseFloat(str(args[0]));
+        return unsupported();
+      }
+      if (callee.type !== "MemberExpression" || callee.computed)
+        return unsupported();
+      const name2 = callee.property?.name;
+      const object4 = callee.object;
+      if (object4.type === "Identifier" && object4.name === "moment") {
+        if (name2 === "utc")
+          return box(import_moment.default.utc(...momentArgs(args)));
+        if (name2 === "unix" && args.length === 1)
+          return box(import_moment.default.unix(num(args[0])));
+        return unsupported();
+      }
+      if (object4.type === "Identifier" && object4.name === "Math") {
+        const fn = own(MATH_FNS, name2);
+        return fn ? fn(...args.map((a) => num(a))) : unsupported();
+      }
+      if (object4.type === "Identifier" && object4.name === "Date" && name2 === "now" && args.length === 0)
+        return Date.now();
+      if (object4.type === "Identifier" && object4.name === "JSON" && name2 === "stringify" && args.length === 1) {
+        return JSON.stringify(primitive(args[0]));
+      }
+      const target = interpret(object4);
+      if (isMoment(target)) {
+        const check2 = own(MOMENT_METHODS, name2);
+        if (!check2 || !check2(args))
+          return unsupported();
+        const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
+        const result = target.m[name2](...unwrapped);
+        if (import_moment.default.isMoment(result))
+          return box(result);
+        if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
+          return result;
+        return unsupported();
+      }
+      if (typeof target === "string") {
+        const fn = own(STRING_METHODS, name2);
+        return fn ? fn(target, args) : unsupported();
+      }
+      if (typeof target === "number") {
+        if (name2 === "toFixed" && args.length <= 1)
+          return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
+        if (name2 === "toString" && args.length === 0)
+          return String(target);
+        return unsupported();
+      }
+      return unsupported();
+    }
+    default:
+      return unsupported();
+  }
+}
+var SERVER_BINDING = /\{\{(.*?)\}\}/gs;
+function resolveStaticBindings(options2) {
+  const resolved = {};
+  const unresolved = [];
+  const visit = (value2) => {
+    if (typeof value2 === "string") {
+      if (!value2.includes("{{") || !value2.includes("}}"))
+        return;
+      const key4 = value2.replace(/\n/g, " ");
+      if (key4 in resolved || unresolved.includes(key4))
+        return;
+      const outcome = resolveString(value2);
+      if (!outcome.ok) {
+        unresolved.push(key4);
+        return;
+      }
+      resolved[key4] = outcome.value;
+      for (const [binding, v] of outcome.parts)
+        resolved[binding.replace(/\n/g, " ")] = v;
+    } else if (Array.isArray(value2))
+      value2.forEach(visit);
+    else if (value2 && typeof value2 === "object")
+      Object.values(value2).forEach(visit);
+  };
+  visit(options2);
+  return { resolved, unresolved };
+}
+function resolveString(text) {
+  const matches2 = [...text.matchAll(SERVER_BINDING)];
+  if (!matches2.length)
+    return { ok: false };
+  const parts = [];
+  for (const m of matches2) {
+    const result = evaluate(m[1]);
+    if (!result.ok)
+      return { ok: false };
+    parts.push([m[0], result.value]);
+  }
+  if (matches2.length === 1 && matches2[0][0] === text.trim())
+    return { ok: true, value: parts[0][1], parts: [] };
+  let i = 0;
+  return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
+}
+function evaluate(expression2) {
+  if (expression2.length > MAX_EXPRESSION_CHARS)
+    return { ok: false };
+  try {
+    const value2 = interpret((0, import_parser12.parseExpression)(expression2));
+    if (isMoment(value2))
+      return { ok: true, value: value2.m.toISOString() };
+    if (typeof value2 === "number" && !Number.isFinite(value2))
+      return { ok: false };
+    return { ok: true, value: value2 };
+  } catch {
+    return { ok: false };
+  }
+}
+function unresolvedNote(bindings) {
+  const shown = bindings.slice(0, 3).map((b) => b.length > 60 ? `${b.slice(0, 57)}...` : b).join(", ");
+  return `Browser-free run: ${bindings.length} binding(s) read live app state and ran as undefined (${shown}). Empty or failed results here do not show the viewer is wrong; check it in the viewer before rewriting the query.`;
+}
+function applyResolvedBindings(options2, resolved) {
+  if (typeof options2 === "string") {
+    if (!options2.includes("{{") || !options2.includes("}}"))
+      return options2;
+    const key4 = options2.replace(/\n/g, " ");
+    return Object.prototype.hasOwnProperty.call(resolved, key4) ? resolved[key4] : options2;
+  }
+  if (Array.isArray(options2))
+    return options2.map((value2) => applyResolvedBindings(value2, resolved));
+  if (options2 && typeof options2 === "object") {
+    return Object.fromEntries(Object.entries(options2).map(([k, v]) => [k, applyResolvedBindings(v, resolved)]));
+  }
+  return options2;
+}
+function resolvedBindingValues(resolved) {
+  return Object.entries(resolved).filter(([key4]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key4)).map(([, value2]) => value2);
+}
+function emptyViewerOnlyParams(options2, resolution) {
+  const params = options2 && typeof options2 === "object" ? options2.query_params : void 0;
+  if (!Array.isArray(params))
+    return [];
+  const filled = [];
+  for (const pair of params) {
+    if (!Array.isArray(pair) || typeof pair[1] !== "string")
+      continue;
+    const key4 = pair[1].replace(/\n/g, " ");
+    if (!resolution.unresolved.includes(key4))
+      continue;
+    resolution.resolved[key4] = null;
+    resolution.unresolved = resolution.unresolved.filter((b) => b !== key4);
+    filled.push(String(pair[0]));
+  }
+  return filled;
+}
+function emptyParamsNote(names) {
+  return `Ran with ${names.map((n) => `:${n}`).join(", ")} = null: ${names.length > 1 ? "they come" : "it comes"} from the app (a component or a picked row), which is empty outside the viewer. The query works for the empty case; check a value in the viewer.`;
+}
+
+// dist/queryExecutionSafety.js
 var LARGE_READ_ROW_THRESHOLD = 1e3;
 var SQL_KINDS = /* @__PURE__ */ new Set([
   "postgresql",
@@ -66957,17 +71915,19 @@ function assessSupabase(options2, datasourceId) {
     };
   }
   const maxRows = staticPositiveInteger(options2.get_limit);
+  const unbounded = maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD;
   return {
     provenRead: true,
     directSafe: false,
     countOnly: false,
     selectStar: false,
-    requiresCountPreflight: maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD,
+    requiresCountPreflight: unbounded,
     requiresRemoteReadConfirmation: true,
     simpleSourceRead: true,
     source: source2,
     maxRows,
-    ...identity
+    ...identity,
+    ...unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}
   };
 }
 var MONGO_ROW_READS = /* @__PURE__ */ new Set(["find_many"]);
@@ -67284,6 +72244,47 @@ function assessCouch(options2, datasourceId) {
 function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
+function sqlStatementText(sql, backslashEscapes) {
+  let text = "";
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === "`") {
+      const quote2 = char;
+      text += quote2 + quote2;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] !== quote2)
+          continue;
+        if (sql[i + 1] === quote2) {
+          i++;
+          continue;
+        }
+        closed = true;
+        break;
+      }
+      if (!closed)
+        return void 0;
+    } else if (char === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      text += " ";
+    } else if (char === "/" && sql[i + 1] === "*") {
+      if (sql[i + 2] === "!")
+        return void 0;
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return void 0;
+      i = end + 1;
+      text += " ";
+    } else
+      text += char;
+  }
+  return text.trim().replace(/;\s*$/, "").trim();
+}
 function normalizeSqlTable(raw) {
   return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
 }
@@ -67294,7 +72295,31 @@ function sqlSource(sql) {
 function assessSql(sql, datasourceKind, datasourceId) {
   const compact = stripSql(sql);
   const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
-  if (!compact || /;\s*\S/.test(compact)) {
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === void 0 || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters",
+      ...identity
+    };
+  }
+  const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
+  if (entity) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`,
+      ...identity
+    };
+  }
+  if (!compact || unquoted.includes(";")) {
     return {
       provenRead: false,
       directSafe: false,
@@ -67555,6 +72580,15 @@ function assessQueryRead(query) {
       ...issue2 ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue2.message } : { reason: assessment.reason?.replaceAll("OpenAPI", "HubSpot") }
     };
   }
+  if (singleSpecRef(kind)) {
+    const issue2 = apiEndpointQueryIssues(kind, options2)[0];
+    const assessment = assessOpenapi({ ...options2, host: kind }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: kind,
+      ...issue2 ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue2.message } : { reason: assessment.reason?.replaceAll("OpenAPI", kind) }
+    };
+  }
   if (kind === "restapi")
     return assessRestGet(options2, datasourceId);
   if (kind === "openapi")
@@ -67620,6 +72654,20 @@ function assessQueryRead(query) {
     reason: `Datasource kind ${kind} has no proven read classifier.`
   };
 }
+function resolvedReadRefusal(query, before, resolved) {
+  if (!Object.keys(resolved).length)
+    return void 0;
+  const kind = query.kind?.toLowerCase() ?? "";
+  const sqlLike = SQL_KINDS.has(kind) || kind === "tooljetdb";
+  if (sqlLike && resolvedBindingValues(resolved).some((value2) => typeof value2 === "string" && value2.includes(";"))) {
+    return "after its {{ }} bindings are resolved, a binding value contains a statement separator (;). Bindings in SQL must supply values, not SQL; move the statement text into the saved query.";
+  }
+  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) });
+  const weaker = !after.provenRead || after.selectStar || before.directSafe && !after.directSafe || !before.requiresCountPreflight && after.requiresCountPreflight || !before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation || !before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation;
+  if (!weaker)
+    return void 0;
+  return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? "the resolved text changes the statement"}). Bindings must supply values, not SQL or query structure; move that text into the saved query.`;
+}
 function sameReadSource(target, count) {
   return !!target.source && !!count.source && target.simpleSourceRead === true && count.fullSourceCount === true && !!target.datasourceId && target.datasourceId === count.datasourceId && target.datasourceKind === count.datasourceKind && target.source.kind === count.source.kind && target.source.value === count.source.value;
 }
@@ -67647,7 +72695,7 @@ function extractRowCount(result) {
 }
 
 // dist/writeBindingShape.js
-var import_parser12 = __toESM(require_lib(), 1);
+var import_parser13 = __toESM(require_lib(), 1);
 function primitiveWriteBindingEntries(value2) {
   if (typeof value2 !== "string")
     return [];
@@ -67656,7 +72704,7 @@ function primitiveWriteBindingEntries(value2) {
   if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source2.length)
     return [];
   try {
-    const node2 = (0, import_parser12.parseExpression)(spans[0].body);
+    const node2 = (0, import_parser13.parseExpression)(spans[0].body);
     if (node2.type !== "ObjectExpression")
       return [];
     return node2.properties.flatMap((p) => {
@@ -67673,7 +72721,7 @@ function primitiveWriteBindingEntries(value2) {
 }
 
 // dist/arithmeticWriteContract.js
-var import_parser13 = __toESM(require_lib(), 1);
+var import_parser14 = __toESM(require_lib(), 1);
 var object3 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
 function conditionalWriteWarning(kind, options2) {
   if (kind !== "tooljetdb" || options2.operation !== "update_rows")
@@ -67725,7 +72773,7 @@ function arithmeticWriteWarning(kind, options2) {
       continue;
     let ast;
     try {
-      ast = (0, import_parser13.parseExpression)(match[1]);
+      ast = (0, import_parser14.parseExpression)(match[1]);
     } catch {
       continue;
     }
@@ -67765,7 +72813,7 @@ function isObject2(value2) {
   return !!value2 && typeof value2 === "object" && !Array.isArray(value2);
 }
 function isTruthyStatic(value2) {
-  return value2 === true || value2 === "true" || value2 === "{{true}}";
+  return value2 === true || staticToggle(value2) === true;
 }
 function isDynamicBinding2(value2) {
   return typeof value2 === "string" && value2.includes("{{");
@@ -67782,6 +72830,8 @@ function valueAtPath(source2, path) {
 function describeOperationSelection(schema) {
   if (schema.kind === "hubspot")
     return "Use inspect_datasource_schema getEndpointSchema and copy query_options (operation, path, specType and params).";
+  if (singleSpecRef(schema.kind))
+    return SPEC_DISCOVERY_NOTE;
   const selection = schema.operationSelection;
   if (schema.operations.length) {
     const fields = selection?.fields?.length ? selection.fields.join(" + ") : "operation";
@@ -67903,14 +72953,34 @@ function interpolatedSqlBindingIssues(sql) {
     }
   ];
 }
+var RUNJS_PARAMETERS = ["moment", "_", "components", "queries", "globals", "page", "axios", "variables", "actions", "constants"];
 function runjsSyntaxError(code) {
   try {
-    new Function(`return (async () => {
+    new Function(`return (async (${RUNJS_PARAMETERS.join(", ")}) => {
 ${code}
 });`);
     return void 0;
   } catch (error51) {
-    return error51 instanceof SyntaxError ? error51.message : void 0;
+    if (!(error51 instanceof SyntaxError))
+      return void 0;
+    const clash = error51.message.match(/Identifier '([\w$]+)' has already been declared/)?.[1];
+    if (clash && RUNJS_PARAMETERS.includes(clash)) {
+      return `the code declares \`${clash}\`, a name ToolJet already gives every RunJS query (${RUNJS_PARAMETERS.join(", ")}), so the query fails with "Identifier '${clash}' has already been declared" when it runs. Rename it (${clash}List, say).`;
+    }
+    try {
+      (0, import_parser15.parse)(`async function f(){
+${code}
+}`, { sourceType: "script" });
+    } catch (located) {
+      const loc = located.loc;
+      const line = loc ? code.split("\n")[loc.line - 2] : void 0;
+      if (loc && line !== void 0) {
+        const from = Math.max(0, loc.column - 60);
+        const excerpt = line.slice(from, loc.column + 20).trim();
+        return `${error51.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? "\u2026" : ""}${excerpt}`;
+      }
+    }
+    return error51.message;
   }
 }
 function transformationWarnings(options2) {
@@ -67958,10 +73028,13 @@ function influxTransformWarnings(kind, options2) {
     message: 'InfluxDB query_data returns annotated CSV as a single raw string, not rows. Bound directly, a Table renders nothing. Add a transformation that parses the CSV into an array of row objects (skip the #datatype/#group/#default annotation lines and the empty leading columns), with enableTransformation: true and transformationLanguage: "javascript".'
   }];
 }
+var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
 function validateQueryOptions(kind, options2) {
   const errors = [];
+  errors.push(...queryToggleIssues(options2));
   if (kind === "hubspot")
     errors.push(...hubspotQueryIssues(options2).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
+  errors.push(...apiEndpointQueryIssues(kind, options2).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
   if (kind === "hubspot" && options2.operation !== "get" && (isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange))) {
     errors.push({ code: "automatic_hubspot_write", message: "HubSpot writes must run from an explicit user action, not on page load or dependency changes." });
   }
@@ -68005,7 +73078,7 @@ function validateQueryOptions(kind, options2) {
     errors.push({
       code: "unsafe_automatic_unbounded_read",
       path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
-      message: `An unbounded read cannot run automatically on page load or dependency change. Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD} and use server-side pagination, or disable automatic execution and run it only after an explicit user decision.`
+      message: "An unbounded read cannot run automatically on page load or dependency change. " + (readAssessment.reason ? `${readAssessment.reason} ` : `Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD}. `) + "Use server-side pagination for more, or run it only after an explicit user decision."
     });
   }
   if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
@@ -68074,12 +73147,25 @@ function validateQueryOptions(kind, options2) {
   }
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
+  if (singleSpecRef(kind))
+    for (const key4 of ["operation", "path", "params", "selectedOperation"])
+      allowedTopLevel.add(key4);
+  const own2 = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
   for (const key4 of Object.keys(options2)) {
     if (allowedTopLevel.has(key4))
       continue;
     const exactReplacement = KNOWN_IGNORED_KEYS[key4];
     const nestedReplacement = suffixSuggestion(key4, fields);
     const replacement = exactReplacement ?? nestedReplacement;
+    const meant = key4.length >= 4 ? own2.filter((f) => f !== key4 && options2[f] === void 0 && (f.toLowerCase().includes(key4.toLowerCase()) || key4.toLowerCase().includes(f.toLowerCase()))) : [];
+    if (!replacement && meant.length === 1) {
+      errors.push({
+        code: "unknown_option_key",
+        path: key4,
+        message: `Option key "${key4}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key4}" and the query runs without it.`
+      });
+      continue;
+    }
     warnings.push({
       code: replacement ? "ignored_or_misplaced_option_key" : "unknown_option_key",
       path: key4,
@@ -68099,6 +73185,16 @@ function validateQueryOptions(kind, options2) {
           message: `Unknown nested option key "${root}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`
         });
       }
+    }
+  }
+  if (options2.mode !== "sql") {
+    const targets = Object.keys(fields).filter((path) => !path.includes(".") && TARGET_FIELD.test(path) && !(path in COMMON_QUERY_OPTION_FIELDS));
+    const set2 = targets.filter((path) => {
+      const v = options2[path];
+      return v !== void 0 && v !== null && v !== "";
+    });
+    if (targets.length && !set2.length) {
+      errors.push({ code: "missing_target", path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(" or ")}.` });
     }
   }
   const required3 = intersection2(matching.map((variant) => variant.required));
@@ -68286,7 +73382,8 @@ function normalizeWriteColumnMap(columns) {
   });
   return normalized2;
 }
-function normalizeQueryOptions(kind, options2) {
+function normalizeQueryOptions(kind, rawOptions) {
+  const options2 = normalizeQueryToggles(rawOptions);
   if (kind === "mongodb" && isObject2(options2)) {
     let result = options2;
     for (const field of ["filter", "options", "pipeline", "document", "documents", "update", "replacement", "operations"]) {
@@ -68344,6 +73441,13 @@ function validatePersistedAppSummary(summary) {
   const eventValidation = validateEvents(summary, persistedEventSpecs(summary), { includePersistedChains: false });
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
+  for (const page of summary.pages ?? []) {
+    for (const component of page.components ?? []) {
+      for (const col of htmlFedTextColumns(component, summary.queries)) {
+        warnings.push(`Table "${String(component.name)}" column "${String(col.key)}" is typed as text but its query returns HTML for it, so it renders as raw text (<span ...>). Set that column's columnType "html", or return plain text.`);
+      }
+    }
+  }
   for (const query of summary.queries) {
     const label2 = `Query "${query.name ?? query.id}"`;
     if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
@@ -68425,6 +73529,37 @@ function renderAuditBase(configuredBase, override) {
   if (url2.search || url2.hash)
     throw new Error("viewer_url must be a base URL without query or fragment");
   return { base: url2.href.replace(/\/$/, ""), origins };
+}
+function hasBinding(value2) {
+  if (typeof value2 === "string")
+    return value2.includes("{{");
+  if (Array.isArray(value2))
+    return value2.some(hasBinding);
+  return !!value2 && typeof value2 === "object" && Object.values(value2).some(hasBinding);
+}
+function renderAuditRequest(url2, method, saved) {
+  if (["GET", "HEAD", "OPTIONS"].includes(method))
+    return { allowed: true };
+  const blocked = (detail) => ({ allowed: false, detail: `${detail}; this behavior was not verified` });
+  if (method !== "POST" || !saved?.version_id)
+    return blocked("A potentially mutating request was blocked");
+  const parsed = httpUrl2(url2);
+  const match = parsed.pathname.match(/\/api\/data-queries\/([A-Za-z0-9_-]+)(?:\/versions\/([A-Za-z0-9_-]+))?\/run(?:\/([A-Za-z0-9_-]+))?$/);
+  if (!match || match[2] && (match[2] !== saved.version_id || !match[3] || parsed.searchParams.get("mode") !== "view") || !match[2] && match[3])
+    return blocked("An unverified query or mutating request was blocked");
+  const query = saved.queries.find((item) => item.id === match[1]);
+  if (!query)
+    return blocked("A query outside the audited app/version was blocked");
+  const options2 = query.options;
+  if (hasBinding(options2))
+    return blocked("A query with dynamic bindings was blocked");
+  if (options2?.requestConfirmation || options2?.request_confirmation)
+    return blocked("A query requiring confirmation was blocked");
+  const read = assessQueryRead(query);
+  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight || read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
+    return blocked("A query that is not a proven bounded read was blocked");
+  }
+  return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
 }
 
 // dist/tools/verifyPageRender.js
@@ -68649,19 +73784,34 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         reports[index] = unreachable(p, "browser_unavailable", "The render audit requires Playwright 1.48+ for WebSocket interception");
         return;
       }
+      if (options2.session) {
+        await ctx.addCookies([{ name: "tj_auth_token", value: options2.session, url: new URL(p.url).origin }]);
+      }
       await ctx.routeWebSocket("**/*", (socket) => {
         blocked ??= { kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A WebSocket dependency was blocked; live behavior was not verified" };
         socket.close();
       });
       await ctx.route("**/*", async (route) => {
-        const url2 = route.request().url();
+        const request = route.request();
+        const url2 = request.url();
         if (!renderAuditUrlAllowed(url2, origins)) {
           blocked ??= { kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" };
           await route.abort();
           return;
         }
         try {
-          const response2 = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 3e4 });
+          const policy = renderAuditRequest(url2, request.method(), options2.savedQueries);
+          if (!policy.allowed) {
+            blocked ??= { kind: "unreachable", component: "-", reason: "blocked_execution", detail: policy.detail };
+            await route.abort();
+            return;
+          }
+          const response2 = await route.fetch({
+            maxRedirects: 0,
+            maxRetries: 0,
+            timeout: 3e4,
+            ...policy.postData === void 0 ? {} : { postData: policy.postData }
+          });
           try {
             if (response2.status() >= 300 && response2.status() < 400 && response2.headers().location) {
               const dest = new URL(response2.headers().location, url2);
@@ -68726,12 +73876,12 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
   }
   return reports;
 }
-function verifyPageRenderTool(client, viewerBase) {
+function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
   return {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: 'Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Uses a fresh unauthenticated browser context; a private app is reported as unverified, never made public. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
+    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
@@ -68744,15 +73894,20 @@ function verifyPageRenderTool(client, viewerBase) {
         const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
         const summary = await client.getAppSummary(args.app_id);
         const pages = summary.pages ?? [];
-        const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}` }));
+        const version2 = await client.editingVersionName?.(args.app_id).catch(() => void 0);
+        const preview = version2 ? `?env=development&version=${encodeURIComponent(version2)}` : "";
+        const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}${preview}` }));
         if (!targets.length)
           return fail(new Error(`no page ${args.page_handle ?? ""} in app ${args.app_id}`));
         const options2 = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
-          allowedOrigins: origins
+          allowedOrigins: origins,
+          savedQueries: summary,
+          // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
+          session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : await client.viewerSession?.().catch(() => void 0)
         };
-        const reports = await auditPages(targets, options2);
+        const reports = await auditPages(targets, options2, driver);
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {
@@ -68830,6 +73985,38 @@ function materializeRequiredDefaultChildren(input) {
     warnings.push(`Kanban "${original.name}" had no explicit card children; materialized ${defaults.length} catalog default children so cards render content. For wrapped multi-line card text, use add_components with a Kanban client_ref and an explicit Html child using the matching parent_ref.`);
   });
   return { components, warnings, materializedChildren };
+}
+
+// dist/pageMatch.js
+function matchPlannedPage(pages, name2, plannedNames, claimed = /* @__PURE__ */ new Set()) {
+  const byName = pages.find((page) => page.name === name2 && !claimed.has(page.id));
+  if (byName || name2 !== "Home" || pages.some((page) => page.name === "Home"))
+    return byName;
+  return pages.find((page) => page.handle === "home" && !claimed.has(page.id) && !plannedNames.has(page.name ?? ""));
+}
+
+// dist/queryPersistence.js
+function prepareQueryOptionsForWrite(kind, raw, subject) {
+  const prefix = subject ? `${subject}: ` : "";
+  const line = (text) => subject ? `${prefix}${text}` : text.charAt(0).toUpperCase() + text.slice(1);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { options: raw, errors: [line("options must be an object.")], warnings: [] };
+  }
+  const toggled = normalizeQueryToggles(raw);
+  const warnings = [];
+  const rewrite = toggleRewriteWarning(raw, toggled);
+  if (rewrite)
+    warnings.push(`${prefix}${rewrite}`);
+  if (!kind) {
+    return { options: toggled, errors: issueMessages(queryToggleIssues(toggled), subject), warnings };
+  }
+  const options2 = normalizeQueryOptions(kind, toggled);
+  if (options2 !== toggled) {
+    warnings.push(line(kind === "mongodb" ? "serialized MongoDB document fields to the JSON text expected by the plugin." : `rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`));
+  }
+  const validation = validateQueryOptions(kind, options2);
+  warnings.push(...issueMessages(validation.warnings, subject));
+  return { options: options2, errors: issueMessages(validation.errors, subject), warnings, validation };
 }
 
 // dist/queryLifecycle.js
@@ -69574,13 +74761,8 @@ function lintPlannedApp(spec, existingSummary) {
   const seedData = spec.seedData ?? [];
   const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
   if (seedData.length) {
-    checked.push("seed batches have unique table targets and non-empty rows");
-    const seen = /* @__PURE__ */ new Set();
+    checked.push("seed batches have non-empty rows");
     for (const seed of seedData) {
-      const key4 = seed.tableName.toLowerCase();
-      if (seen.has(key4))
-        errors.push(`Seed data targets table "${seed.tableName}" more than once.`);
-      seen.add(key4);
       if (!seed.rows.length)
         errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
     }
@@ -69609,18 +74791,13 @@ function lintPlannedApp(spec, existingSummary) {
     if (ref !== query.name)
       registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
     queryIds.set(id, { id, name: query.name });
-    let options2 = query.options;
     if (!query.kind) {
       errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
-    } else {
-      options2 = normalizeQueryOptions(query.kind, query.options);
-      if (options2 !== query.options) {
-        warnings.push(query.kind === "mongodb" ? `Query "${query.name}": serialized MongoDB document fields to the JSON text expected by the plugin.` : `Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-      }
-      const validation = validateQueryOptions(query.kind, options2);
-      errors.push(...issueMessages(validation.errors, `Query "${query.name}"`));
-      warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
     }
+    const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
+    const options2 = prepared.options;
+    errors.push(...prepared.errors);
+    warnings.push(...prepared.warnings);
     return {
       id,
       name: query.name,
@@ -69667,7 +74844,7 @@ function lintPlannedApp(spec, existingSummary) {
   let componentCount = 0;
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
-    const existingPage = pages.find((page) => page.name === plannedPage.name || plannedPage.name === "Home" && page.handle === "home");
+    const existingPage = matchPlannedPage(pages, plannedPage.name, new Set((spec.pages ?? []).map((page) => page.name)));
     const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
     bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
     const iconError = pageIconError(plannedPage.icon);
@@ -69751,7 +74928,11 @@ function lintPlannedApp(spec, existingSummary) {
   errors.push(...lintServerSidePaginationRace(pages, queries));
   warnings.push(...lintChartNumericBindings(pages, queries));
   const eventSpecs = [];
+  const scanners = new Set((spec.pages ?? []).flatMap((p) => (p.components ?? []).filter((c) => c.type === "QrScanner").flatMap((c) => [c.clientRef, c.name].filter(Boolean))));
   (spec.events ?? []).forEach((event, index) => {
+    if (event.sourceType === "component" && event.trigger === "onDetect" && scanners.has(String(event.sourceRef)) && !event.action?.debounce) {
+      errors.push(`Event[${index}] (QrScanner "${event.sourceRef}" onDetect): add debounce: "300" to the action. The scanner runs onDetect before it sets lastDetectedValue, so an undelayed action reads the previous scan (nothing on the first).`);
+    }
     const source2 = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
     if (!source2)
       errors.push(`Event[${index}] has unknown ${event.sourceType} source_ref "${event.sourceRef}".`);
@@ -69815,8 +74996,9 @@ function lintPlannedApp(spec, existingSummary) {
     warnings.push(...eventValidation.warnings);
   }
   const structure = validateAppStructure(summary);
-  errors.push(...structure.errors);
-  warnings.push(...structure.warnings);
+  const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
+  errors.push(...forward.errors);
+  warnings.push(...structure.warnings, ...forward.notes);
   const deduped = dropUnprefixedDuplicates(errors);
   return {
     ok: deduped.length === 0,
@@ -69838,6 +75020,23 @@ function lintPlannedApp(spec, existingSummary) {
       lifecycles: spec.lifecycles?.length ?? 0
     }
   };
+}
+function splitForwardComponentRefs(structureErrors, existingQueryNames) {
+  const errors = [];
+  const missing = /* @__PURE__ */ new Map();
+  for (const error51 of structureErrors) {
+    const m = error51.match(/^Query "([^"]+)" references components\.([^,]+), but no component is named /) ?? error51.match(/^RunJS query "([^"]+)" references components\["([^"]+)"\], but no component is named /);
+    if (m && existingQueryNames.has(m[1])) {
+      const names = missing.get(m[1]) ?? [];
+      if (!names.includes(m[2]))
+        names.push(m[2]);
+      missing.set(m[1], names);
+    } else {
+      errors.push(error51);
+    }
+  }
+  const notes = [...missing].map(([query, names]) => `Query "${query}" reads ${names.map((n) => `components.${n}`).join(", ")}, which no page has yet. Build them on a later page with that exact name, or the query reads undefined.`);
+  return { errors, notes };
 }
 function bindRef(map2, ref, value2, type, errors) {
   const existing = map2.get(ref);
@@ -69942,7 +75141,7 @@ var componentInputSchema = external_exports.object({
   client_ref: external_exports.string().optional(),
   parent_ref: external_exports.string().optional(),
   parent: external_exports.string().optional(),
-  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+  slot_name: componentSlotSchema.optional()
 });
 function containsListItemBinding(value2) {
   if (typeof value2 === "string")
@@ -70102,6 +75301,10 @@ function storeAppPlan(spec, lint) {
     expiresAt: Date.now() + PLAN_TTL_MS
   });
   return { plan_token: planToken, expires_in_seconds: PLAN_TTL_MS / 1e3 };
+}
+function peekAppPlan(planToken) {
+  prune();
+  return plans.get(planToken);
 }
 function consumeAppPlan(planToken) {
   prune();
@@ -70264,7 +75467,31 @@ function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PUR
 }
 
 // dist/componentFxGuidance.js
-var COMPONENT_FX_GUIDANCE = "For properties/styles with an FX toggle, use `{ value: <expression>, fxActive: true }` for bindings/conditions/calculations the normal control cannot represent (e.g. visibility, disable, loading). Table column/button and KeyValuePair field expressions instead add the field name to that object's `fxActiveFields`. Keep built-in defaults and static panel-editable values (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. On updates, always send both `value` and `fxActive`; use `{ value: <constant>, fxActive: false }` when reverting. For nested Table fields, remove only the reverted field from `fxActiveFields`; preserve other flags. KeyValuePair arrays merge by index; verify flag removals and report any retained flags. ";
+var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
+var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
+
+// dist/frozenApp.js
+function frozenAppRefusal(summary) {
+  if (!summary?.editor_frozen)
+    return void 0;
+  const where = summary.environment ? ` is in the ${summary.environment} environment and` : "";
+  return `Not executed: this app's version${where} is read-only in ToolJet (the editor is frozen, and ToolJet refuses changes to a promoted version). Nothing was changed. Tell the user to create a new version in development (version menu, Create version) and ask again; do not create tables or try other tools.`;
+}
+
+// dist/mapKeyGuard.js
+async function mapKeyRefusal(client, componentTypes) {
+  if (![...componentTypes].includes("Map") || typeof client.hasGoogleMapsKey !== "function")
+    return void 0;
+  let hasKey;
+  try {
+    hasKey = await client.hasGoogleMapsKey();
+  } catch {
+    return void 0;
+  }
+  if (hasKey !== false)
+    return void 0;
+  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
+}
 
 // dist/tools/lintAppSpec.js
 var TABLE_NAME_MAX = 31;
@@ -70287,17 +75514,33 @@ function lintAppSpecTool(client) {
         if (!args.app_name && ![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
           return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
         }
+        const columnless = (args.tables ?? []).filter((table) => !Array.isArray(table.columns));
+        if (columnless.length) {
+          return fail(new Error(`tables: ${columnless.map((t) => `"${t.table_name ?? "?"}"`).join(", ")} has no columns. List only new tables here, each with its columns; an existing table needs no entry (queries reach it by table_ref).`));
+        }
         const preflightErrors = [];
         const preflightWarnings = [];
+        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
+        if (mapRefusal)
+          preflightErrors.push(mapRefusal);
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
         const [existingTables, existingSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
         ]);
+        const frozen = frozenAppRefusal(existingSummary);
+        if (frozen)
+          return fail(new Error(frozen));
         if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
           preflightErrors.push(`App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`);
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        const plannedNew = new Set((args.tables ?? []).map((table) => table.table_name.toLowerCase()));
+        const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))].filter((name2) => tableIds.has(name2.toLowerCase()) && !plannedNew.has(name2.toLowerCase()));
+        const withRows = await Promise.all(seededExisting.map(async (name2) => await client.hasRows?.(tableIds.get(name2.toLowerCase())).catch(() => void 0) === true ? name2 : void 0));
+        for (const name2 of withRows.filter(Boolean)) {
+          preflightErrors.push(`Seed data targets "${name2}", which already has rows (seeded earlier), so they would be inserted again: leave that table out of seed_data.`);
+        }
         for (const table of args.tables ?? []) {
           const key4 = table.table_name.toLowerCase();
           if (tableIds.has(key4)) {
@@ -70676,10 +75919,22 @@ function applyAppPhaseTool(client) {
     description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
-      version_id: external_exports.string(),
+      version_id: external_exports.string().optional().describe("Defaults to the version the plan was linted for."),
       plan_token: external_exports.string()
     },
-    async handler(args) {
+    async handler(input) {
+      const peeked = peekAppPlan(input.plan_token);
+      if (peeked) {
+        const planVersion = peeked.spec.version_id;
+        const mismatch = peeked.spec.app_id && peeked.spec.app_id !== input.app_id ? `Plan app_id "${peeked.spec.app_id}" does not match "${input.app_id}".` : input.version_id && planVersion && planVersion !== input.version_id ? `Plan version_id "${planVersion}" does not match "${input.version_id}". Omit version_id to use the plan's.` : void 0;
+        if (mismatch)
+          return { content: [{ type: "text", text: `Error: ${mismatch} The plan_token is still valid.` }], isError: true };
+      }
+      const version2 = input.version_id ?? peeked?.spec.version_id;
+      if (!version2) {
+        return { content: [{ type: "text", text: "Error: apply_app_phase needs version_id: neither the call nor the plan names one." }], isError: true };
+      }
+      const args = { ...input, version_id: version2 };
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = "consume plan";
       let createdPageIds = [];
@@ -70698,9 +75953,28 @@ function applyAppPhaseTool(client) {
           client.listTables(),
           spec.queries?.length ? client.listDatasources(args.version_id) : Promise.resolve([])
         ]);
+        const frozen = frozenAppRefusal(initialSummary);
+        if (frozen)
+          return fail(new Error(frozen));
         if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
+        stage = "prepare queries";
+        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
+        const preparedQueryOptions = (spec.queries ?? []).map((query) => {
+          if (!query.datasource_id)
+            throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
+          const kind = datasourceKinds.get(query.datasource_id);
+          if (!kind)
+            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
+          const options2 = structuredClone(query.options);
+          if (query.table_ref)
+            options2.table_id = `planned-table:${query.table_ref}`;
+          const prepared = prepareQueryOptionsForWrite(kind, options2, `Query "${query.name}"`);
+          if (prepared.errors.length)
+            throw new Error(`${prepared.errors.join(" ")} Nothing was written; lint the phase again.`);
+          return { kind, options: prepared.options };
+        });
         let renameWarning;
         if (spec.app_name && spec.app_name !== initialSummary.name) {
           stage = "rename target app";
@@ -70719,8 +75993,9 @@ function applyAppPhaseTool(client) {
         const plannedPageMatches = /* @__PURE__ */ new Map();
         const claimedPageIds = /* @__PURE__ */ new Set();
         const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === "home" && initialSummary.pages[0].components.length === 0 ? initialSummary.pages[0] : void 0;
+        const plannedPageNames = new Set((spec.pages ?? []).map((page) => page.name));
         for (const page of spec.pages ?? []) {
-          let match = initialSummary.pages.find((candidate) => !claimedPageIds.has(candidate.id) && (candidate.name === page.name || candidate.handle === (page.name === "Home" ? "home" : void 0)));
+          let match = matchPlannedPage(initialSummary.pages, page.name, plannedPageNames, claimedPageIds);
           if (!match && reusableHome && !claimedPageIds.has(reusableHome.id))
             match = reusableHome;
           if (match)
@@ -70738,7 +76013,6 @@ function applyAppPhaseTool(client) {
         if (queryCollision)
           throw new Error(`App already has a query named "${queryCollision.name}".`);
         const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
-        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
         stage = "create tables and pages";
         const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
         const [tableWrite, pageWrite] = await Promise.allSettled([
@@ -70802,13 +76076,8 @@ function applyAppPhaseTool(client) {
           await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
         }
         stage = "seed data and create queries";
-        const queryInputs = (spec.queries ?? []).map((query) => {
-          if (!query.datasource_id)
-            throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
-          const kind = datasourceKinds.get(query.datasource_id);
-          if (!kind)
-            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
-          const options2 = structuredClone(query.options);
+        const queryInputs = (spec.queries ?? []).map((query, index) => {
+          const { kind, options: options2 } = preparedQueryOptions[index];
           if (query.table_ref) {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
             if (!tableId)
@@ -70921,14 +76190,15 @@ function applyAppPhaseTool(client) {
         if (eventValidation.errors.length)
           throw new Error(eventValidation.errors.join(" "));
         warnings.push(...eventValidation.warnings);
-        if (allEvents.length) {
+        const newEvents = withoutExistingEvents(allEvents, summaryBeforeEvents.events);
+        if (newEvents.length) {
           await client.createEvents({
             appId: args.app_id,
             versionId: args.version_id,
-            events: allEvents,
+            events: newEvents,
             existingEvents: summaryBeforeEvents.events
           });
-          applied.events = allEvents.length;
+          applied.events = newEvents.length;
         }
         stage = "validate persisted phase";
         const validation = validatePersistedAppSummary(await client.getAppSummary(args.app_id));
@@ -71004,6 +76274,17 @@ function selectedRefs(targets, refs2) {
     const target = targets.get(ref);
     return target ? [[ref, target.id]] : [];
   }));
+}
+function withoutExistingEvents(planned, existing) {
+  const key4 = (sourceType, sourceId, payload) => JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
+  const have = new Set(existing.flatMap((e) => {
+    const raw = e.event && typeof e.event === "object" && !Array.isArray(e.event) ? e.event : void 0;
+    if (!raw)
+      return [];
+    const { index: _index, name: _name, ...payload } = raw;
+    return [key4(e.target, e.sourceId, payload)];
+  }));
+  return planned.filter((e) => !have.has(key4(e.sourceType, e.sourceId, { eventId: e.trigger, ...e.ref ? { ref: e.ref } : {}, ...e.action })));
 }
 
 // dist/tools/addPage.js
@@ -71209,14 +76490,11 @@ function addQueryTool(client) {
         if (!datasource) {
           return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
         }
-        const options2 = normalizeQueryOptions(datasource.kind, args.options);
-        const validation = validateQueryOptions(datasource.kind, options2);
-        if (validation.errors.length)
-          return fail(new Error(issueMessages(validation.errors).join(" ")));
-        const warnings = issueMessages(validation.warnings);
-        if (options2 !== args.options) {
-          warnings.push(datasource.kind === "mongodb" ? "Serialized MongoDB document fields to JSON text expected by the plugin." : `Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-        }
+        const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
+        if (prepared.errors.length)
+          return fail(new Error(prepared.errors.join(" ")));
+        const { options: options2, warnings } = prepared;
+        const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
@@ -71282,15 +76560,12 @@ function addQueriesTool(client) {
           if (!datasource) {
             throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          const options2 = normalizeQueryOptions(datasource.kind, query.options);
-          if (options2 !== query.options) {
-            warnings.push(datasource.kind === "mongodb" ? `Query "${query.name}": serialized MongoDB document fields to JSON text expected by the plugin.` : `Query "${query.name}": rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-          }
-          const validation = validateQueryOptions(datasource.kind, options2);
-          if (validation.errors.length) {
-            throw new Error(issueMessages(validation.errors, `Query "${query.name}"`).join(" "));
-          }
-          warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          if (prepared.errors.length)
+            throw new Error(prepared.errors.join(" "));
+          warnings.push(...prepared.warnings);
+          const { options: options2 } = prepared;
+          const validation = prepared.validation;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
           }
@@ -71374,9 +76649,12 @@ function addComponentTool(client) {
       const expanded = materializeRequiredDefaultChildren([geometry.component]);
       const lintResult = lintComponents(expanded.components);
       const errors = lintResult.errors;
+      const mapRefusal = await mapKeyRefusal(client, expanded.components.map((c) => String(c.type)));
+      if (mapRefusal)
+        errors.push(mapRefusal);
       const warnings = [...geometry.warnings, ...lintResult.warnings];
       if (errors.length)
-        return fail(new Error(errors.join(" ")));
+        return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
       try {
         if (expanded.materializedChildren) {
           const [parent, ...defaultChildren] = await client.createComponents({
@@ -71519,8 +76797,11 @@ function addComponentBatchesTool(client) {
       }
       const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error51) => `Page ${page.page_id}: ${error51}`));
+      const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c) => String(c.type))));
+      if (mapRefusal)
+        errors.push(mapRefusal);
       if (errors.length)
-        return fail(new Error(errors.join(" ")));
+        return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
       const settled = await Promise.allSettled(prepared.map(async (page) => ({
         page_id: page.page_id,
         components: await client.createComponents({
@@ -71560,7 +76841,7 @@ var updateSchema2 = strictEntry({
   definition: definitionSchema.optional(),
   name: external_exports.string().optional(),
   parent: external_exports.string().optional(),
-  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+  slot_name: componentSlotSchema.optional()
 }, (key4) => {
   if (DEFINITION_SECTIONS.includes(key4)) {
     return `Update entry key "${key4}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key4}: {...} } }); top-level ${key4} would write nothing.`;
@@ -71579,7 +76860,7 @@ function updateComponentsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -71664,7 +76945,7 @@ function updateComponentsTool(client) {
           if (update.definition)
             changedComponents.push({ before: current, after: normalizedNext });
           placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...normalized2.warnings);
+          warnings.push(...onlyTouchedBraceNotes(normalized2.warnings, definition));
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized2.patch).length) {
             normalizedDefinition = { ...update.definition };
@@ -71697,7 +76978,7 @@ function updateComponentsTool(client) {
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length)
-          return fail(new Error(errors.join(" ")));
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
         warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
         warnings.push(...introducedForChanged(lintTextGeometry));
         warnings.push(...lintRenderedGeometry(allComponents));
@@ -71717,6 +76998,19 @@ function updateComponentsTool(client) {
       }
     }
   };
+}
+function onlyTouchedBraceNotes(warnings, definition) {
+  const touched = /* @__PURE__ */ new Set([
+    ...Object.keys(definition?.properties ?? {}).map((key4) => `properties.${key4}`),
+    ...Object.keys(definition?.styles ?? {}).map((key4) => `styles.${key4}`)
+  ]);
+  return warnings.flatMap((warning) => {
+    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
+    if (!m)
+      return [warning];
+    const keys = m[2].split(", ").filter((key4) => touched.has(key4));
+    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
+  });
 }
 
 // dist/tools/deleteComponents.js
@@ -71752,7 +77046,9 @@ function deleteComponentsTool(client) {
         if (missing.length) {
           throw new Error(`delete_components: component ids are not on page ${args.page_id}: ${missing.join(", ")}.`);
         }
-        const descendants = page.components.filter((component) => component.parent && [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`)) && !requested.has(component.id));
+        const descendants = page.components.filter((component) => component.parent && // Header, footer and tab children sit on "<id>-header", "<id>-t1" ...: an exact match missed them, and deleting
+        // a Tabs, Modal or Container orphaned them (review 2026-09-25).
+        [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) || decodeComponentParent(component.parent).parentId === targetId) && !requested.has(component.id));
         if (descendants.length) {
           throw new Error(`delete_components: surviving child components still belong to a target: ` + descendants.map((component) => component.name ?? component.id).join(", ") + ". Include them in the explicitly approved deletion or reparent them first.");
         }
@@ -71819,7 +77115,7 @@ var layoutEntrySchema = strictEntry({
   desktop: rect.optional(),
   mobile: rect.optional(),
   parent: external_exports.string().optional(),
-  slot_name: external_exports.enum(COMPONENT_SLOT_NAMES).optional()
+  slot_name: componentSlotSchema.optional()
 }, (key4) => {
   if (RECT_KEYS.has(key4)) {
     return `Layout entry key "${key4}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
@@ -71927,7 +77223,7 @@ function updateLayoutTool(client) {
           ...introducedForChanged(lintUnusableTextGeometry)
         ];
         if (errors.length)
-          return fail(new Error(errors.join(" ")));
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
         const warnings = [.../* @__PURE__ */ new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
@@ -72054,12 +77350,14 @@ function addQueryLifecyclesTool(client) {
     async handler(args) {
       try {
         const summary = await client.getAppSummary(args.app_id);
+        const queryId = idByName(summary.queries);
+        const componentId = idByName(summary.pages.flatMap((page) => page.components));
         const expanded = expandQueryLifecycles(summary, args.lifecycles.map((lifecycle) => ({
-          queryId: lifecycle.query_id,
+          queryId: queryId(lifecycle.query_id),
           beforeRefreshActions: lifecycle.before_refresh_actions,
-          refreshQueryIds: lifecycle.refresh_query_ids,
-          clearComponentIds: lifecycle.clear_component_ids,
-          closeModalId: lifecycle.close_modal_id,
+          refreshQueryIds: lifecycle.refresh_query_ids?.map(queryId),
+          clearComponentIds: lifecycle.clear_component_ids?.map(componentId),
+          closeModalId: lifecycle.close_modal_id === void 0 ? void 0 : componentId(lifecycle.close_modal_id),
           successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
           failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
           successActions: lifecycle.success_actions,
@@ -72085,6 +77383,14 @@ function addQueryLifecyclesTool(client) {
     }
   };
 }
+function idByName(items) {
+  const ids = new Set(items.map((item) => item.id));
+  const byName = /* @__PURE__ */ new Map();
+  for (const item of items)
+    if (item.name)
+      byName.set(item.name, [...byName.get(item.name) ?? [], item.id]);
+  return (ref) => ids.has(ref) ? ref : byName.get(ref)?.length === 1 ? byName.get(ref)[0] : ref;
+}
 
 // dist/tools/updateQuery.js
 function updateQueryTool(client) {
@@ -72096,9 +77402,9 @@ function updateQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails.",
+    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.",
     inputSchema: {
-      query_id: external_exports.string(),
+      query_id: external_exports.string().optional().describe("the query id, or its name; with only name given, name picks the query"),
       version_id: external_exports.string(),
       app_id: external_exports.string().optional(),
       datasource_id: external_exports.string().optional(),
@@ -72106,17 +77412,21 @@ function updateQueryTool(client) {
       options: external_exports.record(external_exports.string(), external_exports.any()),
       name: external_exports.string().optional()
     },
-    async handler(args) {
+    async handler(input) {
       try {
+        if (!input.query_id && !input.name)
+          return fail(new Error("update_query needs query_id (the query id or name)."));
+        let args = { ...input, query_id: input.query_id ?? input.name, name: input.query_id ? input.name : void 0 };
         if (args.datasource_id && !args.app_id) {
           return fail(new Error("Changing datasource_id requires app_id so MCP can validate and roll back safely."));
         }
         const resolutionWarnings = [];
         let currentDatasourceId;
         let kind = args.kind;
-        if (args.app_id) {
-          const summary = await client.getAppSummary(args.app_id);
-          const resolution = resolveRef2(summary.queries, args.query_id, "Query", `in app "${args.app_id}"`);
+        if (args.app_id || !input.query_id) {
+          const queries = args.app_id ? (await client.getAppSummary(args.app_id)).queries : await client.getQueries(args.version_id);
+          const scope = args.app_id ? `in app "${args.app_id}"` : `in version "${args.version_id}"`;
+          const resolution = resolveRef2(queries, args.query_id, "Query", scope);
           if (!resolution.ok)
             return fail(new Error(resolution.error));
           if (resolution.warning)
@@ -72136,21 +77446,13 @@ function updateQueryTool(client) {
           }
           kind = datasource.kind;
         }
-        const warnings = [...resolutionWarnings];
-        let validation;
-        let options2 = args.options;
-        if (kind) {
-          options2 = normalizeQueryOptions(kind, args.options);
-          if (options2 !== args.options) {
-            warnings.push(kind === "mongodb" ? "Serialized MongoDB document fields to JSON text expected by the plugin." : `Rewrote the ${String(options2.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`);
-          }
-          validation = validateQueryOptions(kind, options2);
-          if (validation.errors.length)
-            return fail(new Error(issueMessages(validation.errors).join(" ")));
-          warnings.push(...issueMessages(validation.warnings));
-        } else {
+        const prepared = prepareQueryOptionsForWrite(kind, args.options);
+        if (prepared.errors.length)
+          return fail(new Error(prepared.errors.join(" ")));
+        const warnings = [...resolutionWarnings, ...prepared.warnings];
+        const { options: options2, validation } = prepared;
+        if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        }
         warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
@@ -72446,10 +77748,21 @@ function runQueryTool(client) {
     async handler(args) {
       try {
         const warnings = [];
-        const query = await client.getQuery(args.query_id, args.version_id);
+        const query = await client.getQuery(args.query_id, args.version_id).catch(async (error51) => {
+          const saved = await client.getQueries(args.version_id);
+          const resolution = resolveRef2(saved, args.query_id, "Query", `on version "${args.version_id}"`);
+          if (!resolution.ok)
+            throw new Error(resolution.error, { cause: error51 });
+          return resolution.target;
+        });
         const assessment = assessQueryRead(query);
         if (!assessment.provenRead || assessment.selectStar) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
+        }
+        const staticBindings = resolveStaticBindings(query.options);
+        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
+        if (bindingRefusal) {
+          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
         }
         if (containsComponentBinding(query.options)) {
           warnings.push('Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.');
@@ -72468,7 +77781,7 @@ function runQueryTool(client) {
           if (!args.count_query_id) {
             return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
           }
-          if (args.count_query_id === args.query_id) {
+          if (args.count_query_id === args.query_id || args.count_query_id === query.id) {
             return fail(new Error("count_query_id must be a separate count-only query."));
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
@@ -72496,10 +77809,18 @@ function runQueryTool(client) {
         }
         let result;
         try {
+          const bindings = staticBindings;
+          const emptied = emptyViewerOnlyParams(query.options, bindings);
+          if (emptied.length)
+            warnings.push(emptyParamsNote(emptied));
+          const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+          if (liveOnly.length)
+            warnings.push(unresolvedNote(liveOnly));
           result = await client.runQuery({
-            queryId: args.query_id,
+            queryId: query.id,
             versionId: args.version_id,
-            environmentId: args.environment_id
+            environmentId: args.environment_id,
+            resolvedOptions: bindings.resolved
           });
         } catch (error51) {
           return ok({
@@ -72539,8 +77860,10 @@ function runQueryTool(client) {
 // dist/tools/runQueries.js
 function batchSafeRead(query) {
   const assessment = assessQueryRead(query);
-  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar)
-    return { safe: true };
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
+    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
+    return refusal ? { safe: false, reason: refusal } : { safe: true };
+  }
   if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
     return {
       safe: false,
@@ -72607,7 +77930,14 @@ function runQueriesTool(client) {
           const query = byId.get(queryId);
           const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
           try {
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId });
+            const bindings = resolveStaticBindings(query.options);
+            const emptied = emptyViewerOnlyParams(query.options, bindings);
+            if (emptied.length)
+              warnings.push(emptyParamsNote(emptied));
+            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+            if (liveOnly.length)
+              warnings.push(unresolvedNote(liveOnly));
+            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
             const failed = result.status === "failed";
             const bindingHint = queryResultBindingHint(query, result);
             const recovery = failed ? failureRecovery(query, result) : void 0;
@@ -72786,7 +78116,7 @@ function deleteEventTool(client) {
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.6.1";
+var TOOLJET_MCP_VERSION = "0.7.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);

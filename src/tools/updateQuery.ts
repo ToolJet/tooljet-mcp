@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
+import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
@@ -18,9 +18,10 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       'Change an existing query in place. `options` REPLACES the stored options wholesale — send the ' +
       'FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are ' +
       'validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, ' +
-      'and MCP attempts to roll back the source if the subsequent option update fails.',
+      'and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, ' +
+      'runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.',
     inputSchema: {
-      query_id: z.string(),
+      query_id: z.string().optional().describe('the query id, or its name; with only name given, name picks the query'),
       version_id: z.string(),
       app_id: z.string().optional(),
       datasource_id: z.string().optional(),
@@ -28,8 +29,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       options: z.record(z.string(), z.any()),
       name: z.string().optional(),
     },
-    async handler(args: {
-      query_id: string;
+    async handler(input: {
+      query_id?: string;
       version_id: string;
       app_id?: string;
       datasource_id?: string;
@@ -38,20 +39,27 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       name?: string;
     }) {
       try {
+        // name without query_id picks the query (cy-grants rg3 called update_query with name only and lost a turn to
+        // "expected string, received undefined at query_id"); name beside query_id stays a rename.
+        if (!input.query_id && !input.name) return fail(new Error('update_query needs query_id (the query id or name).'));
+        let args = { ...input, query_id: (input.query_id ?? input.name)!, name: input.query_id ? input.name : undefined };
         if (args.datasource_id && !args.app_id) {
           return fail(new Error('Changing datasource_id requires app_id so MCP can validate and roll back safely.'));
         }
         const resolutionWarnings: string[] = [];
         let currentDatasourceId: string | undefined;
         let kind = args.kind;
-        if (args.app_id) {
-          const summary = await client.getAppSummary(args.app_id);
+        if (args.app_id || !input.query_id) {
+          const queries = args.app_id
+            ? (await client.getAppSummary(args.app_id)).queries
+            : await client.getQueries(args.version_id);
           // Accept a query NAME as query_id: the name is the handle the model authored and what every
           // binding uses ({{queries.createVehicle.data}}). Matching on id alone produced a FALSE
           // "was not found" for a query that plainly exists — observed live, where the model then tried
           // to CREATE a duplicate and the next lint answered "App already has a query named X",
           // flatly contradicting the error it had just been given. See src/refResolution.ts.
-          const resolution = resolveRef(summary.queries, args.query_id, 'Query', `in app "${args.app_id}"`);
+          const scope = args.app_id ? `in app "${args.app_id}"` : `in version "${args.version_id}"`;
+          const resolution = resolveRef(queries, args.query_id, 'Query', scope);
           if (!resolution.ok) return fail(new Error(resolution.error));
           if (resolution.warning) resolutionWarnings.push(resolution.warning);
           const query = resolution.target;
@@ -74,26 +82,13 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           kind = datasource.kind;
         }
 
-        const warnings: string[] = [...resolutionWarnings];
-        let validation: ReturnType<typeof validateQueryOptions> | undefined;
-        // See addQueries.ts: repair a flat {column: value} write map before validating. Only possible
-        // when the kind is known — without it the options are passed through unvalidated as before.
-        let options = args.options;
-        if (kind) {
-          options = normalizeQueryOptions(kind, args.options);
-          if (options !== args.options) {
-            warnings.push(
-              kind === 'mongodb' ? 'Serialized MongoDB document fields to JSON text expected by the plugin.' :
-              `Rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; ` +
-                'the flat {column: value} form sends an empty body and fails at runtime.'
-            );
-          }
-          validation = validateQueryOptions(kind, options);
-          if (validation.errors.length) return fail(new Error(issueMessages(validation.errors).join(' ')));
-          warnings.push(...issueMessages(validation.warnings));
-        } else {
-          warnings.push('Query options were not contract-validated; pass app_id or kind on update_query.');
-        }
+        // The shared write preparation. Its toggle rules hold with or without a kind; the kind's normalization and
+        // contract only when this call can resolve it (a bare query_id + version_id update cannot).
+        const prepared = prepareQueryOptionsForWrite(kind, args.options);
+        if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
+        const warnings: string[] = [...resolutionWarnings, ...prepared.warnings];
+        const { options, validation } = prepared;
+        if (!kind) warnings.push('Query options were not contract-validated; pass app_id or kind on update_query.');
 
         warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {

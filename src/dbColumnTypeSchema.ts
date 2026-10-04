@@ -7,5 +7,5 @@ export const dbColumnTypeSchema = z.string().describe(
   'Existing aliases text/varchar/int/float/decimal/double/bool/datetime/date/json and canonical API type names are accepted. ' +
   'numeric is unsupported; number/decimal are floating-point, not exact decimal. For money consider integer minor units.'
 ).refine(value => TOOLJET_DB_DATA_TYPES.has(normalizeType(value)), {
-  message: 'Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported; do not silently replace exact decimals with floating-point.',
+  message: 'Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently.',
 });

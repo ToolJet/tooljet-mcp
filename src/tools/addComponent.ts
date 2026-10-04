@@ -1,3 +1,4 @@
+import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintComponents } from '../lint.js';
@@ -84,8 +85,10 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       const expanded = materializeRequiredDefaultChildren([geometry.component]);
       const lintResult = lintComponents(expanded.components);
       const errors = lintResult.errors;
+      const mapRefusal = await mapKeyRefusal(client, expanded.components.map((c) => String((c as { type?: unknown }).type)));
+      if (mapRefusal) errors.push(mapRefusal);
       const warnings = [...geometry.warnings, ...lintResult.warnings];
-      if (errors.length) return fail(new Error(errors.join(' ')));
+      if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
       try {
         if (expanded.materializedChildren) {
           const [parent, ...defaultChildren] = await client.createComponents({

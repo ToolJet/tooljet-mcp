@@ -28,7 +28,7 @@ export interface AppSummarySelection {
   eventFields?: string[];
 }
 
-const APP_FIELDS = ['app_id', 'name', 'version_id'] as const;
+const APP_FIELDS = ['app_id', 'name', 'version_id', 'editor_frozen', 'environment'] as const;
 const PAGE_FIELDS = ['id', 'name', 'handle', 'icon', 'hidden', 'index', 'is_page_group', 'page_group_id'] as const;
 const COMPONENT_FIELDS = [
   'id',
@@ -128,8 +128,9 @@ export function selectAppSummary(
   const sections = new Set(selection.sections ?? ['pages', 'queries', 'events']);
   const appFields = selection.appFields ?? [...APP_FIELDS];
   const pageFields = selection.pageFields ?? [...PAGE_FIELDS];
+  // "layout" is the singular a model writes for the "layouts" root (overnight n1 lost a call to it).
   const componentFields =
-    selection.componentFields ??
+    selection.componentFields?.map((path) => path.replace(/^layout(?=\.|$)/, 'layouts')) ??
     (detail === 'full' ? [...COMPONENT_FIELDS] : STRUCTURE_COMPONENT_FIELDS);
   const queryFields =
     selection.queryFields ?? (detail === 'full' ? [...QUERY_FIELDS] : STRUCTURE_QUERY_FIELDS);

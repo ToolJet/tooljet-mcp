@@ -321,8 +321,18 @@ describe('lintComponentSpec', () => {
       name: 'openCases',
       type: 'Statistics',
       properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
-      layout: { top: 0, left: 0, width: 11, height: 120 },
-    }).warnings.join(' ')).toMatch(/value-only tile.*at least 12.*three tiles per content row/is);
+      layout: { top: 0, left: 0, width: 8, height: 120 },
+    }).warnings.join(' ')).toMatch(/value-only tile.*at least 9.*four tiles per content row/is);
+
+    // Builds 3 and 4 of a parcel-carrier brief (2026-09-28): "at least 12 columns, three tiles a row" made the model split four KPI tiles
+    // into a 2x2 grid of half-page cards. Rendered in an 800 px pane, four 9-column tiles fit "Average cost per parcel"
+    // over "£12,345.50" on one line each.
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: { primaryValue: { value: '42' }, hideSecondary: { value: true } },
+      layout: { top: 0, left: 0, width: 9, height: 120 },
+    }).warnings.join(' ')).not.toMatch(/too narrow/);
 
     expect(lintComponentSpec({
       name: 'openCases',
@@ -344,7 +354,18 @@ describe('lintComponentSpec', () => {
         hideSecondary: { value: true },
       },
       layout: { top: 0, left: 0, width: 13, height: 120 },
-    }).warnings.join(' ')).toMatch(/only safe for a short one- or two-word.*Open work orders.*wrap vertically.*at least 18/is);
+    }).warnings).toEqual([]);  // about 325px at 1366px wide: 16 characters fit on one line (vet n1, 2026-09-25)
+
+    expect(lintComponentSpec({
+      name: 'openCases',
+      type: 'Statistics',
+      properties: {
+        primaryValue: { value: '42' },
+        primaryValueLabel: { value: 'Open work orders awaiting parts' },
+        hideSecondary: { value: true },
+      },
+      layout: { top: 0, left: 0, width: 13, height: 120 },
+    }).warnings.join(' ')).toMatch(/Open work orders awaiting parts.*wrap vertically.*at least 18/is);
 
     expect(lintComponentSpec({
       name: 'openCases',
@@ -626,26 +647,17 @@ describe('lintComponentSpec', () => {
     expect(r.warnings).toEqual([]);
   });
 
-  it('blocks statement-body map callbacks in Table data but accepts expression bodies', () => {
-    const broken = lintComponentSpec({
-      name: 'claims',
-      type: 'Table',
-      properties: {
-        data: { value: '{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}' },
-        dataSourceSelector: { value: 'rawJson' },
-      },
-    });
-    expect(broken.errors.join(' ')).toMatch(/statement-body \.map\(\).*silently.*no data.*expression body/is);
-
-    const supported = lintComponentSpec({
-      name: 'claims',
-      type: 'Table',
-      properties: {
-        data: { value: '{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}' },
-        dataSourceSelector: { value: 'rawJson' },
-      },
-    });
-    expect(supported.errors).toEqual([]);
+  // Probed on ToolJet 3.16 (2026-09-24): a Table bound to a statement-body map renders every row, over a
+  // query's data and over static rows. What cuts a binding short is a literal `}}` inside it.
+  it('accepts statement-body map callbacks in Table data unless the code holds a literal }}', () => {
+    const lint = (value: string) => lintComponentSpec({
+      name: 'claims', type: 'Table',
+      properties: { data: { value }, dataSourceSelector: { value: 'rawJson' } },
+    }).errors;
+    expect(lint('{{queries.claims.data.map(c => { const age = c.age_days; return {id:c.id,age}; })}}')).toEqual([]);
+    expect(lint('{{queries.claims.data.map(c => ({id:c.id,age:c.age_days}))}}')).toEqual([]);
+    expect(lint('{{queries.claims.data.map(c => { return {id:c.id,meta:{age:c.age_days}}; })}}').join(' '))
+      .toMatch(/statement-body \.map\(\).*`}}`.*space/is);
   });
 
   it('gives an actionable repair for function-style Table projections without weakening key checks', () => {
@@ -784,6 +796,22 @@ describe('lintComponentSpec', () => {
       },
     }).warnings.join(' ');
     expect(detailsWarnings).toMatch(/dueDate.*raw ISO timestamp.*fieldType:"datepicker".*dateFormat\/parseDateFormat/is);
+  });
+
+  // n1 (2026-09-25): a RunJS query formatted the date into due_display; the header "Due" alone drew this
+  // warning, and the model re-planned and re-applied the page to switch the column to datepicker.
+  it('judges a date-like column by its key when it has one, not by its header', () => {
+    const warn = (key: string, name: string) => lintComponentSpec({
+      name: 'jobs', type: 'Table',
+      properties: {
+        data: { value: '{{queries.jobData.data.rows}}' },
+        columns: { value: [{ id: 'd', name, key, columnType: 'string' }] },
+      },
+    }).warnings.join(' ');
+    expect(warn('due_display', 'Due')).not.toMatch(/date\/time-like/);
+    expect(warn('due_label', 'Due date')).not.toMatch(/date\/time-like/);
+    expect(warn('due_date', 'Due')).toMatch(/date\/time-like/);
+    expect(warn('', 'Created')).toMatch(/date\/time-like/);
   });
 
   it('warns on the untouched DatePickerV2 demo date but accepts explicit empty/edit values', () => {
@@ -1041,6 +1069,23 @@ describe('lintModalChildren', () => {
     ]).join(' ');
     expect(warnings).toMatch(/native header slot is empty.*slot_name:"header"/i);
     expect(warnings).toMatch(/title-like Text "modalTitle" in the body.*Move.*slot_name:"header"/i);
+  });
+
+  // Trace review 2026-09-25: five plans failed "title-like Text in the body" on a bold line naming the selected record
+  // under the modal title ({row.product_name}). That is a record label, not a second title.
+  it('does not take a bold dynamic record label for a second title, and still flags a static bold heading', () => {
+    const titleLike = (text: string, textSize?: number) => lintModalChildren([
+      { name: 'changePrice', type: 'ModalV2', clientRef: 'modal', properties: { showHeader: { value: true } } },
+      { name: 'modalHeader', type: 'Text', parentRef: 'modal', slotName: 'header', properties: { text: { value: 'Change price' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
+      {
+        name: 'recordLabel', type: 'Text', parentRef: 'modal', properties: { text: { value: text } },
+        styles: { fontWeight: { value: 'bold' }, ...(textSize ? { textSize: { value: textSize } } : {}) },
+        layout: { top: 10, left: 2, width: 30, height: 30 },
+      },
+    ]).join(' ').includes('title-like');
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 15)).toBe(false);
+    expect(titleLike('Edit this price', 15)).toBe(true);
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(true);
   });
 
   it('recognizes explicit and persisted header slots and keeps their geometry separate from the body', () => {
@@ -1404,7 +1449,7 @@ describe('validateAppStructure', () => {
     events: [{ id: 'e1', name: 'run', sourceId: 'c1', target: 'component', event: { actionId: 'run-query', queryId: 'q1' } }],
   };
 
-  it('rejects a query referenced by bare name, the Haiku Helix case', () => {
+  it('rejects a query referenced by bare name, the Haiku workshop-booking case', () => {
     const withBinding = (binding: string): AppSummary => ({
       ...base,
       pages: [{ id: 'p1', name: 'Home', components: [{ ...base.pages[0]!.components[0]!, properties: { ...base.pages[0]!.components[0]!.properties, data: { value: binding } } }] }],

@@ -18,12 +18,14 @@ export function getAppSettingsTool(client: ToolJetClient): ToolDef {
       'JavaScript library configuration and RunJS scope guidance before authoring library-dependent queries; this never loads or executes code.',
     inputSchema: {
       app_id: z.string().min(1),
-      version_id: z.string().min(1),
+      version_id: z.string().min(1).optional().describe('Defaults to the app\'s editing version.'),
       include_libraries: z.boolean().optional().describe('Inspect stored JavaScript dependencies, not runtime readiness. Omitted by default.'),
     },
-    async handler(args: { app_id: string; version_id: string; include_libraries?: boolean }) {
+    async handler(args: { app_id: string; version_id?: string; include_libraries?: boolean }) {
       try {
-        const snapshot = await client.getAppSettings(args.app_id, args.version_id);
+        const versionId = args.version_id ?? (await client.getAppSummary(args.app_id)).version_id;
+        if (!versionId) throw new Error('get_app_settings needs version_id: the app has no editing version.');
+        const snapshot = await client.getAppSettings(args.app_id, versionId);
         return ok({ ...projectAppSettings(snapshot),
           ...(args.include_libraries ? { javascript_runtime: projectJavascriptRuntime(snapshot) } : {}),
         });
