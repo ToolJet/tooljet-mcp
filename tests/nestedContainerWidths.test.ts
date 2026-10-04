@@ -103,6 +103,21 @@ describe('nested container grid widths', () => {
     expect(result.content[0]?.text).toContain('own 43-column grid');
   });
 
+  it('reports a nested-width warning once when a parent and child are added together', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue({ version_id: 'v1', pages: [{ id: 'page', components: [] }] }),
+      createComponents: vi.fn().mockResolvedValue([]),
+    } as unknown as ToolJetClient;
+    const result = await addComponentsTool(client).handler({ app_id: 'app', version_id: 'v1', page_id: 'page', components: [
+      { ...panel(), properties: {}, client_ref: 'parcel-panel' },
+      { ...child(), properties: child().properties!, parent_ref: 'parcel-panel' },
+    ] });
+    expect(result.isError).toBeFalsy();
+    const body = JSON.parse(result.content[0]!.text);
+    expect(body.warnings.filter((warning: string) => warning.includes('own 43-column grid'))).toHaveLength(1);
+    expect(client.createComponents).toHaveBeenCalledOnce();
+  });
+
   it('resolves an existing parent by name in a planned app phase', () => {
     const p = { ...panel(), id: 'persisted-panel', clientRef: undefined };
     const result = lintPlannedApp({ pages: [{ name: 'Dispatch', icon: 'IconTruck', components: [

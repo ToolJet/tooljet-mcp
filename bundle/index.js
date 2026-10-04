@@ -76788,7 +76788,7 @@ function addComponentsTool(client) {
         });
         return ok({
           components: result,
-          warnings: [...prepared.warnings, ...pageWarnings]
+          warnings: [.../* @__PURE__ */ new Set([...prepared.warnings, ...pageWarnings])]
         });
       } catch (err) {
         return fail(err);

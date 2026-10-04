@@ -91,7 +91,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         });
         return ok({
           components: result,
-          warnings: [...prepared.warnings, ...pageWarnings],
+          warnings: [...new Set([...prepared.warnings, ...pageWarnings])],
         });
       } catch (err) {
         return fail(err);
