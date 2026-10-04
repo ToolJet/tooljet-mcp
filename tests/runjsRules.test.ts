@@ -129,3 +129,18 @@ describe('a {{ }} binding that reads a name nothing declares', () => {
     }, 'x')).toEqual([]);
   });
 });
+
+// Codex review (2026-10-04) of the first version of this check: method and constructor parameters were reported as
+// undeclared, and a name declared inside one function hid an outer read of it. Kept as regression cases.
+describe('scope cases from the Codex review', () => {
+  it.each([
+    ['object method parameter', 'const f = { twice(x) { return x * 2; } };\nreturn f.twice(4);'],
+    ['class constructor parameter and getter', 'class A { constructor(v) { this.v = v; } get double() { return this.v * 2; } }\nreturn new A(2).double;'],
+    ['class field arrow', 'class B { add = (a, b) => a + b; }\nreturn new B().add(1, 2);'],
+    ['destructured parameter with defaults', 'const h = ({ a = 1, b } = {}) => a + b;\nreturn h({ b: 2 });'],
+    ['computed key and getter', 'const k = "a"; const o = { [k]: 1, get v() { return 2; } };\nreturn o.v;'],
+  ])('accepts %s', (_label, code) => { expect(runjsUndeclaredNames(code)).toEqual([]); });
+  it('does not let a name declared inside one function cover a read outside it', () => {
+    expect(runjsUndeclaredNames('function g() { const secret = 1; return secret; }\nreturn secret;')).toEqual(['secret']);
+  });
+});
