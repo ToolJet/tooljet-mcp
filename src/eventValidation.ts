@@ -109,7 +109,7 @@ function isMutationQuery(query: { options?: unknown }): boolean {
 export function validateEvents(
   summary: AppSummary,
   events: EventSpec[],
-  options: { includePersistedChains?: boolean } = {}
+  options: { includePersistedChains?: boolean; navigationMovedLast?: boolean } = {}
 ): EventValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -457,6 +457,12 @@ export function validateEvents(
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === 'switch-page');
     if (navigationIndex === -1 || navigationIndex === chain.length - 1) continue;
     const navigation = chain[navigationIndex]!;
+    // apply_app_phase moves a saved page switch behind the handlers its plan adds (navigationReorders), so a saved
+    // switch followed only by this plan's new handlers is fine there (a site inspection build lost four compiles to it,
+    // 2026-10-04). Where nothing reorders (add_events), it is still an error.
+    const afterNavigation = chain.slice(navigationIndex + 1);
+    if (options.navigationMovedLast && navigation.persisted &&
+        afterNavigation.every((item) => !item.persisted && item.event.action.actionId !== 'switch-page')) continue;
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(', ');
     const label = navigation.event.name
       ? `${navigation.persisted ? 'Persisted event' : 'Event'} "${navigation.event.name}"`
@@ -526,4 +532,28 @@ export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
       name: event.name,
     }];
     });
+}
+
+
+/** Saved page switches that are no longer last in their chain (source, trigger, ref), moved to the end: what
+ *  apply_app_phase sends as a reorder after it adds a phase's handlers. ToolJet runs nothing after a switch-page. */
+export function navigationReorders(summary: AppSummary): Array<{ eventId: string; index: number }> {
+  const chains = new Map<string, Array<{ id: string; index: number; nav: boolean }>>();
+  for (const saved of summary.events ?? []) {
+    const raw = isRecord(saved.event) ? saved.event : undefined;
+    if (!raw || !saved.sourceId || !nonEmptyString(raw.eventId)) continue;
+    const key = [saved.target, saved.sourceId, nonEmptyString(raw.ref) ? raw.ref : '', raw.eventId].join('\u0000');
+    const chain = chains.get(key) ?? [];
+    chain.push({ id: saved.id, index: saved.index ?? 0, nav: raw.actionId === 'switch-page' });
+    chains.set(key, chain);
+  }
+  const moves: Array<{ eventId: string; index: number }> = [];
+  for (const chain of chains.values()) {
+    chain.sort((a, b) => a.index - b.index);
+    const navs = chain.filter((item) => item.nav);
+    if (!navs.length || chain.slice(-navs.length).every((item) => item.nav)) continue;
+    let next = Math.max(...chain.map((item) => item.index)) + 1;
+    for (const nav of navs) moves.push({ eventId: nav.id, index: next++ });
+  }
+  return moves;
 }

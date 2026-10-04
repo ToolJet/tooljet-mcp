@@ -588,7 +588,9 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     // makes a sole final switch-page look as though another switch-page follows it.
     const eventValidation = validateEvents(
       { ...summary, events: existingSummary?.events ?? [] },
-      eventSpecs
+      eventSpecs,
+      // apply_app_phase moves a saved page switch behind the handlers a plan adds (navigationReorders).
+      { navigationMovedLast: true }
     );
     errors.push(...eventValidation.errors);
     warnings.push(...eventValidation.warnings);
