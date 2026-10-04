@@ -287,6 +287,16 @@ describe('a replace that drops a component another page acts on', () => {
     const view = replaceView(modal as never, dropped as never)!;
     expect(danglingAfterReplace(modal as never, view, dropped as never).join(' ')).toMatch(/openEdit.*editModal/);
   });
+  it('tells how to change a query that reads the dropped component: redefine it in the same plan (site inspection)', () => {
+    // Pass 4 (2026-10-04): "or change the query first" read as a separate step, and the same page was resent twice.
+    const photo = { ...modal, queries: [{ id: 'q-save', name: 'save_inspection', kind: 'tooljetdb', options: { insert: '{{components.tbl.selectedRow}}' } }], events: [] };
+    const dropped = { pages: [{ name: 'Orders', replace: true, components: [{ name: 'editModal' }] }] };
+    const view = replaceView(photo as never, dropped as never)!;
+    const message = danglingAfterReplace(photo as never, view, dropped as never).join(' ');
+    expect(message).toMatch(/save_inspection/);
+    expect(message).toMatch(/redefine "save_inspection" in this same plan/);
+    expect(message).not.toMatch(/change the query first/);
+  });
   it('is fine when the component is kept under its name', () => {
     const kept = { pages: [{ name: 'Orders', replace: true, components: [{ name: 'tbl' }, { name: 'editModal' }] }] };
     const view = replaceView(modal as never, kept as never)!;
