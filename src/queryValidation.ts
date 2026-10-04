@@ -280,6 +280,85 @@ export function runjsSyntaxError(code: string): string | undefined {
   }
 }
 
+/** Names a RunJS query may use without declaring: what ToolJet passes it (RUNJS_PARAMETERS, plus `parameters` when
+ *  the query has parameters and `input` in a module), JavaScript's own globals, and the browser's. A JavaScript
+ *  library added to the workspace also arrives as a parameter; agent-built apps add none, so it is not listed. */
+const RUNJS_KNOWN_NAMES = new Set([
+  ...RUNJS_PARAMETERS, 'parameters', 'input', 'arguments', 'undefined', 'NaN', 'Infinity', 'globalThis',
+  'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent',
+  'escape', 'unescape', 'Object', 'Function', 'Boolean', 'Symbol', 'Error', 'AggregateError', 'EvalError', 'RangeError',
+  'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'Number', 'BigInt', 'Math', 'Date', 'String', 'RegExp', 'Array',
+  'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array',
+  'Float64Array', 'BigInt64Array', 'BigUint64Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef', 'FinalizationRegistry',
+  'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Intl',
+  'window', 'self', 'document', 'navigator', 'location', 'history', 'screen', 'localStorage', 'sessionStorage', 'console',
+  'alert', 'confirm', 'prompt', 'fetch', 'Blob', 'File', 'FileReader', 'FormData', 'Headers', 'Request', 'Response', 'URL',
+  'URLSearchParams', 'AbortController', 'atob', 'btoa', 'crypto', 'performance', 'structuredClone', 'queueMicrotask',
+  'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame',
+  'TextEncoder', 'TextDecoder', 'DOMParser', 'XMLHttpRequest', 'WebSocket', 'Image', 'getComputedStyle', 'Event', 'CustomEvent',
+]);
+
+type AstNode = { type: string; [key: string]: unknown };
+const isNode = (value: unknown): value is AstNode => !!value && typeof value === 'object' && typeof (value as AstNode).type === 'string';
+
+/** Names a binding pattern declares: `a`, `{ a, b: c, ...d }`, `[e, = f]`. */
+function patternNames(node: unknown, out: Set<string>): void {
+  if (!isNode(node)) return;
+  if (node.type === 'Identifier') out.add(String(node.name));
+  else if (node.type === 'ObjectPattern') for (const p of node.properties as AstNode[]) patternNames(p.type === 'RestElement' ? p.argument : p.value, out);
+  else if (node.type === 'ArrayPattern') for (const e of node.elements as unknown[]) patternNames(e, out);
+  else if (node.type === 'RestElement') patternNames(node.argument, out);
+  else if (node.type === 'AssignmentPattern') patternNames(node.left, out);
+}
+
+/** Identifiers a RunJS query reads but never declares anywhere in its code, in first-use order. Every declaration
+ *  counts wherever it is (block scope and hoisting are not checked), so this reports only names that cannot exist:
+ *  a ReferenceError the first time that line runs, which fails the query and empties what it feeds. Code that does
+ *  not parse returns [] (the syntax check reports it). */
+export function runjsUndeclaredNames(code: string): string[] {
+  let ast: unknown;
+  try {
+    ast = babelParse(`async function __runjs__(){\n${code}\n}`, { sourceType: 'script', errorRecovery: false });
+  } catch {
+    return [];
+  }
+  const declared = new Set<string>();
+  const used: string[] = [];
+  const walk = (node: unknown, parent?: AstNode, key?: string): void => {
+    if (Array.isArray(node)) { for (const child of node) walk(child, parent, key); return; }
+    if (!isNode(node)) return;
+    switch (node.type) {
+      case 'VariableDeclarator': patternNames(node.id, declared); break;
+      case 'FunctionDeclaration': case 'FunctionExpression': case 'ArrowFunctionExpression':
+        if (isNode(node.id)) declared.add(String(node.id.name));
+        for (const param of node.params as unknown[]) patternNames(param, declared);
+        break;
+      case 'ClassDeclaration': case 'ClassExpression': if (isNode(node.id)) declared.add(String(node.id.name)); break;
+      case 'CatchClause': patternNames(node.param, declared); break;
+      case 'Identifier': {
+        const name = String(node.name);
+        const p = parent?.type;
+        const notARead =
+          ((p === 'MemberExpression' || p === 'OptionalMemberExpression') && key === 'property' && !parent!.computed) ||
+          ((p === 'ObjectProperty' || p === 'ObjectMethod' || p === 'ClassMethod' || p === 'ClassProperty' || p === 'ClassPrivateProperty') &&
+            key === 'key' && !parent!.computed) ||
+          ((p === 'LabeledStatement' || p === 'BreakStatement' || p === 'ContinueStatement') && key === 'label') ||
+          (p === 'UnaryExpression' && parent!.operator === 'typeof') ||
+          p === 'MetaProperty';
+        if (!notARead) used.push(name);
+        return;
+      }
+    }
+    for (const [childKey, child] of Object.entries(node)) {
+      if (childKey === 'loc' || childKey === 'start' || childKey === 'end' || childKey === 'extra' || childKey.endsWith('Comments')) continue;
+      walk(child, node, childKey);
+    }
+  };
+  walk(ast);
+  declared.add('__runjs__');
+  return [...new Set(used.filter((name) => !declared.has(name) && !RUNJS_KNOWN_NAMES.has(name)))];
+}
+
 /* A transformation is three fields, not one. `transformations` / `transformation` carries the code,
    but ToolJet only runs it when `enableTransformation` is true and `transformationLanguage` names the
    language the code is under. Writing the code alone saves a transformation that never executes, and
@@ -369,6 +448,18 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
           `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; ` +
           'fix the code before writing it.',
       });
+    } else {
+      const undeclared = runjsUndeclaredNames(options.code);
+      if (undeclared.length) {
+        errors.push({
+          code: 'runjs_undeclared_name',
+          path: 'code',
+          message:
+            `the JavaScript uses ${undeclared.map((n) => `\`${n}\``).join(', ')} but never declares ${undeclared.length > 1 ? 'them' : 'it'}. ` +
+            'The query throws a ReferenceError when that line runs, ToolJet marks it failed, and every component bound to its data stays ' +
+            'empty. Declare the value, or use the name you meant.',
+        });
+      }
     }
   }
   warnings.push(...transformationWarnings(options));

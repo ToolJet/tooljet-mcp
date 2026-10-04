@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateQueryOptions, runjsSyntaxError } from '../src/queryValidation.js';
+import { validateQueryOptions, runjsSyntaxError, runjsUndeclaredNames } from '../src/queryValidation.js';
 import { lintPlannedApp, lintRunjsLoadOrder } from '../src/appSpecLint.js';
 
 describe('JavaScript query rules from round eight (2026-09-12)', () => {
@@ -51,5 +51,40 @@ describe('JavaScript query rules from round eight (2026-09-12)', () => {
       pages: [],
     } as any);
     expect(r.errors.some((e) => e.includes('races "deals_list"'))).toBe(true);
+  });
+});
+
+// A cinema build (2026-10-04): a view script returned `seatsFigure`, a name it never declared. The query threw a
+// ReferenceError on every run and two pages bound to it rendered empty; the syntax check passed it.
+describe('names a JavaScript query uses but never declares', () => {
+  it('reports one', () => {
+    expect(runjsUndeclaredNames('const rows = queries.q.data || [];\nreturn { rows, seats: seatsFigure };')).toEqual(['seatsFigure']);
+    const r = validateQueryOptions('runjs', { code: 'const total = 1;\nreturn totl;' });
+    expect(r.errors.find((e) => e.code === 'runjs_undeclared_name')?.message).toMatch(/totl/);
+  });
+  it('accepts declared names, ToolJet\'s own names and JavaScript globals', () => {
+    expect(runjsUndeclaredNames(`
+      const rows = queries.q.data || [];
+      const today = moment().format('YYYY-MM-DD');
+      function sum(list, key) { return list.reduce((s, r) => s + Number(r[key] || 0), 0); }
+      const byId = Object.fromEntries(rows.map(({ id, ...rest }) => [id, rest]));
+      let total = 0; for (const r of rows) { total += sum([r], 'amount'); }
+      try { JSON.parse('{}'); } catch (err) { console.log(err.message); }
+      const fmt = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
+      await actions.setVariable('x', variables.y ?? globals.currentUser.email);
+      label: for (const k of Object.keys(byId)) { if (!k) continue label; }
+      const o = { today, total, fmt: fmt.format(total), first: _.first(rows), at: Date.now(), page: page.handle, c: constants.X, s: components.t.value };
+      return typeof missingButGuarded === 'undefined' ? o : null;
+    `)).toEqual([]);
+  });
+  it('accepts a name declared later in the code or in another block (hoisting is not checked)', () => {
+    expect(runjsUndeclaredNames('return helper(1);\nfunction helper(x) { return x; }')).toEqual([]);
+    expect(runjsUndeclaredNames('if (true) { var late = 1; }\nreturn late;')).toEqual([]);
+  });
+  it('accepts parameters and input, which ToolJet passes when a query has parameters or runs in a module', () => {
+    expect(runjsUndeclaredNames('return [parameters.id, input.value];')).toEqual([]);
+  });
+  it('reports each name once, in order', () => {
+    expect(runjsUndeclaredNames('return [a, b, a];')).toEqual(['a', 'b']);
   });
 });
