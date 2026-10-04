@@ -76265,7 +76265,7 @@ function danglingAfterReplace(summary, view, plan) {
     const text = JSON.stringify(query.options ?? {});
     for (const name2 of dropped) {
       if (reads(text, name2))
-        errors.push(`Query "${query.name}" reads components.${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or change the query first.`);
+        errors.push(`Query "${query.name}" reads components.${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or redefine "${query.name}" in this same plan without it (in page markup: write the whole <Query name="${query.name}" ...> in the same document as the page).`);
     }
   }
   return errors;
