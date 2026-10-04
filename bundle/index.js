@@ -21639,7 +21639,7 @@ var require_identity = __commonJS({
         }
       return false;
     }
-    function isNode3(node2) {
+    function isNode4(node2) {
       if (node2 && typeof node2 === "object")
         switch (node2[NODE_TYPE]) {
           case ALIAS:
@@ -21663,7 +21663,7 @@ var require_identity = __commonJS({
     exports.isCollection = isCollection;
     exports.isDocument = isDocument;
     exports.isMap = isMap;
-    exports.isNode = isNode3;
+    exports.isNode = isNode4;
     exports.isPair = isPair;
     exports.isScalar = isScalar;
     exports.isSeq = isSeq;
@@ -73188,6 +73188,192 @@ ${code}
     return error51.message;
   }
 }
+var RUNJS_KNOWN_NAMES = /* @__PURE__ */ new Set([
+  ...RUNJS_PARAMETERS,
+  "parameters",
+  "input",
+  "arguments",
+  "undefined",
+  "NaN",
+  "Infinity",
+  "globalThis",
+  "eval",
+  "isFinite",
+  "isNaN",
+  "parseFloat",
+  "parseInt",
+  "decodeURI",
+  "decodeURIComponent",
+  "encodeURI",
+  "encodeURIComponent",
+  "escape",
+  "unescape",
+  "Object",
+  "Function",
+  "Boolean",
+  "Symbol",
+  "Error",
+  "AggregateError",
+  "EvalError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "TypeError",
+  "URIError",
+  "Number",
+  "BigInt",
+  "Math",
+  "Date",
+  "String",
+  "RegExp",
+  "Array",
+  "Int8Array",
+  "Uint8Array",
+  "Uint8ClampedArray",
+  "Int16Array",
+  "Uint16Array",
+  "Int32Array",
+  "Uint32Array",
+  "Float32Array",
+  "Float64Array",
+  "BigInt64Array",
+  "BigUint64Array",
+  "Map",
+  "Set",
+  "WeakMap",
+  "WeakSet",
+  "WeakRef",
+  "FinalizationRegistry",
+  "ArrayBuffer",
+  "SharedArrayBuffer",
+  "DataView",
+  "Atomics",
+  "JSON",
+  "Promise",
+  "Proxy",
+  "Reflect",
+  "Intl",
+  "window",
+  "self",
+  "document",
+  "navigator",
+  "location",
+  "history",
+  "screen",
+  "localStorage",
+  "sessionStorage",
+  "console",
+  "alert",
+  "confirm",
+  "prompt",
+  "fetch",
+  "Blob",
+  "File",
+  "FileReader",
+  "FormData",
+  "Headers",
+  "Request",
+  "Response",
+  "URL",
+  "URLSearchParams",
+  "AbortController",
+  "atob",
+  "btoa",
+  "crypto",
+  "performance",
+  "structuredClone",
+  "queueMicrotask",
+  "setTimeout",
+  "clearTimeout",
+  "setInterval",
+  "clearInterval",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
+  "TextEncoder",
+  "TextDecoder",
+  "DOMParser",
+  "XMLHttpRequest",
+  "WebSocket",
+  "Image",
+  "getComputedStyle",
+  "Event",
+  "CustomEvent"
+]);
+var isNode3 = (value2) => !!value2 && typeof value2 === "object" && typeof value2.type === "string";
+function patternNames(node2, out) {
+  if (!isNode3(node2))
+    return;
+  if (node2.type === "Identifier")
+    out.add(String(node2.name));
+  else if (node2.type === "ObjectPattern")
+    for (const p of node2.properties)
+      patternNames(p.type === "RestElement" ? p.argument : p.value, out);
+  else if (node2.type === "ArrayPattern")
+    for (const e of node2.elements)
+      patternNames(e, out);
+  else if (node2.type === "RestElement")
+    patternNames(node2.argument, out);
+  else if (node2.type === "AssignmentPattern")
+    patternNames(node2.left, out);
+}
+function runjsUndeclaredNames(code) {
+  let ast;
+  try {
+    ast = (0, import_parser15.parse)(`async function __runjs__(){
+${code}
+}`, { sourceType: "script", errorRecovery: false });
+  } catch {
+    return [];
+  }
+  const declared = /* @__PURE__ */ new Set();
+  const used = [];
+  const walk4 = (node2, parent, key4) => {
+    if (Array.isArray(node2)) {
+      for (const child of node2)
+        walk4(child, parent, key4);
+      return;
+    }
+    if (!isNode3(node2))
+      return;
+    switch (node2.type) {
+      case "VariableDeclarator":
+        patternNames(node2.id, declared);
+        break;
+      case "FunctionDeclaration":
+      case "FunctionExpression":
+      case "ArrowFunctionExpression":
+        if (isNode3(node2.id))
+          declared.add(String(node2.id.name));
+        for (const param of node2.params)
+          patternNames(param, declared);
+        break;
+      case "ClassDeclaration":
+      case "ClassExpression":
+        if (isNode3(node2.id))
+          declared.add(String(node2.id.name));
+        break;
+      case "CatchClause":
+        patternNames(node2.param, declared);
+        break;
+      case "Identifier": {
+        const name2 = String(node2.name);
+        const p = parent?.type;
+        const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key4 === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key4 === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key4 === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty";
+        if (!notARead)
+          used.push(name2);
+        return;
+      }
+    }
+    for (const [childKey, child] of Object.entries(node2)) {
+      if (childKey === "loc" || childKey === "start" || childKey === "end" || childKey === "extra" || childKey.endsWith("Comments"))
+        continue;
+      walk4(child, node2, childKey);
+    }
+  };
+  walk4(ast);
+  declared.add("__runjs__");
+  return [...new Set(used.filter((name2) => !declared.has(name2) && !RUNJS_KNOWN_NAMES.has(name2)))];
+}
 function transformationWarnings(options2) {
   const warnings = [];
   const bag = isObject2(options2.transformations) ? options2.transformations : void 0;
@@ -73255,6 +73441,15 @@ function validateQueryOptions(kind, options2) {
         path: "code",
         message: `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; fix the code before writing it.`
       });
+    } else {
+      const undeclared = runjsUndeclaredNames(options2.code);
+      if (undeclared.length) {
+        errors.push({
+          code: "runjs_undeclared_name",
+          path: "code",
+          message: `the JavaScript uses ${undeclared.map((n) => `\`${n}\``).join(", ")} but never declares ${undeclared.length > 1 ? "them" : "it"}. The query throws a ReferenceError when that line runs, ToolJet marks it failed, and every component bound to its data stays empty. Declare the value, or use the name you meant.`
+        });
+      }
     }
   }
   warnings.push(...transformationWarnings(options2));
@@ -75848,8 +76043,6 @@ function replaceView(summary, plan) {
       return true;
     if (action.actionId === "run-query")
       return typeof action.queryId === "string" && redefinedIds.has(action.queryId);
-    if (action.actionId === "set-custom-variable")
-      return typeof action.key === "string" && action.key.startsWith("__ok_");
     if (action.actionId === "show-alert")
       return alertedQueries.has(queryNameById.get(event.sourceId) ?? "");
     return false;
