@@ -42,7 +42,7 @@ Build a polished, contemporary 2026 product UI even from a short prompt: legible
 
 Detail: `references/qa.md`.
 
-- Nested canvases have **43 local columns**, regardless of outer width. Inset full-row children use left 2, width 39.
+- Nested canvases have **43 local columns**, regardless of outer width. Container/Form/modal inset left/width:2/39; grid-mode Listview full-row left/width:0/43.
 
 - **One line per binding.** A line break anywhere inside `{{ }}` makes the whole binding render empty. Multi-line logic goes in a JavaScript query; never a literal backslash-n or code outside its braces.
 - **Modal and form children are parented to the modal or form**, never placed at root at its coordinates. `add_components` refuses overlaps.

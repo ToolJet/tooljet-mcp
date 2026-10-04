@@ -5,6 +5,7 @@ import {
   lintComponentSlots,
   lintComponentSpec,
   lintRenderedGeometry,
+  lintNestedContainerWidths,
   lintStandardSingleLineInputHeight,
   lintTextGeometry,
   lintUnusableTextGeometry,
@@ -55,7 +56,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
     description:
       'Move / resize existing components (batch) without touching their properties. `left`/`width` are ' +
       'in the immediate parent canvas\'s own 43-column grid, including nested containers; `top`/`height` are pixels. ' +
-      'A full-row child uses width 43 (or left 2, width 39 with insets), independent of the parent outer width. Provide desktop and/or mobile per ' +
+      'Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per ' +
       'component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` ' +
       '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.',
     inputSchema: {
@@ -168,13 +169,15 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
           ...introducedForChanged(lintUnusableTextGeometry),
         ];
         if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
+        const nestedWidths = new Set(lintNestedContainerWidths(projected));
         const warnings = [...new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
           ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
           ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
           ...introducedForChanged(lintTextGeometry),
-          ...lintRenderedGeometry(projected),
+          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
+          ...introducedLintFindings(lintNestedContainerWidths(page.components as LintComponent[]), [...nestedWidths]),
         ])];
         const result = await client.updateLayouts({
           appId: args.app_id,

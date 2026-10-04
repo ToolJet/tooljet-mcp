@@ -2642,7 +2642,7 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
   ];
 }
 
-/** Advisory only: a narrow standalone child may have confused its local grid with the outer span. */
+/** Advisory only: a narrow content row may have confused its local grid with the outer span. */
 export function lintNestedContainerWidths(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const refs = new Map(components.flatMap((component) => {
@@ -2654,6 +2654,7 @@ export function lintNestedContainerWidths(components: LintComponent[]): string[]
     const placement = parentPlacement(child);
     const parent = placement && refs.get(placement.parentId);
     if (!parent || !['Container', 'Form'].includes(parent.type ?? '') || !contentTypes.has(child.type ?? '')) continue;
+    const findings = new Map<string, string[]>();
     for (const resolution of ['desktop', 'mobile'] as const) {
       const rect = child.layouts?.[resolution] ?? child.layout;
       const parentRect = parent.layouts?.[resolution] ?? parent.layout;
@@ -2661,21 +2662,29 @@ export function lintNestedContainerWidths(components: LintComponent[]): string[]
       if (!rect || typeof parentWidth !== 'number' || parentWidth <= 0 || parentWidth > 21 ||
           typeof rect.width !== 'number' || rect.width <= 0 || typeof rect.left !== 'number' || rect.left < 0 ||
           rect.left + rect.width > parentWidth || typeof rect.top !== 'number' || typeof rect.height !== 'number') continue;
-      const sharesRow = components.some((sibling) => {
-        if (sibling === child || placementKey(sibling) !== placementKey(child)) return false;
+      let rowLeft = rect.left;
+      let rowRight = rect.left + rect.width;
+      for (const sibling of components) {
+        if (sibling === child || placementKey(sibling) !== placementKey(child)) continue;
         const other = sibling.layouts?.[resolution] ?? sibling.layout;
-        return other && typeof other.top === 'number' && typeof other.height === 'number' &&
-          rect.top! < other.top + renderedHeight(sibling, other) && other.top < rect.top! + renderedHeight(child, rect);
-      });
-      if (sharesRow) continue;
-      warnings.push(
-        `${child.type} "${child.name ?? child.id ?? '?'}": ${resolution} width ${rect.width} occupies only ` +
-        `${Math.round(rect.width / 43 * 100)}% of ${parent.type} "${parent.name ?? parent.id ?? '?'}". ` +
-        `Its left + width fits the parent's outer ${parentWidth}-column span, which may confuse the two grids. ` +
-        'Every Container/Form slot has its own 43-column grid regardless of the outer width. ' +
+        if (!other || typeof other.top !== 'number' || typeof other.height !== 'number' ||
+            typeof other.left !== 'number' || typeof other.width !== 'number') continue;
+        if (rect.top < other.top + renderedHeight(sibling, other) && other.top < rect.top + renderedHeight(child, rect)) {
+          rowLeft = Math.min(rowLeft, other.left);
+          rowRight = Math.max(rowRight, other.left + other.width);
+        }
+      }
+      if (rowLeft < 0 || rowRight > parentWidth) continue;
+      const detail = `${rect.width} occupies only ${Math.round(rect.width / 43 * 100)}% of ` +
+        `${parent.type} "${parent.name ?? parent.id ?? '?'}". ` +
+        `The content row spans local columns ${rowLeft}-${rowRight}, fitting the parent's outer ${parentWidth}-column span, ` +
+        'which may confuse the two grids. Every Container/Form slot has its own 43-column grid regardless of the outer width. ' +
         'For an inset full-row child use left:2,width:39 (or left:0,width:43 for full width); ' +
-        'keep a narrower width only when intentional and browser-verified.'
-      );
+        'keep a narrower width only when intentional and browser-verified.';
+      findings.set(detail, [...(findings.get(detail) ?? []), resolution]);
+    }
+    for (const [detail, resolutions] of findings) {
+      warnings.push(`${child.type} "${child.name ?? child.id ?? '?'}": ${resolutions.join('/')} width ${detail}`);
     }
   }
   return warnings;

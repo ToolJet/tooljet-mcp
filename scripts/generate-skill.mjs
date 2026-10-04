@@ -334,7 +334,7 @@ The full built-in palette (every \`type\` + purpose) is in **\`references/compon
 ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.
 
 - The canvas is **${grid.columns} columns** wide. A component's \`left\` and \`width\` are in **columns** (0–${grid.columns}). Full width = \`left: 0, width: ${grid.columns}\`.
-- **Nested canvases have their own 43 columns:** Container and Form body/header/footer slots, modal slots, Tabs panes and repeated cards all restart the grid. A parent that occupies 13 page columns still gives its children 43 local columns. Use \`left:2,width:39\` for an inset full-row child or \`left:0,width:43\` for edge-to-edge content. Never cap a child width at the parent's outer column count; smaller widths are for intentional side-by-side content. \`top\`/\`height\` remain pixels relative to the slot.
+- **Nested canvases have their own 43 columns:** Container and Form body/header/footer slots, modal slots, Tabs panes and repeated cards all restart the grid. A parent that occupies 13 page columns still gives its children 43 local columns. For Container/Form/modal slots, use \`left:2,width:39\` for an inset full-row child or \`left:0,width:43\` for edge-to-edge content. A standalone full-row child in a grid-mode Listview cell must use \`left:0,width:43\`. Never cap a child width at the parent's outer column count; smaller widths are for intentional side-by-side content. \`top\`/\`height\` remain pixels relative to the slot.
 - \`top\` and \`height\` are in **pixels**, snapped to a **${grid.rowSnapPx}px** vertical grid. A data table is commonly ~300–500px tall.
 - For one rectangle applied to both resolutions, use flat \`layout:{top,left,width,height}\`. For distinct resolution-specific placement, use \`layouts:{desktop:{top,left,width,height},mobile:{top,left,width,height}}\`. Do not put \`desktop\`/\`mobile\` inside \`layout\`; an invalid member rejects the entire atomic \`add_components\` batch.
 - **Stack using rendered height:** \`B.top = A.top + A.renderedHeight + gap\` (gap ~10–20px). Most widgets—including Text, Button, Html, Chart, Table, and Statistics—render at the authored \`height\`. ToolJet's top-aligned labelled form-input widgets render at **\`height + ${grid.topAlignmentHeightIncrement}px\`**. Standard single-line inputs use their catalog default **40px** authored height, occupy about **60px** with the top label/validation footprint, and need a **70px** top-to-top row step with a 10px gap. Raising the authored height does not absorb the increment or enlarge the value text.
@@ -1079,7 +1079,7 @@ Build a polished, contemporary 2026 product UI even from a short prompt: legible
 
 Detail: \`references/qa.md\`.
 
-- Nested canvases have **43 local columns**, regardless of outer width. Inset full-row children use left 2, width 39.
+- Nested canvases have **43 local columns**, regardless of outer width. Container/Form/modal inset left/width:2/39; grid-mode Listview full-row left/width:0/43.
 
 - **One line per binding.** A line break anywhere inside \`{{ }}\` makes the whole binding render empty. Multi-line logic goes in a JavaScript query; never a literal backslash-n or code outside its braces.
 - **Modal and form children are parented to the modal or form**, never placed at root at its coordinates. \`add_components\` refuses overlaps.
