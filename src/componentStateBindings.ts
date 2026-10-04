@@ -52,17 +52,33 @@ export function lintComponentStateBindings(value: unknown, components: Component
       node.type === 'WithStatement' ||
       (node.type === 'CallExpression' && isNode(node.callee) && node.callee.type === 'Identifier' && node.callee.name === 'eval')
     ) shadowed = true;
-    if (isMember(node) && memberName(node) === 'selectedCard' && isMember(node.object)) {
+    const prop = isMember(node) ? memberName(node) : undefined;
+    if (prop && isMember(node.object)) {
       const owner = node.object;
       if (isNode(owner.object) && owner.object.type === 'Identifier' && owner.object.name === 'components') {
         const name = memberName(owner);
-        if (name && components.some((c) => c.name === name && c.type === 'Kanban')) wrongNames.add(name);
+        const type = name ? components.find((c) => c.name === name)?.type : undefined;
+        if (name && type && WRONG_ALIASES[type]?.[prop]) wrongNames.add(`${name}\u0000${type}\u0000${prop}`);
       }
     }
     Object.values(node).forEach(visit);
   };
   visit(root);
-  return shadowed ? [] : [...wrongNames].map((name) =>
-    `${path}: Kanban "${name}" does not expose selectedCard. Use components.${name}.lastSelectedCard after onCardSelected; ` +
-    'the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.');
+  return shadowed ? [] : [...wrongNames].map((key) => {
+    const [name, type, prop] = key.split('\u0000') as [string, string, string];
+    return `${path}: ${WRONG_ALIASES[type]![prop]!(name)}`;
+  });
 }
+
+/** Properties a binding reads that are proven wrong for that component type, with the message naming the right one. */
+const WRONG_ALIASES: Record<string, Record<string, (name: string) => string>> = {
+  Kanban: {
+    selectedCard: (name) => `Kanban "${name}" does not expose selectedCard. Use components.${name}.lastSelectedCard after onCardSelected; ` +
+      'the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.',
+  },
+  // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
+  RadioButtonV2: {
+    label: (name) => `RadioButton "${name}": label is the field's caption, not the chosen option, so a filter or write reading it ` +
+      `matches nothing. Read components.${name}.value for the selection.`,
+  },
+};

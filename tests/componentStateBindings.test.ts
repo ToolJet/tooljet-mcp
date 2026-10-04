@@ -49,3 +49,19 @@ describe('known component runtime state aliases', () => {
     expect(validateEvents(summary, [event]).errors).toEqual([]);
   });
 });
+
+// A claims build (2026-10-04) filtered its queue on components.type_filter?.label. A RadioButtonV2's label is the
+// field's caption ("Type"), never the chosen option, so no claim matched and the queue showed none.
+describe('a radio group read through its caption', () => {
+  const radios = [{ id: 'r1', name: 'type_filter', type: 'RadioButtonV2' }];
+  it.each([
+    '{{components.type_filter.label}}',
+    '{{ (queries.q.data || []).filter(r => !components.type_filter?.label || r.kind === components.type_filter?.label) }}',
+  ])('is an error that names value: %s', (value) => {
+    expect(lintComponentStateBindings(value, radios, 'Component "t"').join(' ')).toMatch(/type_filter.*caption.*components\.type_filter\.value/);
+  });
+  it('accepts value and options, and label on other components', () => {
+    expect(lintComponentStateBindings('{{components.type_filter.value + components.type_filter.options.length}}', radios, 'x')).toEqual([]);
+    expect(lintComponentStateBindings('{{components.other.label}}', [{ name: 'other', type: 'Button' }], 'x')).toEqual([]);
+  });
+});
