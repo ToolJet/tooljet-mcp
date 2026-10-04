@@ -878,3 +878,46 @@ describe('a query run by a chain from the page’s own query', () => {
     expect([...view.queriesToUpdate]).toEqual([['saveBooking', 'q2']]);
   });
 });
+
+describe('a redefined source of a gated view keeps its success flags', () => {
+  // A view gated on several sources (after="sites,screenings") reads one __ok_<source> flag per source. A page patch
+  // that redefines screenings alone, and not the view, must not delete screenings' flags: nothing recreates them, the
+  // gate never passes and every page bound to the view renders empty (a cinema build, 2026-10-03).
+  const gated = {
+    app_id: 'a', version_id: 'v',
+    pages: [
+      { id: 'p1', name: 'Tonight', handle: 'tonight', components: [{ id: 'c1', name: 'refresh', type: 'Button' }] },
+      { id: 'p2', name: 'Schedule', handle: 'schedule', components: [{ id: 'c2', name: 'grid', type: 'Table', properties: { data: { value: '{{queries.desk.data.rows}}' } } }] },
+    ],
+    queries: [
+      { id: 'q-scr', name: 'screenings', kind: 'tooljetdb', options: {} },
+      { id: 'q-sit', name: 'sites', kind: 'tooljetdb', options: {} },
+      { id: 'q-desk', name: 'desk', kind: 'runjs', options: { code: 'return [queries.screenings.data, queries.sites.data]' } },
+    ],
+    events: [
+      { id: 'f1', target: 'data_query', sourceId: 'q-scr', event: { eventId: 'onDataQuerySuccess', actionId: 'set-custom-variable', key: '__ok_screenings', value: '{{true}}' } },
+      { id: 'f2', target: 'data_query', sourceId: 'q-scr', event: { eventId: 'onDataQueryFailure', actionId: 'set-custom-variable', key: '__ok_screenings', value: '{{false}}' } },
+      { id: 'g1', target: 'data_query', sourceId: 'q-scr', event: { eventId: 'onDataQuerySuccess', actionId: 'run-query', queryId: 'q-desk', runOnlyIf: '{{ variables.__ok_sites === true && variables.__ok_screenings === true }}' } },
+      { id: 'f3', target: 'data_query', sourceId: 'q-sit', event: { eventId: 'onDataQuerySuccess', actionId: 'set-custom-variable', key: '__ok_sites', value: '{{true}}' } },
+      { id: 'f4', target: 'data_query', sourceId: 'q-sit', event: { eventId: 'onDataQueryFailure', actionId: 'set-custom-variable', key: '__ok_sites', value: '{{false}}' } },
+      { id: 'g2', target: 'data_query', sourceId: 'q-sit', event: { eventId: 'onDataQuerySuccess', actionId: 'run-query', queryId: 'q-desk', runOnlyIf: '{{ variables.__ok_sites === true && variables.__ok_screenings === true }}' } },
+    ],
+  };
+  it('keeps them when the plan does not set them again', () => {
+    const view = replaceView(gated as never, { pages: [{ name: 'Tonight', replace: true }], queries: [{ name: 'screenings', update: true }] } as never)!;
+    expect([...view.queriesToUpdate]).toEqual([['screenings', 'q-scr']]);
+    expect(view.eventsToDelete).not.toContain('f1');
+    expect(view.eventsToDelete).not.toContain('f2');
+    expect(view.eventsToDelete).not.toContain('g1');
+  });
+  it('drops them when the plan sets them again, so they are not doubled', () => {
+    const view = replaceView(gated as never, {
+      pages: [{ name: 'Tonight', replace: true }], queries: [{ name: 'screenings', update: true }],
+      events: [
+        { source_ref: 'screenings', source_type: 'data_query', trigger: 'onDataQuerySuccess', action: { actionId: 'set-custom-variable', key: '__ok_screenings', value: '{{true}}' } },
+        { source_ref: 'screenings', source_type: 'data_query', trigger: 'onDataQueryFailure', action: { actionId: 'set-custom-variable', key: '__ok_screenings', value: '{{false}}' } },
+      ],
+    } as never)!;
+    expect(view.eventsToDelete).toEqual(expect.arrayContaining(['f1', 'f2']));
+  });
+});

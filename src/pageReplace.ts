@@ -211,7 +211,9 @@ export function replaceView(summary: AppSummary, plan: ReplacePlan): ReplaceView
     if (replacedComponentIds.some((id) => mentionsId(text, id))) return true;
     if (replannedFrom(`q:${queryNameById.get(event.sourceId)}`, action)) return true;
     if (action.actionId === 'run-query') return typeof action.queryId === 'string' && redefinedIds.has(action.queryId);
-    if (action.actionId === 'set-custom-variable') return typeof action.key === 'string' && action.key.startsWith('__ok_');
+    // A success flag (__ok_<query>) feeds a view gated on several sources. It goes only when the plan sets it again
+    // (replannedFrom above): a plan that redefines the source but not the view recreates no flag, and deleting it
+    // left the gate shut for good (a cinema build, 2026-10-03).
     if (action.actionId === 'show-alert') return alertedQueries.has(queryNameById.get(event.sourceId) ?? '');
     return false;
   }).map((event) => event.id);
