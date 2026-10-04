@@ -29,7 +29,9 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
       'bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names ' +
       'when existing names can be checked, without overriding an existing runtime name. ' +
-      'coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child ' +
+      'coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. ' +
+      'A full-row child uses width 43 (or left 2, width 39 with insets), even in a narrow parent. ' +
+      'For ModalV2/Form/Container native regions, set child ' +
       '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
       'those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',

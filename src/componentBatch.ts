@@ -9,8 +9,8 @@ import type { ComponentSpec } from './tooljetClient.js';
 
 const layoutSchema = z.object({
   top: z.number(),
-  left: z.number(),
-  width: z.number(),
+  left: z.number().describe('Columns in the immediate parent canvas, which has its own 43-column grid.'),
+  width: z.number().describe('Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43; inset full row is left 2, width 39.'),
   height: z.number(),
 });
 

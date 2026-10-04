@@ -54,7 +54,8 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Move / resize existing components (batch) without touching their properties. `left`/`width` are ' +
-      'in grid columns (43 desktop), `top`/`height` in grid rows. Provide desktop and/or mobile per ' +
+      'in the immediate parent canvas\'s own 43-column grid, including nested containers; `top`/`height` are pixels. ' +
+      'A full-row child uses width 43 (or left 2, width 39 with insets), independent of the parent outer width. Provide desktop and/or mobile per ' +
       'component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` ' +
       '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.',
     inputSchema: {
