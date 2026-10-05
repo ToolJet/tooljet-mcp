@@ -65,3 +65,19 @@ describe('a radio group read through its caption', () => {
     expect(lintComponentStateBindings('{{components.other.label}}', [{ name: 'other', type: 'Button' }], 'x')).toEqual([]);
   });
 });
+
+// Insurance claims (round 3 pass 6, 2026-10-04): the same radio-label mistake in a RunJS query's code emptied the claims
+// queue; the rule read {{ }} bindings only.
+describe('a RunJS query reading a known wrong alias', () => {
+  const radios = [{ name: 'typeFilter', type: 'RadioButtonV2' }];
+  it('is caught in the query code', () => {
+    const options = { code: 'const rows = queries.claims.data || [];\nconst type = components.typeFilter?.label || "All";\nreturn rows.filter(r => type === "All" || r.claim_type === type);' };
+    expect(lintComponentStateBindings(options, radios, 'Query "queueFiltered"').join(' ')).toMatch(/typeFilter.*caption.*value/);
+  });
+  it('leaves correct, shadowed and unparsable code alone', () => {
+    expect(lintComponentStateBindings({ code: 'return components.typeFilter.value;' }, radios, 'q')).toEqual([]);
+    expect(lintComponentStateBindings({ code: 'const components = {}; return components.typeFilter.label;' }, radios, 'q')).toEqual([]);
+    expect(lintComponentStateBindings({ code: 'return (' }, radios, 'q')).toEqual([]);
+    expect(lintComponentStateBindings({ note: 'components.typeFilter.label' }, radios, 'q')).toEqual([]);
+  });
+});

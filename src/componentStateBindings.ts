@@ -1,4 +1,4 @@
-import { parseExpression } from '@babel/parser';
+import { parse, parseExpression } from '@babel/parser';
 
 type Node = Record<string, unknown> & { type: string };
 type Component = { name?: string; type?: string };
@@ -36,9 +36,14 @@ export function lintComponentStateBindings(value: unknown, components: Component
     lintComponentStateBindings(child, components, `${path}.${key}`));
   if (typeof value !== 'string') return [];
   const binding = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!binding) return [];
   let root: unknown;
-  try { root = parseExpression(binding[1]); } catch { return []; }
+  if (binding) {
+    try { root = parseExpression(binding[1]); } catch { return []; }
+  } else if (/\.code$/.test(path)) {
+    // A RunJS query's code is a script, not a {{ }} binding: an insurance queue filtered on a radio's caption there
+    // (round 3 pass 6, 2026-10-04).
+    try { root = parse(value, { sourceType: 'script', allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program; } catch { return []; }
+  } else return [];
   const wrongNames = new Set<string>();
   let shadowed = false;
   const visit = (node: unknown): void => {
