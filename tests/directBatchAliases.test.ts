@@ -13,7 +13,7 @@ function fixture() {
     createQueries: vi.fn().mockResolvedValue([]),
   };
 }
-const field = () => ({ client_ref: 'input_alias', name: 'Project name', type: 'TextInput', properties: {label:'Project name'},
+const field = () => ({ client_ref: 'input_alias', name: 'project-name', type: 'TextInput', properties: {label:'Project name'},
   layout: { left: 2, top: 0, width: 15, height: 60 } });
 const button = () => ({ name: 'Save', type: 'Button', properties: { text: 'Save', disabledState: '{{!components.input_alias?.value}}' },
   layout: { left: 20, top: 0, width: 10, height: 40 } });
@@ -26,7 +26,7 @@ describe('direct batch binding aliases', () => {
     const result = await addComponentsTool(mock as unknown as ToolJetClient).handler({ ...context, components });
     expect(result.isError, JSON.stringify(result)).toBeUndefined();
     const saved = mock.createComponents.mock.calls[0]![0].components;
-    expect(saved[1].properties.disabledState.value).toBe('{{!components["Project name"]?.value}}');
+    expect(saved[1].properties.disabledState.value).toBe('{{!components["project-name"]?.value}}');
     expect(components[1]!.properties).toHaveProperty('disabledState', '{{!components.input_alias?.value}}');
     expect(mock.getAppSummary).toHaveBeenCalledOnce();
     expect(text(result).warnings.join(' ')).toContain('Resolved explicit binding alias');
@@ -37,7 +37,7 @@ describe('direct batch binding aliases', () => {
       pages: [{ page_id: 'p1', components: [field()] }, { page_id: 'p2', components: [button()] }] });
     expect(result.isError, JSON.stringify(result)).toBeUndefined();
     expect(mock.getAppSummary).toHaveBeenCalledOnce();
-    expect(mock.createComponents.mock.calls[1]![0].components[0].properties.disabledState.value).toContain('components["Project name"]');
+    expect(mock.createComponents.mock.calls[1]![0].components[0].properties.disabledState.value).toContain('components["project-name"]');
   });
   it.each(['collision', 'unavailable', 'ambiguous'])('does not guess when component aliases are %s', async scenario => {
     const mock = fixture(); const components = [field(), button()];

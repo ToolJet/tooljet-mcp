@@ -6,6 +6,7 @@ import { lintComponents } from './lint.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
+import { componentNameSchema } from './componentName.js';
 
 const layoutSchema = z.object({
   top: z.number(),
@@ -15,7 +16,7 @@ const layoutSchema = z.object({
 });
 
 export const componentInputSchema = z.object({
-  name: z.string(),
+  name: componentNameSchema,
   type: z.string(),
   properties: z.record(z.string(), z.any()),
   styles: z.record(z.string(), z.any()).optional(),

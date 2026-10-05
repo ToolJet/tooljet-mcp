@@ -61878,6 +61878,17 @@ function bindingReferences(value2) {
   return refs2;
 }
 
+// dist/componentName.js
+var COMPONENT_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+var COMPONENT_NAME_RULE = "Component names must be non-empty and contain only ASCII letters, numbers, underscores, or hyphens. Use camelCase for multi-word names; put display text in component properties.";
+var componentNameSchema = external_exports.string().regex(COMPONENT_NAME_PATTERN, COMPONENT_NAME_RULE).describe(COMPONENT_NAME_RULE);
+function componentNameError(name2) {
+  if (typeof name2 !== "string" || !COMPONENT_NAME_PATTERN.test(name2)) {
+    return `Invalid component name ${JSON.stringify(name2)}. ${COMPONENT_NAME_RULE}`;
+  }
+  return void 0;
+}
+
 // dist/editPrefillContract.js
 var record2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : {};
 var unwrap = (v) => Object.hasOwn(record2(v), "value") ? record2(v).value : v;
@@ -64776,6 +64787,9 @@ function lintComponents(components) {
   const warnings = [];
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
+    const nameError = componentNameError(c.name);
+    if (nameError)
+      errors.push(nameError);
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
@@ -75174,7 +75188,7 @@ var layoutSchema = external_exports.object({
   height: external_exports.number()
 });
 var componentInputSchema = external_exports.object({
-  name: external_exports.string(),
+  name: componentNameSchema,
   type: external_exports.string(),
   properties: external_exports.record(external_exports.string(), external_exports.any()),
   styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
@@ -76664,7 +76678,7 @@ function addComponentTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      name: external_exports.string(),
+      name: componentNameSchema,
       type: external_exports.string(),
       properties: external_exports.record(external_exports.string(), external_exports.any()),
       styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
@@ -76879,7 +76893,7 @@ var definitionSchema = strictEntry({
 var updateSchema2 = strictEntry({
   component_id: external_exports.string(),
   definition: definitionSchema.optional(),
-  name: external_exports.string().optional(),
+  name: componentNameSchema.optional(),
   parent: external_exports.string().optional(),
   slot_name: componentSlotSchema.optional()
 }, (key4) => {
@@ -76921,6 +76935,13 @@ function updateComponentsTool(client) {
         const layoutFixes = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
+          if (update.name !== void 0) {
+            const nameError = componentNameError(update.name);
+            if (nameError) {
+              errors.push(`Component "${update.component_id}": ${nameError}`);
+              continue;
+            }
+          }
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
           if (!resolution.ok) {
             errors.push(resolution.error);

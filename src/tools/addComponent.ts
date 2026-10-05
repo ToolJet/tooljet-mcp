@@ -6,6 +6,7 @@ import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
 import { normalizePlannedLayouts } from '../layoutNormalization.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { componentNameSchema } from '../componentName.js';
 
 const layoutSchema = z.object({
   top: z.number(),
@@ -43,7 +44,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       app_id: z.string(),
       version_id: z.string(),
       page_id: z.string(),
-      name: z.string(),
+      name: componentNameSchema,
       type: z.string(),
       properties: z.record(z.string(), z.any()),
       styles: z.record(z.string(), z.any()).optional(),

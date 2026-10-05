@@ -17,6 +17,7 @@ import {
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
 import { lintWhitespaceGuards } from './whitespaceGuard.js';
 import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
@@ -2798,6 +2799,10 @@ export function lintComponents(components: LintComponent[]): LintResult {
   const warnings: string[] = [];
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
+    // This batch contains newly authored components. Persisted legacy names are not
+    // revalidated by lintComponentSpec when checking unrelated edits or app bindings.
+    const nameError = componentNameError(c.name);
+    if (nameError) errors.push(nameError);
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
