@@ -27,6 +27,7 @@ describe('buildServer', () => {
         'get_runtime_info',
         'create_app',
         'create_app_version',
+        'switch_app_version',
         'release_app',
         'get_app_settings',
         'list_app_themes',

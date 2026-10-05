@@ -217,6 +217,28 @@ describe('createClient', () => {
       });
     });
 
+    it('verifies and returns the version selected for the editor', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: {
+        versions: [{ id: 'version-2', name: 'v2', status: 'DRAFT', current_environment_id: 'environment-dev' }],
+      } }));
+      const client = createClient(auth, config);
+      await expect(client.switchAppVersion('app-1', 'version-2')).resolves.toEqual({
+        app_id: 'app-1', version_id: 'version-2', version_name: 'v2', status: 'DRAFT',
+        current_environment_id: 'environment-dev', selected: true,
+      });
+      expect(auth.authedFetch).toHaveBeenCalledWith('/api/apps/app-1/versions');
+    });
+
+    it('rejects switching to a version outside the target app', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: {
+        versions: [{ id: 'version-1', name: 'v1' }],
+      } }));
+      const client = createClient(auth, config);
+      await expect(client.switchAppVersion('app-1', 'version-other')).rejects.toThrow(
+        /version version-other was not found in app app-1/
+      );
+    });
+
     it.each([409, 422])('rejects a first-call %s conflict even when an edited draft matches every field', async (status) => {
       auth.authedFetch
         .mockResolvedValueOnce(mockResponse({ status, text: 'Already exists!' }))
@@ -259,6 +281,7 @@ describe('createClient', () => {
         version_id: 'version-2',
         released: true,
         current_version_id: 'version-2',
+        current_environment_id: 'environment-production',
         published_for_release: false,
         promoted_to_environments: [],
       });
@@ -327,6 +350,7 @@ describe('createClient', () => {
         version_id: 'version-2',
         released: true,
         current_version_id: 'version-2',
+        current_environment_id: 'environment-production',
         published_for_release: true,
         promoted_to_environments: ['staging', 'production'],
       });

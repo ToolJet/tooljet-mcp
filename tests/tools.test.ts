@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
 import { createAppVersionTool } from '../src/tools/createAppVersion.js';
+import { switchAppVersionTool } from '../src/tools/switchAppVersion.js';
 import { releaseAppTool } from '../src/tools/releaseApp.js';
 import { z } from 'zod';
 import { listDatasourcesTool } from '../src/tools/listDatasources.js';
@@ -22,6 +23,7 @@ function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } 
   return {
     createApp: vi.fn(),
     createAppVersion: vi.fn(),
+    switchAppVersion: vi.fn(),
     releaseApp: vi.fn(),
     getApp: vi.fn(),
     getAppSummary: vi.fn().mockResolvedValue({ version_id: 'v1', pages: [] }),
@@ -240,6 +242,27 @@ describe('app version lifecycle tools', () => {
       versionDescription: 'Second release candidate',
     });
     expect(textOf(result)).toMatchObject({ version_id: '22222222-2222-4222-8222-222222222222', status: 'DRAFT' });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('selects an existing version without releasing it', async () => {
+    const client = makeClient();
+    client.switchAppVersion.mockResolvedValue({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      version_name: 'v2', status: 'DRAFT',
+      current_environment_id: '33333333-3333-4333-8333-333333333333', selected: true,
+    });
+    const result = await switchAppVersionTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+    });
+    expect(client.switchAppVersion).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'
+    );
+    expect(textOf(result)).toMatchObject({
+      version_name: 'v2', current_environment_id: '33333333-3333-4333-8333-333333333333', selected: true,
+    });
     expect(result.isError).toBeUndefined();
   });
 

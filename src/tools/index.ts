@@ -7,6 +7,7 @@ import { listWorkspacesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
 import { createAppVersionTool } from './createAppVersion.js';
+import { switchAppVersionTool } from './switchAppVersion.js';
 import { releaseAppTool } from './releaseApp.js';
 import { getAppSettingsTool } from './getAppSettings.js';
 import { listAppThemesTool } from './listAppThemes.js';
@@ -101,6 +102,7 @@ export function registerTools(
     manageWorkspaceGroupsTool(client),
     createAppTool(client),
     createAppVersionTool(client),
+    switchAppVersionTool(client),
     releaseAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),

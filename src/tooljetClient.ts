@@ -32,6 +32,15 @@ export interface AppVersionResult {
   description?: string | null;
 }
 
+export interface SwitchAppVersionResult {
+  app_id: string;
+  version_id: string;
+  version_name: string;
+  status?: string;
+  current_environment_id?: string;
+  selected: true;
+}
+
 export interface CreateAppVersionParams {
   appId: string;
   versionName: string;
@@ -44,6 +53,7 @@ export interface ReleaseAppResult {
   version_id: string;
   released: true;
   current_version_id: string;
+  current_environment_id?: string;
   published_for_release: boolean;
   promoted_to_environments: string[];
 }
@@ -572,6 +582,7 @@ export interface ToolJetClient {
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
   createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult>;
+  switchAppVersion(appId: string, versionId: string): Promise<SwitchAppVersionResult>;
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
@@ -1466,6 +1477,28 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     };
   }
 
+  async function switchAppVersion(appId: string, versionId: string): Promise<SwitchAppVersionResult> {
+    const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/versions`);
+    await assertOk(versionsRes, 'switchAppVersion.listVersions');
+    const body = (await versionsRes.json()) as { versions?: Array<Record<string, unknown>> };
+    const version = body.versions?.find((candidate) => candidate.id === versionId);
+    if (!version || typeof version.name !== 'string') {
+      throw new Error(`ToolJet switchAppVersion failed: version ${versionId} was not found in app ${appId}.`);
+    }
+    return {
+      app_id: appId,
+      version_id: versionId,
+      version_name: version.name,
+      ...(typeof version.status === 'string' ? { status: version.status } : {}),
+      ...(typeof version.current_environment_id === 'string'
+        ? { current_environment_id: version.current_environment_id }
+        : typeof version.currentEnvironmentId === 'string'
+          ? { current_environment_id: version.currentEnvironmentId }
+          : {}),
+      selected: true,
+    };
+  }
+
   async function releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult> {
     type VersionLifecycleState = {
       id: string;
@@ -1616,6 +1649,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       version_id: versionId,
       released: true,
       current_version_id: releasedId,
+      ...(version.currentEnvironmentId ? { current_environment_id: version.currentEnvironmentId } : {}),
       published_for_release: publishedForRelease,
       promoted_to_environments: promotedToEnvironments,
     };
@@ -2793,6 +2827,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     setWorkspaceUserArchived,
     createApp,
     createAppVersion,
+    switchAppVersion,
     releaseApp,
     renameApp,
     getApp,
