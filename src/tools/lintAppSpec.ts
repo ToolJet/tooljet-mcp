@@ -225,11 +225,24 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
                 );
                 continue;
               }
-              preflightErrors.push(
-                `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
-                `"${column.name}" in row(s) ${missingRows.join(', ')}. Use type "serial" for a generated key, ` +
-                'add a defaultValue, or provide explicit values.'
-              );
+              // A key written with null is not a missing key: told the rows "omit" a column they held as null, a
+              // build renamed the column twice looking for the gap (2026-10-05).
+              const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]!);
+              const absentRows = missingRows.filter((n) => !nullRows.includes(n));
+              if (nullRows.length) {
+                preflightErrors.push(
+                  `Seed data for planned table "${seed.table_name}": required column "${column.name}" is null in row(s) ` +
+                  `${nullRows.join(', ')}. Give each of those rows a real value (seed rows are literal values, not formulas), ` +
+                  'or add a defaultValue.'
+                );
+              }
+              if (absentRows.length) {
+                preflightErrors.push(
+                  `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
+                  `"${column.name}" in row(s) ${absentRows.join(', ')}. Use type "serial" for a generated key, ` +
+                  'add a defaultValue, or provide explicit values.'
+                );
+              }
             }
           }
         }
