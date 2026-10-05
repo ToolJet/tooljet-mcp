@@ -144,3 +144,19 @@ describe('scope cases from the Codex review', () => {
     expect(runjsUndeclaredNames('function g() { const secret = 1; return secret; }\nreturn secret;')).toEqual(['secret']);
   });
 });
+
+// A RunJS figure missing its last brace failed with "Unexpected token ';'" at column 927; the same mistake failed two
+// builds' compiles (2026-10-05, a fleet and a cinema app). The message names what is left open and where it opened.
+describe('runjsSyntaxError on unbalanced brackets', () => {
+  it('names the brace left open', async () => {
+    const { runjsSyntaxError } = await import('../src/queryValidation.js');
+    const message = runjsSyntaxError('const rows = [];\nreturn {data: rows, layout: {barmode: "stack", hovermode: "x unified"};') ?? '';
+    expect(message).toMatch(/never closed/);
+    expect(message).toMatch(/`\{` opened at line 2/);
+  });
+  it('ignores brackets inside strings and templates', async () => {
+    const { runjsSyntaxError } = await import('../src/queryValidation.js');
+    const message = runjsSyntaxError('const s = "{"; const t = `a ${"}"} b`;\nreturn {a: 1;') ?? '';
+    expect(message).toMatch(/`\{` opened at line 2/);
+  });
+});

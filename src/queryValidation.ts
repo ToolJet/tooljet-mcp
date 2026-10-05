@@ -273,11 +273,50 @@ export function runjsSyntaxError(code: string): string | undefined {
       if (loc && line !== undefined) {
         const from = Math.max(0, loc.column - 60);
         const excerpt = line.slice(from, loc.column + 20).trim();
-        return `${error.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? '…' : ''}${excerpt}`;
+        return `${error.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? '…' : ''}${excerpt}${bracketBalance(code)}`;
       }
     }
-    return error.message;
+    return `${error.message}${bracketBalance(code)}`;
   }
+}
+
+/** What the brackets of a query's code leave open or close wrongly, outside strings, template text and comments. A
+ *  figure missing its last brace failed as "Unexpected token ';'" at column 927, twice (2026-10-05). */
+function bracketBalance(code: string): string {
+  const stack: Array<{ ch: string; line: number; at: number }> = [];
+  const pairs: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+  const lines = code.split('\n');
+  const lineOf = (i: number) => code.slice(0, i).split('\n').length;
+  const snippet = (i: number) => { const l = lineOf(i); const start = code.lastIndexOf('\n', i - 1) + 1; const col = i - start;
+    return (lines[l - 1] ?? '').slice(Math.max(0, col - 30), col + 30).trim(); };
+  let quote: string | null = null;
+  for (let i = 0; i < code.length; i += 1) {
+    const ch = code[i]!;
+    if (quote) {
+      if (ch === '\\') { i += 1; continue; }
+      if (quote === '`' && ch === '$' && code[i + 1] === '{') { stack.push({ ch: '${', line: lineOf(i), at: i }); quote = null; i += 1; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '/' && code[i + 1] === '/') { const end = code.indexOf('\n', i); i = end === -1 ? code.length : end; continue; }
+    if (ch === '/' && code[i + 1] === '*') { const end = code.indexOf('*/', i + 2); i = end === -1 ? code.length : end + 1; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') stack.push({ ch, line: lineOf(i), at: i });
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      const top = stack.pop();
+      if (top?.ch === '${' && ch === '}') { quote = '`'; continue; }
+      if (!top || top.ch !== pairs[ch]) {
+        return top
+          ? ` A \`${ch}\` at line ${lineOf(i)} closes the \`${top.ch}\` opened at line ${top.line} (${snippet(top.at)}).`
+          : ` A \`${ch}\` at line ${lineOf(i)} closes nothing.`;
+      }
+    }
+  }
+  const open = stack.filter((s) => s.ch !== '${');
+  if (!open.length) return '';
+  const last = open[open.length - 1]!;
+  return ` ${open.length} bracket${open.length > 1 ? 's are' : ' is'} never closed; the last, \`${last.ch}\` opened at line ${last.line} ` +
+    `(${snippet(last.at)}), needs its \`${({ '(': ')', '[': ']', '{': '}' } as Record<string, string>)[last.ch]}\`.`;
 }
 
 /** Names a RunJS query may use without declaring: what ToolJet passes it (RUNJS_PARAMETERS, plus `parameters` when
