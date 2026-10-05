@@ -67099,7 +67099,7 @@ function lintListviewChildren(components) {
     const rawHtml = propVal2(child.properties, "rawHtml");
     if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
       continue;
-    if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
+    if (/\bheight\s*:\s*100%/i.test(rawHtml))
       continue;
     warnings.push(`Html "${child.name ?? child.id ?? "Html"}" is repeated inside Listview "${parent.name ?? parent.id ?? "Listview"}" and uses a fixed pixel CSS height. The Listview wrapper's inner canvas can be shorter than the authored component, creating a scrollbar in every item. Use height:100%; box-sizing:border-box on the Html root instead.`);
   }
@@ -71808,6 +71808,21 @@ function insertRowsBatchTool(client) {
   };
 }
 
+// dist/mapKeyGuard.js
+async function mapKeyRefusal(client, componentTypes) {
+  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
+    return void 0;
+  let hasKey;
+  try {
+    hasKey = await client.hasGoogleMapsKey();
+  } catch {
+    return void 0;
+  }
+  if (hasKey !== false)
+    return void 0;
+  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
+}
+
 // dist/tools/getComponentCatalog.js
 var CATALOG_SECTIONS = [
   "overview",
@@ -71903,7 +71918,11 @@ function legacyNotice(type) {
     deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
   } : {};
 }
-function getComponentCatalogTool(_client) {
+async function instanceNote(client, type) {
+  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
+  return refusal ? { instance_note: refusal } : {};
+}
+function getComponentCatalogTool(client) {
   return {
     name: "get_component_catalog",
     title: "Get Component Catalog",
@@ -71950,7 +71969,8 @@ function getComponentCatalogTool(_client) {
           return ok({
             ...selectSchema(schema, args),
             ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {}
+            ...resolved.alias ? { alias: resolved.alias } : {},
+            ...await instanceNote(client, schema.type)
           });
         }
         const withDefaults = (type, over) => ({
@@ -71995,7 +72015,8 @@ function getComponentCatalogTool(_client) {
             ...selectSchema(schema, request),
             ...legacyNotice(schema.type),
             ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {}
+            ...resolved.alias ? { requested_aliases: [request.type] } : {},
+            ...await instanceNote(client, schema.type)
           };
           components.push(component);
           componentByResolvedType.set(resolved.type, component);
@@ -76426,21 +76447,6 @@ function frozenAppRefusal(summary) {
     return void 0;
   const where = summary.environment ? ` is in the ${summary.environment} environment and` : "";
   return `Not executed: this app's version${where} is read-only in ToolJet (the editor is frozen, and ToolJet refuses changes to a promoted version). Nothing was changed. Tell the user to create a new version in development (version menu, Create version) and ask again; do not create tables or try other tools.`;
-}
-
-// dist/mapKeyGuard.js
-async function mapKeyRefusal(client, componentTypes) {
-  if (![...componentTypes].includes("Map") || typeof client.hasGoogleMapsKey !== "function")
-    return void 0;
-  let hasKey;
-  try {
-    hasKey = await client.hasGoogleMapsKey();
-  } catch {
-    return void 0;
-  }
-  if (hasKey !== false)
-    return void 0;
-  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
 }
 
 // dist/tools/lintAppSpec.js
