@@ -73930,7 +73930,8 @@ function persistedEventSpecs(summary) {
     }];
   });
 }
-function navigationReorders(summary) {
+function navigationReorders(summary, touched, diagnostics) {
+  const touchedKeys = touched ? new Set(touched.map((event) => [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0"))) : void 0;
   const chains = /* @__PURE__ */ new Map();
   for (const saved of summary.events ?? []) {
     const raw = isRecord(saved.event) ? saved.event : void 0;
@@ -73942,11 +73943,16 @@ function navigationReorders(summary) {
     chains.set(key4, chain);
   }
   const moves = [];
-  for (const chain of chains.values()) {
+  for (const [key4, chain] of chains) {
     chain.sort((a, b) => a.index - b.index);
     const navs = chain.filter((item) => item.nav);
     if (!navs.length || chain.slice(-navs.length).every((item) => item.nav))
       continue;
+    if (touchedKeys && !touchedKeys.has(key4)) {
+      const [, sourceId, ref, trigger] = key4.split("\0");
+      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref ? ` (${ref})` : ""} has a page switch before other handlers, so those never run; this phase did not touch it, so it was left as it is.`);
+      continue;
+    }
     let next = Math.max(...chain.map((item) => item.index)) + 1;
     for (const nav of navs)
       moves.push({ eventId: nav.id, index: next++ });
@@ -77879,7 +77885,7 @@ function applyAppPhaseTool(client) {
             existingEvents: summaryBeforeEvents.events
           });
           applied.events = newEvents.length;
-          const reorders = navigationReorders(await client.getAppSummary(args.app_id));
+          const reorders = navigationReorders(await client.getAppSummary(args.app_id), newEvents, warnings);
           if (reorders.length) {
             await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: reorders, updateType: "reorder" });
             warnings.push(`Moved ${reorders.length} page switch${reorders.length > 1 ? "es" : ""} behind the handlers this phase added, so they still run.`);
