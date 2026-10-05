@@ -73216,7 +73216,22 @@ function selectAppSummary(summary, selection = {}) {
   const pageFields = selection.pageFields ?? [...PAGE_FIELDS];
   const componentFields = selection.componentFields?.map((path) => path.replace(/^layout(?=\.|$)/, "layouts")) ?? (detail === "full" ? [...COMPONENT_FIELDS] : STRUCTURE_COMPONENT_FIELDS);
   const queryFields = selection.queryFields ?? (detail === "full" ? [...QUERY_FIELDS] : STRUCTURE_QUERY_FIELDS);
-  const eventFields = selection.eventFields ?? (detail === "full" ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
+  const EVENT_ALIASES = {
+    trigger: "name",
+    eventName: "name",
+    event_name: "name",
+    sourceType: "target",
+    source_type: "target",
+    source_id: "sourceId",
+    action: "event",
+    actionId: "event.actionId",
+    action_id: "event.actionId"
+  };
+  const eventFields = (selection.eventFields ? [...new Set(selection.eventFields.map((path) => {
+    const [root, ...rest] = path.split(".");
+    const mapped = EVENT_ALIASES[root];
+    return mapped ? [mapped, ...rest].join(".") : path;
+  }))] : void 0) ?? (detail === "full" ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
   validatePaths(appFields, APP_FIELDS, "app_fields");
   validatePaths(pageFields, PAGE_FIELDS, "page_fields");
   validatePaths(componentFields, COMPONENT_FIELDS, "component_fields");
@@ -73260,7 +73275,8 @@ function getAppSummaryTool(client) {
     description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
-      sections: external_exports.array(external_exports.enum(["pages", "queries", "events"])).optional(),
+      // Components live in pages: "components" is read as pages (a build lost a call to it, 2026-10-05).
+      sections: external_exports.preprocess((value2) => Array.isArray(value2) ? [...new Set(value2.map((s) => s === "components" ? "pages" : s))] : value2, external_exports.array(external_exports.enum(["pages", "queries", "events"]))).optional(),
       detail: external_exports.enum(["structure", "full"]).optional(),
       include_components: external_exports.boolean().optional(),
       page_ids: stringList,
