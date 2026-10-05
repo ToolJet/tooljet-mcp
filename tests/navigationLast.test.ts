@@ -38,3 +38,28 @@ describe('navigationReorders', () => {
     expect(navigationReorders(other as never)).toEqual([]);
   });
 });
+
+// Review of round 3 (2026-10-04): the reorder scanned the whole app, so adding an alert to newButton also reordered
+// oldButton's saved chain, which the plan never touched, and could make an unreachable handler (a write) run.
+describe('navigationReorders limited to the chains a phase added to', () => {
+  const app = {
+    app_id: 'a', version_id: 'v', pages: [], queries: [],
+    events: [
+      { id: 'old-nav', index: 0, sourceId: 'oldButton', target: 'component', event: { eventId: 'onClick', actionId: 'switch-page', pageId: 'p2' } },
+      { id: 'old-write', index: 1, sourceId: 'oldButton', target: 'component', event: { eventId: 'onClick', actionId: 'run-query', queryId: 'q-delete' } },
+      { id: 'new-nav', index: 0, sourceId: 'newButton', target: 'component', event: { eventId: 'onClick', actionId: 'switch-page', pageId: 'p2' } },
+      { id: 'new-alert', index: 1, sourceId: 'newButton', target: 'component', event: { eventId: 'onClick', actionId: 'show-alert' } },
+    ],
+  };
+  const touched = [{ sourceId: 'newButton', sourceType: 'component', trigger: 'onClick', action: { actionId: 'show-alert' } }];
+
+  it('moves the switch only in a chain the phase added a handler to', () => {
+    expect(navigationReorders(app as never, touched as never)).toEqual([{ eventId: 'new-nav', index: 2 }]);
+  });
+
+  it('reports the untouched chain instead of changing it', () => {
+    const diagnostics: string[] = [];
+    navigationReorders(app as never, touched as never, diagnostics);
+    expect(diagnostics.join(' ')).toMatch(/oldButton/);
+  });
+});

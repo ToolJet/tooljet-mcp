@@ -653,7 +653,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           applied.events = newEvents.length;
           // A handler added to a chain whose saved page switch was last now follows it, and ToolJet runs nothing after
           // a switch-page: move the switch back to the end (a site inspection build, 2026-10-04).
-          const reorders = navigationReorders(await client.getAppSummary(args.app_id));
+          const reorders = navigationReorders(await client.getAppSummary(args.app_id), newEvents, warnings);
           if (reorders.length) {
             await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: reorders, updateType: 'reorder' });
             warnings.push(`Moved ${reorders.length} page switch${reorders.length > 1 ? 'es' : ''} behind the handlers this phase added, so they still run.`);

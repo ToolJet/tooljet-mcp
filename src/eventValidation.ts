@@ -537,7 +537,20 @@ export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
 
 /** Saved page switches that are no longer last in their chain (source, trigger, ref), moved to the end: what
  *  apply_app_phase sends as a reorder after it adds a phase's handlers. ToolJet runs nothing after a switch-page. */
-export function navigationReorders(summary: AppSummary): Array<{ eventId: string; index: number }> {
+/**
+ * The saved page switches that are no longer last in their chain, moved to the end. `touched` limits this to the chains
+ * a phase added handlers to (source, ref and trigger): reordering every chain in the app also moved handlers the plan
+ * never approved, and could make an unreachable write run (round-3 review, 2026-10-04). Untouched chains that end
+ * out of order are reported in `diagnostics` instead.
+ */
+export function navigationReorders(
+  summary: AppSummary,
+  touched?: EventSpec[],
+  diagnostics?: string[],
+): Array<{ eventId: string; index: number }> {
+  const touchedKeys = touched
+    ? new Set(touched.map((event) => [event.sourceType, event.sourceId, event.ref ?? '', event.trigger].join('\u0000')))
+    : undefined;
   const chains = new Map<string, Array<{ id: string; index: number; nav: boolean }>>();
   for (const saved of summary.events ?? []) {
     const raw = isRecord(saved.event) ? saved.event : undefined;
@@ -548,10 +561,16 @@ export function navigationReorders(summary: AppSummary): Array<{ eventId: string
     chains.set(key, chain);
   }
   const moves: Array<{ eventId: string; index: number }> = [];
-  for (const chain of chains.values()) {
+  for (const [key, chain] of chains) {
     chain.sort((a, b) => a.index - b.index);
     const navs = chain.filter((item) => item.nav);
     if (!navs.length || chain.slice(-navs.length).every((item) => item.nav)) continue;
+    if (touchedKeys && !touchedKeys.has(key)) {
+      const [, sourceId, ref, trigger] = key.split('\u0000');
+      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref ? ` (${ref})` : ''} has a page switch before other handlers, ` +
+        'so those never run; this phase did not touch it, so it was left as it is.');
+      continue;
+    }
     let next = Math.max(...chain.map((item) => item.index)) + 1;
     for (const nav of navs) moves.push({ eventId: nav.id, index: next++ });
   }
