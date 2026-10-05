@@ -51,7 +51,7 @@ var require_content_type = __commonJS({
     var QUOTE_REGEXP = /([\\"])/g;
     var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
     exports.format = format;
-    exports.parse = parse4;
+    exports.parse = parse5;
     function format(obj3) {
       if (!obj3 || typeof obj3 !== "object") {
         throw new TypeError("argument obj is required");
@@ -75,7 +75,7 @@ var require_content_type = __commonJS({
       }
       return string4;
     }
-    function parse4(string4) {
+    function parse5(string4) {
       if (!string4) {
         throw new TypeError("argument string is required");
       }
@@ -3749,7 +3749,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options2);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse4(serialize(uri, options2), options2);
+        parse5(serialize(uri, options2), options2);
       }
       return uri;
     }
@@ -3767,8 +3767,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative, options2, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse4(serialize(base, options2), options2);
-        relative = parse4(serialize(relative, options2), options2);
+        base = parse5(serialize(base, options2), options2);
+        relative = parse5(serialize(relative, options2), options2);
       }
       options2 = options2 || {};
       if (!options2.tolerant && relative.scheme) {
@@ -4012,7 +4012,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort };
     }
-    function parse4(uri, opts) {
+    function parse5(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -4041,7 +4041,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse4
+      parse: parse5
     };
     module.exports = fastUri;
     module.exports.default = fastUri;
@@ -10105,14 +10105,14 @@ var require_lib = __commonJS({
         super.checkParams(node2, false, true);
         this.scope.exit();
       }
-      forwardNoArrowParamsConversionAt(node2, parse5) {
+      forwardNoArrowParamsConversionAt(node2, parse6) {
         let result;
         if (this.state.noArrowParamsConversionAt.includes(this.offsetToSourcePos(node2.start))) {
           this.state.noArrowParamsConversionAt.push(this.state.start);
-          result = parse5();
+          result = parse6();
           this.state.noArrowParamsConversionAt.pop();
         } else {
-          result = parse5();
+          result = parse6();
         }
         return result;
       }
@@ -21520,7 +21520,7 @@ var require_lib = __commonJS({
         return result;
       }
     };
-    function parse4(input, options2) {
+    function parse5(input, options2) {
       var _options;
       if (((_options = options2) == null ? void 0 : _options.sourceType) === "unambiguous") {
         options2 = Object.assign({}, options2);
@@ -21607,7 +21607,7 @@ var require_lib = __commonJS({
       }
       return cls;
     }
-    exports.parse = parse4;
+    exports.parse = parse5;
     exports.parseExpression = parseExpression14;
     exports.tokTypes = tokTypes;
   }
@@ -28840,7 +28840,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse4(src, reviver, options2) {
+    function parse5(src, reviver, options2) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -28881,7 +28881,7 @@ var require_public_api = __commonJS({
         return value2.toString(options2);
       return new Document.Document(value2, _replacer, options2).toString(options2);
     }
-    exports.parse = parse4;
+    exports.parse = parse5;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify;
@@ -28986,7 +28986,7 @@ var require_parse = __commonJS({
     var token;
     var key4;
     var root;
-    module.exports = function parse4(text, reviver) {
+    module.exports = function parse5(text, reviver) {
       source2 = String(text);
       parseState = "start";
       stack = [];
@@ -30042,10 +30042,10 @@ var require_stringify2 = __commonJS({
 // node_modules/json5/lib/index.js
 var require_lib2 = __commonJS({
   "node_modules/json5/lib/index.js"(exports, module) {
-    var parse4 = require_parse();
+    var parse5 = require_parse();
     var stringify = require_stringify2();
     var JSON52 = {
-      parse: parse4,
+      parse: parse5,
       stringify
     };
     module.exports = JSON52;
@@ -62207,14 +62207,21 @@ function lintComponentStateBindings(value2, components, path) {
   if (typeof value2 !== "string")
     return [];
   const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!binding)
-    return [];
   let root;
-  try {
-    root = (0, import_parser6.parseExpression)(binding[1]);
-  } catch {
+  if (binding) {
+    try {
+      root = (0, import_parser6.parseExpression)(binding[1]);
+    } catch {
+      return [];
+    }
+  } else if (/\.code$/.test(path)) {
+    try {
+      root = (0, import_parser6.parse)(value2, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
+    } catch {
+      return [];
+    }
+  } else
     return [];
-  }
   const wrongNames = /* @__PURE__ */ new Set();
   let shadowed = false;
   const visit = (node2) => {
