@@ -76599,7 +76599,14 @@ function lintAppSpecTool(client) {
                 preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
                 continue;
               }
-              preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]);
+              const absentRows = missingRows.filter((n) => !nullRows.includes(n));
+              if (nullRows.length) {
+                preflightErrors.push(`Seed data for planned table "${seed.table_name}": required column "${column.name}" is null in row(s) ${nullRows.join(", ")}. Give each of those rows a real value (seed rows are literal values, not formulas), or add a defaultValue.`);
+              }
+              if (absentRows.length) {
+                preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${absentRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              }
             }
           }
         }
