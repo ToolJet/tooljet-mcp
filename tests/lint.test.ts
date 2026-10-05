@@ -874,7 +874,8 @@ describe('lintComponentSpec', () => {
       styles: { cellSize: { value: 'regular' } },
       layout: { top: 0, left: 0, width: 30, height: 460 },
     });
-    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 614px/i);
+    // 56 toolbar + 34 header + 46 footer + 2 border + 10 x 45 (calibrated in the viewer 2026-10-05)
+    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 588px/i);
 
     const tall = lintComponentSpec({
       name: 'orders',

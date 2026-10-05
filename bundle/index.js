@@ -66228,11 +66228,11 @@ var STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 9;
 var STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 var STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
 var STATISTICS_SAFE_VALUE_FONT_PX = 22;
-var TABLE_REGULAR_ROW_HEIGHT_PX = 46;
-var TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
-var TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
+var TABLE_REGULAR_ROW_HEIGHT_PX = 45;
+var TABLE_CONDENSED_ROW_HEIGHT_PX = 42;
+var TABLE_COLUMN_HEADER_HEIGHT_PX = 34;
 var TABLE_TOOLBAR_HEIGHT_PX = 56;
-var TABLE_FOOTER_HEIGHT_PX = 56;
+var TABLE_FOOTER_HEIGHT_PX = 46;
 var TABLE_BORDER_PX = 2;
 var TABLE_VISIBLE_COLUMN_WARN = 10;
 var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container", "Accordion"]);
@@ -67613,7 +67613,7 @@ function lintComponentSpec(spec, context = {}) {
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
       const baseRowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const rowHeight2 = isTruthyBinding(contentWrap) ? baseRowHeight + 8 : baseRowHeight;
+      const rowHeight2 = isTruthyBinding(contentWrap) ? baseRowHeight + 4 : baseRowHeight;
       const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props, key4)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;

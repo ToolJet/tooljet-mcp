@@ -166,11 +166,13 @@ const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 const STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
 // A primaryValueSize at/under this is small enough that a value-only tile fits without the icon squeeze.
 const STATISTICS_SAFE_VALUE_FONT_PX = 22;
-const TABLE_REGULAR_ROW_HEIGHT_PX = 46;
-const TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
-const TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
+// Measured in the viewer (2026-10-05, five tables): a one-line row 45px regular and 42px condensed, column header 33px,
+// footer 45px. The compiler sizes tables with the same numbers, so its tables never trip this check.
+const TABLE_REGULAR_ROW_HEIGHT_PX = 45;
+const TABLE_CONDENSED_ROW_HEIGHT_PX = 42;
+const TABLE_COLUMN_HEADER_HEIGHT_PX = 34;
 const TABLE_TOOLBAR_HEIGHT_PX = 56;
-const TABLE_FOOTER_HEIGHT_PX = 56;
+const TABLE_FOOTER_HEIGHT_PX = 46;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
@@ -2045,9 +2047,9 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
     ) {
       const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
       const baseRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      // Measured in the viewer: a wrapped row renders about 8px taller than a plain one, not 60px; a page of long
+      // Measured in the viewer: a wrapped row allowance of 4px (a known one-line row draws at its base height); a page of long
       // wrapped rows scrolls inside the table. The flat 60px asked for tables far taller than they need.
-      const rowHeight = isTruthyBinding(contentWrap) ? baseRowHeight + 8 : baseRowHeight;
+      const rowHeight = isTruthyBinding(contentWrap) ? baseRowHeight + 4 : baseRowHeight;
       const toolbarVisible = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
         .some((key) => isTruthyBinding(catalogValue('Table', props, key)));
       const chromeHeight =

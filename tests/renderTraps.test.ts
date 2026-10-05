@@ -94,10 +94,10 @@ describe('render traps found in the 2026-09-12 reviews', () => {
   });
 
   it('counts the search toolbar in the table height', () => {
-    const table = (extra: Record<string, unknown>) => lintComponentSpec({ type: 'Table', name: 'logs', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 5 }, ...extra }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 650, left: 22, width: 19, height: 410 } } });
+    const table = (extra: Record<string, unknown>) => lintComponentSpec({ type: 'Table', name: 'logs', properties: { columns: { value: cols(4) }, rowsPerPage: { value: 5 }, ...extra }, styles: { contentWrap: { value: '{{true}}' } }, layouts: { desktop: { top: 650, left: 22, width: 19, height: 340 } } });
     expect(table({ displaySearchBox: { value: false }, showFilterButton: { value: false }, showDownloadButton: { value: false }, showAddNewRowButton: { value: false }, showBulkUpdateActions: { value: false } }).warnings.some((e) => e.includes('inner scrollbar'))).toBe(false);
     const withSearch = table({ displaySearchBox: { value: true } });
-    expect(withSearch.warnings.some((e) => e.includes('424px'))).toBe(true); // 5 wrapped rows at 46 + 8 each
+    expect(withSearch.warnings.some((e) => e.includes('383px'))).toBe(true); // 56 + 34 + 46 + 2 + 5 wrapped rows at 45 + 4 each
   });
 
   it('advises about an empty-state message with no visibility binding', () => {
