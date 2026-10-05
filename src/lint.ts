@@ -1123,7 +1123,7 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
     if (parent?.type !== 'Listview') continue;
     const rawHtml = propVal(child.properties, 'rawHtml');
     if (typeof rawHtml !== 'string' || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml)) continue;
-    if (/\bheight\s*:\s*100%\b/i.test(rawHtml)) continue;
+    if (/\bheight\s*:\s*100%/i.test(rawHtml)) continue;
     warnings.push(
       `Html "${child.name ?? child.id ?? 'Html'}" is repeated inside Listview ` +
         `"${parent.name ?? parent.id ?? 'Listview'}" and uses a fixed pixel CSS height. The Listview wrapper's ` +

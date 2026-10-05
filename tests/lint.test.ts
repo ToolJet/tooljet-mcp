@@ -2011,3 +2011,18 @@ describe('modal header advice', () => {
     expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).toMatch(/title-like/);
   });
 });
+
+// A volunteer-card build (2026-10-05): the card root had height:100%;box-sizing:border-box and a 44px avatar inside
+// it; the exemption's `100%\b` never matched ("%;" has no word boundary), so the rule failed two compiles in a row.
+describe('a repeated Html whose root fills its cell', () => {
+  it('may size an inner element in pixels', () => {
+    const parent = { name: 'directory', type: 'Listview', clientRef: 'dir', properties: { mode: { value: 'grid' } } };
+    expect(lintListviewChildren([
+      parent,
+      {
+        name: 'card', type: 'Html', parentRef: 'dir',
+        properties: { rawHtml: { value: "<div style='height:100%;box-sizing:border-box;padding:16px'><div style='width:44px;height:44px'>AB</div>{{listItem.name}}</div>" } },
+      },
+    ] as never)).toEqual([]);
+  });
+});
