@@ -65572,6 +65572,9 @@ function lintBindingSyntax(value2, path, wholeValueRequired = false) {
   if (!match) {
     return wholeValueRequired && value2.includes("{{") ? [`${path}: expected one whole-value JavaScript binding, without text before or after {{...}}; this property is not an interpolated text field.`] : [];
   }
+  if (match[1].includes("}}") && !match[1].includes("{{")) {
+    return [`${path}: the binding contains "}}" before its end; ToolJet ends a binding at the first "}}", so the code is cut there and the value renders empty. Put a space between adjacent closing braces ("} }") inside the expression.`];
+  }
   if (!wholeValueRequired && (match[1].includes("{{") || match[1].includes("}}")))
     return [];
   try {
