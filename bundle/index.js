@@ -64770,11 +64770,73 @@ ${code}
       if (loc && line !== void 0) {
         const from = Math.max(0, loc.column - 60);
         const excerpt = line.slice(from, loc.column + 20).trim();
-        return `${error51.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? "\u2026" : ""}${excerpt}`;
+        return `${error51.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? "\u2026" : ""}${excerpt}${bracketBalance(code)}`;
       }
     }
-    return error51.message;
+    return `${error51.message}${bracketBalance(code)}`;
   }
+}
+function bracketBalance(code) {
+  const stack = [];
+  const pairs = { ")": "(", "]": "[", "}": "{" };
+  const lines = code.split("\n");
+  const lineOf = (i) => code.slice(0, i).split("\n").length;
+  const snippet = (i) => {
+    const l = lineOf(i);
+    const start = code.lastIndexOf("\n", i - 1) + 1;
+    const col = i - start;
+    return (lines[l - 1] ?? "").slice(Math.max(0, col - 30), col + 30).trim();
+  };
+  let quote2 = null;
+  for (let i = 0; i < code.length; i += 1) {
+    const ch = code[i];
+    if (quote2) {
+      if (ch === "\\") {
+        i += 1;
+        continue;
+      }
+      if (quote2 === "`" && ch === "$" && code[i + 1] === "{") {
+        stack.push({ ch: "${", line: lineOf(i), at: i });
+        quote2 = null;
+        i += 1;
+        continue;
+      }
+      if (ch === quote2)
+        quote2 = null;
+      continue;
+    }
+    if (ch === "/" && code[i + 1] === "/") {
+      const end = code.indexOf("\n", i);
+      i = end === -1 ? code.length : end;
+      continue;
+    }
+    if (ch === "/" && code[i + 1] === "*") {
+      const end = code.indexOf("*/", i + 2);
+      i = end === -1 ? code.length : end + 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote2 = ch;
+      continue;
+    }
+    if (ch === "(" || ch === "[" || ch === "{")
+      stack.push({ ch, line: lineOf(i), at: i });
+    else if (ch === ")" || ch === "]" || ch === "}") {
+      const top = stack.pop();
+      if (top?.ch === "${" && ch === "}") {
+        quote2 = "`";
+        continue;
+      }
+      if (!top || top.ch !== pairs[ch]) {
+        return top ? ` A \`${ch}\` at line ${lineOf(i)} closes the \`${top.ch}\` opened at line ${top.line} (${snippet(top.at)}).` : ` A \`${ch}\` at line ${lineOf(i)} closes nothing.`;
+      }
+    }
+  }
+  const open = stack.filter((s) => s.ch !== "${");
+  if (!open.length)
+    return "";
+  const last = open[open.length - 1];
+  return ` ${open.length} bracket${open.length > 1 ? "s are" : " is"} never closed; the last, \`${last.ch}\` opened at line ${last.line} (${snippet(last.at)}), needs its \`${{ "(": ")", "[": "]", "{": "}" }[last.ch]}\`.`;
 }
 var RUNJS_KNOWN_NAMES = /* @__PURE__ */ new Set([
   ...RUNJS_PARAMETERS,
