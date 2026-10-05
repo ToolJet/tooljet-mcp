@@ -13,3 +13,13 @@ describe('event_fields under the names a model writes', () => {
     expect(JSON.stringify(out.events[0])).toContain('run-query');
   });
 });
+
+// One build asked for sections ["components", "pages"] and the call failed on "components"; components are in pages.
+describe('the components section', () => {
+  it('is read as pages', async () => {
+    const { z } = await import('zod');
+    const { getAppSummaryTool } = await import('../src/tools/getAppSummary.js');
+    const schema = z.object(getAppSummaryTool({} as never).inputSchema as never);
+    expect((schema.parse({ app_id: 'a', sections: ['components', 'pages'] }) as { sections: string[] }).sections).toEqual(['pages']);
+  });
+});
