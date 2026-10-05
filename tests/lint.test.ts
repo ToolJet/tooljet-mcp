@@ -2026,3 +2026,15 @@ describe('a repeated Html whose root fills its cell', () => {
     ] as never)).toEqual([]);
   });
 });
+
+// A labelling build (2026-10-05): placeholder={{ saved || "{\n  \"format\": \"coco\"\n}" }} was refused as a literal
+// backslash-n, but inside a binding's string \n is a line break when ToolJet evaluates it. Only text outside a binding
+// prints the two characters.
+describe('a backslash-n inside a binding', () => {
+  it('is not a literal', async () => {
+    const { lintRenderedText } = await import('../src/lint.js');
+    expect(lintRenderedText({ name: 'ed', type: 'CodeEditor', properties: { placeholder: { value: '{{ (queries.s.data || [])[0]?.cfg || "{\\n  \\"format\\": \\"coco\\"\\n}" }}' } } } as never)
+      .join(' ')).not.toMatch(/backslash-n/);
+    expect(lintRenderedText({ name: 't', type: 'Text', properties: { text: { value: 'TOTAL\\n8' } } } as never).join(' ')).toMatch(/backslash-n/);
+  });
+});

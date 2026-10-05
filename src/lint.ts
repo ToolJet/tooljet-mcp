@@ -1274,7 +1274,8 @@ export function lintRenderedText(spec: LintComponent): string[] {
   for (const key of RENDERED_TEXT_KEYS) {
     const value = propVal(props, key);
     if (typeof value !== 'string' || !value) continue;
-    if (value.includes('\\n')) {
+    // Inside a {{ }} binding's string, \n is a line break when ToolJet evaluates it; only text outside prints it.
+    if (value.replace(/\{\{[\s\S]*?\}\}/g, '').includes('\\n')) {
       errors.push(
         `Component "${label}".properties.${key} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". ` +
           'Use a real line break, <br> in Html, or separate components.'
