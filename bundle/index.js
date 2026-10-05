@@ -67152,7 +67152,7 @@ function lintRenderedText(spec) {
     const value2 = propVal2(props, key4);
     if (typeof value2 !== "string" || !value2)
       continue;
-    if (value2.includes("\\n")) {
+    if (value2.replace(/\{\{[\s\S]*?\}\}/g, "").includes("\\n")) {
       errors.push(`Component "${label2}".properties.${key4} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". Use a real line break, <br> in Html, or separate components.`);
     }
     const outside = expressionOutsideBinding(value2);
