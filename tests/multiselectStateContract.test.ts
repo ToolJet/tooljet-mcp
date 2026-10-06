@@ -10,7 +10,7 @@ import type { AppSummary } from '../src/tooljetClient.js';
 const component = { id: 'stage', name: 'stageFilter', type: 'MultiselectV2' };
 const components = [component];
 const aliasErrors = (errors: string[]) => errors.filter(e => e.includes('MultiselectV2 "stageFilter" does not expose value.'));
-// Exact R16 personal filter, with no trace dependency or query execution.
+// A personal filter over a multiselect, with no trace dependency or query execution.
 const filter = '{{ (queries.deals.data || []).filter(r => { const chosen = components.stageFilter?.value || ["Proposal","Negotiation"]; return chosen.includes("All stages") || chosen.includes(r.stage); }) }}';
 
 describe('MultiselectV2 typed selection reads', () => {
