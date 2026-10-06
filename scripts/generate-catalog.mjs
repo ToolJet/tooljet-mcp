@@ -338,6 +338,12 @@ const RUNTIME_EXPOSED_VARIABLES = {
     { name: 'unixTimestamp', valueType: 'number', semantics: 'Selected date timestamp; use selectedDate for formatted date-only persistence.' },
   ],
   DropdownV2: [{ name: 'value' }, { name: 'selectedOption' }, { name: 'options' }],
+  // MultiselectV2.jsx reads properties.values in static mode and publishes plural values in setInputValue.
+  MultiselectV2: [
+    { name: 'values', valueType: 'array', semantics: 'Selected option values, published before onSelect; an empty selection is []. Read components.<name>.values, not the nonexistent .value alias. Static initial selection comes from properties.values; advanced mode uses visible/default schema entries.' },
+    { name: 'selectedOptions', valueType: 'array', semantics: 'Selected option objects projected to { label, value, caption }, published with values. Not .selected and not the scalar DropdownV2 selectedOption.' },
+    { name: 'options', valueType: 'array', semantics: 'Rendered options projected to { label, value, caption }; distinct from the selected values.' },
+  ],
   Form: [{ name: 'formData', default: {} }, { name: 'children', default: {} }],
   Listview: [
     {
@@ -363,6 +369,11 @@ const RUNTIME_EXPOSED_VARIABLES = {
     { name: 'isValid', default: true, valueType: 'boolean' },
     { name: 'label', default: 'Select', semantics: "The field's caption text, not the selected option: use value for the selection." },
   ],
+  // Widgets/ReorderableList/ReorderableList.jsx: onDragEnd and transformedOptions/mount effects.
+  // The editor config omits values; the runtime publishes option.value entries, not whole option objects.
+  ReorderableList: [
+    { name: 'values', valueType: 'array', semantics: 'Ordered option values (options.map(option => option.value)), initialized on mount and refreshed when options/schema change. Published before onChange after a reorder. Persist the order with components.<name>.values, not the nonexistent .value alias; use .options for the full option objects.' },
+  ],
   Table: [
     { name: 'currentData', default: [] },
     { name: 'currentPageData', default: [] },
@@ -378,10 +389,21 @@ for (const [type, variables] of Object.entries(RUNTIME_EXPOSED_VARIABLES)) {
   schemas[type].exposedVariables.push(...variables.filter((variable) => !known.has(variable.name)));
   // Newer widget configs may already advertise these names. Retain their harvested defaults,
   // but enrich them with the same runtime semantics instead of dropping the supplement.
-  if (type === 'Map' || type === 'DatePickerV2' || type === 'Calendar' || type === 'RadioButtonV2') {
+  if (type === 'Map' || type === 'DatePickerV2' || type === 'Calendar' || type === 'RadioButtonV2' || type === 'ReorderableList' || type === 'MultiselectV2') {
     for (const variable of variables) {
       Object.assign(schemas[type].exposedVariables.find(entry => entry.name === variable.name), variable);
     }
+  }
+}
+
+if (schemas.MultiselectV2) {
+  const descriptions = {
+    values: 'Static mode (advanced=false) initial selection: an array of option values, matched without type coercion. Option default flags do not initialize static mode. Use [] for intentionally empty selection; do not replace it with fallback defaults.',
+    schema: 'Advanced mode (advanced=true) options: initial selection uses entries with visible=true and default=true. Static mode instead reads properties.values. Preserve value types and distinguish selectedOptions objects from exposed values.',
+    value: 'Inspector metadata, not the runtime initial-selection property: static mode reads values (an array). The exposed current selection is also .values, never .value.',
+  };
+  for (const property of schemas.MultiselectV2.properties) {
+    if (descriptions[property.key]) property.description = descriptions[property.key];
   }
 }
 

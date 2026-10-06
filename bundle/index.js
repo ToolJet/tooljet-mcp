@@ -62258,6 +62258,14 @@ var WRONG_ALIASES = {
   // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
   RadioButtonV2: {
     label: (name2) => `RadioButton "${name2}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name2}.value for the selection.`
+  },
+  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
+  ReorderableList: {
+    value: (name2) => `ReorderableList "${name2}" does not expose value. Use components.${name2}.values for the ordered option values; the incorrect alias is undefined, even with optional chaining or a fallback.`
+  },
+  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
+  MultiselectV2: {
+    value: (name2) => `MultiselectV2 "${name2}" does not expose value. Use components.${name2}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
   }
 };
 
