@@ -5,6 +5,7 @@ import { lintComponents, validateAppStructure, type LintComponent } from './lint
 import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
+import { invalidPlannedGeneratedPrimaryKeySeeds } from './seedGeneratedPrimaryKeyValidation.js';
 import { encodeComponentParent } from './componentParent.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
@@ -315,11 +316,16 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     // A table may take several entries: each is capped at 40 rows and they insert one after another (merch m14
     // and m16 split a table's rows and then lost three lint rounds to a "more than once" rule).
     checked.push('seed batches have non-empty rows');
-    for (const seed of seedData) {
+    for (const [batchIndex, seed] of seedData.entries()) {
       if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+      const plannedTable = tables.find((table) => table.tableName.toLowerCase() === seed.tableName.toLowerCase());
+      if (plannedTable) {
+        errors.push(...invalidPlannedGeneratedPrimaryKeySeeds(plannedTable.columns, seed.rows)
+          .map(error => `Seed data for planned table "${seed.tableName}" (batch ${batchIndex + 1}): ${error}`));
+      }
       // ToolJet DB takes an object or an array for a jsonb column and refuses anything else at insert, after the plan
       // token is spent (rn50, 2026-10-01: plain strings, refused twice).
-      const columns = tables.find((table) => table.tableName === seed.tableName)?.columns ?? [];
+      const columns = plannedTable?.columns ?? [];
       for (const column of columns) {
         if (!/^jsonb?$/i.test(String((column as { type?: unknown }).type ?? ''))) continue;
         const bad = seed.rows.flatMap((row, index) => {

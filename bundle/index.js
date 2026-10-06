@@ -74907,6 +74907,21 @@ function unique(values, label2, sourceName, warnings) {
   return result;
 }
 
+// dist/seedGeneratedPrimaryKeyValidation.js
+function invalidPlannedGeneratedPrimaryKeySeeds(columns, rows) {
+  const primaryKeys = columns.some((column) => column.primaryKey) ? columns.filter((column) => column.primaryKey) : [{ name: "id", type: "serial", primaryKey: true }];
+  const errors = [];
+  for (const column of primaryKeys) {
+    if (normalizeType(column.type) !== "serial" && !/^nextval\(/i.test(String(column.defaultValue ?? "").trim()))
+      continue;
+    const supplied = rows.flatMap((row, index) => column.name in row ? [index + 1] : []);
+    if (supplied.length) {
+      errors.push(`Omit generated primary key "${column.name}" from seed row(s) ${supplied.slice(0, 12).join(", ")}${supplied.length > 12 ? ` and ${supplied.length - 12} more` : ""}. ToolJet allocates it from the table sequence; explicit keys can collide or desynchronize future inserts. No seed values were removed or rewritten.`);
+    }
+  }
+  return errors;
+}
+
 // dist/bindingBraces.js
 function separateAdjacentClosingBraces(text) {
   let out = "";
@@ -75538,10 +75553,14 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
   const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
   if (seedData.length) {
     checked.push("seed batches have non-empty rows");
-    for (const seed of seedData) {
+    for (const [batchIndex, seed] of seedData.entries()) {
       if (!seed.rows.length)
         errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
-      const columns = tables.find((table) => table.tableName === seed.tableName)?.columns ?? [];
+      const plannedTable = tables.find((table) => table.tableName.toLowerCase() === seed.tableName.toLowerCase());
+      if (plannedTable) {
+        errors.push(...invalidPlannedGeneratedPrimaryKeySeeds(plannedTable.columns, seed.rows).map((error51) => `Seed data for planned table "${seed.tableName}" (batch ${batchIndex + 1}): ${error51}`));
+      }
+      const columns = plannedTable?.columns ?? [];
       for (const column of columns) {
         if (!/^jsonb?$/i.test(String(column.type ?? "")))
           continue;
@@ -76602,9 +76621,47 @@ function lintAppSpecTool(client) {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen)
           return fail(new Error(frozen));
+        const plannedNames = /* @__PURE__ */ new Map();
+        for (const table of args.tables ?? []) {
+          const key4 = table.table_name.toLowerCase();
+          if (plannedNames.has(key4))
+            return fail(new Error(`Ambiguous planned table name "${table.table_name}": table names must be unique ignoring case.`));
+          plannedNames.set(key4, table.table_name);
+        }
+        const existingNames = /* @__PURE__ */ new Map();
+        const ambiguousNames = /* @__PURE__ */ new Set();
+        for (const table of existingTables) {
+          const key4 = table.table_name.toLowerCase();
+          if (existingNames.has(key4))
+            ambiguousNames.add(key4);
+          existingNames.set(key4, table.table_name);
+        }
+        const canonicalTableName = (name2) => {
+          const key4 = name2.toLowerCase();
+          if (ambiguousNames.has(key4))
+            throw new Error(`Ambiguous existing table name "${name2}": multiple workspace tables match ignoring case. No plan token was issued.`);
+          return plannedNames.get(key4) ?? existingNames.get(key4) ?? name2;
+        };
+        for (const name2 of plannedNames.values())
+          canonicalTableName(name2);
+        for (const seed of args.seed_data ?? [])
+          seed.table_name = canonicalTableName(seed.table_name);
+        for (const query of args.queries ?? [])
+          if (query.table_ref)
+            query.table_ref = canonicalTableName(query.table_ref);
+        for (const table of args.tables ?? []) {
+          for (const fk of table.foreign_keys ?? []) {
+            const ref = fk;
+            for (const field of ["referencedTable", "referenced_table", "references_table"]) {
+              if (typeof ref[field] === "string")
+                ref[field] = canonicalTableName(ref[field]);
+            }
+          }
+        }
+        const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
         const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
         if (fetchedSummary && args.queries?.length) {
-          const restated = restatedQueryNames(fetchedSummary, args.queries, existingTables, datasources);
+          const restated = restatedQueryNames(fetchedSummary, args.queries.filter((query) => !query.table_ref || !plannedNames.has(query.table_ref.toLowerCase())), existingTables, datasources);
           if (restated.length) {
             args.queries = args.queries.filter((query) => !restated.includes(query.name));
             preflightWarnings.push(`${restated.map((name2) => `"${name2}"`).join(", ")}: already in the app exactly as written here, so the plan uses the existing quer` + (restated.length > 1 ? "ies" : "y") + " and defines nothing again.");
@@ -76625,6 +76682,7 @@ function lintAppSpecTool(client) {
           preflightErrors.push(`App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`);
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        const reservedTableNames = new Map([...tableIds, ...plannedNames]);
         const plannedNew = new Set((args.tables ?? []).map((table) => table.table_name.toLowerCase()));
         const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))].filter((name2) => tableIds.has(name2.toLowerCase()) && !plannedNew.has(name2.toLowerCase()));
         const withRows = await Promise.all(seededExisting.map(async (name2) => await client.hasRows?.(tableIds.get(name2.toLowerCase())).catch(() => void 0) === true ? name2 : void 0));
@@ -76634,13 +76692,13 @@ function lintAppSpecTool(client) {
         for (const table of args.tables ?? []) {
           const key4 = table.table_name.toLowerCase();
           if (tableIds.has(key4)) {
-            const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
             if (hasSql) {
               preflightErrors.push(`Planned table "${table.table_name}" already exists and this plan contains SQL queries. Rename the planned table and update all SQL references, seed data, table_ref and foreign keys together, then lint again. To reuse the existing table, remove it from tables instead.`);
               continue;
             }
             const oldName = table.table_name;
-            const newName = nextTableName(oldName, tableIds);
+            const newName = nextTableName(oldName, reservedTableNames);
+            reservedTableNames.set(newName.toLowerCase(), newName);
             table.table_name = newName;
             for (const seed of args.seed_data ?? [])
               if (seed.table_name === oldName)
@@ -76664,9 +76722,9 @@ function lintAppSpecTool(client) {
         }
         preflightWarnings.push(...autoFitHtmlHeights(args));
         if (existingSummary) {
-          const plannedNames = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
+          const plannedNames2 = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
           const createsPages = (args.pages ?? []).some((page) => !existingSummary.pages.some((existing) => existing.name?.toLowerCase() === page.name.toLowerCase() || page.name === "Home" && existing.handle === "home"));
-          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames.has(page.name.toLowerCase()));
+          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames2.has(page.name.toLowerCase()));
           if (createsPages && abandoned.length) {
             preflightErrors.push(`App already has ${abandoned.length} empty page(s) this plan does not touch: ${abandoned.map((page) => `"${page.name}"`).join(", ")}. Build on them (use the exact existing name in pages[]) or delete them with delete_page before creating new pages, so the app does not end up with duplicates.`);
           }
@@ -76689,9 +76747,10 @@ function lintAppSpecTool(client) {
               }, []);
               if (!missingRows.length)
                 continue;
-              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && missingRows.length === seed.rows.length) {
+              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && (args.seed_data ?? []).filter((batch) => batch.table_name.toLowerCase() === seed.table_name.toLowerCase()).every((batch) => batch.rows.every((row) => !(column.name in row)))) {
+                const originalType = column.type;
                 column.type = "serial";
-                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
+                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(originalType)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
                 continue;
               }
               const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]);

@@ -80,13 +80,48 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
+        // Resolve names once, before collision renames or existing-table seed checks. A planned
+        // name takes precedence over an existing namesake; all references must follow it together.
+        const plannedNames = new Map<string, string>();
+        for (const table of args.tables ?? []) {
+          const key = table.table_name.toLowerCase();
+          if (plannedNames.has(key)) return fail(new Error(`Ambiguous planned table name "${table.table_name}": table names must be unique ignoring case.`));
+          plannedNames.set(key, table.table_name);
+        }
+        const existingNames = new Map<string, string>();
+        const ambiguousNames = new Set<string>();
+        for (const table of existingTables) {
+          const key = table.table_name.toLowerCase();
+          if (existingNames.has(key)) ambiguousNames.add(key);
+          existingNames.set(key, table.table_name);
+        }
+        const canonicalTableName = (name: string): string => {
+          const key = name.toLowerCase();
+          if (ambiguousNames.has(key)) throw new Error(`Ambiguous existing table name "${name}": multiple workspace tables match ignoring case. No plan token was issued.`);
+          return plannedNames.get(key) ?? existingNames.get(key) ?? name;
+        };
+        for (const name of plannedNames.values()) canonicalTableName(name);
+        for (const seed of args.seed_data ?? []) seed.table_name = canonicalTableName(seed.table_name);
+        for (const query of args.queries ?? []) if (query.table_ref) query.table_ref = canonicalTableName(query.table_ref);
+        for (const table of args.tables ?? []) {
+          for (const fk of table.foreign_keys ?? []) {
+            const ref = fk as unknown as Record<string, unknown>;
+            for (const field of ['referencedTable', 'referenced_table', 'references_table']) {
+              if (typeof ref[field] === 'string') ref[field] = canonicalTableName(ref[field]);
+            }
+          }
+        }
+        const hasSql = args.queries?.some(query =>
+          query.options?.operation === 'sql_execution' || query.options?.sql_execution !== undefined);
         const datasources = args.queries?.length && args.version_id
           ? await client.listDatasources(args.version_id)
           : [];
         // A plan query that says again, word for word, what the app already holds is a use of that query, not a new
         // definition (restatedQueries.ts): it leaves the plan, and refs to its name resolve to the query in the app.
         if (fetchedSummary && args.queries?.length) {
-          const restated = restatedQueryNames(fetchedSummary, args.queries, existingTables, datasources);
+          // A query for a planned table is not a restatement of one targeting its existing namesake.
+          const restated = restatedQueryNames(fetchedSummary, args.queries.filter(query =>
+            !query.table_ref || !plannedNames.has(query.table_ref.toLowerCase())), existingTables, datasources);
           if (restated.length) {
             args.queries = args.queries.filter((query) => !restated.includes(query.name));
             preflightWarnings.push(`${restated.map((name) => `"${name}"`).join(', ')}: already in the app exactly as written here, ` +
@@ -113,6 +148,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           );
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        const reservedTableNames = new Map([...tableIds, ...plannedNames]);
         // Seed rows for a table that already exists and already has rows would insert them again: merch m18
         // hand-seeded its tables, then sent the same rows in every plan, and the apply failed on a unique key
         // after creating its queries. Unknown (no reader, or the read failed) is not a finding.
@@ -131,9 +167,6 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             // SQL can name multiple tables, independently of table_ref/table_id. Without resolving
             // SQL identifiers, even a query without table_ref may depend on the colliding name.
             // Require a coherent revised plan rather than silently splitting seeds and SQL targets.
-            const hasSql = args.queries?.some((query) =>
-              query.options?.operation === 'sql_execution' || query.options?.sql_execution !== undefined
-            );
             if (hasSql) {
               preflightErrors.push(
                 `Planned table "${table.table_name}" already exists and this plan contains SQL queries. ` +
@@ -146,7 +179,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             // a prefix (seven of twelve order-desk builds, 2026-09-07). Suffix it here and carry the new name
             // into seed data, table_ref and foreign keys, since they all name the table.
             const oldName = table.table_name;
-            const newName = nextTableName(oldName, tableIds);
+            const newName = nextTableName(oldName, reservedTableNames);
+            reservedTableNames.set(newName.toLowerCase(), newName);
             table.table_name = newName;
             for (const seed of args.seed_data ?? []) if (seed.table_name === oldName) seed.table_name = newName;
             for (const query of args.queries ?? []) if (query.table_ref === oldName) query.table_ref = newName;
@@ -210,17 +244,19 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
                 return indexes;
               }, []);
               if (!missingRows.length) continue;
-              // An integer primary key that no seed row supplies is a generated key the model forgot to
+              // An integer primary key that no seed row in ANY batch supplies is a generated key the model forgot to
               // declare (three of four Grok builds in one evening lost a full lint round trip to this).
               // The intent is unambiguous, so make it serial and say so instead of failing the plan.
               if (
                 column.primaryKey &&
                 /^(integer|bigint|int|int4|int8)$/i.test(column.type) &&
-                missingRows.length === seed.rows.length
+                (args.seed_data ?? []).filter(batch => batch.table_name.toLowerCase() === seed.table_name.toLowerCase())
+                  .every(batch => batch.rows.every(row => !(column.name in row)))
               ) {
+                const originalType = column.type;
                 column.type = 'serial';
                 preflightWarnings.push(
-                  `Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} ` +
+                  `Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(originalType)} ` +
                   'with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.'
                 );
                 continue;
