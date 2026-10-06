@@ -62,7 +62,7 @@ export const ALLOWED_API_ORIGINS_VAR = 'MCP_ALLOWED_API_ORIGINS';
 const GATEWAY_URL_VAR = 'MCP_GATEWAY_URL';
 const GATEWAY_TOKEN_VAR = 'MCP_GATEWAY_TOKEN';
 
-/** An environment variable, or undefined when unset, blank, or a literal `${VAR}` — Codex passes unset placeholders through as text. */
+/** An environment variable, or undefined when unset, blank, or a literal `${VAR}` — plugin hosts can pass an unset placeholder through as text. */
 export function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value && !isPlaceholder(value) ? value : undefined;

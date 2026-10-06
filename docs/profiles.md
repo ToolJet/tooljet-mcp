@@ -14,7 +14,8 @@ agent ──launches──▶ tooljet-mcp ───┘                     one p
 
 - A process reads its environment once, so switching servers meant editing an agent's config and restarting it.
 - Every chat on the machine was forced onto the same server.
-- Codex passes an unset `${TOOLJET_PAT}` through as literal text, so the server got that string as its token. `env()` in `src/config.ts` now treats it as unset; the plugin manifests are unchanged.
+- Plugin hosts can pass an unset `${TOOLJET_PAT}` through as literal text, so the server got that string as its token. `env()` in `src/config.ts` now treats it as unset.
+- Codex never expands `${PLUGIN_ROOT}` ([openai/codex#22842](https://github.com/openai/codex/issues/22842)), so the server never started there. Codex's `.mcp.json` now launches the bundle by a relative path with `cwd: "."` and passes the `TOOLJET_*` variables through `env_vars`; `mcp.json` keeps `${PLUGIN_ROOT}`, which the Agent Plugins hosts (VS Code, Copilot) are required to expand.
 
 ## 2. Behavior contract
 

@@ -28,7 +28,12 @@ describe('plugin manifests agree across ecosystems', () => {
   });
 
   it('declares the same MCP server in both filenames', () => {
-    expect(read('.mcp.json')).toEqual(read('mcp.json'));
+    // Codex never expands ${PLUGIN_ROOT} (openai/codex#22842), so its file launches by a relative path from the plugin root.
+    const codex = read('.mcp.json').mcpServers.tooljet;
+    const agentPlugins = read('mcp.json').mcpServers.tooljet;
+    expect(codex.command).toBe(agentPlugins.command);
+    expect(codex.args).toEqual(agentPlugins.args.map((a: string) => a.replace('${PLUGIN_ROOT}/', './')));
+    expect(codex.cwd).toBe('.');
   });
 
   it('points every manifest at a bundle that exists', () => {

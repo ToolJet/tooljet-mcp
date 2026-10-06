@@ -10,37 +10,36 @@
 // The bundle is built from the tsc output (dist/), NOT src/, so the NodeNext `.js` import
 // specifiers resolve to real files (esbuild can't map `./foo.js` → `foo.ts` on its own).
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
-// The TypeScript compiler this repo uses cannot start on older Node; fail with a clear message instead.
-if (Number(process.versions.node.split('.')[0]) < 22) {
-  throw new Error(`Building needs Node 22 or newer; this is ${process.version}. Run: nvm use 22 — then build again.`);
-}
-
 // 1. Compile TS → dist/ (real .js files with resolvable imports), then bundle to one file.
 run('npm run build');
 run('node scripts/render-component-catalog.mjs');
 mkdirSync(resolve(root, 'bundle'), { recursive: true });
-const esbuild =
-  'npx --no-install esbuild --bundle --platform=node --format=esm ' +
-  // Isolated builds may share node_modules via a symlink. Keep module labels relative
-  // to this checkout instead of embedding the dependency directory's physical path.
-  '--legal-comments=none --preserve-symlinks --external:playwright-core ' +
-  // An ESM bundle has no `require`, so a CommonJS dependency calling require('process') (the
-  // `yaml` parser does) dies at import time with "Dynamic require ... is not supported" — the
-  // whole server fails to boot, and no unit test sees it because tests import src/, not this.
-  // Defining require via createRequire gives those calls a real one.
-  '--banner:js=\'import{createRequire as __cr}from"module";const require=__cr(import.meta.url);\'';
+run(
+  'npx --no-install esbuild dist/index.js --bundle --platform=node --format=esm ' +
+    // Isolated builds may share node_modules via a symlink. Keep module labels relative
+    // to this checkout instead of embedding the dependency directory's physical path.
+    '--outfile=bundle/index.js --legal-comments=none --preserve-symlinks --external:playwright-core --external:./cli/index.js ' +
+    // An ESM bundle has no `require`, so a CommonJS dependency calling require('process') (the
+    // `yaml` parser does) dies at import time with "Dynamic require ... is not supported" — the
+    // whole server fails to boot, and no unit test sees it because tests import src/, not this.
+    // Defining require via createRequire gives those calls a real one.
+    '--banner:js=\'import{createRequire as __cr}from"module";const require=__cr(import.meta.url);\''
+);
 // The `tj` CLI is its own file, loaded only when asked for: its prompt library needs a newer Node
 // than the server does, and a static import inside one bundle would stop the server from starting.
-run(`${esbuild} dist/index.js --outfile=bundle/index.js --external:./cli/index.js`);
-run(`${esbuild} dist/cli/index.js --outfile=bundle/cli/index.js`);
+run(
+  'npx --no-install esbuild dist/cli/index.js --bundle --platform=node --format=esm --outfile=bundle/cli/index.js ' +
+    '--legal-comments=none --preserve-symlinks --external:playwright-core ' +
+    '--banner:js=\'import{createRequire as __cr}from"module";const require=__cr(import.meta.url);\''
+);
 
 // Reject home-directory and temporary-checkout paths before the artifact can be shipped.
 const bundle = readFileSync(resolve(root, 'bundle/index.js'), 'utf8') + readFileSync(resolve(root, 'bundle/cli/index.js'), 'utf8');
@@ -83,37 +82,34 @@ for (const f of [
 // cannot be resolved in an ESM bundle, say — therefore passes every test and still fails at
 // startup for every user. Handshake with it here so that can never leave this script.
 {
+  // Scratch home: a build must never touch the developer's real profiles.
   const probeHome = mkdtempSync(join(tmpdir(), 'tooljet-mcp-probe-'));
-  try {
-    const probe = spawnSync(process.execPath, [resolve(root, 'bundle/index.js')], {
-      input: JSON.stringify({
-        jsonrpc: '2.0', id: 1, method: 'initialize',
-        params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'build-probe', version: '1' } },
-      }) + '\n',
-      encoding: 'utf8',
-      timeout: 30_000,
-      // No TOOLJET_PAT: the server is expected to answer initialize and report the missing
-      // credential in `instructions`. We are testing that it boots, not that it is configured.
-      // Scratch home: a build must never touch the developer's real profiles.
-      env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '', TOOLJET_PROFILE: '', TOOLJET_MCP_HOME: probeHome },
-    });
-    // Same reason, for the CLI file: run it once so a bundling fault cannot ship.
-    const cli = spawnSync(process.execPath, [resolve(root, 'bundle/index.js'), 'cli', 'version'], {
-      encoding: 'utf8',
-      timeout: 30_000,
-      env: { ...process.env, TOOLJET_MCP_HOME: probeHome },
-    });
-    if (cli.status !== 0 || !/^\d+\.\d+\.\d+/.test(cli.stdout ?? '')) {
-      throw new Error(`build-plugin: bundle/cli/index.js does not run.\n${(cli.stderr || cli.stdout || '(no output)').slice(0, 1200)}`);
-    }
-    const reply = (probe.stdout ?? '').split('\n').find((line) => line.includes('"result"'));
-    if (!reply || !reply.includes('"serverInfo"')) {
-      throw new Error(
-        `build-plugin: bundle/index.js does not start.\n${(probe.stderr || probe.stdout || '(no output)').slice(0, 1200)}`
-      );
-    }
-  } finally {
-    rmSync(probeHome, { recursive: true, force: true });
+  process.on('exit', () => rmSync(probeHome, { recursive: true, force: true }));
+  const probe = spawnSync(process.execPath, [resolve(root, 'bundle/index.js')], {
+    input: JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'build-probe', version: '1' } },
+    }) + '\n',
+    encoding: 'utf8',
+    timeout: 30_000,
+    // No TOOLJET_PAT: the server is expected to answer initialize and report the missing
+    // credential in `instructions`. We are testing that it boots, not that it is configured.
+    env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '', TOOLJET_MCP_HOME: probeHome },
+  });
+  const reply = (probe.stdout ?? '').split('\n').find((line) => line.includes('"result"'));
+  if (!reply || !reply.includes('"serverInfo"')) {
+    throw new Error(
+      `build-plugin: bundle/index.js does not start.\n${(probe.stderr || probe.stdout || '(no output)').slice(0, 1200)}`
+    );
+  }
+  // Same reason, for the CLI file: run it once so a bundling fault cannot ship.
+  const cli = spawnSync(process.execPath, [resolve(root, 'bundle/index.js'), 'cli', 'version'], {
+    encoding: 'utf8',
+    timeout: 30_000,
+    env: { ...process.env, TOOLJET_MCP_HOME: probeHome },
+  });
+  if (cli.status !== 0 || !/^\d+\.\d+\.\d+/.test(cli.stdout ?? '')) {
+    throw new Error(`build-plugin: bundle/cli/index.js does not run.\n${(cli.stderr || cli.stdout || '(no output)').slice(0, 1200)}`);
   }
 }
 

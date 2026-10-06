@@ -11,7 +11,6 @@
         "TOOLJET_DEPLOYMENT_URL",
         "TOOLJET_PAT",
         "TOOLJET_PROFILE",
-        "TOOLJET_AGENT",
         "TOOLJET_MCP_HOME",
         "TOOLJET_MCP_NO_AUTO_SETUP"
       ]

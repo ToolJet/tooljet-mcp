@@ -108,6 +108,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch, onPa
     workspaceSlug = body.organizationSlug ?? undefined;
     workspaceName = body.organizationName ?? undefined;
     onPatLogin?.({ workspaceSlug });
+
   }
 
   // Low-level authed fetch that assumes a token already exists (no re-login) — used by the
