@@ -2046,10 +2046,16 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       !isTruthyBinding(expandableRows)
     ) {
       const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
-      const baseRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const textRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const hasVisibleChips = Array.isArray(columns) && columns.some((column) => {
+        const c = recordValue(column);
+        return c?.columnVisibility !== false && c?.columnType === 'tagsV2';
+      });
+      // Chip rows have a measured 49px minimum even with one short value, unlike possible text wrapping.
+      const baseRowHeight = hasVisibleChips ? Math.max(49, textRowHeight) : textRowHeight;
       // Measured in the viewer: a wrapped row allowance of 4px (a known one-line row draws at its base height); a page of long
       // wrapped rows scrolls inside the table. The flat 60px asked for tables far taller than they need.
-      const rowHeight = isTruthyBinding(contentWrap) ? baseRowHeight + 4 : baseRowHeight;
+      const rowHeight = Math.max(baseRowHeight, isTruthyBinding(contentWrap) ? textRowHeight + 4 : textRowHeight);
       const toolbarVisible = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
         .some((key) => isTruthyBinding(catalogValue('Table', props, key)));
       const chromeHeight =
