@@ -453,7 +453,7 @@ export interface EventSpec {
   sourceId: string;
   /** Source kind. Modern Table row buttons use table_column; table_action is legacy/deprecated. */
   sourceType: EventSourceType;
-  /** Sub-element reference. Table Button columns use `<column key or name>::<button id>`. */
+  /** Sub-element reference: Table Button columns use `<column key or name>::<button id>`; Navigation onClick uses a non-group menu item id. */
   ref?: string;
   /** The trigger event id, e.g. onClick, onDataQuerySuccess, onDataQueryFailure, onPageLoad. */
   trigger: string;

@@ -73670,6 +73670,41 @@ function isRecord(value2) {
 function nonEmptyString(value2) {
   return typeof value2 === "string" && value2.trim().length > 0;
 }
+function navigationItemRef(source2, ref) {
+  let unknown2 = false;
+  let found = false;
+  let group = false;
+  const visit = (items) => {
+    if (typeof items === "string" && items.includes("{{")) {
+      unknown2 = true;
+      return;
+    }
+    if (!Array.isArray(items)) {
+      if (items == null)
+        unknown2 = true;
+      return;
+    }
+    for (const item of items) {
+      if (!isRecord(item))
+        continue;
+      if (item.id === ref) {
+        if (item.isGroup)
+          group = true;
+        else
+          found = true;
+      }
+      if (typeof item.id === "string" && item.id.includes("{{"))
+        unknown2 = true;
+      if (item.isGroup)
+        visit(item.children ?? []);
+    }
+  };
+  visit(propVal3(source2.properties, "menuItems"));
+  return group ? "invalid" : found ? "valid" : unknown2 ? "unknown" : "invalid";
+}
+function effectiveRef(event) {
+  return Object.prototype.hasOwnProperty.call(event.action, "ref") ? event.action.ref : event.ref;
+}
 function validateTableColumnRef(source2, ref) {
   if (!ref)
     return 'Table Button-column events require ref "<column key or name>::<button id>".';
@@ -73773,6 +73808,19 @@ function validateEvents(summary, events, options2 = {}) {
     errors.push(...lintComponentStateBindings(event.action, [...components.values()], label2));
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
+      for (const ref of new Set([event.ref, event.action.ref].filter((ref2) => ref2 != null && ref2 !== ""))) {
+        if (source2?.type !== "Navigation" || event.trigger !== "onClick") {
+          errors.push(`${label2}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
+        } else if (!nonEmptyString(ref) || ref.includes("{{")) {
+          errors.push(`${label2}: Navigation onClick ref must be a literal non-empty item id.`);
+        } else {
+          const membership = navigationItemRef(source2, ref);
+          if (membership === "invalid")
+            errors.push(`${label2}: Navigation ref "${ref}" does not identify a non-group menu item.`);
+          if (membership === "unknown")
+            warnings.push(`${label2}: Navigation ref "${ref}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
+        }
+      }
       if (!source2)
         errors.push(`${label2}: component source "${event.sourceId}" does not exist.`);
       else if (source2.type) {
@@ -74019,7 +74067,10 @@ function validateEvents(summary, events, options2 = {}) {
   }
   errors.push(...queryEventCycleErrors(summary, events, options2.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
   const persistedMode = options2.includePersistedChains === false;
-  const runKey = (sourceId, trigger, ref, queryId) => JSON.stringify([sourceId, trigger, ref ?? null, queryId]);
+  const isNavigation = (sourceType, sourceId, trigger) => sourceType === "component" && components.get(sourceId)?.type === "Navigation" && trigger === "onClick";
+  const runKey = (sourceType, sourceId, trigger, queryId) => JSON.stringify([sourceType, sourceId, trigger, queryId]);
+  const runScope = (sourceType, sourceId, trigger, ref) => sourceType === "table_column" || isNavigation(sourceType, sourceId, trigger) ? ref || null : null;
+  const overlaps = (left, right, navigation) => left === right || navigation && (left === null || right === null);
   const payloadKey = (payload2) => JSON.stringify(Object.keys(payload2).filter((k) => k !== "index" && k !== "name").sort().map((k) => [k, payload2[k]]));
   const heldRuns = /* @__PURE__ */ new Map();
   if (!persistedMode) {
@@ -74029,27 +74080,30 @@ function validateEvents(summary, events, options2 = {}) {
         continue;
       if (held.target !== "component" && held.target !== "table_column")
         continue;
-      const key4 = runKey(held.sourceId, payload2.eventId, payload2.ref, payload2.queryId);
-      heldRuns.set(key4, [...heldRuns.get(key4) ?? [], { id: held.id, payload: payloadKey(payload2) }]);
+      const key4 = runKey(held.target, held.sourceId, payload2.eventId, payload2.queryId);
+      const scope = runScope(held.target, held.sourceId, payload2.eventId, payload2.ref);
+      heldRuns.set(key4, [...heldRuns.get(key4) ?? [], { id: held.id, payload: payloadKey(payload2), scope }]);
     }
   }
-  const plannedRuns = /* @__PURE__ */ new Set();
+  const plannedRuns = /* @__PURE__ */ new Map();
   for (const event of events) {
     if (event.action?.actionId !== "run-query")
       continue;
     if (event.sourceType !== "component" && event.sourceType !== "table_column")
       continue;
-    const key4 = runKey(event.sourceId, event.trigger, event.ref, event.action.queryId);
+    const key4 = runKey(event.sourceType, event.sourceId, event.trigger, event.action.queryId);
+    const scope = runScope(event.sourceType, event.sourceId, event.trigger, effectiveRef(event));
+    const navigation = isNavigation(event.sourceType, event.sourceId, event.trigger);
     const sourceName = components.get(event.sourceId)?.name ?? event.sourceId;
     const queryName = queryById.get(String(event.action.queryId ?? ""))?.name ?? String(event.action.queryName ?? event.action.queryId);
     const mine = payloadKey({ eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action });
-    const held = heldRuns.get(key4);
-    if (held && !held.some((h) => h.payload === mine)) {
+    const held = (heldRuns.get(key4) ?? []).filter((h) => overlaps(h.scope, scope, navigation));
+    if (held.length && !held.some((h) => h.payload === mine)) {
       errors.push(`"${sourceName}" ${event.trigger} already runs query "${queryName}" (event ${held[0].id}); a second handler would run it twice on one ${event.trigger}. Change that handler with update_events, or delete it with delete_event before adding this one.`);
-    } else if (plannedRuns.has(key4)) {
+    } else if ((plannedRuns.get(key4) ?? []).some((previous) => overlaps(previous, scope, navigation))) {
       (persistedMode ? warnings : errors).push(`"${sourceName}" ${event.trigger} runs query "${queryName}" twice: two handlers on it run the same query, so one ${event.trigger} runs it two times. Keep one.`);
     }
-    plannedRuns.add(key4);
+    plannedRuns.set(key4, [...plannedRuns.get(key4) ?? [], scope]);
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
@@ -74061,6 +74115,8 @@ function persistedEventSpecs(summary) {
     if (typeof payload2.eventId !== "string")
       return [];
     const { eventId, ref, ...action } = payload2;
+    if (event.target === "component" && ref != null && typeof ref !== "string")
+      action.ref = ref;
     return [{
       sourceId: event.sourceId,
       sourceType: event.target,
@@ -79111,8 +79167,8 @@ var eventSchema = external_exports.object({
   message: "component_id can only be used with source_type=component; use source_id for query/page events."
 }).refine((event) => !["table_column", "table_action"].includes(event.source_type ?? "") || !!event.ref, {
   message: "table_column/table_action events require ref; Button columns use `<column key or name>::<button id>`."
-}).refine((event) => !event.ref || ["table_column", "table_action"].includes(event.source_type ?? ""), {
-  message: "ref is only valid with source_type=table_column or the deprecated table_action."
+}).refine((event) => !event.ref || ["component", "table_column", "table_action"].includes(event.source_type ?? "component"), {
+  message: "ref is only valid for Navigation component items, table_column or the deprecated table_action; component refs are checked against the saved component."
 });
 function addEventsTool(client) {
   return {
@@ -79123,7 +79179,7 @@ function addEventsTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
+    description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. For a Navigation item use source_type='component', trigger='onClick', ref='<non-group menu item id>'; other ordinary components cannot use ref. Dynamic menu membership is reported as unverified. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),

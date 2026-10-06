@@ -29,8 +29,8 @@ const eventSchema = z
       message: 'table_column/table_action events require ref; Button columns use `<column key or name>::<button id>`.',
     }
   )
-  .refine((event) => !event.ref || ['table_column', 'table_action'].includes(event.source_type ?? ''), {
-    message: 'ref is only valid with source_type=table_column or the deprecated table_action.',
+  .refine((event) => !event.ref || ['component', 'table_column', 'table_action'].includes(event.source_type ?? 'component'), {
+    message: 'ref is only valid for Navigation component items, table_column or the deprecated table_action; component refs are checked against the saved component.',
   });
 
 type EventInput = {
@@ -57,6 +57,7 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
       "{ source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. " +
       "trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). " +
       "For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. " +
+      "For a Navigation item use source_type='component', trigger='onClick', ref='<non-group menu item id>'; other ordinary components cannot use ref. Dynamic menu membership is reported as unverified. " +
       "The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. " +
       "Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. " +
       "action is { actionId, ...params } — use these EXACT ids (an invalid actionId silently does nothing):\n" +
