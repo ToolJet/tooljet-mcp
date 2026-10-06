@@ -67200,6 +67200,17 @@ function expressionOutsideBinding(value2) {
 }
 var WRAP_REQUIRED_COLUMNS = 5;
 function estimateTextHeight(text, baseSize) {
+  const dynamic = text.includes("{{");
+  if (dynamic) {
+    const literals = [];
+    let from = 0;
+    for (const span of bindingSpans(text)) {
+      literals.push(text.slice(from, span.start));
+      from = span.end;
+    }
+    literals.push(text.slice(from));
+    text = literals.join(" ").split("{{", 1)[0];
+  }
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
   const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
   const parts = rawParts.map((part) => part.replace(/<[^>]+>/g, "").trim() === "" ? null : part).filter((part) => part !== null);
@@ -67217,7 +67228,7 @@ function estimateTextHeight(text, baseSize) {
   });
   const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
   const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
-  return { lines: parts.length + blankLines, px: px2, sizes };
+  return { lines: parts.length + blankLines, px: px2, sizes, ...dynamic ? { dynamic: true } : {} };
 }
 var CHART_HOUSE_LAYOUT_KEYS = ["font", "family"];
 var CHART_PADDING_MAX_PX = 24;
@@ -67331,7 +67342,7 @@ function lintComponentSpec(spec, context = {}) {
     if (typeof text === "string" && typeof height === "number") {
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
-        errors.push(`Text "${label2}": its ${needed.lines} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
+        errors.push(`Text "${label2}": its ${needed.lines}${needed.dynamic ? " static" : ""} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
       }
     }
   }
@@ -67632,11 +67643,12 @@ function lintComponentSpec(spec, context = {}) {
       const rowHeight2 = Math.max(baseRowHeight, isTruthyBinding(contentWrap) ? textRowHeight + 4 : textRowHeight);
       const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props, key4)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
+      const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
+      const estimatedHeight = chromeHeight + rowsPerPage * rowHeight2;
       if (desktopHeight < chromeHeight + baseRowHeight) {
         errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + baseRowHeight}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
+        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {

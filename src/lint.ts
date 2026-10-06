@@ -1336,9 +1336,24 @@ export function expressionOutsideBinding(value: string): string | null {
 
 const WRAP_REQUIRED_COLUMNS = 5;
 
-/** Rough rendered height of a Text value: one entry per line (<br>, block tags, newlines), each the largest
- *  inline font-size on that line at 1.5 line height (minimum 18px), plus the widget's padding. */
-export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[] } {
+/** Rough height of visible static Text: one entry per line (<br>, block tags, newlines), each the largest
+ * inline font-size at 1.5 line height (minimum 18px), plus padding. With bindings this is only the
+ * static minimum; their rendered content (even a quoted HTML string) is deliberately not evaluated. */
+export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[]; dynamic?: boolean } {
+  const dynamic = text.includes('{{');
+  if (dynamic) {
+    const literals: string[] = [];
+    let from = 0;
+    // Parse-only boundaries handle strings, comments and nested braces containing markup or `}}`.
+    for (const span of bindingSpans(text)) {
+      literals.push(text.slice(from, span.start));
+      from = span.end;
+    }
+    literals.push(text.slice(from));
+    // Whitespace avoids inventing a nonempty line or joining fragments into an HTML tag. If a
+    // boundary could not be parsed, keep only the known prefix; syntax lint owns invalid bindings.
+    text = literals.join(' ').split('{{', 1)[0]!;
+  }
   // Blank lines from a doubled <br> still take space (about half a line each).
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
   const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
@@ -1357,7 +1372,7 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
   });
   const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
   const px = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
-  return { lines: parts.length + blankLines, px, sizes };
+  return { lines: parts.length + blankLines, px, sizes, ...(dynamic ? { dynamic: true } : {}) };
 }
 
 // The Chart wrapper (Chart.jsx) spreads layout first, then overrides paper/plot backgrounds from the component's
@@ -1538,7 +1553,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
         errors.push(
-          `Text "${label}": its ${needed.lines} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
+          `Text "${label}": its ${needed.lines}${needed.dynamic ? ' static' : ''} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
             `${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`
         );
       }
@@ -2064,7 +2079,11 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
         TABLE_COLUMN_HEADER_HEIGHT_PX +
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
+      // Wrapping is a possibility, not a minimum. Without the rendered rows this linter cannot tell
+      // whether an enabled contentWrap actually adds a line. Use the one-line floor to decide whether
+      // to warn, and retain the conservative estimate only as sizing advice for genuinely short tables.
+      const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
+      const estimatedHeight = chromeHeight + rowsPerPage * rowHeight;
       if (desktopHeight < chromeHeight + baseRowHeight) {
         errors.push(
           `Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; ` +
@@ -2074,7 +2093,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
-            `${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
+            `${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
             'Deliberate inner scrolling is valid when the rows and actions remain usable.'
         );
       }

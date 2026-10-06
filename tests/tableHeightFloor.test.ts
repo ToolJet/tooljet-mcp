@@ -22,3 +22,17 @@ it('ignores hidden chip columns and plain text columns', () => {
   expect(lintComponentSpec(table(262, hidden)).warnings.join(' ')).not.toContain('too short to show');
   expect(lintComponentSpec(table(262, text)).warnings.join(' ')).not.toContain('too short to show');
 });
+
+const wrapped = (height: number) => {
+  const spec = table(height);
+  spec.styles.contentWrap = { value: true };
+  return spec;
+};
+
+it('does not demand wrapping allowance when a table fits four single-line rows', () => {
+  expect(lintComponentSpec(wrapped(262)).warnings.join(' ')).not.toContain('too short to show');
+});
+
+it('still warns when even four single-line rows cannot fit', () => {
+  expect(lintComponentSpec(wrapped(230)).warnings.join(' ')).toContain('too short to show');
+});
