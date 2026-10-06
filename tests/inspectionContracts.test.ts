@@ -57,3 +57,28 @@ describe('runtime inspection contracts from Luna benchmark failures', () => {
     expect(compact.pages[0].components[0]).not.toHaveProperty('validation');
   });
 });
+
+// cy-trials / cy-ats edits (2026-09-26): an edit spent six to twelve turns calling list_tables with guessed search words
+// in a workspace of ~1,700 tables to find the tables its own queries already use.
+describe('get_app_summary names the tables its queries use', () => {
+  const client = (queries: unknown[]) => ({
+    getAppSummary: vi.fn().mockResolvedValue({ app_id: 'a', pages: [], events: [], queries }),
+    listTables: vi.fn().mockResolvedValue([{ id: 't1', table_name: 'h1_sites' }, { id: 't2', table_name: 'h1_visits' }, { id: 't9', table_name: 'other' }]),
+  } as unknown as ToolJetClient);
+  it('lists them once each with their names', async () => {
+    const c = client([
+      { id: 'q1', name: 'sites', kind: 'tooljetdb', options: { table_id: 't1' } },
+      { id: 'q2', name: 'addVisit', kind: 'tooljetdb', options: { table_id: 't2' } },
+      { id: 'q3', name: 'visits', kind: 'tooljetdb', options: { table_id: 't2' } },
+      { id: 'q4', name: 'view', kind: 'runjs', options: { code: 'return 1' } },
+    ]);
+    expect(body(await getAppSummaryTool(c).handler({ app_id: 'a' })).tables).toEqual([
+      { id: 't1', table_name: 'h1_sites' }, { id: 't2', table_name: 'h1_visits' },
+    ]);
+  });
+  it('reads nothing more for an app without ToolJet DB queries', async () => {
+    const c = client([{ id: 'q4', name: 'view', kind: 'runjs', options: {} }]);
+    expect(body(await getAppSummaryTool(c).handler({ app_id: 'a' })).tables).toBeUndefined();
+    expect((c as any).listTables).not.toHaveBeenCalled();
+  });
+});

@@ -119,6 +119,13 @@ export function getDatasourceCatalog(): Array<Pick<DatasourceQuerySchema, 'kind'
   return Object.values(load()).map(({ kind, name, type, operations }) => ({ kind, name, type, operations }));
 }
 
+/** Every source ToolJet can connect, by display name. Lets a caller tell "this source exists but
+ * nobody has connected it" from "ToolJet has no connector for this at all" — the second case has to
+ * go through a REST API datasource, and only this list can distinguish them. */
+export function connectableDatasourceNames(): string[] {
+  return [...new Set(Object.values(load()).map(({ name }) => name).filter(Boolean))].sort();
+}
+
 export function getDatasourceQuerySchema(kind: string): DatasourceQuerySchema | null {
   return load()[kind] ?? null;
 }
@@ -146,6 +153,20 @@ function operationSummary(contract: DatasourceOperationContract): Record<string,
   };
 }
 
+// A single-spec API-endpoint plugin (Stripe, Gmail, ...): inspect_datasource_schema discovers its endpoints (see
+// specEndpointKinds.ts, which imports this module; the test is repeated here to keep the import one-way).
+function discoverable(schema: DatasourceQuerySchema): boolean {
+  const selection = schema.operationSelection;
+  if (schema.kind === 'hubspot' || selection?.mode !== 'remote-spec' || selection.specs?.length !== 1) return false;
+  const ref = selection.specs[0]!;
+  return ref.location === 'remote' || (ref.location === 'bundled' && !!ref.plugin && !!ref.name);
+}
+const SINGLE_SPEC_DISCOVERY =
+  'Operations come from the plugin\'s API spec. Discover them with inspect_datasource_schema: listTables (pass `search`) ' +
+  'finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to ' +
+  'copy: operation (lowercase HTTP method), path, and params with path, query and request objects ({} when empty). Query ' +
+  'values are flat: created[gte], expand[0], never a list or an object.';
+
 export function selectDatasourceQuerySchema(
   kind: string,
   options: { operation?: string; sections?: DatasourceSchemaSection[] } = {}
@@ -165,7 +186,10 @@ export function selectDatasourceQuerySchema(
       description: schema.description,
       defaults: schema.defaults,
       operations: schema.operations,
-      ...(schema.operationSelection ? { operation_selection: schema.operationSelection } : {}),
+      ...(schema.operationSelection ? { operation_selection: discoverable(schema)
+        ? { ...schema.operationSelection, field: 'operation + path + params', description: SINGLE_SPEC_DISCOVERY,
+            introspection_methods: ['listTables', 'getEndpointSchema'] }
+        : schema.operationSelection } : {}),
       ...(typeof schema.supportsTestConnection === 'boolean'
         ? { supports_test_connection: schema.supportsTestConnection }
         : {}),

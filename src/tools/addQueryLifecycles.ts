@@ -61,14 +61,18 @@ export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
     async handler(args: { app_id: string; version_id: string; lifecycles: LifecycleInput[] }) {
       try {
         const summary = await client.getAppSummary(args.app_id);
+        // Models pass the names their bindings use; resolve an unambiguous name to its id rather than
+        // failing with "does not exist" and costing a retry.
+        const queryId = idByName(summary.queries);
+        const componentId = idByName(summary.pages.flatMap((page) => page.components));
         const expanded = expandQueryLifecycles(
           summary,
           args.lifecycles.map((lifecycle) => ({
-            queryId: lifecycle.query_id,
+            queryId: queryId(lifecycle.query_id),
             beforeRefreshActions: lifecycle.before_refresh_actions,
-            refreshQueryIds: lifecycle.refresh_query_ids,
-            clearComponentIds: lifecycle.clear_component_ids,
-            closeModalId: lifecycle.close_modal_id,
+            refreshQueryIds: lifecycle.refresh_query_ids?.map(queryId),
+            clearComponentIds: lifecycle.clear_component_ids?.map(componentId),
+            closeModalId: lifecycle.close_modal_id === undefined ? undefined : componentId(lifecycle.close_modal_id),
             successAlert: lifecycle.success_alert
               ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type }
               : undefined,
@@ -97,4 +101,11 @@ export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+function idByName(items: Array<{ id: string; name?: string | null }>): (ref: string) => string {
+  const ids = new Set(items.map((item) => item.id));
+  const byName = new Map<string, string[]>();
+  for (const item of items) if (item.name) byName.set(item.name, [...(byName.get(item.name) ?? []), item.id]);
+  return (ref) => (ids.has(ref) ? ref : byName.get(ref)?.length === 1 ? byName.get(ref)![0]! : ref);
 }

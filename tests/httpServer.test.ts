@@ -56,6 +56,28 @@ describe('Streamable HTTP transport', () => {
     }
   });
 
+  it('accepts an original 10 MiB image encoded in a tool request while retaining a bounded body limit', async () => {
+    const httpMcp = createHttpMcpServer({ serverFactory: testServerFactory });
+    runningServers.push(httpMcp);
+    const baseUrl = await listen(httpMcp);
+    const client = new Client({ name: 'image-test-client', version: '1.0.0' });
+    const transport = new StreamableHTTPClientTransport(new URL('/mcp', baseUrl));
+    try {
+      await client.connect(transport);
+      const result = await client.callTool({ name: 'ping', arguments: {
+        embeddedImage: Buffer.alloc(10 * 1024 * 1024, 0x3a).toString('base64'),
+      } });
+      expect(result.content).toEqual([{ type: 'text', text: 'pong' }]);
+      const oversized = await fetch(new URL('/mcp', baseUrl), {
+        method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream',
+          'mcp-session-id': transport.sessionId! },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 10, method: 'ping', params: { bytes: 'x'.repeat(15 * 1024 * 1024) } }),
+      });
+      expect(oversized.status).toBe(400);
+      expect(await oversized.json()).toMatchObject({ error: { message: `Request body exceeds ${15 * 1024 * 1024} bytes` } });
+    } finally { await client.close(); }
+  });
+
   it('serves health and rejects non-initialize requests without a session', async () => {
     const httpMcp = createHttpMcpServer({ serverFactory: testServerFactory });
     runningServers.push(httpMcp);

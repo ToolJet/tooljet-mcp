@@ -59,7 +59,7 @@ describe('direct batch binding aliases', () => {
     const mock = fixture(); const queries = [
       { client_ref: 'source_alias', name: 'Source rows', datasource_id: 'js', options: {code:'return [];'} },
       { name: 'Derived', datasource_id: 'js', options: {code:'return queries.source_alias.data; // queries.source_alias'} },
-      { name: 'Example', datasource_id: 'js', options: {code:'const queries={source_alias:1}; return queries.source_alias;'} },
+      { name: 'Example', datasource_id: 'js', options: {code:'{ const queries={source_alias:1}; return queries.source_alias; }'} },
     ];
     const result = await addQueriesTool(mock as unknown as ToolJetClient).handler({version_id:'v1',queries});
     expect(result.isError).toBeUndefined();

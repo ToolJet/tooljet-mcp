@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed } from '../renderAuditPolicy.js';
+import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
 
 /**
  * Render audit: open a page in a headless browser and report what static checks cannot see. Built from
@@ -14,7 +14,7 @@ export interface RenderFinding {
   kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'unreachable';
   component: string;
   detail: string;
-  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'no_widgets';
+  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
 }
 
 export interface PageRenderReport {
@@ -199,7 +199,9 @@ async function loadPlaywright(): Promise<any | null> {
 
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
-  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string> } = {},
+  options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
+    /** The builder's ToolJet session (tj_auth_token), set as a cookie for the viewer origin so a private app opens. */
+    session?: string; savedQueries?: RenderAuditQueries } = {},
   driver: () => Promise<any | null> = loadPlaywright
 ): Promise<PageRenderReport[]> {
   const unreachable = (p: { page: string; url: string }, reason: RenderFinding['reason'], detail: string): PageRenderReport =>
@@ -235,18 +237,30 @@ export async function auditPages(
         return;
       }
       // Audits are snapshots, not live subscriptions. No unaudited socket channel may bypass routing.
+      if (options.session) {
+        // Only the viewer's own origin gets the session, and every request to any other origin is aborted below.
+        await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: new URL(p.url).origin }]);
+      }
       await ctx.routeWebSocket('**/*', (socket: any) => { blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }; socket.close(); });
       await ctx.route('**/*', async (route: any) => {
-        const url = route.request().url();
+        const request = route.request();
+        const url = request.url();
         if (!renderAuditUrlAllowed(url, origins)) {
           blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A navigation or resource outside the configured audit origins was blocked' };
           await route.abort();
           return;
         }
         try {
+          const policy = renderAuditRequest(url, request.method(), options.savedQueries);
+          if (!policy.allowed) {
+            blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_execution', detail: policy.detail! };
+            await route.abort();
+            return;
+          }
           // route.continue() may automatically follow redirects before another interception. Fetch
           // with redirects disabled, and never fulfill a redirect response: use canonical URLs.
-          const response = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 30_000 });
+          const response = await route.fetch({ maxRedirects: 0, maxRetries: 0, timeout: 30_000,
+            ...(policy.postData === undefined ? {} : { postData: policy.postData }) });
           try {
             if (response.status() >= 300 && response.status() < 400 && response.headers().location) {
               const dest = new URL(response.headers().location, url);
@@ -314,7 +328,7 @@ export async function auditPages(
   return reports;
 }
 
-export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => string): ToolDef {
+export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => string, driver: () => Promise<any | null> = loadPlaywright): ToolDef {
   return {
     name: 'verify_page_render',
     title: 'Verify Page Render',
@@ -325,7 +339,9 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
       '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
       'Run it once per page before the handoff and review every finding; report unverified behavior explicitly. ' +
-      'Uses a fresh unauthenticated browser context; a private app is reported as unverified, never made public. ' +
+      'Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is ' +
+      'audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries ' +
+      'and queries requiring confirmation are blocked and reported as unverified. ' +
       'Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: z.string().regex(/^[A-Za-z0-9_-]+$/),
@@ -338,16 +354,22 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
         const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
         const summary = await client.getAppSummary(args.app_id);
         const pages = (summary.pages ?? []) as Array<{ handle?: string; name?: string }>;
+        // The version being edited (preview), not the released one: a build audits what it just changed.
+        const version = await client.editingVersionName?.(args.app_id).catch(() => undefined);
+        const preview = version ? `?env=development&version=${encodeURIComponent(version)}` : '';
         const targets = pages
           .filter((p) => !args.page_handle || p.handle === args.page_handle)
-          .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}` }));
+          .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}${preview}` }));
         if (!targets.length) return fail(new Error(`no page ${args.page_handle ?? ''} in app ${args.app_id}`));
         const options = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
           allowedOrigins: origins,
+          savedQueries: summary,
+          // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
+          session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : await client.viewerSession?.().catch(() => undefined),
         };
-        const reports = await auditPages(targets, options);
+        const reports = await auditPages(targets, options, driver);
         // A private app redirects the headless browser to sign-in, and this audit will NOT publish it
         // to get around that. Making someone's app world-readable is not a diagnostic step: the window
         // is not ours to choose, the restore is a best-effort call that can fail, and a failure leaves

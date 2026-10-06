@@ -60,7 +60,10 @@ export function validateTableBatch(tables: CreateTableParams[]): string[] {
       if (!TOOLJET_DB_DATA_TYPES.has(dataType)) {
         errors.push(
           `Table "${table.tableName}" column "${column.name}" has type "${column.type}", which ToolJet DB does not accept. ` +
-            'Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.'
+            'Use one of: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb.' +
+            (/^(numeric|money|dec)/i.test(column.type.trim())
+              ? ' numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently.'
+              : '')
         );
       }
     }

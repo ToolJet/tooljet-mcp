@@ -1,3 +1,6 @@
+import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
+import { frozenAppRefusal } from '../frozenApp.js';
+import { peekAppPlan } from '../appPlanStore.js';
 import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
 import type { AppPlanInput } from '../appPlanSchema.js';
@@ -14,6 +17,7 @@ import type {
   ToolJetClient,
 } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
+import { matchPlannedPage } from '../pageMatch.js';
 
 interface LogicalTarget { id: string; name: string; type?: string }
 
@@ -139,10 +143,27 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       'and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.',
     inputSchema: {
       app_id: z.string(),
-      version_id: z.string(),
+      version_id: z.string().optional().describe('Defaults to the version the plan was linted for.'),
       plan_token: z.string(),
     },
-    async handler(args: { app_id: string; version_id: string; plan_token: string }) {
+    async handler(input: { app_id: string; version_id?: string; plan_token: string }) {
+      // The ids are checked before the one-time token is spent, so a mistyped id does not cost the linted plan, and
+      // an omitted version is the plan's (h2-receiving: a malformed version id, then none, and the page never applied).
+      const peeked = peekAppPlan(input.plan_token);
+      if (peeked) {
+        const planVersion = peeked.spec.version_id;
+        const mismatch = peeked.spec.app_id && peeked.spec.app_id !== input.app_id
+          ? `Plan app_id "${peeked.spec.app_id}" does not match "${input.app_id}".`
+          : input.version_id && planVersion && planVersion !== input.version_id
+            ? `Plan version_id "${planVersion}" does not match "${input.version_id}". Omit version_id to use the plan's.`
+            : undefined;
+        if (mismatch) return { content: [{ type: 'text' as const, text: `Error: ${mismatch} The plan_token is still valid.` }], isError: true };
+      }
+      const version = input.version_id ?? peeked?.spec.version_id;
+      if (!version) {
+        return { content: [{ type: 'text' as const, text: 'Error: apply_app_phase needs version_id: neither the call nor the plan names one.' }], isError: true };
+      }
+      const args = { ...input, version_id: version };
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
       let stage = 'consume plan';
       let createdPageIds: string[] = [];
@@ -162,9 +183,28 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           client.listTables(),
           spec.queries?.length ? client.listDatasources(args.version_id) : Promise.resolve([]),
         ]);
+        const frozen = frozenAppRefusal(initialSummary);
+        if (frozen) return fail(new Error(frozen));
         if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
+
+        // Prepare every query's options before the first write (the rename below included): the same shared step the
+        // lint and the direct query tools use, so a plan that reaches apply by any route cannot persist a toggle ToolJet
+        // would read as on, or options its datasource contract refuses.
+        stage = 'prepare queries';
+        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
+        const preparedQueryOptions = (spec.queries ?? []).map((query) => {
+          if (!query.datasource_id) throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
+          const kind = datasourceKinds.get(query.datasource_id);
+          if (!kind) throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
+          const options = structuredClone(query.options);
+          // The lint validated these with the table_ref resolved; the created table's id replaces this before the write.
+          if (query.table_ref) options.table_id = `planned-table:${query.table_ref}`;
+          const prepared = prepareQueryOptionsForWrite(kind, options, `Query "${query.name}"`);
+          if (prepared.errors.length) throw new Error(`${prepared.errors.join(' ')} Nothing was written; lint the phase again.`);
+          return { kind, options: prepared.options };
+        });
 
         let renameWarning: string | undefined;
         if (spec.app_name && spec.app_name !== initialSummary.name) {
@@ -189,11 +229,10 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           initialSummary.pages[0].components.length === 0
           ? initialSummary.pages[0]
           : undefined;
+        const plannedPageNames = new Set((spec.pages ?? []).map((page) => page.name));
         for (const page of spec.pages ?? []) {
-          let match = initialSummary.pages.find((candidate) =>
-            !claimedPageIds.has(candidate.id) &&
-            (candidate.name === page.name || candidate.handle === (page.name === 'Home' ? 'home' : undefined))
-          );
+          // By name first: "Home" also matching handle home took "Dashboard" over a real Home page (review 2026-09-25).
+          let match = matchPlannedPage(initialSummary.pages, page.name, plannedPageNames, claimedPageIds);
           if (!match && reusableHome && !claimedPageIds.has(reusableHome.id)) match = reusableHome;
           if (match) plannedPageMatches.set(logicalRef(page), match);
           if (match) claimedPageIds.add(match.id);
@@ -208,7 +247,6 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         if (queryCollision) throw new Error(`App already has a query named "${queryCollision.name}".`);
 
         const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
-        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
 
         stage = 'create tables and pages';
         const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
@@ -288,17 +326,14 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         }
 
         stage = 'seed data and create queries';
-        const queryInputs = (spec.queries ?? []).map((query) => {
-          if (!query.datasource_id) throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
-          const kind = datasourceKinds.get(query.datasource_id);
-          if (!kind) throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
-          const options = structuredClone(query.options);
+        const queryInputs = (spec.queries ?? []).map((query, index) => {
+          const { kind, options } = preparedQueryOptions[index]!;
           if (query.table_ref) {
             const tableId = tableIds.get(query.table_ref.toLowerCase());
             if (!tableId) throw new Error(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
             options.table_id = tableId;
           }
-          return { dataSourceId: query.datasource_id, name: query.name, options, kind };
+          return { dataSourceId: query.datasource_id!, name: query.name, options, kind };
         });
         const [seedWrite, queryWrite] = await Promise.allSettled([
           spec.seed_data?.length
@@ -424,14 +459,15 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const eventValidation = validateEvents(summaryBeforeEvents, allEvents);
         if (eventValidation.errors.length) throw new Error(eventValidation.errors.join(' '));
         warnings.push(...eventValidation.warnings);
-        if (allEvents.length) {
+        const newEvents = withoutExistingEvents(allEvents, summaryBeforeEvents.events);
+        if (newEvents.length) {
           await client.createEvents({
             appId: args.app_id,
             versionId: args.version_id,
-            events: allEvents,
+            events: newEvents,
             existingEvents: summaryBeforeEvents.events,
           });
-          applied.events = allEvents.length;
+          applied.events = newEvents.length;
         }
 
         stage = 'validate persisted phase';
@@ -459,7 +495,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       } catch (error) {
         let recovery = '';
         // A phase that died in its foundation stage leaves empty pages behind, and the next plan then
-        // recreates them under new names (Gemini Pro on the Nordlicht benchmark ended with nine pages, five
+        // recreates them under new names (Gemini Pro on an order-desk same-prompt run ended with nine pages, five
         // empty). Pages with nothing on them are safe to remove; created tables stay, since seed rows may
         // already be in them and the next plan can reuse them through table_ref.
         const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;
@@ -516,4 +552,19 @@ function selectedRefs(targets: Map<string, LogicalTarget>, refs: string[]): Reco
     const target = targets.get(ref);
     return target ? [[ref, target.id]] : [];
   }));
+}
+
+/** Planned events the app already has, the same source, trigger and action, dropped: a phase that re-plans the events
+ *  of queries the app keeps created them again, and each then fired twice (ds-tower d1). Only exact matches; a changed
+ *  action is created. */
+export function withoutExistingEvents(planned: EventSpec[], existing: AppSummary['events']): EventSpec[] {
+  const key = (sourceType: unknown, sourceId: unknown, payload: Record<string, unknown>) =>
+    JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
+  const have = new Set(existing.flatMap((e) => {
+    const raw = e.event && typeof e.event === 'object' && !Array.isArray(e.event) ? e.event as Record<string, unknown> : undefined;
+    if (!raw) return [];
+    const { index: _index, name: _name, ...payload } = raw;
+    return [key(e.target, e.sourceId, payload)];
+  }));
+  return planned.filter((e) => !have.has(key(e.sourceType, e.sourceId, { eventId: e.trigger, ...(e.ref ? { ref: e.ref } : {}), ...e.action })));
 }

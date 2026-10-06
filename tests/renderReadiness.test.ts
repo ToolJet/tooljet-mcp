@@ -183,7 +183,7 @@ describe('lintHtmlContentHeight', () => {
   it('flags a vertically centred header whose lines exceed the box (clipped at both edges)', () => {
     const header =
       '<div style="height:100%;display:flex;align-items:center;justify-content:space-between;padding:22px 26px">' +
-      '<div><div style="font-size:12px">Lufthansa Frankfurt hub</div><div style="font-size:30px;margin-top:6px">Operations control</div>' +
+      '<div><div style="font-size:12px">Air cargo Frankfurt hub</div><div style="font-size:30px;margin-top:6px">Operations control</div>' +
       '<div style="font-size:13px;margin-top:6px">Saturday, live operating picture</div></div></div>';
     expect(lintHtmlContentHeight(html(header, 80))[0]).toMatch(/needs about 9\dpx/);
     expect(lintHtmlContentHeight(html(header, 110))).toEqual([]);

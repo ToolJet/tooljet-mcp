@@ -36,6 +36,12 @@ export function storeAppPlan(spec: AppPlanInput, lint: AppSpecLintResult): {
   return { plan_token: planToken, expires_in_seconds: PLAN_TTL_MS / 1000 };
 }
 
+/** A plan without consuming it: apply checks the ids before it spends the one-time token. */
+export function peekAppPlan(planToken: string): StoredPlan | undefined {
+  prune();
+  return plans.get(planToken);
+}
+
 /** One-time consume prevents an accidental retry from duplicating already-created objects. */
 export function consumeAppPlan(planToken: string): StoredPlan {
   prune();

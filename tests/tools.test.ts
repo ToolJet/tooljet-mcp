@@ -232,7 +232,26 @@ describe('list_datasources tool', () => {
     const result = await tool.handler({ version_id: 'v1' });
 
     expect(client.listDatasources).toHaveBeenCalledWith('v1');
-    expect(textOf(result)).toEqual(datasources);
+    expect((textOf(result) as { datasources: unknown }).datasources).toEqual(datasources);
+  });
+
+  it('lists what ToolJet can connect, so an absent source can be told from an unsupported one', async () => {
+    // Without this the model can only see what IS connected: Pipedrive and Google Sheets both look
+    // like "not in the list", though one needs connecting and the other has no ToolJet connector at
+    // all and has to go through a REST API datasource instead.
+    const client = makeClient();
+    client.listDatasources.mockResolvedValue([{ id: 'ds1', name: 'ToolJet DB', kind: 'tooljetdb' }]);
+
+    const tool = listDatasourcesTool(client as unknown as ToolJetClient);
+    const result = textOf(await tool.handler({ version_id: 'v1' })) as {
+      datasources: unknown[];
+      connectable: string[];
+    };
+
+    expect(result.datasources).toHaveLength(1);
+    expect(result.connectable).toEqual(expect.arrayContaining(['Google Sheets 2.0', 'HubSpot', 'REST API']));
+    expect(result.connectable).not.toContain('Pipedrive');
+    expect(tool.description).toMatch(/connectable/i);
   });
 
   it('returns isError on client failure', async () => {
@@ -248,6 +267,20 @@ describe('list_datasources tool', () => {
 });
 
 describe('run_query tool', () => {
+  // Codex audit: a query name passed to run_query was not resolved, and mistyped UUIDs recurred across a
+  // build (property manager, aesthetic clinic). run_query takes the name, like run_queries and the edit tools.
+  it('runs a query given by its name', async () => {
+    const client = makeClient();
+    const saved = { id: '11111111-2222-3333-4444-555555555555', name: 'products', kind: 'tooljetdb', options: { operation: 'list_rows', list_rows: { limit: 25 } } };
+    client.getQuery.mockRejectedValue(new Error('ToolJet getQuery failed: query products not found in version v1'));
+    (client as any).getQueries = vi.fn().mockResolvedValue([saved]);
+    client.runQuery.mockResolvedValue({ status: 'ok', data: [{ id: 1 }] });
+    const result = await runQueryTool(client as unknown as ToolJetClient).handler({ query_id: 'products', version_id: 'v1' });
+    expect(textOf(result)).toMatchObject({ status: 'ok' });
+    expect(client.runQuery.mock.calls[0]![0]).toMatchObject({ queryId: saved.id });
+    expect(JSON.stringify(textOf(result))).not.toMatch(/matched by name/);
+  });
+
   it('warns when a successful browser-free run cannot resolve component-bound options', async () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({

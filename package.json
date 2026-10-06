@@ -1,6 +1,6 @@
 {
   "name": "tooljet-mcp",
-  "version": "0.5.1",
+  "version": "0.7.0",
   "main": "index.js",
   "type": "module",
   "directories": {
@@ -30,6 +30,7 @@
     "@clack/prompts": "^1.8.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "json5": "^2.2.3",
+    "moment": "^2.31.0",
     "picocolors": "^1.1.1",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"

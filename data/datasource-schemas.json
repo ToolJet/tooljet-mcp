@@ -39597,6 +39597,406 @@
       }
     ]
   },
+  "openrouter": {
+    "kind": "openrouter",
+    "name": "OpenRouter",
+    "type": "ai",
+    "description": "A schema defining OpenRouter datasource",
+    "defaults": {
+      "operation": "chat",
+      "data_collection": "allow",
+      "encoding_format": "float"
+    },
+    "operations": [
+      "chat",
+      "generate_embedding",
+      "list_models"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "chat",
+        "generate_embedding",
+        "list_models"
+      ]
+    },
+    "contracts": {
+      "chat": {
+        "operation": "chat",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "chat"
+              ]
+            },
+            "fields": {
+              "data_collection": {
+                "path": "data_collection",
+                "type": "string|binding",
+                "label": "Provider data policy",
+                "description": "Whether providers that train on prompts may serve this query",
+                "allowedValues": [
+                  "allow",
+                  "deny"
+                ]
+              },
+              "fallback_models": {
+                "path": "fallback_models",
+                "type": "unknown|binding",
+                "label": "Fallback models",
+                "description": "Comma separated models to try if the first is unavailable"
+              },
+              "json_mode": {
+                "path": "json_mode",
+                "type": "boolean|binding",
+                "label": "JSON mode",
+                "description": "Ask the model for a JSON object rather than prose"
+              },
+              "max_tokens": {
+                "path": "max_tokens",
+                "type": "unknown|binding",
+                "label": "Max tokens"
+              },
+              "message_history": {
+                "path": "message_history",
+                "type": "unknown|binding",
+                "label": "Message history",
+                "description": "Prior turns as [{role, content}]"
+              },
+              "model": {
+                "path": "model",
+                "type": "unknown|binding",
+                "label": "Model",
+                "description": "Any OpenRouter model id",
+                "required": true
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select an operation",
+                "allowedValues": [
+                  "chat",
+                  "generate_embedding",
+                  "list_models"
+                ]
+              },
+              "prompt": {
+                "path": "prompt",
+                "type": "unknown|binding",
+                "label": "User prompt",
+                "description": "The message to send",
+                "required": true
+              },
+              "stop_sequence": {
+                "path": "stop_sequence",
+                "type": "unknown|binding",
+                "label": "Stop sequences",
+                "description": "Comma separated"
+              },
+              "system_prompt": {
+                "path": "system_prompt",
+                "type": "unknown|binding",
+                "label": "System prompt",
+                "description": "Role and context for the model"
+              },
+              "temperature": {
+                "path": "temperature",
+                "type": "unknown|binding",
+                "label": "Temperature"
+              },
+              "top_p": {
+                "path": "top_p",
+                "type": "unknown|binding",
+                "label": "Top P"
+              }
+            },
+            "required": [
+              "model",
+              "operation",
+              "prompt"
+            ]
+          }
+        ],
+        "response": {
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "An object, NOT the bare string the OpenAI plugin returns and NOT an OpenAI chat-completions response: { message: string (the assistant text, bind this), finish_reason, model, provider (which provider actually served it, so it can differ from the model asked for when fallbacks are set), usage, id }."
+        },
+        "notes": [
+          "model is free text: OpenRouter carries hundreds of ids and the list changes. Populate a model picker from a list_models query rather than hard-coding options.",
+          "fallback_models is a comma-separated list of further ids to try when the first is down or rate limited. Every id must be a real model, or OpenRouter rejects the whole request."
+        ]
+      },
+      "generate_embedding": {
+        "operation": "generate_embedding",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "generate_embedding"
+              ]
+            },
+            "fields": {
+              "encoding_format": {
+                "path": "encoding_format",
+                "type": "string|binding",
+                "label": "Encoding format",
+                "allowedValues": [
+                  "float",
+                  "base64"
+                ]
+              },
+              "input": {
+                "path": "input",
+                "type": "unknown|binding",
+                "label": "Input",
+                "required": true
+              },
+              "model": {
+                "path": "model",
+                "type": "unknown|binding",
+                "label": "Model",
+                "required": true
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select an operation",
+                "allowedValues": [
+                  "chat",
+                  "generate_embedding",
+                  "list_models"
+                ]
+              }
+            },
+            "required": [
+              "input",
+              "model",
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "{ embedding: array<number> for a single input, embeddings: array<array<number>>, model, usage }."
+        }
+      },
+      "list_models": {
+        "operation": "list_models",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "list_models"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select an operation",
+                "allowedValues": [
+                  "chat",
+                  "generate_embedding",
+                  "list_models"
+                ]
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "{ models: array<{ id, name, context_length, pricing }>, count }. Use it to populate a model dropdown rather than hard-coding ids, which change often."
+        }
+      }
+    },
+    "properties": {
+      "operation": {
+        "label": "Operation",
+        "key": "operation",
+        "type": "dropdown-component-flip",
+        "description": "Select an operation",
+        "list": [
+          {
+            "value": "chat",
+            "name": "Chat"
+          },
+          {
+            "value": "generate_embedding",
+            "name": "Generate embedding"
+          },
+          {
+            "value": "list_models",
+            "name": "List models"
+          }
+        ]
+      },
+      "chat": {
+        "model": {
+          "label": "Model",
+          "key": "model",
+          "type": "codehinter",
+          "description": "Any OpenRouter model id",
+          "placeholder": "anthropic/claude-sonnet-4.5",
+          "height": "36px",
+          "mandatory": true,
+          "tooltip": "OpenRouter carries hundreds of models and the list changes weekly, so this is free text. Use the List models operation to populate a dropdown in your app."
+        },
+        "system_prompt": {
+          "label": "System prompt",
+          "key": "system_prompt",
+          "type": "codehinter",
+          "description": "Role and context for the model",
+          "height": "120px",
+          "mandatory": false,
+          "placeholder": "You are a support agent summarising tickets"
+        },
+        "prompt": {
+          "label": "User prompt",
+          "key": "prompt",
+          "type": "codehinter",
+          "description": "The message to send",
+          "height": "150px",
+          "mandatory": true,
+          "placeholder": "Summarise this ticket: {{components.table1.selectedRow.body}}"
+        },
+        "message_history": {
+          "label": "Message history",
+          "key": "message_history",
+          "type": "codehinter",
+          "description": "Prior turns as [{role, content}]",
+          "height": "100px",
+          "mandatory": false,
+          "placeholder": "{{components.chat1.history}}"
+        },
+        "max_tokens": {
+          "label": "Max tokens",
+          "key": "max_tokens",
+          "type": "codehinter",
+          "height": "36px",
+          "mandatory": false,
+          "placeholder": "1024"
+        },
+        "temperature": {
+          "label": "Temperature",
+          "key": "temperature",
+          "type": "codehinter",
+          "height": "36px",
+          "mandatory": false,
+          "placeholder": "0.7"
+        },
+        "top_p": {
+          "label": "Top P",
+          "key": "top_p",
+          "type": "codehinter",
+          "height": "36px",
+          "mandatory": false,
+          "placeholder": "1"
+        },
+        "stop_sequence": {
+          "label": "Stop sequences",
+          "key": "stop_sequence",
+          "type": "codehinter",
+          "height": "36px",
+          "mandatory": false,
+          "description": "Comma separated",
+          "placeholder": "END, ###"
+        },
+        "json_mode": {
+          "label": "JSON mode",
+          "key": "json_mode",
+          "type": "toggle",
+          "mandatory": false,
+          "description": "Ask the model for a JSON object rather than prose"
+        },
+        "fallback_models": {
+          "label": "Fallback models",
+          "key": "fallback_models",
+          "type": "codehinter",
+          "height": "36px",
+          "mandatory": false,
+          "description": "Comma separated models to try if the first is unavailable",
+          "placeholder": "openai/gpt-5.6-luna, meta-llama/llama-3.3-70b-instruct",
+          "tooltip": "OpenRouter tries these in order when the chosen model is down, rate limited or refuses the request."
+        },
+        "data_collection": {
+          "label": "Provider data policy",
+          "key": "data_collection",
+          "type": "dropdown",
+          "mandatory": false,
+          "description": "Whether providers that train on prompts may serve this query",
+          "list": [
+            {
+              "value": "allow",
+              "name": "Allow any provider"
+            },
+            {
+              "value": "deny",
+              "name": "Only providers that do not train on prompts"
+            }
+          ]
+        }
+      },
+      "generate_embedding": {
+        "model": {
+          "label": "Model",
+          "key": "model",
+          "type": "codehinter",
+          "height": "36px",
+          "mandatory": true,
+          "placeholder": "openai/text-embedding-3-small"
+        },
+        "input": {
+          "label": "Input",
+          "key": "input",
+          "type": "codehinter",
+          "height": "100px",
+          "mandatory": true,
+          "placeholder": "{{components.textinput1.value}}"
+        },
+        "encoding_format": {
+          "label": "Encoding format",
+          "key": "encoding_format",
+          "type": "dropdown",
+          "mandatory": false,
+          "list": [
+            {
+              "value": "float",
+              "name": "float"
+            },
+            {
+              "value": "base64",
+              "name": "base64"
+            }
+          ]
+        }
+      },
+      "list_models": {}
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": true,
+    "sources": [
+      {
+        "collection": "marketplace",
+        "package": "openrouter"
+      }
+    ]
+  },
   "oracledb": {
     "kind": "oracledb",
     "name": "Oracle DB",
@@ -55094,6 +55494,148 @@
       {
         "collection": "core",
         "package": "twilio"
+      }
+    ]
+  },
+  "typesafe": {
+    "kind": "typesafe",
+    "name": "TypeSafe",
+    "type": "api",
+    "description": "A schema defining TypeSafe datasource",
+    "defaults": {
+      "operation": "evaluate"
+    },
+    "operations": [
+      "evaluate"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "evaluate"
+      ]
+    },
+    "contracts": {
+      "evaluate": {
+        "operation": "evaluate",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "evaluate"
+              ]
+            },
+            "fields": {
+              "model": {
+                "path": "model",
+                "type": "unknown|binding",
+                "label": "Model",
+                "description": "Blank uses jev-latest (TypeSafe) or typesafe/jev-1.13 (OpenRouter)"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Select an operation",
+                "allowedValues": [
+                  "evaluate"
+                ]
+              },
+              "questions": {
+                "path": "questions",
+                "type": "unknown|binding",
+                "label": "Questions",
+                "description": "JSON map of question id to a typed question. Answers come back under the same ids as data.answers.<id>.",
+                "required": true
+              },
+              "state": {
+                "path": "state",
+                "type": "unknown|binding",
+                "label": "State",
+                "description": "What to decide about: a ticket, a record, a message. Text is sent as text; JSON is sent as structured state.",
+                "required": true
+              }
+            },
+            "required": [
+              "operation",
+              "questions",
+              "state"
+            ]
+          }
+        ],
+        "response": {
+          "status": "known",
+          "source": "curated-tooljet-source",
+          "type": "object",
+          "description": "{ model, answers, usage }. answers is keyed by the question ids you sent, never by position, and every answer is a typed value, not text. A choice answer is { type: 'choice', choice: string (the winning option key), probabilities: record<option, number>, confidence: number 0-1 }. A noul (yes/no) answer is { type: 'noul', noul: number } where noul is the probability of yes from 0 to 1 and there is no separate confidence. A score answer is { type: 'score', score: number (probability-weighted position from 0 to levels-1), legend: record<index, level text>, probabilities: record<index, number>, confidence: number }. Bind queries.<q>.data.answers.<id>.choice, .noul or .score; show a score's level with data.answers.<id>.legend[Math.round(data.answers.<id>.score)]. usage carries input_tokens, output_tokens and cost."
+        },
+        "notes": [
+          "questions is a JSON map of question id to a typed question { type: 'choice' | 'noul' | 'score', instructions, criteria }. choice needs criteria as a map of at least two option keys to descriptions; score needs criteria as an ordered list of at least two levels written as concrete situations; noul takes instructions only. Question ids are for your bindings and are not sent to the model, so put the full meaning in instructions.",
+          "state is what the questions are about: pass a record or an object of named fields such as {{ { subject: components.table1.selectedRow.subject, body: components.table1.selectedRow.body } }} rather than whole rows or pages; the model reads literally and unrelated detail lowers accuracy. A plain string is sent as text.",
+          "Ask every independent question about the same state in one query: they run in parallel and one call costs a few hundred milliseconds. Use a second query only when an answer decides what state to fetch next.",
+          "Decide thresholds in code or bindings, not in the question: a noul of 0.5 means yes and no are equally likely, not a medium intensity, and a spread choice distribution means several options were acceptable.",
+          "model is optional. Blank uses jev-latest on a TypeSafe credential and typesafe/jev-1.13 on an OpenRouter credential; a bare name such as jev-1.13 is mapped to the right form for either credential.",
+          "The plugin validates question shapes before calling the API, so a malformed question fails with a message naming the question id; a 401 means the key for the selected credential mode is wrong."
+        ]
+      }
+    },
+    "properties": {
+      "operation": {
+        "label": "Operation",
+        "key": "operation",
+        "type": "dropdown-component-flip",
+        "description": "Select an operation",
+        "list": [
+          {
+            "value": "evaluate",
+            "name": "Evaluate"
+          }
+        ]
+      },
+      "evaluate": {
+        "state": {
+          "label": "State",
+          "key": "state",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "description": "What to decide about: a ticket, a record, a message. Text is sent as text; JSON is sent as structured state.",
+          "height": "120px",
+          "mandatory": true,
+          "placeholder": "{{components.table1.selectedRow}}",
+          "tooltip": "Send the fields the questions need, not whole pages. Jev reads literally and large unrelated detail lowers accuracy."
+        },
+        "questions": {
+          "label": "Questions",
+          "key": "questions",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "description": "JSON map of question id to a typed question. Answers come back under the same ids as data.answers.<id>.",
+          "height": "220px",
+          "mandatory": true,
+          "placeholder": "{\n  \"route\": {\n    \"type\": \"choice\",\n    \"instructions\": \"Which team should handle this?\",\n    \"criteria\": { \"billing\": \"Payments, invoicing, refunds\", \"technical\": \"Bugs, outages\", \"sales\": \"Pricing, upgrades\" }\n  },\n  \"urgent\": { \"type\": \"noul\", \"instructions\": \"Is this time-sensitive?\" },\n  \"mood\": { \"type\": \"score\", \"instructions\": \"How frustrated is the customer?\", \"criteria\": [\"Calm\", \"Frustrated\", \"Very angry\"] }\n}",
+          "tooltip": "choice: criteria is a map of option to description. score: criteria is an ordered list of at least two levels. noul: a yes/no question, criteria optional {true, false}."
+        },
+        "model": {
+          "label": "Model",
+          "key": "model",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "description": "Blank uses jev-latest (TypeSafe) or typesafe/jev-1.13 (OpenRouter)",
+          "height": "36px",
+          "mandatory": false,
+          "placeholder": "jev-latest",
+          "editorType": "extendedSingleLine"
+        }
+      }
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": true,
+    "sources": [
+      {
+        "collection": "marketplace",
+        "package": "typesafe"
       }
     ]
   },

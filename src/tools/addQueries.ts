@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { issueMessages, normalizeQueryOptions, validateQueryOptions } from '../queryValidation.js';
+import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
@@ -61,22 +61,12 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
           if (!datasource) {
             throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          // Repair a flat {column: value} write map before validating, so an unambiguous authoring
-          // slip is fixed here instead of costing a build turn (the validator still errors on
-          // anything this cannot confidently normalize).
-          const options = normalizeQueryOptions(datasource.kind, query.options);
-          if (options !== query.options) {
-            warnings.push(
-              datasource.kind === 'mongodb' ? `Query "${query.name}": serialized MongoDB document fields to JSON text expected by the plugin.` :
-              `Query "${query.name}": rewrote the ${String(options.operation)} column map to ToolJet's ` +
-                '{index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.'
-            );
-          }
-          const validation = validateQueryOptions(datasource.kind, options);
-          if (validation.errors.length) {
-            throw new Error(issueMessages(validation.errors, `Query "${query.name}"`).join(' '));
-          }
-          warnings.push(...issueMessages(validation.warnings, `Query "${query.name}"`));
+          // The shared write preparation (toggles, the kind's normalization, its contract), for every query before any write.
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          if (prepared.errors.length) throw new Error(prepared.errors.join(' '));
+          warnings.push(...prepared.warnings);
+          const { options } = prepared;
+          const validation = prepared.validation!;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(
               `Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`

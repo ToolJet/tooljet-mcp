@@ -39,15 +39,9 @@ export function resolveRef<T extends ResolvableRef>(
   if (byId) return { ok: true, target: byId };
 
   const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1) {
-    return {
-      ok: true,
-      target: byName[0],
-      warning:
-        `${kind} "${ref}" was matched by name to id "${byName[0].id}". ` +
-        'Pass the id (from get_app_summary) to avoid ambiguity.',
-    };
-  }
+  // A unique name is as good as the id, and safer than a retyped UUID (Codex audit: mistyped ids recurred
+  // across builds), so it resolves without a note that would send the model back to ids.
+  if (byName.length === 1) return { ok: true, target: byName[0] };
   if (byName.length > 1) {
     return {
       ok: false,
