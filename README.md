@@ -6,7 +6,7 @@ An MCP server that lets a coding agent (Codex, Claude Code, …) build and maint
 
 - A ToolJet instance with personal access token support.
 - A personal access token for the target ToolJet workspace.
-- Node.js 20 or newer.
+- Node.js 20 or newer (the `tj` command needs 20.12 or newer).
 
 ## Setup
 
@@ -28,6 +28,42 @@ TOOLJET_PAT=tj_pat_...                   # Settings -> Access tokens, in the tar
 
 The default MCP profile keeps tool selection compact by exposing batch create tools only; every batch accepts a single item. Older clients can restore the redundant singular aliases with `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=true`.
 
+## Connect to ToolJet (profiles)
+
+Your ToolJet servers are saved in one private file, `~/.tooljet-mcp/profiles.json`, which the server reads itself. An agent's config then needs no token, so an agent is set up once.
+
+The first time any agent starts the server, it installs a short `tj` command for you (`~/.local/bin/tj`). Then:
+
+```bash
+tj        # guided setup: add a server, connect your coding agents
+```
+
+If your terminal cannot find `tj`, add `~/.local/bin` to your PATH, or run `node ~/.tooljet-mcp/bundle/index.js cli`.
+
+| Command | What it does |
+|---|---|
+| `tj` | guided menu |
+| `tj auth add` | add a server (URL + personal access token, typed at a masked prompt) |
+| `tj auth status` | check that every saved token still works |
+| `tj auth switch [name]` | choose what **new** chats start on |
+| `tj auth switch [name] --agent codex` | …for one agent only, so each agent can have its own default |
+| `tj agents connect --all` | connect the coding agents found on this machine |
+| `tj agents snippet` | setup for any other agent: clone this repo, then add one entry to its MCP settings |
+| `tj doctor` | check the whole setup |
+| `tj uninstall` | remove `tj` and the server copy; saved servers stay unless you add `--profiles`, which removes them for **all** coding agents |
+
+**Switch inside a chat:** ask *"switch to staging"*. The agent asks you to confirm, and only that chat moves. Open chats never follow `tj auth switch`.
+
+**Agents connected for you:** Claude Code, Codex, Antigravity, Cursor, VS Code (Copilot), Claude Desktop, Gemini CLI, Windsurf, Kiro.
+
+**Already set up with environment variables?** Nothing breaks: that server keeps working, and after its first successful login it is saved as a profile named after it (`cloud`, `local`, `staging`…). Connecting an agent moves its stored token into a profile and keeps the agent on that server.
+
+**Credential order at start:** `TOOLJET_PAT` in the environment → `TOOLJET_PROFILE=<name>` (pins one server, no switching) → the saved default. With none, the server still starts and tells the chat what to run.
+
+**From a chat:** the bundled `use-tj` skill lets the agent check the setup, install `tj` if it is missing, and run the safe commands for you. It never handles a token; adding a server stays in your terminal.
+
+Details: [docs/profiles.md](docs/profiles.md).
+
 ## Install as a Codex plugin
 
 This repo is a self-contained **Codex plugin** that registers the bundled MCP server and the
@@ -44,7 +80,7 @@ codex plugin add tooljet-app-builder@tooljet
 On Codex desktop, run the marketplace command, restart the app, open Plugins, select the ToolJet
 source and install **ToolJet App Builder**. In Codex CLI you can also install it from `/plugins`.
 
-Before launching Codex, provide the same credentials used by the standalone MCP server:
+Then run `tj` (see [Connect to ToolJet](#connect-to-tooljet-profiles)). Environment variables still work, for CI and containers:
 
 ```bash
 export TOOLJET_DEPLOYMENT_URL="https://your-instance.tooljet.com"
@@ -163,16 +199,16 @@ Or via the marketplace, which lets you get updates:
 ```
 For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.
 
-**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_DEPLOYMENT_URL` defaults to localhost; `TOOLJET_URL` defaults to `TOOLJET_DEPLOYMENT_URL`). Before launching Claude Code:
+**Provide credentials.** Run `tj` once (see [Connect to ToolJet](#connect-to-tooljet-profiles)) — a plugin cannot prompt for secrets, so they are entered in a terminal and never in chat. Environment variables still work, for CI and containers:
 ```bash
 export TOOLJET_DEPLOYMENT_URL="https://your-instance.tooljet.com"
 export TOOLJET_PAT="tj_pat_..."
 # only needed if the API lives on a different origin than TOOLJET_DEPLOYMENT_URL above:
 # export TOOLJET_URL="https://api.your-instance.tooljet.com"
 ```
-If `TOOLJET_DEPLOYMENT_URL` and `TOOLJET_PAT` are missing, the server exits during startup with a clear required-variable error. Set them and restart.
+With no saved server and no `TOOLJET_PAT`, the server still starts; every tool answers with the setup command, and `use_profile` brings the chat to life afterwards without a restart.
 
-**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
+**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`), with the `tj` CLI beside it as `bundle/cli/index.js`, loaded only when asked for; it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
 ```bash
 npm run generate:catalogs && npm run generate:skill && npm run build:plugin
 ```
@@ -199,6 +235,7 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 
 | Tool | Purpose |
 |---|---|
+| `list_profiles()` / `use_profile(name)` | The ToolJet servers saved on this machine (names and hosts, never tokens), and switching THIS chat to another one; stdio only, confirmation-gated, refused when `TOOLJET_PROFILE` pins the process |
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace; results include its manual datasource-settings URL |
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
 | `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |

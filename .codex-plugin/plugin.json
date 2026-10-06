@@ -23,6 +23,10 @@
     "longDescription": "Create and maintain ToolJet apps through governed MCP tools, exact component and datasource contracts, and a focused app-building skill.",
     "developerName": "ToolJet",
     "category": "Productivity",
+    "websiteURL": "https://tooljet.com",
+    "brandColor": "#4D72FA",
+    "composerIcon": "./data/icon.png",
+    "logo": "./data/icon.png",
     "capabilities": [
       "Interactive",
       "Write"

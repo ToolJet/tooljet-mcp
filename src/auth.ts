@@ -26,7 +26,19 @@ export interface Auth {
   viewerSession?(): Promise<string | undefined>;
 }
 
-export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
+/** The one place that knows how a PAT is exchanged for a session. `tj` uses it to check a token exactly as the server logs in. */
+export function requestPatSession(apiUrl: string, pat: string, fetchImpl: typeof fetch = fetch): Promise<Response> {
+  return fetchImpl(`${apiUrl}/api/personal-access-tokens/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pat}` },
+  });
+}
+
+export interface PatLogin {
+  workspaceSlug?: string;
+}
+
+export function createAuth(config: Config, fetchImpl: typeof fetch = fetch, onPatLogin?: (login: PatLogin) => void): Auth {
   let token: string | undefined;
   /* Set once the caller-supplied session has been installed. login() is re-entered by the 401
      retry path with `token` already cleared, so this — not `token` — is what tells us a supplied
@@ -68,10 +80,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
       return;
     }
 
-    const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
-    });
+    const res = await requestPatSession(config.apiUrl, config.pat as string, fetchImpl);
     recordHttpResponse(res);
 
     if (!res.ok) {
@@ -98,6 +107,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     workspaceId = body.organizationId;
     workspaceSlug = body.organizationSlug ?? undefined;
     workspaceName = body.organizationName ?? undefined;
+    onPatLogin?.({ workspaceSlug });
 
   }
 

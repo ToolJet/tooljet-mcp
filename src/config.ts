@@ -62,10 +62,25 @@ export const ALLOWED_API_ORIGINS_VAR = 'MCP_ALLOWED_API_ORIGINS';
 const GATEWAY_URL_VAR = 'MCP_GATEWAY_URL';
 const GATEWAY_TOKEN_VAR = 'MCP_GATEWAY_TOKEN';
 
-/** An environment variable, or undefined when unset OR blank. */
-function env(name: string): string | undefined {
+/** An environment variable, or undefined when unset, blank, or a literal `${VAR}` — plugin hosts can pass an unset placeholder through as text. */
+export function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
-  return value ? value : undefined;
+  return value && !isPlaceholder(value) ? value : undefined;
+}
+
+/** True for an unexpanded `${VAR}` that a plugin host passed through as literal text. */
+export function isPlaceholder(value: string): boolean {
+  return /^\$\{[^}]*\}$/.test(value.trim());
+}
+
+/** True when this process was handed a credential through its environment. */
+export function hasEnvCredential(): boolean {
+  return Boolean(env('TOOLJET_PAT') || env('TOOLJET_SESSION_TOKEN'));
+}
+
+/** Config for a saved profile. */
+export function configFromProfile(profile: { url: string; apiUrl?: string; pat: string }): Config {
+  return { apiUrl: profile.apiUrl ?? profile.url, appUrl: profile.url, pat: profile.pat };
 }
 
 /**

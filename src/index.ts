@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { buildServer, buildUnconfiguredServer } from './server.js';
+import { buildServer, buildStdioServer, buildUnconfiguredServer } from './server.js';
+import { CLI_MIN_NODE, CLI_WORDS } from './cli/words.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
 import {
@@ -259,6 +260,20 @@ async function serveHttp(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  /** `tj` enters here too. Branch before any transport exists: stdout belongs to JSON-RPC. */
+  if (CLI_WORDS.has(process.argv[2] ?? '')) {
+    // The CLI ships as its own file, so the server never loads its prompt library, which needs a newer Node.
+    const [major, minor] = process.versions.node.split('.').map(Number);
+    const [needMajor, needMinor] = CLI_MIN_NODE;
+    if (major < needMajor || (major === needMajor && minor < needMinor)) {
+      console.error(`tj needs Node.js ${needMajor}.${needMinor} or newer; this is ${process.version}. The ToolJet MCP server itself still runs on it.`);
+      process.exit(1);
+    }
+    const { runCli } = await import('./cli/index.js');
+    await runCli(process.argv.slice(2));
+    return;
+  }
+
   if (process.env.MCP_TRANSPORT === 'http') {
     await serveHttp();
     return;
@@ -269,7 +284,7 @@ async function main(): Promise<void> {
      reaches only this stderr. Hand back a server that says why instead. */
   let server: McpServer;
   try {
-    server = buildServer();
+    server = buildStdioServer();
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     console.error(`tooljet-mcp: ${reason}`);
