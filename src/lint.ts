@@ -2276,6 +2276,8 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
         }
         if (
           c?.columnType === 'string' &&
+          // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
+          c.columnVisibility !== false && c.columnVisibility !== '{{false}}' &&
           // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
           (typeof c.key === 'string' && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) &&
           !authorComputesKey(props?.data, c.key)

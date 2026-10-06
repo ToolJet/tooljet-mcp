@@ -67748,7 +67748,8 @@ function lintComponentSpec(spec, context = {}) {
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
           warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
-        if (c?.columnType === "string" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
+        if (c?.columnType === "string" && // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
+        c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
         (typeof c.key === "string" && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) && !authorComputesKey(props?.data, c.key)) {
           warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
