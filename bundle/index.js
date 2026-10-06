@@ -67913,18 +67913,49 @@ function lintToolbarButtonAlignment(components) {
   }
   return errors;
 }
-function isTitleLikeText(component) {
+function modalTitleText(component) {
+  if (component.type !== "Text")
+    return void 0;
+  const value2 = propVal2(component.properties, "text");
+  if (typeof value2 !== "string")
+    return void 0;
+  let text = "";
+  let from = 0;
+  for (const span of bindingSpans(value2)) {
+    let literal3;
+    try {
+      literal3 = (0, import_parser14.parseExpression)(`(${span.body})`);
+    } catch {
+      return void 0;
+    }
+    if (literal3.type !== "StringLiteral" && !(literal3.type === "TemplateLiteral" && literal3.expressions.length === 0))
+      return void 0;
+    text += value2.slice(from, span.start) + (literal3.type === "StringLiteral" ? literal3.value : literal3.quasis[0]?.value.cooked ?? "");
+    from = span.end;
+  }
+  text += value2.slice(from);
+  if (text.includes("{{"))
+    return void 0;
+  return text.replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|#160|#x0*a0);/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
+}
+function isTitleLikeText(component, headerChildren) {
   if (component.type !== "Text")
     return false;
   const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
   if (top > 100)
     return false;
-  const name2 = component.name ?? "";
-  const text = propVal2(component.properties, "text");
+  const text = modalTitleText(component);
+  if (!text)
+    return false;
+  if (headerChildren.length)
+    return headerChildren.some((header) => modalTitleText(header) === text);
+  if (text.length > 80 || text.split(" ").length > 8 || /[.!?;…]/.test(text) || /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text) || /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text) || /\b(?:below|above|to continue|to get started)\b/.test(text))
+    return false;
   const fontWeight = propVal2(component.styles, "fontWeight");
   const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
-  const recordLabel = typeof text === "string" && (text.includes("{{") || /\?\s*$/.test(text.trim())) && (textSize === void 0 || textSize < 18);
-  return /(?:title|heading|header)/i.test(name2) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || !recordLabel && typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || !recordLabel && typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
+  const bold = typeof fontWeight === "number" ? fontWeight >= 600 : typeof fontWeight === "string" && /^(?:bold|[6-9]00)$/.test(fontWeight);
+  const rawText = propVal2(component.properties, "text");
+  return /<h[1-6]\b/i.test(rawText) || bold && /(?:title|heading|header)/i.test(component.name ?? "") || textSize !== void 0 && textSize >= 18;
 }
 function lintModalChildren(components) {
   const warnings = [];
@@ -67979,8 +68010,8 @@ function lintModalChildren(components) {
       if (!headerChildren.length) {
         warnings.push(`Modal "${modal.name ?? modal.type}" has showHeader enabled but its native header slot is empty, so it renders reserved blank chrome. Add a Text child with the modal parent_ref/parent and slot_name:"header", or set showHeader:false.`);
       }
-      for (const child of children.filter(isTitleLikeText)) {
-        warnings.push(`Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. Move that Text to slot_name:"header" instead of spending body space on a second title row.`);
+      for (const child of children.filter((child2) => isTitleLikeText(child2, headerChildren))) {
+        warnings.push(`Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. ` + (headerChildren.length ? "It repeats the native header text; consider removing the duplicate body title." : 'Move that Text to slot_name:"header" to fill the empty native header.'));
       }
     }
     const childBottoms = children.flatMap((child) => {

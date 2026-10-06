@@ -18,6 +18,7 @@ import {
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { bindingSpans } from './bindingSpans.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
 import { lintWhitespaceGuards } from './whitespaceGuard.js';
 import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
@@ -2524,25 +2525,59 @@ export function lintToolbarButtonAlignment(components: LintComponent[]): string[
   return errors;
 }
 
-function isTitleLikeText(component: LintComponent): boolean {
+/** Compare only knowable display text. Never evaluate record bindings or infer their runtime title. */
+function modalTitleText(component: LintComponent): string | undefined {
+  if (component.type !== 'Text') return undefined;
+  const value = propVal(component.properties, 'text');
+  if (typeof value !== 'string') return undefined;
+  let text = '';
+  let from = 0;
+  for (const span of bindingSpans(value)) {
+    let literal: ReturnType<typeof parseExpression>;
+    try {
+      literal = parseExpression(`(${span.body})`);
+    } catch {
+      return undefined; // Malformed bindings belong to syntax lint, not title advice.
+    }
+    if (literal.type !== 'StringLiteral' &&
+        !(literal.type === 'TemplateLiteral' && literal.expressions.length === 0)) return undefined;
+    text += value.slice(from, span.start) + (literal.type === 'StringLiteral'
+      ? literal.value : literal.quasis[0]?.value.cooked ?? '');
+    from = span.end;
+  }
+  text += value.slice(from);
+  if (text.includes('{{')) return undefined; // Incomplete/unknown bindings belong to syntax lint.
+  return text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(?:nbsp|#160|#x0*a0);/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function isTitleLikeText(component: LintComponent, headerChildren: LintComponent[]): boolean {
   if (component.type !== 'Text') return false;
   const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
   if (top > 100) return false;
-  const name = component.name ?? '';
-  const text = propVal(component.properties, 'text');
+  const text = modalTitleText(component);
+  if (!text) return false;
+  // A populated header needs actual duplicate wording. A distinct customer/product name, section
+  // heading, or helper is legitimate regardless of its component name, size, or weight.
+  if (headerChildren.length) return headerChildren.some((header) => modalTitleText(header) === text);
+
+  // An empty header can take a short, visibly authored heading. Action verbs and component names
+  // alone are not evidence: "Add the contact details..." is instructional copy, not a modal title.
+  if (text.length > 80 || text.split(' ').length > 8 || /[.!?;…]/.test(text) ||
+      /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text) ||
+      /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text) ||
+      /\b(?:below|above|to continue|to get started)\b/.test(text)) return false;
   const fontWeight = propVal(component.styles, 'fontWeight');
   const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
-  // Bold dynamic text below 18px is a record label ("{row.product_name}" under "Change price"), not a second
-  // title: five plans failed on exactly that (trace review, 2026-09-25).
-  // A bold question below 18px ("Mark this invoice as paid?") is the prompt the modal asks, not a title (n1 vet).
-  const recordLabel = typeof text === 'string' && (text.includes('{{') || /\?\s*$/.test(text.trim())) &&
-    (textSize === undefined || textSize < 18);
+  const bold = typeof fontWeight === 'number' ? fontWeight >= 600
+    : typeof fontWeight === 'string' && /^(?:bold|[6-9]00)$/.test(fontWeight);
+  const rawText = propVal(component.properties, 'text') as string;
   return (
-    /(?:title|heading|header)/i.test(name) ||
-    (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
-      (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim()))) ||
-    (!recordLabel && typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
-    (!recordLabel && typeof fontWeight === 'number' && fontWeight >= 600) ||
+    /<h[1-6]\b/i.test(rawText) ||
+    (bold && /(?:title|heading|header)/i.test(component.name ?? '')) ||
     (textSize !== undefined && textSize >= 18)
   );
 }
@@ -2615,10 +2650,12 @@ export function lintModalChildren(components: LintComponent[]): string[] {
             'Add a Text child with the modal parent_ref/parent and slot_name:"header", or set showHeader:false.'
         );
       }
-      for (const child of children.filter(isTitleLikeText)) {
+      for (const child of children.filter((child) => isTitleLikeText(child, headerChildren))) {
         warnings.push(
           `Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. ` +
-            'Move that Text to slot_name:"header" instead of spending body space on a second title row.'
+            (headerChildren.length
+              ? 'It repeats the native header text; consider removing the duplicate body title.'
+              : 'Move that Text to slot_name:"header" to fill the empty native header.')
         );
       }
     }
