@@ -62269,6 +62269,14 @@ var WRONG_ALIASES = {
   // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
   RadioButtonV2: {
     label: (name2) => `RadioButton "${name2}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name2}.value for the selection.`
+  },
+  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
+  ReorderableList: {
+    value: (name2) => `ReorderableList "${name2}" does not expose value. Use components.${name2}.values for the ordered option values; the incorrect alias is undefined, even with optional chaining or a fallback.`
+  },
+  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
+  MultiselectV2: {
+    value: (name2) => `MultiselectV2 "${name2}" does not expose value. Use components.${name2}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
   }
 };
 
@@ -67347,7 +67355,19 @@ function expressionOutsideBinding(value2) {
   return match ? JSON.stringify(match[0].trim().slice(0, 60)) : null;
 }
 var WRAP_REQUIRED_COLUMNS = 5;
-function estimateTextHeight(text, baseSize) {
+function estimateTextHeight(text, baseSize, options2 = {}) {
+  const dynamic = text.includes("{{");
+  if (dynamic) {
+    const literals = [];
+    let from = 0;
+    for (const span of bindingSpans(text)) {
+      literals.push(text.slice(from, span.start));
+      from = span.end;
+    }
+    literals.push(text.slice(from));
+    const standIn = options2.bindingLines && literals.some((part) => part.replace(/<[^>]+>/g, "").trim() || /<br\s*\/?>/i.test(part)) ? "x" : " ";
+    text = literals.join(standIn).split("{{", 1)[0];
+  }
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
   const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
   const parts = rawParts.map((part) => part.replace(/<[^>]+>/g, "").trim() === "" ? null : part).filter((part) => part !== null);
@@ -67365,7 +67385,7 @@ function estimateTextHeight(text, baseSize) {
   });
   const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
   const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
-  return { lines: parts.length + blankLines, px: px2, sizes };
+  return { lines: parts.length + blankLines, px: px2, sizes, ...dynamic ? { dynamic: true } : {} };
 }
 var CHART_HOUSE_LAYOUT_KEYS = ["font", "family"];
 var CHART_PADDING_MAX_PX = 24;
@@ -67479,7 +67499,12 @@ function lintComponentSpec(spec, context = {}) {
     if (typeof text === "string" && typeof height === "number") {
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
-        errors.push(`Text "${label2}": its ${needed.lines} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
+        errors.push(`Text "${label2}": its ${needed.lines}${needed.dynamic ? " static" : ""} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
+      } else if (needed.dynamic) {
+        const likely = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14, { bindingLines: true });
+        if (likely.lines > 1 && likely.px > height + 6) {
+          warnings.push(`Text "${label2}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`);
+        }
       }
     }
   }
@@ -67771,15 +67796,21 @@ function lintComponentSpec(spec, context = {}) {
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
-      const baseRowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const rowHeight2 = isTruthyBinding(contentWrap) ? baseRowHeight + 4 : baseRowHeight;
+      const textRowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const hasVisibleChips = Array.isArray(columns) && columns.some((column) => {
+        const c = recordValue(column);
+        return c?.columnVisibility !== false && c?.columnType === "tagsV2";
+      });
+      const baseRowHeight = hasVisibleChips ? Math.max(49, textRowHeight) : textRowHeight;
+      const rowHeight2 = Math.max(baseRowHeight, isTruthyBinding(contentWrap) ? textRowHeight + 4 : textRowHeight);
       const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props, key4)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
+      const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
+      const estimatedHeight = chromeHeight + rowsPerPage * rowHeight2;
       if (desktopHeight < chromeHeight + baseRowHeight) {
         errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + baseRowHeight}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
+        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {
@@ -67879,7 +67910,8 @@ function lintComponentSpec(spec, context = {}) {
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
           warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
-        if (c?.columnType === "string" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
+        if (c?.columnType === "string" && // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
+        c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
         (typeof c.key === "string" && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) && !authorComputesKey(props?.data, c.key)) {
           warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
@@ -68064,18 +68096,49 @@ function lintToolbarButtonAlignment(components) {
   }
   return errors;
 }
-function isTitleLikeText(component) {
+function modalTitleText(component) {
+  if (component.type !== "Text")
+    return void 0;
+  const value2 = propVal2(component.properties, "text");
+  if (typeof value2 !== "string")
+    return void 0;
+  let text = "";
+  let from = 0;
+  for (const span of bindingSpans(value2)) {
+    let literal3;
+    try {
+      literal3 = (0, import_parser15.parseExpression)(`(${span.body})`);
+    } catch {
+      return void 0;
+    }
+    if (literal3.type !== "StringLiteral" && !(literal3.type === "TemplateLiteral" && literal3.expressions.length === 0))
+      return void 0;
+    text += value2.slice(from, span.start) + (literal3.type === "StringLiteral" ? literal3.value : literal3.quasis[0]?.value.cooked ?? "");
+    from = span.end;
+  }
+  text += value2.slice(from);
+  if (text.includes("{{"))
+    return void 0;
+  return text.replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|#160|#x0*a0);/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
+}
+function isTitleLikeText(component, headerChildren) {
   if (component.type !== "Text")
     return false;
   const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
   if (top > 100)
     return false;
-  const name2 = component.name ?? "";
-  const text = propVal2(component.properties, "text");
+  const text = modalTitleText(component);
+  if (!text)
+    return false;
+  if (headerChildren.length)
+    return headerChildren.some((header) => modalTitleText(header) === text);
+  if (text.length > 80 || text.split(" ").length > 8 || /[.!?;…]/.test(text) || /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text) || /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text) || /\b(?:below|above|to continue|to get started)\b/.test(text))
+    return false;
   const fontWeight = propVal2(component.styles, "fontWeight");
   const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
-  const recordLabel = typeof text === "string" && (text.includes("{{") || /\?\s*$/.test(text.trim())) && (textSize === void 0 || textSize < 18);
-  return /(?:title|heading|header)/i.test(name2) || typeof text === "string" && !text.includes("{{") && text.trim().length > 0 && text.trim().length <= 80 && (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim())) || !recordLabel && typeof fontWeight === "string" && /bold|[6-9]00/.test(fontWeight) || !recordLabel && typeof fontWeight === "number" && fontWeight >= 600 || textSize !== void 0 && textSize >= 18;
+  const bold = typeof fontWeight === "number" ? fontWeight >= 600 : typeof fontWeight === "string" && /^(?:bold|[6-9]00)$/.test(fontWeight);
+  const rawText = propVal2(component.properties, "text");
+  return /<h[1-6]\b/i.test(rawText) || bold && /(?:title|heading|header)/i.test(component.name ?? "") || textSize !== void 0 && textSize >= 18;
 }
 function lintModalChildren(components) {
   const warnings = [];
@@ -68130,8 +68193,8 @@ function lintModalChildren(components) {
       if (!headerChildren.length) {
         warnings.push(`Modal "${modal.name ?? modal.type}" has showHeader enabled but its native header slot is empty, so it renders reserved blank chrome. Add a Text child with the modal parent_ref/parent and slot_name:"header", or set showHeader:false.`);
       }
-      for (const child of children.filter(isTitleLikeText)) {
-        warnings.push(`Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. Move that Text to slot_name:"header" instead of spending body space on a second title row.`);
+      for (const child of children.filter((child2) => isTitleLikeText(child2, headerChildren))) {
+        warnings.push(`Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. ` + (headerChildren.length ? "It repeats the native header text; consider removing the duplicate body title." : 'Move that Text to slot_name:"header" to fill the empty native header.'));
       }
     }
     const childBottoms = children.flatMap((child) => {
@@ -73837,6 +73900,41 @@ function isRecord(value2) {
 function nonEmptyString(value2) {
   return typeof value2 === "string" && value2.trim().length > 0;
 }
+function navigationItemRef(source2, ref) {
+  let unknown2 = false;
+  let found = false;
+  let group = false;
+  const visit = (items) => {
+    if (typeof items === "string" && items.includes("{{")) {
+      unknown2 = true;
+      return;
+    }
+    if (!Array.isArray(items)) {
+      if (items == null)
+        unknown2 = true;
+      return;
+    }
+    for (const item of items) {
+      if (!isRecord(item))
+        continue;
+      if (item.id === ref) {
+        if (item.isGroup)
+          group = true;
+        else
+          found = true;
+      }
+      if (typeof item.id === "string" && item.id.includes("{{"))
+        unknown2 = true;
+      if (item.isGroup)
+        visit(item.children ?? []);
+    }
+  };
+  visit(propVal3(source2.properties, "menuItems"));
+  return group ? "invalid" : found ? "valid" : unknown2 ? "unknown" : "invalid";
+}
+function effectiveRef(event) {
+  return Object.prototype.hasOwnProperty.call(event.action, "ref") ? event.action.ref : event.ref;
+}
 function validateTableColumnRef(source2, ref) {
   if (!ref)
     return 'Table Button-column events require ref "<column key or name>::<button id>".';
@@ -73940,6 +74038,19 @@ function validateEvents(summary, events, options2 = {}) {
     errors.push(...lintComponentStateBindings(event.action, [...components.values()], label2));
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
+      for (const ref of new Set([event.ref, event.action.ref].filter((ref2) => ref2 != null && ref2 !== ""))) {
+        if (source2?.type !== "Navigation" || event.trigger !== "onClick") {
+          (options2.savedRefs?.has(event) ? warnings : errors).push(`${label2}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
+        } else if (!nonEmptyString(ref) || ref.includes("{{")) {
+          errors.push(`${label2}: Navigation onClick ref must be a literal non-empty item id.`);
+        } else {
+          const membership = navigationItemRef(source2, ref);
+          if (membership === "invalid")
+            errors.push(`${label2}: Navigation ref "${ref}" does not identify a non-group menu item.`);
+          if (membership === "unknown")
+            warnings.push(`${label2}: Navigation ref "${ref}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
+        }
+      }
       if (!source2)
         errors.push(`${label2}: component source "${event.sourceId}" does not exist.`);
       else if (source2.type) {
@@ -74186,7 +74297,10 @@ function validateEvents(summary, events, options2 = {}) {
   }
   errors.push(...queryEventCycleErrors(summary, events, options2.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
   const persistedMode = options2.includePersistedChains === false;
-  const runKey = (sourceId, trigger, ref, queryId) => JSON.stringify([sourceId, trigger, ref ?? null, queryId]);
+  const isNavigation = (sourceType, sourceId, trigger) => sourceType === "component" && components.get(sourceId)?.type === "Navigation" && trigger === "onClick";
+  const runKey = (sourceType, sourceId, trigger, queryId) => JSON.stringify([sourceType, sourceId, trigger, queryId]);
+  const runScope = (sourceType, sourceId, trigger, ref) => sourceType === "table_column" || isNavigation(sourceType, sourceId, trigger) ? ref || null : null;
+  const overlaps = (left, right, navigation) => left === right || navigation && (left === null || right === null);
   const payloadKey = (payload2) => JSON.stringify(Object.keys(payload2).filter((k) => k !== "index" && k !== "name").sort().map((k) => [k, payload2[k]]));
   const heldRuns = /* @__PURE__ */ new Map();
   if (!persistedMode) {
@@ -74196,30 +74310,34 @@ function validateEvents(summary, events, options2 = {}) {
         continue;
       if (held.target !== "component" && held.target !== "table_column")
         continue;
-      const key4 = runKey(held.sourceId, payload2.eventId, payload2.ref, payload2.queryId);
-      heldRuns.set(key4, [...heldRuns.get(key4) ?? [], { id: held.id, payload: payloadKey(payload2) }]);
+      const key4 = runKey(held.target, held.sourceId, payload2.eventId, payload2.queryId);
+      const scope = runScope(held.target, held.sourceId, payload2.eventId, payload2.ref);
+      heldRuns.set(key4, [...heldRuns.get(key4) ?? [], { id: held.id, payload: payloadKey(payload2), scope }]);
     }
   }
-  const plannedRuns = /* @__PURE__ */ new Set();
+  const plannedRuns = /* @__PURE__ */ new Map();
   for (const event of events) {
     if (event.action?.actionId !== "run-query")
       continue;
     if (event.sourceType !== "component" && event.sourceType !== "table_column")
       continue;
-    const key4 = runKey(event.sourceId, event.trigger, event.ref, event.action.queryId);
+    const key4 = runKey(event.sourceType, event.sourceId, event.trigger, event.action.queryId);
+    const scope = runScope(event.sourceType, event.sourceId, event.trigger, effectiveRef(event));
+    const navigation = isNavigation(event.sourceType, event.sourceId, event.trigger);
     const sourceName = components.get(event.sourceId)?.name ?? event.sourceId;
     const queryName = queryById.get(String(event.action.queryId ?? ""))?.name ?? String(event.action.queryName ?? event.action.queryId);
     const mine = payloadKey({ eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action });
-    const held = heldRuns.get(key4);
-    if (held && !held.some((h) => h.payload === mine)) {
+    const held = (heldRuns.get(key4) ?? []).filter((h) => overlaps(h.scope, scope, navigation));
+    if (held.length && !held.some((h) => h.payload === mine)) {
       errors.push(`"${sourceName}" ${event.trigger} already runs query "${queryName}" (event ${held[0].id}); a second handler would run it twice on one ${event.trigger}. Change that handler with update_events, or delete it with delete_event before adding this one.`);
-    } else if (plannedRuns.has(key4)) {
+    } else if ((plannedRuns.get(key4) ?? []).some((previous) => overlaps(previous, scope, navigation))) {
       (persistedMode ? warnings : errors).push(`"${sourceName}" ${event.trigger} runs query "${queryName}" twice: two handlers on it run the same query, so one ${event.trigger} runs it two times. Keep one.`);
     }
-    plannedRuns.add(key4);
+    plannedRuns.set(key4, [...plannedRuns.get(key4) ?? [], scope]);
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
+var persistedEventIds = /* @__PURE__ */ new WeakMap();
 function persistedEventSpecs(summary) {
   return summary.events.map((event, position) => ({ event, position })).sort((left, right) => (left.event.index ?? left.position) - (right.event.index ?? right.position)).flatMap(({ event }) => {
     if (!event.sourceId || !event.target || !event.event || typeof event.event !== "object")
@@ -74228,14 +74346,19 @@ function persistedEventSpecs(summary) {
     if (typeof payload2.eventId !== "string")
       return [];
     const { eventId, ref, ...action } = payload2;
-    return [{
+    if (event.target === "component" && ref != null && typeof ref !== "string")
+      action.ref = ref;
+    const spec = {
       sourceId: event.sourceId,
       sourceType: event.target,
       ...typeof ref === "string" ? { ref } : {},
       trigger: eventId,
       action,
       name: event.name
-    }];
+    };
+    if (event.id)
+      persistedEventIds.set(spec, event.id);
+    return [spec];
   });
 }
 function navigationReorders(summary, touched, diagnostics) {
@@ -75018,6 +75141,21 @@ function unique(values, label2, sourceName, warnings) {
   return result;
 }
 
+// dist/seedGeneratedPrimaryKeyValidation.js
+function invalidPlannedGeneratedPrimaryKeySeeds(columns, rows) {
+  const primaryKeys = columns.some((column) => column.primaryKey) ? columns.filter((column) => column.primaryKey) : [{ name: "id", type: "serial", primaryKey: true }];
+  const errors = [];
+  for (const column of primaryKeys) {
+    if (normalizeType(column.type) !== "serial" && !/^nextval\(/i.test(String(column.defaultValue ?? "").trim()))
+      continue;
+    const supplied = rows.flatMap((row, index) => column.name in row ? [index + 1] : []);
+    if (supplied.length) {
+      errors.push(`Omit generated primary key "${column.name}" from seed row(s) ${supplied.slice(0, 12).join(", ")}${supplied.length > 12 ? ` and ${supplied.length - 12} more` : ""}. ToolJet allocates it from the table sequence; explicit keys can collide or desynchronize future inserts. No seed values were removed or rewritten.`);
+    }
+  }
+  return errors;
+}
+
 // dist/bindingBraces.js
 function separateAdjacentClosingBraces(text) {
   let out = "";
@@ -75649,10 +75787,14 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
   const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
   if (seedData.length) {
     checked.push("seed batches have non-empty rows");
-    for (const seed of seedData) {
+    for (const [batchIndex, seed] of seedData.entries()) {
       if (!seed.rows.length)
         errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
-      const columns = tables.find((table) => table.tableName === seed.tableName)?.columns ?? [];
+      const plannedTable = tables.find((table) => table.tableName.toLowerCase() === seed.tableName.toLowerCase());
+      if (plannedTable) {
+        errors.push(...invalidPlannedGeneratedPrimaryKeySeeds(plannedTable.columns, seed.rows).map((error51) => `Seed data for planned table "${seed.tableName}" (batch ${batchIndex + 1}): ${error51}`));
+      }
+      const columns = plannedTable?.columns ?? [];
       for (const column of columns) {
         if (!/^jsonb?$/i.test(String(column.type ?? "")))
           continue;
@@ -76721,9 +76863,48 @@ function lintAppSpecTool(client) {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen)
           return fail(new Error(frozen));
+        const plannedNames = /* @__PURE__ */ new Map();
+        for (const table of args.tables ?? []) {
+          const key4 = table.table_name.toLowerCase();
+          if (plannedNames.has(key4))
+            return fail(new Error(`Ambiguous planned table name "${table.table_name}": table names must be unique ignoring case.`));
+          plannedNames.set(key4, table.table_name);
+        }
+        const existingNames = /* @__PURE__ */ new Map();
+        const ambiguousNames = /* @__PURE__ */ new Set();
+        for (const table of existingTables) {
+          const key4 = table.table_name.toLowerCase();
+          if (existingNames.has(key4))
+            ambiguousNames.add(key4);
+          existingNames.set(key4, table.table_name);
+        }
+        const existingExact = new Set(existingTables.map((table) => table.table_name));
+        const canonicalTableName = (name2) => {
+          const key4 = name2.toLowerCase();
+          if (ambiguousNames.has(key4) && !existingExact.has(name2))
+            throw new Error(`Ambiguous existing table name "${name2}": multiple workspace tables match ignoring case. No plan token was issued.`);
+          return plannedNames.get(key4) ?? (existingExact.has(name2) ? name2 : existingNames.get(key4)) ?? name2;
+        };
+        for (const name2 of plannedNames.values())
+          canonicalTableName(name2);
+        for (const seed of args.seed_data ?? [])
+          seed.table_name = canonicalTableName(seed.table_name);
+        for (const query of args.queries ?? [])
+          if (query.table_ref)
+            query.table_ref = canonicalTableName(query.table_ref);
+        for (const table of args.tables ?? []) {
+          for (const fk of table.foreign_keys ?? []) {
+            const ref = fk;
+            for (const field of ["referencedTable", "referenced_table", "references_table"]) {
+              if (typeof ref[field] === "string")
+                ref[field] = canonicalTableName(ref[field]);
+            }
+          }
+        }
+        const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
         const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
         if (fetchedSummary && args.queries?.length) {
-          const restated = restatedQueryNames(fetchedSummary, args.queries, existingTables, datasources);
+          const restated = restatedQueryNames(fetchedSummary, args.queries.filter((query) => !query.table_ref || !plannedNames.has(query.table_ref.toLowerCase())), existingTables, datasources);
           if (restated.length) {
             args.queries = args.queries.filter((query) => !restated.includes(query.name));
             preflightWarnings.push(`${restated.map((name2) => `"${name2}"`).join(", ")}: already in the app exactly as written here, so the plan uses the existing quer` + (restated.length > 1 ? "ies" : "y") + " and defines nothing again.");
@@ -76744,6 +76925,7 @@ function lintAppSpecTool(client) {
           preflightErrors.push(`App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`);
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        const reservedTableNames = new Map([...tableIds, ...plannedNames]);
         const plannedNew = new Set((args.tables ?? []).map((table) => table.table_name.toLowerCase()));
         const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))].filter((name2) => tableIds.has(name2.toLowerCase()) && !plannedNew.has(name2.toLowerCase()));
         const withRows = await Promise.all(seededExisting.map(async (name2) => await client.hasRows?.(tableIds.get(name2.toLowerCase())).catch(() => void 0) === true ? name2 : void 0));
@@ -76753,13 +76935,13 @@ function lintAppSpecTool(client) {
         for (const table of args.tables ?? []) {
           const key4 = table.table_name.toLowerCase();
           if (tableIds.has(key4)) {
-            const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
             if (hasSql) {
               preflightErrors.push(`Planned table "${table.table_name}" already exists and this plan contains SQL queries. Rename the planned table and update all SQL references, seed data, table_ref and foreign keys together, then lint again. To reuse the existing table, remove it from tables instead.`);
               continue;
             }
             const oldName = table.table_name;
-            const newName = nextTableName(oldName, tableIds);
+            const newName = nextTableName(oldName, reservedTableNames);
+            reservedTableNames.set(newName.toLowerCase(), newName);
             table.table_name = newName;
             for (const seed of args.seed_data ?? [])
               if (seed.table_name === oldName)
@@ -76783,9 +76965,9 @@ function lintAppSpecTool(client) {
         }
         preflightWarnings.push(...autoFitHtmlHeights(args));
         if (existingSummary) {
-          const plannedNames = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
+          const plannedNames2 = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
           const createsPages = (args.pages ?? []).some((page) => !existingSummary.pages.some((existing) => existing.name?.toLowerCase() === page.name.toLowerCase() || page.name === "Home" && existing.handle === "home"));
-          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames.has(page.name.toLowerCase()));
+          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames2.has(page.name.toLowerCase()));
           if (createsPages && abandoned.length) {
             preflightErrors.push(`App already has ${abandoned.length} empty page(s) this plan does not touch: ${abandoned.map((page) => `"${page.name}"`).join(", ")}. Build on them (use the exact existing name in pages[]) or delete them with delete_page before creating new pages, so the app does not end up with duplicates.`);
           }
@@ -76808,9 +76990,10 @@ function lintAppSpecTool(client) {
               }, []);
               if (!missingRows.length)
                 continue;
-              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && missingRows.length === seed.rows.length) {
+              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && (args.seed_data ?? []).filter((batch) => batch.table_name.toLowerCase() === seed.table_name.toLowerCase()).every((batch) => batch.rows.every((row) => !(column.name in row)))) {
+                const originalType = column.type;
                 column.type = "serial";
-                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
+                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(originalType)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
                 continue;
               }
               const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]);
@@ -79295,8 +79478,8 @@ var eventSchema = external_exports.object({
   message: "component_id can only be used with source_type=component; use source_id for query/page events."
 }).refine((event) => !["table_column", "table_action"].includes(event.source_type ?? "") || !!event.ref, {
   message: "table_column/table_action events require ref; Button columns use `<column key or name>::<button id>`."
-}).refine((event) => !event.ref || ["table_column", "table_action"].includes(event.source_type ?? ""), {
-  message: "ref is only valid with source_type=table_column or the deprecated table_action."
+}).refine((event) => !event.ref || ["component", "table_column", "table_action"].includes(event.source_type ?? "component"), {
+  message: "ref is only valid for Navigation component items, table_column or the deprecated table_action; component refs are checked against the saved component."
 });
 function addEventsTool(client) {
   return {
@@ -79307,7 +79490,7 @@ function addEventsTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
+    description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. For a Navigation item use source_type='component', trigger='onClick', ref='<non-group menu item id>'; other ordinary components cannot use ref. Dynamic menu membership is reported as unverified. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -79675,7 +79858,9 @@ function updateEventsTool(client) {
             return updateType === "update" ? { ...event, name: update.name, event: update.event } : { ...event, index: update.index };
           })
         };
-        const validation = validateEvents(changedSummary, persistedEventSpecs(changedSummary), { includePersistedChains: false });
+        const specs = persistedEventSpecs(changedSummary);
+        const savedRefs = new Set(specs.filter((spec) => updateType === "reorder" || !updatesById.has(persistedEventIds.get(spec) ?? "")));
+        const validation = validateEvents(changedSummary, specs, { includePersistedChains: false, savedRefs });
         if (validation.errors.length)
           return fail(new Error(validation.errors.join(" ")));
         const result = await client.updateEvents({

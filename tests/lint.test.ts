@@ -1074,7 +1074,7 @@ describe('lintModalChildren', () => {
 
   // Trace review 2026-09-25: five plans failed "title-like Text in the body" on a bold line naming the selected record
   // under the modal title ({row.product_name}). That is a record label, not a second title.
-  it('does not take a bold dynamic record label for a second title, and still flags a static bold heading', () => {
+  it('allows distinct static and dynamic record headings below an existing modal title', () => {
     const titleLike = (text: string, textSize?: number) => lintModalChildren([
       { name: 'changePrice', type: 'ModalV2', clientRef: 'modal', properties: { showHeader: { value: true } } },
       { name: 'modalHeader', type: 'Text', parentRef: 'modal', slotName: 'header', properties: { text: { value: 'Change price' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
@@ -1085,8 +1085,8 @@ describe('lintModalChildren', () => {
       },
     ]).join(' ').includes('title-like');
     expect(titleLike('{{components.tb.selectedRow?.product_name}}', 15)).toBe(false);
-    expect(titleLike('Edit this price', 15)).toBe(true);
-    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(true);
+    expect(titleLike('Edit this price', 15)).toBe(false);
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(false);
   });
 
   it('recognizes explicit and persisted header slots and keeps their geometry separate from the body', () => {
@@ -2007,9 +2007,9 @@ describe('modal header advice', () => {
     { name: 'who', type: 'Text', parentRef: 'm', properties: { text: { value: '{{components.t.selectedRow?.name}}' } },
       styles: { fontWeight: { value: 'bold' }, textSize: { value: 24 } }, layout: { top: 10, left: 2, width: 30, height: 40 } },
   ];
-  it('is not blocking', () => {
+  it('does not warn about a distinct record heading or make it blocking', () => {
     expect(lintRenderedGeometryBlocking(modal as never).join(' ')).not.toMatch(/title-like/);
-    expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).toMatch(/title-like/);
+    expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).not.toMatch(/title-like/);
   });
 });
 

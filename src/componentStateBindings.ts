@@ -86,4 +86,14 @@ const WRONG_ALIASES: Record<string, Record<string, (name: string) => string>> = 
     label: (name) => `RadioButton "${name}": label is the field's caption, not the chosen option, so a filter or write reading it ` +
       `matches nothing. Read components.${name}.value for the selection.`,
   },
+  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
+  ReorderableList: {
+    value: (name) => `ReorderableList "${name}" does not expose value. Use components.${name}.values for the ordered option values; ` +
+      'the incorrect alias is undefined, even with optional chaining or a fallback.',
+  },
+  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
+  MultiselectV2: {
+    value: (name) => `MultiselectV2 "${name}" does not expose value. Use components.${name}.values for the selected option values; ` +
+      'the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].',
+  },
 };

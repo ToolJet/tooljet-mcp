@@ -18,6 +18,7 @@ import {
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { bindingSpans } from './bindingSpans.js';
 import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
 import { lintWhitespaceGuards } from './whitespaceGuard.js';
@@ -1336,9 +1337,27 @@ export function expressionOutsideBinding(value: string): string | null {
 
 const WRAP_REQUIRED_COLUMNS = 5;
 
-/** Rough rendered height of a Text value: one entry per line (<br>, block tags, newlines), each the largest
- *  inline font-size on that line at 1.5 line height (minimum 18px), plus the widget's padding. */
-export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[] } {
+/** Rough height of visible static Text: one entry per line (<br>, block tags, newlines), each the largest
+ * inline font-size at 1.5 line height (minimum 18px), plus padding. With bindings this is only the
+ * static minimum; their rendered content (even a quoted HTML string) is deliberately not evaluated. */
+export function estimateTextHeight(text: string, baseSize: number, options: { bindingLines?: boolean } = {}): { lines: number; px: number; sizes: number[]; dynamic?: boolean } {
+  const dynamic = text.includes('{{');
+  if (dynamic) {
+    const literals: string[] = [];
+    let from = 0;
+    // Parse-only boundaries handle strings, comments and nested braces containing markup or `}}`.
+    for (const span of bindingSpans(text)) {
+      literals.push(text.slice(from, span.start));
+      from = span.end;
+    }
+    literals.push(text.slice(from));
+    // Whitespace avoids inventing a nonempty line or joining fragments into an HTML tag. If a
+    // boundary could not be parsed, keep only the known prefix; syntax lint owns invalid bindings.
+    // With bindingLines, a binding between static lines stands for one line of plain text (never its source or
+    // markup): "{{name}}<br>{{email}}<br>{{phone}}" is three lines. Used only for a non-blocking warning.
+    const standIn = options.bindingLines && literals.some((part) => part.replace(/<[^>]+>/g, '').trim() || /<br\s*\/?>/i.test(part)) ? 'x' : ' ';
+    text = literals.join(standIn).split('{{', 1)[0]!;
+  }
   // Blank lines from a doubled <br> still take space (about half a line each).
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
   const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
@@ -1357,7 +1376,7 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
   });
   const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
   const px = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
-  return { lines: parts.length + blankLines, px, sizes };
+  return { lines: parts.length + blankLines, px, sizes, ...(dynamic ? { dynamic: true } : {}) };
 }
 
 // The Chart wrapper (Chart.jsx) spreads layout first, then overrides paper/plot backgrounds from the component's
@@ -1538,9 +1557,18 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
         errors.push(
-          `Text "${label}": its ${needed.lines} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
+          `Text "${label}": its ${needed.lines}${needed.dynamic ? ' static' : ''} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
             `${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`
         );
+      } else if (needed.dynamic) {
+        // A line that is only a binding may render empty, so it never blocks; one line each is the likely case.
+        const likely = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14, { bindingLines: true });
+        if (likely.lines > 1 && likely.px > height + 6) {
+          warnings.push(
+            `Text "${label}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ` +
+              `${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`
+          );
+        }
       }
     }
   }
@@ -2047,10 +2075,16 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       !isTruthyBinding(expandableRows)
     ) {
       const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
-      const baseRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const textRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const hasVisibleChips = Array.isArray(columns) && columns.some((column) => {
+        const c = recordValue(column);
+        return c?.columnVisibility !== false && c?.columnType === 'tagsV2';
+      });
+      // Chip rows have a measured 49px minimum even with one short value, unlike possible text wrapping.
+      const baseRowHeight = hasVisibleChips ? Math.max(49, textRowHeight) : textRowHeight;
       // Measured in the viewer: a wrapped row allowance of 4px (a known one-line row draws at its base height); a page of long
       // wrapped rows scrolls inside the table. The flat 60px asked for tables far taller than they need.
-      const rowHeight = isTruthyBinding(contentWrap) ? baseRowHeight + 4 : baseRowHeight;
+      const rowHeight = Math.max(baseRowHeight, isTruthyBinding(contentWrap) ? textRowHeight + 4 : textRowHeight);
       const toolbarVisible = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
         .some((key) => isTruthyBinding(catalogValue('Table', props, key)));
       const chromeHeight =
@@ -2058,7 +2092,11 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
         TABLE_COLUMN_HEADER_HEIGHT_PX +
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
+      // Wrapping is a possibility, not a minimum. Without the rendered rows this linter cannot tell
+      // whether an enabled contentWrap actually adds a line. Use the one-line floor to decide whether
+      // to warn, and retain the conservative estimate only as sizing advice for genuinely short tables.
+      const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
+      const estimatedHeight = chromeHeight + rowsPerPage * rowHeight;
       if (desktopHeight < chromeHeight + baseRowHeight) {
         errors.push(
           `Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; ` +
@@ -2068,7 +2106,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
-            `${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
+            `${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
             'Deliberate inner scrolling is valid when the rows and actions remain usable.'
         );
       }
@@ -2251,6 +2289,8 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
         }
         if (
           c?.columnType === 'string' &&
+          // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
+          c.columnVisibility !== false && c.columnVisibility !== '{{false}}' &&
           // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
           (typeof c.key === 'string' && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) &&
           !authorComputesKey(props?.data, c.key)
@@ -2519,25 +2559,59 @@ export function lintToolbarButtonAlignment(components: LintComponent[]): string[
   return errors;
 }
 
-function isTitleLikeText(component: LintComponent): boolean {
+/** Compare only knowable display text. Never evaluate record bindings or infer their runtime title. */
+function modalTitleText(component: LintComponent): string | undefined {
+  if (component.type !== 'Text') return undefined;
+  const value = propVal(component.properties, 'text');
+  if (typeof value !== 'string') return undefined;
+  let text = '';
+  let from = 0;
+  for (const span of bindingSpans(value)) {
+    let literal: ReturnType<typeof parseExpression>;
+    try {
+      literal = parseExpression(`(${span.body})`);
+    } catch {
+      return undefined; // Malformed bindings belong to syntax lint, not title advice.
+    }
+    if (literal.type !== 'StringLiteral' &&
+        !(literal.type === 'TemplateLiteral' && literal.expressions.length === 0)) return undefined;
+    text += value.slice(from, span.start) + (literal.type === 'StringLiteral'
+      ? literal.value : literal.quasis[0]?.value.cooked ?? '');
+    from = span.end;
+  }
+  text += value.slice(from);
+  if (text.includes('{{')) return undefined; // Incomplete/unknown bindings belong to syntax lint.
+  return text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(?:nbsp|#160|#x0*a0);/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function isTitleLikeText(component: LintComponent, headerChildren: LintComponent[]): boolean {
   if (component.type !== 'Text') return false;
   const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
   if (top > 100) return false;
-  const name = component.name ?? '';
-  const text = propVal(component.properties, 'text');
+  const text = modalTitleText(component);
+  if (!text) return false;
+  // A populated header needs actual duplicate wording. A distinct customer/product name, section
+  // heading, or helper is legitimate regardless of its component name, size, or weight.
+  if (headerChildren.length) return headerChildren.some((header) => modalTitleText(header) === text);
+
+  // An empty header can take a short, visibly authored heading. Action verbs and component names
+  // alone are not evidence: "Add the contact details..." is instructional copy, not a modal title.
+  if (text.length > 80 || text.split(' ').length > 8 || /[.!?;…]/.test(text) ||
+      /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text) ||
+      /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text) ||
+      /\b(?:below|above|to continue|to get started)\b/.test(text)) return false;
   const fontWeight = propVal(component.styles, 'fontWeight');
   const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
-  // Bold dynamic text below 18px is a record label ("{row.product_name}" under "Change price"), not a second
-  // title: five plans failed on exactly that (trace review, 2026-09-25).
-  // A bold question below 18px ("Mark this invoice as paid?") is the prompt the modal asks, not a title (n1 vet).
-  const recordLabel = typeof text === 'string' && (text.includes('{{') || /\?\s*$/.test(text.trim())) &&
-    (textSize === undefined || textSize < 18);
+  const bold = typeof fontWeight === 'number' ? fontWeight >= 600
+    : typeof fontWeight === 'string' && /^(?:bold|[6-9]00)$/.test(fontWeight);
+  const rawText = propVal(component.properties, 'text') as string;
   return (
-    /(?:title|heading|header)/i.test(name) ||
-    (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
-      (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim()))) ||
-    (!recordLabel && typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
-    (!recordLabel && typeof fontWeight === 'number' && fontWeight >= 600) ||
+    /<h[1-6]\b/i.test(rawText) ||
+    (bold && /(?:title|heading|header)/i.test(component.name ?? '')) ||
     (textSize !== undefined && textSize >= 18)
   );
 }
@@ -2610,10 +2684,12 @@ export function lintModalChildren(components: LintComponent[]): string[] {
             'Add a Text child with the modal parent_ref/parent and slot_name:"header", or set showHeader:false.'
         );
       }
-      for (const child of children.filter(isTitleLikeText)) {
+      for (const child of children.filter((child) => isTitleLikeText(child, headerChildren))) {
         warnings.push(
           `Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. ` +
-            'Move that Text to slot_name:"header" instead of spending body space on a second title row.'
+            (headerChildren.length
+              ? 'It repeats the native header text; consider removing the duplicate body title.'
+              : 'Move that Text to slot_name:"header" to fill the empty native header.')
         );
       }
     }
