@@ -9,6 +9,7 @@ import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
+import { replaceView, danglingAfterReplace, replaceFingerprint } from '../pageReplace.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
@@ -35,7 +36,12 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'the exact datasource_id or the exact unique datasource_name from list_datasources(version_id); names are pinned to IDs ' +
       'during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. ' +
       'For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
-      'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
+      'are included and can be targeted without redeclaring them. To rebuild an existing page whole, mark its plan page replace: true ' +
+      '(with app_id): the plan is checked against the app with that page emptied, the page\'s own queries may be defined again ' +
+      '(updated in place on apply), and a component another page, event or query still reads must be kept under its name. ' +
+      'A Form submits through a Button inside it: set the Form\'s properties.buttonToSubmit to that Button\'s client_ref in the ' +
+      'same plan (resolved to its id on apply). ' +
+      'On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
       'Treat this call as an awaited barrier; it never mutates ToolJet. ' + COMPONENT_FX_GUIDANCE,
     inputSchema: appPlanSchema.shape,
     async handler(args: AppPlanInput) {
@@ -54,6 +60,11 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         }
         const preflightErrors: string[] = [];
         const preflightWarnings: string[] = [];
+        // replace empties an existing page, which only a plan linted against that app can know about.
+        const replacePages = (args.pages ?? []).filter((page) => page.replace).map((page) => `"${page.name}"`);
+        if (replacePages.length && !args.app_id) {
+          preflightErrors.push(`pages ${replacePages.join(', ')}: replace needs app_id, so the plan is checked against the page it replaces.`);
+        }
         const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
         if (mapRefusal) preflightErrors.push(mapRefusal);
         const needsTables = Boolean(
@@ -61,13 +72,18 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           args.seed_data?.length ||
           args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === 'string')
         );
-        const [existingTables, existingSummary] = await Promise.all([
+        const [existingTables, fetchedSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(undefined),
         ]);
         // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
-        const frozen = frozenAppRefusal(existingSummary);
+        const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
+        // A plan page marked replace is checked against the app with that page emptied and the queries the plan
+        // redefines renamed out of the way: the same names are its new definition, not collisions.
+        const view = fetchedSummary ? replaceView(fetchedSummary, args) : undefined;
+        const existingSummary = view?.summary ?? fetchedSummary;
+        if (view && fetchedSummary) preflightErrors.push(...danglingAfterReplace(fetchedSummary, view, args));
         if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
           preflightErrors.push(
             `App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`
@@ -376,7 +392,9 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           const { datasource_name: _name, ...rest } = query;
           return { ...rest, datasource_id: resolvedQueryIds.get(index)! };
         }) };
-        return ok({ ...result, ...storeAppPlan(resolvedSpec, result) });
+        // A replace plan is bound to the replaced pages' state now; apply refuses it if that state changes first.
+        const stored = storeAppPlan(resolvedSpec, result, view && fetchedSummary ? replaceFingerprint(fetchedSummary, view) : undefined);
+        return ok({ ...result, ...stored });
       } catch (error) {
         return fail(error);
       }

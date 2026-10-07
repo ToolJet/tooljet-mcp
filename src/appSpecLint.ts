@@ -323,7 +323,12 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   const plannedQueries = (spec.queries ?? []).map((query, index) => {
     const ref = query.clientRef ?? query.name;
     const id = `planned-query:${index}:${ref}`;
-    if (existingQueryNames.has(query.name)) errors.push(`App already has a query named "${query.name}".`);
+    if (existingQueryNames.has(query.name)) {
+      // A replace redefines only the replaced page's own queries (pageReplace.ts); a query another page also reaches
+      // stays a collision, so say how to use or change it instead.
+      errors.push(`App already has a query named "${query.name}". To use it as it is, refer to it by name without ` +
+        'defining it in this plan; to change it, use update_query, or replace the page that owns it.');
+    }
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });

@@ -18,6 +18,7 @@ import type {
 } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { matchPlannedPage } from '../pageMatch.js';
+import { danglingAfterReplace, replaceFingerprint, replaceIds, replaceView } from '../pageReplace.js';
 
 interface LogicalTarget { id: string; name: string; type?: string }
 
@@ -128,11 +129,12 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
   return {
     name: 'apply_app_phase',
     title: 'Apply App Phase',
-    // Creates, and amends page metadata or the app name when the approved plan says to. It has no delete or drop
-    // path, so it cannot destroy existing data.
+    // Creates, and amends page metadata or the app name when the approved plan says to. It drops no table and deletes
+    // no row; the one delete path is a plan page marked replace, whose old components and events it removes.
     annotations: {
       readOnlyHint: false,
-      destructiveHint: false,
+      // A plan page marked replace has its components and their events deleted before the plan's are created.
+      destructiveHint: true,
       openWorldHint: true,
     },
     description:
@@ -140,7 +142,14 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       'tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ' +
       'ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never ' +
       'runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts ' +
-      'and never auto-deletes user data. The one-time token prevents an accidental retry from duplicating objects.',
+      'and never auto-deletes user data, except for a plan page marked replace: that page\'s existing components and their events ' +
+      'are deleted just before the plan\'s components are created (page events and query events only where the plan declares them ' +
+      'again), queries the plan defines again are updated in place keeping their ids, and events on other pages that acted on a ' +
+      'replaced component are re-pointed to the recreated component of the same name. A replace is refused before any write if ' +
+      'the page changed since lint (any component, redefined query or related event edited), and every component and event ref ' +
+      'is prepared before the first write. A replace is not atomic: a failure after that deletion leaves the page to be repaired ' +
+      '(the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. ' +
+      'The one-time token prevents an accidental retry from duplicating objects.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string().optional().describe('Defaults to the version the plan was linted for.'),
@@ -164,9 +173,14 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         return { content: [{ type: 'text' as const, text: 'Error: apply_app_phase needs version_id: neither the call nor the plan names one.' }], isError: true };
       }
       const args = { ...input, version_id: version };
-      const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0 };
+      const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0,
+        queries_updated: 0, events_removed: 0, components_removed: 0 };
       let stage = 'consume plan';
       let createdPageIds: string[] = [];
+      let replacedPageNames: string[] = [];
+      let retargetPending: string[] = [];
+      /** Events elsewhere still pointing at a removed component, named for the failure message. */
+      let notRetargeted: string[] | undefined;
       try {
         const stored = consumeAppPlan(args.plan_token);
         const spec: AppPlanInput = stored.spec;
@@ -189,6 +203,27 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
         }
 
+        // A plan page marked replace (see pageReplace.ts): checked against the app with that page emptied,
+        // and its old components and events removed just before the new ones are created.
+        // The plan is bound to the state it was linted against: a page that gained a component, event or query edit
+        // since (or that did not exist, or was not read, at lint) is never emptied by a plan that did not see it.
+        const replacing = replaceView(initialSummary, spec);
+        if (replacing && replaceFingerprint(initialSummary, replacing) !== stored.replaceFingerprint) {
+          const pages = replacing.replacedPageNames.length ? `"${replacing.replacedPageNames.join('", "')}"` : 'The queries this plan redefines';
+          return fail(new Error(`apply_app_phase refused before any write: ${pages} changed since this plan was linted ` +
+            '(a component, event or query was edited, or the plan was linted without app_id). Run lint_app_spec with app_id ' +
+            'again so the plan sees the current state.'));
+        }
+        if (replacing) {
+          // The app may have changed since lint: a replace that would leave another page reading or acting on a
+          // dropped component stops here, before anything is written.
+          const dangling = danglingAfterReplace(initialSummary, replacing, spec as never);
+          if (dangling.length) return fail(new Error(`apply_app_phase refused before any write: ${dangling.join(' ')}`));
+        }
+        const planSummary = replacing?.summary ?? initialSummary;
+        replacedPageNames = replacing?.replacedPageNames ?? [];
+        retargetPending = (replacing?.eventsToRetarget ?? []).map((event) => `"${event.name ?? event.id}"`);
+
         // Prepare every query's options before the first write (the rename below included): the same shared step the
         // lint and the direct query tools use, so a plan that reaches apply by any route cannot persist a toggle ToolJet
         // would read as on, or options its datasource contract refuses.
@@ -206,6 +241,111 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           return { kind, options: prepared.options };
         });
 
+        const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();
+        const claimedPageIds = new Set<string>();
+        const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === 'home' &&
+          initialSummary.pages[0].components.length === 0
+          ? initialSummary.pages[0]
+          : undefined;
+        const plannedPageNames = new Set((spec.pages ?? []).map((page) => page.name));
+        for (const page of spec.pages ?? []) {
+          // By name first: "Home" also matching handle home took "Dashboard" over a real Home page (review 2026-09-25).
+          let match = matchPlannedPage(planSummary.pages, page.name, plannedPageNames, claimedPageIds);
+          if (!match && reusableHome && !claimedPageIds.has(reusableHome.id)) match = reusableHome;
+          if (match) plannedPageMatches.set(logicalRef(page), match);
+          if (match) claimedPageIds.add(match.id);
+          const existingNames = new Set((match?.components ?? []).map((component) => component.name).filter(Boolean));
+          const collision = (page.components ?? []).find((component) => existingNames.has(component.name));
+          if (collision) {
+            throw new Error(`Page "${page.name}" already has a component named "${collision.name}".`);
+          }
+        }
+        const existingQueryNames = new Set(planSummary.queries.map((query) => query.name).filter(Boolean));
+        const queryCollision = (spec.queries ?? []).find((query) => existingQueryNames.has(query.name));
+        if (queryCollision) throw new Error(`App already has a query named "${queryCollision.name}".`);
+
+        const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+
+        // Every event and lifecycle ref resolved against the given targets: once with placeholders for what this phase
+        // creates, before the first write, and again with the persisted ids once everything exists.
+        const resolvePlannedEvents = (pageTargets: Map<string, LogicalTarget>, queryTargets: Map<string, LogicalTarget>,
+          targets: Map<string, LogicalTarget>) => {
+          const ordinaryEvents: EventSpec[] = (spec.events ?? []).map((event) => {
+            const source = sourceTarget(event.source_type, event.source_ref, pageTargets, queryTargets, targets);
+            if (!source) throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
+            return {
+              sourceId: source.id,
+              sourceType: event.source_type,
+              ref: event.ref,
+              trigger: event.trigger,
+              action: resolveAction(event.action, pageTargets, queryTargets, targets),
+              name: event.name,
+            };
+          });
+          const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
+            queryId: oneRef(lifecycle.query_ref, queryTargets, 'Lifecycle query')!,
+            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) =>
+              resolveAction(action, pageTargets, queryTargets, targets)
+            ),
+            refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, 'Lifecycle refresh query'),
+            clearComponentIds: refs(lifecycle.clear_component_refs, targets, 'Lifecycle clear component'),
+            closeModalId: oneRef(lifecycle.close_modal_ref, targets, 'Lifecycle modal'),
+            successAlert: lifecycle.success_alert
+              ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type }
+              : undefined,
+            failureAlert: lifecycle.failure_alert
+              ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type }
+              : undefined,
+            successActions: lifecycle.success_actions?.map((action) =>
+              resolveAction(action, pageTargets, queryTargets, targets)
+            ),
+            failureActions: lifecycle.failure_actions?.map((action) =>
+              resolveAction(action, pageTargets, queryTargets, targets)
+            ),
+          }));
+          return { ordinaryEvents, lifecycleSpecs };
+        };
+
+        // Everything the phase will write is prepared before its first write (the rename included): every page's
+        // components, and every event and lifecycle ref against placeholders for the pages, queries and components this
+        // phase creates. A plan that cannot apply fails here with the app untouched; queries used to be created and
+        // updated before the components were prepared, so a plan whose page could not be built still rewrote them.
+        stage = 'prepare page components';
+        const preparedBatches = new Map<string, ReturnType<typeof prepareComponentBatch>>();
+        for (const page of spec.pages ?? []) {
+          if (!page.components?.length) continue;
+          const prepared = prepareComponentBatch(page.components);
+          if (prepared.errors.length) throw new Error(`Page "${page.name}": ${prepared.errors.join(' ')}`);
+          preparedBatches.set(logicalRef(page), prepared);
+        }
+        stage = 'resolve event refs';
+        {
+          const pages = persistedTargets(
+            initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] }))
+          );
+          for (const page of spec.pages ?? []) {
+            const id = plannedPageMatches.get(logicalRef(page))?.id ?? `planned-page:${logicalRef(page)}`;
+            pages.set(logicalRef(page), { id, name: page.name });
+          }
+          const queries = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
+          for (const query of spec.queries ?? []) {
+            const target = { id: replacing?.queriesToUpdate.get(query.name) ?? `planned-query:${query.name}`, name: query.name };
+            queries.set(logicalRef(query), target);
+            queries.set(query.name, target);
+          }
+          const components = persistedTargets(
+            planSummary.pages.flatMap((page) => page.components).map((component) => ({
+              id: component.id, name: component.name ?? component.id, type: component.type,
+            }))
+          );
+          for (const prepared of preparedBatches.values()) {
+            for (const component of prepared.components) {
+              components.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
+            }
+          }
+          resolvePlannedEvents(pages, queries, components);
+        }
+
         let renameWarning: string | undefined;
         if (spec.app_name && spec.app_name !== initialSummary.name) {
           stage = 'rename target app';
@@ -222,31 +362,6 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           }
           applied.app_metadata = 1;
         }
-
-        const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();
-        const claimedPageIds = new Set<string>();
-        const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === 'home' &&
-          initialSummary.pages[0].components.length === 0
-          ? initialSummary.pages[0]
-          : undefined;
-        const plannedPageNames = new Set((spec.pages ?? []).map((page) => page.name));
-        for (const page of spec.pages ?? []) {
-          // By name first: "Home" also matching handle home took "Dashboard" over a real Home page (review 2026-09-25).
-          let match = matchPlannedPage(initialSummary.pages, page.name, plannedPageNames, claimedPageIds);
-          if (!match && reusableHome && !claimedPageIds.has(reusableHome.id)) match = reusableHome;
-          if (match) plannedPageMatches.set(logicalRef(page), match);
-          if (match) claimedPageIds.add(match.id);
-          const existingNames = new Set((match?.components ?? []).map((component) => component.name).filter(Boolean));
-          const collision = (page.components ?? []).find((component) => existingNames.has(component.name));
-          if (collision) {
-            throw new Error(`Page "${page.name}" already has a component named "${collision.name}".`);
-          }
-        }
-        const existingQueryNames = new Set(initialSummary.queries.map((query) => query.name).filter(Boolean));
-        const queryCollision = (spec.queries ?? []).find((query) => existingQueryNames.has(query.name));
-        if (queryCollision) throw new Error(`App already has a query named "${queryCollision.name}".`);
-
-        const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
 
         stage = 'create tables and pages';
         const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
@@ -335,16 +450,30 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           }
           return { dataSourceId: query.datasource_id!, name: query.name, options, kind };
         });
+        // A query the replaced page defines again keeps its id (other pages' events hold it): updated in place.
+        const updateInputs = queryInputs.filter((query) => replacing?.queriesToUpdate.has(query.name));
+        const createInputs = queryInputs.filter((query) => !replacing?.queriesToUpdate.has(query.name));
         const [seedWrite, queryWrite] = await Promise.allSettled([
           spec.seed_data?.length
             ? client.insertRowsBatch({
                 tables: spec.seed_data.map((seed) => ({ tableName: seed.table_name, rows: seed.rows })),
               })
             : Promise.resolve([]),
-          queryInputs.length
-            ? client.createQueries({ versionId: args.version_id, queries: queryInputs })
+          createInputs.length
+            ? client.createQueries({ versionId: args.version_id, queries: createInputs })
             : Promise.resolve([]),
         ]);
+        for (const query of updateInputs) {
+          const queryId = replacing!.queriesToUpdate.get(query.name)!;
+          // A redefinition on another datasource (ToolJet DB into RunJS) moves the query too; updating the options
+          // alone would leave the old datasource attached.
+          const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
+          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
+            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
+          }
+          await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
+          applied.queries_updated += 1;
+        }
         const seedResults = seedWrite.status === 'fulfilled'
           ? seedWrite.value
           : completedPartialWrites<{ table_name: string; processed_rows: number }>(seedWrite.reason);
@@ -363,24 +492,38 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         ];
         if (dataFailures.length) throw new Error(dataFailures.join(' | '));
         const queryTargets = persistedTargets(
-          initialSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id }))
+          planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id }))
         );
-        (spec.queries ?? []).forEach((query, index) => {
-          const created = createdQueries[index];
-          if (!created) throw new Error(`Could not resolve query "${query.name}" after creation.`);
-          queryTargets.set(logicalRef(query), { id: created.query_id, name: created.name });
-          queryTargets.set(query.name, { id: created.query_id, name: created.name });
+        let createdIndex = 0;
+        (spec.queries ?? []).forEach((query) => {
+          const updatedId = replacing?.queriesToUpdate.get(query.name);
+          const target = updatedId ? { query_id: updatedId, name: query.name } : createdQueries[createdIndex++];
+          if (!target) throw new Error(`Could not resolve query "${query.name}" after creation.`);
+          queryTargets.set(logicalRef(query), { id: target.query_id, name: target.name });
+          queryTargets.set(query.name, { id: target.query_id, name: target.name });
         });
 
-        stage = 'create page components';
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
-          if (!page.components?.length) return [];
+          const prepared = preparedBatches.get(logicalRef(page));
+          if (!prepared) return [];
           const target = pageTargets.get(logicalRef(page));
           if (!target) throw new Error(`Could not resolve component page "${page.name}".`);
-          const prepared = prepareComponentBatch(page.components);
-          if (prepared.errors.length) throw new Error(prepared.errors.join(' '));
           return [{ page, pageId: target.id, prepared }];
         });
+
+        if (replacing) {
+          stage = 'remove the replaced page\'s components and events';
+          for (const eventId of replacing.eventsToDelete) {
+            await client.deleteEvent({ appId: args.app_id, versionId: args.version_id, eventId });
+            applied.events_removed += 1;
+          }
+          for (const { pageId, componentIds } of replacing.componentsToDelete) {
+            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds });
+            applied.components_removed += removed.deleted ?? componentIds.length;
+          }
+        }
+
+        stage = 'create page components';
         const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => ({
           ...page,
           created: await client.createComponents({
@@ -395,7 +538,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           ? [`page ${preparedPages[index]!.page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
           : []);
         const componentTargets = persistedTargets(
-          initialSummary.pages.flatMap((page) => page.components).map((component) => ({
+          planSummary.pages.flatMap((page) => page.components).map((component) => ({
             id: component.id,
             name: component.name ?? component.id,
             type: component.type,
@@ -416,43 +559,36 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             });
           });
         }
+        // Re-pointing runs even when a page's components failed: other pages' events then hold whatever was
+        // recreated, not ids that no longer exist.
+        if (replacing?.eventsToRetarget.length) {
+          // Events elsewhere that pointed at a replaced component by id now point at the recreated component of
+          // the same name; one whose component the replace dropped is left as it was, with a note.
+          stage = 'point other events at the recreated components';
+          const newIdByName = new Map(componentResults.flatMap((page) =>
+            page.prepared.components.map((component, index) => [component.name, page.created[index]?.component_id] as const)));
+          const updates: Array<{ eventId: string; name?: string; event: Record<string, unknown> }> = [];
+          const missingTargets: string[] = [];
+          for (const event of replacing.eventsToRetarget) {
+            const newIds = new Map([...replacing.replacedComponentNames].map(([oldId, name]) => [oldId, newIdByName.get(name)] as const));
+            const swapped = replaceIds(JSON.stringify(event.event ?? {}), newIds);
+            const text = swapped.text;
+            const missing = swapped.missing.map((id) => replacing.replacedComponentNames.get(id) ?? id);
+            if (missing.length) {
+              missingTargets.push(`"${event.name ?? event.id}" (${missing.join(', ')})`);
+              warnings.push(`Event "${event.name ?? event.id}" targets ${missing.map((n) => `"${n}"`).join(', ')}, which the replaced page no longer has; it was left as it was.`);
+            } else {
+              updates.push({ eventId: event.id, ...(event.name ? { name: event.name } : {}), event: JSON.parse(text) });
+            }
+          }
+          if (updates.length) await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: updates });
+          notRetargeted = missingTargets;
+        }
         if (componentFailures.length) throw new Error(componentFailures.join(' | '));
 
         stage = 'create events and lifecycles';
         const summaryBeforeEvents = await client.getAppSummary(args.app_id);
-        const ordinaryEvents: EventSpec[] = (spec.events ?? []).map((event) => {
-          const source = sourceTarget(event.source_type, event.source_ref, pageTargets, queryTargets, componentTargets);
-          if (!source) throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
-          return {
-            sourceId: source.id,
-            sourceType: event.source_type,
-            ref: event.ref,
-            trigger: event.trigger,
-            action: resolveAction(event.action, pageTargets, queryTargets, componentTargets),
-            name: event.name,
-          };
-        });
-        const lifecycleSpecs = (spec.lifecycles ?? []).map((lifecycle) => ({
-          queryId: oneRef(lifecycle.query_ref, queryTargets, 'Lifecycle query')!,
-          beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) =>
-            resolveAction(action, pageTargets, queryTargets, componentTargets)
-          ),
-          refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets, 'Lifecycle refresh query'),
-          clearComponentIds: refs(lifecycle.clear_component_refs, componentTargets, 'Lifecycle clear component'),
-          closeModalId: oneRef(lifecycle.close_modal_ref, componentTargets, 'Lifecycle modal'),
-          successAlert: lifecycle.success_alert
-            ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type }
-            : undefined,
-          failureAlert: lifecycle.failure_alert
-            ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type }
-            : undefined,
-          successActions: lifecycle.success_actions?.map((action) =>
-            resolveAction(action, pageTargets, queryTargets, componentTargets)
-          ),
-          failureActions: lifecycle.failure_actions?.map((action) =>
-            resolveAction(action, pageTargets, queryTargets, componentTargets)
-          ),
-        }));
+        const { ordinaryEvents, lifecycleSpecs } = resolvePlannedEvents(pageTargets, queryTargets, componentTargets);
         const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
         warnings.push(...expanded.warnings);
         const allEvents = [...ordinaryEvents, ...expanded.events];
@@ -522,9 +658,19 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             }).slice(0, 12000);
           } catch { /* Preserve the original failure if even the recovery read is unavailable. */ }
         }
+        // A replace removes the page's old components before creating the new ones; after that point the message
+        // must say so, and what is left to repair (it used to claim nothing had been deleted).
+        const removedNote = applied.components_removed || applied.events_removed
+          ? `The replace had already removed the old content of ${replacedPageNames.map((name) => `"${name}"`).join(', ')} ` +
+            `(${applied.components_removed} component(s), ${applied.events_removed} event(s)); that page now holds only what this ` +
+            'phase created (listed below). Repair it by linting the whole page again with replace: true and applying that plan. ' +
+            (notRetargeted === undefined && retargetPending.length
+              ? `Events on other pages that pointed at its old components were not re-pointed: ${retargetPending.join(', ')}; they still hold the removed ids, so point them at the recreated components with update_events. `
+              : notRetargeted?.length ? `Events on other pages still point at components that were not recreated: ${notRetargeted.join(', ')}; recreate those or change the events with update_events. ` : '')
+          : 'nothing with content on it was auto-deleted. ';
         return fail(new Error(
           `apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. ` +
-            `The one-time plan token is consumed; nothing with content on it was auto-deleted. ` +
+            `The one-time plan token is consumed; ${removedNote}` +
             `${error instanceof Error ? error.message : String(error)}` + recovery,
           { cause: error }
         ));
@@ -555,8 +701,8 @@ function selectedRefs(targets: Map<string, LogicalTarget>, refs: string[]): Reco
 }
 
 /** Planned events the app already has, the same source, trigger and action, dropped: a phase that re-plans the events
- *  of queries the app keeps created them again, and each then fired twice (ds-tower d1). Only exact matches; a changed
- *  action is created. */
+ *  of queries the app keeps (a page replace updates its queries in place) created them again, and each then fired
+ *  twice (ds-tower d1). Only exact matches; a changed action is created. */
 export function withoutExistingEvents(planned: EventSpec[], existing: AppSummary['events']): EventSpec[] {
   const key = (sourceType: unknown, sourceId: unknown, payload: Record<string, unknown>) =>
     JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
