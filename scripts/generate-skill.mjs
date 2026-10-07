@@ -864,6 +864,14 @@ Use \`add_table_column\` to evolve a ToolJet DB table in place. Destructive dele
   - Delete: \`{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }\`
 - After a write succeeds, re-run list/count queries from the mutation's \`onDataQuerySuccess\` event.
 
+### MongoDB writes to embedded arrays (\`kind: "mongodb"\`)
+- **Never \`$set\` a whole array rebuilt from component state** (Table rows, \`.map\`/\`.filter\`/spread over component data). That replaces the stored array on every save and drops every element and field the components do not hold. The linter refuses it.
+- Update the edited elements by path and match each one by a stable key field in \`options.arrayFilters\`, never by position:
+  - \`update: '{ $set: { "Assets.$[el].status": {{JSON.stringify(components.status.value)}} } }'\`
+  - \`options: '{ arrayFilters: [{ "el.asset_id": {{JSON.stringify(components.assetsTable.selectedRow.asset_id)}} }] }'\`
+- Add elements with \`$push\` and remove them with \`$pull\` by key, only from an explicit user add/delete action.
+- Keep a row-count guard: abort the save (\`runOnlyIf\`, or a RunJS step before the write) unless the element count is unchanged apart from those explicit adds and deletes.
+
 (Other datasources have their own generated query schemas; resolve the contract from the connected \`datasource_id\` and requested operation.)
 
 ### SQL response values and aggregation
