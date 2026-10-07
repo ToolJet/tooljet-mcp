@@ -358,7 +358,6 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');
   const workspaceId = env('TOOLJET_WORKSPACE_ID');
-
   if (!pat && !sessionToken) {
     throw new Error(
       'TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal ' +

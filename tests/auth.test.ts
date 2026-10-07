@@ -27,6 +27,7 @@ function sessionResponse(org = 'org1', token = 'TOKEN') {
   });
 }
 
+
 describe('createAuth (personal access token)', () => {
   let fetchImpl: ReturnType<typeof vi.fn>;
   beforeEach(() => {

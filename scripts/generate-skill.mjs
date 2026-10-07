@@ -971,11 +971,45 @@ const makeReference = (title, purpose, headings, document = fullSkill) => `# ${t
   .map((heading) => extractSection(document, heading))
   .join('\n\n')}\n`;
 
+const workflowBuilder = `## ToolJet workflow authoring
+
+Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. The supported authoring subset is Start, JavaScript, datasource query, Loop, condition, Agent, and response nodes.
+
+Use this capability-first sequence:
+
+1. Call \`get_workflow_node_catalog\` for the exact node and patch schema.
+2. Call \`create_workflow\` or \`get_workflow\` and keep its workflow/version IDs.
+3. Call \`get_workflow_capabilities(version_id)\` to discover configured datasource instances classified for ordinary queries, AI models, and email. Its classifications do not contain query options.
+4. For every ordinary datasource-query node, call \`get_datasource_query_schema({ datasource_id, version_id, operation })\` to get its exact fields, allowed operations, response shape, and available metadata methods. For table intent, call \`list_tables\`, then inspect only the selected table schema. Agent model options are provider/model parameters rather than an ordinary chat-query prompt contract.
+5. Construct one explicit \`WorkflowSpec\` and call \`lint_workflow_spec\` by itself. Inspect \`runtime_readiness\`, \`blockers\`, errors, and warnings. A clean runnable result includes a scoped, one-use 30-minute \`plan_token\`; pass that token once to \`apply_workflow_spec\`.
+
+Missing AI or email datasource capability is a real blocker for a request that requires it. Ask the user to configure the missing datasource in ToolJet; never invent an ID or silently omit that part. Capability discovery deliberately does not scan tables or expose credentials.
+
+For inventory alerting, a typical graph is ToolJet DB read → RunJS low-stock filter → condition → Agent with a configured AI-model attachment → SMTP/SendGrid/Mailgun datasource query → response. Email is an ordinary datasource query. Lint/apply only save its configuration and never send it.
+
+An Agent's \`model\` object creates its ToolJet child query and \`ai-model\` attachment. Omitting \`model\` while patching preserves the current model; \`model:null\` removes it. Changing the model datasource or query name requires two phases: remove it first, then add the replacement. A reachable Agent without a valid model is \`draft_only\`; pass \`allow_draft:true\` only when the user wants that incomplete but editable draft.
+
+Workflow reads use the version API for metadata and a version-scoped resource export for the lossless graph. The caller needs resource-export permission; if export fails, stop instead of rebuilding the graph from the version API's camel-cased definition.
+
+For response-node patches, omitting \`status_code\` preserves the existing static or dynamic status; new responses default to 200. Agent labels are visual names: runtime references keep the original \`nodeName\` (initialized from \`ref\`). Use the Agent's \`default\` port in specs. Deleting a node from an incomplete draft preserves and reports the remaining readiness blockers, and shared queries are kept until their last graph reference is removed.
+
+The lint call is a no-write barrier. Omitted nodes and edges remain intact; inspect \`get_workflow\` and specify exact IDs for removals.
+
+\`apply_workflow_spec\` creates or updates node queries before saving the graph. It never executes, publishes, enables, or configures triggers. A partial-write result identifies resources that persisted before a failure; inspect the workflow and replan instead of blindly recreating anything. Existing drafts are editable, but concurrent visual-editor changes are not protected in this release.
+
+\`run_workflow\` is separate from authoring and can execute arbitrary JavaScript and datasource writes. Run it only for an explicitly selected version/environment when execution is authorized. Use \`get_workflow_execution\` to inspect the run and never automatically retry an uncertain execution. JavaScript and response code reference the persisted query \`name\`, not the logical graph \`ref\`.
+`;
+
 const workflows = makeReference(
   'Tool workflows and runtime guardrails',
   'Read this only when choosing an authoring/update path, repairing an existing app, or diagnosing a silent ToolJet configuration failure. MCP input schemas and returned warnings remain authoritative.',
   routedSections.workflows
 );
+const workflowBuilderReference = `# ToolJet workflow builder
+
+Read this only when creating, editing, validating, or running a ToolJet automation workflow. App Builder page and interaction guidance remains in workflows.md.
+
+${workflowBuilder}`;
 const uiLayout = makeReference(
   'UI authoring and layout',
   'Read this before laying out a new page or using a Chart, nested view, or other layout-sensitive surface. Table-specific layout and pagination live in tables.md.',
@@ -1100,11 +1134,12 @@ Detail: \`references/qa.md\`.
 
 ## Datasource repair handoff
 
-If an expected source is absent or a query fails to connect, use the returned \`datasources_url\`, \`settings_url\`, or \`recovery.url\`: open it in the built-in browser when available; otherwise send the clickable link. Never enter credentials, authorize OAuth, test, or save the connection. Check the source against \`list_datasources\`'s \`connectable\`: in it but unconnected means stop and hand off; absent means no ToolJet connector, so say so and name a REST API datasource. Sample data only on request. See \`references/datasources.md\`.
+If a source is absent or a query fails, use its \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If \`list_datasources\` marks it \`connectable\`, stop and hand off; if absent, report no connector and suggest REST API. Sample data only on request. See \`references/datasources.md\`.
 
 ## Load only the references the phase needs
 
 - \`references/workflows.md\` — tool selection, plan/apply, repair, reuse, deletion, silent-failure guardrails, FX visibility.
+- \`references/workflow-builder.md\` — workflow discovery, authoring, validation, and execution safety; only for workflow requests.
 - \`references/ui-layout.md\` — page design, canvas geometry, nested layouts, charts, and visual defaults.
 - \`references/tables.md\` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - \`references/forms.md\` — generated-vs-standalone forms, validation, uploads, and modal geometry.
@@ -1130,6 +1165,7 @@ Tool schemas, catalog responses, and returned warnings are authoritative. Do not
 const references = {
   'migration.md': readFileSync(resolve(root, 'docs/app-migration.md'), 'utf8'),
   'workflows.md': workflows,
+  'workflow-builder.md': workflowBuilderReference,
   'ui-layout.md': uiLayout,
   'tables.md': tables,
   'forms.md': forms,

@@ -2388,26 +2388,26 @@ var require_resolve = __commonJS({
         addAnchor.call(this, sch.$anchor);
         addAnchor.call(this, sch.$dynamicAnchor);
         baseIds[jsonPtr] = innerBaseId;
-        function addRef(ref) {
+        function addRef(ref2) {
           const _resolve = this.opts.uriResolver.resolve;
-          ref = normalizeId(innerBaseId ? _resolve(innerBaseId, ref) : ref);
-          if (schemaRefs.has(ref))
-            throw ambiguos(ref);
-          schemaRefs.add(ref);
-          let schOrRef = this.refs[ref];
+          ref2 = normalizeId(innerBaseId ? _resolve(innerBaseId, ref2) : ref2);
+          if (schemaRefs.has(ref2))
+            throw ambiguos(ref2);
+          schemaRefs.add(ref2);
+          let schOrRef = this.refs[ref2];
           if (typeof schOrRef == "string")
             schOrRef = this.refs[schOrRef];
           if (typeof schOrRef == "object") {
-            checkAmbiguosRef(sch, schOrRef.schema, ref);
-          } else if (ref !== normalizeId(fullPath)) {
-            if (ref[0] === "#") {
-              checkAmbiguosRef(sch, localRefs[ref], ref);
-              localRefs[ref] = sch;
+            checkAmbiguosRef(sch, schOrRef.schema, ref2);
+          } else if (ref2 !== normalizeId(fullPath)) {
+            if (ref2[0] === "#") {
+              checkAmbiguosRef(sch, localRefs[ref2], ref2);
+              localRefs[ref2] = sch;
             } else {
-              this.refs[ref] = fullPath;
+              this.refs[ref2] = fullPath;
             }
           }
-          return ref;
+          return ref2;
         }
         function addAnchor(anchor) {
           if (typeof anchor == "string") {
@@ -2418,12 +2418,12 @@ var require_resolve = __commonJS({
         }
       });
       return localRefs;
-      function checkAmbiguosRef(sch1, sch2, ref) {
+      function checkAmbiguosRef(sch1, sch2, ref2) {
         if (sch2 !== void 0 && !equal(sch1, sch2))
-          throw ambiguos(ref);
+          throw ambiguos(ref2);
       }
-      function ambiguos(ref) {
-        return new Error(`reference "${ref}" resolves to more than one schema`);
+      function ambiguos(ref2) {
+        return new Error(`reference "${ref2}" resolves to more than one schema`);
       }
     }
     exports.getSchemaRefs = getSchemaRefs;
@@ -2961,9 +2961,9 @@ var require_ref_error = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     var resolve_1 = require_resolve();
     var MissingRefError = class extends Error {
-      constructor(resolver, baseId, ref, msg) {
-        super(msg || `can't resolve reference ${ref} from id ${baseId}`);
-        this.missingRef = (0, resolve_1.resolveUrl)(resolver, baseId, ref);
+      constructor(resolver, baseId, ref2, msg) {
+        super(msg || `can't resolve reference ${ref2} from id ${baseId}`);
+        this.missingRef = (0, resolve_1.resolveUrl)(resolver, baseId, ref2);
         this.missingSchema = (0, resolve_1.normalizeId)((0, resolve_1.getFullPath)(resolver, this.missingRef));
       }
     };
@@ -3089,22 +3089,22 @@ var require_compile = __commonJS({
       }
     }
     exports.compileSchema = compileSchema;
-    function resolveRef4(root, baseId, ref) {
+    function resolveRef4(root, baseId, ref2) {
       var _a3;
-      ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, ref);
-      const schOrFunc = root.refs[ref];
+      ref2 = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, ref2);
+      const schOrFunc = root.refs[ref2];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve6.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref2);
       if (_sch === void 0) {
-        const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
+        const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref2];
         const { schemaId } = this.opts;
         if (schema)
           _sch = new SchemaEnv({ schema, schemaId, root, baseId });
       }
       if (_sch === void 0)
         return;
-      return root.refs[ref] = inlineOrCompile.call(this, _sch);
+      return root.refs[ref2] = inlineOrCompile.call(this, _sch);
     }
     exports.resolveRef = resolveRef4;
     function inlineOrCompile(sch) {
@@ -3122,14 +3122,14 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve6(root, ref) {
+    function resolve6(root, ref2) {
       let sch;
-      while (typeof (sch = this.refs[ref]) == "string")
-        ref = sch;
-      return sch || this.schemas[ref] || resolveSchema.call(this, root, ref);
+      while (typeof (sch = this.refs[ref2]) == "string")
+        ref2 = sch;
+      return sch || this.schemas[ref2] || resolveSchema.call(this, root, ref2);
     }
-    function resolveSchema(root, ref) {
-      const p = this.opts.uriResolver.parse(ref);
+    function resolveSchema(root, ref2) {
+      const p = this.opts.uriResolver.parse(ref2);
       const refPath = (0, resolve_1._getFullPath)(this.opts.uriResolver, p);
       let baseId = (0, resolve_1.getFullPath)(this.opts.uriResolver, root.baseId, void 0);
       if (Object.keys(root.schema).length > 0 && refPath === baseId) {
@@ -3147,7 +3147,7 @@ var require_compile = __commonJS({
         return;
       if (!schOrRef.validate)
         compileSchema.call(this, schOrRef);
-      if (id === (0, resolve_1.normalizeId)(ref)) {
+      if (id === (0, resolve_1.normalizeId)(ref2)) {
         const { schema } = schOrRef;
         const { schemaId } = this.opts;
         const schId = schema[schemaId];
@@ -3593,9 +3593,9 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path, query] = wsComponent.resourceName.split("?");
+        const [path, query2] = wsComponent.resourceName.split("?");
         wsComponent.path = path && path !== "/" ? path : void 0;
-        wsComponent.query = query;
+        wsComponent.query = query2;
         wsComponent.resourceName = void 0;
       }
       wsComponent.fragment = void 0;
@@ -3764,10 +3764,10 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options2, skipNormalization) {
+    function resolveComponent(base2, relative, options2, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse5(serialize(base, options2), options2);
+        base2 = parse5(serialize(base2, options2), options2);
         relative = parse5(serialize(relative, options2), options2);
       }
       options2 = options2 || {};
@@ -3787,32 +3787,32 @@ var require_fast_uri = __commonJS({
           target.query = relative.query;
         } else {
           if (!relative.path) {
-            target.path = base.path;
+            target.path = base2.path;
             if (relative.query !== void 0) {
               target.query = relative.query;
             } else {
-              target.query = base.query;
+              target.query = base2.query;
             }
           } else {
             if (relative.path[0] === "/") {
               target.path = removeDotSegments(relative.path);
             } else {
-              if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
+              if ((base2.userinfo !== void 0 || base2.host !== void 0 || base2.port !== void 0) && !base2.path) {
                 target.path = "/" + relative.path;
-              } else if (!base.path) {
+              } else if (!base2.path) {
                 target.path = relative.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative.path;
               }
               target.path = removeDotSegments(target.path);
             }
             target.query = relative.query;
           }
-          target.userinfo = base.userinfo;
-          target.host = base.host;
-          target.port = base.port;
+          target.userinfo = base2.userinfo;
+          target.host = base2.host;
+          target.port = base2.port;
         }
-        target.scheme = base.scheme;
+        target.scheme = base2.scheme;
       }
       target.fragment = relative.fragment;
       return target;
@@ -4260,26 +4260,26 @@ var require_core = __commonJS({
             return _compileAsync.call(this, sch);
           }
         }
-        function checkLoaded({ missingSchema: ref, missingRef }) {
-          if (this.refs[ref]) {
-            throw new Error(`AnySchema ${ref} is loaded but ${missingRef} cannot be resolved`);
+        function checkLoaded({ missingSchema: ref2, missingRef }) {
+          if (this.refs[ref2]) {
+            throw new Error(`AnySchema ${ref2} is loaded but ${missingRef} cannot be resolved`);
           }
         }
-        async function loadMissingSchema(ref) {
-          const _schema = await _loadSchema.call(this, ref);
-          if (!this.refs[ref])
+        async function loadMissingSchema(ref2) {
+          const _schema = await _loadSchema.call(this, ref2);
+          if (!this.refs[ref2])
             await loadMetaSchema.call(this, _schema.$schema);
-          if (!this.refs[ref])
-            this.addSchema(_schema, ref, meta3);
+          if (!this.refs[ref2])
+            this.addSchema(_schema, ref2, meta3);
         }
-        async function _loadSchema(ref) {
-          const p = this._loading[ref];
+        async function _loadSchema(ref2) {
+          const p = this._loading[ref2];
           if (p)
             return p;
           try {
-            return await (this._loading[ref] = loadSchema(ref));
+            return await (this._loading[ref2] = loadSchema(ref2));
           } finally {
-            delete this._loading[ref];
+            delete this._loading[ref2];
           }
         }
       }
@@ -4418,12 +4418,12 @@ var require_core = __commonJS({
           return this;
         }
         keywordMetaschema.call(this, def);
-        const definition = {
+        const definition2 = {
           ...def,
           type: (0, dataType_1.getJSONTypes)(def.type),
           schemaType: (0, dataType_1.getJSONTypes)(def.schemaType)
         };
-        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t) => addRule.call(this, k, definition, t)));
+        (0, util_1.eachItem)(keyword, definition2.type.length === 0 ? (k) => addRule.call(this, k, definition2) : (k) => definition2.type.forEach((t) => addRule.call(this, k, definition2, t)));
         return this;
       }
       getKeyword(keyword) {
@@ -4616,9 +4616,9 @@ var require_core = __commonJS({
         throw new Error('$data keyword must have "code" or "validate" function');
       }
     }
-    function addRule(keyword, definition, dataType) {
+    function addRule(keyword, definition2, dataType) {
       var _a3;
-      const post = definition === null || definition === void 0 ? void 0 : definition.post;
+      const post = definition2 === null || definition2 === void 0 ? void 0 : definition2.post;
       if (dataType && post)
         throw new Error('keyword with "post" flag cannot have "type"');
       const { RULES } = this;
@@ -4628,22 +4628,22 @@ var require_core = __commonJS({
         RULES.rules.push(ruleGroup);
       }
       RULES.keywords[keyword] = true;
-      if (!definition)
+      if (!definition2)
         return;
       const rule = {
         keyword,
         definition: {
-          ...definition,
-          type: (0, dataType_1.getJSONTypes)(definition.type),
-          schemaType: (0, dataType_1.getJSONTypes)(definition.schemaType)
+          ...definition2,
+          type: (0, dataType_1.getJSONTypes)(definition2.type),
+          schemaType: (0, dataType_1.getJSONTypes)(definition2.schemaType)
         }
       };
-      if (definition.before)
-        addBeforeRule.call(this, ruleGroup, rule, definition.before);
+      if (definition2.before)
+        addBeforeRule.call(this, ruleGroup, rule, definition2.before);
       else
         ruleGroup.rules.push(rule);
       RULES.all[keyword] = rule;
-      (_a3 = definition.implements) === null || _a3 === void 0 ? void 0 : _a3.forEach((kwd) => this.addKeyword(kwd));
+      (_a3 = definition2.implements) === null || _a3 === void 0 ? void 0 : _a3.forEach((kwd) => this.addKeyword(kwd));
     }
     function addBeforeRule(ruleGroup, rule, before) {
       const i = ruleGroup.rules.findIndex((_rule) => _rule.keyword === before);
@@ -6438,12 +6438,12 @@ var require_discriminator = __commonJS({
           for (let i = 0; i < oneOf.length; i++) {
             let sch = oneOf[i];
             if ((sch === null || sch === void 0 ? void 0 : sch.$ref) && !(0, util_1.schemaHasRulesButRef)(sch, it.self.RULES)) {
-              const ref = sch.$ref;
-              sch = compile_1.resolveRef.call(it.self, it.schemaEnv.root, it.baseId, ref);
+              const ref2 = sch.$ref;
+              sch = compile_1.resolveRef.call(it.self, it.schemaEnv.root, it.baseId, ref2);
               if (sch instanceof compile_1.SchemaEnv)
                 sch = sch.schema;
               if (sch === void 0)
-                throw new ref_error_1.default(it.opts.uriResolver, it.baseId, ref);
+                throw new ref_error_1.default(it.opts.uriResolver, it.baseId, ref2);
             }
             const propSch = (_a3 = sch === null || sch === void 0 ? void 0 : sch.properties) === null || _a3 === void 0 ? void 0 : _a3[tagName];
             if (typeof propSch != "object") {
@@ -6455,8 +6455,8 @@ var require_discriminator = __commonJS({
           if (!tagRequired)
             throw new Error(`discriminator: "${tagName}" must be required`);
           return oneOfMapping;
-          function hasRequired({ required: required3 }) {
-            return Array.isArray(required3) && required3.includes(tagName);
+          function hasRequired({ required: required4 }) {
+            return Array.isArray(required4) && required4.includes(tagName);
           }
           function addMappings(sch, i) {
             if (sch.const) {
@@ -7845,15 +7845,15 @@ var require_lib = __commonJS({
         }
         return node2;
       }
-      stopParseSubscript(base, state) {
-        const node2 = super.stopParseSubscript(base, state);
+      stopParseSubscript(base2, state) {
+        const node2 = super.stopParseSubscript(base2, state);
         if (state.optionalChainMember) {
-          return this.estreeParseChainExpression(node2, base.loc.end);
+          return this.estreeParseChainExpression(node2, base2.loc.end);
         }
         return node2;
       }
-      parseMember(base, startLoc, state, computed, optional2) {
-        const node2 = super.parseMember(base, startLoc, state, computed, optional2);
+      parseMember(base2, startLoc, state, computed, optional2) {
+        const node2 = super.parseMember(base2, startLoc, state, computed, optional2);
         if (node2.type === "OptionalMemberExpression") {
           this.castNodeTo(node2, "MemberExpression");
         } else {
@@ -10637,18 +10637,18 @@ var require_lib = __commonJS({
       parseParenAndDistinguishExpression(canBeArrow) {
         return super.parseParenAndDistinguishExpression(canBeArrow && !this.state.noArrowAt.includes(this.sourceToOffsetPos(this.state.start)));
       }
-      parseSubscripts(base, startLoc, noCalls) {
-        if (base.type === "Identifier" && base.name === "async" && this.state.noArrowAt.includes(startLoc.index)) {
+      parseSubscripts(base2, startLoc, noCalls) {
+        if (base2.type === "Identifier" && base2.name === "async" && this.state.noArrowAt.includes(startLoc.index)) {
           this.next();
           const node2 = this.startNodeAt(startLoc);
-          node2.callee = base;
+          node2.callee = base2;
           node2.arguments = super.parseCallExpressionArguments();
-          base = this.finishNode(node2, "CallExpression");
-        } else if (base.type === "Identifier" && base.name === "async" && this.match(47)) {
+          base2 = this.finishNode(node2, "CallExpression");
+        } else if (base2.type === "Identifier" && base2.name === "async" && this.match(47)) {
           const state = this.state.clone();
           const arrow = this.tryParse((abort) => this.parseAsyncArrowWithTypeParameters(startLoc) || abort(), state);
           if (!arrow.error && !arrow.aborted) return arrow.node;
-          const result = this.tryParse(() => super.parseSubscripts(base, startLoc, noCalls), state);
+          const result = this.tryParse(() => super.parseSubscripts(base2, startLoc, noCalls), state);
           if (result.node && !result.error) return result.node;
           if (arrow.node) {
             this.state = arrow.failState;
@@ -10660,18 +10660,18 @@ var require_lib = __commonJS({
           }
           throw arrow.error || result.error;
         }
-        return super.parseSubscripts(base, startLoc, noCalls);
+        return super.parseSubscripts(base2, startLoc, noCalls);
       }
-      parseSubscript(base, startLoc, noCalls, subscriptState) {
+      parseSubscript(base2, startLoc, noCalls, subscriptState) {
         if (this.match(18) && this.isLookaheadToken_lt()) {
           subscriptState.optionalChainMember = true;
           if (noCalls) {
             subscriptState.stop = true;
-            return base;
+            return base2;
           }
           this.next();
           const node2 = this.startNodeAt(startLoc);
-          node2.callee = base;
+          node2.callee = base2;
           node2.typeArguments = this.flowParseTypeParameterInstantiationInExpression();
           this.expect(10);
           node2.arguments = this.parseCallExpressionArguments();
@@ -10679,7 +10679,7 @@ var require_lib = __commonJS({
           return this.finishCallExpression(node2, true);
         } else if (!noCalls && this.shouldParseTypes() && (this.match(47) || this.match(51))) {
           const node2 = this.startNodeAt(startLoc);
-          node2.callee = base;
+          node2.callee = base2;
           const result = this.tryParse(() => {
             node2.typeArguments = this.flowParseTypeParameterInstantiationCallOrNew();
             this.expect(10);
@@ -10694,7 +10694,7 @@ var require_lib = __commonJS({
             return result.node;
           }
         }
-        return super.parseSubscript(base, startLoc, noCalls, subscriptState);
+        return super.parseSubscript(base2, startLoc, noCalls, subscriptState);
       }
       parseNewCallee(node2) {
         super.parseNewCallee(node2);
@@ -13165,12 +13165,12 @@ var require_lib = __commonJS({
         } = this.state;
         const next = this.input.charCodeAt(pos + 1);
         if (next === 62) {
-          const size = this.input.charCodeAt(pos + 2) === 62 ? 3 : 2;
-          if (this.input.charCodeAt(pos + size) === 61) {
-            this.finishOp(30, size + 1);
+          const size2 = this.input.charCodeAt(pos + 2) === 62 ? 3 : 2;
+          if (this.input.charCodeAt(pos + size2) === 61) {
+            this.finishOp(30, size2 + 1);
             return;
           }
-          this.finishOp(52, size);
+          this.finishOp(52, size2);
           return;
         }
         if (next === 61) {
@@ -13356,9 +13356,9 @@ var require_lib = __commonJS({
           unexpected: String.fromCodePoint(code2)
         });
       }
-      finishOp(type, size) {
-        const str2 = this.input.slice(this.state.pos, this.state.pos + size);
-        this.state.pos += size;
+      finishOp(type, size2) {
+        const str2 = this.input.slice(this.state.pos, this.state.pos + size2);
+        this.state.pos += size2;
         this.finishToken(type, str2);
       }
       readRegexp() {
@@ -16240,19 +16240,19 @@ var require_lib = __commonJS({
         }
         return node2;
       }
-      parseSubscript(base, startLoc, noCalls, state) {
+      parseSubscript(base2, startLoc, noCalls, state) {
         if (!this.hasPrecedingLineBreak() && this.match(35)) {
           this.state.canStartJSXElement = false;
           this.next();
           const nonNullExpression = this.startNodeAt(startLoc);
-          nonNullExpression.expression = base;
+          nonNullExpression.expression = base2;
           return this.finishNode(nonNullExpression, "TSNonNullExpression");
         }
         let isOptionalCall = false;
         if (this.match(18) && this.lookaheadCharCode() === 60) {
           if (noCalls) {
             state.stop = true;
-            return base;
+            return base2;
           }
           state.optionalChainMember = isOptionalCall = true;
           this.next();
@@ -16260,7 +16260,7 @@ var require_lib = __commonJS({
         if (this.match(47) || this.match(51)) {
           let missingParenErrorLoc;
           const result = this.tsTryParseAndCatch(() => {
-            if (!noCalls && this.atPossibleAsyncArrow(base)) {
+            if (!noCalls && this.atPossibleAsyncArrow(base2)) {
               const asyncArrowFn = this.tsTryParseGenericAsyncArrowFunction(startLoc);
               if (asyncArrowFn) {
                 state.stop = true;
@@ -16274,13 +16274,13 @@ var require_lib = __commonJS({
               return;
             }
             if (tokenIsTemplate(this.state.type)) {
-              const result2 = super.parseTaggedTemplateExpression(base, startLoc, state);
+              const result2 = super.parseTaggedTemplateExpression(base2, startLoc, state);
               result2.typeParameters = typeArguments;
               return result2;
             }
             if (!noCalls && this.eat(10)) {
               const node3 = this.startNodeAt(startLoc);
-              node3.callee = base;
+              node3.callee = base2;
               node3.arguments = this.parseCallExpressionArguments();
               this.tsCheckForInvalidTypeCasts(node3.arguments);
               node3.typeParameters = typeArguments;
@@ -16294,7 +16294,7 @@ var require_lib = __commonJS({
               return;
             }
             const node2 = this.startNodeAt(startLoc);
-            node2.expression = base;
+            node2.expression = base2;
             node2.typeParameters = typeArguments;
             return this.finishNode(node2, "TSInstantiationExpression");
           });
@@ -16307,13 +16307,13 @@ var require_lib = __commonJS({
                 this.raise(TSErrors.InvalidPropertyAccessAfterInstantiationExpression, this.state.startLoc);
               }
               if (!this.match(16) && !this.match(18)) {
-                result.expression = super.stopParseSubscript(base, state);
+                result.expression = super.stopParseSubscript(base2, state);
               }
             }
             return result;
           }
         }
-        return super.parseSubscript(base, startLoc, noCalls, state);
+        return super.parseSubscript(base2, startLoc, noCalls, state);
       }
       parseNewCallee(node2) {
         var _callee$extra;
@@ -18123,62 +18123,62 @@ var require_lib = __commonJS({
         }
         return this.parseSubscripts(expr, startLoc);
       }
-      parseSubscripts(base, startLoc, noCalls) {
+      parseSubscripts(base2, startLoc, noCalls) {
         const state = {
           optionalChainMember: false,
-          maybeAsyncArrow: this.atPossibleAsyncArrow(base),
+          maybeAsyncArrow: this.atPossibleAsyncArrow(base2),
           stop: false
         };
         do {
-          base = this.parseSubscript(base, startLoc, noCalls, state);
+          base2 = this.parseSubscript(base2, startLoc, noCalls, state);
           state.maybeAsyncArrow = false;
         } while (!state.stop);
-        return base;
+        return base2;
       }
-      parseSubscript(base, startLoc, noCalls, state) {
+      parseSubscript(base2, startLoc, noCalls, state) {
         const {
           type
         } = this.state;
         if (!noCalls && type === 15) {
-          return this.parseBind(base, startLoc, state);
+          return this.parseBind(base2, startLoc, state);
         } else if (tokenIsTemplate(type)) {
-          return this.parseTaggedTemplateExpression(base, startLoc, state);
+          return this.parseTaggedTemplateExpression(base2, startLoc, state);
         }
         let optional2 = false;
         if (type === 18) {
           if (noCalls) {
             this.raise(Errors.OptionalChainingNoNew, this.state.startLoc);
             if (this.lookaheadCharCode() === 40) {
-              return this.stopParseSubscript(base, state);
+              return this.stopParseSubscript(base2, state);
             }
           }
           state.optionalChainMember = optional2 = true;
           this.next();
         }
         if (!noCalls && this.match(10)) {
-          return this.parseCoverCallAndAsyncArrowHead(base, startLoc, state, optional2);
+          return this.parseCoverCallAndAsyncArrowHead(base2, startLoc, state, optional2);
         } else {
           const computed = this.eat(0);
           if (computed || optional2 || this.eat(16)) {
-            return this.parseMember(base, startLoc, state, computed, optional2);
+            return this.parseMember(base2, startLoc, state, computed, optional2);
           } else {
-            return this.stopParseSubscript(base, state);
+            return this.stopParseSubscript(base2, state);
           }
         }
       }
-      stopParseSubscript(base, state) {
+      stopParseSubscript(base2, state) {
         state.stop = true;
-        return base;
+        return base2;
       }
-      parseMember(base, startLoc, state, computed, optional2) {
+      parseMember(base2, startLoc, state, computed, optional2) {
         const node2 = this.startNodeAt(startLoc);
-        node2.object = base;
+        node2.object = base2;
         node2.computed = computed;
         if (computed) {
           node2.property = this.parseExpression();
           this.expect(3);
         } else if (this.match(139)) {
-          if (base.type === "Super") {
+          if (base2.type === "Super") {
             this.raise(Errors.SuperPrivateField, startLoc);
           }
           this.classScope.usePrivateName(this.state.value, this.state.startLoc);
@@ -18193,9 +18193,9 @@ var require_lib = __commonJS({
           return this.finishNode(node2, "MemberExpression");
         }
       }
-      parseBind(base, startLoc, state) {
+      parseBind(base2, startLoc, state) {
         const node2 = this.startNodeAt(startLoc);
-        node2.object = base;
+        node2.object = base2;
         this.next();
         const isImport = this.match(83);
         const callee = this.parseNoCallExpr();
@@ -18206,13 +18206,13 @@ var require_lib = __commonJS({
         state.stop = true;
         return this.parseSubscripts(this.finishNode(node2, "BindExpression"), startLoc, false);
       }
-      parseCoverCallAndAsyncArrowHead(base, startLoc, state, optional2) {
+      parseCoverCallAndAsyncArrowHead(base2, startLoc, state, optional2) {
         const oldMaybeInArrowParameters = this.state.maybeInArrowParameters;
         let refExpressionErrors = null;
         this.state.maybeInArrowParameters = true;
         this.next();
         const node2 = this.startNodeAt(startLoc);
-        node2.callee = base;
+        node2.callee = base2;
         const {
           maybeAsyncArrow,
           optionalChainMember
@@ -18227,7 +18227,7 @@ var require_lib = __commonJS({
         if (optional2) {
           node2.arguments = this.parseCallExpressionArguments();
         } else {
-          node2.arguments = this.parseCallExpressionArguments(base.type !== "Super", node2, refExpressionErrors);
+          node2.arguments = this.parseCallExpressionArguments(base2.type !== "Super", node2, refExpressionErrors);
         }
         let finishedNode = this.finishCallExpression(node2, optionalChainMember);
         if (maybeAsyncArrow && this.shouldParseAsyncArrow() && !optional2) {
@@ -18249,17 +18249,17 @@ var require_lib = __commonJS({
       toReferencedArguments(node2, isParenthesizedExpr) {
         this.toReferencedListDeep(node2.arguments, isParenthesizedExpr);
       }
-      parseTaggedTemplateExpression(base, startLoc, state) {
+      parseTaggedTemplateExpression(base2, startLoc, state) {
         const node2 = this.startNodeAt(startLoc);
-        node2.tag = base;
+        node2.tag = base2;
         node2.quasi = this.parseTemplate(true);
         if (state.optionalChainMember) {
           this.raise(Errors.OptionalChainingNoTemplate, startLoc);
         }
         return this.finishNode(node2, "TaggedTemplateExpression");
       }
-      atPossibleAsyncArrow(base) {
-        return base.type === "Identifier" && base.name === "async" && this.state.lastTokEndLoc.index === base.end && !this.canInsertSemicolon() && base.end - base.start === 5 && this.offsetToSourcePos(base.start) === this.state.potentialArrowAt;
+      atPossibleAsyncArrow(base2) {
+        return base2.type === "Identifier" && base2.name === "async" && this.state.lastTokEndLoc.index === base2.end && !this.canInsertSemicolon() && base2.end - base2.start === 5 && this.offsetToSourcePos(base2.start) === this.state.potentialArrowAt;
       }
       finishCallExpression(node2, optional2) {
         if (node2.callee.type === "Import") {
@@ -22049,9 +22049,9 @@ var require_anchors = __commonJS({
          */
         setAnchors: () => {
           for (const source2 of aliasObjects) {
-            const ref = sourceObjects.get(source2);
-            if (typeof ref === "object" && ref.anchor && (identity.isScalar(ref.node) || identity.isCollection(ref.node))) {
-              ref.node.anchor = ref.anchor;
+            const ref2 = sourceObjects.get(source2);
+            if (typeof ref2 === "object" && ref2.anchor && (identity.isScalar(ref2.node) || identity.isCollection(ref2.node))) {
+              ref2.node.anchor = ref2.anchor;
             } else {
               const error51 = new Error("Failed to resolve repeated object (this should not happen)");
               error51.source = source2;
@@ -22368,15 +22368,15 @@ var require_createNode = __commonJS({
         value2 = value2.valueOf();
       }
       const { aliasDuplicateObjects, onAnchor, onTagObj, schema, sourceObjects } = ctx;
-      let ref = void 0;
+      let ref2 = void 0;
       if (aliasDuplicateObjects && value2 && typeof value2 === "object") {
-        ref = sourceObjects.get(value2);
-        if (ref) {
-          ref.anchor ?? (ref.anchor = onAnchor(value2));
-          return new Alias.Alias(ref.anchor);
+        ref2 = sourceObjects.get(value2);
+        if (ref2) {
+          ref2.anchor ?? (ref2.anchor = onAnchor(value2));
+          return new Alias.Alias(ref2.anchor);
         } else {
-          ref = { anchor: null, node: null };
-          sourceObjects.set(value2, ref);
+          ref2 = { anchor: null, node: null };
+          sourceObjects.set(value2, ref2);
         }
       }
       if (tagName?.startsWith("!!"))
@@ -22388,8 +22388,8 @@ var require_createNode = __commonJS({
         }
         if (!value2 || typeof value2 !== "object") {
           const node3 = new Scalar.Scalar(value2);
-          if (ref)
-            ref.node = node3;
+          if (ref2)
+            ref2.node = node3;
           return node3;
         }
         tagObj = value2 instanceof Map ? schema[identity.MAP] : Symbol.iterator in Object(value2) ? schema[identity.SEQ] : schema[identity.MAP];
@@ -22403,8 +22403,8 @@ var require_createNode = __commonJS({
         node2.tag = tagName;
       else if (!tagObj.default)
         node2.tag = tagObj.tag;
-      if (ref)
-        ref.node = node2;
+      if (ref2)
+        ref2.node = node2;
       return node2;
     }
     exports.createNode = createNode;
@@ -32727,25 +32727,25 @@ var require_moment = __commonJS({
         var res = inp && parseFloat(inp.replace(",", "."));
         return (isNaN(res) ? 0 : res) * sign2;
       }
-      function positiveMomentsDifference(base, other) {
+      function positiveMomentsDifference(base2, other) {
         var res = {};
-        res.months = other.month() - base.month() + (other.year() - base.year()) * 12;
-        if (base.clone().add(res.months, "M").isAfter(other)) {
+        res.months = other.month() - base2.month() + (other.year() - base2.year()) * 12;
+        if (base2.clone().add(res.months, "M").isAfter(other)) {
           --res.months;
         }
-        res.milliseconds = +other - +base.clone().add(res.months, "M");
+        res.milliseconds = +other - +base2.clone().add(res.months, "M");
         return res;
       }
-      function momentsDifference(base, other) {
+      function momentsDifference(base2, other) {
         var res;
-        if (!(base.isValid() && other.isValid())) {
+        if (!(base2.isValid() && other.isValid())) {
           return { milliseconds: 0, months: 0 };
         }
-        other = cloneWithOffset(other, base);
-        if (base.isBefore(other)) {
-          res = positiveMomentsDifference(base, other);
+        other = cloneWithOffset(other, base2);
+        if (base2.isBefore(other)) {
+          res = positiveMomentsDifference(base2, other);
         } else {
-          res = positiveMomentsDifference(other, base);
+          res = positiveMomentsDifference(other, base2);
           res.milliseconds = -res.milliseconds;
           res.months = -res.months;
         }
@@ -36127,8 +36127,8 @@ var $ZodCheckMaxSize = /* @__PURE__ */ $constructor("$ZodCheckMaxSize", (inst, d
   });
   inst._zod.check = (payload2) => {
     const input = payload2.value;
-    const size = input.size;
-    if (size <= def.maximum)
+    const size2 = input.size;
+    if (size2 <= def.maximum)
       return;
     payload2.issues.push({
       origin: getSizableOrigin(input),
@@ -36155,8 +36155,8 @@ var $ZodCheckMinSize = /* @__PURE__ */ $constructor("$ZodCheckMinSize", (inst, d
   });
   inst._zod.check = (payload2) => {
     const input = payload2.value;
-    const size = input.size;
-    if (size >= def.minimum)
+    const size2 = input.size;
+    if (size2 >= def.minimum)
       return;
     payload2.issues.push({
       origin: getSizableOrigin(input),
@@ -36184,10 +36184,10 @@ var $ZodCheckSizeEquals = /* @__PURE__ */ $constructor("$ZodCheckSizeEquals", (i
   });
   inst._zod.check = (payload2) => {
     const input = payload2.value;
-    const size = input.size;
-    if (size === def.size)
+    const size2 = input.size;
+    if (size2 === def.size)
       return;
-    const tooBig = size > def.size;
+    const tooBig = size2 > def.size;
     payload2.issues.push({
       origin: getSizableOrigin(input),
       ...tooBig ? { code: "too_big", maximum: def.size } : { code: "too_small", minimum: def.size },
@@ -45157,11 +45157,11 @@ function _minSize(minimum, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _size(size, params) {
+function _size(size2, params) {
   return new $ZodCheckSizeEquals({
     check: "size_equals",
     ...normalizeParams(params),
-    size
+    size: size2
   });
 }
 // @__NO_SIDE_EFFECTS__
@@ -45753,7 +45753,7 @@ function extractDefs(ctx, schema) {
       return;
     }
     const seen = entry[1];
-    const { ref, defId } = makeURI(entry);
+    const { ref: ref2, defId } = makeURI(entry);
     seen.def = { ...seen.schema };
     if (defId)
       seen.defId = defId;
@@ -45761,7 +45761,7 @@ function extractDefs(ctx, schema) {
     for (const key4 in schema2) {
       delete schema2[key4];
     }
-    schema2.$ref = ref;
+    schema2.$ref = ref2;
   };
   if (ctx.cycles === "throw") {
     for (const entry of ctx.seen.entries()) {
@@ -45813,11 +45813,11 @@ function finalize(ctx, schema) {
       return;
     const schema2 = seen.def ?? seen.schema;
     const _cached = { ...schema2 };
-    const ref = seen.ref;
+    const ref2 = seen.ref;
     seen.ref = null;
-    if (ref) {
-      flattenRef(ref);
-      const refSeen = ctx.seen.get(ref);
+    if (ref2) {
+      flattenRef(ref2);
+      const refSeen = ctx.seen.get(ref2);
       const refSchema = refSeen.schema;
       if (refSchema.$ref && (ctx.target === "draft-07" || ctx.target === "draft-04" || ctx.target === "openapi-3.0")) {
         schema2.allOf = schema2.allOf ?? [];
@@ -45826,7 +45826,7 @@ function finalize(ctx, schema) {
         Object.assign(schema2, refSchema);
       }
       Object.assign(schema2, _cached);
-      const isParentRef = zodSchema._zod.parent === ref;
+      const isParentRef = zodSchema._zod.parent === ref2;
       if (isParentRef) {
         for (const key4 in schema2) {
           if (key4 === "$ref" || key4 === "allOf")
@@ -45847,7 +45847,7 @@ function finalize(ctx, schema) {
       }
     }
     const parent = zodSchema._zod.parent;
-    if (parent && parent !== ref) {
+    if (parent && parent !== ref2) {
       flattenRef(parent);
       const parentSeen = ctx.seen.get(parent);
       if (parentSeen?.schema.$ref) {
@@ -47877,8 +47877,8 @@ var ZodFile = /* @__PURE__ */ $constructor("ZodFile", (inst, def) => {
   $ZodFile.init(inst, def);
   ZodType.init(inst, def);
   inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
-  inst.min = (size, params) => inst.check(_minSize(size, params));
-  inst.max = (size, params) => inst.check(_maxSize(size, params));
+  inst.min = (size2, params) => inst.check(_minSize(size2, params));
+  inst.max = (size2, params) => inst.check(_maxSize(size2, params));
   inst.mime = (types, params) => inst.check(_mime(Array.isArray(types) ? types : [types], params));
 });
 function file(params) {
@@ -48324,11 +48324,11 @@ function detectVersion(schema, defaultTarget) {
   }
   return defaultTarget ?? "draft-2020-12";
 }
-function resolveRef(ref, ctx) {
-  if (!ref.startsWith("#")) {
+function resolveRef(ref2, ctx) {
+  if (!ref2.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path = ref.slice(1).split("/").filter(Boolean);
+  const path = ref2.slice(1).split("/").filter(Boolean);
   if (path.length === 0) {
     return ctx.rootSchema;
   }
@@ -48336,11 +48336,11 @@ function resolveRef(ref, ctx) {
   if (path[0] === defsKey) {
     const key4 = path[1];
     if (!key4 || !ctx.defs[key4]) {
-      throw new Error(`Reference not found: ${ref}`);
+      throw new Error(`Reference not found: ${ref2}`);
     }
     return ctx.defs[key4];
   }
-  throw new Error(`Reference not found: ${ref}`);
+  throw new Error(`Reference not found: ${ref2}`);
 }
 function convertBaseSchema(schema, ctx) {
   if (schema.not !== void 0) {
@@ -55556,8 +55556,8 @@ var ZodSet2 = class _ZodSet extends ZodType2 {
       maxSize: { value: maxSize, message: errorUtil.toString(message) }
     });
   }
-  size(size, message) {
-    return this.min(size, message).max(size, message);
+  size(size2, message) {
+    return this.min(size2, message).max(size2, message);
   }
   nonempty(message) {
     return this.min(1, message);
@@ -55955,23 +55955,23 @@ var ZodEffects = class extends ZodType2 {
     }
     if (effect.type === "transform") {
       if (ctx.common.async === false) {
-        const base = this._def.schema._parseSync({
+        const base2 = this._def.schema._parseSync({
           data: ctx.data,
           path: ctx.path,
           parent: ctx
         });
-        if (!isValid(base))
+        if (!isValid(base2))
           return INVALID;
-        const result = effect.transform(base.value, checkCtx);
+        const result = effect.transform(base2.value, checkCtx);
         if (result instanceof Promise) {
           throw new Error(`Asynchronous transform encountered during synchronous parse operation. Use .parseAsync instead.`);
         }
         return { status: status.value, value: result };
       } else {
-        return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base) => {
-          if (!isValid(base))
+        return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base2) => {
+          if (!isValid(base2))
             return INVALID;
-          return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({
+          return Promise.resolve(effect.transform(base2.value, checkCtx)).then((result) => ({
             status: status.value,
             value: result
           }));
@@ -57360,19 +57360,19 @@ function parseNullableDef(def, refs2) {
     };
   }
   if (refs2.target === "openApi3") {
-    const base2 = parseDef(def.innerType._def, {
+    const base3 = parseDef(def.innerType._def, {
       ...refs2,
       currentPath: [...refs2.currentPath]
     });
-    if (base2 && "$ref" in base2)
-      return { allOf: [base2], nullable: true };
-    return base2 && { ...base2, nullable: true };
+    if (base3 && "$ref" in base3)
+      return { allOf: [base3], nullable: true };
+    return base3 && { ...base3, nullable: true };
   }
-  const base = parseDef(def.innerType._def, {
+  const base2 = parseDef(def.innerType._def, {
     ...refs2,
     currentPath: [...refs2.currentPath, "anyOf", "0"]
   });
-  return base && { anyOf: [base, { type: "null" }] };
+  return base2 && { anyOf: [base2, { type: "null" }] };
 }
 
 // node_modules/zod-to-json-schema/dist/esm/parsers/number.js
@@ -57431,7 +57431,7 @@ function parseObjectDef(def, refs2) {
     type: "object",
     properties: {}
   };
-  const required3 = [];
+  const required4 = [];
   const shape = def.shape();
   for (const propName in shape) {
     let propDef = shape[propName];
@@ -57458,11 +57458,11 @@ function parseObjectDef(def, refs2) {
     }
     result.properties[propName] = parsedDef;
     if (!propOptional) {
-      required3.push(propName);
+      required4.push(propName);
     }
   }
-  if (required3.length) {
-    result.required = required3;
+  if (required4.length) {
+    result.required = required4;
   }
   const additionalProperties = decideAdditionalProperties(def, refs2);
   if (additionalProperties !== void 0) {
@@ -58776,8 +58776,8 @@ var Protocol = class {
 function isPlainObject2(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2);
 }
-function mergeCapabilities(base, additional) {
-  const result = { ...base };
+function mergeCapabilities(base2, additional) {
+  const result = { ...base2 };
   for (const key4 in additional) {
     const k = key4;
     const addValue = additional[k];
@@ -59822,13 +59822,13 @@ var McpServer = class {
     });
     this._completionHandlerInitialized = true;
   }
-  async handlePromptCompletion(request, ref) {
-    const prompt = this._registeredPrompts[ref.name];
+  async handlePromptCompletion(request, ref2) {
+    const prompt = this._registeredPrompts[ref2.name];
     if (!prompt) {
-      throw new McpError(ErrorCode.InvalidParams, `Prompt ${ref.name} not found`);
+      throw new McpError(ErrorCode.InvalidParams, `Prompt ${ref2.name} not found`);
     }
     if (!prompt.enabled) {
-      throw new McpError(ErrorCode.InvalidParams, `Prompt ${ref.name} disabled`);
+      throw new McpError(ErrorCode.InvalidParams, `Prompt ${ref2.name} disabled`);
     }
     if (!prompt.argsSchema) {
       return EMPTY_COMPLETION_RESULT;
@@ -59845,10 +59845,10 @@ var McpServer = class {
     const suggestions = await completer(request.params.argument.value, request.params.context);
     return createCompletionResult(suggestions);
   }
-  async handleResourceCompletion(request, ref) {
-    const template = Object.values(this._registeredResourceTemplates).find((t) => t.resourceTemplate.uriTemplate.toString() === ref.uri);
+  async handleResourceCompletion(request, ref2) {
+    const template = Object.values(this._registeredResourceTemplates).find((t) => t.resourceTemplate.uriTemplate.toString() === ref2.uri);
     if (!template) {
-      if (this._registeredResources[ref.uri]) {
+      if (this._registeredResources[ref2.uri]) {
         return EMPTY_COMPLETION_RESULT;
       }
       throw new McpError(ErrorCode.InvalidParams, `Resource template ${request.params.ref.uri} not found`);
@@ -60735,6 +60735,458 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
 
+// dist/workflowClient.js
+import { createHash } from "node:crypto";
+
+// dist/workflows/graph.js
+import { Script } from "node:vm";
+import { randomUUID } from "node:crypto";
+var ref = external_exports.string().min(1).max(100);
+var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
+var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
+var agentModel = external_exports.object(query).strict();
+var nodeSchema = external_exports.discriminatedUnion("type", [
+  external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
+]);
+var specSchema = external_exports.object({
+  schema_version: external_exports.literal(1).default(1),
+  nodes: external_exports.array(nodeSchema).max(200).default([]),
+  edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.enum(["default", "success", "failure", "true", "false"]) }).strict()).max(500).default([]),
+  remove_node_ids: external_exports.array(external_exports.string()).default([]),
+  remove_edge_ids: external_exports.array(external_exports.string()).default([]),
+  test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
+}).strict();
+function assertWorkflowJavaScript(code, label2) {
+  if (typeof code !== "string" || !code.trim())
+    throw new Error(`Missing JavaScript code in ${label2}.`);
+  try {
+    new Script(`(async function() {${code}
+})`);
+  } catch {
+    throw new Error(`Invalid JavaScript syntax in ${label2}.`);
+  }
+}
+function isAttachmentEdge(edge) {
+  return edge.targetHandle === "ai-model" || edge.targetHandle === "tool";
+}
+function controlFlowEdges(graph) {
+  return graph.edges.filter((edge) => !isAttachmentEdge(edge));
+}
+function definition(value2) {
+  if (value2 == null)
+    return { nodes: [], edges: [], queries: [] };
+  const parsed = external_exports.object({
+    nodes: external_exports.array(external_exports.object({ id: external_exports.string(), type: external_exports.string(), data: external_exports.record(external_exports.string(), external_exports.unknown()) }).passthrough()).default([]),
+    edges: external_exports.array(external_exports.object({ id: external_exports.string(), source: external_exports.string(), target: external_exports.string(), sourceHandle: external_exports.string().nullable().optional(), targetHandle: external_exports.string().nullable().optional(), data: external_exports.record(external_exports.string(), external_exports.unknown()).optional() }).passthrough()).default([]),
+    queries: external_exports.array(external_exports.object({ id: external_exports.string(), idOnDefinition: external_exports.string() }).passthrough()).default([])
+  }).passthrough().parse(value2);
+  return structuredClone(parsed);
+}
+function validateGraph(graph, queryIds) {
+  const errors = [], warnings = [];
+  const error51 = (code, path, message) => errors.push({ code, path, message });
+  const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
+  if (nodes.size !== graph.nodes.length)
+    error51("duplicate_node", "nodes", "Node IDs must be unique.");
+  if (new Set(graph.edges.map((e) => e.id)).size !== graph.edges.length)
+    error51("duplicate_edge", "edges", "Edge IDs must be unique.");
+  const starts = graph.nodes.filter((n) => n.type === "input" && n.data.nodeType === "start");
+  if (starts.length !== 1)
+    error51("start_count", "nodes", "Exactly one start node is required.");
+  const mappings = new Map(graph.queries.map((q) => [q.idOnDefinition, q.id]));
+  if (mappings.size !== graph.queries.length)
+    error51("duplicate_mapping", "queries", "Query definition IDs must be unique.");
+  for (const mapping of graph.queries)
+    if (queryIds && !queryIds.has(mapping.id))
+      error51("missing_query", "queries", `Query ${mapping.id} does not belong to this version.`);
+  for (const n of graph.nodes) {
+    if (n.type === "query" && !mappings.has(String(n.data.idOnDefinition)))
+      error51("missing_mapping", `nodes.${n.id}`, "Query node has no query mapping.");
+    if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
+      warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
+  }
+  const flowEdges = controlFlowEdges(graph);
+  for (const edge of graph.edges) {
+    const source2 = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
+    if (!source2 || !target) {
+      error51("missing_endpoint", path, "Edge endpoint does not exist.");
+      continue;
+    }
+    if (isAttachmentEdge(edge)) {
+      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target.type === "agent")) {
+        error51("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
+      }
+      continue;
+    }
+    if (target.type === "input")
+      error51("start_inbound", path, "Start cannot have inbound edges.");
+    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
+    if (ports[source2.type] && !ports[source2.type].includes(edge.sourceHandle))
+      error51("invalid_port", path, `Invalid source port for ${source2.type}.`);
+    if (source2.type === "query" && edge.sourceHandle === "failure" && !source2.data.errorHandler)
+      error51("error_handler_disabled", path, "Failure edge requires query error handling.");
+  }
+  for (const agent of graph.nodes.filter((node2) => node2.type === "agent")) {
+    if (graph.edges.filter((edge) => edge.target === agent.id && edge.targetHandle === "ai-model").length > 1) {
+      error51("duplicate_agent_model", `nodes.${agent.id}.model`, "Agent can have only one AI model attachment.");
+    }
+  }
+  const adjacency = new Map(graph.nodes.map((n) => [n.id, flowEdges.filter((e) => e.source === n.id).map((e) => e.target)]));
+  const visited = /* @__PURE__ */ new Set(), active = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (active.has(id))
+      return true;
+    if (visited.has(id))
+      return false;
+    visited.add(id);
+    active.add(id);
+    const cyclic = (adjacency.get(id) ?? []).some(visit);
+    active.delete(id);
+    return cyclic;
+  };
+  if (graph.nodes.some((n) => visit(n.id)))
+    error51("cycle", "edges", "Cycles are unsupported in the basic node set.");
+  const reachable = /* @__PURE__ */ new Set();
+  const reach = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    (adjacency.get(id) ?? []).forEach(reach);
+  };
+  starts.forEach((n) => reach(n.id));
+  for (const n of graph.nodes)
+    if (!reachable.has(n.id) && n.data.isChildOfAgent !== true)
+      warnings.push({ code: "unreachable", path: `nodes.${n.id}`, message: "Node is unreachable from start." });
+  return { errors, warnings, runtime_verified: false };
+}
+function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new Map()) {
+  const graph = structuredClone(current);
+  const node_ids = /* @__PURE__ */ Object.create(null), edge_ids = /* @__PURE__ */ Object.create(null);
+  const model_ids = /* @__PURE__ */ Object.create(null);
+  const query_nodes = [];
+  const checkUnique = (refs2) => {
+    if (new Set(refs2).size !== refs2.length)
+      throw new Error("Duplicate logical refs.");
+  };
+  checkUnique(spec.nodes.map((n) => n.ref));
+  checkUnique(spec.edges.map((e) => e.ref));
+  for (const id of spec.remove_node_ids)
+    if (!graph.nodes.some((n) => n.id === id))
+      throw new Error(`Unknown node to remove: ${id}`);
+  for (const id of spec.remove_edge_ids)
+    if (!graph.edges.some((e) => e.id === id))
+      throw new Error(`Unknown edge to remove: ${id}`);
+  const removedNodeIds = new Set(spec.remove_node_ids);
+  const cascadedChildIds = /* @__PURE__ */ new Set();
+  for (const agentId of spec.remove_node_ids) {
+    for (const edge of graph.edges.filter((candidate) => candidate.target === agentId && candidate.targetHandle === "ai-model")) {
+      removedNodeIds.add(edge.source);
+      cascadedChildIds.add(edge.source);
+    }
+  }
+  const removedDefinitionIds = graph.nodes.filter((n) => removedNodeIds.has(n.id)).map((n) => n.data.idOnDefinition);
+  graph.nodes = graph.nodes.filter((n) => !removedNodeIds.has(n.id));
+  graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
+  const editedIds = /* @__PURE__ */ new Set();
+  for (const input of spec.nodes) {
+    if ("code" in input) {
+      try {
+        new Script(input.type === "condition" ? `(${input.code})` : `(async function() {${input.code}
+})`);
+      } catch {
+        throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`);
+      }
+    }
+    if (input.type === "loop") {
+      try {
+        new Script(`(async function() {${input.iteration_values_code}
+})`);
+      } catch {
+        throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`);
+      }
+    }
+    const id = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
+    if (editedIds.has(id))
+      throw new Error("Multiple node edits target the same ID.");
+    editedIds.add(id);
+    const old = graph.nodes.find((n) => n.id === id);
+    if (input.existing_id && !old)
+      throw new Error(`Unknown existing node: ${id}`);
+    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
+    if (old && old.type !== type)
+      throw new Error("Changing node type is unsupported; remove and add explicitly.");
+    const data = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
+    if (input.type !== "condition")
+      data.nodeType = input.type === "javascript" || input.type === "loop" ? "query" : input.type;
+    if (input.type === "condition" || input.type === "response")
+      data.code = input.code;
+    if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
+      data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
+    }
+    if (input.type === "loop") {
+      data.looped = true;
+      data.iterationValuesCode = input.iteration_values_code;
+    }
+    if (input.type === "agent") {
+      const oldOptions = old?.data.options && typeof old.data.options === "object" && !Array.isArray(old.data.options) ? old.data.options : {};
+      data.nodeName = old?.data.nodeName ?? input.ref;
+      data.options = {
+        ...oldOptions,
+        systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? "",
+        userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
+        outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
+      };
+      const attachments = graph.edges.filter((edge) => edge.target === id && edge.targetHandle === "ai-model");
+      if (attachments.length > 1)
+        throw new Error(`Agent ${input.ref} has multiple AI model attachments.`);
+      const attachment = attachments[0];
+      const child = attachment && graph.nodes.find((node3) => node3.id === attachment.source);
+      if (input.model === null && attachment) {
+        if (typeof child?.data.idOnDefinition === "string")
+          removedDefinitionIds.push(child.data.idOnDefinition);
+        graph.edges = graph.edges.filter((edge) => edge.id !== attachment.id);
+        graph.nodes = graph.nodes.filter((node3) => node3.id !== attachment.source);
+      } else if (input.model) {
+        const modelNodeId = child?.id ?? ids?.model_ids[input.ref]?.node_id ?? randomUUID();
+        const definitionId = typeof child?.data.idOnDefinition === "string" ? child.data.idOnDefinition : randomUUID();
+        const kind = datasourceKinds.get(input.model.datasource_id);
+        const modelNode = {
+          ...child,
+          id: modelNodeId,
+          type: "query",
+          sourcePosition: "right",
+          targetPosition: "left",
+          deletable: false,
+          data: { ...child?.data, idOnDefinition: definitionId, nodeType: "query", kind, isChildOfAgent: true, agentConnectionType: "ai-model" },
+          position: child?.position ?? { x: 100, y: 70 }
+        };
+        if (child)
+          graph.nodes[graph.nodes.indexOf(child)] = modelNode;
+        else
+          graph.nodes.push(modelNode);
+        const edgeId = attachment?.id ?? ids?.model_ids[input.ref]?.edge_id ?? randomUUID();
+        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
+        if (attachment)
+          graph.edges[graph.edges.indexOf(attachment)] = modelEdge;
+        else
+          graph.edges.push(modelEdge);
+        model_ids[input.ref] = { node_id: modelNodeId, edge_id: edgeId };
+        query_nodes.push({ role: "agent-model", parent_agent_id: id, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
+      }
+    }
+    if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
+      const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
+      data.idOnDefinition = definitionId;
+      query_nodes.push({ role: "workflow-node", spec: input, node_id: id, definition_id: definitionId });
+    }
+    const node2 = { ...old, id, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
+    if (old)
+      graph.nodes[graph.nodes.indexOf(old)] = node2;
+    else
+      graph.nodes.push(node2);
+    node_ids[input.ref] = id;
+  }
+  const resolve6 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const editedEdges = /* @__PURE__ */ new Set();
+  for (const input of spec.edges) {
+    const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
+    if (editedEdges.has(id))
+      throw new Error("Multiple edge edits target the same ID.");
+    editedEdges.add(id);
+    const old = graph.edges.find((e) => e.id === id);
+    if (input.existing_id && !old)
+      throw new Error(`Unknown existing edge: ${id}`);
+    const source2 = resolve6(input.from), target = resolve6(input.to);
+    if (!source2 || !target)
+      throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
+    const sourceNode = graph.nodes.find((node2) => node2.id === source2);
+    const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
+    const edge = { ...old, id, source: source2, target, sourceHandle, type: "custom" };
+    if (old)
+      graph.edges[graph.edges.indexOf(old)] = edge;
+    else
+      graph.edges.push(edge);
+    edge_ids[input.ref] = id;
+    if (input.port === "failure") {
+      const n = graph.nodes.find((n2) => n2.id === source2);
+      if (n.type === "query")
+        n.data.errorHandler = true;
+    }
+  }
+  graph.queries = graph.queries.filter((q) => !removedDefinitionIds.includes(q.idOnDefinition) || graph.nodes.some((n) => n.data.idOnDefinition === q.idOnDefinition));
+  const depths = new Map(graph.nodes.map((n) => [n.id, 0]));
+  for (let pass = 0; pass < graph.nodes.length; pass++) {
+    let changed = false;
+    for (const edge of controlFlowEdges(graph)) {
+      const next = (depths.get(edge.source) ?? 0) + 1;
+      if (next > (depths.get(edge.target) ?? 0)) {
+        depths.set(edge.target, next);
+        changed = true;
+      }
+    }
+    if (!changed)
+      break;
+  }
+  const placed = graph.nodes.filter((n) => current.nodes.some((old) => old.id === n.id) || spec.nodes.some((input) => node_ids[input.ref] === n.id && input.position));
+  for (const n of graph.nodes.filter((n2) => !placed.includes(n2))) {
+    const x = 100 + (depths.get(n.id) ?? 0) * 320;
+    let y = 250;
+    while (placed.some((other) => other.position && Math.abs(other.position.x - x) < 300 && Math.abs(other.position.y - y) < 160))
+      y += 180;
+    n.position = { x, y };
+    placed.push(n);
+  }
+  if (spec.test_parameters !== void 0)
+    graph.defaultParams = JSON.stringify(spec.test_parameters);
+  return { graph, node_ids, edge_ids, model_ids, query_nodes };
+}
+var nodeCatalog = {
+  schema_version: 1,
+  nodes: [
+    { type: "start", renderer: "input", ports: ["default"] },
+    { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
+    { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
+    { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
+    { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
+    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
+    { type: "agent", renderer: "agent", ports: ["default"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
+  ],
+  edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
+  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
+};
+
+// dist/workflowClient.js
+var record2 = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
+var required2 = (x, label2) => {
+  if (typeof x !== "string" || !x)
+    throw new Error(`Workflow response missing ${label2}.`);
+  return x;
+};
+function createWorkflowClient(auth, config2, queries) {
+  async function request(path, body, method = "POST") {
+    const mutation = body !== void 0;
+    let response;
+    try {
+      response = await auth.authedFetch(path, { ...mutation ? { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}, signal: AbortSignal.timeout(9e4) });
+    } catch {
+      throw new Error(mutation ? `Workflow request outcome is unknown (${method} ${path}). Inspect persisted state before retrying; it may have completed.` : `Workflow read failed (${path}).`);
+    }
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 600);
+      throw new Error(`Workflow API ${method === "POST" && !mutation ? "GET" : method} ${path} failed (HTTP ${response.status}). Check session, workspace, permissions, license and version state.${detail ? ` Response: ${detail}` : ""}`);
+    }
+    if (response.status === 204)
+      return {};
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
+  }
+  const versionPath = (id, version2) => `/api/v2/apps/${encodeURIComponent(id)}/versions/${encodeURIComponent(version2)}`;
+  async function get(workflowId, versionId) {
+    if (!versionId) {
+      const app2 = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+      versionId = required2(record2(app2.editing_version ?? app2.editingVersion).id, "editing version");
+    }
+    const app = record2(await request(versionPath(workflowId, versionId)));
+    if (app.type !== "workflow")
+      throw new Error("Target is not a workflow.");
+    const workspace = await auth.getOrganizationId();
+    if ((app.organizationId ?? app.organization_id) !== workspace)
+      throw new Error("Workflow does not belong to the active workspace.");
+    if (app.id !== workflowId)
+      throw new Error("Workflow response ID mismatch.");
+    const version2 = record2(app.editing_version ?? app.editingVersion);
+    if (version2.id !== versionId)
+      throw new Error("Workflow version response mismatch.");
+    const environmentId = required2(version2.currentEnvironmentId ?? version2.current_environment_id, "environment ID");
+    const status = String(version2.status ?? "").toUpperCase();
+    const released = (app.currentVersionId ?? app.current_version_id) === versionId;
+    const frozen = Boolean(app.should_freeze_editor ?? app.shouldFreezeEditor);
+    const exported = record2(await request("/api/v2/resources/export", {
+      organization_id: workspace,
+      app: [{ id: workflowId, search_params: { version_id: versionId } }]
+    }));
+    const apps = Array.isArray(exported.app) ? exported.app : [];
+    const rawApp = record2(record2(record2(apps[0]).definition).appV2);
+    if (apps.length !== 1 || rawApp.id !== workflowId || rawApp.type !== "workflow" || rawApp.organizationId !== workspace) {
+      throw new Error("Lossless workflow export response mismatch. No definition can be safely edited.");
+    }
+    const versions2 = Array.isArray(rawApp.appVersions) ? rawApp.appVersions : [];
+    const rawVersion = record2(versions2.find((candidate) => record2(candidate).id === versionId));
+    if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, "definition")) {
+      throw new Error("Lossless workflow export is missing the requested version definition.");
+    }
+    return {
+      workflow_id: workflowId,
+      version_id: versionId,
+      workspace_id: workspace,
+      environment_id: environmentId,
+      editable: status === "DRAFT" && !released && !frozen,
+      enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
+      editor_url: `${config2.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}`,
+      definition: definition(rawVersion.definition)
+    };
+  }
+  return {
+    ...queries,
+    workspaceId: () => auth.getOrganizationId(),
+    async planScope() {
+      return createHash("sha256").update(JSON.stringify([config2.apiUrl, config2.sessionToken ?? config2.pat, await auth.getOrganizationId()])).digest("hex");
+    },
+    async list(page = 1, search = "") {
+      return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
+    },
+    get,
+    async create(name2) {
+      const created = record2(await request("/api/workflows", { name: name2, type: "workflow" }));
+      const id = required2(created.id, "created workflow ID");
+      try {
+        return await get(id);
+      } catch (error51) {
+        throw new Error(`Workflow ${id} was created, but readback failed. Do not recreate it. ${error51 instanceof Error ? error51.message : String(error51)}`);
+      }
+    },
+    async save(snapshot2, graph) {
+      if (!snapshot2.editable)
+        throw new Error("Only editable draft workflow versions can be changed.");
+      return request(versionPath(snapshot2.workflow_id, snapshot2.version_id), { definition: graph }, "PUT");
+    },
+    /** Workflow nodes use their own creation route. It supplies ToolJet's static RunJS source
+     * when no datasource is needed, and carries workflow-specific guards/metadata. */
+    async createWorkflowQuery(params) {
+      const body = record2(await request("/api/data-queries/workflow-node", {
+        app_id: params.workflowId,
+        app_version_id: params.versionId,
+        name: params.name,
+        kind: params.kind,
+        options: params.options,
+        ...params.dataSourceId ? { data_source_id: params.dataSourceId } : {}
+      }));
+      return { query_id: required2(body.id, "created workflow query ID"), name: required2(body.name, "created workflow query name") };
+    },
+    async run(workflowId, versionId, environmentId, params) {
+      const snapshot2 = await get(workflowId, versionId);
+      if (snapshot2.environment_id !== environmentId)
+        throw new Error("Environment must match the selected workflow version.");
+      if (!snapshot2.enabled)
+        throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
+      return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
+    },
+    async execution(id, page = 1, perPage = 20) {
+      const base2 = `/api/workflow_executions/${encodeURIComponent(id)}`;
+      const response = record2(await request(`${base2}/status`));
+      const status = { status: response.status, logs: response.logs };
+      const nodes = await request(`${base2}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
+      return { execution_id: id, status, nodes, page, per_page: perPage };
+    }
+  };
+}
+
 // dist/tableQuotaError.js
 var TableQuotaError = class extends Error {
   code = "TJDB_TABLE_LIMIT_REACHED";
@@ -60757,7 +61209,7 @@ function tableQuotaError(error51) {
 }
 
 // dist/tooljetClient.js
-import { randomUUID } from "node:crypto";
+import { randomUUID as randomUUID2 } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 
 // dist/pageIcons.js
@@ -60976,7 +61428,7 @@ function parseHtml(html) {
 function decodeEntities(text) {
   return text.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
 }
-function px(value2, fontSize, base = 0) {
+function px(value2, fontSize, base2 = 0) {
   if (value2 === void 0)
     return void 0;
   const v = value2.trim();
@@ -60995,7 +61447,7 @@ function px(value2, fontSize, base = 0) {
     case "pt":
       return n * (4 / 3);
     case "%":
-      return base ? n / 100 * base : void 0;
+      return base2 ? n / 100 * base2 : void 0;
     default:
       return void 0;
   }
@@ -61415,7 +61867,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve6 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const resolve6 = (ref2) => typeof ref2 === "string" ? byId.get(ref2) ?? byName.get(ref2) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options2 = q.options && typeof q.options === "object" ? q.options : {};
@@ -61473,10 +61925,10 @@ function lintUntriggeredDataQueries(summary) {
         continue;
       const names = [...new Set([...data.matchAll(/\bqueries\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
       for (const name2 of names) {
-        const query = byName.get(name2);
-        if (!query)
+        const query2 = byName.get(name2);
+        if (!query2)
           continue;
-        const t = triggers.get(query.id);
+        const t = triggers.get(query2.id);
         if (!t || t.automatic)
           continue;
         const who = `${c.type} "${c.name ?? c.id}"`;
@@ -61798,7 +62250,7 @@ function lintUnguardedComponentRefs(c) {
     }
     if (!bad.size)
       continue;
-    const fixes = [...bad].map((ref) => `${ref.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
+    const fixes = [...bad].map((ref2) => `${ref2.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
     errors.push(`${c.type} "${label(c)}": ${key4} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
   }
   return errors;
@@ -61919,20 +62371,20 @@ function componentNameError(name2) {
 }
 
 // dist/editPrefillContract.js
-var record2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : {};
-var unwrap = (v) => Object.hasOwn(record2(v), "value") ? record2(v).value : v;
+var record3 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : {};
+var unwrap = (v) => Object.hasOwn(record3(v), "value") ? record3(v).value : v;
 function lintEditPrefill(summary) {
   const controls = summary.pages.flatMap((p) => p.components);
   const names = new Map(controls.filter((c) => c.name).map((c) => [c.name, c]));
   const warnings = [];
   for (const q of summary.queries) {
-    const options2 = record2(q.options);
+    const options2 = record3(q.options);
     if (q.kind !== "tooljetdb" || options2.operation !== "update_rows")
       continue;
-    const update = record2(options2.update_rows);
-    if (!Object.keys(record2(update.where_filters)).length)
+    const update = record3(options2.update_rows);
+    if (!Object.keys(record3(update.where_filters)).length)
       continue;
-    const entries = Object.values(record2(update.columns)).map(record2);
+    const entries = Object.values(record3(update.columns)).map(record3);
     if (entries.some((entry) => Object.hasOwn(entry, "value") && (typeof entry.value !== "string" || !entry.value.includes("{{"))))
       continue;
     const referenced = [...new Set(bindingReferences(update.columns).filter((r) => r.namespace === "components").map((r) => r.name))];
@@ -61940,7 +62392,7 @@ function lintEditPrefill(summary) {
       const c = names.get(name2);
       if (!c || !["TextInput", "EmailInput", "PhoneInput", "NumberInput", "TextArea"].includes(c.type ?? ""))
         return [];
-      const p = record2(c.properties);
+      const p = record3(c.properties);
       if (["value", "defaultValue"].some((k) => {
         const v = unwrap(p[k]);
         return v !== void 0 && v !== null && v !== "";
@@ -61962,22 +62414,22 @@ function lintUninitializedWriteSelections(summary) {
   const controls = summary.pages.flatMap((p) => p.components);
   const warnings = [];
   for (const q of summary.queries) {
-    const options2 = record2(q.options);
+    const options2 = record3(q.options);
     if (q.kind !== "tooljetdb" || options2.operation !== "update_rows")
       continue;
-    const update = record2(options2.update_rows);
-    if (!Object.keys(record2(update.where_filters)).length)
+    const update = record3(options2.update_rows);
+    if (!Object.keys(record3(update.where_filters)).length)
       continue;
     const reads = new Set(bindingReferences(update.columns).filter((r) => r.namespace === "components").map((r) => r.name));
     for (const c of controls) {
       if (c.type !== "DropdownV2" || !c.name || !reads.has(c.name))
         continue;
-      const p = record2(c.properties);
+      const p = record3(c.properties);
       const choices = unwrap(p.options);
       if (unwrap(p.advanced) || !Array.isArray(choices) || !choices.length)
         continue;
       if (choices.some((choice) => {
-        const item = record2(choice);
+        const item = record3(choice);
         return item.default !== void 0 && item.default !== false || item.value === "" || item.value === null;
       }))
         continue;
@@ -61988,7 +62440,7 @@ function lintUninitializedWriteSelections(summary) {
       const guardSources = [
         options2.disableQuery,
         q.disableQuery,
-        ...controls.filter((b) => b.type === "Button").map((b) => record2(b.properties).disabledState)
+        ...controls.filter((b) => b.type === "Button").map((b) => record3(b.properties).disabledState)
       ];
       if (guardSources.some((g) => bindingReferences(g).some((r) => r.namespace === "components" && r.name === c.name)))
         continue;
@@ -62398,9 +62850,9 @@ function getDatasourceQuerySchema(kind) {
 }
 function operationSummary(contract) {
   const selectors = {};
-  const required3 = /* @__PURE__ */ new Set();
+  const required4 = /* @__PURE__ */ new Set();
   for (const variant of contract.variants) {
-    variant.required.forEach((path) => required3.add(path));
+    variant.required.forEach((path) => required4.add(path));
     for (const [key4, values] of Object.entries(variant.when)) {
       const collected = selectors[key4] ?? /* @__PURE__ */ new Set();
       values.forEach((value2) => collected.add(value2));
@@ -62410,7 +62862,7 @@ function operationSummary(contract) {
   return {
     operation: contract.operation,
     selectors: Object.fromEntries(Object.entries(selectors).map(([key4, values]) => [key4, [...values].sort()])),
-    required: [...required3].sort(),
+    required: [...required4].sort(),
     variants: contract.variants.length,
     ...contract.response ? { response_type: contract.response.type } : {},
     ...contract.response ? { response_status: contract.response.status } : {}
@@ -62420,8 +62872,8 @@ function discoverable(schema) {
   const selection = schema.operationSelection;
   if (schema.kind === "hubspot" || selection?.mode !== "remote-spec" || selection.specs?.length !== 1)
     return false;
-  const ref = selection.specs[0];
-  return ref.location === "remote" || ref.location === "bundled" && !!ref.plugin && !!ref.name;
+  const ref2 = selection.specs[0];
+  return ref2.location === "remote" || ref2.location === "bundled" && !!ref2.plugin && !!ref2.name;
 }
 var SINGLE_SPEC_DISCOVERY = "Operations come from the plugin's API spec. Discover them with inspect_datasource_schema: listTables (pass `search`) finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to copy: operation (lowercase HTTP method), path, and params with path, query and request objects ({} when empty). Query values are flat: created[gte], expand[0], never a list or an object.";
 function selectDatasourceQuerySchema(kind, options2 = {}) {
@@ -62501,7 +62953,7 @@ function hubspotSpecs() {
 function hubspotQueryIssues(options2) {
   const issues = [];
   const issue3 = (path, message) => issues.push({ path, message });
-  const record5 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+  const record7 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
   if (!["get", "post", "patch", "put", "delete"].includes(String(options2.operation))) {
     issue3("operation", "HubSpot operation must be a lowercase HTTP method from getEndpointSchema, not an object name or create/update action.");
   }
@@ -62512,7 +62964,7 @@ function hubspotQueryIssues(options2) {
     issue3("specType", "Use the exact specType returned by inspect_datasource_schema so the HubSpot editor retains the selected endpoint.");
   }
   for (const bucket of ["path", "query", "request"]) {
-    if (!record5(options2.params) || !record5(options2.params[bucket])) {
+    if (!record7(options2.params) || !record7(options2.params[bucket])) {
       issue3(`params.${bucket}`, `HubSpot requires params.${bucket} as an object; use {} when empty.`);
     }
   }
@@ -62520,7 +62972,7 @@ function hubspotQueryIssues(options2) {
     if (misplaced in options2)
       issue3(misplaced, `HubSpot ignores top-level ${misplaced}; use params.path for IDs and params.request for the JSON body.`);
   }
-  if (typeof options2.path === "string" && record5(options2.params) && record5(options2.params.path)) {
+  if (typeof options2.path === "string" && record7(options2.params) && record7(options2.params.path)) {
     for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
       const value2 = options2.params.path[match[1]];
       if (value2 === void 0 || value2 === null || value2 === "")
@@ -62533,7 +62985,7 @@ function hubspotQueryIssues(options2) {
 // dist/openapiSpec.js
 var import_yaml = __toESM(require_dist2(), 1);
 var HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
-function record3(value2) {
+function record4(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
 }
 function extractSpec(options2) {
@@ -62545,34 +62997,34 @@ function extractSpec(options2) {
   return void 0;
 }
 function parseSpecEntry(entry) {
-  const unwrapped = record3(entry)?.value !== void 0 ? record3(entry).value : entry;
+  const unwrapped = record4(entry)?.value !== void 0 ? record4(entry).value : entry;
   if (typeof unwrapped === "string") {
     try {
-      return record3(JSON.parse(unwrapped));
+      return record4(JSON.parse(unwrapped));
     } catch {
       try {
-        return record3((0, import_yaml.parse)(unwrapped, { prettyErrors: false }));
+        return record4((0, import_yaml.parse)(unwrapped, { prettyErrors: false }));
       } catch {
         return void 0;
       }
     }
   }
-  return record3(unwrapped);
+  return record4(unwrapped);
 }
 function schemaType(schema) {
   if (!schema)
     return void 0;
   if (typeof schema.type === "string") {
-    return schema.type === "array" && record3(schema.items)?.type ? `array<${record3(schema.items).type}>` : schema.type;
+    return schema.type === "array" && record4(schema.items)?.type ? `array<${record4(schema.items).type}>` : schema.type;
   }
   return schema.$ref ? String(schema.$ref) : void 0;
 }
 function listEndpoints(spec) {
-  const paths = record3(spec.paths) ?? {};
+  const paths = record4(spec.paths) ?? {};
   return Object.entries(paths).flatMap(([path, methods]) => {
-    const byMethod = record3(methods) ?? {};
+    const byMethod = record4(methods) ?? {};
     return Object.keys(byMethod).filter((method) => HTTP_METHODS.includes(method.toLowerCase())).map((method) => {
-      const operation = record3(byMethod[method]) ?? {};
+      const operation = record4(byMethod[method]) ?? {};
       return {
         path,
         method: method.toLowerCase(),
@@ -62584,19 +63036,19 @@ function listEndpoints(spec) {
   });
 }
 function deref(spec, node2, seen = /* @__PURE__ */ new Set()) {
-  const value2 = record3(node2);
+  const value2 = record4(node2);
   if (!value2)
     return void 0;
-  const ref = typeof value2.$ref === "string" ? value2.$ref : void 0;
-  if (!ref || !ref.startsWith("#/") || seen.has(ref))
+  const ref2 = typeof value2.$ref === "string" ? value2.$ref : void 0;
+  if (!ref2 || !ref2.startsWith("#/") || seen.has(ref2))
     return value2;
-  seen.add(ref);
-  const resolved = ref.slice(2).split("/").reduce((node3, segment) => record3(node3)?.[segment.replace(/~1/g, "/").replace(/~0/g, "~")], spec);
+  seen.add(ref2);
+  const resolved = ref2.slice(2).split("/").reduce((node3, segment) => record4(node3)?.[segment.replace(/~1/g, "/").replace(/~0/g, "~")], spec);
   return deref(spec, resolved, seen) ?? value2;
 }
 function endpointParameters(spec, path, method) {
-  const pathItem = record3(record3(spec.paths)?.[path]);
-  const operation = record3(pathItem?.[method.toLowerCase()]);
+  const pathItem = record4(record4(spec.paths)?.[path]);
+  const operation = record4(pathItem?.[method.toLowerCase()]);
   if (!pathItem || !operation)
     return { parameters: [], found: false };
   const raw = [
@@ -62619,11 +63071,11 @@ function endpointParameters(spec, path, method) {
     });
   }
   const body = deref(spec, operation.requestBody);
-  const json3 = body && record3(body.content) ? record3(record3(body.content)["application/json"]) : void 0;
+  const json3 = body && record4(body.content) ? record4(record4(body.content)["application/json"]) : void 0;
   const bodySchema = json3 ? deref(spec, json3.schema) : void 0;
-  const success2 = Object.entries(record3(operation.responses) ?? {}).find(([status]) => /^2\d\d$/.test(status));
+  const success2 = Object.entries(record4(operation.responses) ?? {}).find(([status]) => /^2\d\d$/.test(status));
   const response = success2 ? deref(spec, success2[1]) : void 0;
-  const responseContent = record3(record3(response?.content)?.["application/json"]);
+  const responseContent = record4(record4(response?.content)?.["application/json"]);
   const responseSchema = deref(spec, responseContent?.schema ?? response?.schema);
   return {
     parameters: [...byKey.values()],
@@ -62633,7 +63085,7 @@ function endpointParameters(spec, path, method) {
   };
 }
 function specHost(spec) {
-  const server = Array.isArray(spec.servers) ? record3(spec.servers[0]) : void 0;
+  const server = Array.isArray(spec.servers) ? record4(spec.servers[0]) : void 0;
   const url2 = typeof server?.url === "string" ? server.url : void 0;
   if (url2 && /^https?:\/\//i.test(url2))
     return url2.replace(/\/+$/, "");
@@ -62680,7 +63132,7 @@ function tokenize(text) {
 var DESCRIPTION_WEIGHT = 0.2;
 var NAME_COVERAGE_BONUS = 4;
 function endpointFields(spec, endpoint) {
-  const operation = record3(record3(record3(spec.paths)?.[endpoint.path])?.[endpoint.method]) ?? {};
+  const operation = record4(record4(record4(spec.paths)?.[endpoint.path])?.[endpoint.method]) ?? {};
   const tags = Array.isArray(operation.tags) ? operation.tags.map(String) : void 0;
   return {
     // The operation's own name, for coverage: its summary, else its operationId.
@@ -62691,11 +63143,11 @@ function endpointFields(spec, endpoint) {
     ...tags?.length ? { tags } : {}
   };
 }
-function rankEndpoints(spec, endpoints, query) {
-  const queryTokens = [...new Set(tokenize(query))];
+function rankEndpoints(spec, endpoints, query2) {
+  const queryTokens = [...new Set(tokenize(query2))];
   if (!queryTokens.length)
     return [];
-  const phrase = query.trim().toLowerCase();
+  const phrase = query2.trim().toLowerCase();
   const documents = endpoints.map((endpoint) => {
     const fields = endpointFields(spec, endpoint);
     return {
@@ -62752,20 +63204,20 @@ function singleSpecRef(kind) {
   const selection = getDatasourceQuerySchema(kind)?.operationSelection;
   if (selection?.mode !== "remote-spec" || selection.specs?.length !== 1)
     return void 0;
-  const ref = selection.specs[0];
-  return ref.location === "remote" || ref.location === "bundled" && ref.plugin && ref.name ? ref : void 0;
+  const ref2 = selection.specs[0];
+  return ref2.location === "remote" || ref2.location === "bundled" && ref2.plugin && ref2.name ? ref2 : void 0;
 }
 var SPEC_DISCOVERY_NOTE = 'Operations come from the plugin\'s API spec. Discover them with inspect_datasource_schema: listTables (pass `search`, such as "charges") finds endpoints, and getEndpointSchema (table = the path, args.operation = the HTTP method) returns query_options to copy as they are: operation (the lowercase HTTP method), path, and params with path, query and request objects (each present, {} when empty). Query values are flat: created[gte], expand[0], never a list or an object. The plugin fixes the host and authentication.';
 var publicCache = /* @__PURE__ */ new Map();
 var serverCache = /* @__PURE__ */ new Map();
 var TTL_MS = 60 * 60 * 1e3;
-function readSpec(client, kind, ref) {
+function readSpec(client, kind, ref2) {
   return (async () => {
-    const text = ref.location === "remote" ? await fetch(ref.ref, { signal: AbortSignal.timeout(6e4) }).then((res) => {
+    const text = ref2.location === "remote" ? await fetch(ref2.ref, { signal: AbortSignal.timeout(6e4) }).then((res) => {
       if (!res.ok)
         throw new Error(`HTTP ${res.status}`);
       return res.text();
-    }) : await client.getPluginSpec(ref.plugin, ref.name);
+    }) : await client.getPluginSpec(ref2.plugin, ref2.name);
     const parsed = extractSpec({ spec: text });
     if (!parsed)
       throw new Error("not an OpenAPI document");
@@ -62786,9 +63238,9 @@ function cached3(cache3, key4, load3) {
   cache3.set(key4, entry);
   return entry.spec;
 }
-async function loadKindSpec(client, kind, ref) {
-  if (ref.location === "remote")
-    return cached3(publicCache, ref.ref, () => readSpec(client, kind, ref));
+async function loadKindSpec(client, kind, ref2) {
+  if (ref2.location === "remote")
+    return cached3(publicCache, ref2.ref, () => readSpec(client, kind, ref2));
   let scope;
   try {
     scope = await client.specCacheScope?.();
@@ -62796,14 +63248,14 @@ async function loadKindSpec(client, kind, ref) {
     scope = void 0;
   }
   if (!scope)
-    return readSpec(client, kind, ref);
-  return cached3(serverCache, JSON.stringify([scope, ref.plugin, ref.name]), () => readSpec(client, kind, ref));
+    return readSpec(client, kind, ref2);
+  return cached3(serverCache, JSON.stringify([scope, ref2.plugin, ref2.name]), () => readSpec(client, kind, ref2));
 }
 function apiEndpointQueryIssues(kind, options2) {
   if (!singleSpecRef(kind))
     return [];
   const issues = [];
-  const record5 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+  const record7 = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
   if (!HTTP_METHODS2.includes(String(options2.operation))) {
     issues.push({ path: "operation", message: `${kind} operation is the endpoint's lowercase HTTP method (get, post, ...) from getEndpointSchema.` });
   }
@@ -62811,11 +63263,11 @@ function apiEndpointQueryIssues(kind, options2) {
     issues.push({ path: "path", message: `${kind} needs the static endpoint path from getEndpointSchema (such as /v1/charges), not a URL; put IDs in params.path.` });
   }
   for (const bucket of ["path", "query", "request"]) {
-    if (!record5(options2.params) || !record5(options2.params[bucket])) {
+    if (!record7(options2.params) || !record7(options2.params[bucket])) {
       issues.push({ path: `params.${bucket}`, message: `${kind} reads params.${bucket} on every run; give it as an object, {} when empty.` });
     }
   }
-  if (record5(options2.params) && record5(options2.params.query)) {
+  if (record7(options2.params) && record7(options2.params.query)) {
     for (const [key4, value2] of Object.entries(options2.params.query)) {
       if (typeof value2 === "string" && /(\|\||\?\?|:)\s*(''|"")\s*\}\}\s*$/.test(value2)) {
         issues.push({ path: `params.query.${key4}`, message: `${kind} sends every query key it is given, so an empty fallback still sends ${key4}="", which the API refuses. Fall back to undefined instead (such as {{variables.cursor || undefined}}) so the key is left out while it has no value.` });
@@ -62827,7 +63279,7 @@ function apiEndpointQueryIssues(kind, options2) {
       issues.push({ path: `params.query.${key4}`, message: `${kind} sends query parameters flat, so a list or an object is not sent at all and the query fails. Write ${flat} instead.` });
     }
   }
-  if (typeof options2.path === "string" && record5(options2.params) && record5(options2.params.path)) {
+  if (typeof options2.path === "string" && record7(options2.params) && record7(options2.params.path)) {
     for (const match of options2.path.matchAll(/\{([^{}]+)\}/g)) {
       const value2 = options2.params.path[match[1]];
       if (value2 === void 0 || value2 === null || value2 === "")
@@ -62845,7 +63297,7 @@ function flattenQueryValue(key4, value2) {
 
 // dist/redisReadSafety.js
 function assessRedisRead(options2, datasourceId) {
-  const base = {
+  const base2 = {
     datasourceKind: "redis",
     ...datasourceId ? { datasourceId } : {},
     provenRead: false,
@@ -62854,13 +63306,13 @@ function assessRedisRead(options2, datasourceId) {
     selectStar: false,
     requiresCountPreflight: false
   };
-  const query = options2.query;
-  if (typeof query !== "string" || !query || query.includes("{{") || /[\r\n\t\0]/.test(query)) {
-    return { ...base, reason: "Redis needs one static space-delimited command in options.query." };
+  const query2 = options2.query;
+  if (typeof query2 !== "string" || !query2 || query2.includes("{{") || /[\r\n\t\0]/.test(query2)) {
+    return { ...base2, reason: "Redis needs one static space-delimited command in options.query." };
   }
-  const [raw, ...args] = query.split(" ");
+  const [raw, ...args] = query2.split(" ");
   if (!raw || args.some((arg) => !arg)) {
-    return { ...base, reason: "Redis commands must use single spaces, matching the plugin parser." };
+    return { ...base2, reason: "Redis commands must use single spaces, matching the plugin parser." };
   }
   const command = raw.toUpperCase();
   const scalarArity = {
@@ -62881,12 +63333,12 @@ function assessRedisRead(options2, datasourceId) {
     ZSCORE: 2
   };
   if (Object.hasOwn(scalarArity, command) && args.length === scalarArity[command]) {
-    return { ...base, provenRead: true, directSafe: true, maxRows: 1 };
+    return { ...base2, provenRead: true, directSafe: true, maxRows: 1 };
   }
   if (["MGET", "EXISTS", "HMGET"].includes(command)) {
     const fields = args.length - (command === "HMGET" ? 1 : 0);
     if (fields > 0 && fields <= 1e3) {
-      return { ...base, provenRead: true, directSafe: true, maxRows: command === "EXISTS" ? 1 : fields };
+      return { ...base2, provenRead: true, directSafe: true, maxRows: command === "EXISTS" ? 1 : fields };
     }
   }
   if (["LRANGE", "ZRANGE"].includes(command) && args.length === 3 && /^\d+$/.test(args[1]) && /^\d+$/.test(args[2])) {
@@ -62894,7 +63346,7 @@ function assessRedisRead(options2, datasourceId) {
     const end = Number(args[2]);
     const maxRows = end - start + 1;
     if (Number.isSafeInteger(start) && Number.isSafeInteger(end) && maxRows > 0 && maxRows <= 1e3) {
-      return { ...base, provenRead: true, directSafe: true, maxRows };
+      return { ...base2, provenRead: true, directSafe: true, maxRows };
     }
   }
   const scanOffset = command === "SCAN" ? 0 : ["HSCAN", "SSCAN", "ZSCAN"].includes(command) ? 1 : -1;
@@ -62913,13 +63365,13 @@ function assessRedisRead(options2, datasourceId) {
   }
   if (scan || ["HGETALL", "HKEYS", "HVALS", "SMEMBERS"].includes(command) && args.length === 1) {
     return {
-      ...base,
+      ...base2,
       provenRead: true,
       requiresRemoteReadConfirmation: true,
       reason: "Redis collection/scan reads have no hard result bound. Use singular run_query with confirmed read access; SCAN COUNT is only a hint."
     };
   }
-  return { ...base, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
+  return { ...base2, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
 }
 
 // dist/queryExecutionSafety.js
@@ -63358,7 +63810,7 @@ var SQL_KINDS = /* @__PURE__ */ new Set([
   "salesforce"
 ]);
 var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
-function record4(value2) {
+function record5(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2) ? value2 : void 0;
 }
 function staticPositiveInteger(value2) {
@@ -63374,7 +63826,7 @@ function containsBinding(value2) {
     return value2.includes("{{");
   if (Array.isArray(value2))
     return value2.some(containsBinding);
-  return !!record4(value2) && Object.values(record4(value2)).some(containsBinding);
+  return !!record5(value2) && Object.values(record5(value2)).some(containsBinding);
 }
 var SERVICENOW_ROW_READS = /* @__PURE__ */ new Set(["list_records"]);
 var SERVICENOW_SINGLE_READS = /* @__PURE__ */ new Set(["get_record", "aggregate"]);
@@ -63566,24 +64018,24 @@ function assessInflux(options2, datasourceId) {
   }
   const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
   const source2 = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
-  const bounded = { ...remote, countOnly: false, ...source2 ? { source: source2 } : {} };
+  const bounded2 = { ...remote, countOnly: false, ...source2 ? { source: source2 } : {} };
   const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
   if (maxRows === void 0) {
     return {
-      ...bounded,
+      ...bounded2,
       requiresCountPreflight: true,
       reason: "InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded."
     };
   }
   if (maxRows > LARGE_READ_ROW_THRESHOLD) {
     return {
-      ...bounded,
+      ...bounded2,
       requiresCountPreflight: true,
       maxRows,
       reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
     };
   }
-  return { ...bounded, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
+  return { ...bounded2, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
 }
 function assessRestGet(options2, datasourceId) {
   const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
@@ -63653,7 +64105,7 @@ function assessSupabase(options2, datasourceId) {
   const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
   if (operation === "count_rows") {
     const countFilters = options2.count_filters;
-    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record4(countFilters) && Object.keys(record4(countFilters)).length === 0;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record5(countFilters) && Object.keys(record5(countFilters)).length === 0;
     return {
       provenRead: true,
       directSafe: false,
@@ -63689,7 +64141,7 @@ var MONGO_SINGLE_READS = /* @__PURE__ */ new Set(["find_one"]);
 var MONGO_COUNT_READS = /* @__PURE__ */ new Set(["count", "count_total"]);
 var MONGO_WRITE_STAGES = ["$out", "$merge"];
 function mongoOptions(raw) {
-  const direct = record4(raw);
+  const direct = record5(raw);
   if (direct)
     return direct;
   if (typeof raw !== "string" || !raw.trim())
@@ -63697,7 +64149,7 @@ function mongoOptions(raw) {
   try {
     if (containsBinding(raw))
       return void 0;
-    return record4(import_json5.default.parse(raw));
+    return record5(import_json5.default.parse(raw));
   } catch {
     return void 0;
   }
@@ -63705,7 +64157,7 @@ function mongoOptions(raw) {
 function mongoPipelineWrites(pipeline) {
   if (Array.isArray(pipeline))
     return pipeline.some(mongoPipelineWrites);
-  const obj3 = record4(pipeline);
+  const obj3 = record5(pipeline);
   return !!obj3 && Object.entries(obj3).some(([key4, value2]) => MONGO_WRITE_STAGES.includes(key4) || mongoPipelineWrites(value2));
 }
 function assessMongo(options2, datasourceId) {
@@ -63727,7 +64179,7 @@ function assessMongo(options2, datasourceId) {
   const source2 = { kind: "gui_table", value: collection };
   if (MONGO_COUNT_READS.has(operation)) {
     const filter = options2.filter;
-    const fullSourceCount = filter == null || filter === "" || !!record4(filter) && Object.keys(record4(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
+    const fullSourceCount = filter == null || filter === "" || !!record5(filter) && Object.keys(record5(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
     return {
       provenRead: true,
       directSafe: true,
@@ -63773,13 +64225,13 @@ function assessMongo(options2, datasourceId) {
         return refuse("MongoDB aggregate pipeline must be valid JSON5 array text.");
       }
     }
-    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record4(stage))) {
+    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record5(stage))) {
       return refuse("MongoDB aggregate pipeline must be a statically known array of stages.");
     }
     if (mongoPipelineWrites(pipeline)) {
       return refuse("MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.");
     }
-    const last = record4(pipeline.at(-1));
+    const last = record5(pipeline.at(-1));
     const maxRows2 = last && Object.keys(last).length === 1 && typeof last.$limit === "number" ? staticPositiveInteger(last.$limit) : void 0;
     return {
       provenRead: true,
@@ -63887,18 +64339,18 @@ function assessSheets(options2, datasourceId) {
   const sheet = typeof options2.sheet === "string" && options2.sheet.trim() ? `:${options2.sheet.trim()}` : "";
   const source2 = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
   const maxRows = operation === "read" ? sheetsRangeRows(options2.spreadsheet_range) : void 0;
-  const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  const bounded2 = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
   return {
     provenRead: true,
     directSafe: false,
     countOnly: false,
     selectStar: false,
-    requiresCountPreflight: !bounded,
+    requiresCountPreflight: !bounded2,
     requiresRemoteReadConfirmation: true,
     source: source2,
     maxRows,
     ...identity,
-    ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
+    ...bounded2 ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
   };
 }
 function assessDynamo(options2, datasourceId) {
@@ -64280,21 +64732,21 @@ function assessSql(sql, datasourceKind, datasourceId) {
   };
 }
 function countAggregate(options2) {
-  const listRows = record4(options2.list_rows);
-  const aggregates = record4(listRows?.aggregates);
-  const groupBy = record4(listRows?.group_by);
+  const listRows = record5(options2.list_rows);
+  const aggregates = record5(listRows?.aggregates);
+  const groupBy = record5(listRows?.group_by);
   if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
     return false;
-  return Object.values(aggregates).every((aggregate) => record4(aggregate)?.aggFx === "count");
+  return Object.values(aggregates).every((aggregate) => record5(aggregate)?.aggFx === "count");
 }
 function fullToolJetDbCount(options2) {
   if (!countAggregate(options2))
     return false;
-  const listRows = record4(options2.list_rows);
-  const aggregates = record4(listRows.aggregates);
+  const listRows = record5(options2.list_rows);
+  const aggregates = record5(listRows.aggregates);
   if (Object.keys(aggregates).length !== 1)
     return false;
-  const aggregate = record4(Object.values(aggregates)[0]);
+  const aggregate = record5(Object.values(aggregates)[0]);
   if (aggregate?.column !== "id")
     return false;
   const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
@@ -64305,8 +64757,8 @@ function fullToolJetDbCount(options2) {
       return true;
     if (Array.isArray(value2))
       return value2.length === 0;
-    if (record4(value2))
-      return Object.keys(record4(value2)).length === 0;
+    if (record5(value2))
+      return Object.keys(record5(value2)).length === 0;
     return false;
   });
 }
@@ -64338,7 +64790,7 @@ function assessListRows(kind, options2, datasourceId) {
       ...identity
     };
   }
-  const listRows = record4(options2.list_rows);
+  const listRows = record5(options2.list_rows);
   const maxRows = staticPositiveInteger(listRows?.limit ?? options2.limit);
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
@@ -64368,10 +64820,10 @@ function assessListRows(kind, options2, datasourceId) {
     reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
-function assessQueryRead(query) {
-  const kind = query.kind?.toLowerCase();
-  const datasourceId = query.data_source_id;
-  const options2 = record4(query.options);
+function assessQueryRead(query2) {
+  const kind = query2.kind?.toLowerCase();
+  const datasourceId = query2.data_source_id;
+  const options2 = record5(query2.options);
   if (!kind || !options2) {
     return {
       provenRead: false,
@@ -64425,7 +64877,7 @@ function assessQueryRead(query) {
     if (operation === "list_rows")
       return assessListRows(kind, options2, datasourceId);
     if (operation === "sql_execution") {
-      const sql = record4(options2.sql_execution)?.sqlQuery;
+      const sql = record5(options2.sql_execution)?.sqlQuery;
       return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
         provenRead: false,
         directSafe: false,
@@ -64466,15 +64918,15 @@ function assessQueryRead(query) {
     reason: `Datasource kind ${kind} has no proven read classifier.`
   };
 }
-function resolvedReadRefusal(query, before, resolved) {
+function resolvedReadRefusal(query2, before, resolved) {
   if (!Object.keys(resolved).length)
     return void 0;
-  const kind = query.kind?.toLowerCase() ?? "";
+  const kind = query2.kind?.toLowerCase() ?? "";
   const sqlLike = SQL_KINDS.has(kind) || kind === "tooljetdb";
   if (sqlLike && resolvedBindingValues(resolved).some((value2) => typeof value2 === "string" && value2.includes(";"))) {
     return "after its {{ }} bindings are resolved, a binding value contains a statement separator (;). Bindings in SQL must supply values, not SQL; move the statement text into the saved query.";
   }
-  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) });
+  const after = assessQueryRead({ ...query2, options: applyResolvedBindings(query2.options, resolved) });
   const weaker = !after.provenRead || after.selectStar || before.directSafe && !after.directSafe || !before.requiresCountPreflight && after.requiresCountPreflight || !before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation || !before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation;
   if (!weaker)
     return void 0;
@@ -64489,14 +64941,14 @@ function extractRowCount(result) {
   let value2 = result.data;
   if (typeof value2 === "number")
     return Number.isSafeInteger(value2) && value2 >= 0 ? value2 : void 0;
-  if (record4(value2)?.result !== void 0)
-    value2 = record4(value2).result;
+  if (record5(value2)?.result !== void 0)
+    value2 = record5(value2).result;
   if (Array.isArray(value2)) {
     if (value2.length !== 1)
       return void 0;
     value2 = value2[0];
   }
-  const row = record4(value2);
+  const row = record5(value2);
   if (!row)
     return void 0;
   const numeric = Object.values(row).flatMap((candidate) => {
@@ -65324,7 +65776,7 @@ function influxTransformWarnings(kind, options2) {
   }];
 }
 var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
-function validateQueryOptions(kind, options2) {
+function validateQueryOptions(kind, options2, executionContext = "app") {
   const errors = [];
   errors.push(...queryToggleIssues(options2));
   if (kind === "hubspot")
@@ -65339,7 +65791,7 @@ function validateQueryOptions(kind, options2) {
     warnings.push({ code: "conditional_write_result", path: "update_rows", message: conditionalWrite });
   if (kind === "mongodb")
     errors.push(...mongoArrayReplacementIssues(options2));
-  if (kind === "runjs" && typeof options2.code === "string" && options2.code.trim()) {
+  if (executionContext === "app" && kind === "runjs" && typeof options2.code === "string" && options2.code.trim()) {
     const syntax = runjsSyntaxError(options2.code);
     if (syntax) {
       errors.push({
@@ -65503,8 +65955,8 @@ function validateQueryOptions(kind, options2) {
       errors.push({ code: "missing_target", path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(" or ")}.` });
     }
   }
-  const required3 = intersection2(matching.map((variant) => variant.required));
-  for (const path of required3) {
+  const required4 = intersection2(matching.map((variant) => variant.required));
+  for (const path of required4) {
     const value2 = valueAtPath(options2, path);
     if (value2 === void 0 || value2 === null || value2 === "") {
       errors.push({
@@ -65830,7 +66282,7 @@ function lintUntrackedReactiveBindings(value2, label2) {
   });
   if (shadowed)
     return [];
-  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label2}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
+  return [...suspects].filter((ref2) => !tracked.has(ref2)).map((ref2) => `${label2}: a logical fallback wraps ${ref2} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref2}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
 }
 function lintQueryArrayMutations(value2, label2) {
   if (Array.isArray(value2))
@@ -65853,21 +66305,21 @@ function lintQueryArrayMutations(value2, label2) {
   const queryData = (n) => {
     if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
       return queryData(n.left);
-    const ref = member2(n) && key(n) === "data" ? rootRef(n.object) : void 0;
-    return ref?.startsWith("queries.") ? ref : void 0;
+    const ref2 = member2(n) && key(n) === "data" ? rootRef(n.object) : void 0;
+    return ref2?.startsWith("queries.") ? ref2 : void 0;
   };
   walk2(ast, (n) => {
     if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
       shadowed = true;
     if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member2(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
       return;
-    const ref = queryData(n.callee.object);
-    if (ref)
-      mutations.add(`${ref}.data.${key(n.callee)}`);
+    const ref2 = queryData(n.callee.object);
+    if (ref2)
+      mutations.add(`${ref2}.data.${key(n.callee)}`);
   });
   if (shadowed)
     return [];
-  return [...mutations].map((ref) => `${label2}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
+  return [...mutations].map((ref2) => `${label2}: ${ref2}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
 }
 
 // dist/selectedRowProjection.js
@@ -66242,9 +66694,9 @@ function encodeComponentParent(parentId, slotName) {
     return parentId;
   if (slotName === "body")
     return decodeComponentParent(parentId).parentId;
-  const base = decodeComponentParent(parentId).parentId;
+  const base2 = decodeComponentParent(parentId).parentId;
   const tab = TAB_SLOT.exec(slotName);
-  return tab ? `${base}-${tab[1]}` : `${base}-${slotName}`;
+  return tab ? `${base2}-${tab[1]}` : `${base2}-${slotName}`;
 }
 function decodeComponentParent(parentId) {
   for (const slotName of ENCODED_SLOT_SUFFIXES) {
@@ -66577,12 +67029,12 @@ function rowsStateExpression(value2) {
   const queries = [...compact.matchAll(/queries\.([A-Za-z_$][\w$]*)\.(?:isLoading|data)/g)].map((match) => match[1]);
   if (!queries.length || new Set(queries).size !== 1)
     return void 0;
-  const query = queries[0];
-  if (compact === `queries.${query}.isLoading||queries.${query}.data||[].length>0`) {
-    return { query, state: "present" };
+  const query2 = queries[0];
+  if (compact === `queries.${query2}.isLoading||queries.${query2}.data||[].length>0`) {
+    return { query: query2, state: "present" };
   }
-  if (compact === `!queries.${query}.isLoading&&queries.${query}.data||[].length===0`) {
-    return { query, state: "empty" };
+  if (compact === `!queries.${query2}.isLoading&&queries.${query2}.data||[].length===0`) {
+    return { query: query2, state: "empty" };
   }
   return void 0;
 }
@@ -67384,7 +67836,7 @@ function estimateTextHeight(text, baseSize, options2 = {}) {
     return baseSize;
   });
   const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
-  const px2 = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
+  const px2 = Math.round(sizes.reduce((sum, size2) => sum + Math.max(18, size2 * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
   return { lines: parts.length + blankLines, px: px2, sizes, ...dynamic ? { dynamic: true } : {} };
 }
 var CHART_HOUSE_LAYOUT_KEYS = ["font", "family"];
@@ -67895,8 +68347,8 @@ function lintComponentSpec(spec, context = {}) {
         } else if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0) {
           const type = String(c.columnType ?? "string");
           const heading = columnWords(`${String(c.name ?? "")} ${String(c.key ?? "")}`);
-          const base = TABLE_COLUMN_MIN_PX[type] ?? 100;
-          const minimum = ["string", "text", "html", "number"].includes(type) ? Math.max(base, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0) : base;
+          const base2 = TABLE_COLUMN_MIN_PX[type] ?? 100;
+          const minimum = ["string", "text", "html", "number"].includes(type) ? Math.max(base2, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0) : base2;
           if (c.columnSize < minimum) {
             warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column (possible mid-word wrapping or clipped values). Size for the actual content; deliberate compact columns are valid after visual verification.`);
           }
@@ -68511,31 +68963,31 @@ function validateAppStructure(summary, options2 = {}) {
   }
   const homePage = summary.pages.find((page) => page.handle === "home" || page.name === "Home");
   if (homePage) {
-    const appLoadQueryIds = new Set(summary.queries.filter((query) => isTruthyBinding(propVal2(recordValue(query.options), "runOnPageLoad"))).map((query) => query.id));
+    const appLoadQueryIds = new Set(summary.queries.filter((query2) => isTruthyBinding(propVal2(recordValue(query2.options), "runOnPageLoad"))).map((query2) => query2.id));
     for (const event of summary.events) {
       if (event.target !== "page" || event.sourceId !== homePage.id)
         continue;
       const value2 = recordValue(event.event);
       if (value2?.eventId === "onPageLoad" && value2.actionId === "run-query" && typeof value2.queryId === "string" && appLoadQueryIds.has(value2.queryId)) {
-        const query = summary.queries.find((candidate) => candidate.id === value2.queryId);
-        warnings.push(`Query "${query?.name ?? value2.queryId}" has runOnPageLoad=true and is also run by Home.onPageLoad, so the initial page executes it twice. Keep one lifecycle path; use focused page events for later navigation refreshes.`);
+        const query2 = summary.queries.find((candidate) => candidate.id === value2.queryId);
+        warnings.push(`Query "${query2?.name ?? value2.queryId}" has runOnPageLoad=true and is also run by Home.onPageLoad, so the initial page executes it twice. Keep one lifecycle path; use focused page events for later navigation refreshes.`);
       }
     }
   }
-  const queryByName = new Map(summary.queries.flatMap((query) => query.name ? [[query.name, query]] : []));
-  for (const query of summary.queries.filter((candidate) => candidate.kind === "runjs")) {
-    const options3 = recordValue(query.options);
+  const queryByName = new Map(summary.queries.flatMap((query2) => query2.name ? [[query2.name, query2]] : []));
+  for (const query2 of summary.queries.filter((candidate) => candidate.kind === "runjs")) {
+    const options3 = recordValue(query2.options);
     const code = options3?.code;
     if (typeof code !== "string")
       continue;
     for (const name2 of runjsComponentReferences(code)) {
       if (!componentNames.has(name2))
-        errors.push(`RunJS query "${query.name ?? query.id}" references components[${JSON.stringify(name2)}], but no component is named ${JSON.stringify(name2)}. Use the persisted component name exactly (bracket notation for spaces); a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.`);
+        errors.push(`RunJS query "${query2.name ?? query2.id}" references components[${JSON.stringify(name2)}], but no component is named ${JSON.stringify(name2)}. Use the persisted component name exactly (bracket notation for spaces); a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.`);
     }
     const referencedNames = runjsQueryReferences(code);
     for (const name2 of referencedNames) {
       if (!queryNames.has(name2))
-        errors.push(`RunJS query "${query.name ?? query.id}" references queries[${JSON.stringify(name2)}], but no query is named ${JSON.stringify(name2)}. Names are case-sensitive; use the persisted query name exactly (bracket notation for spaces). An empty-array fallback can hide this mistake and make a populated dashboard show zero records.`);
+        errors.push(`RunJS query "${query2.name ?? query2.id}" references queries[${JSON.stringify(name2)}], but no query is named ${JSON.stringify(name2)}. Names are case-sensitive; use the persisted query name exactly (bracket notation for spaces). An empty-array fallback can hide this mistake and make a populated dashboard show zero records.`);
     }
     if (!isTruthyBinding(propVal2(options3, "runOnDependencyChange")))
       continue;
@@ -68545,14 +68997,14 @@ function validateAppStructure(summary, options2 = {}) {
       if (event.target !== "data_query")
         return [];
       const payload2 = recordValue(event.event);
-      return payload2?.eventId === "onDataQuerySuccess" && payload2.actionId === "run-query" && payload2.queryId === query.id ? [event.sourceId] : [];
+      return payload2?.eventId === "onDataQuerySuccess" && payload2.actionId === "run-query" && payload2.queryId === query2.id ? [event.sourceId] : [];
     }));
     const missing = referencedNames.filter((name2) => {
       const source2 = queryByName.get(name2);
       return source2 && !explicitlyChained.has(source2.id);
     });
     if (missing.length) {
-      warnings.push(`RunJS query "${query.name ?? query.id}" sets runOnDependencyChange=true but reads ${missing.map((name2) => `queries.${name2}`).join(", ")} as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. Run this query explicitly from each source query's onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.`);
+      warnings.push(`RunJS query "${query2.name ?? query2.id}" sets runOnDependencyChange=true but reads ${missing.map((name2) => `queries.${name2}`).join(", ")} as plain JavaScript. ToolJet does not infer those reads as reactive dependencies, so the result can stay empty or stale. Run this query explicitly from each source query's onDataQuerySuccess event (after the source data exists), or invoke it from a later user/page event.`);
     }
   }
   const successChains = new Set(summary.events.flatMap((event) => {
@@ -68561,8 +69013,8 @@ function validateAppStructure(summary, options2 = {}) {
     const payload2 = recordValue(event.event);
     return payload2?.eventId === "onDataQuerySuccess" && payload2.actionId === "run-query" && typeof payload2.queryId === "string" ? [`${event.sourceId}->${payload2.queryId}`] : [];
   }));
-  for (const query of summary.queries.filter((candidate) => candidate.kind !== "runjs")) {
-    const options3 = recordValue(query.options);
+  for (const query2 of summary.queries.filter((candidate) => candidate.kind !== "runjs")) {
+    const options3 = recordValue(query2.options);
     if (!options3)
       continue;
     const automatic = isTruthyBinding(propVal2(options3, "runOnPageLoad")) || isTruthyBinding(propVal2(options3, "runOnDependencyChange"));
@@ -68572,20 +69024,20 @@ function validateAppStructure(summary, options2 = {}) {
     const referencedNames = [...new Set([...blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const missing = referencedNames.filter((name2) => {
       const source2 = queryByName.get(name2);
-      return source2 && source2.id !== query.id && !successChains.has(`${source2.id}->${query.id}`);
+      return source2 && source2.id !== query2.id && !successChains.has(`${source2.id}->${query2.id}`);
     });
     if (missing.length) {
-      warnings.push(`Query dependency race: query "${query.name ?? query.id}" starts automatically but reads ${missing.map((name2) => `queries.${name2}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
+      warnings.push(`Query dependency race: query "${query2.name ?? query2.id}" starts automatically but reads ${missing.map((name2) => `queries.${name2}.data`).join(", ")}. The dependent query can run before its source has returned and remain empty or stale. Disable its automatic start and run it explicitly from each source query's onDataQuerySuccess event, or pass a stable custom-variable/component value instead.`);
     }
   }
   for (const component of allComponents) {
     const blob = JSON.stringify(component.properties ?? "");
     const bad = /* @__PURE__ */ new Set();
     for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.results\b/g)) {
-      const query = queryByName.get(m[1]);
-      if (!query || query.kind !== "tooljetdb")
+      const query2 = queryByName.get(m[1]);
+      if (!query2 || query2.kind !== "tooljetdb")
         continue;
-      const operation = recordValue(query.options)?.operation;
+      const operation = recordValue(query2.options)?.operation;
       if (operation === "sql_execution" || operation === void 0)
         continue;
       bad.add(m[1]);
@@ -68601,10 +69053,10 @@ function validateAppStructure(summary, options2 = {}) {
     const blob = JSON.stringify(component.properties ?? "");
     const bad = /* @__PURE__ */ new Set();
     for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data(?![\w?]*\.results)\b/g)) {
-      const query = queryByName.get(m[1]);
-      if (!query || query.kind !== "tooljetdb")
+      const query2 = queryByName.get(m[1]);
+      if (!query2 || query2.kind !== "tooljetdb")
         continue;
-      if (recordValue(query.options)?.operation !== "sql_execution")
+      if (recordValue(query2.options)?.operation !== "sql_execution")
         continue;
       if (blob.includes(`queries.${m[1]}.data.results`) || blob.includes(`queries.${m[1]}?.data?.results`) || blob.includes(`queries.${m[1]}.data?.results`))
         continue;
@@ -68618,10 +69070,10 @@ function validateAppStructure(summary, options2 = {}) {
     const blob = JSON.stringify(component.properties ?? "");
     const bad = /* @__PURE__ */ new Set();
     for (const m of blob.matchAll(/\bqueries\.([A-Za-z_][A-Za-z0-9_]*)\??\.data\??\.result\b/g)) {
-      const query = queryByName.get(m[1]);
-      if (!query || query.kind !== "servicenow")
+      const query2 = queryByName.get(m[1]);
+      if (!query2 || query2.kind !== "servicenow")
         continue;
-      if (isTruthyBinding(propVal2(recordValue(query.options), "enableTransformation")))
+      if (isTruthyBinding(propVal2(recordValue(query2.options), "enableTransformation")))
         continue;
       bad.add(m[1]);
     }
@@ -68653,14 +69105,14 @@ function validateAppStructure(summary, options2 = {}) {
     const m = typeof data === "string" ? data.trim().match(BARE_QUERY_DATA_BINDING) : null;
     if (!m)
       continue;
-    const query = queryByName.get(m[1]);
-    if (!query || query.kind === "runjs" || query.kind === "runpy")
+    const query2 = queryByName.get(m[1]);
+    if (!query2 || query2.kind === "runjs" || query2.kind === "runpy")
       continue;
-    const options3 = recordValue(query.options);
+    const options3 = recordValue(query2.options);
     const sql = typeof options3?.query === "string" ? options3.query : typeof recordValue(options3?.sql_execution)?.sqlQuery === "string" ? String(recordValue(options3?.sql_execution)?.sqlQuery) : "";
     if (sql && /\bas\s+["'`]?x["'`]?\b/i.test(sql) && /\bas\s+["'`]?y["'`]?\b/i.test(sql))
       continue;
-    errors.push(`Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query.kind ?? "datasource"} query that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`);
+    errors.push(`Chart "${component.name ?? component.id}": data binds queries.${m[1]}.data directly, but "${m[1]}" is a ${query2.kind ?? "datasource"} query that does not return columns named x and y. The Chart plots [{x, y}] only and draws an empty axis otherwise. Map the rows: {{queries.${m[1]}.data.map(r => ({x: r.<label>, y: Number(r.<value>)}))}}.`);
   }
   for (const e of summary.events) {
     const name2 = e.name ?? e.id;
@@ -68684,13 +69136,13 @@ function validateAppStructure(summary, options2 = {}) {
     if (!source2.label.startsWith("Query "))
       errors.push(...lintBindingNames(source2.value, source2.label));
     const seen = /* @__PURE__ */ new Set();
-    for (const ref of bindingReferences(source2.value)) {
-      const names = ref.namespace === "components" ? componentNames : queryNames;
-      const ids = ref.namespace === "components" ? componentIds : queryIds;
-      const key4 = `${ref.namespace}.${ref.name}`;
-      if (!names.has(ref.name) && !ids.has(ref.name) && !seen.has(key4)) {
+    for (const ref2 of bindingReferences(source2.value)) {
+      const names = ref2.namespace === "components" ? componentNames : queryNames;
+      const ids = ref2.namespace === "components" ? componentIds : queryIds;
+      const key4 = `${ref2.namespace}.${ref2.name}`;
+      if (!names.has(ref2.name) && !ids.has(ref2.name) && !seen.has(key4)) {
         seen.add(key4);
-        errors.push(`${source2.label} references ${key4}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
+        errors.push(`${source2.label} references ${key4}, but no ${ref2.namespace === "components" ? "component" : "query"} is named "${ref2.name}". Binding names are case-sensitive; use the persisted name.`);
       }
     }
   }
@@ -68734,8 +69186,8 @@ function validateAppStructure(summary, options2 = {}) {
     const dataBinding = JSON.stringify(propVal2(table.properties, "data") ?? "");
     const boundDataQueries = [...new Set([...dataBinding.matchAll(/queries\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]))];
     const hasReactiveDataQuery = (stateName) => boundDataQueries.some((queryName) => {
-      const query = queryByName.get(queryName);
-      const options3 = recordValue(query?.options);
+      const query2 = queryByName.get(queryName);
+      const options3 = recordValue(query2?.options);
       if (!options3 || !isTruthyBinding(propVal2(options3, "runOnDependencyChange")))
         return false;
       return typeof table.name === "string" && JSON.stringify(options3).includes(`components.${table.name}.${stateName}`);
@@ -68751,7 +69203,7 @@ function validateAppStructure(summary, options2 = {}) {
         warnings.push(`Table "${table.name ?? table.id}": ${property3} is enabled but no ${trigger} event refreshes its data query and no runOnDependencyChange data query is bound to components.${table.name ?? "<table>"}.${stateName}.`);
       }
     }
-    const tableColumnRefs = new Set(summary.events.filter((event) => event.sourceId === table.id && event.target === "table_column").map((event) => event.event?.ref).filter((ref) => typeof ref === "string"));
+    const tableColumnRefs = new Set(summary.events.filter((event) => event.sourceId === table.id && event.target === "table_column").map((event) => event.event?.ref).filter((ref2) => typeof ref2 === "string"));
     const columns = propVal2(table.properties, "columns");
     if (Array.isArray(columns)) {
       columns.forEach((column, columnIndex) => {
@@ -68767,9 +69219,9 @@ function validateAppStructure(summary, options2 = {}) {
             return;
           if (typeof b?.id !== "string")
             return;
-          const ref = `${columnKey}::${b.id}`;
-          if (!tableColumnRefs.has(ref)) {
-            warnings.push(`Table "${table.name ?? table.id}" column[${columnIndex}] button[${buttonIndex}] has no table_column onClick event with ref "${ref}".`);
+          const ref2 = `${columnKey}::${b.id}`;
+          if (!tableColumnRefs.has(ref2)) {
+            warnings.push(`Table "${table.name ?? table.id}" column[${columnIndex}] button[${buttonIndex}] has no table_column onClick event with ref "${ref2}".`);
           }
         });
       });
@@ -68848,10 +69300,10 @@ function strictEntry(shape, describeUnknown) {
     error: (issue3) => issue3.code === "unrecognized_keys" ? issue3.keys.map(describeUnknown).join(" ") : void 0
   });
 }
-function hasNonEmptyDefinition(definition) {
-  if (!definition)
+function hasNonEmptyDefinition(definition2) {
+  if (!definition2)
     return false;
-  return Object.values(definition).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
 }
 
 // dist/tableValidation.js
@@ -69329,20 +69781,20 @@ function createClient(auth, config2) {
   let developmentEnvironmentIdPromise;
   const datasourceManagementUrl = (workspaceSlug, datasourceId) => `${config2.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
   async function listWorkspaceApps(params = {}) {
-    const query = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
+    const query2 = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
     if (params.searchText)
-      query.set("searchKey", params.searchText);
-    const res = await auth.authedFetch(`/api/apps?${query}`);
+      query2.set("searchKey", params.searchText);
+    const res = await auth.authedFetch(`/api/apps?${query2}`);
     await assertOk(res, "listWorkspaceApps");
     return await res.json();
   }
   async function listWorkspaceUsers(params = {}) {
-    const query = new URLSearchParams({ page: String(params.page ?? 1) });
+    const query2 = new URLSearchParams({ page: String(params.page ?? 1) });
     if (params.searchText)
-      query.set("searchText", params.searchText);
+      query2.set("searchText", params.searchText);
     if (params.status)
-      query.set("status", params.status);
-    const res = await auth.authedFetch(`/api/organization-users?${query}`);
+      query2.set("status", params.status);
+    const res = await auth.authedFetch(`/api/organization-users?${query2}`);
     await assertOk(res, "listWorkspaceUsers");
     const data = await res.json();
     if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
@@ -69770,8 +70222,8 @@ function createClient(auth, config2) {
   async function setDefaultAppTheme(themeId, isDefault) {
     await updateAppTheme(themeId, "default", { isDefault }, "setDefaultAppTheme");
   }
-  async function updateAppThemeDefinition(themeId, definition) {
-    await updateAppTheme(themeId, "definition", { definition }, "updateAppThemeDefinition");
+  async function updateAppThemeDefinition(themeId, definition2) {
+    await updateAppTheme(themeId, "definition", { definition: definition2 }, "updateAppThemeDefinition");
   }
   async function renameAppTheme(themeId, name2) {
     await updateAppTheme(themeId, "name", { name: name2 }, "renameAppTheme");
@@ -69896,7 +70348,7 @@ function createClient(auth, config2) {
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
-      return { ...page, id: randomUUID(), handle, index: startIndex + offset };
+      return { ...page, id: randomUUID2(), handle, index: startIndex + offset };
     });
     const createSettled = await Promise.allSettled(entries.map(async (page) => {
       const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
@@ -70094,8 +70546,8 @@ function createClient(auth, config2) {
       if (!existing.sourceId || !existing.target || typeof existing.index !== "number")
         continue;
       const raw = existing.event && typeof existing.event === "object" && !Array.isArray(existing.event) ? existing.event : void 0;
-      const ref = typeof raw?.ref === "string" ? raw.ref : "";
-      const sourceKey = `${existing.target}:${existing.sourceId}:${ref}`;
+      const ref2 = typeof raw?.ref === "string" ? raw.ref : "";
+      const sourceKey = `${existing.target}:${existing.sourceId}:${ref2}`;
       indexBySource[sourceKey] = Math.max(indexBySource[sourceKey] ?? 0, existing.index + 1);
     }
     const events = params.events.map((e) => {
@@ -70462,7 +70914,7 @@ function createClient(auth, config2) {
     return dto;
   }
   async function createComponents(params) {
-    const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
+    const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID2(), spec }));
     const refToId = /* @__PURE__ */ new Map();
     for (const e of entries) {
       if (!e.spec.clientRef)
@@ -70638,16 +71090,16 @@ function createClient(auth, config2) {
     await assertOk(res, "getQueries");
     const body = await res.json();
     const orgSlug = await auth.getOrganizationSlug();
-    return (body.data_queries ?? []).map((query) => ({
-      ...query,
-      ...query.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query.data_source_id) } : {}
+    return (body.data_queries ?? []).map((query2) => ({
+      ...query2,
+      ...query2.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query2.data_source_id) } : {}
     }));
   }
   async function getQuery(queryId, versionId) {
-    const query = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
-    if (!query)
+    const query2 = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
+    if (!query2)
       throw new Error(`ToolJet getQuery failed: query ${queryId} not found in version ${versionId}`);
-    return query;
+    return query2;
   }
   async function runQuery(params) {
     const envId = params.environmentId ?? await getDevelopmentEnvironmentId();
@@ -70763,6 +71215,7 @@ function createClient(auth, config2) {
     return { deleted: true };
   }
   return {
+    workflows: createWorkflowClient(auth, config2, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
@@ -71189,10 +71642,10 @@ var themeDefinition = external_exports.object({
     }).strict()
   }).strict()
 }).strict();
-async function applyToApp(client, theme, args, definition) {
+async function applyToApp(client, theme, args, definition2) {
   if (!args.app_id || !args.version_id)
     return void 0;
-  const dark = paintsDarkCanvasInLightMode(definition);
+  const dark = paintsDarkCanvasInLightMode(definition2);
   await client.updateAppSettings({
     appId: args.app_id,
     versionId: args.version_id,
@@ -71351,8 +71804,8 @@ async function resolveTheme(client, choice) {
     throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
   return named;
 }
-function paintsDarkCanvasInLightMode(definition) {
-  const light = definition?.surface?.colors?.appBackground?.light;
+function paintsDarkCanvasInLightMode(definition2) {
+  const light = definition2?.surface?.colors?.appBackground?.light;
   const hex3 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
   if (!hex3)
     return false;
@@ -72369,8 +72822,8 @@ function getDatasourceQuerySchemaTool(client) {
           }
           return ok(getDatasourceCatalog());
         }
-        const base = hasBatch ? args.requests : [args];
-        const requests = base.map((request) => {
+        const base2 = hasBatch ? args.requests : [args];
+        const requests = base2.map((request) => {
           const hasOwnSelector = !!request.kind || !!request.datasource_id;
           return {
             kind: request.kind ?? (hasOwnSelector ? void 0 : args.kind),
@@ -72803,10 +73256,10 @@ function boundedSelect(kind, projection, from, limit, distinct2 = false) {
     return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
   return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
 }
-function options(kind, query) {
+function options(kind, query2) {
   return {
     mode: "sql",
-    query,
+    query: query2,
     ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
     runOnPageLoad: false
   };
@@ -73008,13 +73461,13 @@ function booleanDefault(value2) {
   const match = value2.trim().match(/^['"]?(true|false)['"]?(?:::[a-z\s]+)?$/i);
   return match ? match[1].toLowerCase() === "true" : void 0;
 }
-function mergeField(base, override) {
+function mergeField(base2, override) {
   if (!override)
-    return base;
-  const merged = { ...base, ...override };
+    return base2;
+  const merged = { ...base2, ...override };
   for (const key4 of ["validation", "styles"]) {
-    if (base[key4] && override[key4] && typeof base[key4] === "object" && typeof override[key4] === "object") {
-      merged[key4] = { ...base[key4], ...override[key4] };
+    if (base2[key4] && override[key4] && typeof base2[key4] === "object" && typeof override[key4] === "object") {
+      merged[key4] = { ...base2[key4], ...override[key4] };
     }
   }
   return merged;
@@ -73522,7 +73975,7 @@ function selectAppSummary(summary, selection = {}) {
     });
   }
   if (sections.has("queries")) {
-    result.queries = summary.queries.filter((query) => matches(query.id, selection.queryIds) && matches(query.name, selection.queryNames) && matches(query.kind, selection.queryKinds)).map((query) => pickPaths(query, queryFields));
+    result.queries = summary.queries.filter((query2) => matches(query2.id, selection.queryIds) && matches(query2.name, selection.queryNames) && matches(query2.kind, selection.queryKinds)).map((query2) => pickPaths(query2, queryFields));
   }
   if (sections.has("events")) {
     result.events = summary.events.filter((event) => matches(event.id, selection.eventIds) && matches(event.sourceId, selection.eventSourceIds)).map((event) => pickPaths(event, eventFields));
@@ -73618,8 +74071,8 @@ async function withQueryTables(client, summary, selected, args) {
   const filtered = Object.entries(args).some(([key4, value2]) => key4 !== "app_id" && key4 !== "sections" && key4 !== "detail" && value2 !== void 0);
   if (narrowed || filtered || !selected || typeof selected !== "object")
     return selected;
-  const ids = [...new Set((summary.queries ?? []).flatMap((query) => {
-    const q = query;
+  const ids = [...new Set((summary.queries ?? []).flatMap((query2) => {
+    const q = query2;
     return q.kind === "tooljetdb" && typeof q.options?.table_id === "string" ? [q.options.table_id] : [];
   }))];
   if (!ids.length)
@@ -73683,17 +74136,17 @@ function htmlFedTextColumns(table, queries) {
 }
 
 // dist/refResolution.js
-function resolveRef2(candidates, ref, kind, scope, describe4 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
+function resolveRef2(candidates, ref2, kind, scope, describe4 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref2);
   if (byId)
     return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
+  const byName = candidates.filter((candidate) => candidate.name === ref2);
   if (byName.length === 1)
     return { ok: true, target: byName[0] };
   if (byName.length > 1) {
     return {
       ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+      error: `${kind} name "${ref2}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
     };
   }
   const available = candidates.map(describe4).join(", ");
@@ -73701,7 +74154,7 @@ function resolveRef2(candidates, ref, kind, scope, describe4 = (candidate) => `$
     ok: false,
     // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
     // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+    error: `No ${kind.toLowerCase()} with id or name "${ref2}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
   };
 }
 
@@ -73791,11 +74244,11 @@ function truthyOnlyRequiredText(value2, disabled) {
   };
   return visit(root) ? refs2 : /* @__PURE__ */ new Set();
 }
-function requiredMutationGuardWarnings(source2, query, action, components) {
-  const inputs = inputRefs(query.options);
+function requiredMutationGuardWarnings(source2, query2, action, components) {
+  const inputs = inputRefs(query2.options);
   const guarded = inputRefs([source2.properties?.disabledState, action.runOnlyIf]);
   const missing = components.filter((c) => c.name && inputs.has(c.name) && !guarded.has(c.name) && ["TextInput", "TextArea", "NumberInput", "CurrencyInput", "DatePickerV2"].includes(c.type ?? "") && [true, "true", "{{true}}"].includes(unwrap3(c.validation?.mandatory)));
-  const warnings = missing.length ? [`Button "${source2.name ?? source2.id}" directly runs mutation "${query.name ?? query.id}" using required inputs ${missing.map((c) => `"${c.name}"`).join(", ")}, but no field validation is visible in disabledState or runOnlyIf. A required marker alone does not stop this query. Validate before writing (including whitespace-only text), or route through a validating Form/RunJS success chain. Preserve zero and false; keep database constraints authoritative. This advisory does not prove arbitrary guards or server validation.`] : [];
+  const warnings = missing.length ? [`Button "${source2.name ?? source2.id}" directly runs mutation "${query2.name ?? query2.id}" using required inputs ${missing.map((c) => `"${c.name}"`).join(", ")}, but no field validation is visible in disabledState or runOnlyIf. A required marker alone does not stop this query. Validate before writing (including whitespace-only text), or route through a validating Form/RunJS success chain. Preserve zero and false; keep database constraints authoritative. This advisory does not prove arbitrary guards or server validation.`] : [];
   const disabledRefs = inputRefs(source2.properties?.disabledState), actionRefs = inputRefs(action.runOnlyIf);
   const disabledTruthy = truthyOnlyRequiredText(source2.properties?.disabledState, true);
   const actionTruthy = truthyOnlyRequiredText(action.runOnlyIf, false);
@@ -73900,7 +74353,7 @@ function isRecord(value2) {
 function nonEmptyString(value2) {
   return typeof value2 === "string" && value2.trim().length > 0;
 }
-function navigationItemRef(source2, ref) {
+function navigationItemRef(source2, ref2) {
   let unknown2 = false;
   let found = false;
   let group = false;
@@ -73917,7 +74370,7 @@ function navigationItemRef(source2, ref) {
     for (const item of items) {
       if (!isRecord(item))
         continue;
-      if (item.id === ref) {
+      if (item.id === ref2) {
         if (item.isGroup)
           group = true;
         else
@@ -73935,17 +74388,17 @@ function navigationItemRef(source2, ref) {
 function effectiveRef(event) {
   return Object.prototype.hasOwnProperty.call(event.action, "ref") ? event.action.ref : event.ref;
 }
-function validateTableColumnRef(source2, ref) {
-  if (!ref)
+function validateTableColumnRef(source2, ref2) {
+  if (!ref2)
     return 'Table Button-column events require ref "<column key or name>::<button id>".';
-  const separator = ref.lastIndexOf("::");
-  if (separator <= 0 || separator === ref.length - 2)
-    return `Table Button-column ref "${ref}" is malformed.`;
-  const columnRef = ref.slice(0, separator);
-  const buttonId = ref.slice(separator + 2);
+  const separator = ref2.lastIndexOf("::");
+  if (separator <= 0 || separator === ref2.length - 2)
+    return `Table Button-column ref "${ref2}" is malformed.`;
+  const columnRef = ref2.slice(0, separator);
+  const buttonId = ref2.slice(separator + 2);
   const columns = propVal3(source2.properties, "columns");
   if (!Array.isArray(columns))
-    return `Table "${source2.name ?? source2.id}" has no explicit columns array for ref "${ref}".`;
+    return `Table "${source2.name ?? source2.id}" has no explicit columns array for ref "${ref2}".`;
   const column = columns.find((candidate) => {
     const item = candidate;
     return item?.key === columnRef || item?.name === columnRef;
@@ -73971,8 +74424,8 @@ var MUTATION_OPERATIONS = /* @__PURE__ */ new Set([
   "bulk_update_with_primary_key",
   "bulk_upsert_with_primary_key"
 ]);
-function isMutationQuery(query) {
-  const options2 = query.options ?? {};
+function isMutationQuery(query2) {
+  const options2 = query2.options ?? {};
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
   if (operation && MUTATION_OPERATIONS.has(operation))
     return true;
@@ -73984,8 +74437,8 @@ function validateEvents(summary, events, options2 = {}) {
   const errors = [];
   const warnings = [];
   const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
-  const queries = new Set(summary.queries.map((query) => query.id));
-  const queryById = new Map(summary.queries.map((query) => [query.id, query]));
+  const queries = new Set(summary.queries.map((query2) => query2.id));
+  const queryById = new Map(summary.queries.map((query2) => [query2.id, query2]));
   const pages = new Set(summary.pages.map((page) => page.id));
   const pageOfComponent = new Map(summary.pages.flatMap((page) => page.components.map((c) => [c.id, page.id])));
   const pageName = new Map(summary.pages.map((page) => [page.id, page.name ?? page.handle ?? page.id]));
@@ -73997,12 +74450,12 @@ function validateEvents(summary, events, options2 = {}) {
     set2.add(pageId ?? "*");
     queryTriggerPages.set(queryId, set2);
   };
-  for (const query of summary.queries) {
-    const opts = query.options && typeof query.options === "object" ? query.options : {};
+  for (const query2 of summary.queries) {
+    const opts = query2.options && typeof query2.options === "object" ? query2.options : {};
     const onLoad = opts.runOnPageLoad;
     const raw = onLoad && typeof onLoad === "object" ? onLoad.value : onLoad;
     if (raw === true || String(raw ?? "").replace(/[{}\s]/g, "").toLowerCase() === "true")
-      noteTrigger(query.id, void 0);
+      noteTrigger(query2.id, void 0);
   }
   for (const persisted of summary.events ?? []) {
     const payload2 = persisted.event && typeof persisted.event === "object" ? persisted.event : void 0;
@@ -74038,17 +74491,17 @@ function validateEvents(summary, events, options2 = {}) {
     errors.push(...lintComponentStateBindings(event.action, [...components.values()], label2));
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
-      for (const ref of new Set([event.ref, event.action.ref].filter((ref2) => ref2 != null && ref2 !== ""))) {
+      for (const ref2 of new Set([event.ref, event.action.ref].filter((ref3) => ref3 != null && ref3 !== ""))) {
         if (source2?.type !== "Navigation" || event.trigger !== "onClick") {
           (options2.savedRefs?.has(event) ? warnings : errors).push(`${label2}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
-        } else if (!nonEmptyString(ref) || ref.includes("{{")) {
+        } else if (!nonEmptyString(ref2) || ref2.includes("{{")) {
           errors.push(`${label2}: Navigation onClick ref must be a literal non-empty item id.`);
         } else {
-          const membership = navigationItemRef(source2, ref);
+          const membership = navigationItemRef(source2, ref2);
           if (membership === "invalid")
-            errors.push(`${label2}: Navigation ref "${ref}" does not identify a non-group menu item.`);
+            errors.push(`${label2}: Navigation ref "${ref2}" does not identify a non-group menu item.`);
           if (membership === "unknown")
-            warnings.push(`${label2}: Navigation ref "${ref}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
+            warnings.push(`${label2}: Navigation ref "${ref2}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
         }
       }
       if (!source2)
@@ -74127,13 +74580,13 @@ function validateEvents(summary, events, options2 = {}) {
         errors.push(`${label2}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
       } else if (event.sourceType === "component" && event.trigger === "onClick") {
         const source2 = components.get(event.sourceId);
-        const query = queryById.get(queryId);
-        if (source2?.type === "Button" && query && isMutationQuery(query)) {
-          warnings.push(...requiredMutationGuardWarnings(source2, query, event.action, [...components.values()]));
+        const query2 = queryById.get(queryId);
+        if (source2?.type === "Button" && query2 && isMutationQuery(query2)) {
+          warnings.push(...requiredMutationGuardWarnings(source2, query2, event.action, [...components.values()]));
           const disabled = propVal3(source2.properties, "disabledState");
           const guarded = typeof disabled === "string" && disabled.includes("{{") && /isloading/i.test(disabled);
           if (!guarded) {
-            warnings.push(`Button "${source2.name ?? source2.id}" runs the mutation query "${query.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`);
+            warnings.push(`Button "${source2.name ?? source2.id}" runs the mutation query "${query2.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query2.name ?? queryId}.isLoading}}.`);
           }
         }
       }
@@ -74176,7 +74629,7 @@ function validateEvents(summary, events, options2 = {}) {
               errors.push(`${label2}: every componentSpecificActionParams entry requires a string handle.`);
             }
             const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
-            const missing = requiredHandles.filter((required3) => !supplied.has(required3));
+            const missing = requiredHandles.filter((required4) => !supplied.has(required4));
             if (missing.length) {
               errors.push(`${label2}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
             }
@@ -74299,7 +74752,7 @@ function validateEvents(summary, events, options2 = {}) {
   const persistedMode = options2.includePersistedChains === false;
   const isNavigation = (sourceType, sourceId, trigger) => sourceType === "component" && components.get(sourceId)?.type === "Navigation" && trigger === "onClick";
   const runKey = (sourceType, sourceId, trigger, queryId) => JSON.stringify([sourceType, sourceId, trigger, queryId]);
-  const runScope = (sourceType, sourceId, trigger, ref) => sourceType === "table_column" || isNavigation(sourceType, sourceId, trigger) ? ref || null : null;
+  const runScope = (sourceType, sourceId, trigger, ref2) => sourceType === "table_column" || isNavigation(sourceType, sourceId, trigger) ? ref2 || null : null;
   const overlaps = (left, right, navigation) => left === right || navigation && (left === null || right === null);
   const payloadKey = (payload2) => JSON.stringify(Object.keys(payload2).filter((k) => k !== "index" && k !== "name").sort().map((k) => [k, payload2[k]]));
   const heldRuns = /* @__PURE__ */ new Map();
@@ -74345,13 +74798,13 @@ function persistedEventSpecs(summary) {
     const payload2 = event.event;
     if (typeof payload2.eventId !== "string")
       return [];
-    const { eventId, ref, ...action } = payload2;
-    if (event.target === "component" && ref != null && typeof ref !== "string")
-      action.ref = ref;
+    const { eventId, ref: ref2, ...action } = payload2;
+    if (event.target === "component" && ref2 != null && typeof ref2 !== "string")
+      action.ref = ref2;
     const spec = {
       sourceId: event.sourceId,
       sourceType: event.target,
-      ...typeof ref === "string" ? { ref } : {},
+      ...typeof ref2 === "string" ? { ref: ref2 } : {},
       trigger: eventId,
       action,
       name: event.name
@@ -74380,8 +74833,8 @@ function navigationReorders(summary, touched, diagnostics) {
     if (!navs.length || chain.slice(-navs.length).every((item) => item.nav))
       continue;
     if (touchedKeys && !touchedKeys.has(key4)) {
-      const [, sourceId, ref, trigger] = key4.split("\0");
-      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref ? ` (${ref})` : ""} has a page switch before other handlers, so those never run; this phase did not touch it, so it was left as it is.`);
+      const [, sourceId, ref2, trigger] = key4.split("\0");
+      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref2 ? ` (${ref2})` : ""} has a page switch before other handlers, so those never run; this phase did not touch it, so it was left as it is.`);
       continue;
     }
     let next = Math.max(...chain.map((item) => item.index)) + 1;
@@ -74395,8 +74848,8 @@ function navigationReorders(summary, touched, diagnostics) {
 var SCRATCH_NAME = /^(debug|diag|diagnostic|probe|tmp|temp|scratch|dummy|sample_test|testonly)[_-]|^hidden[A-Z]|[_-](probe|scratch)$/i;
 function scratchArtifactWarnings(summary) {
   const warnings = [];
-  for (const query of summary.queries ?? []) {
-    const name2 = typeof query.name === "string" ? query.name : "";
+  for (const query2 of summary.queries ?? []) {
+    const name2 = typeof query2.name === "string" ? query2.name : "";
     if (name2 && SCRATCH_NAME.test(name2)) {
       warnings.push(`Query "${name2}" looks like a leftover diagnostic, not part of the app. Delete it before finishing, or rename it if it is genuinely part of what the user asked for.`);
     }
@@ -74426,13 +74879,13 @@ function validatePersistedAppSummary(summary, options2 = {}) {
       }
     }
   }
-  for (const query of summary.queries) {
-    const label2 = `Query "${query.name ?? query.id}"`;
-    if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
+  for (const query2 of summary.queries) {
+    const label2 = `Query "${query2.name ?? query2.id}"`;
+    if (!query2.kind || !query2.options || typeof query2.options !== "object" || Array.isArray(query2.options)) {
       warnings.push(`${label2}: kind/options are unavailable, so its datasource contract was not validated.`);
       continue;
     }
-    const validation = validateQueryOptions(query.kind, query.options);
+    const validation = validateQueryOptions(query2.kind, query2.options);
     errors.push(...issueMessages(validation.errors, label2));
     warnings.push(...issueMessages(validation.warnings, label2));
   }
@@ -74525,15 +74978,15 @@ function renderAuditRequest(url2, method, saved) {
   const match = parsed.pathname.match(/\/api\/data-queries\/([A-Za-z0-9_-]+)(?:\/versions\/([A-Za-z0-9_-]+))?\/run(?:\/([A-Za-z0-9_-]+))?$/);
   if (!match || match[2] && (match[2] !== saved.version_id || !match[3] || parsed.searchParams.get("mode") !== "view") || !match[2] && match[3])
     return blocked("An unverified query or mutating request was blocked");
-  const query = saved.queries.find((item) => item.id === match[1]);
-  if (!query)
+  const query2 = saved.queries.find((item) => item.id === match[1]);
+  if (!query2)
     return blocked("A query outside the audited app/version was blocked");
-  const options2 = query.options;
+  const options2 = query2.options;
   if (hasBinding(options2))
     return blocked("A query with dynamic bindings was blocked");
   if (options2?.requestConfirmation || options2?.request_confirmation)
     return blocked("A query requiring confirmation was blocked");
-  const read = assessQueryRead(query);
+  const read = assessQueryRead(query2);
   if (!read.provenRead || !read.directSafe || read.requiresCountPreflight || read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
     return blocked("A query that is not a proven bounded read was blocked");
   }
@@ -74889,12 +75342,12 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
       try {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id))
           return fail(new Error("Invalid app id"));
-        const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
+        const { base: base2, origins } = renderAuditBase(viewerBase(), args.viewer_url);
         const summary = await client.getAppSummary(args.app_id);
         const pages = summary.pages ?? [];
         const version2 = await client.editingVersionName?.(args.app_id).catch(() => void 0);
         const preview = version2 ? `?env=development&version=${encodeURIComponent(version2)}` : "";
-        const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}${preview}` }));
+        const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base2}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}${preview}` }));
         if (!targets.length)
           return fail(new Error(`no page ${args.page_handle ?? ""} in app ${args.app_id}`));
         const options2 = {
@@ -74943,11 +75396,11 @@ function childName(parentName, child, index) {
 }
 function unusedInternalRef(used, index) {
   let suffix = index + 1;
-  let ref = `__mcp_default_parent_${suffix}`;
-  while (used.has(ref))
-    ref = `__mcp_default_parent_${++suffix}`;
-  used.add(ref);
-  return ref;
+  let ref2 = `__mcp_default_parent_${suffix}`;
+  while (used.has(ref2))
+    ref2 = `__mcp_default_parent_${++suffix}`;
+  used.add(ref2);
+  return ref2;
 }
 function materializeRequiredDefaultChildren(input) {
   const usedRefs = new Set(input.flatMap((component) => component.clientRef ? [component.clientRef] : []));
@@ -75019,20 +75472,20 @@ function prepareQueryOptionsForWrite(kind, raw, subject) {
 
 // dist/queryLifecycle.js
 function expandQueryLifecycles(summary, lifecycles) {
-  const queries = new Map(summary.queries.map((query) => [query.id, query]));
+  const queries = new Map(summary.queries.map((query2) => [query2.id, query2]));
   const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
   const warnings = [];
   const events = [];
   const seenSources = /* @__PURE__ */ new Set();
   for (const lifecycle of lifecycles) {
-    const query = queries.get(lifecycle.queryId);
-    if (!query)
+    const query2 = queries.get(lifecycle.queryId);
+    if (!query2)
       throw new Error(`Query lifecycle source "${lifecycle.queryId}" does not exist.`);
     if (seenSources.has(lifecycle.queryId)) {
-      throw new Error(`Query "${query.name ?? lifecycle.queryId}" has more than one lifecycle declaration in this batch.`);
+      throw new Error(`Query "${query2.name ?? lifecycle.queryId}" has more than one lifecycle declaration in this batch.`);
     }
     seenSources.add(lifecycle.queryId);
-    const sourceName = query.name ?? lifecycle.queryId;
+    const sourceName = query2.name ?? lifecycle.queryId;
     const refreshIds = unique(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
     if (refreshIds.includes(lifecycle.queryId)) {
       throw new Error(`Query "${sourceName}" cannot refresh itself after success: this repeats the query indefinitely, including any writes. Refresh a separate read query instead.`);
@@ -75613,23 +76066,23 @@ function lintQueryFedCharts(components, queries) {
     const match = CHART_QUERY_BINDING.exec(description);
     if (!match)
       continue;
-    const query = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
-    if (!query)
+    const query2 = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
+    if (!query2)
       continue;
-    if (query.kind !== "runjs")
+    if (query2.kind !== "runjs")
       continue;
-    const code = String(query.options?.code ?? "");
+    const code = String(query2.options?.code ?? "");
     const label2 = component.name ?? "Chart";
     if (!code.trim()) {
-      errors.push(`Chart "${label2}" is bound to query "${query.name}", which has no JavaScript code to build the chart object.`);
+      errors.push(`Chart "${label2}" is bound to query "${query2.name}", which has no JavaScript code to build the chart object.`);
       continue;
     }
     if (/textposition\s*:\s*['"]outside['"]/.test(code) && !/cliponaxis\s*:\s*false/.test(code)) {
-      errors.push(`Chart "${label2}" is bound to query "${query.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
+      errors.push(`Chart "${label2}" is bound to query "${query2.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
     }
     const missing = ["data", "layout"].filter((key4) => !code.includes(key4));
     if (missing.length) {
-      errors.push(`Chart "${label2}" is bound to query "${query.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
+      errors.push(`Chart "${label2}" is bound to query "${query2.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
     }
   }
   return errors;
@@ -75641,10 +76094,10 @@ function lintRunjsLoadOrder(spec) {
   const warnings = [];
   const queries = spec.queries ?? [];
   const byRef = /* @__PURE__ */ new Map();
-  for (const query of queries) {
-    byRef.set(query.name, query);
-    if (query.clientRef)
-      byRef.set(query.clientRef, query);
+  for (const query2 of queries) {
+    byRef.set(query2.name, query2);
+    if (query2.clientRef)
+      byRef.set(query2.clientRef, query2);
   }
   const chained = /* @__PURE__ */ new Set();
   for (const lifecycle of spec.lifecycles ?? []) {
@@ -75659,23 +76112,23 @@ function lintRunjsLoadOrder(spec) {
     if (target)
       chained.add(`${event.sourceRef}->${target}`);
   }
-  const keysOf = (query) => [query.name, ...query.clientRef ? [query.clientRef] : []];
-  for (const query of queries) {
-    if (query.kind !== "runjs")
+  const keysOf = (query2) => [query2.name, ...query2.clientRef ? [query2.clientRef] : []];
+  for (const query2 of queries) {
+    if (query2.kind !== "runjs")
       continue;
-    const code = String(query.options?.code ?? "");
-    if (!isStaticTrue(query.options?.runOnPageLoad))
+    const code = String(query2.options?.code ?? "");
+    if (!isStaticTrue(query2.options?.runOnPageLoad))
       continue;
     const refs2 = new Set([...code.matchAll(QUERY_DATA_REF)].map((match) => match[1]));
-    for (const ref of refs2) {
-      const source2 = byRef.get(ref);
-      if (!source2 || source2 === query)
+    for (const ref2 of refs2) {
+      const source2 = byRef.get(ref2);
+      if (!source2 || source2 === query2)
         continue;
-      const isChained = keysOf(source2).some((from) => keysOf(query).some((to) => chained.has(`${from}->${to}`)));
+      const isChained = keysOf(source2).some((from) => keysOf(query2).some((to) => chained.has(`${from}->${to}`)));
       if (isChained) {
-        warnings.push(`Query "${query.name}" is already run from "${source2.name}"'s success but also has runOnPageLoad on, so it runs twice and the first run reads queries.${ref}.data before it exists. Set runOnPageLoad to false.`);
+        warnings.push(`Query "${query2.name}" is already run from "${source2.name}"'s success but also has runOnPageLoad on, so it runs twice and the first run reads queries.${ref2}.data before it exists. Set runOnPageLoad to false.`);
       } else {
-        errors.push(`Query "${query.name}" reads queries.${ref}.data and runs on page load, so it races "${source2.name}" and reads undefined on first load (the chart or table it feeds stays empty). Set runOnPageLoad to false and run it from "${source2.name}"'s success: a lifecycle { queryRef: "${source2.clientRef ?? source2.name}", refreshQueryRefs: ["${query.clientRef ?? query.name}"] } or an onDataQuerySuccess run-query event.`);
+        errors.push(`Query "${query2.name}" reads queries.${ref2}.data and runs on page load, so it races "${source2.name}" and reads undefined on first load (the chart or table it feeds stays empty). Set runOnPageLoad to false and run it from "${source2.name}"'s success: a lifecycle { queryRef: "${source2.clientRef ?? source2.name}", refreshQueryRefs: ["${query2.clientRef ?? query2.name}"] } or an onDataQuerySuccess run-query event.`);
       }
     }
   }
@@ -75684,10 +76137,10 @@ function lintRunjsLoadOrder(spec) {
 function lintChartNumericBindings(pages, queries) {
   const warnings = [];
   const sqlByName = /* @__PURE__ */ new Map();
-  for (const query of queries) {
-    const sql = query.options?.query;
-    if (query.name && typeof sql === "string")
-      sqlByName.set(query.name, sql);
+  for (const query2 of queries) {
+    const sql = query2.options?.query;
+    if (query2.name && typeof sql === "string")
+      sqlByName.set(query2.name, sql);
   }
   if (!sqlByName.size)
     return warnings;
@@ -75723,9 +76176,9 @@ function lintChartNumericBindings(pages, queries) {
 function lintServerSidePaginationRace(pages, queries) {
   const errors = [];
   const queryByName = /* @__PURE__ */ new Map();
-  for (const query of queries)
-    if (query.name)
-      queryByName.set(query.name, query);
+  for (const query2 of queries)
+    if (query2.name)
+      queryByName.set(query2.name, query2);
   const propValue2 = (properties, key4) => {
     const entry = properties?.[key4];
     return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
@@ -75751,10 +76204,10 @@ function lintServerSidePaginationRace(pages, queries) {
       if (!isTrue(propValue2(properties, "serverSidePagination")))
         continue;
       for (const queryName of referencedQueryNames(propValue2(properties, "data"))) {
-        const query = queryByName.get(queryName);
-        if (!query)
+        const query2 = queryByName.get(queryName);
+        if (!query2)
           continue;
-        if (runsOnPageLoad(query.options) && containsNamedBinding(query.options, "components", component.name)) {
+        if (runsOnPageLoad(query2.options) && containsNamedBinding(query2.options, "components", component.name)) {
           errors.push(`Table "${component.name}" uses server-side pagination and its data query "${queryName}" runs on page load while referencing components.${component.name}.* in its SQL. On first load the table is not registered yet, so those bindings resolve to "undefined" and the query fails (e.g. column "undefined" does not exist) \u2014 the table then shows "No data" even though the record count is non-zero. For a bounded result set, prefer client-side pagination: set serverSidePagination:false, bind the table data to the full query, and drop the separate count query. If server-side pagination is genuinely needed, set the data query's runOnPageLoad:false and drive it from the table's onPageChanged/onSearch events so it runs after the table mounts.`);
         }
       }
@@ -75765,13 +76218,13 @@ function lintServerSidePaginationRace(pages, queries) {
 function pagesUsingQuery(summary, name2, planPages) {
   if (!summary)
     return [];
-  const query = (summary.queries ?? []).find((q) => q.name === name2);
+  const query2 = (summary.queries ?? []).find((q) => q.name === name2);
   const reads = new RegExp(`queries\\??\\.${name2.replace(/[$]/g, "\\$&")}\\b`);
   return (summary.pages ?? []).filter((page) => {
     if (!page.name || planPages.has(page.name))
       return false;
     const ids = new Set(page.components.map((component) => component.id));
-    return page.components.some((component) => reads.test(JSON.stringify([component.properties ?? {}, component.styles ?? {}]))) || !!query && (summary.events ?? []).some((event) => !!event.sourceId && (ids.has(event.sourceId) || event.sourceId === page.id) && JSON.stringify(event.event ?? {}).includes(`"${query.id}"`));
+    return page.components.some((component) => reads.test(JSON.stringify([component.properties ?? {}, component.styles ?? {}]))) || !!query2 && (summary.events ?? []).some((event) => !!event.sourceId && (ids.has(event.sourceId) || event.sourceId === page.id) && JSON.stringify(event.event ?? {}).includes(`"${query2.id}"`));
   }).map((page) => page.name);
 }
 function lintPlannedApp(spec, existingSummary, options2 = {}) {
@@ -75812,40 +76265,40 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
   const queryIds = /* @__PURE__ */ new Map();
   const existingQueries = existingSummary?.queries ?? [];
   const existingQueryNames = /* @__PURE__ */ new Set();
-  for (const query of existingQueries) {
-    const target = { id: query.id, name: query.name ?? query.id };
-    queryRefs.set(query.id, target);
-    queryIds.set(query.id, target);
-    if (query.name) {
-      if (existingQueryNames.has(query.name))
-        errors.push(`Existing app has duplicate query name "${query.name}".`);
-      existingQueryNames.add(query.name);
-      queryRefs.set(query.name, target);
+  for (const query2 of existingQueries) {
+    const target = { id: query2.id, name: query2.name ?? query2.id };
+    queryRefs.set(query2.id, target);
+    queryIds.set(query2.id, target);
+    if (query2.name) {
+      if (existingQueryNames.has(query2.name))
+        errors.push(`Existing app has duplicate query name "${query2.name}".`);
+      existingQueryNames.add(query2.name);
+      queryRefs.set(query2.name, target);
     }
   }
-  const plannedQueries = (spec.queries ?? []).map((query, index) => {
-    const ref = query.clientRef ?? query.name;
-    const id = `planned-query:${index}:${ref}`;
-    if (existingQueryNames.has(query.name)) {
-      const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
-      errors.push(`App already has a query named "${query.name}"` + (users.length ? `, which page${users.length > 1 ? "s" : ""} ${users.map((u) => `"${u}"`).join(", ")} also read${users.length > 1 ? "" : "s"} or run${users.length > 1 ? "" : "s"}. To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, mark this definition update: true.` : ". To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true."));
+  const plannedQueries = (spec.queries ?? []).map((query2, index) => {
+    const ref2 = query2.clientRef ?? query2.name;
+    const id = `planned-query:${index}:${ref2}`;
+    if (existingQueryNames.has(query2.name)) {
+      const users = pagesUsingQuery(existingSummary, query2.name, new Set((spec.pages ?? []).map((page) => page.name)));
+      errors.push(`App already has a query named "${query2.name}"` + (users.length ? `, which page${users.length > 1 ? "s" : ""} ${users.map((u) => `"${u}"`).join(", ")} also read${users.length > 1 ? "" : "s"} or run${users.length > 1 ? "" : "s"}. To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, mark this definition update: true.` : ". To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true."));
     }
-    registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
-    if (ref !== query.name)
-      registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
-    queryIds.set(id, { id, name: query.name });
-    if (!query.kind) {
-      errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
+    registerRef(queryRefs, ref2, { id, name: query2.name }, "query", errors);
+    if (ref2 !== query2.name)
+      registerRef(queryRefs, query2.name, { id, name: query2.name }, "query", errors);
+    queryIds.set(id, { id, name: query2.name });
+    if (!query2.kind) {
+      errors.push(`Query "${query2.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
     }
-    const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
+    const prepared = prepareQueryOptionsForWrite(query2.kind, query2.options, `Query "${query2.name}"`);
     const options3 = prepared.options;
     errors.push(...prepared.errors);
     warnings.push(...prepared.warnings);
     return {
       id,
-      name: query.name,
-      kind: query.kind,
-      data_source_id: query.datasourceId,
+      name: query2.name,
+      kind: query2.kind,
+      data_source_id: query2.datasourceId,
       options: options3
     };
   });
@@ -75894,9 +76347,9 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     if (iconError)
       errors.push(`Page "${plannedPage.name}": ${iconError}`);
     const normalized2 = (plannedPage.components ?? []).map((component) => {
-      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
-      const geometry = normalizePlannedLayouts(definition.component);
-      return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+      const definition2 = normalizeComponentSpec(component, { stripUnknownKeys: true });
+      const geometry = normalizePlannedLayouts(definition2.component);
+      return { component: geometry.component, warnings: [...definition2.warnings, ...geometry.warnings] };
     });
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
@@ -75912,16 +76365,16 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
       localRefs.set(component.id, component.id);
     }
     const componentEntries = expansion.components.map((component, componentIndex) => {
-      const ref = component.clientRef ?? component.name;
-      const id = `planned-component:${pageIndex}:${componentIndex}:${ref}`;
+      const ref2 = component.clientRef ?? component.name;
+      const id = `planned-component:${pageIndex}:${componentIndex}:${ref2}`;
       if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
         errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
       }
-      if (localRefs.has(ref))
-        errors.push(`Page "${plannedPage.name}" has duplicate component ref "${ref}".`);
+      if (localRefs.has(ref2))
+        errors.push(`Page "${plannedPage.name}" has duplicate component ref "${ref2}".`);
       else
-        localRefs.set(ref, id);
-      registerRef(componentRefs, ref, { id, name: component.name, type: component.type }, "component", errors);
+        localRefs.set(ref2, id);
+      registerRef(componentRefs, ref2, { id, name: component.name, type: component.type }, "component", errors);
       componentCount += 1;
       return { component, id };
     });
@@ -76083,21 +76536,21 @@ function splitForwardComponentRefs(structureErrors, existingQueryNames) {
       errors.push(error51);
     }
   }
-  const notes = [...missing].map(([query, names]) => `Query "${query}" reads ${names.map((n) => `components.${n}`).join(", ")}, which no page has yet. Build them on a later page with that exact name, or the query reads undefined.`);
+  const notes = [...missing].map(([query2, names]) => `Query "${query2}" reads ${names.map((n) => `components.${n}`).join(", ")}, which no page has yet. Build them on a later page with that exact name, or the query reads undefined.`);
   return { errors, notes };
 }
-function bindRef(map2, ref, value2, type, errors) {
-  const existing = map2.get(ref);
+function bindRef(map2, ref2, value2, type, errors) {
+  const existing = map2.get(ref2);
   if (!existing || existing.id === value2.id)
-    map2.set(ref, value2);
+    map2.set(ref2, value2);
   else if (type && errors)
-    errors.push(`Duplicate ${type} client_ref/name "${ref}" in planned app.`);
+    errors.push(`Duplicate ${type} client_ref/name "${ref2}" in planned app.`);
 }
-function registerRef(map2, ref, value2, type, errors) {
-  if (map2.has(ref))
-    errors.push(`Duplicate ${type} client_ref/name "${ref}" in planned app.`);
+function registerRef(map2, ref2, value2, type, errors) {
+  if (map2.has(ref2))
+    errors.push(`Duplicate ${type} client_ref/name "${ref2}" in planned app.`);
   else
-    map2.set(ref, value2);
+    map2.set(ref2, value2);
 }
 function sourceMap(sourceType, components, queries, pages) {
   if (sourceType === "data_query")
@@ -76139,21 +76592,21 @@ function resolveAction(raw, queries, pages, components, errors, label2) {
   return action;
 }
 function resolveRefs(refs2, map2, errors, label2) {
-  return refs2?.flatMap((ref) => {
-    const value2 = map2.get(ref);
+  return refs2?.flatMap((ref2) => {
+    const value2 = map2.get(ref2);
     if (!value2) {
-      errors.push(`${label2} ref "${ref}" does not exist.`);
+      errors.push(`${label2} ref "${ref2}" does not exist.`);
       return [];
     }
     return [value2.id];
   });
 }
-function resolveRef3(ref, map2, errors, label2) {
-  if (!ref)
+function resolveRef3(ref2, map2, errors, label2) {
+  if (!ref2)
     return void 0;
-  const value2 = map2.get(ref);
+  const value2 = map2.get(ref2);
   if (!value2) {
-    errors.push(`${label2} ref "${ref}" does not exist.`);
+    errors.push(`${label2} ref "${ref2}" does not exist.`);
     return void 0;
   }
   return value2.id;
@@ -76209,9 +76662,9 @@ function prepareComponentBatch(inputs, options2 = {}) {
     slotName: slot_name
   }));
   const normalized2 = requested.map((component) => {
-    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
-    const geometry = normalizePlannedLayouts(definition.component);
-    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+    const definition2 = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const geometry = normalizePlannedLayouts(definition2.component);
+    return { ...definition2, component: geometry.component, warnings: [...definition2.warnings, ...geometry.warnings] };
   });
   const heightFixes = [];
   for (const result of normalized2) {
@@ -76225,7 +76678,7 @@ function prepareComponentBatch(inputs, options2 = {}) {
     heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
   }
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
-  const lint = lintComponents(expanded.components, options2);
+  const lint2 = lintComponents(expanded.components, options2);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
     styles: component.styles,
@@ -76236,11 +76689,11 @@ function prepareComponentBatch(inputs, options2 = {}) {
   ] : []);
   return {
     components: expanded.components,
-    errors: lint.errors,
+    errors: lint2.errors,
     warnings: [
       ...normalized2.flatMap((item) => item.warnings),
       ...expanded.warnings,
-      ...lint.warnings,
+      ...lint2.warnings,
       ...heightFixes,
       ...lateListviewChildWarnings
     ]
@@ -76333,7 +76786,7 @@ var appPlanSchema = external_exports.object({
 });
 
 // dist/appPlanStore.js
-import { randomUUID as randomUUID2 } from "node:crypto";
+import { randomUUID as randomUUID3 } from "node:crypto";
 var PLAN_TTL_MS = 30 * 60 * 1e3;
 var MAX_PLANS = 20;
 var plans = /* @__PURE__ */ new Map();
@@ -76344,12 +76797,12 @@ function prune(now = Date.now()) {
   while (plans.size >= MAX_PLANS)
     plans.delete(plans.keys().next().value);
 }
-function storeAppPlan(spec, lint, replaceFingerprint2) {
+function storeAppPlan(spec, lint2, replaceFingerprint2) {
   prune();
-  const planToken = randomUUID2();
+  const planToken = randomUUID3();
   plans.set(planToken, {
     spec: structuredClone(spec),
-    lint: structuredClone(lint),
+    lint: structuredClone(lint2),
     expiresAt: Date.now() + PLAN_TTL_MS,
     ...replaceFingerprint2 ? { replaceFingerprint: replaceFingerprint2 } : {}
   });
@@ -76403,7 +76856,7 @@ function updateRowsCompatibilityWarning(kind, options2, tableName, columns) {
   return `Table "${tableName}" has no id column, but this query uses update_rows. ToolJet deployments that append order=id to the PATCH will fail even when the filter uses the correct custom primary key. For a new schema, prefer the automatically generated serial id and keep the business reference as a separate unique column. For an existing schema, inspect the primary key and the bulk_update_with_primary_key contract. Use that operation only if it preserves the requested targeting: never drop expected-state, ownership, tenant, or other where_filters to convert the query. If extra predicates are required, use a supported conditional-write operation or report the capability gap. Do not recreate existing tables or execute a mutation just to test compatibility.`;
 }
 async function inspectUpdateCompatibility(client, queries) {
-  const targets = queries.filter((query) => query.kind === "tooljetdb" && ["update_rows", "create_row", "bulk_upsert_with_primary_key"].includes(String(query.options.operation)));
+  const targets = queries.filter((query2) => query2.kind === "tooljetdb" && ["update_rows", "create_row", "bulk_upsert_with_primary_key"].includes(String(query2.options.operation)));
   if (!targets.length)
     return [];
   let tables;
@@ -76413,30 +76866,30 @@ async function inspectUpdateCompatibility(client, queries) {
     return ["Structured-write schema compatibility was not checked: table metadata could not be read."];
   }
   const schemas = /* @__PURE__ */ new Map();
-  return (await Promise.all(targets.map(async (query) => {
-    const tableId = query.options.table_id;
+  return (await Promise.all(targets.map(async (query2) => {
+    const tableId = query2.options.table_id;
     if (typeof tableId !== "string" || tableId.includes("{{")) {
-      return `Query "${query.name}": structured-write schema compatibility was not checked for a dynamic or missing table_id.`;
+      return `Query "${query2.name}": structured-write schema compatibility was not checked for a dynamic or missing table_id.`;
     }
     const table = tables.find((item) => item.id === tableId);
     if (!table)
-      return `Query "${query.name}": structured-write schema compatibility was not checked: table_id was not found in workspace metadata.`;
+      return `Query "${query2.name}": structured-write schema compatibility was not checked: table_id was not found in workspace metadata.`;
     if (!schemas.has(tableId))
       schemas.set(tableId, Promise.resolve().then(() => client.getTableSchema(table.table_name)).catch(() => void 0));
     const schema = await schemas.get(tableId);
     if (!schema?.length)
-      return `Query "${query.name}": structured-write schema compatibility was not checked because the schema for "${table.table_name}" was unavailable or empty.`;
-    const missing = missingCreateRowColumns(query.options, schema.map((column) => ({
+      return `Query "${query2.name}": structured-write schema compatibility was not checked because the schema for "${table.table_name}" was unavailable or empty.`;
+    const missing = missingCreateRowColumns(query2.options, schema.map((column) => ({
       name: column.name,
       type: column.type,
       primaryKey: column.isPrimaryKey,
       notNull: column.isNotNull,
       defaultValue: column.defaultValue
     })));
-    const warning = missing?.length ? `create_row for "${table.table_name}" omits required non-generated column(s) ${missing.map((name2) => JSON.stringify(name2)).join(", ")}. Seed records do not supply values for future inserts. Supply required values or verify an existing database trigger; metadata does not verify triggers. Do not recreate tables to repair this query.` : bulkPrimaryKeyWarning("tooljetdb", query.options, table.table_name, schema.map((column) => ({ name: column.name, primaryKey: column.isPrimaryKey }))) ?? updateRowsCompatibilityWarning("tooljetdb", query.options, table.table_name, schema.map((column) => column.name));
-    const arithmetic = arithmeticWriteWarning(query.kind, query.options);
+    const warning = missing?.length ? `create_row for "${table.table_name}" omits required non-generated column(s) ${missing.map((name2) => JSON.stringify(name2)).join(", ")}. Seed records do not supply values for future inserts. Supply required values or verify an existing database trigger; metadata does not verify triggers. Do not recreate tables to repair this query.` : bulkPrimaryKeyWarning("tooljetdb", query2.options, table.table_name, schema.map((column) => ({ name: column.name, primaryKey: column.isPrimaryKey }))) ?? updateRowsCompatibilityWarning("tooljetdb", query2.options, table.table_name, schema.map((column) => column.name));
+    const arithmetic = arithmeticWriteWarning(query2.kind, query2.options);
     const combined = [warning, arithmetic].filter(Boolean).join(" ");
-    return combined ? `Query "${query.name}": ${combined}` : void 0;
+    return combined ? `Query "${query2.name}": ${combined}` : void 0;
   }))).filter((warning) => !!warning);
 }
 
@@ -76494,14 +76947,14 @@ function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PUR
         component[section] = values(component[section]);
     }
   }
-  for (const query of plan.queries ?? []) {
-    const kind = datasourceKinds.get(query.datasource_id ?? "") ?? datasourceNames.get(query.datasource_name ?? "") ?? query.kind;
-    const originalCode = query.options.code;
-    const hasCode = Object.hasOwn(query.options, "code");
-    const { code: _code, ...otherOptions } = query.options;
-    query.options = values(kind === "runjs" ? otherOptions : query.options);
+  for (const query2 of plan.queries ?? []) {
+    const kind = datasourceKinds.get(query2.datasource_id ?? "") ?? datasourceNames.get(query2.datasource_name ?? "") ?? query2.kind;
+    const originalCode = query2.options.code;
+    const hasCode = Object.hasOwn(query2.options, "code");
+    const { code: _code, ...otherOptions } = query2.options;
+    query2.options = values(kind === "runjs" ? otherOptions : query2.options);
     if (kind === "runjs" && hasCode) {
-      query.options.code = typeof originalCode === "string" ? rewrite(originalCode) : originalCode;
+      query2.options.code = typeof originalCode === "string" ? rewrite(originalCode) : originalCode;
     }
   }
   for (const event of plan.events ?? [])
@@ -76560,14 +77013,14 @@ function replaceView(summary, plan) {
   const componentsToDelete = replacedPages.map((page) => ({ pageId: page.id, componentIds: page.components.map((component) => component.id) })).filter((entry) => entry.componentIds.length);
   const replacedComponentIds = componentsToDelete.flatMap((entry) => entry.componentIds);
   const removedSources = /* @__PURE__ */ new Set([...replacedPageIds, ...replacedComponentIds]);
-  const planQueryNames = new Set((plan.queries ?? []).map((query) => query.name));
+  const planQueryNames = new Set((plan.queries ?? []).map((query2) => query2.name));
   const replacedComponents = replacedPages.flatMap((page) => page.components);
   const otherComponents = summary.pages.filter((page) => !matched.has(page.id)).flatMap((page) => page.components);
   const componentText = (component) => JSON.stringify([component.properties ?? {}, component.styles ?? {}]);
   const runsQuery = (event, id) => JSON.stringify(event.event ?? {}).includes(`"${id}"`);
-  const planQueryIds = new Set(summary.queries.filter((query) => query.name && planQueryNames.has(query.name)).map((query) => query.id));
-  const pageOwns = (query) => replacedComponents.some((component) => readsQuery(componentText(component), query.name)) || summary.events.some((event) => event.sourceId && removedSources.has(event.sourceId) && runsQuery(event, query.id));
-  const usedElsewhere = (query) => otherComponents.some((component) => readsQuery(componentText(component), query.name)) || summary.events.some((event) => event.sourceId !== query.id && !(event.sourceId && removedSources.has(event.sourceId)) && !(event.sourceId && planQueryIds.has(event.sourceId)) && runsQuery(event, query.id)) || summary.queries.some((other) => other.id !== query.id && !planQueryIds.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name));
+  const planQueryIds = new Set(summary.queries.filter((query2) => query2.name && planQueryNames.has(query2.name)).map((query2) => query2.id));
+  const pageOwns = (query2) => replacedComponents.some((component) => readsQuery(componentText(component), query2.name)) || summary.events.some((event) => event.sourceId && removedSources.has(event.sourceId) && runsQuery(event, query2.id));
+  const usedElsewhere = (query2) => otherComponents.some((component) => readsQuery(componentText(component), query2.name)) || summary.events.some((event) => event.sourceId !== query2.id && !(event.sourceId && removedSources.has(event.sourceId)) && !(event.sourceId && planQueryIds.has(event.sourceId)) && runsQuery(event, query2.id)) || summary.queries.some((other) => other.id !== query2.id && !planQueryIds.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query2.name));
   const readsOf = (text) => summary.queries.filter((q) => q.name && readsQuery(text, q.name)).map((q) => q.id);
   const reachedElsewhere = /* @__PURE__ */ new Set([
     ...otherComponents.flatMap((component) => readsOf(componentText(component))),
@@ -76575,39 +77028,39 @@ function replaceView(summary, plan) {
   ]);
   for (let frontier = [...reachedElsewhere]; frontier.length; ) {
     const next = frontier.flatMap((id) => {
-      const query = summary.queries.find((q) => q.id === id);
-      return readsOf(JSON.stringify(query?.options ?? {}));
+      const query2 = summary.queries.find((q) => q.id === id);
+      return readsOf(JSON.stringify(query2?.options ?? {}));
     }).filter((id) => !reachedElsewhere.has(id));
     next.forEach((id) => reachedElsewhere.add(id));
     frontier = next;
   }
-  const owned = new Set(summary.queries.filter((query) => query.name && !reachedElsewhere.has(query.id) && pageOwns(query)).map((query) => query.id));
+  const owned = new Set(summary.queries.filter((query2) => query2.name && !reachedElsewhere.has(query2.id) && pageOwns(query2)).map((query2) => query2.id));
   for (let grew = true; grew; ) {
     grew = false;
-    for (const query of summary.queries) {
-      if (!query.name || owned.has(query.id) || reachedElsewhere.has(query.id))
+    for (const query2 of summary.queries) {
+      if (!query2.name || owned.has(query2.id) || reachedElsewhere.has(query2.id))
         continue;
-      const readByOwned = summary.queries.some((other) => owned.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name));
-      const chainedByOwned = summary.events.some((event) => !!event.sourceId && owned.has(event.sourceId) && runsQuery(event, query.id));
+      const readByOwned = summary.queries.some((other) => owned.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query2.name));
+      const chainedByOwned = summary.events.some((event) => !!event.sourceId && owned.has(event.sourceId) && runsQuery(event, query2.id));
       if (readByOwned || chainedByOwned) {
-        owned.add(query.id);
+        owned.add(query2.id);
         grew = true;
       }
     }
   }
-  const explicitUpdates = new Set((plan.queries ?? []).filter((query) => query.update).map((query) => query.name));
-  const implicit = replacedNames.size ? summary.queries.filter((query) => query.name && planQueryNames.has(query.name) && !reachedElsewhere.has(query.id) && (owned.has(query.id) || !usedElsewhere(query))) : [];
-  const explicit = summary.queries.filter((query) => query.name && explicitUpdates.has(query.name));
-  const queriesToUpdate = new Map([...implicit, ...explicit].map((query) => [query.name, query.id]));
+  const explicitUpdates = new Set((plan.queries ?? []).filter((query2) => query2.update).map((query2) => query2.name));
+  const implicit = replacedNames.size ? summary.queries.filter((query2) => query2.name && planQueryNames.has(query2.name) && !reachedElsewhere.has(query2.id) && (owned.has(query2.id) || !usedElsewhere(query2))) : [];
+  const explicit = summary.queries.filter((query2) => query2.name && explicitUpdates.has(query2.name));
+  const queriesToUpdate = new Map([...implicit, ...explicit].map((query2) => [query2.name, query2.id]));
   if (!replacedPages.length && !explicit.length && (!replacedNames.size || !queriesToUpdate.size))
     return void 0;
   const redefinedIds = new Set(queriesToUpdate.values());
-  const queryNameById = new Map(summary.queries.map((query) => [query.id, query.name ?? ""]));
+  const queryNameById = new Map(summary.queries.map((query2) => [query2.id, query2.name ?? ""]));
   const pageNameById = new Map(summary.pages.map((page) => [page.id, page.name ?? ""]));
-  const queryRefName = new Map((plan.queries ?? []).flatMap((query) => [[query.name, query.name], ...query.client_ref ? [[query.client_ref, query.name]] : []]));
+  const queryRefName = new Map((plan.queries ?? []).flatMap((query2) => [[query2.name, query2.name], ...query2.client_ref ? [[query2.client_ref, query2.name]] : []]));
   const pageRefName = new Map((plan.pages ?? []).flatMap((page) => [[page.name, page.name], ...page.client_ref ? [[page.client_ref, page.name]] : []]));
-  const nameOfQuery = (ref) => typeof ref === "string" ? queryRefName.get(ref) ?? queryNameById.get(ref) ?? ref : "";
-  const nameOfPage = (ref) => typeof ref === "string" ? pageRefName.get(ref) ?? pageNameById.get(ref) ?? ref : "";
+  const nameOfQuery = (ref2) => typeof ref2 === "string" ? queryRefName.get(ref2) ?? queryNameById.get(ref2) ?? ref2 : "";
+  const nameOfPage = (ref2) => typeof ref2 === "string" ? pageRefName.get(ref2) ?? pageNameById.get(ref2) ?? ref2 : "";
   const actionKey = (action) => {
     const id = action.actionId;
     if (id === "run-query")
@@ -76632,8 +77085,8 @@ function replaceView(summary, plan) {
   }
   for (const lc of plan.lifecycles ?? []) {
     const source2 = `q:${nameOfQuery(lc.query_ref)}`;
-    for (const ref of lc.refresh_query_refs ?? [])
-      plan_(source2, "onDataQuerySuccess", { actionId: "run-query", queryId: ref });
+    for (const ref2 of lc.refresh_query_refs ?? [])
+      plan_(source2, "onDataQuerySuccess", { actionId: "run-query", queryId: ref2 });
     for (const action of [...lc.before_refresh_actions ?? [], ...lc.success_actions ?? []])
       plan_(source2, "onDataQuerySuccess", action);
     for (const action of lc.failure_actions ?? [])
@@ -76684,7 +77137,7 @@ function replaceView(summary, plan) {
       pages: summary.pages.map((page) => replacedPageIds.includes(page.id) ? { ...page, components: [] } : page),
       // A redefined query stays under a placeholder name: its name is free for the plan's new definition, and
       // events that run it by id (from other pages) still resolve. Dropping it would orphan them.
-      queries: summary.queries.map((query) => redefinedIds.has(query.id) ? { ...query, name: `${query.name} (being replaced)` } : query),
+      queries: summary.queries.map((query2) => redefinedIds.has(query2.id) ? { ...query2, name: `${query2.name} (being replaced)` } : query2),
       events: summary.events.filter((event) => !deleted.has(event.id) && !retargeted.has(event.id))
     },
     replacedPageIds,
@@ -76724,11 +77177,11 @@ function danglingAfterReplace(summary, view, plan) {
     }
   }
   const redefined = new Set(view.queriesToUpdate.values());
-  for (const query of summary.queries.filter((q) => !redefined.has(q.id))) {
-    const text = JSON.stringify(query.options ?? {});
+  for (const query2 of summary.queries.filter((q) => !redefined.has(q.id))) {
+    const text = JSON.stringify(query2.options ?? {});
     for (const name2 of dropped) {
       if (reads(text, name2))
-        errors.push(`Query "${query.name}" reads components.${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or redefine "${query.name}" in this same plan without it (in page markup: write the whole <Query name="${query.name}" ...> in the same document as the page).`);
+        errors.push(`Query "${query2.name}" reads components.${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or redefine "${query2.name}" in this same plan without it (in page markup: write the whole <Query name="${query2.name}" ...> in the same document as the page).`);
     }
   }
   return errors;
@@ -76759,12 +77212,12 @@ function replaceFingerprint(summary, view) {
     }))
   })).sort((a, b) => a.id.localeCompare(b.id));
   const redefined = new Set(view.queriesToUpdate.values());
-  const queries = summary.queries.filter((query) => redefined.has(query.id)).map((query) => ({
-    id: query.id,
-    name: query.name ?? null,
-    kind: query.kind ?? null,
-    data_source_id: query.data_source_id ?? null,
-    options: query.options ?? {}
+  const queries = summary.queries.filter((query2) => redefined.has(query2.id)).map((query2) => ({
+    id: query2.id,
+    name: query2.name ?? null,
+    kind: query2.kind ?? null,
+    data_source_id: query2.data_source_id ?? null,
+    options: query2.options ?? {}
   })).sort((a, b) => a.id.localeCompare(b.id));
   const touched = [...pageIds, ...replacedPages.flatMap((page) => page.components.map((component) => component.id)), ...redefined];
   const touchedIds = new Set(touched);
@@ -76784,27 +77237,27 @@ function replaceFingerprint(summary, view) {
 var stable = (value2) => JSON.stringify(value2, (_key, inner) => inner && typeof inner === "object" && !Array.isArray(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
 function restatedQueryNames(summary, queries, tables, datasources) {
   const restated = [];
-  for (const query of queries) {
-    const held = summary.queries.filter((existing2) => existing2.name === query.name);
+  for (const query2 of queries) {
+    const held = summary.queries.filter((existing2) => existing2.name === query2.name);
     if (held.length !== 1)
       continue;
     const existing = held[0];
-    const named = query.datasource_name !== void 0 ? datasources.filter((source2) => source2.name === query.datasource_name) : [];
-    const datasource = query.datasource_id !== void 0 ? datasources.find((source2) => source2.id === query.datasource_id) : named.length === 1 ? named[0] : void 0;
+    const named = query2.datasource_name !== void 0 ? datasources.filter((source2) => source2.name === query2.datasource_name) : [];
+    const datasource = query2.datasource_id !== void 0 ? datasources.find((source2) => source2.id === query2.datasource_id) : named.length === 1 ? named[0] : void 0;
     if (!datasource || datasource.id !== existing.data_source_id)
       continue;
-    const options2 = structuredClone(query.options ?? {});
-    if (query.table_ref) {
-      const table = tables.find((candidate) => candidate.table_name.toLowerCase() === query.table_ref.toLowerCase());
+    const options2 = structuredClone(query2.options ?? {});
+    if (query2.table_ref) {
+      const table = tables.find((candidate) => candidate.table_name.toLowerCase() === query2.table_ref.toLowerCase());
       if (!table)
         continue;
       options2.table_id = table.id;
     }
-    const prepared = prepareQueryOptionsForWrite(datasource.kind, options2, `Query "${query.name}"`);
+    const prepared = prepareQueryOptionsForWrite(datasource.kind, options2, `Query "${query2.name}"`);
     if (prepared.errors.length)
       continue;
     if (stable(prepared.options) === stable(existing.options ?? {}))
-      restated.push(query.name);
+      restated.push(query2.name);
   }
   return restated;
 }
@@ -76855,7 +77308,7 @@ function lintAppSpecTool(client) {
         const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
         if (mapRefusal)
           preflightErrors.push(mapRefusal);
-        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
+        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query2) => query2.table_ref || typeof query2.options?.table_id === "string"));
         const [existingTables, fetchedSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
@@ -76889,31 +77342,31 @@ function lintAppSpecTool(client) {
           canonicalTableName(name2);
         for (const seed of args.seed_data ?? [])
           seed.table_name = canonicalTableName(seed.table_name);
-        for (const query of args.queries ?? [])
-          if (query.table_ref)
-            query.table_ref = canonicalTableName(query.table_ref);
+        for (const query2 of args.queries ?? [])
+          if (query2.table_ref)
+            query2.table_ref = canonicalTableName(query2.table_ref);
         for (const table of args.tables ?? []) {
           for (const fk of table.foreign_keys ?? []) {
-            const ref = fk;
+            const ref2 = fk;
             for (const field of ["referencedTable", "referenced_table", "references_table"]) {
-              if (typeof ref[field] === "string")
-                ref[field] = canonicalTableName(ref[field]);
+              if (typeof ref2[field] === "string")
+                ref2[field] = canonicalTableName(ref2[field]);
             }
           }
         }
-        const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
+        const hasSql = args.queries?.some((query2) => query2.options?.operation === "sql_execution" || query2.options?.sql_execution !== void 0);
         const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
         if (fetchedSummary && args.queries?.length) {
-          const restated = restatedQueryNames(fetchedSummary, args.queries.filter((query) => !query.table_ref || !plannedNames.has(query.table_ref.toLowerCase())), existingTables, datasources);
+          const restated = restatedQueryNames(fetchedSummary, args.queries.filter((query2) => !query2.table_ref || !plannedNames.has(query2.table_ref.toLowerCase())), existingTables, datasources);
           if (restated.length) {
-            args.queries = args.queries.filter((query) => !restated.includes(query.name));
+            args.queries = args.queries.filter((query2) => !restated.includes(query2.name));
             preflightWarnings.push(`${restated.map((name2) => `"${name2}"`).join(", ")}: already in the app exactly as written here, so the plan uses the existing quer` + (restated.length > 1 ? "ies" : "y") + " and defines nothing again.");
           }
           const planPages = new Set((args.pages ?? []).map((page) => page.name));
-          for (const query of args.queries.filter((candidate) => candidate.update)) {
-            const users = pagesUsingQuery(fetchedSummary, query.name, planPages);
+          for (const query2 of args.queries.filter((candidate) => candidate.update)) {
+            const users = pagesUsingQuery(fetchedSummary, query2.name, planPages);
             if (users.length) {
-              preflightWarnings.push(`Query "${query.name}" is updated in place, and page${users.length > 1 ? "s" : ""} ${users.map((user) => `"${user}"`).join(", ")} also read${users.length > 1 ? "" : "s"} it: keep the fields they use.`);
+              preflightWarnings.push(`Query "${query2.name}" is updated in place, and page${users.length > 1 ? "s" : ""} ${users.map((user) => `"${user}"`).join(", ")} also read${users.length > 1 ? "" : "s"} it: keep the fields they use.`);
             }
           }
         }
@@ -76946,15 +77399,15 @@ function lintAppSpecTool(client) {
             for (const seed of args.seed_data ?? [])
               if (seed.table_name === oldName)
                 seed.table_name = newName;
-            for (const query of args.queries ?? [])
-              if (query.table_ref === oldName)
-                query.table_ref = newName;
+            for (const query2 of args.queries ?? [])
+              if (query2.table_ref === oldName)
+                query2.table_ref = newName;
             for (const other of args.tables ?? []) {
               for (const fk of other.foreign_keys ?? []) {
-                const ref = fk;
+                const ref2 = fk;
                 for (const field of ["referencedTable", "referenced_table", "references_table"]) {
-                  if (ref[field] === oldName)
-                    ref[field] = newName;
+                  if (ref2[field] === oldName)
+                    ref2[field] = newName;
                 }
               }
             }
@@ -77014,48 +77467,48 @@ function lintAppSpecTool(client) {
         const uniqueDatasourceNames = new Map(datasources.filter((source2) => datasources.filter((other) => other.name === source2.name).length === 1).map((source2) => [source2.name, source2.kind]));
         preflightWarnings.push(...normalizePlanBindingAliases(args, existingSummary, datasourceKinds, uniqueDatasourceNames));
         const resolvedQueryIds = /* @__PURE__ */ new Map();
-        const queries = (args.queries ?? []).map((query, index) => {
-          let datasourceId = query.datasource_id;
-          const hasId = query.datasource_id !== void 0;
-          const hasName = query.datasource_name !== void 0;
+        const queries = (args.queries ?? []).map((query2, index) => {
+          let datasourceId = query2.datasource_id;
+          const hasId = query2.datasource_id !== void 0;
+          const hasName = query2.datasource_name !== void 0;
           if (hasId === hasName) {
-            preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
+            preflightErrors.push(`Query "${query2.name}" must provide exactly one of datasource_id or datasource_name.`);
           } else if (hasName) {
-            const matches2 = datasources.filter((source2) => source2.name === query.datasource_name);
-            if (!query.datasource_name || matches2.length !== 1) {
-              preflightErrors.push(`Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version (found ${matches2.length}). Use the exact name or id returned by list_datasources(version_id).`);
+            const matches2 = datasources.filter((source2) => source2.name === query2.datasource_name);
+            if (!query2.datasource_name || matches2.length !== 1) {
+              preflightErrors.push(`Query "${query2.name}" datasource_name "${query2.datasource_name}" must match exactly one source in this version (found ${matches2.length}). Use the exact name or id returned by list_datasources(version_id).`);
             } else
               datasourceId = matches2[0].id;
           }
           const datasourceKind = datasourceKinds.get(datasourceId ?? "");
           if (args.version_id && !datasourceKind) {
-            preflightErrors.push(`Query "${query.name}" datasource "${datasourceId ?? query.datasource_name ?? ""}" is not available.`);
+            preflightErrors.push(`Query "${query2.name}" datasource "${datasourceId ?? query2.datasource_name ?? ""}" is not available.`);
           }
           if (datasourceId && datasourceKind)
             resolvedQueryIds.set(index, datasourceId);
-          if (query.kind && datasourceKind && query.kind !== datasourceKind) {
-            preflightErrors.push(`Query "${query.name}" kind "${query.kind}" does not match datasource kind "${datasourceKind}".`);
+          if (query2.kind && datasourceKind && query2.kind !== datasourceKind) {
+            preflightErrors.push(`Query "${query2.name}" kind "${query2.kind}" does not match datasource kind "${datasourceKind}".`);
           }
-          const options2 = structuredClone(query.options);
-          if (query.table_ref) {
-            const tableId = tableIds.get(query.table_ref.toLowerCase());
+          const options2 = structuredClone(query2.options);
+          if (query2.table_ref) {
+            const tableId = tableIds.get(query2.table_ref.toLowerCase());
             if (!tableId)
-              preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}". Use the actual table_name from tables[] or list_tables, not a client_ref, alias, or UUID.`);
+              preflightErrors.push(`Query "${query2.name}" has unknown table_ref "${query2.table_ref}". Use the actual table_name from tables[] or list_tables, not a client_ref, alias, or UUID.`);
             else
               options2.table_id = tableId;
-          } else if ((datasourceKind ?? query.kind) === "tooljetdb" && typeof options2.table_id === "string") {
+          } else if ((datasourceKind ?? query2.kind) === "tooljetdb" && typeof options2.table_id === "string") {
             const known = new Set(existingTables.map((table) => table.id));
             if (!known.has(options2.table_id)) {
               const prefix = options2.table_id.slice(0, 8);
               const nearest = existingTables.filter((table) => table.id.startsWith(prefix)).map((table) => `${table.table_name} (${table.id})`);
-              preflightErrors.push(`Query "${query.name}": table_id "${options2.table_id}" is not a table in this workspace` + (nearest.length ? `; the closest id is ${nearest.join(", ")}` : "") + ". Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.");
+              preflightErrors.push(`Query "${query2.name}": table_id "${options2.table_id}" is not a table in this workspace` + (nearest.length ? `; the closest id is ${nearest.join(", ")}` : "") + ". Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.");
             }
           }
           return {
-            clientRef: query.client_ref,
+            clientRef: query2.client_ref,
             datasourceId: datasourceId ?? "",
-            name: query.name,
-            kind: datasourceKind ?? query.kind,
+            name: query2.name,
+            kind: datasourceKind ?? query2.kind,
             options: options2
           };
         });
@@ -77068,7 +77521,7 @@ function lintAppSpecTool(client) {
           schemas.set(`planned-table:${table.table_name}`, columns);
           insertSchemas.set(`planned-table:${table.table_name}`, table.columns.some((column) => column.primaryKey) ? table.columns : [...table.columns, { name: "id", type: "serial", primaryKey: true }]);
         }
-        const updateTableIds = new Set(queries.filter((query) => query.kind === "tooljetdb" && ["update_rows", "create_row", "bulk_upsert_with_primary_key"].includes(String(query.options.operation)) && typeof query.options.table_id === "string").map((query) => query.options.table_id));
+        const updateTableIds = new Set(queries.filter((query2) => query2.kind === "tooljetdb" && ["update_rows", "create_row", "bulk_upsert_with_primary_key"].includes(String(query2.options.operation)) && typeof query2.options.table_id === "string").map((query2) => query2.options.table_id));
         await Promise.all([...updateTableIds].map(async (tableId) => {
           if (schemas.has(tableId))
             return;
@@ -77089,22 +77542,22 @@ function lintAppSpecTool(client) {
             preflightWarnings.push(`Could not inspect write target "${table.table_name}"; required insert columns were not checked and update_rows primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
           }
         }));
-        for (const query of queries) {
-          const tableId = query.options.table_id;
+        for (const query2 of queries) {
+          const tableId = query2.options.table_id;
           const tableName = existingTables.find((table) => table.id === tableId)?.table_name ?? (args.tables ?? []).find((table) => `planned-table:${table.table_name}` === tableId)?.table_name ?? tableId;
-          const warning = updateRowsCompatibilityWarning(query.kind, query.options, tableName, schemas.get(tableId));
+          const warning = updateRowsCompatibilityWarning(query2.kind, query2.options, tableName, schemas.get(tableId));
           if (warning)
-            preflightWarnings.push(`Query "${query.name}": ${warning}`);
-          const arithmetic = arithmeticWriteWarning(query.kind, query.options);
+            preflightWarnings.push(`Query "${query2.name}": ${warning}`);
+          const arithmetic = arithmeticWriteWarning(query2.kind, query2.options);
           if (arithmetic)
-            preflightWarnings.push(`Query "${query.name}": ${arithmetic}`);
-          const bulkWarning = bulkPrimaryKeyWarning(query.kind, query.options, tableName, insertSchemas.get(tableId));
+            preflightWarnings.push(`Query "${query2.name}": ${arithmetic}`);
+          const bulkWarning = bulkPrimaryKeyWarning(query2.kind, query2.options, tableName, insertSchemas.get(tableId));
           if (bulkWarning)
-            (tableId.startsWith("planned-table:") ? preflightErrors : preflightWarnings).push(`Query "${query.name}": ${bulkWarning}`);
-          if (query.kind === "tooljetdb" && insertSchemas.has(tableId)) {
-            const missing = missingCreateRowColumns(query.options, insertSchemas.get(tableId));
+            (tableId.startsWith("planned-table:") ? preflightErrors : preflightWarnings).push(`Query "${query2.name}": ${bulkWarning}`);
+          if (query2.kind === "tooljetdb" && insertSchemas.has(tableId)) {
+            const missing = missingCreateRowColumns(query2.options, insertSchemas.get(tableId));
             if (missing?.length) {
-              const message = `Query "${query.name}": create_row for "${tableName}" omits required non-generated column(s) ${missing.map((name2) => JSON.stringify(name2)).join(", ")}. Seed rows do not supply values for future user-created records. Include the required values in this insert, or use a generated/defaulted key when designing a new table. Never recreate an existing table or change its key merely to fix this query.`;
+              const message = `Query "${query2.name}": create_row for "${tableName}" omits required non-generated column(s) ${missing.map((name2) => JSON.stringify(name2)).join(", ")}. Seed rows do not supply values for future user-created records. Include the required values in this insert, or use a generated/defaulted key when designing a new table. Never recreate an existing table or change its key merely to fix this query.`;
               if (tableId.startsWith("planned-table:"))
                 preflightErrors.push(message);
               else
@@ -77113,7 +77566,7 @@ function lintAppSpecTool(client) {
           }
         }
         const canvasColor = args.app_id ? await literalCanvasColor(client, args.app_id, existingSummary?.version_id ?? args.version_id) : void 0;
-        const lint = lintPlannedApp({
+        const lint2 = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
             columns: table.columns,
@@ -77162,15 +77615,15 @@ function lintAppSpecTool(client) {
           }))
         }, existingSummary, { canvasColor });
         const result = {
-          ...lint,
-          ok: lint.ok && preflightErrors.length === 0,
-          errors: unique3([...preflightErrors, ...lint.errors]),
-          warnings: unique3([...preflightWarnings, ...lint.warnings])
+          ...lint2,
+          ok: lint2.ok && preflightErrors.length === 0,
+          errors: unique3([...preflightErrors, ...lint2.errors]),
+          warnings: unique3([...preflightWarnings, ...lint2.warnings])
         };
         if (!result.ok)
           return ok(result);
-        const resolvedSpec = { ...args, queries: args.queries?.map((query, index) => {
-          const { datasource_name: _name, ...rest } = query;
+        const resolvedSpec = { ...args, queries: args.queries?.map((query2, index) => {
+          const { datasource_name: _name, ...rest } = query2;
           return { ...rest, datasource_id: resolvedQueryIds.get(index) };
         }) };
         const stored = storeAppPlan(resolvedSpec, result, view && fetchedSummary ? replaceFingerprint(fetchedSummary, view) : void 0);
@@ -77228,7 +77681,7 @@ function autoFitHtmlHeights(args) {
 }
 
 // dist/pageReplaceInPlace.js
-import { randomUUID as randomUUID3 } from "node:crypto";
+import { randomUUID as randomUUID4 } from "node:crypto";
 import { readFileSync as readFileSync5 } from "node:fs";
 import { dirname as dirname5, resolve as resolve4 } from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
@@ -77270,22 +77723,22 @@ function mergeLikeServer(target, source2, wholeArrays) {
     return isPlainObject4(source2) ? Object.values(source2) : source2;
   }
   if (Array.isArray(source2)) {
-    const base = Array.isArray(target) ? [...target] : [];
+    const base2 = Array.isArray(target) ? [...target] : [];
     source2.forEach((item, index) => {
-      const merged = mergeLikeServer(base[index], item, wholeArrays);
-      if (merged !== void 0 || !(index in base))
-        base[index] = merged;
+      const merged = mergeLikeServer(base2[index], item, wholeArrays);
+      if (merged !== void 0 || !(index in base2))
+        base2[index] = merged;
     });
-    return base;
+    return base2;
   }
   if (isPlainObject4(source2)) {
-    const base = isPlainObject4(target) ? { ...target } : {};
+    const base2 = isPlainObject4(target) ? { ...target } : {};
     for (const [key4, value2] of Object.entries(source2)) {
-      const merged = mergeLikeServer(base[key4], value2, wholeArrays);
-      if (merged !== void 0 || !(key4 in base))
-        base[key4] = merged;
+      const merged = mergeLikeServer(base2[key4], value2, wholeArrays);
+      if (merged !== void 0 || !(key4 in base2))
+        base2[key4] = merged;
     }
-    return base;
+    return base2;
   }
   return source2 === void 0 ? target : source2;
 }
@@ -77311,7 +77764,7 @@ var sameRect = (planned, stored) => {
     return false;
   return RECT_KEYS.every((key4) => Number(stored[key4]) === Number(planned[key4]));
 };
-function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID3) {
+function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID4) {
   const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name, component]));
   const ids = /* @__PURE__ */ new Map();
   const idOf = /* @__PURE__ */ new Map();
@@ -77378,10 +77831,10 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
 
 // dist/tools/runQuery.js
 var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
-function queryResultBindingHint(query, result) {
+function queryResultBindingHint(query2, result) {
   const data = result.data;
-  const options2 = query.options;
-  if (result.status !== "ok" || query.kind !== "tooljetdb" || options2?.operation !== "sql_execution" || !data || !Array.isArray(data.results))
+  const options2 = query2.options;
+  if (result.status !== "ok" || query2.kind !== "tooljetdb" || options2?.operation !== "sql_execution" || !data || !Array.isArray(data.results))
     return void 0;
   return {
     rows_path: "data.results",
@@ -77426,12 +77879,12 @@ function containsComponentBinding(value2) {
     return Object.values(value2).some(containsComponentBinding);
   return false;
 }
-function datasourceRecovery(query) {
-  if (!query.datasource_settings_url)
+function datasourceRecovery(query2) {
+  if (!query2.datasource_settings_url)
     return void 0;
   return {
     action: "open_datasource_settings",
-    url: query.datasource_settings_url,
+    url: query2.datasource_settings_url,
     instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
   };
 }
@@ -77475,15 +77928,15 @@ function classifyQueryFailure(result) {
     return "schema_name";
   return codes.length ? "query" : "unknown";
 }
-function failureRecovery(query, result) {
-  return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
+function failureRecovery(query2, result) {
+  return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query2) : void 0;
 }
-function failureVerification(query, result) {
-  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
+function failureVerification(query2, result) {
+  if (!query2.data_source_id || classifyQueryFailure(result) !== "unknown")
     return void 0;
   return {
     action: "test_datasource_connection",
-    datasource_id: query.data_source_id,
+    datasource_id: query2.data_source_id,
     instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
   };
 }
@@ -77493,29 +77946,29 @@ function introspectedNames(result) {
     return [];
   return data.map((row) => typeof row === "string" ? row : row?.value ?? row?.label ?? row?.name).filter((value2) => typeof value2 === "string" && value2.length > 0);
 }
-async function availableTableNames(client, query) {
-  if (!query.data_source_id || !query.kind)
+async function availableTableNames(client, query2) {
+  if (!query2.data_source_id || !query2.kind)
     return void 0;
-  const methods = getDatasourceQuerySchema(query.kind)?.introspectionMethods ?? [];
+  const methods = getDatasourceQuerySchema(query2.kind)?.introspectionMethods ?? [];
   const tableMethod = ["listTables", "list_tables", "getTables", "tables"].find((m) => methods.includes(m));
   if (!tableMethod)
     return void 0;
   let methodArgs;
   if (methods.includes("listSchemas")) {
-    const schemas = introspectedNames(await client.invokeDatasourceMethod({ dataSourceId: query.data_source_id, method: "listSchemas" }));
+    const schemas = introspectedNames(await client.invokeDatasourceMethod({ dataSourceId: query2.data_source_id, method: "listSchemas" }));
     const schema = schemas.includes("public") ? "public" : schemas[0];
     if (schema)
       methodArgs = { schema };
   }
   const tableResult = await client.invokeDatasourceMethod({
-    dataSourceId: query.data_source_id,
+    dataSourceId: query2.data_source_id,
     method: tableMethod,
     ...methodArgs ? { args: methodArgs } : {}
   });
   const names = introspectedNames(tableResult);
   return names.length ? names : void 0;
 }
-async function schemaNameHint(client, query, result) {
+async function schemaNameHint(client, query2, result) {
   if (classifyQueryFailure(result) !== "schema_name")
     return void 0;
   const data = result.data;
@@ -77527,7 +77980,7 @@ async function schemaNameHint(client, query, result) {
     guidance: "This is a schema/name error, NOT a connection problem \u2014 the datasource is reachable, so do NOT ask the user to repair or test the connection. A table or column named in the SQL does not exist. Call inspect_datasource_schema (listTables, then listColumns for the target table) to get the EXACT names, correct the query, and retry. Never guess table or column names."
   };
   try {
-    const tables = await availableTableNames(client, query);
+    const tables = await availableTableNames(client, query2);
     if (tables?.length)
       hint.available_tables = tables.slice(0, 50);
   } catch {
@@ -77557,40 +78010,40 @@ function runQueryTool(client) {
     async handler(args) {
       try {
         const warnings = [];
-        const query = await client.getQuery(args.query_id, args.version_id).catch(async (error51) => {
+        const query2 = await client.getQuery(args.query_id, args.version_id).catch(async (error51) => {
           const saved = await client.getQueries(args.version_id);
           const resolution = resolveRef2(saved, args.query_id, "Query", `on version "${args.version_id}"`);
           if (!resolution.ok)
             throw new Error(resolution.error, { cause: error51 });
           return resolution.target;
         });
-        const assessment = assessQueryRead(query);
+        const assessment = assessQueryRead(query2);
         if (!assessment.provenRead || assessment.selectStar) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
+          return fail(new Error(`run_query refused query "${query2.name ?? query2.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
         }
-        const staticBindings = resolveStaticBindings(query.options);
-        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
+        const staticBindings = resolveStaticBindings(query2.options);
+        const bindingRefusal = resolvedReadRefusal(query2, assessment, staticBindings.resolved);
         if (bindingRefusal) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
+          return fail(new Error(`run_query refused query "${query2.name ?? query2.id}" before execution: ${bindingRefusal}`));
         }
-        if (containsComponentBinding(query.options)) {
+        if (containsComponentBinding(query2.options)) {
           warnings.push('Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.');
         }
         if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
+          return fail(new Error(`run_query refused remote read "${query2.name ?? query2.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
         }
         if (assessment.requiresRemoteReadConfirmation) {
           warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
+          return fail(new Error(`run_query refused query "${query2.name ?? query2.id}" before execution: ${query2.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
         }
         let preflight;
         if (assessment.requiresCountPreflight) {
           if (!args.count_query_id) {
-            return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
+            return fail(new Error(`run_query refused query "${query2.name ?? query2.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
           }
-          if (args.count_query_id === args.query_id || args.count_query_id === query.id) {
+          if (args.count_query_id === args.query_id || args.count_query_id === query2.id) {
             return fail(new Error("count_query_id must be a separate count-only query."));
           }
           const countQuery = await client.getQuery(args.count_query_id, args.version_id);
@@ -77619,14 +78072,14 @@ function runQueryTool(client) {
         let result;
         try {
           const bindings = staticBindings;
-          const emptied = emptyViewerOnlyParams(query.options, bindings);
+          const emptied = emptyViewerOnlyParams(query2.options, bindings);
           if (emptied.length)
             warnings.push(emptyParamsNote(emptied));
           const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
           if (liveOnly.length)
             warnings.push(unresolvedNote(liveOnly));
           result = await client.runQuery({
-            queryId: query.id,
+            queryId: query2.id,
             versionId: args.version_id,
             environmentId: args.environment_id,
             resolvedOptions: bindings.resolved
@@ -77640,10 +78093,10 @@ function runQueryTool(client) {
           });
         }
         const failed = result.status === "failed";
-        const bindingHint = queryResultBindingHint(query, result);
-        const recovery = failed ? failureRecovery(query, result) : void 0;
-        const verification = failed ? failureVerification(query, result) : void 0;
-        const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
+        const bindingHint = queryResultBindingHint(query2, result);
+        const recovery = failed ? failureRecovery(query2, result) : void 0;
+        const verification = failed ? failureVerification(query2, result) : void 0;
+        const schemaHint = failed ? await schemaNameHint(client, query2, result) : void 0;
         const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
         if (output.warning)
           warnings.push(output.warning);
@@ -77651,7 +78104,7 @@ function runQueryTool(client) {
           ...output.result,
           // Trusted execution evidence, separate from datasource-supplied data. No credentials,
           // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
+          execution: { query_id: query2.id, datasource_kind: query2.kind, read_only: true },
           ...bindingHint ? { binding_hint: bindingHint } : {},
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
@@ -77667,10 +78120,10 @@ function runQueryTool(client) {
 }
 
 // dist/tools/runQueries.js
-function batchSafeRead(query) {
-  const assessment = assessQueryRead(query);
+function batchSafeRead(query2) {
+  const assessment = assessQueryRead(query2);
   if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
-    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
+    const refusal = resolvedReadRefusal(query2, assessment, resolveStaticBindings(query2.options).resolved);
     return refusal ? { safe: false, reason: refusal } : { safe: true };
   }
   if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
@@ -77707,7 +78160,7 @@ function runQueriesTool(client) {
           return fail(new Error("run_queries query_ids must be unique."));
         }
         const saved = await client.getQueries(args.version_id);
-        const byId = new Map(saved.map((query) => [query.id, query]));
+        const byId = new Map(saved.map((query2) => [query2.id, query2]));
         const resolveWarnings = [];
         const resolveErrors = [];
         args = {
@@ -77736,11 +78189,11 @@ function runQueriesTool(client) {
         }
         const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
         const queries = await Promise.all(args.query_ids.map(async (queryId) => {
-          const query = byId.get(queryId);
-          const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
+          const query2 = byId.get(queryId);
+          const warnings = containsComponentBinding(query2.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
           try {
-            const bindings = resolveStaticBindings(query.options);
-            const emptied = emptyViewerOnlyParams(query.options, bindings);
+            const bindings = resolveStaticBindings(query2.options);
+            const emptied = emptyViewerOnlyParams(query2.options, bindings);
             if (emptied.length)
               warnings.push(emptyParamsNote(emptied));
             const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
@@ -77748,19 +78201,19 @@ function runQueriesTool(client) {
               warnings.push(unresolvedNote(liveOnly));
             const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
             const failed = result.status === "failed";
-            const bindingHint = queryResultBindingHint(query, result);
-            const recovery = failed ? failureRecovery(query, result) : void 0;
-            const verification = failed ? failureVerification(query, result) : void 0;
-            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
+            const bindingHint = queryResultBindingHint(query2, result);
+            const recovery = failed ? failureRecovery(query2, result) : void 0;
+            const verification = failed ? failureVerification(query2, result) : void 0;
+            const schemaHint = failed ? await schemaNameHint(client, query2, result) : void 0;
             const shaped = args.include_data === false ? (() => {
               const { data, ...rest } = result;
               return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
             })() : result;
             return {
               query_id: queryId,
-              ...query.name ? { name: query.name } : {},
+              ...query2.name ? { name: query2.name } : {},
               ...shaped,
-              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
+              execution: { query_id: queryId, datasource_kind: query2.kind, read_only: true },
               ...bindingHint ? { binding_hint: bindingHint } : {},
               ...warnings.length ? { warnings } : {},
               ...recovery ? { recovery } : {},
@@ -77771,7 +78224,7 @@ function runQueriesTool(client) {
             const failure = { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
             return {
               query_id: queryId,
-              ...query.name ? { name: query.name } : {},
+              ...query2.name ? { name: query2.name } : {},
               ...failure,
               ...warnings.length ? { warnings } : {}
             };
@@ -77801,15 +78254,15 @@ async function checkPlanReads(client, params) {
   if (!wanted.length)
     return void 0;
   const saved = await client.getQueries(params.versionId);
-  const byId = new Map(saved.map((query) => [query.id, query]));
+  const byId = new Map(saved.map((query2) => [query2.id, query2]));
   const check2 = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [] };
   const runnable = [];
   for (const id of wanted) {
-    const query = byId.get(id);
-    if (!query)
+    const query2 = byId.get(id);
+    if (!query2)
       continue;
-    const name2 = query.name ?? id;
-    const verdict = batchSafeRead(query);
+    const name2 = query2.name ?? id;
+    const verdict = batchSafeRead(query2);
     if (!verdict.safe) {
       check2.not_run.push({ name: name2, reason: String(verdict.reason ?? "not a proven bounded read").slice(0, REASON_CHARS) });
     } else if (runnable.length >= MAX_READS) {
@@ -77822,13 +78275,13 @@ async function checkPlanReads(client, params) {
     return check2;
   const environmentId = params.environmentId ?? await client.getDevelopmentEnvironmentId();
   await Promise.all(runnable.map(async (id) => {
-    const query = byId.get(id);
-    const name2 = query.name ?? id;
-    const needsViewer = containsComponentBinding(query.options);
+    const query2 = byId.get(id);
+    const name2 = query2.name ?? id;
+    const needsViewer = containsComponentBinding(query2.options);
     const run = async () => {
       try {
-        const bindings = resolveStaticBindings(query.options);
-        emptyViewerOnlyParams(query.options, bindings);
+        const bindings = resolveStaticBindings(query2.options);
+        emptyViewerOnlyParams(query2.options, bindings);
         return await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
       } catch (error51) {
         return { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
@@ -77855,7 +78308,7 @@ async function checkPlanReads(client, params) {
       });
       return;
     }
-    const schemaHint = await schemaNameHint(client, query, result).catch(() => void 0);
+    const schemaHint = await schemaNameHint(client, query2, result).catch(() => void 0);
     check2.failed.push({ name: name2, message, ...schemaHint ? { schema_hint: schemaHint } : {} });
   }));
   return check2;
@@ -77865,12 +78318,12 @@ async function checkPlanReads(client, params) {
 function logicalRef(value2) {
   return value2.client_ref ?? value2.name;
 }
-function sourceTarget(sourceType, ref, pages, queries, components) {
+function sourceTarget(sourceType, ref2, pages, queries, components) {
   if (sourceType === "page")
-    return pages.get(ref);
+    return pages.get(ref2);
   if (sourceType === "data_query")
-    return queries.get(ref);
-  return components.get(ref);
+    return queries.get(ref2);
+  return components.get(ref2);
 }
 function resolveAction2(raw, pages, queries, components) {
   const { target_ref: explicitRef, ...action } = raw;
@@ -77897,10 +78350,10 @@ function resolveAction2(raw, pages, queries, components) {
   return action;
 }
 function refs(values, targets, label2) {
-  return values?.map((ref) => {
-    const target = targets.get(ref);
+  return values?.map((ref2) => {
+    const target = targets.get(ref2);
     if (!target)
-      throw new Error(`${label2} ref "${ref}" does not exist.`);
+      throw new Error(`${label2} ref "${ref2}" does not exist.`);
     return target.id;
   });
 }
@@ -78026,16 +78479,16 @@ function applyAppPhaseTool(client) {
         retargetPending = (replacing?.eventsToRetarget ?? []).map((event) => `"${event.name ?? event.id}"`);
         stage = "prepare queries";
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        const preparedQueryOptions = (spec.queries ?? []).map((query) => {
-          if (!query.datasource_id)
-            throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
-          const kind = datasourceKinds.get(query.datasource_id);
+        const preparedQueryOptions = (spec.queries ?? []).map((query2) => {
+          if (!query2.datasource_id)
+            throw new Error(`Query "${query2.name}" has no pinned datasource_id. Lint the phase again.`);
+          const kind = datasourceKinds.get(query2.datasource_id);
           if (!kind)
-            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
-          const options2 = structuredClone(query.options);
-          if (query.table_ref)
-            options2.table_id = `planned-table:${query.table_ref}`;
-          const prepared = prepareQueryOptionsForWrite(kind, options2, `Query "${query.name}"`);
+            throw new Error(`Query "${query2.name}" datasource "${query2.datasource_id}" is unavailable.`);
+          const options2 = structuredClone(query2.options);
+          if (query2.table_ref)
+            options2.table_id = `planned-table:${query2.table_ref}`;
+          const prepared = prepareQueryOptionsForWrite(kind, options2, `Query "${query2.name}"`);
           if (prepared.errors.length)
             throw new Error(`${prepared.errors.join(" ")} Nothing was written; lint the phase again.`);
           return { kind, options: prepared.options };
@@ -78058,8 +78511,8 @@ function applyAppPhaseTool(client) {
             throw new Error(`Page "${page.name}" already has a component named "${collision.name}".`);
           }
         }
-        const existingQueryNames = new Set(planSummary.queries.map((query) => query.name).filter(Boolean));
-        const queryCollision = (spec.queries ?? []).find((query) => existingQueryNames.has(query.name));
+        const existingQueryNames = new Set(planSummary.queries.map((query2) => query2.name).filter(Boolean));
+        const queryCollision = (spec.queries ?? []).find((query2) => existingQueryNames.has(query2.name));
         if (queryCollision)
           throw new Error(`App already has a query named "${queryCollision.name}".`);
         const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
@@ -78108,11 +78561,11 @@ function applyAppPhaseTool(client) {
             const id = plannedPageMatches.get(logicalRef(page))?.id ?? `planned-page:${logicalRef(page)}`;
             pages.set(logicalRef(page), { id, name: page.name });
           }
-          const queries = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
-          for (const query of spec.queries ?? []) {
-            const target = { id: replacing?.queriesToUpdate.get(query.name) ?? `planned-query:${query.name}`, name: query.name };
-            queries.set(logicalRef(query), target);
-            queries.set(query.name, target);
+          const queries = persistedTargets(planSummary.queries.map((query2) => ({ id: query2.id, name: query2.name ?? query2.id })));
+          for (const query2 of spec.queries ?? []) {
+            const target = { id: replacing?.queriesToUpdate.get(query2.name) ?? `planned-query:${query2.name}`, name: query2.name };
+            queries.set(logicalRef(query2), target);
+            queries.set(query2.name, target);
           }
           const components = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
             id: component.id,
@@ -78180,13 +78633,13 @@ function applyAppPhaseTool(client) {
         }
         const pageTargets = persistedTargets(initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] })));
         for (const page of spec.pages ?? []) {
-          const ref = logicalRef(page);
-          const existing = plannedPageMatches.get(ref);
+          const ref2 = logicalRef(page);
+          const existing = plannedPageMatches.get(ref2);
           const created = createdPages.find((candidate) => candidate.name === page.name);
           const id = existing?.id ?? created?.page_id;
           if (!id)
             throw new Error(`Could not resolve page "${page.name}" after creation.`);
-          pageTargets.set(ref, { id, name: page.name });
+          pageTargets.set(ref2, { id, name: page.name });
         }
         const pageUpdates = (spec.pages ?? []).flatMap((page) => {
           const existing = plannedPageMatches.get(logicalRef(page));
@@ -78204,31 +78657,31 @@ function applyAppPhaseTool(client) {
           await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
         }
         stage = "seed data and create queries";
-        const queryInputs = (spec.queries ?? []).map((query, index) => {
+        const queryInputs = (spec.queries ?? []).map((query2, index) => {
           const { kind, options: options2 } = preparedQueryOptions[index];
-          if (query.table_ref) {
-            const tableId = tableIds.get(query.table_ref.toLowerCase());
+          if (query2.table_ref) {
+            const tableId = tableIds.get(query2.table_ref.toLowerCase());
             if (!tableId)
-              throw new Error(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
+              throw new Error(`Query "${query2.name}" has unknown table_ref "${query2.table_ref}".`);
             options2.table_id = tableId;
           }
-          return { dataSourceId: query.datasource_id, name: query.name, options: options2, kind };
+          return { dataSourceId: query2.datasource_id, name: query2.name, options: options2, kind };
         });
-        const updateInputs = queryInputs.filter((query) => replacing?.queriesToUpdate.has(query.name));
-        const createInputs = queryInputs.filter((query) => !replacing?.queriesToUpdate.has(query.name));
+        const updateInputs = queryInputs.filter((query2) => replacing?.queriesToUpdate.has(query2.name));
+        const createInputs = queryInputs.filter((query2) => !replacing?.queriesToUpdate.has(query2.name));
         const [seedWrite, queryWrite] = await Promise.allSettled([
           spec.seed_data?.length ? client.insertRowsBatch({
             tables: spec.seed_data.map((seed) => ({ tableName: seed.table_name, rows: seed.rows }))
           }) : Promise.resolve([]),
           createInputs.length ? client.createQueries({ versionId: args.version_id, queries: createInputs }) : Promise.resolve([])
         ]);
-        for (const query of updateInputs) {
-          const queryId = replacing.queriesToUpdate.get(query.name);
+        for (const query2 of updateInputs) {
+          const queryId = replacing.queriesToUpdate.get(query2.name);
           const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
-          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
-            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
+          if (current && query2.dataSourceId && current.data_source_id !== query2.dataSourceId) {
+            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query2.dataSourceId });
           }
-          await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
+          await client.updateQuery({ queryId, versionId: args.version_id, options: query2.options });
           applied.queries_updated += 1;
         }
         const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : completedPartialWrites(seedWrite.reason);
@@ -78241,15 +78694,15 @@ function applyAppPhaseTool(client) {
         ];
         if (dataFailures.length)
           throw new Error(dataFailures.join(" | "));
-        const queryTargets = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
+        const queryTargets = persistedTargets(planSummary.queries.map((query2) => ({ id: query2.id, name: query2.name ?? query2.id })));
         let createdIndex = 0;
-        (spec.queries ?? []).forEach((query) => {
-          const updatedId = replacing?.queriesToUpdate.get(query.name);
-          const target = updatedId ? { query_id: updatedId, name: query.name } : createdQueries[createdIndex++];
+        (spec.queries ?? []).forEach((query2) => {
+          const updatedId = replacing?.queriesToUpdate.get(query2.name);
+          const target = updatedId ? { query_id: updatedId, name: query2.name } : createdQueries[createdIndex++];
           if (!target)
-            throw new Error(`Could not resolve query "${query.name}" after creation.`);
-          queryTargets.set(logicalRef(query), { id: target.query_id, name: target.name });
-          queryTargets.set(query.name, { id: target.query_id, name: target.name });
+            throw new Error(`Could not resolve query "${query2.name}" after creation.`);
+          queryTargets.set(logicalRef(query2), { id: target.query_id, name: target.name });
+          queryTargets.set(query2.name, { id: target.query_id, name: target.name });
         });
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
           const prepared = preparedBatches.get(logicalRef(page));
@@ -78389,14 +78842,14 @@ function applyAppPhaseTool(client) {
         const relevantTableNames = /* @__PURE__ */ new Set([
           ...(spec.tables ?? []).map((table) => table.table_name),
           ...(spec.seed_data ?? []).map((seed) => seed.table_name),
-          ...(spec.queries ?? []).flatMap((query) => query.table_ref ? [query.table_ref] : [])
+          ...(spec.queries ?? []).flatMap((query2) => query2.table_ref ? [query2.table_ref] : [])
         ]);
         let readCheck;
         if (input.check_reads !== false) {
           stage = "check the phase's reads";
           try {
-            const written = (spec.queries ?? []).flatMap((query) => {
-              const target = queryTargets.get(logicalRef(query));
+            const written = (spec.queries ?? []).flatMap((query2) => {
+              const target = queryTargets.get(logicalRef(query2));
               return target ? [target.id] : [];
             });
             readCheck = await checkPlanReads(client, { versionId: args.version_id, queryIds: written });
@@ -78468,9 +78921,9 @@ function persistedTargets(values) {
   return targets;
 }
 function selectedRefs(targets, refs2) {
-  return Object.fromEntries(refs2.flatMap((ref) => {
-    const target = targets.get(ref);
-    return target ? [[ref, target.id]] : [];
+  return Object.fromEntries(refs2.flatMap((ref2) => {
+    const target = targets.get(ref2);
+    return target ? [[ref2, target.id]] : [];
   }));
 }
 function withoutExistingEvents(planned, existing) {
@@ -78744,7 +79197,7 @@ function addQueriesTool(client) {
         const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
         const warnings = [];
         const queries = structuredClone(args.queries);
-        if (queries.some((query) => query.client_ref && query.client_ref !== query.name)) {
+        if (queries.some((query2) => query2.client_ref && query2.client_ref !== query2.name)) {
           try {
             const existing = await client.getQueries(args.version_id);
             warnings.push(...normalizePlanBindingAliases({ queries }, { pages: [], queries: existing }, new Map(datasources.map((ds) => [ds.id, ds.kind]))));
@@ -78753,39 +79206,39 @@ function addQueriesTool(client) {
           }
         }
         const validations = [];
-        const resolved = queries.map((query) => {
-          const datasource = datasourceById.get(query.datasource_id);
+        const resolved = queries.map((query2) => {
+          const datasource = datasourceById.get(query2.datasource_id);
           if (!datasource) {
-            throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
+            throw new Error(`Query "${query2.name}": datasource "${query2.datasource_id}" is not available on version "${args.version_id}".`);
           }
-          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query2.options, `Query "${query2.name}"`);
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           warnings.push(...prepared.warnings);
           const { options: options2 } = prepared;
           const validation = prepared.validation;
-          if (query.kind && query.kind !== datasource.kind) {
-            warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
+          if (query2.kind && query2.kind !== datasource.kind) {
+            warnings.push(`Query "${query2.name}": caller kind "${query2.kind}" was ignored; datasource kind is "${datasource.kind}".`);
           }
           validations.push({
-            name: query.name,
+            name: query2.name,
             kind: datasource.kind,
             operation: validation.operation,
             schema_found: validation.schemaFound
           });
-          return { query: { ...query, options: options2 }, kind: datasource.kind };
+          return { query: { ...query2, options: options2 }, kind: datasource.kind };
         });
-        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
-          name: query.name,
+        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query: query2, kind }) => ({
+          name: query2.name,
           kind,
-          options: query.options
+          options: query2.options
         }))));
         const result = await client.createQueries({
           versionId: args.version_id,
-          queries: resolved.map(({ query, kind }) => ({
-            dataSourceId: query.datasource_id,
-            name: query.name,
-            options: query.options,
+          queries: resolved.map(({ query: query2, kind }) => ({
+            dataSourceId: query2.datasource_id,
+            name: query2.name,
+            options: query2.options,
             kind
           }))
         });
@@ -79118,13 +79571,13 @@ function updateComponentsTool(client) {
               }
             }
           }
-          const definition = update.definition;
+          const definition2 = update.definition;
           const next = {
             id: current.id,
             name: update.name ?? current.name ?? current.id,
             type: current.type,
-            properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
-            styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
+            properties: { ...current.properties ?? {}, ...definition2?.properties ?? {} },
+            styles: { ...current.styles ?? {}, ...definition2?.styles ?? {} },
             layouts: current.layouts,
             parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
             slotName
@@ -79134,8 +79587,8 @@ function updateComponentsTool(client) {
             type: next.type ?? current.type ?? "",
             properties: next.properties ?? {},
             styles: next.styles,
-            validation: definition?.validation,
-            others: { ...current.others ?? {}, ...definition?.others ?? {} },
+            validation: definition2?.validation,
+            others: { ...current.others ?? {}, ...definition2?.others ?? {} },
             layouts: next.layouts,
             parent: next.parent
           });
@@ -79151,7 +79604,7 @@ function updateComponentsTool(client) {
           if (update.definition)
             changedComponents.push({ before: current, after: normalizedNext });
           placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...onlyTouchedBraceNotes(normalized2.warnings, definition));
+          warnings.push(...onlyTouchedBraceNotes(normalized2.warnings, definition2));
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized2.patch).length) {
             normalizedDefinition = { ...update.definition };
@@ -79178,7 +79631,7 @@ function updateComponentsTool(client) {
           warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
         }
         const allComponents = [...projected.values()];
-        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
+        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
         if (placementChanged) {
           errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
         }
@@ -79205,10 +79658,10 @@ function updateComponentsTool(client) {
     }
   };
 }
-function onlyTouchedBraceNotes(warnings, definition) {
+function onlyTouchedBraceNotes(warnings, definition2) {
   const touched = /* @__PURE__ */ new Set([
-    ...Object.keys(definition?.properties ?? {}).map((key4) => `properties.${key4}`),
-    ...Object.keys(definition?.styles ?? {}).map((key4) => `styles.${key4}`)
+    ...Object.keys(definition2?.properties ?? {}).map((key4) => `properties.${key4}`),
+    ...Object.keys(definition2?.styles ?? {}).map((key4) => `styles.${key4}`)
   ]);
   return warnings.flatMap((warning) => {
     const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
@@ -79267,9 +79720,9 @@ function deleteComponentsTool(client) {
                 references.push(`component ${component.name ?? component.id} binds components.${target.name}`);
               }
             }
-            for (const query of before.queries) {
-              if (containsNamedBinding(query.options, "components", target.name)) {
-                references.push(`query ${query.name ?? query.id} binds components.${target.name}`);
+            for (const query2 of before.queries) {
+              if (containsNamedBinding(query2.options, "components", target.name)) {
+                references.push(`query ${query2.name ?? query2.id} binds components.${target.name}`);
               }
             }
           }
@@ -79422,7 +79875,7 @@ function updateLayoutTool(client) {
         });
         const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
         const changed = projected.filter((component) => component.id && changedIds.has(component.id));
-        const introducedForChanged = (lint) => changed.flatMap((component) => introducedLintFindings(lint([components.get(component.id)]), lint([component])));
+        const introducedForChanged = (lint2) => changed.flatMap((component) => introducedLintFindings(lint2([components.get(component.id)]), lint2([component])));
         const errors = [
           ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
           ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
@@ -79597,7 +80050,7 @@ function idByName(items) {
   for (const item of items)
     if (item.name)
       byName.set(item.name, [...byName.get(item.name) ?? [], item.id]);
-  return (ref) => ids.has(ref) ? ref : byName.get(ref)?.length === 1 ? byName.get(ref)[0] : ref;
+  return (ref2) => ids.has(ref2) ? ref2 : byName.get(ref2)?.length === 1 ? byName.get(ref2)[0] : ref2;
 }
 
 // dist/tools/updateQuery.js
@@ -79639,10 +80092,10 @@ function updateQueryTool(client) {
             return fail(new Error(resolution.error));
           if (resolution.warning)
             resolutionWarnings.push(resolution.warning);
-          const query = resolution.target;
-          args = { ...args, query_id: query.id };
-          currentDatasourceId = query.data_source_id;
-          kind = query.kind ?? kind;
+          const query2 = resolution.target;
+          args = { ...args, query_id: query2.id };
+          currentDatasourceId = query2.data_source_id;
+          kind = query2.kind ?? kind;
         }
         if (args.datasource_id) {
           if (!currentDatasourceId) {
@@ -79727,26 +80180,26 @@ function deleteQueryTool(client) {
         const queryResolution = resolveRef2(before.queries, args.query_id, "Query", `in app "${args.app_id}"`);
         if (!queryResolution.ok)
           throw new Error(`delete_query: ${queryResolution.error}`);
-        const query = queryResolution.target;
-        args = { ...args, query_id: query.id };
+        const query2 = queryResolution.target;
+        args = { ...args, query_id: query2.id };
         const references = [];
-        if (query.name) {
+        if (query2.name) {
           for (const component of before.pages.flatMap((page) => page.components)) {
-            if (containsNamedBinding([component.properties, component.styles, component.others], "queries", query.name)) {
-              references.push(`component ${component.name ?? component.id} binds queries.${query.name}`);
+            if (containsNamedBinding([component.properties, component.styles, component.others], "queries", query2.name)) {
+              references.push(`component ${component.name ?? component.id} binds queries.${query2.name}`);
             }
           }
           for (const dependent of before.queries) {
-            if (dependent.id !== query.id && containsNamedBinding(dependent.options, "queries", query.name)) {
-              references.push(`query ${dependent.name ?? dependent.id} binds queries.${query.name}`);
+            if (dependent.id !== query2.id && containsNamedBinding(dependent.options, "queries", query2.name)) {
+              references.push(`query ${dependent.name ?? dependent.id} binds queries.${query2.name}`);
             }
           }
         }
         for (const event of before.events) {
-          if (event.sourceId === query.id)
+          if (event.sourceId === query2.id)
             continue;
-          if (containsExactValue(event.event, query.id) || (query.name ? containsNamedBinding(event.event, "queries", query.name) : false)) {
-            references.push(`event ${event.name ?? event.id} targets ${query.name ?? query.id}`);
+          if (containsExactValue(event.event, query2.id) || (query2.name ? containsNamedBinding(event.event, "queries", query2.name) : false)) {
+            references.push(`event ${event.name ?? event.id} targets ${query2.name ?? query2.id}`);
           }
         }
         if (references.length) {
@@ -79754,18 +80207,18 @@ function deleteQueryTool(client) {
         }
         const result = await client.deleteQuery({ queryId: args.query_id, versionId: args.version_id });
         const after = await client.getAppSummary(args.app_id);
-        if (after.queries.some((candidate) => candidate.id === query.id)) {
-          throw new Error(`delete_query: ToolJet returned success but query ${query.id} still exists.`);
+        if (after.queries.some((candidate) => candidate.id === query2.id)) {
+          throw new Error(`delete_query: ToolJet returned success but query ${query2.id} still exists.`);
         }
-        const danglingSourceEvents = after.events.filter((event) => event.sourceId === query.id);
+        const danglingSourceEvents = after.events.filter((event) => event.sourceId === query2.id);
         if (danglingSourceEvents.length) {
           throw new Error(`delete_query: query was removed but lifecycle events remain: ` + danglingSourceEvents.map((event) => event.name ?? event.id).join(", ") + ". Delete those events before further authoring.");
         }
-        const sourceEventsDeleted = before.events.filter((event) => event.sourceId === query.id).length;
+        const sourceEventsDeleted = before.events.filter((event) => event.sourceId === query2.id).length;
         return ok({
           ...result,
-          query_id: query.id,
-          query_name: query.name,
+          query_id: query2.id,
+          query_name: query2.name,
           source_events_deleted: sourceEventsDeleted
         });
       } catch (err) {
@@ -79914,7 +80367,7 @@ function deleteEventTool(client) {
 }
 
 // dist/runtimeFreshness.js
-import { createHash } from "node:crypto";
+import { createHash as createHash2 } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.7.0";
@@ -79923,7 +80376,7 @@ function snapshot(path) {
     const stat = statSync(path);
     const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash("sha256").update(source2).digest("hex").slice(0, 12),
+      buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -79997,9 +80450,9 @@ function findResource(summary, resourceType, resourceId) {
     if (page)
       return { type: resourceType, id: page.id, name: page.name };
   } else if (resourceType === "query") {
-    const query = summary.queries.find((candidate) => candidate.id === resourceId);
-    if (query)
-      return { type: resourceType, id: query.id, name: query.name };
+    const query2 = summary.queries.find((candidate) => candidate.id === resourceId);
+    if (query2)
+      return { type: resourceType, id: query2.id, name: query2.name };
   } else {
     for (const page of summary.pages) {
       const component = page.components.find((candidate) => candidate.id === resourceId);
@@ -80159,7 +80612,7 @@ function listWorkspaceUsersTool(client) {
     }
   };
 }
-function required2(value2, label2) {
+function required3(value2, label2) {
   if (!value2)
     throw new Error(`${label2} is required for this action.`);
   return value2;
@@ -80205,7 +80658,7 @@ function manageWorkspaceUsersTool(client) {
         }
         if (args.action === "invite") {
           await client.inviteWorkspaceUser({
-            email: required2(args.email, "email"),
+            email: required3(args.email, "email"),
             role: args.role ?? "end-user",
             firstName: args.first_name,
             lastName: args.last_name,
@@ -80213,7 +80666,7 @@ function manageWorkspaceUsersTool(client) {
           });
           return ok({ invited: true, email: args.email });
         }
-        const organizationUserId = required2(args.organization_user_id, "organization_user_id");
+        const organizationUserId = required3(args.organization_user_id, "organization_user_id");
         if (args.action === "archive" || args.action === "unarchive") {
           await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
           return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
@@ -80240,6 +80693,568 @@ function manageWorkspaceUsersTool(client) {
   };
 }
 
+// dist/tools/getWorkflowNodeCatalog.js
+function getWorkflowNodeCatalogTool(_client) {
+  return {
+    name: "get_workflow_node_catalog",
+    title: "Get Workflow Node Catalog",
+    description: "Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: {},
+    async handler() {
+      try {
+        return ok({ ...nodeCatalog, spec_schema: external_exports.toJSONSchema(specSchema) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/capabilitySchema.js
+var capabilityRequestSchema = external_exports.object({
+  version_id: external_exports.string().uuid()
+}).strict();
+var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
+var workflowCapabilityReportSchema = external_exports.object({
+  version_id: external_exports.string().uuid(),
+  authorable_node_types: external_exports.array(external_exports.string()),
+  datasources: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    name: external_exports.string(),
+    kind: external_exports.string(),
+    capabilities: external_exports.array(datasourceCapabilitySchema)
+  }).strict())
+}).strict();
+
+// dist/workflows/capabilities.js
+var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
+var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
+function datasourceCapabilities(kind) {
+  const capabilities = ["query"];
+  if (AI_DATASOURCE_KINDS.has(kind))
+    capabilities.push("ai-model");
+  if (EMAIL_DATASOURCE_KINDS.has(kind))
+    capabilities.push("email");
+  return capabilities;
+}
+async function getWorkflowCapabilities(client, input) {
+  const { version_id } = capabilityRequestSchema.parse(input);
+  const datasources = await client.workflows.listDatasources(version_id);
+  return workflowCapabilityReportSchema.parse({
+    version_id,
+    authorable_node_types: nodeCatalog.nodes.map((node2) => node2.type),
+    datasources: datasources.map((datasource) => ({
+      id: datasource.id,
+      name: datasource.name,
+      kind: datasource.kind,
+      capabilities: datasourceCapabilities(datasource.kind)
+    }))
+  });
+}
+
+// dist/tools/getWorkflowCapabilities.js
+function getWorkflowCapabilitiesTool(client) {
+  return {
+    name: "get_workflow_capabilities",
+    title: "Get Workflow Capabilities",
+    description: "List authorable workflow node types and classify configured datasource instances for one workflow version: ordinary query, AI-model attachment, or email. This is not a datasource option contract. After choosing a datasource, call get_datasource_query_schema with datasource_id + version_id + operation for its exact query fields, allowed operations, response shape, and introspection methods. Does not inspect credentials, create resources, or execute queries.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: capabilityRequestSchema.shape,
+    async handler(args) {
+      try {
+        return ok(await getWorkflowCapabilities(client, capabilityRequestSchema.parse(args)));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/toolSchemas.js
+var workflowIdSchema = external_exports.string().uuid();
+var workflowTargetShape = {
+  workflow_id: workflowIdSchema,
+  version_id: workflowIdSchema
+};
+var listWorkflowsInputSchema = external_exports.object({
+  page: external_exports.number().int().min(1).default(1),
+  search: external_exports.string().default("")
+}).strict();
+var createWorkflowInputSchema = external_exports.object({
+  name: external_exports.string().trim().min(1).max(100).regex(/^[^/]+$/)
+}).strict();
+var getWorkflowInputSchema = external_exports.object({
+  workflow_id: workflowIdSchema,
+  version_id: workflowIdSchema.optional()
+}).strict();
+var lintWorkflowSpecInputSchema = external_exports.object({
+  ...workflowTargetShape,
+  spec: specSchema,
+  allow_draft: external_exports.boolean().default(false)
+}).strict();
+var applyWorkflowSpecInputSchema = external_exports.object({
+  plan_token: workflowIdSchema
+}).strict();
+var deleteWorkflowNodeInputSchema = external_exports.object({
+  ...workflowTargetShape,
+  node_id: workflowIdSchema
+}).strict();
+var validateWorkflowInputSchema = external_exports.object(workflowTargetShape).strict();
+var runWorkflowInputSchema = external_exports.object({
+  ...workflowTargetShape,
+  environment_id: workflowIdSchema,
+  params: external_exports.record(external_exports.string(), external_exports.unknown()).default({})
+}).strict();
+var getWorkflowExecutionInputSchema = external_exports.object({
+  execution_id: workflowIdSchema,
+  page: external_exports.number().int().min(1).default(1),
+  per_page: external_exports.number().int().min(1).max(50).default(20)
+}).strict();
+
+// dist/tools/listWorkflows.js
+function listWorkflowsTool(client) {
+  return {
+    name: "list_workflows",
+    title: "List Workflows",
+    description: "List workflows in the active workspace.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: listWorkflowsInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = listWorkflowsInputSchema.parse(args);
+        return ok(await client.workflows.list(input.page, input.search));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/createWorkflow.js
+function createWorkflowTool(client) {
+  return {
+    name: "create_workflow",
+    title: "Create Workflow",
+    description: "Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    inputSchema: createWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = createWorkflowInputSchema.parse(args);
+        return ok(await client.workflows.create(input.name));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/getWorkflow.js
+function getWorkflowTool(client) {
+  return {
+    name: "get_workflow",
+    title: "Get Workflow",
+    description: "Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: getWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = getWorkflowInputSchema.parse(args);
+        const snapshot2 = await client.workflows.get(input.workflow_id, input.version_id);
+        return ok({ ...snapshot2, queries: await client.workflows.getQueries(snapshot2.version_id) });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/planner.js
+import { randomUUID as randomUUID5 } from "node:crypto";
+import { isDeepStrictEqual as isDeepStrictEqual2 } from "node:util";
+
+// dist/workflows/readiness.js
+function workflowReadiness(graph, structuralErrors) {
+  if (structuralErrors.length)
+    return { runtime_readiness: "blocked", blockers: structuralErrors };
+  const adjacency = new Map(graph.nodes.map((node2) => [node2.id, []]));
+  for (const edge of controlFlowEdges(graph))
+    adjacency.get(edge.source)?.push(edge.target);
+  const reachable = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    for (const target of adjacency.get(id) ?? [])
+      visit(target);
+  };
+  for (const start of graph.nodes.filter((node2) => node2.type === "input" && node2.data.nodeType === "start"))
+    visit(start.id);
+  const blockers = [];
+  for (const agent of graph.nodes.filter((node2) => node2.type === "agent" && reachable.has(node2.id))) {
+    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
+    const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
+    const definitionId = child?.data.idOnDefinition;
+    const mapping = typeof definitionId === "string" && graph.queries.find((query2) => query2.idOnDefinition === definitionId);
+    if (!attachment || !child || !mapping)
+      blockers.push({
+        code: "agent_missing_model",
+        path: `nodes.${agent.id}.model`,
+        message: "Reachable Agent requires one configured AI model attachment."
+      });
+  }
+  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+}
+
+// dist/workflows/planner.js
+var plans2 = /* @__PURE__ */ new Map();
+var TTL = 30 * 6e4;
+function prune2() {
+  for (const [key4, plan] of plans2)
+    if (plan.expires <= Date.now())
+      plans2.delete(key4);
+}
+async function prepare(client, workflowId, versionId, spec, ids) {
+  const snapshot2 = await client.get(workflowId, versionId);
+  if (!snapshot2.editable)
+    throw new Error("Only editable draft workflow versions can be changed.");
+  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
+  const compiled = compileGraph(snapshot2.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
+  const warnings = [];
+  const writes = [];
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node2) => node2.data.idOnDefinition).filter((value2) => typeof value2 === "string"));
+  const removedDefinitionIds = new Set(snapshot2.definition.nodes.map((node2) => node2.data.idOnDefinition).filter((value2) => typeof value2 === "string" && !finalDefinitionIds.has(value2)));
+  const deletions = [];
+  for (const mapping of snapshot2.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+      continue;
+    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
+      continue;
+    if (deletions.some((deletion) => deletion.query_id === mapping.id))
+      continue;
+    const node2 = snapshot2.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node2)
+      continue;
+    if (!queries.some((query2) => query2.id === mapping.id))
+      throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node2.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
+  const claimedNames = /* @__PURE__ */ new Set();
+  for (const item of compiled.query_nodes) {
+    const existingMapping = snapshot2.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
+    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
+    if (existingMapping && !oldQuery)
+      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
+    if (oldQuery && snapshot2.definition.nodes.filter((n) => snapshot2.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
+      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
+    const input = item.role === "workflow-node" ? item.spec : void 0;
+    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const label2 = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
+    if (!datasource)
+      throw new Error(`Datasource unavailable for ${label2}.`);
+    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
+      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
+    const kind = datasource.kind;
+    const dataSourceId = datasource.id;
+    const name2 = item.role === "agent-model" ? item.name : input.name;
+    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
+      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
+      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
+    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name2}`);
+    claimedNames.add(name2);
+    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
+    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (item.role === "workflow-node" && kind === "runjs")
+      assertWorkflowJavaScript(options2.code, label2);
+    if (item.role === "workflow-node") {
+      const validation2 = validateQueryOptions(kind, options2, "workflow");
+      if (validation2.errors.length)
+        throw new Error(issueMessages(validation2.errors).join(" "));
+      warnings.push(...issueMessages(validation2.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options: options2 });
+    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
+      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
+  const validation = validateGraph(compiled.graph, queryIds);
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot: snapshot2, compiled, writes, deletions, validation, readiness, warnings };
+}
+async function lint(client, workflowId, versionId, spec, allowDraft = false) {
+  const prepared = await prepare(client, workflowId, versionId, spec);
+  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
+    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
+  prune2();
+  while (plans2.size >= 200)
+    plans2.delete(plans2.keys().next().value);
+  const token = randomUUID5();
+  plans2.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+  return {
+    plan_token: token,
+    expires_in_seconds: TTL / 1e3,
+    node_ids: prepared.compiled.node_ids,
+    edge_ids: prepared.compiled.edge_ids,
+    ...prepared.validation,
+    ...prepared.readiness,
+    query_warnings: prepared.warnings,
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
+  };
+}
+async function apply(client, token) {
+  prune2();
+  const scope = await client.planScope();
+  const plan = plans2.get(token);
+  if (!plan || plan.scope !== scope)
+    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
+  plans2.delete(token);
+  const { compiled, snapshot: snapshot2, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  if (validation.errors.length)
+    throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
+    throw new Error(JSON.stringify(readiness.blockers));
+  const completed = [];
+  let phase = "queries";
+  let attemptedQuery;
+  try {
+    for (const write of writes) {
+      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
+      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
+      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
+      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
+      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
+      attemptedQuery = void 0;
+    }
+    phase = "save";
+    await client.save(snapshot2, compiled.graph);
+    phase = "readback";
+    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
+    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
+    if (!isDeepStrictEqual2(saved.definition, compiled.graph))
+      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
+    for (const write of writes) {
+      const id = completed.find((q) => q.node_id === write.node_id).query_id;
+      const persisted = queries.find((q) => q.id === id);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual2(persisted.options, write.options))
+        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
+    }
+    if (validation2.errors.length)
+      throw new Error(JSON.stringify(validation2.errors));
+    phase = "query_deletions";
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = void 0;
+    }
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
+  } catch (error51) {
+    return {
+      failed: true,
+      workflow_id: plan.workflowId,
+      version_id: plan.versionId,
+      phase,
+      completed,
+      attempted_query: attemptedQuery,
+      node_ids: compiled.node_ids,
+      edge_ids: compiled.edge_ids,
+      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
+      error: error51 instanceof Error ? error51.message : String(error51),
+      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
+    };
+  }
+}
+async function deleteNode(client, workflowId, versionId, nodeId) {
+  const snapshot2 = await client.get(workflowId, versionId);
+  if (!snapshot2.definition.nodes.some((node2) => node2.id === nodeId))
+    throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot2.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec, true);
+  if (!("plan_token" in result))
+    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
+  return apply(client, result.plan_token);
+}
+
+// dist/tools/lintWorkflowSpec.js
+function lintWorkflowSpecTool(client) {
+  return {
+    name: "lint_workflow_spec",
+    title: "Lint Workflow Spec",
+    description: "Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: lintWorkflowSpecInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = lintWorkflowSpecInputSchema.parse(args);
+        return ok(await lint(client.workflows, input.workflow_id, input.version_id, input.spec, input.allow_draft));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/applyWorkflowSpec.js
+function applyWorkflowSpecTool(client) {
+  return {
+    name: "apply_workflow_spec",
+    title: "Apply Workflow Spec",
+    description: "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    inputSchema: applyWorkflowSpecInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = applyWorkflowSpecInputSchema.parse(args);
+        const result = await apply(client.workflows, input.plan_token);
+        return result && typeof result === "object" && "failed" in result && result.failed ? { ...ok(result), isError: true } : ok(result);
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/deleteWorkflowNode.js
+function deleteWorkflowNodeTool(client) {
+  return {
+    name: "delete_workflow_node",
+    title: "Delete Workflow Node",
+    description: "Delete one workflow node and all incident edges. Saves the graph before deleting a query only when no remaining mapping references it. Incomplete drafts can be cleaned up; remaining runtime blockers are returned. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    inputSchema: deleteWorkflowNodeInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = deleteWorkflowNodeInputSchema.parse(args);
+        const result = await deleteNode(client.workflows, input.workflow_id, input.version_id, input.node_id);
+        return result && typeof result === "object" && "failed" in result && result.failed ? { ...ok(result), isError: true } : ok(result);
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/validateWorkflow.js
+function validateWorkflowTool(client) {
+  return {
+    name: "validate_workflow",
+    title: "Validate Workflow",
+    description: "Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: validateWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = validateWorkflowInputSchema.parse(args);
+        const snapshot2 = await client.workflows.get(input.workflow_id, input.version_id);
+        const queries = await client.workflows.getQueries(input.version_id);
+        return ok({
+          workflow_id: input.workflow_id,
+          version_id: input.version_id,
+          ...validateGraph(snapshot2.definition, new Set(queries.map((query2) => query2.id)))
+        });
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/workflows/executionResult.js
+var MAX_BYTES = 6e4;
+var size = (value2) => Buffer.byteLength(JSON.stringify(value2) ?? "", "utf8");
+var record6 = (value2) => value2 && typeof value2 === "object" && !Array.isArray(value2) ? value2 : {};
+function bounded(value2, budget) {
+  const bytes = size(value2);
+  return bytes <= budget ? value2 : { truncated: true, bytes, message: "Payload omitted. Open the workflow in ToolJet to inspect this value." };
+}
+function boundWorkflowExecutionResult(value2) {
+  if (size(value2) <= MAX_BYTES)
+    return value2;
+  const data = record6(value2);
+  if (data.execution_id !== void 0 && data.nodes !== void 0) {
+    const status = record6(data.status);
+    const page = record6(data.nodes);
+    const rows = Array.isArray(page.data) ? page.data : [];
+    const budget = Math.floor(4e4 / Math.max(rows.length, 1));
+    const nodes = rows.map((row) => {
+      if (size(row) <= budget)
+        return row;
+      const node2 = record6(row);
+      return {
+        id: node2.id,
+        idOnWorkflowDefinition: node2.idOnWorkflowDefinition,
+        executed: node2.executed,
+        status: node2.status,
+        truncated: true,
+        result: bounded(node2.result, Math.floor(budget / 2)),
+        message: "Large node details omitted. Open the workflow in ToolJet for the full payload."
+      };
+    });
+    const result = {
+      execution_id: data.execution_id,
+      truncated: true,
+      status: { status: status.status, logs: bounded(status.logs, 8e3) },
+      page: data.page,
+      per_page: data.per_page,
+      nodes: { data: nodes, page: page.page, per_page: page.per_page, total: page.total, total_pages: page.total_pages }
+    };
+    if (size(result) <= MAX_BYTES)
+      return result;
+    return { ...result, nodes: { ...result.nodes, data: bounded(nodes, 4e4) } };
+  }
+  const execution = record6(data.workflowExecution);
+  return {
+    truncated: true,
+    execution_id: data.execution_id ?? execution.id,
+    status: execution.status,
+    executed: execution.executed,
+    message: "Result exceeds 60 KB. Use get_workflow_execution for status and paginated node results, or open the workflow in ToolJet."
+  };
+}
+
+// dist/tools/runWorkflow.js
+function runWorkflowTool(client) {
+  return {
+    name: "run_workflow",
+    title: "Run Workflow",
+    description: "Execute the explicitly selected workflow version/environment with real effects, including datasource writes and arbitrary code. Use only when execution is authorized. Never automatically retry a timeout: execution may have completed. Does not enable disabled workflows.",
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    inputSchema: runWorkflowInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = runWorkflowInputSchema.parse(args);
+        const result = await client.workflows.run(input.workflow_id, input.version_id, input.environment_id, input.params);
+        return ok(boundWorkflowExecutionResult(result));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
+// dist/tools/getWorkflowExecution.js
+function getWorkflowExecutionTool(client) {
+  return {
+    name: "get_workflow_execution",
+    title: "Get Workflow Execution",
+    description: "Inspect execution status and a bounded page of node results. Does not start or retry executions.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    inputSchema: getWorkflowExecutionInputSchema.shape,
+    async handler(args) {
+      try {
+        const input = getWorkflowExecutionInputSchema.parse(args);
+        const result = await client.workflows.execution(input.execution_id, input.page, input.per_page);
+        return ok(boundWorkflowExecutionResult(result));
+      } catch (error51) {
+        return fail(error51);
+      }
+    }
+  };
+}
+
 // dist/tools/index.js
 var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "create_table",
@@ -80253,6 +81268,17 @@ function includeLegacySingularCreateTools() {
 }
 function registerTools(server, client, runtime = runtimeFreshness) {
   const tools = [
+    getWorkflowNodeCatalogTool(client),
+    getWorkflowCapabilitiesTool(client),
+    listWorkflowsTool(client),
+    createWorkflowTool(client),
+    getWorkflowTool(client),
+    lintWorkflowSpecTool(client),
+    applyWorkflowSpecTool(client),
+    deleteWorkflowNodeTool(client),
+    validateWorkflowTool(client),
+    runWorkflowTool(client),
+    getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
@@ -80331,7 +81357,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
 }
 
 // dist/catalogResources.js
-import { createHash as createHash2 } from "node:crypto";
+import { createHash as createHash3 } from "node:crypto";
 import { readFileSync as readFileSync6 } from "node:fs";
 import { dirname as dirname6, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath6 } from "node:url";
@@ -80371,12 +81397,12 @@ var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
 function readData(resource) {
   const bytes = readFileSync6(resolve5(dataDir, resource.file));
-  const dataVersion = createHash2("sha256").update(bytes).digest("hex").slice(0, 12);
+  const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
 }
 function catalogVersionOf(parts) {
-  const hash2 = createHash2("sha256");
+  const hash2 = createHash3("sha256");
   for (const part of parts) {
     hash2.update(`${part.file}
 ${part.bytes.length}

@@ -15,7 +15,7 @@ function fixtureClient() {
   } }] };
   const fetch = vi.fn().mockImplementation(async () => new Response(JSON.stringify(raw), { status: 200 }));
   const auth = { authedFetch: fetch } as unknown as Auth;
-  return { client: createClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:8082', email: 'fixture@example.invalid', password: 'fixture' }), fetch };
+  return { client: createClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:8082', pat: 'fixture-pat' }), fetch };
 }
 
 describe('runtime inspection contracts from Luna benchmark failures', () => {

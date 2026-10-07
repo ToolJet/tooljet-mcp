@@ -545,7 +545,7 @@ function influxTransformWarnings(kind: string, options: Record<string, unknown>)
 /** Fields naming what a query acts on. */
 const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
 
-export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
+export function validateQueryOptions(kind: string, options: Record<string, unknown>, executionContext: 'app' | 'workflow' = 'app'): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   errors.push(...queryToggleIssues(options));
   if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
@@ -558,7 +558,7 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
   const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
   if (kind === 'mongodb') errors.push(...mongoArrayReplacementIssues(options));
-  if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
+  if (executionContext === 'app' && kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
     const syntax = runjsSyntaxError(options.code);
     if (syntax) {
       errors.push({

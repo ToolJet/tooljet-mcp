@@ -54,11 +54,12 @@ Detail: `references/qa.md`.
 
 ## Datasource repair handoff
 
-If an expected source is absent or a query fails to connect, use the returned `datasources_url`, `settings_url`, or `recovery.url`: open it in the built-in browser when available; otherwise send the clickable link. Never enter credentials, authorize OAuth, test, or save the connection. Check the source against `list_datasources`'s `connectable`: in it but unconnected means stop and hand off; absent means no ToolJet connector, so say so and name a REST API datasource. Sample data only on request. See `references/datasources.md`.
+If a source is absent or a query fails, use its `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If `list_datasources` marks it `connectable`, stop and hand off; if absent, report no connector and suggest REST API. Sample data only on request. See `references/datasources.md`.
 
 ## Load only the references the phase needs
 
 - `references/workflows.md` — tool selection, plan/apply, repair, reuse, deletion, silent-failure guardrails, FX visibility.
+- `references/workflow-builder.md` — workflow discovery, authoring, validation, and execution safety; only for workflow requests.
 - `references/ui-layout.md` — page design, canvas geometry, nested layouts, charts, and visual defaults.
 - `references/tables.md` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - `references/forms.md` — generated-vs-standalone forms, validation, uploads, and modal geometry.
