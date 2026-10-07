@@ -61878,6 +61878,17 @@ function bindingReferences(value2) {
   return refs2;
 }
 
+// dist/componentName.js
+var COMPONENT_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+var COMPONENT_NAME_RULE = "Component names must be non-empty and contain only ASCII letters, numbers, underscores, or hyphens. Use camelCase for multi-word names; put display text in component properties.";
+var componentNameSchema = external_exports.string().regex(COMPONENT_NAME_PATTERN, COMPONENT_NAME_RULE).describe(COMPONENT_NAME_RULE);
+function componentNameError(name2) {
+  if (typeof name2 !== "string" || !COMPONENT_NAME_PATTERN.test(name2)) {
+    return `Invalid component name ${JSON.stringify(name2)}. ${COMPONENT_NAME_RULE}`;
+  }
+  return void 0;
+}
+
 // dist/editPrefillContract.js
 var record2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : {};
 var unwrap = (v) => Object.hasOwn(record2(v), "value") ? record2(v).value : v;
@@ -64650,8 +64661,52 @@ function lintRenderedGeometryBlocking(components) {
     ...lintListviewChildren(components)
   ];
 }
+function lintNestedContainerWidths(components) {
+  const warnings = [];
+  const refs2 = new Map(components.flatMap((component) => {
+    const key4 = componentKey(component);
+    return key4 ? [[key4, component]] : [];
+  }));
+  const contentTypes = /* @__PURE__ */ new Set(["Text", "Html", "Table", "Chart", ...FORM_INPUT_TYPES]);
+  for (const child of components) {
+    const placement = parentPlacement(child);
+    const parent = placement && refs2.get(placement.parentId);
+    if (!parent || !["Container", "Form"].includes(parent.type ?? "") || !contentTypes.has(child.type ?? ""))
+      continue;
+    const findings = /* @__PURE__ */ new Map();
+    for (const resolution of ["desktop", "mobile"]) {
+      const rect2 = child.layouts?.[resolution] ?? child.layout;
+      const parentRect = parent.layouts?.[resolution] ?? parent.layout;
+      const parentWidth = parentRect?.width;
+      if (!rect2 || typeof parentWidth !== "number" || parentWidth <= 0 || parentWidth > 21 || typeof rect2.width !== "number" || rect2.width <= 0 || typeof rect2.left !== "number" || rect2.left < 0 || rect2.left + rect2.width > parentWidth || typeof rect2.top !== "number" || typeof rect2.height !== "number")
+        continue;
+      let rowLeft = rect2.left;
+      let rowRight = rect2.left + rect2.width;
+      for (const sibling of components) {
+        if (sibling === child || placementKey(sibling) !== placementKey(child))
+          continue;
+        const other = sibling.layouts?.[resolution] ?? sibling.layout;
+        if (!other || typeof other.top !== "number" || typeof other.height !== "number" || typeof other.left !== "number" || typeof other.width !== "number")
+          continue;
+        if (rect2.top < other.top + renderedHeight(sibling, other) && other.top < rect2.top + renderedHeight(child, rect2)) {
+          rowLeft = Math.min(rowLeft, other.left);
+          rowRight = Math.max(rowRight, other.left + other.width);
+        }
+      }
+      if (rowLeft < 0 || rowRight > parentWidth)
+        continue;
+      const detail = `${rect2.width} occupies only ${Math.round(rect2.width / 43 * 100)}% of ${parent.type} "${parent.name ?? parent.id ?? "?"}". The content row spans local columns ${rowLeft}-${rowRight}, fitting the parent's outer ${parentWidth}-column span, which may confuse the two grids. Every Container/Form slot has its own 43-column grid regardless of the outer width. For an inset full-row child use left:2,width:39 (or left:0,width:43 for full width); keep a narrower width only when intentional and browser-verified.`;
+      findings.set(detail, [...findings.get(detail) ?? [], resolution]);
+    }
+    for (const [detail, resolutions] of findings) {
+      warnings.push(`${child.type} "${child.name ?? child.id ?? "?"}": ${resolutions.join("/")} width ${detail}`);
+    }
+  }
+  return warnings;
+}
 function lintRenderedGeometryAdvisory(components) {
   return [
+    ...lintNestedContainerWidths(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components)
   ];
@@ -64732,6 +64787,9 @@ function lintComponents(components) {
   const warnings = [];
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
+    const nameError = componentNameError(c.name);
+    if (nameError)
+      errors.push(nameError);
     const r = lintComponentSpec(c);
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
@@ -75125,12 +75183,12 @@ function dropUnprefixedDuplicates(values) {
 // dist/componentBatch.js
 var layoutSchema = external_exports.object({
   top: external_exports.number(),
-  left: external_exports.number(),
-  width: external_exports.number(),
+  left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
+  width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
   height: external_exports.number()
 });
 var componentInputSchema = external_exports.object({
-  name: external_exports.string(),
+  name: componentNameSchema,
   type: external_exports.string(),
   properties: external_exports.record(external_exports.string(), external_exports.any()),
   styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
@@ -76624,7 +76682,7 @@ function addComponentTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
       page_id: external_exports.string(),
-      name: external_exports.string(),
+      name: componentNameSchema,
       type: external_exports.string(),
       properties: external_exports.record(external_exports.string(), external_exports.any()),
       styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
@@ -76701,7 +76759,7 @@ function addComponentsTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
+    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -76748,7 +76806,7 @@ function addComponentsTool(client) {
         });
         return ok({
           components: result,
-          warnings: [...prepared.warnings, ...pageWarnings]
+          warnings: [.../* @__PURE__ */ new Set([...prepared.warnings, ...pageWarnings])]
         });
       } catch (err) {
         return fail(err);
@@ -76839,7 +76897,7 @@ var definitionSchema = strictEntry({
 var updateSchema2 = strictEntry({
   component_id: external_exports.string(),
   definition: definitionSchema.optional(),
-  name: external_exports.string().optional(),
+  name: componentNameSchema.optional(),
   parent: external_exports.string().optional(),
   slot_name: componentSlotSchema.optional()
 }, (key4) => {
@@ -76881,6 +76939,13 @@ function updateComponentsTool(client) {
         const layoutFixes = [];
         const resolvedUpdates = [];
         for (const update of args.updates) {
+          if (update.name !== void 0) {
+            const nameError = componentNameError(update.name);
+            if (nameError) {
+              errors.push(`Component "${update.component_id}": ${nameError}`);
+              continue;
+            }
+          }
           const resolution = resolveRef2(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
           if (!resolution.ok) {
             errors.push(resolution.error);
@@ -77137,7 +77202,7 @@ function updateLayoutTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in grid columns (43 desktop), `top`/`height` in grid rows. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.",
+    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -77224,13 +77289,15 @@ function updateLayoutTool(client) {
         ];
         if (errors.length)
           return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
+        const nestedWidths = new Set(lintNestedContainerWidths(projected));
         const warnings = [.../* @__PURE__ */ new Set([
           ...layoutWarnings,
           ...rootSlotWarnings,
           ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
           ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
           ...introducedForChanged(lintTextGeometry),
-          ...lintRenderedGeometry(projected)
+          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
+          ...introducedLintFindings(lintNestedContainerWidths(page.components), [...nestedWidths])
         ])];
         const result = await client.updateLayouts({
           appId: args.app_id,
