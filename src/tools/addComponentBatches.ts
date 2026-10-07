@@ -4,6 +4,8 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { literalCanvasColor } from '../appSettings.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 const pageBatchSchema = z.object({
   page_id: z.string(),
@@ -24,7 +26,7 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
       'then sends one atomic ToolJet component request per page in parallel. Use add_components for one page. Cross-page ' +
       'bindings may use unique client_ref aliases declared in this batch; existing runtime names take precedence. Cross-page ' +
       'creation is not transactional because ToolJet has no multi-page component endpoint; an upstream partial failure names ' +
-      'the completed and failed pages so it can be repaired in place.',
+      'the completed and failed pages so it can be repaired in place. ' + COMPONENT_FX_GUIDANCE,
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -52,7 +54,8 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
           aliasWarnings.push('Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.');
         }
       }
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
+      const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
+      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
       const errors = prepared.flatMap((page) =>
         page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`)
       );

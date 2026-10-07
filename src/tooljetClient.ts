@@ -235,6 +235,9 @@ export interface ComponentSpec {
   layout?: ComponentLayout;
   /** Explicit per-resolution layout; takes precedence over `layout` for the resolution it sets. */
   layouts?: { desktop?: ComponentLayout; mobile?: ComponentLayout };
+  /** Create the component under this id instead of a new one: a page replace recreates a changed component under
+   *  the id it had, so events and bindings that hold the id stay valid (pageReplaceInPlace.ts). */
+  id?: string;
   /** Caller-stable reference used only inside one createComponents batch. */
   clientRef?: string;
   /** Parent another component in the same batch by its clientRef. */
@@ -451,7 +454,7 @@ export interface EventSpec {
   sourceId: string;
   /** Source kind. Modern Table row buttons use table_column; table_action is legacy/deprecated. */
   sourceType: EventSourceType;
-  /** Sub-element reference. Table Button columns use `<column key or name>::<button id>`. */
+  /** Sub-element reference: Table Button columns use `<column key or name>::<button id>`; Navigation onClick uses a non-group menu item id. */
   ref?: string;
   /** The trigger event id, e.g. onClick, onDataQuerySuccess, onDataQueryFailure, onPageLoad. */
   trigger: string;
@@ -2191,7 +2194,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createComponents(
     params: CreateComponentsParams
   ): Promise<Array<CreateComponentResult & { name: string }>> {
-    const entries = params.components.map((spec) => ({ id: randomUUID(), spec }));
+    const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map<string, string>();
     for (const e of entries) {
       if (!e.spec.clientRef) continue;
@@ -2216,6 +2219,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      // A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx); a plan names that
+      // Button by its client ref (or its name when it has none), as lint checks, and ids are made here.
+      const submit = e.spec.type === 'Form' ? (dto.properties as Record<string, { value?: unknown }> | undefined)?.buttonToSubmit : undefined;
+      const submitId = submit && typeof submit.value === 'string'
+        ? refToId.get(submit.value) ?? entries.find((other) => !other.spec.clientRef && other.spec.name === submit.value)?.id
+        : undefined;
+      if (submit && submitId) {
+        dto.properties = { ...(dto.properties as Record<string, unknown>), buttonToSubmit: { ...submit, value: submitId } };
+      }
       diff[e.id] = dto;
     }
 

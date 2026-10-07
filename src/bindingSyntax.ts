@@ -25,6 +25,12 @@ export function lintBindingSyntax(value: unknown, path: string, wholeValueRequir
       ? [`${path}: expected one whole-value JavaScript binding, without text before or after {{...}}; this property is not an interpolated text field.`]
       : [];
   }
+  // One binding whose code holds "}}" before its end: ToolJet ends a binding at the first "}}", so the code is cut
+  // there and the value renders empty (two Plotly figures with {line:{width:0}} inside, 2026-10-05). Text holding two
+  // bindings ("{{a}} of {{b}}") has a "{{" inside too and is left alone.
+  if (match[1].includes('}}') && !match[1].includes('{{')) {
+    return [`${path}: the binding contains "}}" before its end; ToolJet ends a binding at the first "}}", so the code is cut there and the value renders empty. Put a space between adjacent closing braces ("} }") inside the expression.`];
+  }
   if (!wholeValueRequired && (match[1].includes('{{') || match[1].includes('}}'))) return [];
   try {
     // Compile only: unknown runtime names are valid and no application code is executed here.

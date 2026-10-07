@@ -22,6 +22,10 @@ For inventory alerting, a typical graph is ToolJet DB read → RunJS low-stock f
 
 An Agent's `model` object creates its ToolJet child query and `ai-model` attachment. Omitting `model` while patching preserves the current model; `model:null` removes it. Changing the model datasource or query name requires two phases: remove it first, then add the replacement. A reachable Agent without a valid model is `draft_only`; pass `allow_draft:true` only when the user wants that incomplete but editable draft.
 
+Workflow reads use the version API for metadata and a version-scoped resource export for the lossless graph. The caller needs resource-export permission; if export fails, stop instead of rebuilding the graph from the version API's camel-cased definition.
+
+For response-node patches, omitting `status_code` preserves the existing static or dynamic status; new responses default to 200. Agent labels are visual names: runtime references keep the original `nodeName` (initialized from `ref`). Use the Agent's `default` port in specs. Deleting a node from an incomplete draft preserves and reports the remaining readiness blockers, and shared queries are kept until their last graph reference is removed.
+
 The lint call is a no-write barrier. Omitted nodes and edges remain intact; inspect `get_workflow` and specify exact IDs for removals.
 
 `apply_workflow_spec` creates or updates node queries before saving the graph. It never executes, publishes, enables, or configures triggers. A partial-write result identifies resources that persisted before a failure; inspect the workflow and replan instead of blindly recreating anything. Existing drafts are editable, but concurrent visual-editor changes are not protected in this release.

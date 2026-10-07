@@ -134,8 +134,16 @@ export function selectAppSummary(
     (detail === 'full' ? [...COMPONENT_FIELDS] : STRUCTURE_COMPONENT_FIELDS);
   const queryFields =
     selection.queryFields ?? (detail === 'full' ? [...QUERY_FIELDS] : STRUCTURE_QUERY_FIELDS);
+  // The names a model writes for an event's fields: the trigger is its name, the source type its target, the action
+  // its event (agent builds lost calls to "trigger", "sourceType" and "source_type", 2026-10-05).
+  const EVENT_ALIASES: Record<string, string> = { trigger: 'name', eventName: 'name', event_name: 'name', sourceType: 'target',
+    source_type: 'target', source_id: 'sourceId', action: 'event', actionId: 'event.actionId', action_id: 'event.actionId' };
   const eventFields =
-    selection.eventFields ?? (detail === 'full' ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
+    (selection.eventFields ? [...new Set(selection.eventFields.map((path) => {
+      const [root, ...rest] = path.split('.');
+      const mapped = EVENT_ALIASES[root!];
+      return mapped ? [mapped, ...rest].join('.') : path;
+    }))] : undefined) ?? (detail === 'full' ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
 
   validatePaths(appFields, APP_FIELDS, 'app_fields');
   validatePaths(pageFields, PAGE_FIELDS, 'page_fields');

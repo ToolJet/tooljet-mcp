@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import type { WorkflowClient } from '../workflowClient.js';
 import { normalizeQueryOptions, validateQueryOptions, issueMessages } from '../queryValidation.js';
-import { compileGraph, specSchema, validateGraph, type WorkflowSpec, type Compiled } from './graph.js';
+import { assertWorkflowJavaScript, compileGraph, specSchema, validateGraph, type WorkflowSpec, type Compiled } from './graph.js';
 import { AI_DATASOURCE_KINDS } from './capabilities.js';
 import { workflowReadiness } from './readiness.js';
 
@@ -27,8 +27,10 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
   const deletions: QueryDeletion[] = [];
   for (const mapping of snapshot.definition.queries) {
     if (!removedDefinitionIds.has(mapping.idOnDefinition)) continue;
-    // A definition ID can only be deleted when no retained node still references it.
-    if (compiled.graph.nodes.some((node) => node.data.idOnDefinition === mapping.idOnDefinition)) continue;
+    // Multiple definition IDs can reference one persisted query. Keep it while any
+    // mapping remains, and delete it only once when all of its nodes are removed.
+    if (compiled.graph.queries.some(retained => retained.id === mapping.id)) continue;
+    if (deletions.some(deletion => deletion.query_id === mapping.id)) continue;
     const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
     if (!node) continue;
     if (!queries.some((query) => query.id === mapping.id)) throw new Error(`Query ${mapping.id} is missing from the target version.`);
@@ -60,8 +62,11 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
     claimedNames.add(name);
     const requestedOptions = item.role === 'agent-model' ? item.options : input!.type === 'javascript' || input!.type === 'loop' ? { ...(oldQuery?.options as Record<string, unknown> ?? {}), code: input!.code } : input!.options;
     const options = item.role === 'agent-model' ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    // Workflow RunJS uses a server-side IIFE and workflow state, not browser
+    // RunJS parameters. Validate that code separately, retaining common option checks.
+    if (item.role === 'workflow-node' && kind === 'runjs') assertWorkflowJavaScript(options.code, label);
     if (item.role === 'workflow-node') {
-      const validation = validateQueryOptions(kind, options);
+      const validation = validateQueryOptions(kind, options, 'workflow');
       if (validation.errors.length) throw new Error(issueMessages(validation.errors).join(' '));
       warnings.push(...issueMessages(validation.warnings));
     }
@@ -143,7 +148,7 @@ export async function deleteNode(client: WorkflowClient, workflowId: string, ver
   const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges
     .filter((edge) => edge.source === nodeId || edge.target === nodeId)
     .map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec);
-  if (!('plan_token' in result)) throw new Error(JSON.stringify(result.errors));
+  const result = await lint(client, workflowId, versionId, spec, true);
+  if (!('plan_token' in result)) throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
   return apply(client, result.plan_token);
 }

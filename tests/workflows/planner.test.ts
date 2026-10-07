@@ -195,3 +195,69 @@ describe('workflow planning and recovery', () => {
     expect(graph.queries).toEqual([]);
   });
 });
+
+describe('workflow review regressions', () => {
+  it.each([false, true])('protects shared persisted queries and deletes them once only after the last reference (remove all: %s)', async removeAll => {
+    const { client, queries } = fixture();
+    const created = await apply(client, await token(client));
+    const snapshot = await client.get('w', 'v');
+    const original = snapshot.definition.nodes.find(n => n.id === created.node_ids.q)!;
+    const duplicate = { ...structuredClone(original), id: crypto.randomUUID(), data: { ...original.data, idOnDefinition: crypto.randomUUID() } };
+    snapshot.definition.nodes.push(duplicate);
+    snapshot.definition.queries.push({ id: queries[0].id, idOnDefinition: duplicate.data.idOnDefinition as string });
+    await client.save(snapshot, snapshot.definition);
+    const plan = await lint(client, 'w', 'v', specSchema.parse({ remove_node_ids: [original.id, ...(removeAll ? [duplicate.id] : [])], remove_edge_ids: snapshot.definition.edges.map(e => e.id) }));
+    expect(plan).toHaveProperty('plan_token');
+    expect(await apply(client, (plan as { plan_token: string }).plan_token)).not.toHaveProperty('failed');
+    expect(client.deleteQuery).toHaveBeenCalledTimes(removeAll ? 1 : 0);
+    expect(queries).toHaveLength(removeAll ? 0 : 1);
+    expect((await client.get('w', 'v')).definition.queries).toHaveLength(removeAll ? 0 : 1);
+  });
+  it('keeps user refs distinct from generated model refs through lint and persisted apply', async () => {
+    const { client, queries } = fixture();
+    vi.mocked(client.listDatasources).mockResolvedValue([{ id: 'js', kind: 'runjs', name: 'JS', settings_url: '' }, { id: 'ai', kind: 'openai', name: 'AI', settings_url: '' }]);
+    const plan = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' },
+      { ref: 'sorter', type: 'agent', model: { datasource_id: 'ai', name: 'sorterModel', options: {} } },
+      { ref: 'sorter.model', type: 'javascript', name: 'calculateWeight', code: 'return 18;' },
+    ], edges: [
+      { ref: 'entry', from: 'start', to: 'sorter', port: 'default' },
+      { ref: 'sorter.model', from: 'sorter', to: 'sorter.model', port: 'default' },
+    ] }));
+    expect(plan).toHaveProperty('plan_token');
+    const applied = await apply(client, (plan as { plan_token: string }).plan_token);
+    expect(applied).not.toHaveProperty('failed');
+    const graph = (await client.get('w', 'v')).definition;
+    expect(graph.nodes).toHaveLength(4);
+    expect(new Set(graph.nodes.map(n => n.id)).size).toBe(4);
+    expect(new Set(graph.edges.map(e => e.id)).size).toBe(3);
+    expect(queries).toHaveLength(2);
+    expect(graph.nodes.find(n => n.data.isChildOfAgent)?.id).not.toBe(applied.node_ids['sorter.model']);
+  });
+  it('allows deleting unrelated nodes from incomplete drafts and retains readiness blockers', async () => {
+    const { client } = fixture();
+    const plan = await lint(client, 'w', 'v', specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' }, { ref: 'sorter', type: 'agent' }, { ref: 'scratch', type: 'response', code: 'return 6;' },
+    ], edges: [{ ref: 'entry', from: 'start', to: 'sorter', port: 'default' }] }), true);
+    const created = await apply(client, (plan as { plan_token: string }).plan_token);
+    const result = await deleteNode(client, 'w', 'v', created.node_ids.scratch);
+    expect(result).not.toHaveProperty('failed');
+    expect(result).toMatchObject({ runtime_readiness: 'draft_only', blockers: [expect.objectContaining({ code: 'agent_missing_model' })] });
+    expect((await client.get('w', 'v')).definition.nodes).toHaveLength(2);
+    await expect(deleteNode(client, 'w', 'v', created.node_ids.start)).rejects.toThrow('start_count');
+  });
+  it.each(['javascript', 'loop', 'query'])('accepts server-side RunJS declarations for %s nodes', async type => {
+    const { client, queries } = fixture();
+    const code = 'const variables = [8, 12]; const actions = variables.map(n => n + 1); return actions;';
+    const node = type === 'query' ? { ref: 'q', type, name: 'calculate', datasource_id: 'js', options: { code } }
+      : { ref: 'q', type, name: 'calculate', code, ...(type === 'loop' ? { iteration_values_code: 'return [2];' } : {}) };
+    const plan = await lint(client, 'w', 'v', specSchema.parse({ nodes: [{ ref: 'start', type: 'start' }, node], edges: [{ ref: 'entry', from: 'start', to: 'q', port: 'default' }] }));
+    expect(await apply(client, (plan as { plan_token: string }).plan_token)).not.toHaveProperty('failed');
+    expect(queries[0].options).toMatchObject({ code });
+  });
+  it.each(['return (;', '', undefined])('still rejects invalid server-side query code %s before writes', async code => {
+    const { client } = fixture();
+    await expect(lint(client, 'w', 'v', specSchema.parse({ nodes: [{ ref: 'start', type: 'start' }, { ref: 'bad', type: 'query', name: 'badCode', datasource_id: 'js', options: { code } }] }))).rejects.toThrow(/JavaScript/);
+    expect(client.createWorkflowQuery).not.toHaveBeenCalled();
+  });
+});

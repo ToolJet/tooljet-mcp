@@ -45,12 +45,29 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
     const status = String(version.status ?? '').toUpperCase();
     const released = (app.currentVersionId ?? app.current_version_id) === versionId;
     const frozen = Boolean(app.should_freeze_editor ?? app.shouldFreezeEditor);
+    // The version endpoint recursively camel-cases opaque definition keys. The
+    // existing export API returns the stored JSON unchanged. Never fall back to
+    // the lossy definition, including when export permission is unavailable.
+    const exported = record(await request('/api/v2/resources/export', {
+      organization_id: workspace,
+      app: [{ id: workflowId, search_params: { version_id: versionId } }],
+    }));
+    const apps = Array.isArray(exported.app) ? exported.app : [];
+    const rawApp = record(record(record(apps[0]).definition).appV2);
+    if (apps.length !== 1 || rawApp.id !== workflowId || rawApp.type !== 'workflow' || rawApp.organizationId !== workspace) {
+      throw new Error('Lossless workflow export response mismatch. No definition can be safely edited.');
+    }
+    const versions = Array.isArray(rawApp.appVersions) ? rawApp.appVersions : [];
+    const rawVersion = record(versions.find(candidate => record(candidate).id === versionId));
+    if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, 'definition')) {
+      throw new Error('Lossless workflow export is missing the requested version definition.');
+    }
     return {
       workflow_id: workflowId, version_id: versionId, workspace_id: workspace, environment_id: environmentId,
       editable: status === 'DRAFT' && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
       editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === 'string' && app.slug ? app.slug : workflowId)}`,
-      definition: definition(version.definition),
+      definition: definition(rawVersion.definition),
     };
   }
   return {
@@ -94,7 +111,10 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
     },
     async execution(id: string, page = 1, perPage = 20) {
       const base = `/api/workflow_executions/${encodeURIComponent(id)}`;
-      const status = await request(`${base}/status`);
+      const response = record(await request(`${base}/status`));
+      // /status repeats every node result. Only /nodes is paginated; omit those
+      // duplicated results before applying the MCP response size limit.
+      const status = { status: response.status, logs: response.logs };
       const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
       return { execution_id: id, status, nodes, page, per_page: perPage };
     },

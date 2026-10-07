@@ -7,7 +7,7 @@ export function deleteWorkflowNodeTool(client: ToolJetClient): ToolDef {
   return {
     name: 'delete_workflow_node',
     title: 'Delete Workflow Node',
-    description: 'Delete one workflow node and all incident edges. If it owns a query, saves the graph before deleting that query. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.',
+    description: 'Delete one workflow node and all incident edges. Saves the graph before deleting a query only when no remaining mapping references it. Incomplete drafts can be cleaned up; remaining runtime blockers are returned. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.',
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     inputSchema: deleteWorkflowNodeInputSchema.shape,
     async handler(args: unknown) {

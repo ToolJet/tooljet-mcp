@@ -5,6 +5,7 @@ import { lintComponents, validateAppStructure, type LintComponent } from './lint
 import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
+import { invalidPlannedGeneratedPrimaryKeySeeds } from './seedGeneratedPrimaryKeyValidation.js';
 import { encodeComponentParent } from './componentParent.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
@@ -284,7 +285,21 @@ function lintServerSidePaginationRace(
   return errors;
 }
 
-export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary): AppSpecLintResult {
+/** The existing pages (other than the plan's) whose components read queries.<name> or whose events run the query. */
+export function pagesUsingQuery(summary: AppSummary | undefined, name: string, planPages: Set<string>): string[] {
+  if (!summary) return [];
+  const query = (summary.queries ?? []).find((q) => q.name === name);
+  const reads = new RegExp(`queries\\??\\.${name.replace(/[$]/g, '\\$&')}\\b`);
+  return (summary.pages ?? []).filter((page) => {
+    if (!page.name || planPages.has(page.name)) return false;
+    const ids = new Set(page.components.map((component) => component.id));
+    return page.components.some((component) => reads.test(JSON.stringify([component.properties ?? {}, component.styles ?? {}]))) ||
+      (!!query && (summary.events ?? []).some((event) => !!event.sourceId && (ids.has(event.sourceId) || event.sourceId === page.id) &&
+        JSON.stringify(event.event ?? {}).includes(`"${query.id}"`)));
+  }).map((page) => page.name as string);
+}
+
+export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummary, options: { canvasColor?: string } = {}): AppSpecLintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const checked: string[] = [];
@@ -301,8 +316,28 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     // A table may take several entries: each is capped at 40 rows and they insert one after another (merch m14
     // and m16 split a table's rows and then lost three lint rounds to a "more than once" rule).
     checked.push('seed batches have non-empty rows');
-    for (const seed of seedData) {
+    for (const [batchIndex, seed] of seedData.entries()) {
       if (!seed.rows.length) errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
+      const plannedTable = tables.find((table) => table.tableName.toLowerCase() === seed.tableName.toLowerCase());
+      if (plannedTable) {
+        errors.push(...invalidPlannedGeneratedPrimaryKeySeeds(plannedTable.columns, seed.rows)
+          .map(error => `Seed data for planned table "${seed.tableName}" (batch ${batchIndex + 1}): ${error}`));
+      }
+      // ToolJet DB takes an object or an array for a jsonb column and refuses anything else at insert, after the plan
+      // token is spent (rn50, 2026-10-01: plain strings, refused twice).
+      const columns = plannedTable?.columns ?? [];
+      for (const column of columns) {
+        if (!/^jsonb?$/i.test(String((column as { type?: unknown }).type ?? ''))) continue;
+        const bad = seed.rows.flatMap((row, index) => {
+          const value = row[column.name];
+          return value === undefined || value === null || typeof value === 'object' ? [] : [index + 1];
+        });
+        if (bad.length) {
+          errors.push(`Seed data for table "${seed.tableName}": column "${column.name}" is jsonb, so each value must be an ` +
+            `object or an array (or null), not ${typeof seed.rows[bad[0]! - 1]![column.name]}; row(s) ${bad.slice(0, 8).join(', ')}. ` +
+            'Store a list as ["a","b"], or make the column string if it holds text.');
+        }
+      }
     }
   }
 
@@ -323,7 +358,17 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   const plannedQueries = (spec.queries ?? []).map((query, index) => {
     const ref = query.clientRef ?? query.name;
     const id = `planned-query:${index}:${ref}`;
-    if (existingQueryNames.has(query.name)) errors.push(`App already has a query named "${query.name}".`);
+    if (existingQueryNames.has(query.name)) {
+      // A replace redefines only the replaced page's own queries (pageReplace.ts); a query another page also reaches
+      // stays a collision, so say how to use or change it instead, naming the pages that use it: told only "replace
+      // the page that owns it", a build spent five compiles, three of them probing the compiler (2026-09-29).
+      const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
+      errors.push(`App already has a query named "${query.name}"` +
+        (users.length ? `, which page${users.length > 1 ? 's' : ''} ${users.map((u) => `"${u}"`).join(', ')} also read${users.length > 1 ? '' : 's'} or run${users.length > 1 ? '' : 's'}. ` +
+          'To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, ' +
+          'mark this definition update: true.'
+          : '. To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true.'));
+    }
     registerRef(queryRefs, ref, { id, name: query.name }, 'query', errors);
     if (ref !== query.name) registerRef(queryRefs, query.name, { id, name: query.name }, 'query', errors);
     queryIds.set(id, { id, name: query.name });
@@ -396,7 +441,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     warnings.push(...normalized.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
     warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components);
+    const componentLint = lintComponents(expansion.components, options);
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
@@ -549,13 +594,15 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     // makes a sole final switch-page look as though another switch-page follows it.
     const eventValidation = validateEvents(
       { ...summary, events: existingSummary?.events ?? [] },
-      eventSpecs
+      eventSpecs,
+      // apply_app_phase moves a saved page switch behind the handlers a plan adds (navigationReorders).
+      { navigationMovedLast: true }
     );
     errors.push(...eventValidation.errors);
     warnings.push(...eventValidation.warnings);
   }
 
-  const structure = validateAppStructure(summary);
+  const structure = validateAppStructure(summary, options);
   const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
   errors.push(...forward.errors);
   warnings.push(...structure.warnings, ...forward.notes);

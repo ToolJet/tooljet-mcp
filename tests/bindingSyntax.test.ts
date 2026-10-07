@@ -24,3 +24,20 @@ describe('multi-line bindings', () => {
     expect(multilineBindings('{{a\n}} and {{b}} and {{c\r\n}}')).toHaveLength(2);
   });
 });
+
+// A Databricks dashboard (2026-10-05) saved two Plotly charts as {{({data:[{marker:{line:{width:0}}}], ...} )}}: ToolJet
+// ends a binding at the first "}}", so the figure was cut mid-object and both charts rendered empty. The check used to
+// skip any binding containing "}}"; one binding with "}}" before its end is now reported.
+describe('closing braces inside one binding', () => {
+  it('flags "}}" inside a single whole-value binding', () => {
+    const chart = "{{({data:[{type:'bar',marker:{color:'#2563EB',line:{width:0}},x:[1]}],layout:{showlegend:false} )}}";
+    const errors = lintBindingSyntax({ jsonDescription: chart }, 'Component "Top products".properties');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/first "\}\}"/);
+    expect(errors[0]).toMatch(/\} \}/);
+  });
+  it('accepts the same figure with the braces spaced, and text with two bindings', () => {
+    expect(lintBindingSyntax("{{({data:[{marker:{line:{width:0} } }],layout:{} })}}", 'p')).toEqual([]);
+    expect(lintBindingSyntax('{{queries.a.data.length}} of {{queries.b.data.length}}', 'p')).toEqual([]);
+  });
+});

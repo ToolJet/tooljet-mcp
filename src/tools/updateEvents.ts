@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { persistedEventSpecs, validateEvents } from '../eventValidation.js';
+import { persistedEventIds, persistedEventSpecs, validateEvents } from '../eventValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { strictEntry } from '../strictEntry.js';
 
@@ -81,11 +81,10 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
         };
         // The projected list already contains every persisted event exactly once. Validate that
         // complete future state without merging the original persisted chains a second time.
-        const validation = validateEvents(
-          changedSummary,
-          persistedEventSpecs(changedSummary),
-          { includePersistedChains: false }
-        );
+        const specs = persistedEventSpecs(changedSummary);
+        // Only the handlers this call rewrites can add a ref; a reorder rewrites none.
+        const savedRefs = new Set(specs.filter((spec) => updateType === 'reorder' || !updatesById.has(persistedEventIds.get(spec) ?? '')));
+        const validation = validateEvents(changedSummary, specs, { includePersistedChains: false, savedRefs });
         if (validation.errors.length) return fail(new Error(validation.errors.join(' ')));
         const result = await client.updateEvents({
           appId: args.app_id,

@@ -12,7 +12,7 @@ export const nodeSchema = z.discriminatedUnion('type', [
   z.object({ ...base, type: z.literal('query'), ...query }).strict(),
   z.object({ ...base, type: z.literal('loop'), name: query.name, iteration_values_code: z.string().min(1), code: z.string().min(1) }).strict(),
   z.object({ ...base, type: z.literal('condition'), code: z.string().min(1) }).strict(),
-  z.object({ ...base, type: z.literal('response'), code: z.string().min(1), status_code: z.number().int().min(100).max(599).default(200) }).strict(),
+  z.object({ ...base, type: z.literal('response'), code: z.string().min(1), status_code: z.number().int().min(100).max(599).optional() }).strict(),
   z.object({ ...base, type: z.literal('agent'), system_prompt: z.string().optional(), user_prompt: z.string().optional(), output_format: z.record(z.string(), z.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict(),
 ]);
 export const specSchema = z.object({
@@ -23,6 +23,12 @@ export const specSchema = z.object({
   remove_edge_ids: z.array(z.string()).default([]),
   test_parameters: z.record(z.string(), z.unknown()).optional(),
 }).strict();
+/** Workflows run code in a server-side async IIFE, without app RunJS parameters. */
+export function assertWorkflowJavaScript(code: unknown, label: string) {
+  if (typeof code !== 'string' || !code.trim()) throw new Error(`Missing JavaScript code in ${label}.`);
+  try { new Script(`(async function() {${code}\n})`); }
+  catch { throw new Error(`Invalid JavaScript syntax in ${label}.`); }
+}
 export type WorkflowSpec = z.infer<typeof specSchema>;
 export type NodeSpec = WorkflowSpec['nodes'][number];
 export interface GraphNode { id: string; type: string; data: Record<string, unknown>; position?: { x: number; y: number }; [key: string]: unknown }
@@ -98,10 +104,14 @@ export function validateGraph(graph: Definition, queryIds?: Set<string>) {
 export type PlannedQueryWrite =
   | { role: 'workflow-node'; spec: Extract<NodeSpec, { type: 'javascript' | 'query' | 'loop' }>; node_id: string; definition_id: string }
   | { role: 'agent-model'; parent_agent_id: string; node_id: string; definition_id: string; datasource_id: string; name: string; options: Record<string, unknown> };
-export interface Compiled { graph: Definition; node_ids: Record<string, string>; edge_ids: Record<string, string>; query_nodes: PlannedQueryWrite[] }
-export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: { node_ids: Record<string, string>; edge_ids: Record<string, string> }, datasourceKinds = new Map<string, string>()): Compiled {
+interface ModelIds { node_id: string; edge_id: string }
+interface GraphIds { node_ids: Record<string, string>; edge_ids: Record<string, string>; model_ids: Record<string, ModelIds> }
+export interface Compiled extends GraphIds { graph: Definition; query_nodes: PlannedQueryWrite[] }
+export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: GraphIds, datasourceKinds = new Map<string, string>()): Compiled {
   const graph = structuredClone(current);
   const node_ids: Record<string, string> = Object.create(null), edge_ids: Record<string, string> = Object.create(null);
+  // Generated attachments use a separate namespace from caller-supplied refs.
+  const model_ids: Record<string, ModelIds> = Object.create(null);
   const query_nodes: Compiled['query_nodes'] = [];
   const checkUnique = (refs: string[]) => { if (new Set(refs).size !== refs.length) throw new Error('Duplicate logical refs.'); };
   checkUnique(spec.nodes.map(n => n.ref)); checkUnique(spec.edges.map(e => e.ref));
@@ -138,7 +148,9 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: { no
     const data: Record<string, unknown> = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
     if (input.type !== 'condition') data.nodeType = input.type === 'javascript' || input.type === 'loop' ? 'query' : input.type;
     if (input.type === 'condition' || input.type === 'response') data.code = input.code;
-    if (input.type === 'response') data.statusCode = { fxActive: false, value: String(input.status_code) };
+    if (input.type === 'response' && (input.status_code !== undefined || data.statusCode === undefined)) {
+      data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
+    }
     if (input.type === 'loop') {
       data.looped = true;
       data.iterationValuesCode = input.iteration_values_code;
@@ -146,8 +158,10 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: { no
     if (input.type === 'agent') {
       const oldOptions = old?.data.options && typeof old.data.options === 'object' && !Array.isArray(old.data.options)
         ? old.data.options as Record<string, unknown> : {};
-      data.nodeName = input.label ?? old?.data.nodeName ?? input.ref;
+      // nodeName is a runtime identifier, independent of the visual label.
+      data.nodeName = old?.data.nodeName ?? input.ref;
       data.options = {
+        ...oldOptions,
         systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? '',
         userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? '',
         outputFormat: input.output_format === undefined ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format },
@@ -161,7 +175,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: { no
         graph.edges = graph.edges.filter(edge => edge.id !== attachment.id);
         graph.nodes = graph.nodes.filter(node => node.id !== attachment.source);
       } else if (input.model) {
-        const modelNodeId = child?.id ?? ids?.node_ids[`${input.ref}.model`] ?? randomUUID();
+        const modelNodeId = child?.id ?? ids?.model_ids[input.ref]?.node_id ?? randomUUID();
         const definitionId = typeof child?.data.idOnDefinition === 'string' ? child.data.idOnDefinition : randomUUID();
         const kind = datasourceKinds.get(input.model.datasource_id);
         const modelNode: GraphNode = {
@@ -175,11 +189,10 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: { no
           position: child?.position ?? { x: 100, y: 70 },
         };
         if (child) graph.nodes[graph.nodes.indexOf(child)] = modelNode; else graph.nodes.push(modelNode);
-        const edgeId = attachment?.id ?? ids?.edge_ids[`${input.ref}.model`] ?? randomUUID();
+        const edgeId = attachment?.id ?? ids?.model_ids[input.ref]?.edge_id ?? randomUUID();
         const modelEdge: GraphEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id, sourceHandle: 'output', targetHandle: 'ai-model', type: 'custom', data: { direction: 'vertical' } };
         if (attachment) graph.edges[graph.edges.indexOf(attachment)] = modelEdge; else graph.edges.push(modelEdge);
-        node_ids[`${input.ref}.model`] = modelNodeId;
-        edge_ids[`${input.ref}.model`] = edgeId;
+        model_ids[input.ref] = { node_id: modelNodeId, edge_id: edgeId };
         query_nodes.push({ role: 'agent-model', parent_agent_id: id, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
       }
     }
@@ -231,7 +244,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: { no
     n.position = { x, y }; placed.push(n);
   }
   if (spec.test_parameters !== undefined) graph.defaultParams = JSON.stringify(spec.test_parameters);
-  return { graph, node_ids, edge_ids, query_nodes };
+  return { graph, node_ids, edge_ids, model_ids, query_nodes };
 }
 export const nodeCatalog = {
   schema_version: 1,
@@ -242,7 +255,7 @@ export const nodeCatalog = {
     { type: 'loop', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'iteration_values_code', 'code'] },
     { type: 'condition', renderer: 'if-condition', ports: ['true', 'false'], fields: ['code'] },
     { type: 'response', renderer: 'output', ports: [], fields: ['code', 'status_code'] },
-    { type: 'agent', renderer: 'agent', ports: ['output'], fields: ['system_prompt', 'user_prompt', 'output_format', 'model'] },
+    { type: 'agent', renderer: 'agent', ports: ['default'], fields: ['system_prompt', 'user_prompt', 'output_format', 'model'] },
   ],
   edit_semantics: 'Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.',
   limitations: ['Agent tool connections are not authored', 'No publishing or trigger setup', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Advanced nodes are preserved but not authored'],

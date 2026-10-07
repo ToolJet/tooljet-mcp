@@ -300,13 +300,56 @@ export function lintHtmlContentHeight(c: ReadinessComponent): string[] {
 
 const SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
 
+const LITERAL_SURFACE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
+const CLEAR_SURFACE = /^(transparent|#[0-9a-f]{3}0|#[0-9a-f]{6}00)$|^rgba\([^)]*,\s*0(\.0+)?\s*\)$/i;
+const sameColour = (a: string, b: string) => a.replace(/\s+/g, '').toLowerCase() === b.replace(/\s+/g, '').toLowerCase();
+
+interface SurfaceComponent {
+  id?: string;
+  name?: string;
+  parent?: string;
+  parentRef?: string;
+  styles?: Record<string, unknown>;
+  clientRef?: string;
+  slotName?: string;
+  slot_name?: string;
+}
+
+/** The literal colour each component sits on, when one is known: its container's own background (a near-black board,
+ *  a tinted rail), or the app canvas at the top level when the app sets it to a literal colour. A container painted
+ *  with a theme token, or none, leaves the token rules in charge (undefined). A transparent container passes its
+ *  parent's surface through. */
+export function surfaceAroundResolver(components: SurfaceComponent[], canvasColor?: string): (c: SurfaceComponent) => string | undefined {
+  const find = (key: string): SurfaceComponent | undefined =>
+    components.find((o) => o.clientRef === key || o.id === key) ??
+    components.find((o) => typeof o.id === 'string' && key.startsWith(`${o.id}-`)) ??
+    components.find((o) => o.name === key);
+  const canvas = typeof canvasColor === 'string' && LITERAL_SURFACE.test(canvasColor.trim()) ? canvasColor.trim() : undefined;
+  return (c) => {
+    let current: SurfaceComponent = c;
+    for (let depth = 0; depth < 12; depth++) {
+      const key = current.parentRef ?? current.parent;
+      if (!key) return canvas;
+      const parent = find(key);
+      if (!parent) return undefined;
+      const slot = current.slotName ?? current.slot_name ?? (typeof parent.id === 'string' && key.startsWith(`${parent.id}-`) ? key.slice(parent.id.length + 1) : undefined);
+      const own = slot === 'header' ? propVal(parent.styles, 'headerBackgroundColor') : slot === 'footer' ? propVal(parent.styles, 'footerBackgroundColor') : undefined;
+      const raw = own ?? propVal(parent.styles, 'backgroundColor');
+      const colour = typeof raw === 'string' ? raw.trim() : '';
+      if (CLEAR_SURFACE.test(colour)) { current = parent; continue; }
+      return LITERAL_SURFACE.test(colour) ? colour : undefined;
+    }
+    return undefined;
+  };
+}
+
 /** ToolJet's Html widget paints its whole box white (`#ffffff`, `#47505D` in dark mode) underneath the
  *  markup. On a tinted canvas anything the root element does not cover shows as a white edge: the
  *  leftover height under a root without `height:100%`, the corners outside a rounded root, a root
  *  with no background of its own. Every build measured on 2026-09-05 (Sol, Luna, Terra at every
  *  effort) put the card's tint and radius on the root, so the fix has to be enforced here: the root
  *  is a plain full-bleed box painted with the surface it sits on; the card is a child. */
-export function lintHtmlRootSurface(c: ReadinessComponent): string[] {
+export function lintHtmlRootSurface(c: ReadinessComponent, surfaceAround?: string): string[] {
   if (c.type !== 'Html') return [];
   const raw = propVal(c.properties, 'rawHtml');
   if (typeof raw !== 'string' || !raw.trim()) return [];
@@ -315,7 +358,7 @@ export function lintHtmlRootSurface(c: ReadinessComponent): string[] {
   const roots = tree.children.filter((n) => n.tag !== '#text' || n.text.trim());
   const who = `Html "${label(c)}"`;
   const parented = Boolean(c.parent || c.parentRef);
-  const surface = parented ? 'var(--cc-surface1-surface)' : 'var(--cc-appBackground-surface)';
+  const surface = surfaceAround ?? (parented ? 'var(--cc-surface1-surface)' : 'var(--cc-appBackground-surface)');
   const template =
     `<div style="height:100%;box-sizing:border-box;margin:0;background:${surface}"> ...your markup... </div>`;
   const why =
@@ -344,6 +387,8 @@ export function lintHtmlRootSurface(c: ReadinessComponent): string[] {
       `it paints no background of its own, so the widget's white shows through; use ${surface}` +
         (parented ? ' (or the surface2 token for a tinted rail)' : '')
     );
+  } else if (surfaceAround && sameColour(background, surfaceAround)) {
+    // Painted exactly the surface it sits on: a container's own colour, or the app's literal canvas colour.
   } else if (parented ? !SURFACE_TOKENS.test(background) : !/var\(--cc-appBackground-surface\)/.test(background)) {
     problems.push(
       `its background is "${background.slice(0, 60)}" rather than the surface it sits on (${surface}); a tint, ` +

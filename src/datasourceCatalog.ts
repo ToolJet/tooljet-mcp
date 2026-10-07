@@ -102,6 +102,9 @@ export const COMMON_QUERY_OPTION_FIELDS: Record<string, DatasourceFieldContract>
   transformation: { path: 'transformation', type: 'string' },
   query_timeout: { path: 'query_timeout', type: 'number|string' },
   disableQuery: { path: 'disableQuery', type: 'boolean|binding' },
+  // Not read by any datasource: a builder's record of a query it generated (a server-paged read and its count), so a
+  // rebuild updates only queries it made and never one of the same name another page wrote.
+  compiledPaging: { path: 'compiledPaging', type: 'object', description: 'Record of a generated server-paging query; leave as written.' },
   disabledMessage: { path: 'disabledMessage', type: 'string|binding' },
 };
 

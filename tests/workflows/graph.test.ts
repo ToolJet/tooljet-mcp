@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compileGraph, definition, specSchema, validateGraph } from '../../src/workflows/graph.js';
+import { compileGraph, definition, specSchema, validateGraph, nodeCatalog } from '../../src/workflows/graph.js';
 const empty = () => definition({});
 const basic = () => specSchema.parse({ nodes: [{ ref: 'start', type: 'start' }, { ref: 'response', type: 'response', code: 'return { ok: true };' }], edges: [{ ref: 'e', from: 'start', to: 'response', port: 'default' }] });
 describe('workflow graph contracts', () => {
@@ -137,4 +137,31 @@ describe('workflow graph contracts', () => {
   it('rejects arbitrary raw configuration and invalid response codes', () => {
     expect(specSchema.safeParse({ nodes: [{ ref: 'r', type: 'response', code: 'return 1', raw: {}, status_code: 999 }] }).success).toBe(false);
   });
+});
+
+describe('workflow patch regressions', () => {
+  it.each([{ fxActive: false, value: '409' }, { fxActive: true, value: 'start.params.httpCode' }])('preserves an omitted response status: %j', statusCode => {
+    const initial = compileGraph(empty(), basic());
+    initial.graph.nodes[1].data.statusCode = statusCode;
+    const patched = compileGraph(initial.graph, specSchema.parse({ nodes: [{ ref: 'response', type: 'response', existing_id: initial.node_ids.response, code: 'return { count: 8 };' }] }));
+    expect(patched.graph.nodes[1].data.statusCode).toEqual(statusCode);
+    const explicit = compileGraph(patched.graph, specSchema.parse({ nodes: [{ ref: 'response', type: 'response', existing_id: initial.node_ids.response, code: 'return {};', status_code: 201 }] }));
+    expect(explicit.graph.nodes[1].data.statusCode).toEqual({ fxActive: false, value: '201' });
+  });
+  it('keeps runtime Agent names and unknown options across label-only edits', () => {
+    const initial = compileGraph(empty(), specSchema.parse({ nodes: [{ ref: 'classifyParcel', label: 'Parcel classifier', type: 'agent' }] }));
+    initial.graph.nodes[0].data.options = { customOption: { sample_key: 7 }, systemPrompt: 'Classify synthetic parcels.' };
+    const patched = compileGraph(initial.graph, specSchema.parse({ nodes: [{ ref: 'newRef', existing_id: initial.node_ids.classifyParcel, type: 'agent', label: 'Sorting desk' }] }));
+    expect(patched.graph.nodes[0].data).toMatchObject({ nodeName: 'classifyParcel', label: 'Sorting desk', options: { customOption: { sample_key: 7 } } });
+  });
+});
+
+it('accepts every advertised Agent port and compiles its runtime handle', () => {
+  for (const port of nodeCatalog.nodes.find(n => n.type === 'agent')!.ports) {
+    const compiled = compileGraph(definition({}), specSchema.parse({ nodes: [
+      { ref: 'start', type: 'start' }, { ref: 'router', type: 'agent' }, { ref: 'response', type: 'response', code: 'return {};' },
+    ], edges: [{ ref: 'entry', from: 'start', to: 'router', port: 'default' }, { ref: 'exit', from: 'router', to: 'response', port }] }));
+    expect(validateGraph(compiled.graph).errors).toEqual([]);
+    expect(compiled.graph.edges.find(e => e.source === compiled.node_ids.router)?.sourceHandle).toBe('output');
+  }
 });
