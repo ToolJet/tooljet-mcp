@@ -19,6 +19,8 @@ import type {
 import { fail, ok, type ToolDef } from './types.js';
 import { matchPlannedPage } from '../pageMatch.js';
 import { danglingAfterReplace, replaceFingerprint, replaceIds, replaceView } from '../pageReplace.js';
+import { diffPageInPlace, type InPlaceDiff } from '../pageReplaceInPlace.js';
+import { checkPlanReads, type ReadCheck } from '../applyReadCheck.js';
 import { literalCanvasColor } from '../appSettings.js';
 
 interface LogicalTarget { id: string; name: string; type?: string }
@@ -141,22 +143,31 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
     description:
       'Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates ' +
       'tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ' +
-      'ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It never ' +
-      'runs queries. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts ' +
-      'and never auto-deletes user data, except for a plan page marked replace: that page\'s existing components and their events ' +
-      'are deleted just before the plan\'s components are created (page events and query events only where the plan declares them ' +
-      'again), queries the plan defines again are updated in place keeping their ids, and events on other pages that acted on a ' +
-      'replaced component are re-pointed to the recreated component of the same name. A replace is refused before any write if ' +
-      'the page changed since lint (any component, redefined query or related event edited), and every component and event ref ' +
-      'is prepared before the first write. A replace is not atomic: a failure after that deletion leaves the page to be repaired ' +
-      '(the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. ' +
+      'ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then ' +
+      'runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; ' +
+      'inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and ' +
+      'RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare ' +
+      'upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked ' +
+      'replace: that page ends up holding exactly the plan\'s components. It is written as a difference: a component the plan ' +
+      'leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and ' +
+      'one the plan drops is deleted, with the events on the page\'s components replaced by the plan\'s (page events and query ' +
+      'events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. ' +
+      'A replace is refused before any write if the page changed since lint (any component, redefined query or related event ' +
+      'edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway ' +
+      'leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or ' +
+      'otherwise recoverable pages. ' +
       'The one-time token prevents an accidental retry from duplicating objects.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string().optional().describe('Defaults to the version the plan was linted for.'),
       plan_token: z.string(),
+      check_reads: z.boolean().optional().describe(
+        'Default true: after the phase is written, the proven read queries it created or updated are run once and ' +
+          'the result carries read_check {ran, rows, failed, inconclusive, not_run}. Writes, remote or paid calls and ' +
+          'RunJS are never run. false skips the check.'
+      ),
     },
-    async handler(input: { app_id: string; version_id?: string; plan_token: string }) {
+    async handler(input: { app_id: string; version_id?: string; plan_token: string; check_reads?: boolean }) {
       // The ids are checked before the one-time token is spent, so a mistyped id does not cost the linted plan, and
       // an omitted version is the plan's (h2-receiving: a malformed version id, then none, and the page never applied).
       const peeked = peekAppPlan(input.plan_token);
@@ -175,7 +186,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       }
       const args = { ...input, version_id: version };
       const applied = { app_metadata: 0, tables: 0, seed_rows: 0, pages: 0, queries: 0, components: 0, events: 0,
-        queries_updated: 0, events_removed: 0, components_removed: 0 };
+        queries_updated: 0, events_removed: 0, components_removed: 0, components_kept: 0, components_moved: 0 };
       let stage = 'consume plan';
       let createdPageIds: string[] = [];
       let replacedPageNames: string[] = [];
@@ -515,6 +526,18 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           return [{ page, pageId: target.id, prepared }];
         });
 
+        // A replaced page is written as its difference from what it holds (pageReplaceInPlace.ts): a component the
+        // plan leaves as it is is not written, one that moved gets a layout update, and one that changed is created
+        // again under its own id, so ids survive a replace and a one-line change is a small write.
+        const inPlace = new Map<string, InPlaceDiff>();
+        if (replacing) {
+          for (const page of preparedPages) {
+            if (!replacing.replacedPageIds.includes(page.pageId)) continue;
+            const held = initialSummary.pages.find((existing) => existing.id === page.pageId)?.components ?? [];
+            inPlace.set(page.pageId, diffPageInPlace(held, page.prepared.components));
+          }
+        }
+
         if (replacing) {
           stage = 'remove the replaced page\'s components and events';
           for (const eventId of replacing.eventsToDelete) {
@@ -522,21 +545,39 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             applied.events_removed += 1;
           }
           for (const { pageId, componentIds } of replacing.componentsToDelete) {
-            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds });
-            applied.components_removed += removed.deleted ?? componentIds.length;
+            const ids = inPlace.get(pageId)?.deleteIds ?? componentIds;
+            if (!ids.length) continue;
+            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds: ids });
+            applied.components_removed += removed.deleted ?? ids.length;
           }
         }
 
         stage = 'create page components';
-        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => ({
-          ...page,
-          created: await client.createComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: page.pageId,
-            components: page.prepared.components,
-          }),
-        })));
+        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => {
+          const diff = inPlace.get(page.pageId);
+          if (!diff) {
+            const created = await client.createComponents({
+              appId: args.app_id,
+              versionId: args.version_id,
+              pageId: page.pageId,
+              components: page.prepared.components,
+            });
+            return { ...page, created, written: created.length };
+          }
+          if (diff.create.length) {
+            await client.createComponents({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, components: diff.create });
+          }
+          if (diff.relayout.length) {
+            await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, layouts: diff.relayout });
+          }
+          applied.components_kept += diff.keep.length;
+          applied.components_moved += diff.relayout.length;
+          // Every planned component has its id now, written or not: events and other pages refer to them by it.
+          const created = page.prepared.components.map((component) => ({
+            component_id: diff.ids.get(component.clientRef ?? component.name)!, name: component.name,
+          }));
+          return { ...page, created, written: diff.create.length };
+        }));
         const componentResults = componentWrites.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
         const componentFailures = componentWrites.flatMap((result, index) => result.status === 'rejected'
           ? [`page ${preparedPages[index]!.page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
@@ -551,7 +592,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const warnings: string[] = [];
         if (renameWarning) warnings.push(renameWarning);
         for (const page of componentResults) {
-          applied.components += page.created.length;
+          applied.components += page.written;
           warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
           page.prepared.components.forEach((component, index) => {
             const created = page.created[index];
@@ -575,13 +616,15 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           const missingTargets: string[] = [];
           for (const event of replacing.eventsToRetarget) {
             const newIds = new Map([...replacing.replacedComponentNames].map(([oldId, name]) => [oldId, newIdByName.get(name)] as const));
-            const swapped = replaceIds(JSON.stringify(event.event ?? {}), newIds);
+            const original = JSON.stringify(event.event ?? {});
+            const swapped = replaceIds(original, newIds);
             const text = swapped.text;
             const missing = swapped.missing.map((id) => replacing.replacedComponentNames.get(id) ?? id);
             if (missing.length) {
               missingTargets.push(`"${event.name ?? event.id}" (${missing.join(', ')})`);
               warnings.push(`Event "${event.name ?? event.id}" targets ${missing.map((n) => `"${n}"`).join(', ')}, which the replaced page no longer has; it was left as it was.`);
-            } else {
+            } else if (text !== original) {
+              // A component replaced in place kept its id: the event already points at it.
               updates.push({ eventId: event.id, ...(event.name ? { name: event.name } : {}), event: JSON.parse(text) });
             }
           }
@@ -619,8 +662,24 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           ...(spec.seed_data ?? []).map((seed) => seed.table_name),
           ...(spec.queries ?? []).flatMap((query) => query.table_ref ? [query.table_ref] : []),
         ]);
+        // The reads this phase wrote, run once (applyReadCheck.ts): a query that fails on first load is reported
+        // here by name, instead of reaching the app's users. Never a reason to fail a phase that is already written.
+        let readCheck: ReadCheck | { error: string } | undefined;
+        if (input.check_reads !== false) {
+          stage = 'check the phase\'s reads';
+          try {
+            const written = (spec.queries ?? []).flatMap((query) => {
+              const target = queryTargets.get(logicalRef(query));
+              return target ? [target.id] : [];
+            });
+            readCheck = await checkPlanReads(client, { versionId: args.version_id, queryIds: written });
+          } catch (error) {
+            readCheck = { error: `The phase applied; its reads could not be checked (${error instanceof Error ? error.message : String(error)}). Run them with run_queries.` };
+          }
+        }
         return ok({
           applied,
+          ...(readCheck ? { read_check: readCheck } : {}),
           refs: {
             tables: Object.fromEntries([...relevantTableNames].map((name) => [name, tableIds.get(name.toLowerCase())])),
             pages: selectedRefs(pageTargets, (spec.pages ?? []).map(logicalRef)),

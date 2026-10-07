@@ -14112,7 +14112,23 @@
     "exposedVariables": [
       {
         "name": "label",
-        "default": "Select"
+        "default": "Select",
+        "semantics": "The field's caption text, not the selected option: use value for the selection."
+      },
+      {
+        "name": "value",
+        "default": null,
+        "semantics": "The value of the selected option (null until one is chosen). Filter and write with this."
+      },
+      {
+        "name": "options",
+        "default": [],
+        "semantics": "The options as rendered: [{ label, value }]."
+      },
+      {
+        "name": "isValid",
+        "default": true,
+        "valueType": "boolean"
       }
     ]
   },

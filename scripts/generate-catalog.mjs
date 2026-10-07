@@ -355,6 +355,14 @@ const RUNTIME_EXPOSED_VARIABLES = {
     },
     { name: 'selectedRowId', default: null, valueType: 'number', semantics: 'Alias of selectedRecordId.' },
   ],
+  // The widget config lists only label; RadioButtonV2.jsx sets value (the selected option), options and isValid at
+  // runtime, and label is the field's caption. A build filtered a table by .label and it always read empty (2026-10-01).
+  RadioButtonV2: [
+    { name: 'value', default: null, semantics: 'The value of the selected option (null until one is chosen). Filter and write with this.' },
+    { name: 'options', default: [], semantics: 'The options as rendered: [{ label, value }].' },
+    { name: 'isValid', default: true, valueType: 'boolean' },
+    { name: 'label', default: 'Select', semantics: "The field's caption text, not the selected option: use value for the selection." },
+  ],
   Table: [
     { name: 'currentData', default: [] },
     { name: 'currentPageData', default: [] },
@@ -370,7 +378,7 @@ for (const [type, variables] of Object.entries(RUNTIME_EXPOSED_VARIABLES)) {
   schemas[type].exposedVariables.push(...variables.filter((variable) => !known.has(variable.name)));
   // Newer widget configs may already advertise these names. Retain their harvested defaults,
   // but enrich them with the same runtime semantics instead of dropping the supplement.
-  if (type === 'Map' || type === 'DatePickerV2' || type === 'Calendar') {
+  if (type === 'Map' || type === 'DatePickerV2' || type === 'Calendar' || type === 'RadioButtonV2') {
     for (const variable of variables) {
       Object.assign(schemas[type].exposedVariables.find(entry => entry.name === variable.name), variable);
     }

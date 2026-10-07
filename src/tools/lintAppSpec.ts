@@ -1,5 +1,5 @@
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
+import { lintPlannedApp, pagesUsingQuery, type AppSpecLintResult } from '../appSpecLint.js';
 import { literalCanvasColor } from '../appSettings.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
@@ -11,6 +11,7 @@ import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
 import { replaceView, danglingAfterReplace, replaceFingerprint } from '../pageReplace.js';
+import { restatedQueryNames } from '../restatedQueries.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
@@ -80,6 +81,28 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
+        const datasources = args.queries?.length && args.version_id
+          ? await client.listDatasources(args.version_id)
+          : [];
+        // A plan query that says again, word for word, what the app already holds is a use of that query, not a new
+        // definition (restatedQueries.ts): it leaves the plan, and refs to its name resolve to the query in the app.
+        if (fetchedSummary && args.queries?.length) {
+          const restated = restatedQueryNames(fetchedSummary, args.queries, existingTables, datasources);
+          if (restated.length) {
+            args.queries = args.queries.filter((query) => !restated.includes(query.name));
+            preflightWarnings.push(`${restated.map((name) => `"${name}"`).join(', ')}: already in the app exactly as written here, ` +
+              'so the plan uses the existing quer' + (restated.length > 1 ? 'ies' : 'y') + ' and defines nothing again.');
+          }
+          // A query marked update: true changes for every page that reads it: say which pages those are.
+          const planPages = new Set((args.pages ?? []).map((page) => page.name));
+          for (const query of args.queries.filter((candidate) => candidate.update)) {
+            const users = pagesUsingQuery(fetchedSummary, query.name, planPages);
+            if (users.length) {
+              preflightWarnings.push(`Query "${query.name}" is updated in place, and page${users.length > 1 ? 's' : ''} ` +
+                `${users.map((user) => `"${user}"`).join(', ')} also read${users.length > 1 ? '' : 's'} it: keep the fields they use.`);
+            }
+          }
+        }
         // A plan page marked replace is checked against the app with that page emptied and the queries the plan
         // redefines renamed out of the way: the same names are its new definition, not collisions.
         const view = fetchedSummary ? replaceView(fetchedSummary, args) : undefined;
@@ -215,9 +238,6 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         if (args.queries?.length && !args.version_id) {
           preflightErrors.push('version_id is required when a plan contains queries.');
         }
-        const datasources = args.queries?.length && args.version_id
-          ? await client.listDatasources(args.version_id)
-          : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
         const uniqueDatasourceNames = new Map(datasources.filter(source =>
           datasources.filter(other => other.name === source.name).length === 1

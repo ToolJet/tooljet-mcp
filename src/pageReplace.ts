@@ -31,7 +31,7 @@ export interface ReplaceView {
 
 interface ReplacePlan {
   pages?: Array<{ name: string; client_ref?: string; replace?: boolean }>;
-  queries?: Array<{ name: string; client_ref?: string }>;
+  queries?: Array<{ name: string; client_ref?: string; update?: boolean }>;
   lifecycles?: Array<{
     query_ref: string; success_alert?: unknown; failure_alert?: unknown; refresh_query_refs?: string[];
     before_refresh_actions?: Array<Record<string, unknown>>; success_actions?: Array<Record<string, unknown>>;
@@ -143,12 +143,15 @@ export function replaceView(summary: AppSummary, plan: ReplacePlan): ReplaceView
       }
     }
   }
-  const queriesToUpdate = new Map(
-    summary.queries
-      .filter((query) => query.name && planQueryNames.has(query.name) && !reachedElsewhere.has(query.id) && (owned.has(query.id) || !usedElsewhere(query)))
-      .map((query) => [query.name!, query.id])
-  );
-  if (!replacedPages.length && (!replacedNames.size || !queriesToUpdate.size)) return undefined;
+  // A plan query marked update: true is the author changing a query for every page that reads it: updated in place
+  // whoever reaches it. Unmarked, only the replaced page's own queries are.
+  const explicitUpdates = new Set((plan.queries ?? []).filter((query) => query.update).map((query) => query.name));
+  const implicit = replacedNames.size
+    ? summary.queries.filter((query) => query.name && planQueryNames.has(query.name) && !reachedElsewhere.has(query.id) && (owned.has(query.id) || !usedElsewhere(query)))
+    : [];
+  const explicit = summary.queries.filter((query) => query.name && explicitUpdates.has(query.name));
+  const queriesToUpdate = new Map([...implicit, ...explicit].map((query) => [query.name!, query.id]));
+  if (!replacedPages.length && !explicit.length && (!replacedNames.size || !queriesToUpdate.size)) return undefined;
   const redefinedIds = new Set(queriesToUpdate.values());
 
   // Events the plan will create, keyed by what they do, so the ones it creates again are dropped rather than

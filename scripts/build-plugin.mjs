@@ -40,7 +40,7 @@ if (/(?:\/(?:Users|home)\/[^/\s"']+\/|\/(?:private\/)?(?:tmp|var\/folders)\/|[A-
 }
 
 // 2. Runtime catalogs and compatibility metadata live at `../data/*.json`. Assert they ship.
-for (const f of ['component-schemas.json', 'component-compatibility.json', 'datasource-schemas.json', 'default-theme.json', 'page-icons.json']) {
+for (const f of ['component-schemas.json', 'component-compatibility.json', 'component-default-definitions.json', 'datasource-schemas.json', 'default-theme.json', 'page-icons.json']) {
   if (!existsSync(resolve(root, 'data', f))) {
     const generate = f === 'page-icons.json' ? 'generate:page-icons' : 'generate:catalogs';
     throw new Error(`build-plugin: missing data/${f} — run "npm run ${generate}" first.`);

@@ -6,6 +6,7 @@ export const THEME_LICENCE_USER_MESSAGE =
   'Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. ' +
   'Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.';
 import { fail, ok, type ToolDef } from './types.js';
+import { paintsDarkCanvasInLightMode } from './createApp.js';
 
 const colorPair = z.object({
   light: z.string().trim().min(1).max(100).describe('Color used in light mode; hex is recommended.'),
@@ -65,7 +66,18 @@ type Args = {
   is_default?: boolean;
   confirm?: boolean;
   include_definitions?: boolean;
+  app_id?: string;
+  version_id?: string;
 };
+
+/** Sets the theme on an app version, in dark mode when the theme's light-mode canvas is dark (as create_app does). */
+async function applyToApp(client: ToolJetClient, theme: AppTheme, args: Args, definition: unknown) {
+  if (!args.app_id || !args.version_id) return undefined;
+  const dark = paintsDarkCanvasInLightMode(definition);
+  await client.updateAppSettings({ appId: args.app_id, versionId: args.version_id,
+    globalSettings: { theme, ...(dark ? { appMode: 'dark' as const } : {}) } });
+  return { app_id: args.app_id, version_id: args.version_id, ...(dark ? { app_mode: 'dark' as const } : {}) };
+}
 
 function requireValue<T>(value: T | undefined, label: string): T {
   if (value === undefined) throw new Error(`manage_theme requires ${label} for this action.`);
@@ -91,7 +103,9 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
     description:
       'Manage workspace theme objects through ToolJet\'s typed theme API. Actions: list, create, set_default, ' +
       'update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens ' +
-      'with light/dark values. Creating a theme does not apply it to an app; use update_app_settings(theme_id) for that. ' +
+      'with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when ' +
+      'its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same ' +
+      'name, so there is no need to list themes first. ' +
       'Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass ' +
       'include_definitions:true (or theme_id) to get a definition.',
     inputSchema: {
@@ -102,6 +116,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       is_default: z.boolean().optional(),
       confirm: z.boolean().optional(),
       include_definitions: z.boolean().optional(),
+      app_id: z.string().uuid().optional().describe('create only: apply the theme to this app as well'),
+      version_id: z.string().uuid().optional().describe('create only, with app_id: the app version to apply it to'),
     },
     async handler(args: Args) {
       try {
@@ -129,12 +145,14 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
           // idempotent instead of costing the caller a 422 and a retry turn.
           const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
           if (existing) {
+            const applied = await applyToApp(client, existing, args, (existing as { definition?: unknown }).definition ?? args.definition);
             return ok({
               theme: existing,
               reused: true,
+              ...(applied ? { applied } : {}),
               warnings: [
                 `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` +
-                  'Apply it with update_app_settings, or use update_definition to change it.',
+                  (applied ? 'It is applied to the app.' : 'Apply it with update_app_settings, or use update_definition to change it.'),
               ],
             });
           }
@@ -144,7 +162,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
               definition: requireValue(args.definition, 'definition'),
               isDefault: args.is_default ?? false,
             });
-            return ok({ theme: created });
+            const applied = await applyToApp(client, created, args, args.definition);
+            return ok({ theme: created, ...(applied ? { applied } : {}) });
           } catch (error) {
             // Custom themes are a licensed feature; Community Edition answers 451. That is a fact about
             // the customer's plan, not a mistake in the call, so it must not read as an error the model

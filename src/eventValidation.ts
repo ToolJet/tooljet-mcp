@@ -468,6 +468,43 @@ export function validateEvents(
   }
 
   errors.push(...queryEventCycleErrors(summary, events, options.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
+  // One click, one run of a query. A handler planned again with a slightly different guard is not an exact match of
+  // the one the app holds, so it was created beside it and the click ran the write twice (2026-09-30).
+  const persistedMode = options.includePersistedChains === false;
+  const runKey = (sourceId: string, trigger: unknown, ref: unknown, queryId: unknown) => JSON.stringify([sourceId, trigger, ref ?? null, queryId]);
+  const payloadKey = (payload: Record<string, unknown>) => JSON.stringify(Object.keys(payload).filter((k) => k !== 'index' && k !== 'name').sort().map((k) => [k, payload[k]]));
+  const heldRuns = new Map<string, { id: string; payload: string }[]>();
+  if (!persistedMode) {
+    for (const held of summary.events ?? []) {
+      const payload = held.event && typeof held.event === 'object' ? (held.event as Record<string, unknown>) : undefined;
+      if (!payload || payload.actionId !== 'run-query' || !held.sourceId) continue;
+      if (held.target !== 'component' && held.target !== 'table_column') continue;
+      const key = runKey(held.sourceId, payload.eventId, payload.ref, payload.queryId);
+      heldRuns.set(key, [...(heldRuns.get(key) ?? []), { id: held.id, payload: payloadKey(payload) }]);
+    }
+  }
+  const plannedRuns = new Set<string>();
+  for (const event of events) {
+    if (event.action?.actionId !== 'run-query') continue;
+    if (event.sourceType !== 'component' && event.sourceType !== 'table_column') continue;
+    const key = runKey(event.sourceId, event.trigger, event.ref, event.action.queryId);
+    const sourceName = components.get(event.sourceId)?.name ?? event.sourceId;
+    const queryName = queryById.get(String(event.action.queryId ?? ''))?.name ?? String(event.action.queryName ?? event.action.queryId);
+    const mine = payloadKey({ eventId: event.trigger, ...(event.ref ? { ref: event.ref } : {}), ...event.action });
+    const held = heldRuns.get(key);
+    // An exact match of a held handler is not created again (withoutExistingEvents), so it is not a second run.
+    if (held && !held.some((h) => h.payload === mine)) {
+      errors.push(
+        `"${sourceName}" ${event.trigger} already runs query "${queryName}" (event ${held[0].id}); a second handler would run it twice on one ${event.trigger}. ` +
+          'Change that handler with update_events, or delete it with delete_event before adding this one.'
+      );
+    } else if (plannedRuns.has(key)) {
+      (persistedMode ? warnings : errors).push(
+        `"${sourceName}" ${event.trigger} runs query "${queryName}" twice: two handlers on it run the same query, so one ${event.trigger} runs it two times. Keep one.`
+      );
+    }
+    plannedRuns.add(key);
+  }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
