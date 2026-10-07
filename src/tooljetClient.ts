@@ -30,7 +30,6 @@ export interface AppVersionResult {
   source_version_id?: string;
   current_environment_id?: string;
   description?: string | null;
-  recovered?: true;
 }
 
 export interface CreateAppVersionParams {
@@ -1436,35 +1435,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           : {}),
       }),
     });
-    let created: Record<string, unknown>;
-    let recoveredExisting = false;
-    const conflictText = res.ok ? '' : await res.clone().text();
-    const duplicateConflict = res.status === 409
-      || (res.status === 422 && /already exists/i.test(conflictText));
-    if (duplicateConflict) {
-      // A timeout after ToolJet committed the clone is safe to retry: recover only the exact
-      // same draft name/source/description tuple. Never adopt the released version or an
-      // unrelated same-name version.
-      const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
-      await assertOk(versionsRes, 'createAppVersion.readAfterConflict');
-      const versionsBody = (await versionsRes.json()) as { versions?: Array<Record<string, unknown>> };
-      const app = await getApp(params.appId);
-      const currentVersionId = app.current_version_id ?? app.currentVersionId;
-      const expectedDescription = params.versionDescription ?? '';
-      const recovered = versionsBody.versions?.find((version) =>
-        version.name === params.versionName
-        && (version.parent_version_id ?? version.parentVersionId) === params.versionFromId
-        && String(version.description ?? '') === expectedDescription
-        && version.status === 'DRAFT'
-        && version.id !== currentVersionId
+    // The backend has no operation idempotency key. A same-name draft, even with the
+    // same source/description, is not evidence that this request created it. Fail
+    // closed on conflicts and uncertain retries instead of adopting someone else's work.
+    if (res.status === 409 || (res.status === 422 && /already exists/i.test(await res.clone().text()))) {
+      throw new Error(
+        `ToolJet createAppVersion failed (${res.status}): version name already exists. ` +
+          'No existing draft was adopted. Inspect the versions and ask the user whether to use ' +
+          'an existing version or create a version with a different name; do not edit or release ' +
+          'a matching draft as a recovered clone.'
       );
-      if (!recovered) await assertOk(res, 'createAppVersion');
-      created = recovered!;
-      recoveredExisting = true;
-    } else {
-      await assertOk(res, 'createAppVersion');
-      created = (await res.json()) as Record<string, unknown>;
     }
+    await assertOk(res, 'createAppVersion');
+    const created = (await res.json()) as Record<string, unknown>;
     if (typeof created.id !== 'string' || typeof created.name !== 'string') {
       throw new Error('ToolJet createAppVersion failed: response did not include the new version id and name.');
     }
@@ -1480,7 +1463,6 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       ...(created.description === null || typeof created.description === 'string'
         ? { description: created.description as string | null }
         : {}),
-      ...(recoveredExisting ? { recovered: true as const } : {}),
     };
   }
 

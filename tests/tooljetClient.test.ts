@@ -217,37 +217,32 @@ describe('createClient', () => {
       });
     });
 
-    it('recovers an exact version clone after a conflict from a timed-out first attempt', async () => {
+    it.each([409, 422])('rejects a first-call %s conflict even when an edited draft matches every field', async (status) => {
       auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 422, text: 'Already exists!' }))
+        .mockResolvedValueOnce(mockResponse({ status, text: 'Already exists!' }))
         .mockResolvedValueOnce(mockResponse({ json: { versions: [{
-          id: 'version-new', name: 'v2', parent_version_id: 'version-old', status: 'DRAFT',
-          current_environment_id: 'environment-dev', description: 'Candidate',
-        }] } }))
-        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-live' } }));
+          id: 'orchard-draft', name: 'harvest-review', parent_version_id: 'orchard-source', status: 'DRAFT',
+          description: 'Harvest candidate', definition: { pages: [{ name: 'Existing edits' }] },
+        }] } }));
       const client = createClient(auth, config);
 
       await expect(client.createAppVersion({
-        appId: 'app-1', versionName: 'v2', versionFromId: 'version-old', versionDescription: 'Candidate',
-      })).resolves.toMatchObject({
-        version_id: 'version-new', source_version_id: 'version-old', recovered: true,
-      });
+        appId: 'orchard-app', versionName: 'harvest-review', versionFromId: 'orchard-source',
+        versionDescription: 'Harvest candidate',
+      })).rejects.toThrow('No existing draft was adopted');
+      expect(auth.authedFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('does not recover a published, released, or differently described same-name version', async () => {
+    it('does not adopt a matching draft after an uncertain clone timeout', async () => {
       auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 422, text: 'Already exists!' }))
-        .mockResolvedValueOnce(mockResponse({ json: { versions: [
-          { id: 'published', name: 'v2', parent_version_id: 'version-old', status: 'PUBLISHED', description: '' },
-          { id: 'released', name: 'v2', parent_version_id: 'version-old', status: 'DRAFT', description: '' },
-          { id: 'described', name: 'v2', parent_version_id: 'version-old', status: 'DRAFT', description: 'Older work' },
-        ] } }))
-        .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'released' } }));
+        .mockRejectedValueOnce(new Error('Response timed out after submission'))
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: 'Already exists!' }));
       const client = createClient(auth, config);
+      const request = { appId: 'orchard-app', versionName: 'harvest-review', versionFromId: 'orchard-source' };
 
-      await expect(client.createAppVersion({
-        appId: 'app-1', versionName: 'v2', versionFromId: 'version-old',
-      })).rejects.toThrow(/422.*Already exists/i);
+      await expect(client.createAppVersion(request)).rejects.toThrow('timed out');
+      await expect(client.createAppVersion(request)).rejects.toThrow('No existing draft was adopted');
+      expect(auth.authedFetch.mock.calls.map(([, init]) => init.method)).toEqual(['POST', 'POST']);
     });
 
     it('releases a version and verifies it through the app readback', async () => {

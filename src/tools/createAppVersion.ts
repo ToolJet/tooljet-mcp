@@ -14,7 +14,7 @@ export function createAppVersionTool(client: ToolJetClient): ToolDef {
     description:
       'Create a new draft version of an existing ToolJet app by cloning a specified source version. ' +
       'Returns the app_id, new version_id, version_name, source_version_id, and available version metadata; ' +
-      'recovered:true means an exact draft from a retry was reused. Before editing, inspect that returned ' +
+      'Conflicts fail without adopting an existing draft, including after a timeout. Before editing, inspect the returned ' +
       'version_id for its cloned resource IDs. Version names must be unique within the app.',
     inputSchema: {
       app_id: z.string().uuid(),

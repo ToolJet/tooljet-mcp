@@ -86,6 +86,7 @@ POST /api/apps/:appId/versions
 Body: { "versionName": "v2", "versionFromId": "<source-version-uuid>", "versionDescription"?: "..." }
 ```
 The response is the cloned draft version. MCP returns its `id` as `version_id`; subsequent edits must use that id.
+Name conflicts fail, including retries after an uncertain timeout. The API has no operation idempotency key, so matching draft metadata cannot prove ownership; MCP never adopts an existing draft as a recovered clone.
 
 ### Release a version
 ```
