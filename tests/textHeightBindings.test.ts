@@ -80,3 +80,21 @@ describe('Text height estimates exclude binding source', () => {
     expect(lintComponents([textSpec(recipe, 10)]).errors.join(' ')).toMatch(/too short to render one line/);
   });
 });
+
+// Self-review of the binding-source change (2026-10-06): a line that is only a binding stopped counting, so a
+// three-line contact card at 30px passed silently. It still never blocks (the binding may render empty), but warns.
+describe('lines that are only a binding', () => {
+  const warningsFor = (text: string, height = 30) =>
+    lintComponentSpec(textSpec(text, height)).warnings.filter(warning => warning.includes('likely cut off'));
+  it('warn when one line each would not fit', () => {
+    const text = '{{queries.a.data.name}}<br>{{queries.a.data.email}}<br>{{queries.a.data.phone}}';
+    expect(clippingErrors(text)).toEqual([]);
+    expect(warningsFor(text)).toHaveLength(1);
+    expect(warningsFor(text, 80)).toEqual([]);
+    expect(warningsFor('<b>Name</b><br>{{x}}')).toHaveLength(1);
+  });
+  it('stay silent for a text that is one binding', () => {
+    expect(warningsFor(recipe)).toEqual([]);
+    expect(warningsFor('{{"first<br>second"}}')).toEqual([]);
+  });
+});

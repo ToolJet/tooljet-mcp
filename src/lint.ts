@@ -1339,7 +1339,7 @@ const WRAP_REQUIRED_COLUMNS = 5;
 /** Rough height of visible static Text: one entry per line (<br>, block tags, newlines), each the largest
  * inline font-size at 1.5 line height (minimum 18px), plus padding. With bindings this is only the
  * static minimum; their rendered content (even a quoted HTML string) is deliberately not evaluated. */
-export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[]; dynamic?: boolean } {
+export function estimateTextHeight(text: string, baseSize: number, options: { bindingLines?: boolean } = {}): { lines: number; px: number; sizes: number[]; dynamic?: boolean } {
   const dynamic = text.includes('{{');
   if (dynamic) {
     const literals: string[] = [];
@@ -1352,7 +1352,10 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
     literals.push(text.slice(from));
     // Whitespace avoids inventing a nonempty line or joining fragments into an HTML tag. If a
     // boundary could not be parsed, keep only the known prefix; syntax lint owns invalid bindings.
-    text = literals.join(' ').split('{{', 1)[0]!;
+    // With bindingLines, a binding between static lines stands for one line of plain text (never its source or
+    // markup): "{{name}}<br>{{email}}<br>{{phone}}" is three lines. Used only for a non-blocking warning.
+    const standIn = options.bindingLines && literals.some((part) => part.replace(/<[^>]+>/g, '').trim() || /<br\s*\/?>/i.test(part)) ? 'x' : ' ';
+    text = literals.join(standIn).split('{{', 1)[0]!;
   }
   // Blank lines from a doubled <br> still take space (about half a line each).
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
@@ -1556,6 +1559,15 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
           `Text "${label}": its ${needed.lines}${needed.dynamic ? ' static' : ''} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
             `${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`
         );
+      } else if (needed.dynamic) {
+        // A line that is only a binding may render empty, so it never blocks; one line each is the likely case.
+        const likely = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14, { bindingLines: true });
+        if (likely.lines > 1 && likely.px > height + 6) {
+          warnings.push(
+            `Text "${label}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ` +
+              `${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`
+          );
+        }
       }
     }
   }

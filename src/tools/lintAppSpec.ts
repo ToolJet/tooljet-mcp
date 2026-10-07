@@ -95,10 +95,12 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           if (existingNames.has(key)) ambiguousNames.add(key);
           existingNames.set(key, table.table_name);
         }
+        const existingExact = new Set(existingTables.map((table) => table.table_name));
         const canonicalTableName = (name: string): string => {
           const key = name.toLowerCase();
-          if (ambiguousNames.has(key)) throw new Error(`Ambiguous existing table name "${name}": multiple workspace tables match ignoring case. No plan token was issued.`);
-          return plannedNames.get(key) ?? existingNames.get(key) ?? name;
+          // An exact workspace name is not ambiguous because another table differs from it only in case.
+          if (ambiguousNames.has(key) && !existingExact.has(name)) throw new Error(`Ambiguous existing table name "${name}": multiple workspace tables match ignoring case. No plan token was issued.`);
+          return plannedNames.get(key) ?? (existingExact.has(name) ? name : existingNames.get(key)) ?? name;
         };
         for (const name of plannedNames.values()) canonicalTableName(name);
         for (const seed of args.seed_data ?? []) seed.table_name = canonicalTableName(seed.table_name);

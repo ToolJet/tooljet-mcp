@@ -137,7 +137,7 @@ function isMutationQuery(query: { options?: unknown }): boolean {
 export function validateEvents(
   summary: AppSummary,
   events: EventSpec[],
-  options: { includePersistedChains?: boolean; navigationMovedLast?: boolean } = {}
+  options: { includePersistedChains?: boolean; navigationMovedLast?: boolean; savedRefs?: ReadonlySet<EventSpec> } = {}
 ): EventValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -194,7 +194,9 @@ export function validateEvents(
       const source = components.get(event.sourceId);
       for (const ref of new Set([event.ref, event.action.ref].filter((ref) => ref != null && ref !== ''))) {
         if (source?.type !== 'Navigation' || event.trigger !== 'onClick') {
-          errors.push(`${label}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
+          // A ref saved before this check existed is reported, not blocking: an edit to another handler of the same
+          // app must not fail on it. A ref this call adds or rewrites still blocks.
+          (options.savedRefs?.has(event) ? warnings : errors).push(`${label}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
         } else if (!nonEmptyString(ref) || ref.includes('{{')) {
           errors.push(`${label}: Navigation onClick ref must be a literal non-empty item id.`);
         } else {
@@ -569,6 +571,9 @@ export function validateEvents(
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
+/** The saved event id behind each spec persistedEventSpecs returns. */
+export const persistedEventIds = new WeakMap<EventSpec, string>();
+
 export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
   return summary.events
     .map((event, position) => ({ event, position }))
@@ -581,14 +586,16 @@ export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
     // Keep malformed ordinary refs visible to validation instead of silently dropping them.
     // String refs retain the normal representation, including runtime query and table refs.
     if (event.target === 'component' && ref != null && typeof ref !== 'string') action.ref = ref;
-    return [{
+    const spec: EventSpec = {
       sourceId: event.sourceId,
       sourceType: event.target as EventSourceType,
       ...(typeof ref === 'string' ? { ref } : {}),
       trigger: eventId,
       action,
       name: event.name,
-    }];
+    };
+    if (event.id) persistedEventIds.set(spec, event.id);
+    return [spec];
     });
 }
 

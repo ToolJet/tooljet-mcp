@@ -67199,7 +67199,7 @@ function expressionOutsideBinding(value2) {
   return match ? JSON.stringify(match[0].trim().slice(0, 60)) : null;
 }
 var WRAP_REQUIRED_COLUMNS = 5;
-function estimateTextHeight(text, baseSize) {
+function estimateTextHeight(text, baseSize, options2 = {}) {
   const dynamic = text.includes("{{");
   if (dynamic) {
     const literals = [];
@@ -67209,7 +67209,8 @@ function estimateTextHeight(text, baseSize) {
       from = span.end;
     }
     literals.push(text.slice(from));
-    text = literals.join(" ").split("{{", 1)[0];
+    const standIn = options2.bindingLines && literals.some((part) => part.replace(/<[^>]+>/g, "").trim() || /<br\s*\/?>/i.test(part)) ? "x" : " ";
+    text = literals.join(standIn).split("{{", 1)[0];
   }
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
   const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
@@ -67343,6 +67344,11 @@ function lintComponentSpec(spec, context = {}) {
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
         errors.push(`Text "${label2}": its ${needed.lines}${needed.dynamic ? " static" : ""} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
+      } else if (needed.dynamic) {
+        const likely = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14, { bindingLines: true });
+        if (likely.lines > 1 && likely.px > height + 6) {
+          warnings.push(`Text "${label2}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`);
+        }
       }
     }
   }
@@ -73831,7 +73837,7 @@ function validateEvents(summary, events, options2 = {}) {
       const source2 = components.get(event.sourceId);
       for (const ref of new Set([event.ref, event.action.ref].filter((ref2) => ref2 != null && ref2 !== ""))) {
         if (source2?.type !== "Navigation" || event.trigger !== "onClick") {
-          errors.push(`${label2}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
+          (options2.savedRefs?.has(event) ? warnings : errors).push(`${label2}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
         } else if (!nonEmptyString(ref) || ref.includes("{{")) {
           errors.push(`${label2}: Navigation onClick ref must be a literal non-empty item id.`);
         } else {
@@ -74128,6 +74134,7 @@ function validateEvents(summary, events, options2 = {}) {
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
+var persistedEventIds = /* @__PURE__ */ new WeakMap();
 function persistedEventSpecs(summary) {
   return summary.events.map((event, position) => ({ event, position })).sort((left, right) => (left.event.index ?? left.position) - (right.event.index ?? right.position)).flatMap(({ event }) => {
     if (!event.sourceId || !event.target || !event.event || typeof event.event !== "object")
@@ -74138,14 +74145,17 @@ function persistedEventSpecs(summary) {
     const { eventId, ref, ...action } = payload2;
     if (event.target === "component" && ref != null && typeof ref !== "string")
       action.ref = ref;
-    return [{
+    const spec = {
       sourceId: event.sourceId,
       sourceType: event.target,
       ...typeof ref === "string" ? { ref } : {},
       trigger: eventId,
       action,
       name: event.name
-    }];
+    };
+    if (event.id)
+      persistedEventIds.set(spec, event.id);
+    return [spec];
   });
 }
 function navigationReorders(summary, touched, diagnostics) {
@@ -76657,11 +76667,12 @@ function lintAppSpecTool(client) {
             ambiguousNames.add(key4);
           existingNames.set(key4, table.table_name);
         }
+        const existingExact = new Set(existingTables.map((table) => table.table_name));
         const canonicalTableName = (name2) => {
           const key4 = name2.toLowerCase();
-          if (ambiguousNames.has(key4))
+          if (ambiguousNames.has(key4) && !existingExact.has(name2))
             throw new Error(`Ambiguous existing table name "${name2}": multiple workspace tables match ignoring case. No plan token was issued.`);
-          return plannedNames.get(key4) ?? existingNames.get(key4) ?? name2;
+          return plannedNames.get(key4) ?? (existingExact.has(name2) ? name2 : existingNames.get(key4)) ?? name2;
         };
         for (const name2 of plannedNames.values())
           canonicalTableName(name2);
@@ -79627,7 +79638,9 @@ function updateEventsTool(client) {
             return updateType === "update" ? { ...event, name: update.name, event: update.event } : { ...event, index: update.index };
           })
         };
-        const validation = validateEvents(changedSummary, persistedEventSpecs(changedSummary), { includePersistedChains: false });
+        const specs = persistedEventSpecs(changedSummary);
+        const savedRefs = new Set(specs.filter((spec) => updateType === "reorder" || !updatesById.has(persistedEventIds.get(spec) ?? "")));
+        const validation = validateEvents(changedSummary, specs, { includePersistedChains: false, savedRefs });
         if (validation.errors.length)
           return fail(new Error(validation.errors.join(" ")));
         const result = await client.updateEvents({

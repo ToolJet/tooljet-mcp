@@ -109,6 +109,12 @@ describe('case-insensitive table references across collision renames', () => {
     expect(args).toEqual(before);
   });
 
+  it('resolves an exact workspace name even when another table differs only in case', async () => {
+    const client = clientMock([{ id: 'one', table_name: 'jobs' }, { id: 'two', table_name: 'JOBS' }]);
+    const { body } = await lint({ seed_data: [{ table_name: 'jobs', rows: [{ sku: 'A' }] }] }, client);
+    expect(JSON.stringify(body)).not.toContain('Ambiguous existing table name');
+  });
+
   it('rejects referenced case-ambiguous workspace tables instead of choosing the last ID', async () => {
     const client = clientMock([{ id: 'one', table_name: 'jobs' }, { id: 'two', table_name: 'JOBS' }]);
     const { out, body } = await lint({ seed_data: [{ table_name: 'Jobs', rows: [{ sku: 'A' }] }] }, client);

@@ -85,6 +85,24 @@ describe('ordinary component refs cannot disguise duplicate submissions', () => 
     expect(client.updateEvents).not.toHaveBeenCalled();
   });
 
+  // Self-review (2026-10-06): a ref saved before the check existed failed every later update_events in the app.
+  it('lets update_events edit another handler when an older handler kept a saved ref', async () => {
+    const app = summary();
+    app.pages[0]!.components.push({ id: 'cancel', name: 'button5', type: 'Button' });
+    app.events.push({ id: 'legacy', sourceId: 'merchant', target: 'component',
+      event: { eventId: 'onChange', ref: 'old_ref', actionId: 'show-alert', message: 'changed', alertType: 'info' } });
+    app.events.push({ id: 'other', sourceId: 'cancel', target: 'component',
+      event: { eventId: 'onClick', actionId: 'show-alert', message: 'Cancelled', alertType: 'info' } });
+    const client = clientFor(app);
+    client.updateEvents.mockResolvedValue({});
+    const result = await updateEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app', version_id: 'v1', events: [{ event_id: 'other', name: 'Cancel',
+        event: { eventId: 'onClick', actionId: 'show-alert', message: 'Cancelled.', alertType: 'info' } }],
+    });
+    expect(result.isError).toBeFalsy();
+    expect(client.updateEvents).toHaveBeenCalled();
+  });
+
   it.each([
     [undefined, 'submit_addExpense'], ['first', 'second'], ['same', 'same'],
   ])('finds persisted duplicate runs despite refs %j / %j', (left, right) => {
