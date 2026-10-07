@@ -6,7 +6,7 @@ import type { ToolJetClient } from './tooljetClient.js';
  * for a write that adds a Map when the instance is known to have no key; undefined otherwise (key set, no Map, or unknown).
  */
 export async function mapKeyRefusal(client: ToolJetClient, componentTypes: Iterable<string>): Promise<string | undefined> {
-  if (![...componentTypes].includes('Map') || typeof client.hasGoogleMapsKey !== 'function') return undefined;
+  if (![...componentTypes].includes('Map') || typeof client?.hasGoogleMapsKey !== 'function') return undefined;
   let hasKey: boolean | undefined;
   try { hasKey = await client.hasGoogleMapsKey(); } catch { return undefined; }
   if (hasKey !== false) return undefined;

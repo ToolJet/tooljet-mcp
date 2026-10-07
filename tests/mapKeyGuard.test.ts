@@ -18,3 +18,18 @@ describe('a Map on an instance without a Google Maps key', () => {
     expect(await mapKeyRefusal({} as ToolJetClient, ['Map'])).toBeUndefined();
   });
 });
+
+// Two warehouse builds (2026-10-05) read the Map catalog, wrote a Map page, and only learnt from the write's refusal
+// that the instance has no key: a whole page rewritten each time. The catalog entry says so when Map is read.
+describe('the Map catalog entry on an instance without a key', () => {
+  it('carries the instance note', async () => {
+    const { getComponentCatalogTool } = await import('../src/tools/getComponentCatalog.js');
+    const tool = getComponentCatalogTool(client(false));
+    const one = JSON.stringify(await tool.handler({ type: 'Map' } as never));
+    expect(one).toMatch(/instance_note[\s\S]*GOOGLE_MAPS_API_KEY/);
+    const batch = JSON.stringify(await tool.handler({ types: ['Table', 'Map'] } as never));
+    expect(batch).toMatch(/instance_note/);
+    const keyed = JSON.stringify(await getComponentCatalogTool(client(true)).handler({ type: 'Map' } as never));
+    expect(keyed).not.toMatch(/instance_note/);
+  });
+});

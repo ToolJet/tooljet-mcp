@@ -62367,6 +62367,9 @@ var COMMON_QUERY_OPTION_FIELDS = {
   transformation: { path: "transformation", type: "string" },
   query_timeout: { path: "query_timeout", type: "number|string" },
   disableQuery: { path: "disableQuery", type: "boolean|binding" },
+  // Not read by any datasource: a builder's record of a query it generated (a server-paged read and its count), so a
+  // rebuild updates only queries it made and never one of the same name another page wrote.
+  compiledPaging: { path: "compiledPaging", type: "object", description: "Record of a generated server-paging query; leave as written." },
   disabledMessage: { path: "disabledMessage", type: "string|binding" }
 };
 var dataPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/datasource-schemas.json");
@@ -64921,11 +64924,73 @@ ${code}
       if (loc && line !== void 0) {
         const from = Math.max(0, loc.column - 60);
         const excerpt = line.slice(from, loc.column + 20).trim();
-        return `${error51.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? "\u2026" : ""}${excerpt}`;
+        return `${error51.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? "\u2026" : ""}${excerpt}${bracketBalance(code)}`;
       }
     }
-    return error51.message;
+    return `${error51.message}${bracketBalance(code)}`;
   }
+}
+function bracketBalance(code) {
+  const stack = [];
+  const pairs = { ")": "(", "]": "[", "}": "{" };
+  const lines = code.split("\n");
+  const lineOf = (i) => code.slice(0, i).split("\n").length;
+  const snippet = (i) => {
+    const l = lineOf(i);
+    const start = code.lastIndexOf("\n", i - 1) + 1;
+    const col = i - start;
+    return (lines[l - 1] ?? "").slice(Math.max(0, col - 30), col + 30).trim();
+  };
+  let quote2 = null;
+  for (let i = 0; i < code.length; i += 1) {
+    const ch = code[i];
+    if (quote2) {
+      if (ch === "\\") {
+        i += 1;
+        continue;
+      }
+      if (quote2 === "`" && ch === "$" && code[i + 1] === "{") {
+        stack.push({ ch: "${", line: lineOf(i), at: i });
+        quote2 = null;
+        i += 1;
+        continue;
+      }
+      if (ch === quote2)
+        quote2 = null;
+      continue;
+    }
+    if (ch === "/" && code[i + 1] === "/") {
+      const end = code.indexOf("\n", i);
+      i = end === -1 ? code.length : end;
+      continue;
+    }
+    if (ch === "/" && code[i + 1] === "*") {
+      const end = code.indexOf("*/", i + 2);
+      i = end === -1 ? code.length : end + 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote2 = ch;
+      continue;
+    }
+    if (ch === "(" || ch === "[" || ch === "{")
+      stack.push({ ch, line: lineOf(i), at: i });
+    else if (ch === ")" || ch === "]" || ch === "}") {
+      const top = stack.pop();
+      if (top?.ch === "${" && ch === "}") {
+        quote2 = "`";
+        continue;
+      }
+      if (!top || top.ch !== pairs[ch]) {
+        return top ? ` A \`${ch}\` at line ${lineOf(i)} closes the \`${top.ch}\` opened at line ${top.line} (${snippet(top.at)}).` : ` A \`${ch}\` at line ${lineOf(i)} closes nothing.`;
+      }
+    }
+  }
+  const open = stack.filter((s) => s.ch !== "${");
+  if (!open.length)
+    return "";
+  const last = open[open.length - 1];
+  return ` ${open.length} bracket${open.length > 1 ? "s are" : " is"} never closed; the last, \`${last.ch}\` opened at line ${last.line} (${snippet(last.at)}), needs its \`${{ "(": ")", "[": "]", "{": "}" }[last.ch]}\`.`;
 }
 var RUNJS_KNOWN_NAMES = /* @__PURE__ */ new Set([
   ...RUNJS_PARAMETERS,
@@ -65663,6 +65728,9 @@ function lintBindingSyntax(value2, path, wholeValueRequired = false) {
   if (!match) {
     return wholeValueRequired && value2.includes("{{") ? [`${path}: expected one whole-value JavaScript binding, without text before or after {{...}}; this property is not an interpolated text field.`] : [];
   }
+  if (match[1].includes("}}") && !match[1].includes("{{")) {
+    return [`${path}: the binding contains "}}" before its end; ToolJet ends a binding at the first "}}", so the code is cut there and the value renders empty. Put a space between adjacent closing braces ("} }") inside the expression.`];
+  }
   if (!wholeValueRequired && (match[1].includes("{{") || match[1].includes("}}")))
     return [];
   try {
@@ -66319,11 +66387,11 @@ var STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS = 9;
 var STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 var STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
 var STATISTICS_SAFE_VALUE_FONT_PX = 22;
-var TABLE_REGULAR_ROW_HEIGHT_PX = 46;
-var TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
-var TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
+var TABLE_REGULAR_ROW_HEIGHT_PX = 45;
+var TABLE_CONDENSED_ROW_HEIGHT_PX = 42;
+var TABLE_COLUMN_HEADER_HEIGHT_PX = 34;
 var TABLE_TOOLBAR_HEIGHT_PX = 56;
-var TABLE_FOOTER_HEIGHT_PX = 56;
+var TABLE_FOOTER_HEIGHT_PX = 46;
 var TABLE_BORDER_PX = 2;
 var TABLE_VISIBLE_COLUMN_WARN = 10;
 var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container", "Accordion"]);
@@ -67190,7 +67258,7 @@ function lintListviewChildren(components) {
     const rawHtml = propVal2(child.properties, "rawHtml");
     if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
       continue;
-    if (/\bheight\s*:\s*100%\b/i.test(rawHtml))
+    if (/\bheight\s*:\s*100%/i.test(rawHtml))
       continue;
     warnings.push(`Html "${child.name ?? child.id ?? "Html"}" is repeated inside Listview "${parent.name ?? parent.id ?? "Listview"}" and uses a fixed pixel CSS height. The Listview wrapper's inner canvas can be shorter than the authored component, creating a scrollbar in every item. Use height:100%; box-sizing:border-box on the Html root instead.`);
   }
@@ -67243,7 +67311,7 @@ function lintRenderedText(spec) {
     const value2 = propVal2(props, key4);
     if (typeof value2 !== "string" || !value2)
       continue;
-    if (value2.includes("\\n")) {
+    if (value2.replace(/\{\{[\s\S]*?\}\}/g, "").includes("\\n")) {
       errors.push(`Component "${label2}".properties.${key4} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". Use a real line break, <br> in Html, or separate components.`);
     }
     const outside = expressionOutsideBinding(value2);
@@ -67704,7 +67772,7 @@ function lintComponentSpec(spec, context = {}) {
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
       const baseRowHeight = cellSize === "condensed" ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const rowHeight2 = isTruthyBinding(contentWrap) ? baseRowHeight + 8 : baseRowHeight;
+      const rowHeight2 = isTruthyBinding(contentWrap) ? baseRowHeight + 4 : baseRowHeight;
       const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props, key4)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * rowHeight2;
@@ -71946,6 +72014,21 @@ function insertRowsBatchTool(client) {
   };
 }
 
+// dist/mapKeyGuard.js
+async function mapKeyRefusal(client, componentTypes) {
+  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
+    return void 0;
+  let hasKey;
+  try {
+    hasKey = await client.hasGoogleMapsKey();
+  } catch {
+    return void 0;
+  }
+  if (hasKey !== false)
+    return void 0;
+  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
+}
+
 // dist/tools/getComponentCatalog.js
 var CATALOG_SECTIONS = [
   "overview",
@@ -72041,7 +72124,11 @@ function legacyNotice(type) {
     deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
   } : {};
 }
-function getComponentCatalogTool(_client) {
+async function instanceNote(client, type) {
+  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
+  return refusal ? { instance_note: refusal } : {};
+}
+function getComponentCatalogTool(client) {
   return {
     name: "get_component_catalog",
     title: "Get Component Catalog",
@@ -72088,7 +72175,8 @@ function getComponentCatalogTool(_client) {
           return ok({
             ...selectSchema(schema, args),
             ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {}
+            ...resolved.alias ? { alias: resolved.alias } : {},
+            ...await instanceNote(client, schema.type)
           });
         }
         const withDefaults = (type, over) => ({
@@ -72133,7 +72221,8 @@ function getComponentCatalogTool(_client) {
             ...selectSchema(schema, request),
             ...legacyNotice(schema.type),
             ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {}
+            ...resolved.alias ? { requested_aliases: [request.type] } : {},
+            ...await instanceNote(client, schema.type)
           };
           components.push(component);
           componentByResolvedType.set(resolved.type, component);
@@ -73333,7 +73422,22 @@ function selectAppSummary(summary, selection = {}) {
   const pageFields = selection.pageFields ?? [...PAGE_FIELDS];
   const componentFields = selection.componentFields?.map((path) => path.replace(/^layout(?=\.|$)/, "layouts")) ?? (detail === "full" ? [...COMPONENT_FIELDS] : STRUCTURE_COMPONENT_FIELDS);
   const queryFields = selection.queryFields ?? (detail === "full" ? [...QUERY_FIELDS] : STRUCTURE_QUERY_FIELDS);
-  const eventFields = selection.eventFields ?? (detail === "full" ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
+  const EVENT_ALIASES = {
+    trigger: "name",
+    eventName: "name",
+    event_name: "name",
+    sourceType: "target",
+    source_type: "target",
+    source_id: "sourceId",
+    action: "event",
+    actionId: "event.actionId",
+    action_id: "event.actionId"
+  };
+  const eventFields = (selection.eventFields ? [...new Set(selection.eventFields.map((path) => {
+    const [root, ...rest] = path.split(".");
+    const mapped = EVENT_ALIASES[root];
+    return mapped ? [mapped, ...rest].join(".") : path;
+  }))] : void 0) ?? (detail === "full" ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
   validatePaths(appFields, APP_FIELDS, "app_fields");
   validatePaths(pageFields, PAGE_FIELDS, "page_fields");
   validatePaths(componentFields, COMPONENT_FIELDS, "component_fields");
@@ -73377,7 +73481,8 @@ function getAppSummaryTool(client) {
     description: 'Selective, bounded inspection of an app \u2014 use this instead of get_app. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.',
     inputSchema: {
       app_id: external_exports.string(),
-      sections: external_exports.array(external_exports.enum(["pages", "queries", "events"])).optional(),
+      // Components live in pages: "components" is read as pages (a build lost a call to it, 2026-10-05).
+      sections: external_exports.preprocess((value2) => Array.isArray(value2) ? [...new Set(value2.map((s) => s === "components" ? "pages" : s))] : value2, external_exports.array(external_exports.enum(["pages", "queries", "events"]))).optional(),
       detail: external_exports.enum(["structure", "full"]).optional(),
       include_components: external_exports.boolean().optional(),
       page_ids: stringList,
@@ -74133,7 +74238,8 @@ function persistedEventSpecs(summary) {
     }];
   });
 }
-function navigationReorders(summary) {
+function navigationReorders(summary, touched, diagnostics) {
+  const touchedKeys = touched ? new Set(touched.map((event) => [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0"))) : void 0;
   const chains = /* @__PURE__ */ new Map();
   for (const saved of summary.events ?? []) {
     const raw = isRecord(saved.event) ? saved.event : void 0;
@@ -74145,11 +74251,16 @@ function navigationReorders(summary) {
     chains.set(key4, chain);
   }
   const moves = [];
-  for (const chain of chains.values()) {
+  for (const [key4, chain] of chains) {
     chain.sort((a, b) => a.index - b.index);
     const navs = chain.filter((item) => item.nav);
     if (!navs.length || chain.slice(-navs.length).every((item) => item.nav))
       continue;
+    if (touchedKeys && !touchedKeys.has(key4)) {
+      const [, sourceId, ref, trigger] = key4.split("\0");
+      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref ? ` (${ref})` : ""} has a page switch before other handlers, so those never run; this phase did not touch it, so it was left as it is.`);
+      continue;
+    }
     let next = Math.max(...chain.map((item) => item.index)) + 1;
     for (const nav of navs)
       moves.push({ eventId: nav.id, index: next++ });
@@ -76568,21 +76679,6 @@ function frozenAppRefusal(summary) {
   return `Not executed: this app's version${where} is read-only in ToolJet (the editor is frozen, and ToolJet refuses changes to a promoted version). Nothing was changed. Tell the user to create a new version in development (version menu, Create version) and ask again; do not create tables or try other tools.`;
 }
 
-// dist/mapKeyGuard.js
-async function mapKeyRefusal(client, componentTypes) {
-  if (![...componentTypes].includes("Map") || typeof client.hasGoogleMapsKey !== "function")
-    return void 0;
-  let hasKey;
-  try {
-    hasKey = await client.hasGoogleMapsKey();
-  } catch {
-    return void 0;
-  }
-  if (hasKey !== false)
-    return void 0;
-  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
-}
-
 // dist/tools/lintAppSpec.js
 var TABLE_NAME_MAX = 31;
 function unique3(values) {
@@ -76717,7 +76813,14 @@ function lintAppSpecTool(client) {
                 preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
                 continue;
               }
-              preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${missingRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]);
+              const absentRows = missingRows.filter((n) => !nullRows.includes(n));
+              if (nullRows.length) {
+                preflightErrors.push(`Seed data for planned table "${seed.table_name}": required column "${column.name}" is null in row(s) ${nullRows.join(", ")}. Give each of those rows a real value (seed rows are literal values, not formulas), or add a defaultValue.`);
+              }
+              if (absentRows.length) {
+                preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${absentRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
+              }
             }
           }
         }
@@ -78090,7 +78193,7 @@ function applyAppPhaseTool(client) {
             existingEvents: summaryBeforeEvents.events
           });
           applied.events = newEvents.length;
-          const reorders = navigationReorders(await client.getAppSummary(args.app_id));
+          const reorders = navigationReorders(await client.getAppSummary(args.app_id), newEvents, warnings);
           if (reorders.length) {
             await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: reorders, updateType: "reorder" });
             warnings.push(`Moved ${reorders.length} page switch${reorders.length > 1 ? "es" : ""} behind the handlers this phase added, so they still run.`);

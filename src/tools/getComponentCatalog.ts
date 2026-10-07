@@ -1,3 +1,4 @@
+import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ComponentSchema } from '../catalog.js';
@@ -137,7 +138,14 @@ function legacyNotice(type: string): Record<string, unknown> {
     : {};
 }
 
-export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
+/** What this instance cannot render for a component type: a Map without the instance's Google Maps key shows a Google
+ *  error, and two builds learnt that only when the write refused a page already written (2026-10-05). */
+async function instanceNote(client: ToolJetClient, type: string): Promise<Record<string, string>> {
+  const refusal = type === 'Map' ? await mapKeyRefusal(client, ['Map']) : undefined;
+  return refusal ? { instance_note: refusal } : {};
+}
+
+export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
   return {
     name: 'get_component_catalog',
     title: 'Get Component Catalog',
@@ -202,6 +210,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
             ...selectSchema(schema, args),
             ...legacyNotice(schema.type),
             ...(resolved.alias ? { alias: resolved.alias } : {}),
+            ...(await instanceNote(client, schema.type)),
           });
         }
 
@@ -256,6 +265,7 @@ export function getComponentCatalogTool(_client: ToolJetClient): ToolDef {
             ...legacyNotice(schema.type),
             ...(resolved.alias ? { alias: resolved.alias } : {}),
             ...(resolved.alias ? { requested_aliases: [request.type] } : {}),
+            ...(await instanceNote(client, schema.type)),
           };
           components.push(component);
           componentByResolvedType.set(resolved.type, component);

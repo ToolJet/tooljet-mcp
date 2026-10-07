@@ -874,7 +874,8 @@ describe('lintComponentSpec', () => {
       styles: { cellSize: { value: 'regular' } },
       layout: { top: 0, left: 0, width: 30, height: 460 },
     });
-    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 614px/i);
+    // 56 toolbar + 34 header + 46 footer + 2 border + 10 x 45 (calibrated in the viewer 2026-10-05)
+    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 588px/i);
 
     const tall = lintComponentSpec({
       name: 'orders',
@@ -2009,5 +2010,32 @@ describe('modal header advice', () => {
   it('is not blocking', () => {
     expect(lintRenderedGeometryBlocking(modal as never).join(' ')).not.toMatch(/title-like/);
     expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).toMatch(/title-like/);
+  });
+});
+
+// A volunteer-card build (2026-10-05): the card root had height:100%;box-sizing:border-box and a 44px avatar inside
+// it; the exemption's `100%\b` never matched ("%;" has no word boundary), so the rule failed two compiles in a row.
+describe('a repeated Html whose root fills its cell', () => {
+  it('may size an inner element in pixels', () => {
+    const parent = { name: 'directory', type: 'Listview', clientRef: 'dir', properties: { mode: { value: 'grid' } } };
+    expect(lintListviewChildren([
+      parent,
+      {
+        name: 'card', type: 'Html', parentRef: 'dir',
+        properties: { rawHtml: { value: "<div style='height:100%;box-sizing:border-box;padding:16px'><div style='width:44px;height:44px'>AB</div>{{listItem.name}}</div>" } },
+      },
+    ] as never)).toEqual([]);
+  });
+});
+
+// A labelling build (2026-10-05): placeholder={{ saved || "{\n  \"format\": \"coco\"\n}" }} was refused as a literal
+// backslash-n, but inside a binding's string \n is a line break when ToolJet evaluates it. Only text outside a binding
+// prints the two characters.
+describe('a backslash-n inside a binding', () => {
+  it('is not a literal', async () => {
+    const { lintRenderedText } = await import('../src/lint.js');
+    expect(lintRenderedText({ name: 'ed', type: 'CodeEditor', properties: { placeholder: { value: '{{ (queries.s.data || [])[0]?.cfg || "{\\n  \\"format\\": \\"coco\\"\\n}" }}' } } } as never)
+      .join(' ')).not.toMatch(/backslash-n/);
+    expect(lintRenderedText({ name: 't', type: 'Text', properties: { text: { value: 'TOTAL\\n8' } } } as never).join(' ')).toMatch(/backslash-n/);
   });
 });
