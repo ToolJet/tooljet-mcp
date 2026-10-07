@@ -1,8 +1,19 @@
 import { describe, it, expect } from 'vitest';
+import { runInNewContext } from 'node:vm';
 import { compileGraph, definition, specSchema, validateGraph, nodeCatalog } from '../../src/workflows/graph.js';
 const empty = () => definition({});
 const basic = () => specSchema.parse({ nodes: [{ ref: 'start', type: 'start' }, { ref: 'response', type: 'response', code: 'return { ok: true };' }], edges: [{ ref: 'e', from: 'start', to: 'response', port: 'default' }] });
 describe('workflow graph contracts', () => {
+  it('executes the catalog example with workflow runtime globals, without app binding aliases', () => {
+    const example = nodeCatalog.runtime_context.example;
+    const result = runInNewContext(`(function() { ${example.javascript} })()`, {
+      startTrigger: { params: { left: 32, right: 11 } },
+    });
+    const response = runInNewContext(`(function() { ${example.response} })()`, {
+      [example.query_name]: { status: 'ok', data: result },
+    });
+    expect(response).toEqual({ sum: 43 });
+  });
   it('compiles editor types and validates start to response', () => {
     const { graph } = compileGraph(empty(), basic());
     expect(graph.nodes.map(n => n.type)).toEqual(['input', 'output']);
