@@ -5,6 +5,7 @@ import { ok, fail, type ToolDef } from './types.js';
 import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
 import { introducedLintFindings } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -22,6 +23,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'name), the whole call fails; fix that component and retry. ' +
       'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
       '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
+      COMPONENT_FX_GUIDANCE +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in each component’s top-level `styles` object, NOT under `properties` — ToolJet silently ignores ' +
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
@@ -29,7 +31,9 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child ' +
       'bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names ' +
       'when existing names can be checked, without overriding an existing runtime name. ' +
-      'coordinates are relative to that parent. For ModalV2/Form/Container native regions, set child ' +
+      'coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. ' +
+      'A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. ' +
+      'For ModalV2/Form/Container native regions, set child ' +
       '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
       'those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
@@ -89,7 +93,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         });
         return ok({
           components: result,
-          warnings: [...prepared.warnings, ...pageWarnings],
+          warnings: [...new Set([...prepared.warnings, ...pageWarnings])],
         });
       } catch (err) {
         return fail(err);

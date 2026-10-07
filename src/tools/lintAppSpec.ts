@@ -10,6 +10,7 @@ import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
 import { replaceView, danglingAfterReplace, replaceFingerprint } from '../pageReplace.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
@@ -41,7 +42,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'A Form submits through a Button inside it: set the Form\'s properties.buttonToSubmit to that Button\'s client_ref in the ' +
       'same plan (resolved to its id on apply). ' +
       'On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
-      'Treat this call as an awaited barrier; it never mutates ToolJet.',
+      'Treat this call as an awaited barrier; it never mutates ToolJet. ' + COMPONENT_FX_GUIDANCE,
     inputSchema: appPlanSchema.shape,
     async handler(args: AppPlanInput) {
       try {

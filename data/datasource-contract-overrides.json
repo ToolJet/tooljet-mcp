@@ -516,7 +516,8 @@
           }
         },
         "notes": [
-          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
         ]
       },
       "count": {
@@ -698,7 +699,8 @@
           }
         },
         "notes": [
-          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
         ]
       },
       "insert_many": {
@@ -766,7 +768,8 @@
           }
         },
         "notes": [
-          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
         ]
       },
       "update_one": {
@@ -785,7 +788,8 @@
           }
         },
         "notes": [
-          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
         ]
       }
     }
