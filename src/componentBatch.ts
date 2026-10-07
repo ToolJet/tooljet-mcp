@@ -6,16 +6,17 @@ import { lintComponents } from './lint.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
+import { componentNameSchema } from './componentName.js';
 
 const layoutSchema = z.object({
   top: z.number(),
-  left: z.number(),
-  width: z.number(),
+  left: z.number().describe('Columns in the immediate parent canvas, which has its own 43-column grid.'),
+  width: z.number().describe('Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43.'),
   height: z.number(),
 });
 
 export const componentInputSchema = z.object({
-  name: z.string(),
+  name: componentNameSchema,
   type: z.string(),
   properties: z.record(z.string(), z.any()),
   styles: z.record(z.string(), z.any()).optional(),

@@ -6,6 +6,8 @@ import { materializeRequiredDefaultChildren } from '../defaultChildren.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
 import { normalizePlannedLayouts } from '../layoutNormalization.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { componentNameSchema } from '../componentName.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 const layoutSchema = z.object({
   top: z.number(),
@@ -33,6 +35,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       'properties.data.value = "{{queries.<queryName>.data}}". ' +
       'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
       '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
+      COMPONENT_FX_GUIDANCE +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in the top-level `styles` object, NOT under `properties` — ToolJet silently ignores styles nested ' +
       'in properties (and this tool will reject them). Provide either `layout` (one rectangle applied to ' +
@@ -43,7 +46,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
       app_id: z.string(),
       version_id: z.string(),
       page_id: z.string(),
-      name: z.string(),
+      name: componentNameSchema,
       type: z.string(),
       properties: z.record(z.string(), z.any()),
       styles: z.record(z.string(), z.any()).optional(),
