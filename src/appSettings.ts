@@ -1,4 +1,4 @@
-import type { AppSettingsSnapshot, AppTheme } from './tooljetClient.js';
+import type { AppSettingsSnapshot, AppTheme, ToolJetClient } from './tooljetClient.js';
 import { booleanBindingValue } from './bindings.js';
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -101,4 +101,17 @@ export function projectJavascriptRuntime(snapshot: AppSettingsSnapshot): Record<
       'This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. ' +
       'PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration.',
   };
+}
+
+/** The app's canvas colour when it is a plain literal colour, which a top-level Html root may then paint; undefined when
+ *  the canvas follows the theme, or the settings cannot be read (the token rules apply then). */
+export async function literalCanvasColor(client: Partial<Pick<ToolJetClient, 'getAppSettings'>>, appId: string, versionId?: string): Promise<string | undefined> {
+  if (!versionId || typeof client.getAppSettings !== 'function') return undefined;
+  try {
+    const snapshot = await client.getAppSettings(appId, versionId);
+    const colour = asRecord(snapshot.global_settings).canvasBackgroundColor;
+    return typeof colour === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(colour.trim()) ? colour.trim() : undefined;
+  } catch {
+    return undefined;
+  }
 }

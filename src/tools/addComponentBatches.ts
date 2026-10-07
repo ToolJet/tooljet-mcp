@@ -4,6 +4,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { literalCanvasColor } from '../appSettings.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 const pageBatchSchema = z.object({
@@ -53,7 +54,8 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
           aliasWarnings.push('Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.');
         }
       }
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components) }));
+      const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
+      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
       const errors = prepared.flatMap((page) =>
         page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`)
       );

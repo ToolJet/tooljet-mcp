@@ -1,5 +1,6 @@
 import type { ToolJetClient } from '../tooljetClient.js';
 import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
+import { literalCanvasColor } from '../appSettings.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
@@ -327,6 +328,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           }
         }
 
+        // A top-level Html root may paint the app's literal canvas colour: the surface it actually sits on.
+        const canvasColor = args.app_id ? await literalCanvasColor(client, args.app_id, existingSummary?.version_id ?? args.version_id) : undefined;
         const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
@@ -378,7 +381,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions,
           })),
-        }, existingSummary);
+        }, existingSummary, { canvasColor });
         const result: AppSpecLintResult = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,

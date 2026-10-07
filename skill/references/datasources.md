@@ -49,7 +49,7 @@ Call `get_datasource_query_schema({ datasource_id, version_id, operation })` for
 Many requests ("build a CRM", "an expense tracker") come with **no table yet** — you must create the data model first:
 1. **Propose the data model** (tables, columns + types, relationships) and **confirm it with the user** before creating anything — schema is a commitment.
 2. `create_tables` once for the confirmed model (it accepts one or many tables).
-3. Optionally `insert_rows_batch` once to seed a small representative set so the app doesn't render empty. It is insert-only: omit generated serial primary keys, and treat an explicit duplicate-key error as a conflict to resolve—not an update path. Avoid dozens of rows unless density/pagination is under test.
+3. Optionally `insert_rows_batch` once to seed a small representative set so the app doesn't render empty. It is insert-only: omit generated serial primary keys, and treat an explicit duplicate-key error as a conflict to resolve—not an update path. Avoid dozens of rows unless density/pagination is under test. Size: 24-32 rows for the primary paginated entity and at most 40 per payload unless the user gives a larger count; a few rows for lookup tables; enough facts for what the pages show (a 30-day trend needs a row per day, not a handful of samples).
 4. Then `add_queries` + `add_components` as usual.
 For an **existing** table, call `get_table_schema(table_name)` first so you use its real column names and types.
 Use `add_table_column` to evolve a ToolJet DB table in place. Destructive deletes are irreversible: inspect dependencies and obtain explicit approval for the exact target before any `drop_*` or `delete_*` call, then pass `confirm:true`.

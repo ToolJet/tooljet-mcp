@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency, lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -1223,6 +1223,15 @@ describe('lintListviewChildren', () => {
     expect(warnings).toMatch(/only child on its row.*fresh 43-column local canvas.*left:0, width:43.*do not divide/i);
   });
 
+  it('accepts a full-row child one column short of the edge', () => {
+    // ToolJet pads the Listview 7px but lays each row out on its full width, so a 43-column child loses its right edge;
+    // the page compiler places full-row children at width 42 (overnight site inspections, 2026-09-29).
+    expect(lintListviewChildren([
+      parent,
+      { name: 'card', type: 'Html', parentRef: 'fleet', layout: { top: 8, left: 0, width: 42, height: 120 } },
+    ])).toEqual([]);
+  });
+
   it('allows intentional side-by-side composition inside the local item canvas', () => {
     expect(lintListviewChildren([
       parent,
@@ -1973,5 +1982,32 @@ describe('lintUnrenderableHeights', () => {
     expect(
       lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
     ).toEqual([]);
+  });
+});
+
+describe('keys ToolJet stores from the inspector only', () => {
+  it('PhoneInput and CurrencyInput defaultCountry is not an unknown key', () => {
+    // The inspector writes properties.defaultCountry and the widgets read it, but the catalog does not list it; the
+    // page compiler sets it from a phone number's calling code (overnight site inspections, 2026-09-29).
+    for (const type of ['PhoneInput', 'CurrencyInput']) {
+      const r = lintComponentSpec({ name: 'x', type, properties: { label: { value: 'L' }, defaultCountry: { value: 'GB' } }, styles: { alignment: { value: 'top' } } } as never);
+      expect(r.warnings.join(' ')).not.toMatch(/defaultCountry/);
+    }
+  });
+});
+
+describe('modal header advice', () => {
+  // Overnight campaign (2026-09-29): six compiles in five apps failed on "title-like Text in the body" for a profile
+  // modal titled "Volunteer profile" with the person's name as a 20-26px heading. That is a design choice, not broken
+  // geometry: it is advice (a warning), while children outside the modal stay blocking.
+  const modal = [
+    { name: 'profile', type: 'ModalV2', clientRef: 'm', properties: { showHeader: { value: true } } },
+    { name: 'hdr', type: 'Text', parentRef: 'm', slotName: 'header', properties: { text: { value: 'Volunteer profile' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
+    { name: 'who', type: 'Text', parentRef: 'm', properties: { text: { value: '{{components.t.selectedRow?.name}}' } },
+      styles: { fontWeight: { value: 'bold' }, textSize: { value: 24 } }, layout: { top: 10, left: 2, width: 30, height: 40 } },
+  ];
+  it('is not blocking', () => {
+    expect(lintRenderedGeometryBlocking(modal as never).join(' ')).not.toMatch(/title-like/);
+    expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).toMatch(/title-like/);
   });
 });

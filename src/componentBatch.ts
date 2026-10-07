@@ -48,7 +48,7 @@ export interface PreparedComponentBatch {
 }
 
 /** Normalize and fully lint one page's component batch before any ToolJet write. */
-export function prepareComponentBatch(inputs: ComponentInput[]): PreparedComponentBatch {
+export function prepareComponentBatch(inputs: ComponentInput[], options: { canvasColor?: string } = {}): PreparedComponentBatch {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,
@@ -76,7 +76,7 @@ export function prepareComponentBatch(inputs: ComponentInput[]): PreparedCompone
     );
   }
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
-  const lint = lintComponents(expanded.components);
+  const lint = lintComponents(expanded.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) =>
     component.parent && containsListItemBinding({
       properties: component.properties,

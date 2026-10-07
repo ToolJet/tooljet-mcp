@@ -5,6 +5,7 @@ import { ok, fail, type ToolDef } from './types.js';
 import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
 import { introducedLintFindings } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { literalCanvasColor } from '../appSettings.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -61,7 +62,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         return fail(new Error('Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components.'));
       }
       if (summary) pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
-      const prepared = prepareComponentBatch(inputs);
+      const prepared = prepareComponentBatch(inputs, { canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id) });
       if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
       // Geometry against the page as it already is, not the batch alone: a targeted add that lands on top
       // of an existing table (a modal's buttons placed at root, a caption over a register) passed here
