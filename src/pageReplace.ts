@@ -313,7 +313,8 @@ export function replaceFingerprint(summary: AppSummary, view: ReplaceView): stri
   const pageIds = new Set(view.replacedPageIds);
   const replacedPages = summary.pages.filter((page) => pageIds.has(page.id));
   const pages = replacedPages.map((page) => ({
-    id: page.id,
+    id: page.id, name: page.name ?? null, handle: page.handle ?? null,
+    icon: page.icon ?? null, hidden: page.hidden ?? false,
     components: [...page.components].sort((a, b) => a.id.localeCompare(b.id)).map((component) => ({
       id: component.id, name: component.name ?? null, type: component.type ?? null,
       parent: component.parent ?? null, slot_name: component.slot_name ?? null,

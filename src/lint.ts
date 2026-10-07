@@ -18,6 +18,7 @@ import {
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
 import { lintWhitespaceGuards } from './whitespaceGuard.js';
 import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
@@ -2659,12 +2660,60 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
  *  geometry: a profile titled "Volunteer profile" with the person's name as a large body heading failed six compiles
  *  overnight (2026-09-29). It stays a warning. */
 const MODAL_HEADER_ADVICE = /native header (?:slot is empty|is visible)/;
+/** Advisory only: a narrow content row may have confused its local grid with the outer span. */
+export function lintNestedContainerWidths(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const refs = new Map(components.flatMap((component) => {
+    const key = componentKey(component);
+    return key ? [[key, component] as const] : [];
+  }));
+  const contentTypes = new Set(['Text', 'Html', 'Table', 'Chart', ...FORM_INPUT_TYPES]);
+  for (const child of components) {
+    const placement = parentPlacement(child);
+    const parent = placement && refs.get(placement.parentId);
+    if (!parent || !['Container', 'Form'].includes(parent.type ?? '') || !contentTypes.has(child.type ?? '')) continue;
+    const findings = new Map<string, string[]>();
+    for (const resolution of ['desktop', 'mobile'] as const) {
+      const rect = child.layouts?.[resolution] ?? child.layout;
+      const parentRect = parent.layouts?.[resolution] ?? parent.layout;
+      const parentWidth = parentRect?.width;
+      if (!rect || typeof parentWidth !== 'number' || parentWidth <= 0 || parentWidth > 21 ||
+          typeof rect.width !== 'number' || rect.width <= 0 || typeof rect.left !== 'number' || rect.left < 0 ||
+          rect.left + rect.width > parentWidth || typeof rect.top !== 'number' || typeof rect.height !== 'number') continue;
+      let rowLeft = rect.left;
+      let rowRight = rect.left + rect.width;
+      for (const sibling of components) {
+        if (sibling === child || placementKey(sibling) !== placementKey(child)) continue;
+        const other = sibling.layouts?.[resolution] ?? sibling.layout;
+        if (!other || typeof other.top !== 'number' || typeof other.height !== 'number' ||
+            typeof other.left !== 'number' || typeof other.width !== 'number') continue;
+        if (rect.top < other.top + renderedHeight(sibling, other) && other.top < rect.top + renderedHeight(child, rect)) {
+          rowLeft = Math.min(rowLeft, other.left);
+          rowRight = Math.max(rowRight, other.left + other.width);
+        }
+      }
+      if (rowLeft < 0 || rowRight > parentWidth) continue;
+      const detail = `${rect.width} occupies only ${Math.round(rect.width / 43 * 100)}% of ` +
+        `${parent.type} "${parent.name ?? parent.id ?? '?'}". ` +
+        `The content row spans local columns ${rowLeft}-${rowRight}, fitting the parent's outer ${parentWidth}-column span, ` +
+        'which may confuse the two grids. Every Container/Form slot has its own 43-column grid regardless of the outer width. ' +
+        'For an inset full-row child use left:2,width:39 (or left:0,width:43 for full width); ' +
+        'keep a narrower width only when intentional and browser-verified.';
+      findings.set(detail, [...(findings.get(detail) ?? []), resolution]);
+    }
+    for (const [detail, resolutions] of findings) {
+      warnings.push(`${child.type} "${child.name ?? child.id ?? '?'}": ${resolutions.join('/')} width ${detail}`);
+    }
+  }
+  return warnings;
+}
 
 /** Geometry advice: canvas coverage, gutters. Warnings. The fold rule (lintOperationalViewport) is left out:
  *  a primary action under a table is a scroll away, and every time a tool reported it the model re-laid out
  *  the page for nothing (merch m2 two re-plans, m8 two re-layouts and rowsPerPage 4; trace review 2026-09-24). */
 export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
   return [
+    ...lintNestedContainerWidths(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
     ...lintModalChildren(components).filter((warning) => MODAL_HEADER_ADVICE.test(warning)),
@@ -2791,6 +2840,10 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   const around = surfaceAroundResolver(components, options.canvasColor);
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
+    // This batch contains newly authored components. Persisted legacy names are not
+    // revalidated by lintComponentSpec when checking unrelated edits or app bindings.
+    const nameError = componentNameError(c.name);
+    if (nameError) errors.push(nameError);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));

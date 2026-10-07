@@ -13,6 +13,7 @@ import {
 import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafety.js';
 import { primitiveWriteBindingEntries } from './writeBindingShape.js';
 import { conditionalWriteWarning } from './arithmeticWriteContract.js';
+import { mongoArrayReplacementIssues } from './mongoWriteContract.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -517,6 +518,7 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
   const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
+  if (kind === 'mongodb') errors.push(...mongoArrayReplacementIssues(options));
   if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
     const syntax = runjsSyntaxError(options.code);
     if (syntax) {
