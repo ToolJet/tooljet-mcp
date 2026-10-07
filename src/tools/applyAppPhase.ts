@@ -7,7 +7,7 @@ import type { AppPlanInput } from '../appPlanSchema.js';
 import { consumeAppPlan } from '../appPlanStore.js';
 import { validatePersistedAppSummary } from '../appValidation.js';
 import { prepareComponentBatch } from '../componentBatch.js';
-import { validateEvents } from '../eventValidation.js';
+import { navigationReorders, validateEvents } from '../eventValidation.js';
 import { expandQueryLifecycles } from '../queryLifecycle.js';
 import { completedPartialWrites } from '../tooljetClient.js';
 import type {
@@ -639,7 +639,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
         warnings.push(...expanded.warnings);
         const allEvents = [...ordinaryEvents, ...expanded.events];
-        const eventValidation = validateEvents(summaryBeforeEvents, allEvents);
+        const eventValidation = validateEvents(summaryBeforeEvents, allEvents, { navigationMovedLast: true });
         if (eventValidation.errors.length) throw new Error(eventValidation.errors.join(' '));
         warnings.push(...eventValidation.warnings);
         const newEvents = withoutExistingEvents(allEvents, summaryBeforeEvents.events);
@@ -651,6 +651,13 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             existingEvents: summaryBeforeEvents.events,
           });
           applied.events = newEvents.length;
+          // A handler added to a chain whose saved page switch was last now follows it, and ToolJet runs nothing after
+          // a switch-page: move the switch back to the end (a site inspection build, 2026-10-04).
+          const reorders = navigationReorders(await client.getAppSummary(args.app_id));
+          if (reorders.length) {
+            await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: reorders, updateType: 'reorder' });
+            warnings.push(`Moved ${reorders.length} page switch${reorders.length > 1 ? 'es' : ''} behind the handlers this phase added, so they still run.`);
+          }
         }
 
         stage = 'validate persisted phase';

@@ -24,6 +24,7 @@ import { lintWhitespaceGuards } from './whitespaceGuard.js';
 import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
 import { lintSurfaceInsets } from './surfaceInsets.js';
 import { lintComponentStateBindings } from './componentStateBindings.js';
+import { lintBindingNames } from './queryValidation.js';
 import { pageIconError } from './pageIcons.js';
 import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
@@ -3290,6 +3291,7 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
   warnings.push(...lintSelectedRowProjections(allComponents, bindingSources.filter(s => !s.label.startsWith('Component '))));
   for (const source of bindingSources) {
     errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
+    if (!source.label.startsWith('Query ')) errors.push(...lintBindingNames(source.value, source.label));
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;
