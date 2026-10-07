@@ -5,6 +5,7 @@ import { ok, fail, type ToolDef } from './types.js';
 import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
 import { introducedLintFindings } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
   return {
@@ -22,6 +23,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'name), the whole call fails; fix that component and retry. ' +
       'Property/style/validation/other leaves may be supplied as concise raw values or canonical ' +
       '`{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' +
+      COMPONENT_FX_GUIDANCE +
       'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, …) ' +
       'in each component’s top-level `styles` object, NOT under `properties` — ToolJet silently ignores ' +
       'styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle ' +
