@@ -72810,6 +72810,7 @@ var import_parser15 = __toESM(require_lib(), 1);
 var UPDATE_OPERATIONS = /* @__PURE__ */ new Set(["update_one", "update_many", "find_one_update"]);
 var BULK_UPDATES = ["updateOne", "updateMany"];
 var ARRAY_METHODS = /* @__PURE__ */ new Set(["map", "filter", "concat", "flat", "flatMap", "slice", "sort", "reverse", "toSorted", "toReversed"]);
+var STRING_OR_ARRAY_METHODS = /* @__PURE__ */ new Set(["slice", "concat"]);
 var ROW_COLLECTIONS = /* @__PURE__ */ new Set(["currentData", "updatedData", "filteredData", "currentPageData", "selectedRows", "newRows"]);
 var ELEMENT_PATH = /\$|\.\d+(\.|$)/;
 var isMember2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
@@ -72817,8 +72818,21 @@ var propertyName = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.
 var keyName = (p) => p.computed ? void 0 : p.key?.type === "Identifier" ? p.key.name : p.key?.type === "StringLiteral" ? p.key.value : void 0;
 var property2 = (n, key4) => n?.type === "ObjectExpression" ? n.properties.find((p) => p.type === "ObjectProperty" && keyName(p) === key4)?.value : void 0;
 function unwrap3(n) {
-  while (n?.type === "CallExpression" && isMember2(n.callee) && n.callee.object?.name === "JSON" && propertyName(n.callee) === "stringify" && n.arguments.length >= 1)
-    n = n.arguments[0];
+  while (n?.type === "CallExpression") {
+    if (isMember2(n.callee) && n.callee.object?.name === "JSON" && propertyName(n.callee) === "stringify" && n.arguments.length >= 1) {
+      n = n.arguments[0];
+      continue;
+    }
+    const fn = n.callee;
+    if (!["ArrowFunctionExpression", "FunctionExpression"].includes(fn?.type) || fn.async || fn.generator || fn.params.length || n.arguments.length)
+      break;
+    if (fn.body.type !== "BlockStatement") {
+      n = fn.body;
+    } else if (fn.body.body.length === 1 && fn.body.body[0].type === "ReturnStatement") {
+      n = fn.body.body[0].argument;
+    } else
+      break;
+  }
   return n;
 }
 function parseField(value2) {
@@ -72851,27 +72865,35 @@ function referencesComponents(n) {
     return true;
   return Object.entries(node2).some(([key4, child]) => !["loc", "extra", "comments"].includes(key4) && referencesComponents(child));
 }
-function isComponentArray(raw) {
+function isArrayValue(raw) {
   const n = unwrap3(raw);
   if (!n)
     return false;
   if (n.type === "LogicalExpression")
-    return isComponentArray(n.left) || isComponentArray(n.right);
+    return isArrayValue(n.left) || isArrayValue(n.right);
   if (n.type === "ConditionalExpression")
-    return isComponentArray(n.consequent) || isComponentArray(n.alternate);
-  if (!referencesComponents(n))
-    return false;
+    return isArrayValue(n.consequent) || isArrayValue(n.alternate);
   if (n.type === "ArrayExpression")
     return true;
   if (n.type === "CallExpression" || n.type === "OptionalCallExpression") {
     const callee = n.callee;
-    if (isMember2(callee) && ARRAY_METHODS.has(propertyName(callee) ?? ""))
-      return true;
+    const method = isMember2(callee) ? propertyName(callee) ?? "" : "";
+    if (ARRAY_METHODS.has(method)) {
+      return !STRING_OR_ARRAY_METHODS.has(method) || isArrayValue(callee.object);
+    }
     if (isMember2(callee) && ["Array", "Object"].includes(callee.object?.name) && ["from", "values"].includes(propertyName(callee) ?? ""))
       return true;
     return false;
   }
   return isMember2(n) && ROW_COLLECTIONS.has(propertyName(n) ?? "");
+}
+function isComponentArray(raw) {
+  const n = unwrap3(raw);
+  if (n?.type === "LogicalExpression")
+    return isComponentArray(n.left) || isComponentArray(n.right);
+  if (n?.type === "ConditionalExpression")
+    return isComponentArray(n.consequent) || isComponentArray(n.alternate);
+  return referencesComponents(n) && isArrayValue(n);
 }
 function replacedArrayPaths(set2, prefix = "") {
   if (set2?.type !== "ObjectExpression")
@@ -72891,6 +72913,7 @@ function replacedArrayPaths(set2, prefix = "") {
   });
 }
 function setStages(update) {
+  update = unwrap3(update);
   if (update?.type === "ObjectExpression")
     return [property2(update, "$set")].filter(Boolean);
   if (update?.type === "ArrayExpression") {

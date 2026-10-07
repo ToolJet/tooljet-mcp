@@ -5,13 +5,13 @@ import type { QueryValidationIssue } from './queryValidation.js';
 type Node = Record<string, any>;
 
 /* A MongoDB `$set` of a whole array rebuilt from component state replaces the stored array on every
-   save, dropping every element and field the components do not hold. Observed: a License form saved
-   `$set: { Assets: rows }` with rows rebuilt from three Tables, wiping the customer's Assets array.
-   Element-targeted paths (`Assets.$[el].field`, `Assets.$`, `Assets.0`) are the safe shape. */
+   save, dropping every element and field the components do not hold. Element-targeted paths preserve
+   the surrounding array; the validator inspects expressions without executing user code. */
 
 const UPDATE_OPERATIONS = new Set(['update_one', 'update_many', 'find_one_update']);
 const BULK_UPDATES = ['updateOne', 'updateMany'];
 const ARRAY_METHODS = new Set(['map', 'filter', 'concat', 'flat', 'flatMap', 'slice', 'sort', 'reverse', 'toSorted', 'toReversed']);
+const STRING_OR_ARRAY_METHODS = new Set(['slice', 'concat']);
 // Table exposed row collections; a single control's `values` (MultiSelect, TagsInput) is a whole value on purpose.
 const ROW_COLLECTIONS = new Set(['currentData', 'updatedData', 'filteredData', 'currentPageData', 'selectedRows', 'newRows']);
 const ELEMENT_PATH = /\$|\.\d+(\.|$)/;
@@ -24,10 +24,25 @@ const keyName = (p: Node): string | undefined =>
 const property = (n: Node | undefined, key: string): Node | undefined =>
   n?.type === 'ObjectExpression' ? n.properties.find((p: Node) => p.type === 'ObjectProperty' && keyName(p) === key)?.value : undefined;
 
-/** `{{JSON.stringify(x)}}` is transparent: the plugin parses the text back into x. */
+/** Inspect transparent serialization and simple inline wrappers without evaluating their code. */
 function unwrap(n: Node | undefined): Node | undefined {
-  while (n?.type === 'CallExpression' && isMember(n.callee) && n.callee.object?.name === 'JSON' &&
-         propertyName(n.callee) === 'stringify' && n.arguments.length >= 1) n = n.arguments[0];
+  while (n?.type === 'CallExpression') {
+    if (isMember(n.callee) && n.callee.object?.name === 'JSON' &&
+        propertyName(n.callee) === 'stringify' && n.arguments.length >= 1) {
+      n = n.arguments[0];
+      continue;
+    }
+    const fn = n.callee;
+    // Parameters, local declarations and arbitrary control flow need scope/data-flow analysis.
+    // Only unwrap a synchronous, zero-argument function that directly returns its expression.
+    if (!['ArrowFunctionExpression', 'FunctionExpression'].includes(fn?.type) || fn.async || fn.generator ||
+        fn.params.length || n.arguments.length) break;
+    if (fn.body.type !== 'BlockStatement') {
+      n = fn.body;
+    } else if (fn.body.body.length === 1 && fn.body.body[0].type === 'ReturnStatement') {
+      n = fn.body.body[0].argument;
+    } else break;
+  }
   return n;
 }
 
@@ -56,21 +71,31 @@ function referencesComponents(n: unknown): boolean {
   return Object.entries(node).some(([key, child]) => !['loc', 'extra', 'comments'].includes(key) && referencesComponents(child));
 }
 
-/** An array value built from component data: an array literal, an array method result or a Table row collection. */
-function isComponentArray(raw: Node | undefined): boolean {
+/** Evidence that an expression returns an array; method names shared with strings are insufficient. */
+function isArrayValue(raw: Node | undefined): boolean {
   const n = unwrap(raw);
   if (!n) return false;
-  if (n.type === 'LogicalExpression') return isComponentArray(n.left) || isComponentArray(n.right);
-  if (n.type === 'ConditionalExpression') return isComponentArray(n.consequent) || isComponentArray(n.alternate);
-  if (!referencesComponents(n)) return false;
+  if (n.type === 'LogicalExpression') return isArrayValue(n.left) || isArrayValue(n.right);
+  if (n.type === 'ConditionalExpression') return isArrayValue(n.consequent) || isArrayValue(n.alternate);
   if (n.type === 'ArrayExpression') return true;
   if (n.type === 'CallExpression' || n.type === 'OptionalCallExpression') {
     const callee = n.callee;
-    if (isMember(callee) && ARRAY_METHODS.has(propertyName(callee) ?? '')) return true;
+    const method = isMember(callee) ? propertyName(callee) ?? '' : '';
+    if (ARRAY_METHODS.has(method)) {
+      return !STRING_OR_ARRAY_METHODS.has(method) || isArrayValue(callee.object);
+    }
     if (isMember(callee) && ['Array', 'Object'].includes(callee.object?.name) && ['from', 'values'].includes(propertyName(callee) ?? '')) return true;
     return false;
   }
   return isMember(n) && ROW_COLLECTIONS.has(propertyName(n) ?? '');
+}
+
+/** An array value built from component data, rather than a scalar string or a literal constant. */
+function isComponentArray(raw: Node | undefined): boolean {
+  const n = unwrap(raw);
+  if (n?.type === 'LogicalExpression') return isComponentArray(n.left) || isComponentArray(n.right);
+  if (n?.type === 'ConditionalExpression') return isComponentArray(n.consequent) || isComponentArray(n.alternate);
+  return referencesComponents(n) && isArrayValue(n);
 }
 
 /** Top-level `$set` paths (including inside a replaced sub-document) whose value is a component-built array. */
@@ -88,6 +113,7 @@ function replacedArrayPaths(set: Node | undefined, prefix = ''): string[] {
 }
 
 function setStages(update: Node | undefined): Node[] {
+  update = unwrap(update);
   if (update?.type === 'ObjectExpression') return [property(update, '$set')].filter(Boolean) as Node[];
   if (update?.type === 'ArrayExpression') {
     return update.elements.flatMap((stage: Node) => [property(stage, '$set'), property(stage, '$addFields')].filter(Boolean)) as Node[];
