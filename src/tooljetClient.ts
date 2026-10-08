@@ -1,3 +1,4 @@
+import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
@@ -564,6 +565,7 @@ export interface QuerySummary {
    back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
    An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
+  appVersions: ReturnType<typeof createAppVersionLifecycle>;
   workflows: WorkflowClient;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
@@ -2919,6 +2921,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   return {
+    appVersions: createAppVersionLifecycle(auth, getApp),
     workflows: createWorkflowClient(auth, config, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,

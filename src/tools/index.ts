@@ -1,3 +1,4 @@
+import { appVersionLifecycleTools } from './appVersionLifecycle.js';
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -124,6 +125,7 @@ export function registerTools(
     manageWorkspaceGroupsTool(client),
     createAppTool(client),
     createAppVersionTool(client),
+    ...appVersionLifecycleTools(client),
     switchAppVersionTool(client),
     releaseAppTool(client),
     getAppSettingsTool(client),

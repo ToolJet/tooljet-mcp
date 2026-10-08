@@ -19,9 +19,9 @@ var __commonJS = (cb, mod) => function __require2() {
     throw mod = 0, e;
   }
 };
-var __export = (target, all) => {
+var __export = (target2, all) => {
   for (var name2 in all)
-    __defProp(target, name2, { get: all[name2], enumerable: true });
+    __defProp(target2, name2, { get: all[name2], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -31,12 +31,12 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+var __toESM = (mod, isNodeMode, target2) => (target2 = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
   // If the importer is in node compatibility mode or this is not an ESM
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target2, "default", { value: mod, enumerable: true }) : target2,
   mod
 ));
 
@@ -3765,57 +3765,57 @@ var require_fast_uri = __commonJS({
       return serialize(resolved, schemelessOptions);
     }
     function resolveComponent(base2, relative, options2, skipNormalization) {
-      const target = {};
+      const target2 = {};
       if (!skipNormalization) {
         base2 = parse5(serialize(base2, options2), options2);
         relative = parse5(serialize(relative, options2), options2);
       }
       options2 = options2 || {};
       if (!options2.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+        target2.scheme = relative.scheme;
+        target2.userinfo = relative.userinfo;
+        target2.host = relative.host;
+        target2.port = relative.port;
+        target2.path = removeDotSegments(relative.path || "");
+        target2.query = relative.query;
       } else {
         if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+          target2.userinfo = relative.userinfo;
+          target2.host = relative.host;
+          target2.port = relative.port;
+          target2.path = removeDotSegments(relative.path || "");
+          target2.query = relative.query;
         } else {
           if (!relative.path) {
-            target.path = base2.path;
+            target2.path = base2.path;
             if (relative.query !== void 0) {
-              target.query = relative.query;
+              target2.query = relative.query;
             } else {
-              target.query = base2.query;
+              target2.query = base2.query;
             }
           } else {
             if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+              target2.path = removeDotSegments(relative.path);
             } else {
               if ((base2.userinfo !== void 0 || base2.host !== void 0 || base2.port !== void 0) && !base2.path) {
-                target.path = "/" + relative.path;
+                target2.path = "/" + relative.path;
               } else if (!base2.path) {
-                target.path = relative.path;
+                target2.path = relative.path;
               } else {
-                target.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative.path;
+                target2.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative.path;
               }
-              target.path = removeDotSegments(target.path);
+              target2.path = removeDotSegments(target2.path);
             }
-            target.query = relative.query;
+            target2.query = relative.query;
           }
-          target.userinfo = base2.userinfo;
-          target.host = base2.host;
-          target.port = base2.port;
+          target2.userinfo = base2.userinfo;
+          target2.host = base2.host;
+          target2.port = base2.port;
         }
-        target.scheme = base2.scheme;
+        target2.scheme = base2.scheme;
       }
-      target.fragment = relative.fragment;
-      return target;
+      target2.fragment = relative.fragment;
+      return target2;
     }
     function equal(uriA, uriB, options2) {
       const normalizedA = normalizeComparableURI(uriA, options2);
@@ -7304,9 +7304,9 @@ var require_lib = __commonJS({
       UnsupportedDefaultExport: "Only expressions, functions or classes are allowed as the `default` export.",
       UnsupportedImport: "`import` can only be used in `import()` or `import.meta`.",
       UnsupportedMetaProperty: ({
-        target,
+        target: target2,
         onlyValidPropertyName
-      }) => `The only valid meta property for ${target} is ${target}.${onlyValidPropertyName}.`,
+      }) => `The only valid meta property for ${target2} is ${target2}.${onlyValidPropertyName}.`,
       UnsupportedParameterDecorator: "Decorators cannot be used to decorate parameters.",
       UnsupportedPropertyDecorator: "Decorators cannot be used to decorate object literal properties.",
       UnsupportedSuper: "'super' can only be used with function calls (i.e. super()) or in property accesses (i.e. super.prop or super[prop]).",
@@ -27988,12 +27988,12 @@ var require_parser = __commonJS({
       }
       return prev.splice(i, prev.length);
     }
-    function arrayPushArray(target, source2) {
+    function arrayPushArray(target2, source2) {
       if (source2.length < 1e5)
-        Array.prototype.push.apply(target, source2);
+        Array.prototype.push.apply(target2, source2);
       else
         for (let i = 0; i < source2.length; ++i)
-          target.push(source2[i]);
+          target2.push(source2[i]);
     }
     function fixFlowSeqItems(fc) {
       if (fc.start.type === "flow-seq-start") {
@@ -34975,8 +34975,8 @@ function defineLazy(object4, key4, getter) {
 function objectClone(obj3) {
   return Object.create(Object.getPrototypeOf(obj3), Object.getOwnPropertyDescriptors(obj3));
 }
-function assignProp(target, prop2, value2) {
-  Object.defineProperty(target, prop2, {
+function assignProp(target2, prop2, value2) {
+  Object.defineProperty(target2, prop2, {
     value: value2,
     writable: true,
     enumerable: true,
@@ -35159,35 +35159,35 @@ function normalizeParams(_params) {
   return params;
 }
 function createTransparentProxy(getter) {
-  let target;
+  let target2;
   return new Proxy({}, {
     get(_, prop2, receiver) {
-      target ?? (target = getter());
-      return Reflect.get(target, prop2, receiver);
+      target2 ?? (target2 = getter());
+      return Reflect.get(target2, prop2, receiver);
     },
     set(_, prop2, value2, receiver) {
-      target ?? (target = getter());
-      return Reflect.set(target, prop2, value2, receiver);
+      target2 ?? (target2 = getter());
+      return Reflect.set(target2, prop2, value2, receiver);
     },
     has(_, prop2) {
-      target ?? (target = getter());
-      return Reflect.has(target, prop2);
+      target2 ?? (target2 = getter());
+      return Reflect.has(target2, prop2);
     },
     deleteProperty(_, prop2) {
-      target ?? (target = getter());
-      return Reflect.deleteProperty(target, prop2);
+      target2 ?? (target2 = getter());
+      return Reflect.deleteProperty(target2, prop2);
     },
     ownKeys(_) {
-      target ?? (target = getter());
-      return Reflect.ownKeys(target);
+      target2 ?? (target2 = getter());
+      return Reflect.ownKeys(target2);
     },
     getOwnPropertyDescriptor(_, prop2) {
-      target ?? (target = getter());
-      return Reflect.getOwnPropertyDescriptor(target, prop2);
+      target2 ?? (target2 = getter());
+      return Reflect.getOwnPropertyDescriptor(target2, prop2);
     },
     defineProperty(_, prop2, descriptor) {
-      target ?? (target = getter());
-      return Reflect.defineProperty(target, prop2, descriptor);
+      target2 ?? (target2 = getter());
+      return Reflect.defineProperty(target2, prop2, descriptor);
     }
   });
 }
@@ -45639,15 +45639,15 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
 
 // node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
-  let target = params?.target ?? "draft-2020-12";
-  if (target === "draft-4")
-    target = "draft-04";
-  if (target === "draft-7")
-    target = "draft-07";
+  let target2 = params?.target ?? "draft-2020-12";
+  if (target2 === "draft-4")
+    target2 = "draft-04";
+  if (target2 === "draft-7")
+    target2 = "draft-07";
   return {
     processors: params.processors ?? {},
     metadataRegistry: params?.metadata ?? globalRegistry,
-    target,
+    target: target2,
     unrepresentable: params?.unrepresentable ?? "throw",
     override: params?.override ?? (() => {
     }),
@@ -45989,8 +45989,8 @@ var createToJSONSchemaMethod = (schema, processors = {}) => (params) => {
   return finalize(ctx, schema);
 };
 var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) => {
-  const { libraryOptions, target } = params ?? {};
-  const ctx = initializeContext({ ...libraryOptions ?? {}, target, io, processors });
+  const { libraryOptions, target: target2 } = params ?? {};
+  const ctx = initializeContext({ ...libraryOptions ?? {}, target: target2, io, processors });
   process2(schema, ctx);
   extractDefs(ctx, schema);
   return finalize(ctx, schema);
@@ -47049,8 +47049,8 @@ var ZodType = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
     catch(params) {
       return _catch2(this, params);
     },
-    pipe(target) {
-      return pipe(this, target);
+    pipe(target2) {
+      return pipe(this, target2);
     },
     readonly() {
       return readonly(this);
@@ -53231,8 +53231,8 @@ var ZodType2 = class {
       description
     });
   }
-  pipe(target) {
-    return ZodPipeline.create(this, target);
+  pipe(target2) {
+    return ZodPipeline.create(this, target2);
   }
   readonly() {
     return ZodReadonly2.create(this);
@@ -60735,6 +60735,179 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
 
+// dist/appVersionLifecycle.js
+function createAppVersionLifecycle(auth, getApp) {
+  const enc = encodeURIComponent;
+  async function request(path, method = "GET", body) {
+    const response = await auth.authedFetch(path, method === "GET" ? void 0 : {
+      method,
+      headers: { "Content-Type": "application/json" },
+      ...body === void 0 ? {} : { body: JSON.stringify(body) }
+    });
+    if (!response.ok)
+      throw new Error(`App version ${method} failed (${response.status}): ${await response.text()}`);
+    return response;
+  }
+  function normalize(raw) {
+    if (typeof raw.id !== "string" || typeof raw.name !== "string")
+      throw new Error("Invalid version metadata.");
+    const environmentId = raw.current_environment_id ?? raw.currentEnvironmentId;
+    return {
+      id: raw.id,
+      name: raw.name,
+      ...typeof raw.description === "string" || raw.description === null ? { description: raw.description } : {},
+      ...typeof raw.status === "string" ? { status: raw.status } : {},
+      ...typeof environmentId === "string" ? { environmentId } : {}
+    };
+  }
+  async function versions2(appId) {
+    const data = await (await request(`/api/apps/${enc(appId)}/versions`)).json();
+    if (!Array.isArray(data.versions))
+      throw new Error("Missing app version inventory.");
+    return data.versions.map(normalize);
+  }
+  async function version2(appId, versionId) {
+    const found = (await versions2(appId)).find((v) => v.id === versionId);
+    if (!found)
+      throw new Error(`Version ${versionId} does not belong to app ${appId}.`);
+    return found;
+  }
+  async function environments(appId) {
+    const data = await (await request(`/api/app-environments?app_id=${enc(appId)}`)).json();
+    if (!Array.isArray(data.environments))
+      throw new Error("Missing environment inventory.");
+    return data.environments.map((e) => {
+      if (typeof e.id !== "string" || typeof e.name !== "string" || typeof e.priority !== "number") {
+        throw new Error("Cannot verify environment promotion order.");
+      }
+      return { id: e.id, name: e.name, priority: e.priority, enabled: e.enabled !== false };
+    }).sort((a, b) => a.priority - b.priority);
+  }
+  function environment2(envs, name2) {
+    const matches2 = envs.filter((e) => e.name.toLowerCase() === name2.trim().toLowerCase());
+    if (matches2.length !== 1)
+      throw new Error(`Unknown or ambiguous environment: ${name2}. Inspect list_app_versions.`);
+    if (!matches2[0].enabled)
+      throw new Error(`Environment ${name2} is not enabled for this workspace.`);
+    return matches2[0];
+  }
+  function selection(appId, v, environmentId = v.environmentId) {
+    return {
+      app_id: appId,
+      version_id: v.id,
+      version_name: v.name,
+      selected: true,
+      ...v.status ? { status: v.status } : {},
+      ...environmentId ? { current_environment_id: environmentId } : {}
+    };
+  }
+  async function available(appId, v, env2) {
+    const data = await (await request(`/api/app-environments/${enc(env2.id)}/versions?app_id=${enc(appId)}`)).json();
+    const rows = data.appVersions ?? data.app_versions;
+    if (!Array.isArray(rows) || !rows.some((row) => row.id === v.id)) {
+      throw new Error(`Version ${v.name} is not available in ${env2.name}. No promotion or release was performed.`);
+    }
+  }
+  async function list(appId) {
+    const vs = await versions2(appId);
+    const envs = await environments(appId);
+    return { app_id: appId, versions: vs.map((v) => ({ ...selection(appId, v), selected: void 0, description: v.description })), environments: envs };
+  }
+  async function switchEnvironment(appId, versionId, environmentName) {
+    const v = await version2(appId, versionId);
+    const env2 = environment2(await environments(appId), environmentName);
+    await available(appId, v, env2);
+    return { ...selection(appId, v, env2.id), environment_name: env2.name };
+  }
+  async function promote(appId, versionId, environmentName) {
+    let v = await version2(appId, versionId);
+    const envs = await environments(appId);
+    const target2 = environment2(envs, environmentName);
+    const start = envs.find((e) => e.id === v.environmentId);
+    if (!start || envs.some((e, i) => i > 0 && e.priority === envs[i - 1].priority)) {
+      throw new Error("Cannot verify current environment and promotion order.");
+    }
+    if (target2.priority < start.priority)
+      throw new Error("Promotion cannot move a version backwards; use switch_app_environment to view an earlier environment.");
+    if (target2.id === start.id)
+      return { ...selection(appId, v), environment_name: target2.name, promoted_to_environments: [] };
+    const steps = envs.filter((e) => e.priority > start.priority && e.priority <= target2.priority);
+    let published = false;
+    let canViewPromotedEnvironment = true;
+    const promoted = [];
+    try {
+      if (v.status?.toUpperCase() === "DRAFT") {
+        await request(`/api/v2/apps/${enc(appId)}/versions/${enc(versionId)}`, "PUT", { status: "PUBLISHED" });
+        published = true;
+      }
+      for (const next of steps) {
+        const response = await request(`/api/v2/apps/${enc(appId)}/versions/${enc(versionId)}/promote`, "PUT", { currentEnvironmentId: v.environmentId });
+        const body = await response.text();
+        const result = body ? JSON.parse(body) : {};
+        canViewPromotedEnvironment = (result.hasAccessToPromotedEnvironment ?? result.has_access_to_promoted_environment) !== false;
+        v = await version2(appId, versionId);
+        if (v.environmentId !== next.id)
+          throw new Error("Promotion readback did not match the next expected environment.");
+        promoted.push(next.name);
+      }
+    } catch (err) {
+      throw new Error(`${String(err)} Draft saved: ${published}; verified promotions: ${promoted.join(", ") || "none"}. Inspect this exact version before retrying. No release was requested.`);
+    }
+    const selected = selection(appId, v);
+    if (!canViewPromotedEnvironment)
+      delete selected.current_environment_id;
+    return {
+      ...selected,
+      environment_name: target2.name,
+      promoted_environment_id: v.environmentId,
+      has_access_to_promoted_environment: canViewPromotedEnvironment,
+      published_for_promotion: published,
+      promoted_to_environments: promoted
+    };
+  }
+  async function update(appId, versionId, changes) {
+    const before = await version2(appId, versionId);
+    if (changes.name === void 0 && changes.description === void 0)
+      throw new Error("Provide a version name or description.");
+    const patch = {
+      ...changes.name !== void 0 ? { name: changes.name.trim() } : {},
+      ...changes.description !== void 0 ? { description: changes.description } : {}
+    };
+    if (patch.name !== void 0 && (!patch.name || patch.name.length > 50))
+      throw new Error("Version name must contain 1\u201350 characters.");
+    await request(`/api/v2/apps/${enc(appId)}/versions/${enc(versionId)}`, "PUT", { name: before.name, ...patch });
+    const saved = await version2(appId, versionId);
+    if (patch.name !== void 0 && saved.name !== patch.name || patch.description !== void 0 && saved.description !== patch.description)
+      throw new Error("Version metadata update could not be verified; inspect the version before retrying.");
+    return {
+      app_id: appId,
+      version_id: saved.id,
+      version_name: saved.name,
+      description: saved.description,
+      updated: true
+    };
+  }
+  async function remove(appId, versionId, fallbackVersionId) {
+    const all = await versions2(appId);
+    const v = all.find((v2) => v2.id === versionId);
+    const fallback = all.find((v2) => v2.id === fallbackVersionId);
+    if (!v || !fallback || v.id === fallback.id)
+      throw new Error("Delete requires an existing target and a different remaining version in the same app.");
+    const app = await getApp(appId);
+    if ((app.current_version_id ?? app.currentVersionId) === versionId)
+      throw new Error("Cannot delete the released version.");
+    await request(`/api/apps/${enc(appId)}/versions/${enc(versionId)}`, "DELETE");
+    const remaining = await versions2(appId);
+    if (remaining.some((v2) => v2.id === versionId))
+      throw new Error("Version deletion could not be verified.");
+    const selected = remaining.find((v2) => v2.id === fallbackVersionId);
+    if (!selected)
+      throw new Error("Version was deleted but the requested remaining version disappeared. Refresh the editor.");
+    return { ...selection(appId, selected), deleted_version_id: versionId, deleted: true };
+  }
+  return { list, switchEnvironment, promote, update, remove };
+}
+
 // dist/workflowClient.js
 import { createHash } from "node:crypto";
 
@@ -60813,18 +60986,18 @@ function validateGraph(graph, queryIds) {
   }
   const flowEdges = controlFlowEdges(graph);
   for (const edge of graph.edges) {
-    const source2 = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
-    if (!source2 || !target) {
+    const source2 = nodes.get(edge.source), target2 = nodes.get(edge.target), path = `edges.${edge.id}`;
+    if (!source2 || !target2) {
       error51("missing_endpoint", path, "Edge endpoint does not exist.");
       continue;
     }
     if (isAttachmentEdge(edge)) {
-      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target.type === "agent")) {
+      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target2.type === "agent")) {
         error51("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
       }
       continue;
     }
-    if (target.type === "input")
+    if (target2.type === "input")
       error51("start_inbound", path, "Start cannot have inbound edges.");
     const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
     if (ports[source2.type] && !ports[source2.type].includes(edge.sourceHandle))
@@ -61002,12 +61175,12 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source2 = resolve6(input.from), target = resolve6(input.to);
-    if (!source2 || !target)
+    const source2 = resolve6(input.from), target2 = resolve6(input.to);
+    if (!source2 || !target2)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node2) => node2.id === source2);
     const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
-    const edge = { ...old, id, source: source2, target, sourceHandle, type: "custom" };
+    const edge = { ...old, id, source: source2, target: target2, sourceHandle, type: "custom" };
     if (old)
       graph.edges[graph.edges.indexOf(old)] = edge;
     else
@@ -61889,17 +62062,17 @@ function queryTriggers(summary) {
     const payload2 = eventPayload(e.event);
     if (!payload2 || payload2.actionId !== "run-query")
       continue;
-    const target = resolve6(payload2.queryId ?? payload2.queryName);
-    if (!target)
+    const target2 = resolve6(payload2.queryId ?? payload2.queryName);
+    if (!target2)
       continue;
-    const entry = triggers.get(target.id);
+    const entry = triggers.get(target2.id);
     if (!entry)
       continue;
     const trigger = String(payload2.eventId ?? "");
     if (e.target === "page" && trigger === "onPageLoad") {
       entry.automatic = true;
     } else if (e.target === "data_query" && trigger === "onDataQuerySuccess" && e.sourceId) {
-      chains.push([e.sourceId, target.id]);
+      chains.push([e.sourceId, target2.id]);
     } else {
       entry.manual.push(`${e.target ?? "component"} ${trigger || "event"}`);
     }
@@ -61909,9 +62082,9 @@ function queryTriggers(summary) {
     changed = false;
     for (const [sourceId, targetId] of chains) {
       const source2 = triggers.get(sourceId);
-      const target = triggers.get(targetId);
-      if (source2?.automatic && target && !target.automatic) {
-        target.automatic = true;
+      const target2 = triggers.get(targetId);
+      if (source2?.automatic && target2 && !target2.automatic) {
+        target2.automatic = true;
         changed = true;
       }
     }
@@ -63617,9 +63790,9 @@ function interpret(node2) {
         const constant = own(MATH_CONSTANTS, name2);
         return constant ?? unsupported();
       }
-      const target = interpret(node2.object);
-      if (typeof target === "string" && name2 === "length")
-        return target.length;
+      const target2 = interpret(node2.object);
+      if (typeof target2 === "string" && name2 === "length")
+        return target2.length;
       return unsupported();
     }
     case "CallExpression": {
@@ -63660,28 +63833,28 @@ function interpret(node2) {
       if (object4.type === "Identifier" && object4.name === "JSON" && name2 === "stringify" && args.length === 1) {
         return JSON.stringify(primitive(args[0]));
       }
-      const target = interpret(object4);
-      if (isMoment(target)) {
+      const target2 = interpret(object4);
+      if (isMoment(target2)) {
         const check2 = own(MOMENT_METHODS, name2);
         if (!check2 || !check2(args))
           return unsupported();
         const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
-        const result = target.m[name2](...unwrapped);
+        const result = target2.m[name2](...unwrapped);
         if (import_moment.default.isMoment(result))
           return box(result);
         if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
           return result;
         return unsupported();
       }
-      if (typeof target === "string") {
+      if (typeof target2 === "string") {
         const fn = own(STRING_METHODS, name2);
-        return fn ? fn(target, args) : unsupported();
+        return fn ? fn(target2, args) : unsupported();
       }
-      if (typeof target === "number") {
+      if (typeof target2 === "number") {
         if (name2 === "toFixed" && args.length <= 1)
-          return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
+          return target2.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
         if (name2 === "toString" && args.length === 0)
-          return String(target);
+          return String(target2);
         return unsupported();
       }
       return unsupported();
@@ -64942,8 +65115,8 @@ function resolvedReadRefusal(query2, before, resolved) {
     return void 0;
   return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? "the resolved text changes the statement"}). Bindings must supply values, not SQL or query structure; move that text into the saved query.`;
 }
-function sameReadSource(target, count) {
-  return !!target.source && !!count.source && target.simpleSourceRead === true && count.fullSourceCount === true && !!target.datasourceId && target.datasourceId === count.datasourceId && target.datasourceKind === count.datasourceKind && target.source.kind === count.source.kind && target.source.value === count.source.value;
+function sameReadSource(target2, count) {
+  return !!target2.source && !!count.source && target2.simpleSourceRead === true && count.fullSourceCount === true && !!target2.datasourceId && target2.datasourceId === count.datasourceId && target2.datasourceKind === count.datasourceKind && target2.source.kind === count.source.kind && target2.source.value === count.source.value;
 }
 function extractRowCount(result) {
   if (result.status !== "ok")
@@ -68511,14 +68684,14 @@ function lintHiddenModalHitTargets(components) {
     if (!a)
       continue;
     const targets = [];
-    for (const target of components) {
-      if (!interactive.has(target.type ?? "") || placementKey(target) !== placementKey(modal) || mutuallyExclusiveVisibility(modal, target))
+    for (const target2 of components) {
+      if (!interactive.has(target2.type ?? "") || placementKey(target2) !== placementKey(modal) || mutuallyExclusiveVisibility(modal, target2))
         continue;
-      const b = target.layouts?.desktop ?? target.layout;
+      const b = target2.layouts?.desktop ?? target2.layout;
       if (!b)
         continue;
-      if ((a.left ?? 0) < (b.left ?? 0) + (b.width ?? 0) && (b.left ?? 0) < (a.left ?? 0) + (a.width ?? 0) && (a.top ?? 0) < (b.top ?? 0) + renderedHeight(target, b) && (b.top ?? 0) < (a.top ?? 0) + (a.height ?? 0)) {
-        targets.push(target.name ?? target.type ?? "?");
+      if ((a.left ?? 0) < (b.left ?? 0) + (b.width ?? 0) && (b.left ?? 0) < (a.left ?? 0) + (a.width ?? 0) && (a.top ?? 0) < (b.top ?? 0) + renderedHeight(target2, b) && (b.top ?? 0) < (a.top ?? 0) + (a.height ?? 0)) {
+        targets.push(target2.name ?? target2.type ?? "?");
       }
     }
     if (targets.length)
@@ -70428,18 +70601,18 @@ function createClient(auth, config2) {
       const environmentsRes = await auth.authedFetch(`/api/app-environments?app_id=${encodeURIComponent(appId)}`);
       await assertOk(environmentsRes, "releaseApp.listEnvironments");
       const environmentsBody = await environmentsRes.json();
-      const environments = (environmentsBody.environments ?? []).flatMap((environment) => {
-        if (typeof environment.id !== "string" || typeof environment.name !== "string")
+      const environments = (environmentsBody.environments ?? []).flatMap((environment2) => {
+        if (typeof environment2.id !== "string" || typeof environment2.name !== "string")
           return [];
         return [{
-          id: environment.id,
-          name: environment.name,
-          isDefault: environment.default === true || environment.is_default === true || environment.isDefault === true,
-          ...typeof environment.priority === "number" ? { priority: environment.priority } : {}
+          id: environment2.id,
+          name: environment2.name,
+          isDefault: environment2.default === true || environment2.is_default === true || environment2.isDefault === true,
+          ...typeof environment2.priority === "number" ? { priority: environment2.priority } : {}
         }];
       });
       for (let attempts = 0; attempts <= environments.length; attempts++) {
-        const currentEnvironment = environments.find((environment) => environment.id === version2.currentEnvironmentId);
+        const currentEnvironment = environments.find((environment2) => environment2.id === version2.currentEnvironmentId);
         if (!currentEnvironment) {
           throw new Error(`ToolJet releaseApp failed after publishing the version: version ${versionId} references unknown environment ${String(version2.currentEnvironmentId)}. Retry release after checking its environment.`);
         }
@@ -70461,7 +70634,7 @@ function createClient(auth, config2) {
           throw new Error(`ToolJet releaseApp promotion from ${currentEnvironment.name} failed (${promoteRes.status}): ${promoteError}. The version may already be published or partly promoted; retry the same release.`);
         }
         version2 = await readVersion();
-        const promotedEnvironment = environments.find((environment) => environment.id === version2.currentEnvironmentId);
+        const promotedEnvironment = environments.find((environment2) => environment2.id === version2.currentEnvironmentId);
         if (!promotedEnvironment || promotedEnvironment.id === currentEnvironment.id) {
           throw new Error(`ToolJet releaseApp could not verify promotion from ${currentEnvironment.name} for version ${versionId}. Retry the same release to continue safely.`);
         }
@@ -71399,6 +71572,7 @@ function createClient(auth, config2) {
     return { deleted: true };
   }
   return {
+    appVersions: createAppVersionLifecycle(auth, getApp),
     workflows: createWorkflowClient(auth, config2, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
@@ -71503,6 +71677,66 @@ function fail(err) {
     details: message
   } }) : `Error: ${message}`;
   return { content: [{ type: "text", text }], isError: true };
+}
+
+// dist/tools/appVersionLifecycle.js
+var target = { app_id: external_exports.string().uuid(), version_id: external_exports.string().uuid() };
+var environment = external_exports.enum(["development", "staging", "production"]);
+function appVersionLifecycleTools(client) {
+  const execute = (action) => async (args) => {
+    try {
+      return ok(await action(args));
+    } catch (err) {
+      return fail(err);
+    }
+  };
+  return [
+    {
+      name: "list_app_versions",
+      title: "List App Versions",
+      description: "List exact versions and environments for one app. Use returned IDs to resolve named lifecycle targets; never infer IDs.",
+      annotations: { readOnlyHint: true },
+      strictInput: true,
+      inputSchema: { app_id: target.app_id },
+      handler: execute((a) => client.appVersions.list(a.app_id))
+    },
+    {
+      name: "promote_app_version",
+      title: "Promote App Version",
+      description: "Save a draft if necessary and promote the selected version only as far as the explicitly requested environment. Never releases the app. Pass confirm:true only for an explicit promotion request. Returns verified editor selection metadata.",
+      annotations: { readOnlyHint: false, destructiveHint: true },
+      strictInput: true,
+      inputSchema: { ...target, environment_name: external_exports.enum(["staging", "production"]), confirm: external_exports.literal(true) },
+      handler: execute((a) => client.appVersions.promote(a.app_id, a.version_id, a.environment_name))
+    },
+    {
+      name: "switch_app_environment",
+      title: "Switch App Environment",
+      description: "Open the same app version in a requested environment without publishing, promoting, or releasing it. Fails if that version is not available there. Use only for an explicit environment-switch request.",
+      annotations: { readOnlyHint: false, destructiveHint: false },
+      strictInput: true,
+      inputSchema: { ...target, environment_name: environment },
+      handler: execute((a) => client.appVersions.switchEnvironment(a.app_id, a.version_id, a.environment_name))
+    },
+    {
+      name: "update_app_version",
+      title: "Update App Version",
+      description: "Rename the selected version or edit its description, only when explicitly requested. Does not publish, promote, or release. Backend version permissions and edit restrictions apply.",
+      annotations: { readOnlyHint: false, destructiveHint: false },
+      strictInput: true,
+      inputSchema: { ...target, version_name: external_exports.string().trim().min(1).max(50).optional(), version_description: external_exports.string().max(500).optional() },
+      handler: execute((a) => client.appVersions.update(a.app_id, a.version_id, { name: a.version_name, description: a.version_description }))
+    },
+    {
+      name: "delete_app_version",
+      title: "Delete App Version",
+      description: "Delete the explicitly selected, unreleased version only on an explicit user deletion request. List versions first and provide a different fallback_version_id in the same app for the editor to open afterward. Never delete the released or only version. Do not retry an uncertain deletion automatically.",
+      annotations: { readOnlyHint: false, destructiveHint: true },
+      strictInput: true,
+      inputSchema: { ...target, fallback_version_id: external_exports.string().uuid(), confirm: external_exports.literal(true) },
+      handler: execute((a) => client.appVersions.remove(a.app_id, a.version_id, a.fallback_version_id))
+    }
+  ];
 }
 
 // dist/tools/workspaceGroupManagement.js
@@ -74163,8 +74397,8 @@ function readPath(source2, segments) {
   }
   return { found: true, value: cursor };
 }
-function writePath(target, segments, value2) {
-  let cursor = target;
+function writePath(target2, segments, value2) {
+  let cursor = target2;
   for (let index = 0; index < segments.length - 1; index += 1) {
     const segment = segments[index];
     const child = cursor[segment];
@@ -74545,8 +74779,8 @@ function queryEventCycleErrors(summary, additions, persisted) {
   const edge = (event) => {
     if (event.sourceType !== "data_query" || !names.has(event.sourceId) || event.action.actionId !== "run-query" || !unconditional(event.action))
       return void 0;
-    const target = resolve6(event.action.queryId);
-    return target ? [event.sourceId, target] : void 0;
+    const target2 = resolve6(event.action.queryId);
+    return target2 ? [event.sourceId, target2] : void 0;
   };
   const graph = /* @__PURE__ */ new Map();
   for (const event of [...persisted, ...additions]) {
@@ -74578,11 +74812,11 @@ function queryEventCycleErrors(summary, additions, persisted) {
     const pair = edge(event);
     if (!pair)
       continue;
-    const [source2, target] = pair;
-    const successCycle = event.trigger === "onDataQuerySuccess" && reaches(target, source2);
-    const failureSelfRetry = event.trigger === "onDataQueryFailure" && source2 === target;
+    const [source2, target2] = pair;
+    const successCycle = event.trigger === "onDataQuerySuccess" && reaches(target2, source2);
+    const failureSelfRetry = event.trigger === "onDataQueryFailure" && source2 === target2;
     if (successCycle || failureSelfRetry)
-      errors.push(`Query "${names.get(source2)}" -> "${names.get(target)}" creates an unconditional query ${failureSelfRetry ? "failure retry" : "success cycle"}. This can repeat queries and writes after one click. Refresh a separate read query with no return edge, or use an explicit bounded retry/termination guard.`);
+      errors.push(`Query "${names.get(source2)}" -> "${names.get(target2)}" creates an unconditional query ${failureSelfRetry ? "failure retry" : "success cycle"}. This can repeat queries and writes after one click. Refresh a separate read query with no return edge, or use an explicit bounded retry/termination guard.`);
   }
   return [...new Set(errors)];
 }
@@ -74866,26 +75100,26 @@ function validateEvents(summary, events, options2 = {}) {
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
-      const target = typeof modal === "string" ? components.get(modal) : void 0;
-      if (!target) {
+      const target2 = typeof modal === "string" ? components.get(modal) : void 0;
+      if (!target2) {
         errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
-      } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
-        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
+      } else if (!["Modal", "ModalV2"].includes(target2.type ?? "")) {
+        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target2.type ?? "unknown"} "${target2.name ?? target2.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
-      const target = typeof componentId === "string" ? components.get(componentId) : void 0;
-      if (!target) {
+      const target2 = typeof componentId === "string" ? components.get(componentId) : void 0;
+      if (!target2) {
         errors.push(`${label2}: control-component target "${String(componentId)}" does not exist.`);
       } else {
         const handle = event.action.componentSpecificActionHandle;
-        const schema = target.type ? getComponentSchema(target.type) : null;
+        const schema = target2.type ? getComponentSchema(target2.type) : null;
         const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
         if (!nonEmptyString(handle)) {
           errors.push(`${label2}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target2.type ?? "unknown"} "${target2.name ?? target2.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
@@ -76054,12 +76288,12 @@ function normalizeComponentSpec(component, options2 = {}) {
   const aliasTargetFor = (key4) => {
     if (knownPropertyKeys?.has(key4))
       return void 0;
-    const target = PROPERTY_KEY_ALIASES[key4.toLowerCase()];
-    if (!target)
+    const target2 = PROPERTY_KEY_ALIASES[key4.toLowerCase()];
+    if (!target2)
       return void 0;
     if (!schema)
-      return target;
-    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+      return target2;
+    return knownStyleKeys.has(target2) || knownPropertyKeys.has(target2) ? target2 : void 0;
   };
   for (const key4 of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key4);
@@ -76369,16 +76603,16 @@ function lintRunjsLoadOrder(spec) {
   }
   const chained = /* @__PURE__ */ new Set();
   for (const lifecycle of spec.lifecycles ?? []) {
-    for (const target of lifecycle.refreshQueryRefs ?? [])
-      chained.add(`${lifecycle.queryRef}->${target}`);
+    for (const target2 of lifecycle.refreshQueryRefs ?? [])
+      chained.add(`${lifecycle.queryRef}->${target2}`);
   }
   for (const event of spec.events ?? []) {
     const action = event.action ?? {};
     if (event.sourceType !== "data_query" || event.trigger !== "onDataQuerySuccess" || action.actionId !== "run-query")
       continue;
-    const target = String(action.target_ref ?? action.queryName ?? action.queryId ?? "");
-    if (target)
-      chained.add(`${event.sourceRef}->${target}`);
+    const target2 = String(action.target_ref ?? action.queryName ?? action.queryId ?? "");
+    if (target2)
+      chained.add(`${event.sourceRef}->${target2}`);
   }
   const keysOf = (query2) => [query2.name, ...query2.clientRef ? [query2.clientRef] : []];
   for (const query2 of queries) {
@@ -76534,14 +76768,14 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
   const existingQueries = existingSummary?.queries ?? [];
   const existingQueryNames = /* @__PURE__ */ new Set();
   for (const query2 of existingQueries) {
-    const target = { id: query2.id, name: query2.name ?? query2.id };
-    queryRefs.set(query2.id, target);
-    queryIds.set(query2.id, target);
+    const target2 = { id: query2.id, name: query2.name ?? query2.id };
+    queryRefs.set(query2.id, target2);
+    queryIds.set(query2.id, target2);
     if (query2.name) {
       if (existingQueryNames.has(query2.name))
         errors.push(`Existing app has duplicate query name "${query2.name}".`);
       existingQueryNames.add(query2.name);
-      queryRefs.set(query2.name, target);
+      queryRefs.set(query2.name, target2);
     }
   }
   const plannedQueries = (spec.queries ?? []).map((query2, index) => {
@@ -76592,8 +76826,8 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     if (page.handle)
       bindRef(pageRefs, page.handle, { id: page.id, name: page.name ?? page.handle });
     for (const component of page.components) {
-      const target = { id: component.id, name: component.name ?? component.id, type: component.type };
-      bindRef(componentRefs, component.id, target);
+      const target2 = { id: component.id, name: component.name ?? component.id, type: component.type };
+      bindRef(componentRefs, component.id, target2);
       if (component.name)
         componentNameCounts.set(component.name, (componentNameCounts.get(component.name) ?? 0) + 1);
     }
@@ -76841,22 +77075,22 @@ function resolveAction(raw, queries, pages, components, errors, label2) {
     return action;
   }
   const actionId = action.actionId;
-  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
-  if (!target) {
+  const target2 = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
+  if (!target2) {
     errors.push(`${label2} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
   if (actionId === "run-query")
-    return { ...action, queryId: target.id, queryName: target.name };
+    return { ...action, queryId: target2.id, queryName: target2.name };
   if (actionId === "switch-page")
-    return { ...action, pageId: target.id };
+    return { ...action, pageId: target2.id };
   if (actionId === "show-modal" || actionId === "close-modal")
-    return { ...action, modal: target.id };
+    return { ...action, modal: target2.id };
   if (actionId === "control-component" || actionId === "scroll-component-into-view") {
-    return { ...action, componentId: target.id };
+    return { ...action, componentId: target2.id };
   }
   if (actionId === "set-table-page")
-    return { ...action, table: target.id };
+    return { ...action, table: target2.id };
   return action;
 }
 function resolveRefs(refs2, map2, errors, label2) {
@@ -77182,11 +77416,11 @@ function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PUR
   const changed = /* @__PURE__ */ new Set();
   const rewrite = (code) => {
     const edits = ["components", "queries"].flatMap((namespace) => namespaceReads(code, namespace).flatMap((read) => {
-      const target = maps[namespace].get(read.name);
-      if (!target)
+      const target2 = maps[namespace].get(read.name);
+      if (!target2)
         return [];
-      changed.add(`${namespace}[${JSON.stringify(read.name)}] \u2192 ${namespace}[${JSON.stringify(target)}]`);
-      return [{ ...read, text: `${namespace}${read.optional ? "?." : ""}[${JSON.stringify(target)}]` }];
+      changed.add(`${namespace}[${JSON.stringify(read.name)}] \u2192 ${namespace}[${JSON.stringify(target2)}]`);
+      return [{ ...read, text: `${namespace}${read.optional ? "?." : ""}[${JSON.stringify(target2)}]` }];
     }));
     for (const edit of edits.sort((a, b) => b.start - a.start))
       code = code.slice(0, edit.start) + edit.text + code.slice(edit.end);
@@ -77982,16 +78216,16 @@ var WHOLE_ARRAY_TYPES = /* @__PURE__ */ new Set([
   "Navigation",
   "ButtonGroupV2"
 ]);
-function mergeLikeServer(target, source2, wholeArrays) {
-  if (wholeArrays && Array.isArray(target)) {
+function mergeLikeServer(target2, source2, wholeArrays) {
+  if (wholeArrays && Array.isArray(target2)) {
     if (source2 === void 0)
-      return target;
+      return target2;
     if (Array.isArray(source2))
       return source2;
     return isPlainObject4(source2) ? Object.values(source2) : source2;
   }
   if (Array.isArray(source2)) {
-    const base2 = Array.isArray(target) ? [...target] : [];
+    const base2 = Array.isArray(target2) ? [...target2] : [];
     source2.forEach((item, index) => {
       const merged = mergeLikeServer(base2[index], item, wholeArrays);
       if (merged !== void 0 || !(index in base2))
@@ -78000,7 +78234,7 @@ function mergeLikeServer(target, source2, wholeArrays) {
     return base2;
   }
   if (isPlainObject4(source2)) {
-    const base2 = isPlainObject4(target) ? { ...target } : {};
+    const base2 = isPlainObject4(target2) ? { ...target2 } : {};
     for (const [key4, value2] of Object.entries(source2)) {
       const merged = mergeLikeServer(base2[key4], value2, wholeArrays);
       if (merged !== void 0 || !(key4 in base2))
@@ -78008,7 +78242,7 @@ function mergeLikeServer(target, source2, wholeArrays) {
     }
     return base2;
   }
-  return source2 === void 0 ? target : source2;
+  return source2 === void 0 ? target2 : source2;
 }
 var stable2 = (value2) => JSON.stringify(value2, (_key, inner) => isPlainObject4(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
 function sectionAsRead(type, section, stored, definitions = bundledDefinitions()) {
@@ -78601,37 +78835,37 @@ function resolveAction2(raw, pages, queries, components) {
   if (typeof targetRef !== "string")
     throw new Error("Event action target_ref must be a string.");
   const actionId = String(action.actionId);
-  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(actionId) ? components.get(targetRef) : void 0;
-  if (!target)
+  const target2 = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(actionId) ? components.get(targetRef) : void 0;
+  if (!target2)
     throw new Error(`Action "${actionId}" has unknown or unsupported target_ref "${targetRef}".`);
   if (actionId === "run-query")
-    return { ...action, queryId: target.id, queryName: target.name };
+    return { ...action, queryId: target2.id, queryName: target2.name };
   if (actionId === "switch-page")
-    return { ...action, pageId: target.id };
+    return { ...action, pageId: target2.id };
   if (actionId === "show-modal" || actionId === "close-modal")
-    return { ...action, modal: target.id };
+    return { ...action, modal: target2.id };
   if (actionId === "control-component" || actionId === "scroll-component-into-view") {
-    return { ...action, componentId: target.id };
+    return { ...action, componentId: target2.id };
   }
   if (actionId === "set-table-page")
-    return { ...action, table: target.id };
+    return { ...action, table: target2.id };
   return action;
 }
 function refs(values, targets, label2) {
   return values?.map((ref2) => {
-    const target = targets.get(ref2);
-    if (!target)
+    const target2 = targets.get(ref2);
+    if (!target2)
       throw new Error(`${label2} ref "${ref2}" does not exist.`);
-    return target.id;
+    return target2.id;
   });
 }
 function oneRef(value2, targets, label2) {
   if (!value2)
     return void 0;
-  const target = targets.get(value2);
-  if (!target)
+  const target2 = targets.get(value2);
+  if (!target2)
     throw new Error(`${label2} ref "${value2}" does not exist.`);
-  return target.id;
+  return target2.id;
 }
 function appliedSummary(applied) {
   return Object.entries(applied).map(([key4, value2]) => `${key4}=${value2}`).join(", ");
@@ -78831,9 +79065,9 @@ function applyAppPhaseTool(client) {
           }
           const queries = persistedTargets(planSummary.queries.map((query2) => ({ id: query2.id, name: query2.name ?? query2.id })));
           for (const query2 of spec.queries ?? []) {
-            const target = { id: replacing?.queriesToUpdate.get(query2.name) ?? `planned-query:${query2.name}`, name: query2.name };
-            queries.set(logicalRef(query2), target);
-            queries.set(query2.name, target);
+            const target2 = { id: replacing?.queriesToUpdate.get(query2.name) ?? `planned-query:${query2.name}`, name: query2.name };
+            queries.set(logicalRef(query2), target2);
+            queries.set(query2.name, target2);
           }
           const components = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
             id: component.id,
@@ -78966,20 +79200,20 @@ function applyAppPhaseTool(client) {
         let createdIndex = 0;
         (spec.queries ?? []).forEach((query2) => {
           const updatedId = replacing?.queriesToUpdate.get(query2.name);
-          const target = updatedId ? { query_id: updatedId, name: query2.name } : createdQueries[createdIndex++];
-          if (!target)
+          const target2 = updatedId ? { query_id: updatedId, name: query2.name } : createdQueries[createdIndex++];
+          if (!target2)
             throw new Error(`Could not resolve query "${query2.name}" after creation.`);
-          queryTargets.set(logicalRef(query2), { id: target.query_id, name: target.name });
-          queryTargets.set(query2.name, { id: target.query_id, name: target.name });
+          queryTargets.set(logicalRef(query2), { id: target2.query_id, name: target2.name });
+          queryTargets.set(query2.name, { id: target2.query_id, name: target2.name });
         });
         const preparedPages = (spec.pages ?? []).flatMap((page) => {
           const prepared = preparedBatches.get(logicalRef(page));
           if (!prepared)
             return [];
-          const target = pageTargets.get(logicalRef(page));
-          if (!target)
+          const target2 = pageTargets.get(logicalRef(page));
+          if (!target2)
             throw new Error(`Could not resolve component page "${page.name}".`);
-          return [{ page, pageId: target.id, prepared }];
+          return [{ page, pageId: target2.id, prepared }];
         });
         const inPlace = /* @__PURE__ */ new Map();
         if (replacing) {
@@ -79117,8 +79351,8 @@ function applyAppPhaseTool(client) {
           stage = "check the phase's reads";
           try {
             const written = (spec.queries ?? []).flatMap((query2) => {
-              const target = queryTargets.get(logicalRef(query2));
-              return target ? [target.id] : [];
+              const target2 = queryTargets.get(logicalRef(query2));
+              return target2 ? [target2.id] : [];
             });
             readCheck = await checkPlanReads(client, { versionId: args.version_id, queryIds: written });
           } catch (error51) {
@@ -79190,8 +79424,8 @@ function persistedTargets(values) {
 }
 function selectedRefs(targets, refs2) {
   return Object.fromEntries(refs2.flatMap((ref2) => {
-    const target = targets.get(ref2);
-    return target ? [[ref2, target.id]] : [];
+    const target2 = targets.get(ref2);
+    return target2 ? [[ref2, target2.id]] : [];
   }));
 }
 function withoutExistingEvents(planned, existing) {
@@ -79981,24 +80215,24 @@ function deleteComponentsTool(client) {
         }
         const survivingComponents = before.pages.flatMap((candidate) => candidate.components).filter((component) => !requested.has(component.id));
         const references = [];
-        for (const target of targets) {
-          if (target.name) {
+        for (const target2 of targets) {
+          if (target2.name) {
             for (const component of survivingComponents) {
-              if (containsNamedBinding([component.properties, component.styles, component.others], "components", target.name)) {
-                references.push(`component ${component.name ?? component.id} binds components.${target.name}`);
+              if (containsNamedBinding([component.properties, component.styles, component.others], "components", target2.name)) {
+                references.push(`component ${component.name ?? component.id} binds components.${target2.name}`);
               }
             }
             for (const query2 of before.queries) {
-              if (containsNamedBinding(query2.options, "components", target.name)) {
-                references.push(`query ${query2.name ?? query2.id} binds components.${target.name}`);
+              if (containsNamedBinding(query2.options, "components", target2.name)) {
+                references.push(`query ${query2.name ?? query2.id} binds components.${target2.name}`);
               }
             }
           }
           for (const event of before.events) {
             if (requested.has(event.sourceId ?? ""))
               continue;
-            if (containsExactValue(event.event, target.id) || (target.name ? containsNamedBinding(event.event, "components", target.name) : false)) {
-              references.push(`event ${event.name ?? event.id} targets ${target.name ?? target.id}`);
+            if (containsExactValue(event.event, target2.id) || (target2.name ? containsNamedBinding(event.event, "components", target2.name) : false)) {
+              references.push(`event ${event.name ?? event.id} targets ${target2.name ?? target2.id}`);
             }
           }
         }
@@ -81154,8 +81388,8 @@ function workflowReadiness(graph, structuralErrors) {
     if (reachable.has(id))
       return;
     reachable.add(id);
-    for (const target of adjacency.get(id) ?? [])
-      visit(target);
+    for (const target2 of adjacency.get(id) ?? [])
+      visit(target2);
   };
   for (const start of graph.nodes.filter((node2) => node2.type === "input" && node2.data.nodeType === "start"))
     visit(start.id);
@@ -81558,6 +81792,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     manageWorkspaceGroupsTool(client),
     createAppTool(client),
     createAppVersionTool(client),
+    ...appVersionLifecycleTools(client),
     switchAppVersionTool(client),
     releaseAppTool(client),
     getAppSettingsTool(client),
