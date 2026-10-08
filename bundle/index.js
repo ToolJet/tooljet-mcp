@@ -80872,7 +80872,7 @@ function deleteEventTool(client) {
 import { createHash as createHash2 } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.7.0";
+var TOOLJET_MCP_VERSION = "0.8.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);
