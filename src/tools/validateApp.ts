@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { validatePersistedAppSummary } from '../appValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { literalCanvasColor } from '../appSettings.js';
 
 export function validateAppTool(client: ToolJetClient): ToolDef {
   return {
@@ -32,7 +33,7 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
         const summary = args.version_id
           ? await client.getAppSummary(args.app_id, args.version_id)
           : await client.getAppSummary(args.app_id);
-        return ok(validatePersistedAppSummary(summary));
+        return ok(validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) }));
       } catch (err) {
         return fail(err);
       }

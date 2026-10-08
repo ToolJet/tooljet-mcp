@@ -1,5 +1,6 @@
 import type { ToolJetClient } from '../tooljetClient.js';
-import { lintPlannedApp, type AppSpecLintResult } from '../appSpecLint.js';
+import { lintPlannedApp, pagesUsingQuery, type AppSpecLintResult } from '../appSpecLint.js';
+import { literalCanvasColor } from '../appSettings.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { storeAppPlan } from '../appPlanStore.js';
 import { ok, fail, type ToolDef } from './types.js';
@@ -9,6 +10,9 @@ import { suggestedHtmlHeight } from '../renderReadiness.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { missingCreateRowColumns, type RequiredColumn } from '../createRowRequiredColumns.js';
 import { invalidSeedTimestamps } from '../seedTimestampValidation.js';
+import { replaceView, danglingAfterReplace, replaceFingerprint } from '../pageReplace.js';
+import { restatedQueryNames } from '../restatedQueries.js';
+import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
@@ -34,8 +38,13 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       'the exact datasource_id or the exact unique datasource_name from list_datasources(version_id); names are pinned to IDs ' +
       'during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. ' +
       'For repair/continuation phases, pass app_id so persisted page/component/query refs ' +
-      'are included and can be targeted without redeclaring them. On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
-      'Treat this call as an awaited barrier; it never mutates ToolJet.',
+      'are included and can be targeted without redeclaring them. To rebuild an existing page whole, mark its plan page replace: true ' +
+      '(with app_id): the plan is checked against the app with that page emptied, the page\'s own queries may be defined again ' +
+      '(updated in place on apply), and a component another page, event or query still reads must be kept under its name. ' +
+      'A Form submits through a Button inside it: set the Form\'s properties.buttonToSubmit to that Button\'s client_ref in the ' +
+      'same plan (resolved to its id on apply). ' +
+      'On success it returns a one-time 30-minute plan_token for apply_app_phase. ' +
+      'Treat this call as an awaited barrier; it never mutates ToolJet. ' + COMPONENT_FX_GUIDANCE,
     inputSchema: appPlanSchema.shape,
     async handler(args: AppPlanInput) {
       try {
@@ -53,6 +62,11 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         }
         const preflightErrors: string[] = [];
         const preflightWarnings: string[] = [];
+        // replace empties an existing page, which only a plan linted against that app can know about.
+        const replacePages = (args.pages ?? []).filter((page) => page.replace).map((page) => `"${page.name}"`);
+        if (replacePages.length && !args.app_id) {
+          preflightErrors.push(`pages ${replacePages.join(', ')}: replace needs app_id, so the plan is checked against the page it replaces.`);
+        }
         const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
         if (mapRefusal) preflightErrors.push(mapRefusal);
         const needsTables = Boolean(
@@ -60,19 +74,84 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           args.seed_data?.length ||
           args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === 'string')
         );
-        const [existingTables, existingSummary] = await Promise.all([
+        const [existingTables, fetchedSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
           args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(undefined),
         ]);
         // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
-        const frozen = frozenAppRefusal(existingSummary);
+        const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
+        // Resolve names once, before collision renames or existing-table seed checks. A planned
+        // name takes precedence over an existing namesake; all references must follow it together.
+        const plannedNames = new Map<string, string>();
+        for (const table of args.tables ?? []) {
+          const key = table.table_name.toLowerCase();
+          if (plannedNames.has(key)) return fail(new Error(`Ambiguous planned table name "${table.table_name}": table names must be unique ignoring case.`));
+          plannedNames.set(key, table.table_name);
+        }
+        const existingNames = new Map<string, string>();
+        const ambiguousNames = new Set<string>();
+        for (const table of existingTables) {
+          const key = table.table_name.toLowerCase();
+          if (existingNames.has(key)) ambiguousNames.add(key);
+          existingNames.set(key, table.table_name);
+        }
+        const existingExact = new Set(existingTables.map((table) => table.table_name));
+        const canonicalTableName = (name: string): string => {
+          const key = name.toLowerCase();
+          // An exact workspace name is not ambiguous because another table differs from it only in case.
+          if (ambiguousNames.has(key) && !existingExact.has(name)) throw new Error(`Ambiguous existing table name "${name}": multiple workspace tables match ignoring case. No plan token was issued.`);
+          return plannedNames.get(key) ?? (existingExact.has(name) ? name : existingNames.get(key)) ?? name;
+        };
+        for (const name of plannedNames.values()) canonicalTableName(name);
+        for (const seed of args.seed_data ?? []) seed.table_name = canonicalTableName(seed.table_name);
+        for (const query of args.queries ?? []) if (query.table_ref) query.table_ref = canonicalTableName(query.table_ref);
+        for (const table of args.tables ?? []) {
+          for (const fk of table.foreign_keys ?? []) {
+            const ref = fk as unknown as Record<string, unknown>;
+            for (const field of ['referencedTable', 'referenced_table', 'references_table']) {
+              if (typeof ref[field] === 'string') ref[field] = canonicalTableName(ref[field]);
+            }
+          }
+        }
+        const hasSql = args.queries?.some(query =>
+          query.options?.operation === 'sql_execution' || query.options?.sql_execution !== undefined);
+        const datasources = args.queries?.length && args.version_id
+          ? await client.listDatasources(args.version_id)
+          : [];
+        // A plan query that says again, word for word, what the app already holds is a use of that query, not a new
+        // definition (restatedQueries.ts): it leaves the plan, and refs to its name resolve to the query in the app.
+        if (fetchedSummary && args.queries?.length) {
+          // A query for a planned table is not a restatement of one targeting its existing namesake.
+          const restated = restatedQueryNames(fetchedSummary, args.queries.filter(query =>
+            !query.table_ref || !plannedNames.has(query.table_ref.toLowerCase())), existingTables, datasources);
+          if (restated.length) {
+            args.queries = args.queries.filter((query) => !restated.includes(query.name));
+            preflightWarnings.push(`${restated.map((name) => `"${name}"`).join(', ')}: already in the app exactly as written here, ` +
+              'so the plan uses the existing quer' + (restated.length > 1 ? 'ies' : 'y') + ' and defines nothing again.');
+          }
+          // A query marked update: true changes for every page that reads it: say which pages those are.
+          const planPages = new Set((args.pages ?? []).map((page) => page.name));
+          for (const query of args.queries.filter((candidate) => candidate.update)) {
+            const users = pagesUsingQuery(fetchedSummary, query.name, planPages);
+            if (users.length) {
+              preflightWarnings.push(`Query "${query.name}" is updated in place, and page${users.length > 1 ? 's' : ''} ` +
+                `${users.map((user) => `"${user}"`).join(', ')} also read${users.length > 1 ? '' : 's'} it: keep the fields they use.`);
+            }
+          }
+        }
+        // A plan page marked replace is checked against the app with that page emptied and the queries the plan
+        // redefines renamed out of the way: the same names are its new definition, not collisions.
+        const view = fetchedSummary ? replaceView(fetchedSummary, args) : undefined;
+        const existingSummary = view?.summary ?? fetchedSummary;
+        if (view && fetchedSummary) preflightErrors.push(...danglingAfterReplace(fetchedSummary, view, args));
         if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
           preflightErrors.push(
             `App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`
           );
         }
         const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
+        const reservedTableNames = new Map([...tableIds, ...plannedNames]);
         // Seed rows for a table that already exists and already has rows would insert them again: merch m18
         // hand-seeded its tables, then sent the same rows in every plan, and the apply failed on a unique key
         // after creating its queries. Unknown (no reader, or the read failed) is not a finding.
@@ -91,9 +170,6 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             // SQL can name multiple tables, independently of table_ref/table_id. Without resolving
             // SQL identifiers, even a query without table_ref may depend on the colliding name.
             // Require a coherent revised plan rather than silently splitting seeds and SQL targets.
-            const hasSql = args.queries?.some((query) =>
-              query.options?.operation === 'sql_execution' || query.options?.sql_execution !== undefined
-            );
             if (hasSql) {
               preflightErrors.push(
                 `Planned table "${table.table_name}" already exists and this plan contains SQL queries. ` +
@@ -106,7 +182,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             // a prefix (seven of twelve order-desk builds, 2026-09-07). Suffix it here and carry the new name
             // into seed data, table_ref and foreign keys, since they all name the table.
             const oldName = table.table_name;
-            const newName = nextTableName(oldName, tableIds);
+            const newName = nextTableName(oldName, reservedTableNames);
+            reservedTableNames.set(newName.toLowerCase(), newName);
             table.table_name = newName;
             for (const seed of args.seed_data ?? []) if (seed.table_name === oldName) seed.table_name = newName;
             for (const query of args.queries ?? []) if (query.table_ref === oldName) query.table_ref = newName;
@@ -170,26 +247,41 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
                 return indexes;
               }, []);
               if (!missingRows.length) continue;
-              // An integer primary key that no seed row supplies is a generated key the model forgot to
+              // An integer primary key that no seed row in ANY batch supplies is a generated key the model forgot to
               // declare (three of four Grok builds in one evening lost a full lint round trip to this).
               // The intent is unambiguous, so make it serial and say so instead of failing the plan.
               if (
                 column.primaryKey &&
                 /^(integer|bigint|int|int4|int8)$/i.test(column.type) &&
-                missingRows.length === seed.rows.length
+                (args.seed_data ?? []).filter(batch => batch.table_name.toLowerCase() === seed.table_name.toLowerCase())
+                  .every(batch => batch.rows.every(row => !(column.name in row)))
               ) {
+                const originalType = column.type;
                 column.type = 'serial';
                 preflightWarnings.push(
-                  `Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(column.type)} ` +
+                  `Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(originalType)} ` +
                   'with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.'
                 );
                 continue;
               }
-              preflightErrors.push(
-                `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
-                `"${column.name}" in row(s) ${missingRows.join(', ')}. Use type "serial" for a generated key, ` +
-                'add a defaultValue, or provide explicit values.'
-              );
+              // A key written with null is not a missing key: told the rows "omit" a column they held as null, a
+              // build renamed the column twice looking for the gap (2026-10-05).
+              const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]!);
+              const absentRows = missingRows.filter((n) => !nullRows.includes(n));
+              if (nullRows.length) {
+                preflightErrors.push(
+                  `Seed data for planned table "${seed.table_name}": required column "${column.name}" is null in row(s) ` +
+                  `${nullRows.join(', ')}. Give each of those rows a real value (seed rows are literal values, not formulas), ` +
+                  'or add a defaultValue.'
+                );
+              }
+              if (absentRows.length) {
+                preflightErrors.push(
+                  `Seed data for planned table "${seed.table_name}" omits required non-generated column ` +
+                  `"${column.name}" in row(s) ${absentRows.join(', ')}. Use type "serial" for a generated key, ` +
+                  'add a defaultValue, or provide explicit values.'
+                );
+              }
             }
           }
         }
@@ -197,9 +289,6 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         if (args.queries?.length && !args.version_id) {
           preflightErrors.push('version_id is required when a plan contains queries.');
         }
-        const datasources = args.queries?.length && args.version_id
-          ? await client.listDatasources(args.version_id)
-          : [];
         const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
         const uniqueDatasourceNames = new Map(datasources.filter(source =>
           datasources.filter(other => other.name === source.name).length === 1
@@ -310,6 +399,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           }
         }
 
+        // A top-level Html root may paint the app's literal canvas colour: the surface it actually sits on.
+        const canvasColor = args.app_id ? await literalCanvasColor(client, args.app_id, existingSummary?.version_id ?? args.version_id) : undefined;
         const lint = lintPlannedApp({
           tables: args.tables?.map((table) => ({
             tableName: table.table_name,
@@ -361,7 +452,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             successActions: lifecycle.success_actions,
             failureActions: lifecycle.failure_actions,
           })),
-        }, existingSummary);
+        }, existingSummary, { canvasColor });
         const result: AppSpecLintResult = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
@@ -375,7 +466,9 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           const { datasource_name: _name, ...rest } = query;
           return { ...rest, datasource_id: resolvedQueryIds.get(index)! };
         }) };
-        return ok({ ...result, ...storeAppPlan(resolvedSpec, result) });
+        // A replace plan is bound to the replaced pages' state now; apply refuses it if that state changes first.
+        const stored = storeAppPlan(resolvedSpec, result, view && fetchedSummary ? replaceFingerprint(fetchedSummary, view) : undefined);
+        return ok({ ...result, ...stored });
       } catch (error) {
         return fail(error);
       }

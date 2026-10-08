@@ -119,7 +119,7 @@ Bind data property to a query array: `{{queries.queryName.data}}`. Child compone
 show is controlled exclusively via events (control-component with setVisibility) — do NOT bind show directly in properties. Determine TABLE-CONNECTED vs STANDALONE via the app's — call it on every table/button with attached events and check the current state; never infer from component/button naming (e.g. 'Edit row' vs 'Add new' are not reliable signals). STANDALONE (no table's event chain shows this modal) — there is no selectedRow to prefill from; leave children at static defaults/empty and do NOT bind to any table's selectedRow, or the modal will leak stale data from whichever row was last clicked.
 
 ### MultiselectV2
-Only `.searchText` is exposed — there is no `.values` or `.selected` variable on MultiselectV2.
+Read the current selection from `components.<name>?.values` (an array, [] when empty), not `.value`. `.selectedOptions` contains selected {label, value, caption} objects; `.options` contains rendered options; `.searchText` is the search input, not the selection. STATIC mode (advanced=false): initialize `properties.values` with an array matching option values; option-level default flags do not initialize static selection. ADVANCED mode (advanced=true): initialize through schema entries with visible=true and default=true. Preserve option value types and intentional empty selections; do not substitute fallback defaults for []. There is no `.selected` alias. These are standalone MultiselectV2 contracts, not generated Form values/displayValues or DropdownV2's scalar `.value`.
 
 ### NumberInput
 Use debounce: 300 on onChange events that trigger queries. Bind value to prefill from a query: `{{queries.queryName.data[0].fieldName}}`.
@@ -128,7 +128,7 @@ Use debounce: 300 on onChange events that trigger queries. Bind value to prefill
 currentPageIndex is 1-based (starts at 1, not 0). Wire to Table: add a control-component event that calls setPage with value=`{{components.paginationName.currentPageIndex}}`. Bind numberOfPages to the total record count from a COUNT query.
 
 ### RadioButtonV2
-Exposed variable is `.label` — there is NO `.value` on RadioButtonV2. Use `{{components.radioName.label}}` to read the selected option.
+Read the selected option value from `components.<name>?.value`, published before onSelectionChange. `.label` is the field caption, not the selected option or its display label; do not use it for selection filters or writes. `.options` contains {label, value} objects. This scalar selection is distinct from MultiselectV2's plural `.values`.
 
 ### Statistics
 primaryValue must be a scalar — bind `queries.name.data[0].fieldName` from an aggregate query, never the full array. secondarySignDisplay accepted values: 'positive', 'negative', 'none' — never a boolean. icon is MANDATORY — always set it; never leave empty. primaryPrefixText / primarySuffixText are static strings only — do not bind expressions here. Statistics is display-only — its exposed variables are read-back values, not filter inputs.

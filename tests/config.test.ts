@@ -27,6 +27,11 @@ describe('loadConfig', () => {
     expect(() => loadConfig()).toThrow(/TOOLJET_SESSION_TOKEN or TOOLJET_PAT/);
   });
 
+  it('does not treat password-login environment variables as MCP credentials', () => {
+    process.env.TOOLJET_EMAIL = 'dev@example.com'; process.env.TOOLJET_PASSWORD = 'secret';
+    expect(() => loadConfig()).toThrow(/TOOLJET_SESSION_TOKEN or TOOLJET_PAT/);
+  });
+
   /* The in-product path: ToolJet's backend mints a session for the signed-in user and passes it
      here, so no PAT is configured at all. */
   it('accepts a backend-minted session in place of a token', () => {

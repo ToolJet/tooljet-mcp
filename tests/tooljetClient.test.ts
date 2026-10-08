@@ -952,6 +952,50 @@ describe('createClient', () => {
       expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
     });
 
+    it('resolves a Form buttonToSubmit written as a same-batch Button ref to its id', async () => {
+      // ToolJet matches buttonToSubmit against the clicked Button's component id (Form.jsx), and ids are made here.
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'f', type: 'Form', clientRef: 'f', properties: { buttonToSubmit: { value: 'go' } } },
+          { name: 'go', type: 'Button', clientRef: 'go', parentRef: 'f', slotName: 'footer', properties: {} },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-1'].properties.buttonToSubmit.value).toBe('component-uuid-2');
+    });
+
+    it('resolves a Form buttonToSubmit naming a same-batch Button that has no ref', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'f', type: 'Form', clientRef: 'f', properties: { buttonToSubmit: { value: 'go' } } },
+          { name: 'go', type: 'Button', parentRef: 'f', properties: {} },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-1'].properties.buttonToSubmit.value).toBe('component-uuid-2');
+    });
+
+    it('leaves a Form buttonToSubmit that is not a ref of the batch as written', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
+      const client = createClient(auth, config);
+      await client.createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home',
+        components: [
+          { name: 'f', type: 'Form', clientRef: 'f', properties: { buttonToSubmit: { value: 'none' } } },
+          { name: 'g', type: 'Form', clientRef: 'g', properties: { buttonToSubmit: { value: '0b6b1c8e-7d0e-4a57-9d0c-2f8a1d3c4b5e' } } },
+        ],
+      });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.diff['component-uuid-1'].properties.buttonToSubmit.value).toBe('none');
+      expect(body.diff['component-uuid-2'].properties.buttonToSubmit.value).toBe('0b6b1c8e-7d0e-4a57-9d0c-2f8a1d3c4b5e');
+    });
+
     it('persists Kanban modal children on the separate card-click canvas', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
       const client = createClient(auth, config);

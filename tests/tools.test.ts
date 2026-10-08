@@ -184,6 +184,25 @@ describe('create_app tool', () => {
     expect(body.theme.warning).toContain('licence required');
   });
 
+  // A developer portal asked for a dark console: the derived theme put its dark palette in the light slots too, the
+  // app stayed in light mode, and table tags drew dark text on the dark surface (2026-09-30).
+  it('opens an app in dark mode when the derived theme paints a dark canvas in light mode', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([]);
+    client.createAppTheme.mockImplementation(async (input: { name: string; definition: unknown }) => ({ id: 'theme-dark', ...input }));
+    client.updateAppSettings.mockResolvedValue(undefined);
+    const standard = loadStandardTheme().definition as any;
+    const definition = { ...standard, surface: { colors: { ...standard.surface.colors, appBackground: { light: '#0B1020', dark: '#0B1020' } } } };
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Console', theme: { name: 'Relay console dark', definition } });
+
+    expect(client.updateAppSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-dark' }), appMode: 'dark' } })
+    );
+    expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark' });
+  });
+
   it('rejects font-only and incomplete derived palettes before creating any resources', async () => {
     for (const definition of [{ text: { font: 'Inter' } }, { brand: { colors: { primary: { light: '#AA7788' } } } }]) {
       const client = makeClient();
@@ -1861,6 +1880,7 @@ describe('add_components tool', () => {
 describe('validate_app tool', () => {
   it('fetches the summary and reports structural errors/warnings', async () => {
     const client = makeClient();
+    client.getAppSettings = vi.fn().mockResolvedValue({ global_settings: { canvasBackgroundColor: '#eef2ff' } });
     client.getAppSummary.mockResolvedValue({
       app_id: 'app1',
       name: 'App',
@@ -1872,6 +1892,7 @@ describe('validate_app tool', () => {
     const tool = validateAppTool(client as unknown as ToolJetClient);
     const out = textOf(await tool.handler({ app_id: 'app1', version_id: 'v1' })) as { ok: boolean; errors: string[]; warnings: string[] };
     expect(client.getAppSummary).toHaveBeenCalledWith('app1', 'v1');
+    expect(client.getAppSettings).toHaveBeenCalledWith('app1', 'v1');
     expect(out.ok).toBe(false); // dangling event source
     expect(out.errors.join(' ')).toMatch(/no longer exists/);
     expect(out.warnings.join(' ')).toMatch(/can clip at dashboard sizes/); // chart title lint

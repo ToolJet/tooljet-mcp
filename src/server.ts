@@ -3,6 +3,7 @@ import { loadConfig, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
+import { registerCatalogResources } from './catalogResources.js';
 import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
 
 /**
@@ -20,6 +21,7 @@ export function buildServer(identity?: RequestIdentity): McpServer {
   const server = new McpServer({ name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION });
 
   registerTools(server, client);
+  registerCatalogResources(server);
 
   return server;
 }

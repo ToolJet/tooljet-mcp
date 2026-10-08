@@ -52,7 +52,10 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
     inputSchema: {
       app_id: z.string(),
       version_id: z.string().min(1).optional(),
-      sections: z.array(z.enum(['pages', 'queries', 'events'])).optional(),
+      // Components live in pages: "components" is read as pages (a build lost a call to it, 2026-10-05).
+      sections: z.preprocess((value) => (Array.isArray(value)
+        ? [...new Set(value.map((s) => (s === 'components' ? 'pages' : s)))] : value),
+      z.array(z.enum(['pages', 'queries', 'events']))).optional(),
       detail: z.enum(['structure', 'full']).optional(),
       include_components: z.boolean().optional(),
       page_ids: stringList,

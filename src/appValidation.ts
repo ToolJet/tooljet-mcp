@@ -51,8 +51,8 @@ function scratchArtifactWarnings(summary: AppSummary): string[] {
   return warnings;
 }
 
-export function validatePersistedAppSummary(summary: AppSummary): PersistedAppValidation {
-  const structural = validateAppStructure(summary);
+export function validatePersistedAppSummary(summary: AppSummary, options: { canvasColor?: string } = {}): PersistedAppValidation {
+  const structural = validateAppStructure(summary, options);
   const errors = [...structural.errors];
   const warnings = [...structural.warnings];
   warnings.push(...scratchArtifactWarnings(summary));

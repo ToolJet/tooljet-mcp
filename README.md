@@ -237,6 +237,22 @@ Workspace theme creation and management are exposed through `manage_theme`; appl
 of `update_app_settings`. The definition structure and token-backed styling guidance are documented in
 [`docs/theme-api-tool.md`](docs/theme-api-tool.md).
 
+## Resources
+
+Read-only catalog data, for clients that validate or build plans locally and need the same catalog this server
+checks plans against. Each is `application/json`: `{ "mcp_version", "catalog_version", "data_version", "data" }`,
+where `data` is the data file as the server reads it and `data_version` is the first 12 hex characters of its SHA-256.
+`catalog_version` is the same kind of hash over all four parts together and is identical in each of them, so a client
+that reads the parts one at a time can confirm they form one coherent catalog (not a mix from two servers during a
+rolling deployment). The resource list carries both in each entry's `_meta`, so a client can skip a read it has cached.
+
+| URI | Data |
+|---|---|
+| `tooljet://catalog/components` | Component types: properties, styles, events, actions, sizing and authoring hints (`data/component-schemas.json`) |
+| `tooljet://catalog/component-compatibility` | Legacy component types and their replacements (`data/component-compatibility.json`) |
+| `tooljet://catalog/datasources` | Query contract of every datasource kind (`data/datasource-schemas.json`) |
+| `tooljet://catalog/page-icons` | Page icon package, version and names (`data/page-icons.json`) |
+
 ## Privacy Policy
 
 This connector is covered by ToolJet's privacy policy: [tooljet.com/privacy](https://tooljet.com/privacy).

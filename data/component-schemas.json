@@ -11414,12 +11414,14 @@
       {
         "key": "value",
         "label": "Default value",
-        "valueType": "union"
+        "valueType": "union",
+        "description": "Inspector metadata, not the runtime initial-selection property: static mode reads values (an array). The exposed current selection is also .values, never .value."
       },
       {
         "key": "schema",
         "label": "Schema",
-        "default": "{{[ {label: 'option1',value: 1,caption: null,disable: false,visible: true,default: true},{label: 'option2',value: 2,caption: null,disable: false,visible: tru…"
+        "default": "{{[ {label: 'option1',value: 1,caption: null,disable: false,visible: true,default: true},{label: 'option2',value: 2,caption: null,disable: false,visible: tru…",
+        "description": "Advanced mode (advanced=true) options: initial selection uses entries with visible=true and default=true. Static mode instead reads properties.values. Preserve value types and distinguish selectedOptions objects from exposed values."
       },
       {
         "key": "showAllOption",
@@ -11519,7 +11521,8 @@
         "default": [
           "1",
           "2"
-        ]
+        ],
+        "description": "Static mode (advanced=false) initial selection: an array of option values, matched without type coercion. Option default flags do not initialize static mode. Use [] for intentionally empty selection; do not replace it with fallback defaults."
       },
       {
         "key": "options",
@@ -11774,6 +11777,21 @@
       {
         "name": "searchText",
         "default": ""
+      },
+      {
+        "name": "values",
+        "valueType": "array",
+        "semantics": "Selected option values, published before onSelect; an empty selection is []. Read components.<name>.values, not the nonexistent .value alias. Static initial selection comes from properties.values; advanced mode uses visible/default schema entries."
+      },
+      {
+        "name": "selectedOptions",
+        "valueType": "array",
+        "semantics": "Selected option objects projected to { label, value, caption }, published with values. Not .selected and not the scalar DropdownV2 selectedOption."
+      },
+      {
+        "name": "options",
+        "valueType": "array",
+        "semantics": "Rendered options projected to { label, value, caption }; distinct from the selected values."
       }
     ],
     "renderingHints": {
@@ -14112,7 +14130,23 @@
     "exposedVariables": [
       {
         "name": "label",
-        "default": "Select"
+        "default": "Select",
+        "semantics": "The field's caption text, not the selected option: use value for the selection."
+      },
+      {
+        "name": "value",
+        "default": null,
+        "semantics": "The value of the selected option (null until one is chosen). Filter and write with this."
+      },
+      {
+        "name": "options",
+        "default": [],
+        "semantics": "The options as rendered: [{ label, value }]."
+      },
+      {
+        "name": "isValid",
+        "default": true,
+        "valueType": "boolean"
       }
     ]
   },
@@ -14735,6 +14769,11 @@
       {
         "name": "isLoading",
         "default": false
+      },
+      {
+        "name": "values",
+        "valueType": "array",
+        "semantics": "Ordered option values (options.map(option => option.value)), initialized on mount and refreshed when options/schema change. Published before onChange after a reorder. Persist the order with components.<name>.values, not the nonexistent .value alias; use .options for the full option objects."
       }
     ]
   },

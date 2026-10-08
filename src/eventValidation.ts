@@ -48,6 +48,34 @@ function nonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+// Navigation dispatches an item's exact ref, followed by unreferenced component handlers.
+// Groups expose no item events. Dynamic menus cannot prove membership without runtime state.
+function navigationItemRef(source: AppSummary['pages'][number]['components'][number], ref: string): 'valid' | 'invalid' | 'unknown' {
+  let unknown = false;
+  let found = false;
+  let group = false;
+  const visit = (items: unknown) => {
+    if (typeof items === 'string' && items.includes('{{')) { unknown = true; return; }
+    if (!Array.isArray(items)) { if (items == null) unknown = true; return; }
+    for (const item of items) {
+      if (!isRecord(item)) continue;
+      if (item.id === ref) {
+        if (item.isGroup) group = true;
+        else found = true;
+      }
+      if (typeof item.id === 'string' && item.id.includes('{{')) unknown = true;
+      if (item.isGroup) visit(item.children ?? []);
+    }
+  };
+  visit(propVal(source.properties, 'menuItems'));
+  return group ? 'invalid' : found ? 'valid' : unknown ? 'unknown' : 'invalid';
+}
+
+// Match serialization: a ref nested in action overrides the outer event ref, even if null.
+function effectiveRef(event: EventSpec): unknown {
+  return Object.prototype.hasOwnProperty.call(event.action, 'ref') ? event.action.ref : event.ref;
+}
+
 function validateTableColumnRef(
   source: AppSummary['pages'][number]['components'][number],
   ref: string | undefined
@@ -109,7 +137,7 @@ function isMutationQuery(query: { options?: unknown }): boolean {
 export function validateEvents(
   summary: AppSummary,
   events: EventSpec[],
-  options: { includePersistedChains?: boolean } = {}
+  options: { includePersistedChains?: boolean; navigationMovedLast?: boolean; savedRefs?: ReadonlySet<EventSpec> } = {}
 ): EventValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -160,7 +188,23 @@ export function validateEvents(
     const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
     errors.push(...lintComponentStateBindings(event.action, [...components.values()], label));
     if (event.sourceType === 'component') {
+      // Invented Button refs once hid three duplicate submit handlers. An action's ref
+      // reaches the same payload field on write, so nesting it must not bypass this check.
+      // Query events may carry runtime refs; only ordinary component events are restricted here.
       const source = components.get(event.sourceId);
+      for (const ref of new Set([event.ref, event.action.ref].filter((ref) => ref != null && ref !== ''))) {
+        if (source?.type !== 'Navigation' || event.trigger !== 'onClick') {
+          // A ref saved before this check existed is reported, not blocking: an edit to another handler of the same
+          // app must not fail on it. A ref this call adds or rewrites still blocks.
+          (options.savedRefs?.has(event) ? warnings : errors).push(`${label}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
+        } else if (!nonEmptyString(ref) || ref.includes('{{')) {
+          errors.push(`${label}: Navigation onClick ref must be a literal non-empty item id.`);
+        } else {
+          const membership = navigationItemRef(source, ref);
+          if (membership === 'invalid') errors.push(`${label}: Navigation ref "${ref}" does not identify a non-group menu item.`);
+          if (membership === 'unknown') warnings.push(`${label}: Navigation ref "${ref}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
+        }
+      }
       if (!source) errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
       else if (source.type) {
         const schema = getComponentSchema(source.type);
@@ -457,6 +501,12 @@ export function validateEvents(
     const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === 'switch-page');
     if (navigationIndex === -1 || navigationIndex === chain.length - 1) continue;
     const navigation = chain[navigationIndex]!;
+    // apply_app_phase moves a saved page switch behind the handlers its plan adds (navigationReorders), so a saved
+    // switch followed only by this plan's new handlers is fine there (a site inspection build lost four compiles to it,
+    // 2026-10-04). Where nothing reorders (add_events), it is still an error.
+    const afterNavigation = chain.slice(navigationIndex + 1);
+    if (options.navigationMovedLast && navigation.persisted &&
+        afterNavigation.every((item) => !item.persisted && item.event.action.actionId !== 'switch-page')) continue;
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(', ');
     const label = navigation.event.name
       ? `${navigation.persisted ? 'Persisted event' : 'Event'} "${navigation.event.name}"`
@@ -468,8 +518,61 @@ export function validateEvents(
   }
 
   errors.push(...queryEventCycleErrors(summary, events, options.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
+  // One click, one run of a query. A handler planned again with a slightly different guard is not an exact match of
+  // the one the app holds, so it was created beside it and the click ran the write twice (2026-09-30).
+  const persistedMode = options.includePersistedChains === false;
+  // Invalid ordinary refs cannot partition a click, even in data persisted before this check.
+  // Table buttons and Navigation items retain their scopes. Navigation's component-wide handler
+  // runs after EVERY clicked item's handlers, so its null scope overlaps each item scope.
+  const isNavigation = (sourceType: string, sourceId: string, trigger: unknown) =>
+    sourceType === 'component' && components.get(sourceId)?.type === 'Navigation' && trigger === 'onClick';
+  const runKey = (sourceType: string, sourceId: string, trigger: unknown, queryId: unknown) =>
+    JSON.stringify([sourceType, sourceId, trigger, queryId]);
+  const runScope = (sourceType: string, sourceId: string, trigger: unknown, ref: unknown) =>
+    sourceType === 'table_column' || isNavigation(sourceType, sourceId, trigger) ? ref || null : null;
+  const overlaps = (left: unknown, right: unknown, navigation: boolean) =>
+    left === right || (navigation && (left === null || right === null));
+  const payloadKey = (payload: Record<string, unknown>) => JSON.stringify(Object.keys(payload).filter((k) => k !== 'index' && k !== 'name').sort().map((k) => [k, payload[k]]));
+  const heldRuns = new Map<string, { id: string; payload: string; scope: unknown }[]>();
+  if (!persistedMode) {
+    for (const held of summary.events ?? []) {
+      const payload = held.event && typeof held.event === 'object' ? (held.event as Record<string, unknown>) : undefined;
+      if (!payload || payload.actionId !== 'run-query' || !held.sourceId) continue;
+      if (held.target !== 'component' && held.target !== 'table_column') continue;
+      const key = runKey(held.target, held.sourceId, payload.eventId, payload.queryId);
+      const scope = runScope(held.target, held.sourceId, payload.eventId, payload.ref);
+      heldRuns.set(key, [...(heldRuns.get(key) ?? []), { id: held.id, payload: payloadKey(payload), scope }]);
+    }
+  }
+  const plannedRuns = new Map<string, unknown[]>();
+  for (const event of events) {
+    if (event.action?.actionId !== 'run-query') continue;
+    if (event.sourceType !== 'component' && event.sourceType !== 'table_column') continue;
+    const key = runKey(event.sourceType, event.sourceId, event.trigger, event.action.queryId);
+    const scope = runScope(event.sourceType, event.sourceId, event.trigger, effectiveRef(event));
+    const navigation = isNavigation(event.sourceType, event.sourceId, event.trigger);
+    const sourceName = components.get(event.sourceId)?.name ?? event.sourceId;
+    const queryName = queryById.get(String(event.action.queryId ?? ''))?.name ?? String(event.action.queryName ?? event.action.queryId);
+    const mine = payloadKey({ eventId: event.trigger, ...(event.ref ? { ref: event.ref } : {}), ...event.action });
+    const held = (heldRuns.get(key) ?? []).filter((h) => overlaps(h.scope, scope, navigation));
+    // An exact match of a held handler is not created again (withoutExistingEvents), so it is not a second run.
+    if (held.length && !held.some((h) => h.payload === mine)) {
+      errors.push(
+        `"${sourceName}" ${event.trigger} already runs query "${queryName}" (event ${held[0].id}); a second handler would run it twice on one ${event.trigger}. ` +
+          'Change that handler with update_events, or delete it with delete_event before adding this one.'
+      );
+    } else if ((plannedRuns.get(key) ?? []).some((previous) => overlaps(previous, scope, navigation))) {
+      (persistedMode ? warnings : errors).push(
+        `"${sourceName}" ${event.trigger} runs query "${queryName}" twice: two handlers on it run the same query, so one ${event.trigger} runs it two times. Keep one.`
+      );
+    }
+    plannedRuns.set(key, [...(plannedRuns.get(key) ?? []), scope]);
+  }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
+
+/** The saved event id behind each spec persistedEventSpecs returns. */
+export const persistedEventIds = new WeakMap<EventSpec, string>();
 
 export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
   return summary.events
@@ -480,13 +583,61 @@ export function persistedEventSpecs(summary: AppSummary): EventSpec[] {
     const payload = event.event as Record<string, unknown>;
     if (typeof payload.eventId !== 'string') return [];
     const { eventId, ref, ...action } = payload;
-    return [{
+    // Keep malformed ordinary refs visible to validation instead of silently dropping them.
+    // String refs retain the normal representation, including runtime query and table refs.
+    if (event.target === 'component' && ref != null && typeof ref !== 'string') action.ref = ref;
+    const spec: EventSpec = {
       sourceId: event.sourceId,
       sourceType: event.target as EventSourceType,
       ...(typeof ref === 'string' ? { ref } : {}),
       trigger: eventId,
       action,
       name: event.name,
-    }];
+    };
+    if (event.id) persistedEventIds.set(spec, event.id);
+    return [spec];
     });
+}
+
+
+/** Saved page switches that are no longer last in their chain (source, trigger, ref), moved to the end: what
+ *  apply_app_phase sends as a reorder after it adds a phase's handlers. ToolJet runs nothing after a switch-page. */
+/**
+ * The saved page switches that are no longer last in their chain, moved to the end. `touched` limits this to the chains
+ * a phase added handlers to (source, ref and trigger): reordering every chain in the app also moved handlers the plan
+ * never approved, and could make an unreachable write run (round-3 review, 2026-10-04). Untouched chains that end
+ * out of order are reported in `diagnostics` instead.
+ */
+export function navigationReorders(
+  summary: AppSummary,
+  touched?: EventSpec[],
+  diagnostics?: string[],
+): Array<{ eventId: string; index: number }> {
+  const touchedKeys = touched
+    ? new Set(touched.map((event) => [event.sourceType, event.sourceId, event.ref ?? '', event.trigger].join('\u0000')))
+    : undefined;
+  const chains = new Map<string, Array<{ id: string; index: number; nav: boolean }>>();
+  for (const saved of summary.events ?? []) {
+    const raw = isRecord(saved.event) ? saved.event : undefined;
+    if (!raw || !saved.sourceId || !nonEmptyString(raw.eventId)) continue;
+    const key = [saved.target, saved.sourceId, nonEmptyString(raw.ref) ? raw.ref : '', raw.eventId].join('\u0000');
+    const chain = chains.get(key) ?? [];
+    chain.push({ id: saved.id, index: saved.index ?? 0, nav: raw.actionId === 'switch-page' });
+    chains.set(key, chain);
+  }
+  const moves: Array<{ eventId: string; index: number }> = [];
+  for (const [key, chain] of chains) {
+    chain.sort((a, b) => a.index - b.index);
+    const navs = chain.filter((item) => item.nav);
+    if (!navs.length || chain.slice(-navs.length).every((item) => item.nav)) continue;
+    if (touchedKeys && !touchedKeys.has(key)) {
+      const [, sourceId, ref, trigger] = key.split('\u0000');
+      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref ? ` (${ref})` : ''} has a page switch before other handlers, ` +
+        'so those never run; this phase did not touch it, so it was left as it is.');
+      continue;
+    }
+    let next = Math.max(...chain.map((item) => item.index)) + 1;
+    for (const nav of navs) moves.push({ eventId: nav.id, index: next++ });
+  }
+  return moves;
 }

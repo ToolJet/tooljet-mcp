@@ -44,6 +44,12 @@ surface.colors
 Theme colors are normally hex values. The saved definition generates ToolJet's semantic `--cc-*` variables at
 runtime; do not put CSS variable references inside the theme definition itself.
 
+**A dark design lives in the light slot too.** Apps open in light mode unless the viewer switches, so a brief that
+asks for a dark app (a charcoal or near-black canvas, light text) needs its dark palette in the `light` values as well
+as the `dark` ones: appBackground, the surfaces, text and borders. A theme with a light canvas in its light slot and
+components hard-coded for dark renders dark panels on a pale page, with pale headings on the canvas and dark labels
+inside the panels (a gym front-desk build, 2026-09-29).
+
 ## The standard theme (applied by default)
 
 `create_app` applies the skill's standard theme, **"ToolJet Modern"**, to every new app unless told otherwise. It is
@@ -80,8 +86,10 @@ Use this precedence:
 1. Explicit user requirements and a supplied design system.
 2. The app's existing or explicitly selected ToolJet theme; a requested workspace default counts as selected.
 3. A recognizable brand identity, when no higher-priority choice supplies it.
-4. Use case, industry, audience and working environment.
-5. The polished ToolJet Modern fallback when nothing useful can be inferred.
+4. Use case, industry, audience and working environment. Any request that says what the app is for has one:
+   "build a small business CRM" names a use case (customer relationships) and an audience (a small business).
+5. ToolJet Modern, only when the user asks for the default or the request names no use case at all (a test app,
+   "hello world").
 
 Inspect `get_app_settings` / `list_app_themes` or `manage_theme` list as needed to resolve an existing
 choice. Do not replace a selected theme because the industry suggests another colour. When requirements ask
@@ -102,9 +110,9 @@ nor a fashionable effect proves good design: relevance, hierarchy, readability a
   button colours. Use domain conventions as clues, not fixed industry-to-colour assignments.
 - **Mood/material/place:** use these as supporting cues, not literal rules that override a real brand. A name
   alone is weak evidence. Explain an important assumption briefly so the user can redirect.
-- **Fallback:** use ToolJet Modern with a coherent neutral canvas, readable typography, purposeful accent,
-  consistent surfaces and clear actions. Do not invent a brand to justify novelty. Blue is allowed; generic
-  composition and unfinished formatting are the problems, not a particular hue.
+- **Fallback:** ToolJet Modern, only when the user asks for it or no use case can be read from the request. A short
+  prompt is not a reason to fall back: its use case is still evidence. Do not invent a brand or a customer persona to
+  justify a palette; the derivation comes from the work.
 
 Derive the palette rather than choosing a named preset. With no selected theme, decide what should recede
 (canvas and supporting surfaces), what needs sustained reading (text and data), and what must stand out
@@ -116,9 +124,14 @@ a guest-facing hotel booking flow needs room comparison and a clear reservation 
 beige by default. Two tools for the same brand can preserve its palette while using different density,
 surface emphasis and hierarchy. These examples explain decisions; they are not additional theme presets.
 
-When the request offers no useful visual identity, use ToolJet Modern without inventing a brand story.
-Still derive the composition from the actual task. A familiar palette or layout is appropriate when it
-serves the job; do not force novelty or rotate colours simply to make successive apps look different.
+A short request with no visual identity still gets a derived theme. State the derivation in the design brief in a
+line or two: who uses the app, where and for how long, and what must stand out, then the canvas temperature, accent,
+density and type that follow. A warehouse floor tool used on a tablet all shift wants high contrast and dense rows; a
+personal to-do list wants a calm, roomy page; a compliance tracker wants a sober canvas with strong exception colours.
+Blue is allowed when the work points to it; what matters is that the choice follows from the work. Do not rotate
+colours simply to make successive apps look different, and do not settle on one favourite palette for every tool:
+a fixed menu once put seven of ten apps on the same ink and amber, and an industry lookup put nine of sixteen on
+steel or teal.
 
 ### Build a coherent theme, not one recoloured button
 

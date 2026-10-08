@@ -9,6 +9,7 @@ import {
   lintChartDataShape,
   lintEmbeddedBindingSyntax,
   lintHtmlRootSurface,
+  surfaceAroundResolver,
   lintOversizedWidths,
   lintUnguardedComponentRefs,
   lintUnguardedSelectionText,
@@ -17,11 +18,14 @@ import {
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
 import { bindingReferences } from './bindingReferences.js';
+import { bindingSpans } from './bindingSpans.js';
+import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
 import { lintWhitespaceGuards } from './whitespaceGuard.js';
 import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
 import { lintSurfaceInsets } from './surfaceInsets.js';
 import { lintComponentStateBindings } from './componentStateBindings.js';
+import { lintBindingNames } from './queryValidation.js';
 import { pageIconError } from './pageIcons.js';
 import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
@@ -164,11 +168,13 @@ const STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS = 18;
 const STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS = 18;
 // A primaryValueSize at/under this is small enough that a value-only tile fits without the icon squeeze.
 const STATISTICS_SAFE_VALUE_FONT_PX = 22;
-const TABLE_REGULAR_ROW_HEIGHT_PX = 46;
-const TABLE_CONDENSED_ROW_HEIGHT_PX = 40;
-const TABLE_COLUMN_HEADER_HEIGHT_PX = 40;
+// Measured in the viewer (2026-10-05, five tables): a one-line row 45px regular and 42px condensed, column header 33px,
+// footer 45px. The compiler sizes tables with the same numbers, so its tables never trip this check.
+const TABLE_REGULAR_ROW_HEIGHT_PX = 45;
+const TABLE_CONDENSED_ROW_HEIGHT_PX = 42;
+const TABLE_COLUMN_HEADER_HEIGHT_PX = 34;
 const TABLE_TOOLBAR_HEIGHT_PX = 56;
-const TABLE_FOOTER_HEIGHT_PX = 56;
+const TABLE_FOOTER_HEIGHT_PX = 46;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
@@ -1105,7 +1111,8 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
         if (!siblingRect || siblingRect.top === undefined || siblingRect.height === undefined) return false;
         return rect.top! < siblingRect.top + siblingRect.height && siblingRect.top < rect.top! + rect.height!;
       });
-      if (sharesRow || (rect.left === 0 && rect.width === 43)) continue;
+      // 42 is full too: ToolJet pads the list 7px, so a 43-column child loses its right edge.
+      if (sharesRow || (rect.left === 0 && (rect.width === 43 || rect.width === 42))) continue;
       warnings.push(
         `Component "${child.name ?? child.id ?? child.type}" is the only child on its row inside grid-mode ` +
           `Listview "${parent.name ?? parent.id ?? 'Listview'}", but uses left:${rect.left ?? 'unset'}, ` +
@@ -1120,7 +1127,7 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
     if (parent?.type !== 'Listview') continue;
     const rawHtml = propVal(child.properties, 'rawHtml');
     if (typeof rawHtml !== 'string' || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml)) continue;
-    if (/\bheight\s*:\s*100%\b/i.test(rawHtml)) continue;
+    if (/\bheight\s*:\s*100%/i.test(rawHtml)) continue;
     warnings.push(
       `Html "${child.name ?? child.id ?? 'Html'}" is repeated inside Listview ` +
         `"${parent.name ?? parent.id ?? 'Listview'}" and uses a fixed pixel CSS height. The Listview wrapper's ` +
@@ -1271,7 +1278,8 @@ export function lintRenderedText(spec: LintComponent): string[] {
   for (const key of RENDERED_TEXT_KEYS) {
     const value = propVal(props, key);
     if (typeof value !== 'string' || !value) continue;
-    if (value.includes('\\n')) {
+    // Inside a {{ }} binding's string, \n is a line break when ToolJet evaluates it; only text outside prints it.
+    if (value.replace(/\{\{[\s\S]*?\}\}/g, '').includes('\\n')) {
       errors.push(
         `Component "${label}".properties.${key} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". ` +
           'Use a real line break, <br> in Html, or separate components.'
@@ -1329,9 +1337,27 @@ export function expressionOutsideBinding(value: string): string | null {
 
 const WRAP_REQUIRED_COLUMNS = 5;
 
-/** Rough rendered height of a Text value: one entry per line (<br>, block tags, newlines), each the largest
- *  inline font-size on that line at 1.5 line height (minimum 18px), plus the widget's padding. */
-export function estimateTextHeight(text: string, baseSize: number): { lines: number; px: number; sizes: number[] } {
+/** Rough height of visible static Text: one entry per line (<br>, block tags, newlines), each the largest
+ * inline font-size at 1.5 line height (minimum 18px), plus padding. With bindings this is only the
+ * static minimum; their rendered content (even a quoted HTML string) is deliberately not evaluated. */
+export function estimateTextHeight(text: string, baseSize: number, options: { bindingLines?: boolean } = {}): { lines: number; px: number; sizes: number[]; dynamic?: boolean } {
+  const dynamic = text.includes('{{');
+  if (dynamic) {
+    const literals: string[] = [];
+    let from = 0;
+    // Parse-only boundaries handle strings, comments and nested braces containing markup or `}}`.
+    for (const span of bindingSpans(text)) {
+      literals.push(text.slice(from, span.start));
+      from = span.end;
+    }
+    literals.push(text.slice(from));
+    // Whitespace avoids inventing a nonempty line or joining fragments into an HTML tag. If a
+    // boundary could not be parsed, keep only the known prefix; syntax lint owns invalid bindings.
+    // With bindingLines, a binding between static lines stands for one line of plain text (never its source or
+    // markup): "{{name}}<br>{{email}}<br>{{phone}}" is three lines. Used only for a non-blocking warning.
+    const standIn = options.bindingLines && literals.some((part) => part.replace(/<[^>]+>/g, '').trim() || /<br\s*\/?>/i.test(part)) ? 'x' : ' ';
+    text = literals.join(standIn).split('{{', 1)[0]!;
+  }
   // Blank lines from a doubled <br> still take space (about half a line each).
   const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
   const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
@@ -1350,7 +1376,7 @@ export function estimateTextHeight(text: string, baseSize: number): { lines: num
   });
   const blockBoundaries = parts.filter((part) => /<(?:h[1-6]|p|div|li)\b/i.test(part)).length;
   const px = Math.round(sizes.reduce((sum, size) => sum + Math.max(18, size * 1.5), 0) + blankLines * 10 + blockBoundaries * 8 + 6);
-  return { lines: parts.length + blankLines, px, sizes };
+  return { lines: parts.length + blankLines, px, sizes, ...(dynamic ? { dynamic: true } : {}) };
 }
 
 // The Chart wrapper (Chart.jsx) spreads layout first, then overrides paper/plot backgrounds from the component's
@@ -1445,7 +1471,13 @@ export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []
   return [];
 }
 
-export function lintComponentSpec(spec: LintComponent): LintResult {
+/** Properties the inspector stores and the widget reads that the catalog does not list. */
+const INSPECTOR_ONLY_PROPERTIES: Record<string, string[]> = {
+  PhoneInput: ['defaultCountry'],
+  CurrencyInput: ['defaultCountry'],
+};
+
+export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?: string } = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const props = spec.properties ?? {};
@@ -1525,9 +1557,18 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       const needed = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
         errors.push(
-          `Text "${label}": its ${needed.lines} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
+          `Text "${label}": its ${needed.lines}${needed.dynamic ? ' static' : ''} lines (font sizes ${needed.sizes.join('/')}px) need about ${needed.px}px but the widget is ` +
             `${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`
         );
+      } else if (needed.dynamic) {
+        // A line that is only a binding may render empty, so it never blocks; one line each is the likely case.
+        const likely = estimateTextHeight(text, optionalStaticNumber(propVal(spec.styles, 'textSize')) ?? 14, { bindingLines: true });
+        if (likely.lines > 1 && likely.px > height + 6) {
+          warnings.push(
+            `Text "${label}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ` +
+              `${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`
+          );
+        }
       }
     }
   }
@@ -1622,6 +1663,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     for (const key of Object.keys(authored)) {
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
+      if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type ?? '']?.includes(key)) continue;
       const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
       const alias =
         aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))
@@ -1645,6 +1687,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
     }
     for (const entry of entries) {
       if (!entry.allowedValues?.length) continue;
+      if (spec.type === 'Form' && entry.key === 'buttonToSubmit') continue; // names a Button: lintFormSubmitButtons
       const value = propVal(authored, entry.key);
       if (value === undefined || isDynamicBinding(value)) continue;
       if (!entry.allowedValues.some((allowed) => Object.is(allowed, value))) {
@@ -1979,7 +2022,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
   // Text holding markdown in the default html format renders the markdown literally.
   errors.push(...lintTextFormat(spec));
   errors.push(...lintHtmlContentHeight(spec));
-  errors.push(...lintHtmlRootSurface(spec));
+  errors.push(...lintHtmlRootSurface(spec, context.surfaceAround));
   errors.push(...lintUnguardedComponentRefs(spec));
   errors.push(...lintEmbeddedBindingSyntax(spec));
   errors.push(...lintChartDataShape(spec));
@@ -2032,8 +2075,16 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
       !isTruthyBinding(expandableRows)
     ) {
       const cellSize = catalogValue('Table', spec.styles, 'cellSize', 'styles');
-      const baseRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
-      const rowHeight = isTruthyBinding(contentWrap) ? Math.max(baseRowHeight, 60) : baseRowHeight;
+      const textRowHeight = cellSize === 'condensed' ? TABLE_CONDENSED_ROW_HEIGHT_PX : TABLE_REGULAR_ROW_HEIGHT_PX;
+      const hasVisibleChips = Array.isArray(columns) && columns.some((column) => {
+        const c = recordValue(column);
+        return c?.columnVisibility !== false && c?.columnType === 'tagsV2';
+      });
+      // Chip rows have a measured 49px minimum even with one short value, unlike possible text wrapping.
+      const baseRowHeight = hasVisibleChips ? Math.max(49, textRowHeight) : textRowHeight;
+      // Measured in the viewer: a wrapped row allowance of 4px (a known one-line row draws at its base height); a page of long
+      // wrapped rows scrolls inside the table. The flat 60px asked for tables far taller than they need.
+      const rowHeight = Math.max(baseRowHeight, isTruthyBinding(contentWrap) ? textRowHeight + 4 : textRowHeight);
       const toolbarVisible = ['displaySearchBox', 'showFilterButton', 'showDownloadButton', 'showAddNewRowButton', 'showBulkUpdateActions']
         .some((key) => isTruthyBinding(catalogValue('Table', props, key)));
       const chromeHeight =
@@ -2041,7 +2092,11 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         TABLE_COLUMN_HEADER_HEIGHT_PX +
         TABLE_FOOTER_HEIGHT_PX +
         TABLE_BORDER_PX;
-      const minimumHeight = chromeHeight + rowsPerPage * rowHeight;
+      // Wrapping is a possibility, not a minimum. Without the rendered rows this linter cannot tell
+      // whether an enabled contentWrap actually adds a line. Use the one-line floor to decide whether
+      // to warn, and retain the conservative estimate only as sizing advice for genuinely short tables.
+      const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
+      const estimatedHeight = chromeHeight + rowsPerPage * rowHeight;
       if (desktopHeight < chromeHeight + baseRowHeight) {
         errors.push(
           `Table "${label}": desktop height ${desktopHeight}px cannot show even one data row; ` +
@@ -2051,7 +2106,7 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         warnings.push(
           `Table "${label}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ` +
             `${cellSize === 'condensed' ? 'condensed' : 'regular'} rows without an inner scrollbar; use about ` +
-            `${minimumHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
+            `${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. ` +
             'Deliberate inner scrolling is valid when the rows and actions remain usable.'
         );
       }
@@ -2234,6 +2289,8 @@ export function lintComponentSpec(spec: LintComponent): LintResult {
         }
         if (
           c?.columnType === 'string' &&
+          // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
+          c.columnVisibility !== false && c.columnVisibility !== '{{false}}' &&
           // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
           (typeof c.key === 'string' && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) &&
           !authorComputesKey(props?.data, c.key)
@@ -2502,25 +2559,59 @@ export function lintToolbarButtonAlignment(components: LintComponent[]): string[
   return errors;
 }
 
-function isTitleLikeText(component: LintComponent): boolean {
+/** Compare only knowable display text. Never evaluate record bindings or infer their runtime title. */
+function modalTitleText(component: LintComponent): string | undefined {
+  if (component.type !== 'Text') return undefined;
+  const value = propVal(component.properties, 'text');
+  if (typeof value !== 'string') return undefined;
+  let text = '';
+  let from = 0;
+  for (const span of bindingSpans(value)) {
+    let literal: ReturnType<typeof parseExpression>;
+    try {
+      literal = parseExpression(`(${span.body})`);
+    } catch {
+      return undefined; // Malformed bindings belong to syntax lint, not title advice.
+    }
+    if (literal.type !== 'StringLiteral' &&
+        !(literal.type === 'TemplateLiteral' && literal.expressions.length === 0)) return undefined;
+    text += value.slice(from, span.start) + (literal.type === 'StringLiteral'
+      ? literal.value : literal.quasis[0]?.value.cooked ?? '');
+    from = span.end;
+  }
+  text += value.slice(from);
+  if (text.includes('{{')) return undefined; // Incomplete/unknown bindings belong to syntax lint.
+  return text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(?:nbsp|#160|#x0*a0);/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function isTitleLikeText(component: LintComponent, headerChildren: LintComponent[]): boolean {
   if (component.type !== 'Text') return false;
   const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
   if (top > 100) return false;
-  const name = component.name ?? '';
-  const text = propVal(component.properties, 'text');
+  const text = modalTitleText(component);
+  if (!text) return false;
+  // A populated header needs actual duplicate wording. A distinct customer/product name, section
+  // heading, or helper is legitimate regardless of its component name, size, or weight.
+  if (headerChildren.length) return headerChildren.some((header) => modalTitleText(header) === text);
+
+  // An empty header can take a short, visibly authored heading. Action verbs and component names
+  // alone are not evidence: "Add the contact details..." is instructional copy, not a modal title.
+  if (text.length > 80 || text.split(' ').length > 8 || /[.!?;…]/.test(text) ||
+      /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text) ||
+      /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text) ||
+      /\b(?:below|above|to continue|to get started)\b/.test(text)) return false;
   const fontWeight = propVal(component.styles, 'fontWeight');
   const textSize = optionalStaticNumber(propVal(component.styles, 'textSize'));
-  // Bold dynamic text below 18px is a record label ("{row.product_name}" under "Change price"), not a second
-  // title: five plans failed on exactly that (trace review, 2026-09-25).
-  // A bold question below 18px ("Mark this invoice as paid?") is the prompt the modal asks, not a title (n1 vet).
-  const recordLabel = typeof text === 'string' && (text.includes('{{') || /\?\s*$/.test(text.trim())) &&
-    (textSize === undefined || textSize < 18);
+  const bold = typeof fontWeight === 'number' ? fontWeight >= 600
+    : typeof fontWeight === 'string' && /^(?:bold|[6-9]00)$/.test(fontWeight);
+  const rawText = propVal(component.properties, 'text') as string;
   return (
-    /(?:title|heading|header)/i.test(name) ||
-    (typeof text === 'string' && !text.includes('{{') && text.trim().length > 0 && text.trim().length <= 80 &&
-      (/^(?:add|create|edit|new|view|update)\b/i.test(text.trim()) || /(?:title|details?)$/i.test(text.trim()))) ||
-    (!recordLabel && typeof fontWeight === 'string' && /bold|[6-9]00/.test(fontWeight)) ||
-    (!recordLabel && typeof fontWeight === 'number' && fontWeight >= 600) ||
+    /<h[1-6]\b/i.test(rawText) ||
+    (bold && /(?:title|heading|header)/i.test(component.name ?? '')) ||
     (textSize !== undefined && textSize >= 18)
   );
 }
@@ -2593,10 +2684,12 @@ export function lintModalChildren(components: LintComponent[]): string[] {
             'Add a Text child with the modal parent_ref/parent and slot_name:"header", or set showHeader:false.'
         );
       }
-      for (const child of children.filter(isTitleLikeText)) {
+      for (const child of children.filter((child) => isTitleLikeText(child, headerChildren))) {
         warnings.push(
           `Modal "${modal.name ?? modal.type}" has title-like Text "${child.name ?? child.type}" in the body while the native header is visible. ` +
-            'Move that Text to slot_name:"header" instead of spending body space on a second title row.'
+            (headerChildren.length
+              ? 'It repeats the native header text; consider removing the duplicate body title.'
+              : 'Move that Text to slot_name:"header" to fill the empty native header.')
         );
       }
     }
@@ -2637,9 +2730,61 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
   return [
     ...detectOverlaps(components),
     ...lintToolbarButtonAlignment(components),
-    ...lintModalChildren(components),
+    ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components),
   ];
+}
+
+/** A modal's header advice (an empty native header, a title-like Text in the body) is about design, not broken
+ *  geometry: a profile titled "Volunteer profile" with the person's name as a large body heading failed six compiles
+ *  overnight (2026-09-29). It stays a warning. */
+const MODAL_HEADER_ADVICE = /native header (?:slot is empty|is visible)/;
+/** Advisory only: a narrow content row may have confused its local grid with the outer span. */
+export function lintNestedContainerWidths(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const refs = new Map(components.flatMap((component) => {
+    const key = componentKey(component);
+    return key ? [[key, component] as const] : [];
+  }));
+  const contentTypes = new Set(['Text', 'Html', 'Table', 'Chart', ...FORM_INPUT_TYPES]);
+  for (const child of components) {
+    const placement = parentPlacement(child);
+    const parent = placement && refs.get(placement.parentId);
+    if (!parent || !['Container', 'Form'].includes(parent.type ?? '') || !contentTypes.has(child.type ?? '')) continue;
+    const findings = new Map<string, string[]>();
+    for (const resolution of ['desktop', 'mobile'] as const) {
+      const rect = child.layouts?.[resolution] ?? child.layout;
+      const parentRect = parent.layouts?.[resolution] ?? parent.layout;
+      const parentWidth = parentRect?.width;
+      if (!rect || typeof parentWidth !== 'number' || parentWidth <= 0 || parentWidth > 21 ||
+          typeof rect.width !== 'number' || rect.width <= 0 || typeof rect.left !== 'number' || rect.left < 0 ||
+          rect.left + rect.width > parentWidth || typeof rect.top !== 'number' || typeof rect.height !== 'number') continue;
+      let rowLeft = rect.left;
+      let rowRight = rect.left + rect.width;
+      for (const sibling of components) {
+        if (sibling === child || placementKey(sibling) !== placementKey(child)) continue;
+        const other = sibling.layouts?.[resolution] ?? sibling.layout;
+        if (!other || typeof other.top !== 'number' || typeof other.height !== 'number' ||
+            typeof other.left !== 'number' || typeof other.width !== 'number') continue;
+        if (rect.top < other.top + renderedHeight(sibling, other) && other.top < rect.top + renderedHeight(child, rect)) {
+          rowLeft = Math.min(rowLeft, other.left);
+          rowRight = Math.max(rowRight, other.left + other.width);
+        }
+      }
+      if (rowLeft < 0 || rowRight > parentWidth) continue;
+      const detail = `${rect.width} occupies only ${Math.round(rect.width / 43 * 100)}% of ` +
+        `${parent.type} "${parent.name ?? parent.id ?? '?'}". ` +
+        `The content row spans local columns ${rowLeft}-${rowRight}, fitting the parent's outer ${parentWidth}-column span, ` +
+        'which may confuse the two grids. Every Container/Form slot has its own 43-column grid regardless of the outer width. ' +
+        'For an inset full-row child use left:2,width:39 (or left:0,width:43 for full width); ' +
+        'keep a narrower width only when intentional and browser-verified.';
+      findings.set(detail, [...(findings.get(detail) ?? []), resolution]);
+    }
+    for (const [detail, resolutions] of findings) {
+      warnings.push(`${child.type} "${child.name ?? child.id ?? '?'}": ${resolutions.join('/')} width ${detail}`);
+    }
+  }
+  return warnings;
 }
 
 /** Geometry advice: canvas coverage, gutters. Warnings. The fold rule (lintOperationalViewport) is left out:
@@ -2647,8 +2792,10 @@ export function lintRenderedGeometryBlocking(components: LintComponent[]): strin
  *  the page for nothing (merch m2 two re-plans, m8 two re-layouts and rowsPerPage 4; trace review 2026-09-24). */
 export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
   return [
+    ...lintNestedContainerWidths(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
+    ...lintModalChildren(components).filter((warning) => MODAL_HEADER_ADVICE.test(warning)),
   ];
 }
 
@@ -2743,13 +2890,40 @@ export function lintWidgetContracts(c: LintComponent): string[] {
   return errors;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx). A plan names that Button
+ *  by its client_ref (or name), resolved to the id on apply, so it must be a Button of the same batch inside the Form
+ *  (body, header or footer); an id read back from an app, a binding and "none" are kept as they are. */
+export function lintFormSubmitButtons(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const form of components.filter((c) => c.type === 'Form')) {
+    const value = propVal(form.properties ?? {}, 'buttonToSubmit');
+    if (value === undefined || value === 'none' || (typeof value === 'string' && (UUID_RE.test(value) || isDynamicBinding(value)))) continue;
+    const formKeys = new Set([form.clientRef, form.name, form.id].filter(Boolean));
+    const button = components.find((c) => (c.clientRef ?? c.name) === value);
+    const inForm = button && [button.parentRef, button.parent].some((p) => p && formKeys.has(p.replace(/-(header|footer)$/, '')));
+    if (!button || button.type !== 'Button' || !inForm) {
+      errors.push(`Component "${form.name ?? form.clientRef}": buttonToSubmit ${JSON.stringify(value)} must name a Button inside this Form ` +
+        '(its body, header or footer) by its client_ref (or its name when it has none), or be "none"; the form submits when ' +
+        'that Button is clicked.');
+    }
+  }
+  return errors;
+}
+
 /** Lint a batch: per-component checks + overlap detection across the batch. */
-export function lintComponents(components: LintComponent[]): LintResult {
+export function lintComponents(components: LintComponent[], options: { canvasColor?: string } = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const around = surfaceAroundResolver(components, options.canvasColor);
   warnings.push(...lintSelectedRowProjections(components));
   for (const c of components) {
-    const r = lintComponentSpec(c);
+    // This batch contains newly authored components. Persisted legacy names are not
+    // revalidated by lintComponentSpec when checking unrelated edits or app bindings.
+    const nameError = componentNameError(c.name);
+    if (nameError) errors.push(nameError);
+    const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
@@ -2761,13 +2935,14 @@ export function lintComponents(components: LintComponent[]): LintResult {
     warnings.push(...r.warnings);
   }
   errors.push(...lintComponentSlots(components));
+  errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
-  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
+  for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   for (const c of components) warnings.push(...lintSurfaceInsets(c));
   errors.push(...lintRenderedGeometryBlocking(components));
@@ -2882,7 +3057,7 @@ export function lintStatTileConsistency(summary: AppSummary): string[] {
 /** Whole-app structural validation over a compact app summary (post-write). Catches dangling
  *  references, ambiguous duplicate names, and bindings to non-existent queries/components, plus
  *  re-runs the per-component render lints against what actually persisted. */
-export function validateAppStructure(summary: AppSummary): LintResult {
+export function validateAppStructure(summary: AppSummary, options: { canvasColor?: string } = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   warnings.push(...lintEditPrefill(summary));
@@ -2891,6 +3066,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   warnings.push(...lintSelectedRowObjectGuards(summary));
 
   const allComponents = summary.pages.flatMap((p) => p.components);
+  const around = surfaceAroundResolver(allComponents, options.canvasColor);
   const componentNames = new Set(allComponents.map((c) => c.name).filter(Boolean) as string[]);
   const componentIds = new Set(allComponents.map((c) => c.id));
   const queryNames = new Set(summary.queries.map((q) => q.name).filter(Boolean) as string[]);
@@ -3194,6 +3370,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
   warnings.push(...lintSelectedRowProjections(allComponents, bindingSources.filter(s => !s.label.startsWith('Component '))));
   for (const source of bindingSources) {
     errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
+    if (!source.label.startsWith('Query ')) errors.push(...lintBindingNames(source.value, source.label));
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;
@@ -3228,7 +3405,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
       styles: c.styles,
       layouts: c.layouts as LintComponent['layouts'],
       parent: c.parent,
-    });
+    }, { surfaceAround: around(c) });
     errors.push(...r.errors);
     warnings.push(...r.warnings);
   }
@@ -3306,7 +3483,7 @@ export function validateAppStructure(summary: AppSummary): LintResult {
     errors.push(...lintUnusableTextGeometry(p.components as LintComponent[]));
     errors.push(...lintUnrenderableHeights(p.components as LintComponent[]));
     errors.push(...lintOversizedWidths(p.components as LintComponent[]));
-    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
+    for (const c of p.components as LintComponent[]) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
     warnings.push(...lintTextGeometry(p.components as LintComponent[]));
     for (const c of p.components) warnings.push(...lintSurfaceInsets(c));
     errors.push(...lintRenderedGeometryBlocking(p.components as LintComponent[]));
