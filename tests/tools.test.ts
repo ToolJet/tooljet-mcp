@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
+import { createAppVersionTool } from '../src/tools/createAppVersion.js';
+import { switchAppVersionTool } from '../src/tools/switchAppVersion.js';
+import { releaseAppTool } from '../src/tools/releaseApp.js';
 import { z } from 'zod';
 import { listDatasourcesTool } from '../src/tools/listDatasources.js';
 import { getComponentCatalogTool } from '../src/tools/getComponentCatalog.js';
@@ -19,6 +22,9 @@ import { getCatalog } from '../src/catalog.js';
 function makeClient(): { [K in keyof ToolJetClient]: ReturnType<typeof vi.fn> } {
   return {
     createApp: vi.fn(),
+    createAppVersion: vi.fn(),
+    switchAppVersion: vi.fn(),
+    releaseApp: vi.fn(),
     getApp: vi.fn(),
     getAppSummary: vi.fn().mockResolvedValue({ version_id: 'v1', pages: [] }),
     getDevelopmentEnvironmentId: vi.fn(),
@@ -227,6 +233,100 @@ describe('create_app tool', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Error:');
     expect(result.content[0]!.text).toContain('boom');
+  });
+});
+
+describe('app version lifecycle tools', () => {
+  it('creates a draft version from the exact source version', async () => {
+    const client = makeClient();
+    client.createAppVersion.mockResolvedValue({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      version_name: 'v2',
+      source_version_id: '33333333-3333-4333-8333-333333333333',
+      status: 'DRAFT',
+    });
+
+    const result = await createAppVersionTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_name: 'v2',
+      version_from_id: '33333333-3333-4333-8333-333333333333',
+      version_description: 'Second release candidate',
+    });
+
+    expect(client.createAppVersion).toHaveBeenCalledWith({
+      appId: '11111111-1111-4111-8111-111111111111',
+      versionName: 'v2',
+      versionFromId: '33333333-3333-4333-8333-333333333333',
+      versionDescription: 'Second release candidate',
+    });
+    expect(textOf(result)).toMatchObject({ version_id: '22222222-2222-4222-8222-222222222222', status: 'DRAFT' });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('selects an existing version without releasing it', async () => {
+    const client = makeClient();
+    client.switchAppVersion.mockResolvedValue({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      version_name: 'v2', status: 'DRAFT',
+      current_environment_id: '33333333-3333-4333-8333-333333333333', selected: true,
+    });
+    const result = await switchAppVersionTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+    });
+    expect(client.switchAppVersion).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'
+    );
+    expect(textOf(result)).toMatchObject({
+      version_name: 'v2', current_environment_id: '33333333-3333-4333-8333-333333333333', selected: true,
+    });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('releases the exact version after explicit confirmation', async () => {
+    const client = makeClient();
+    const tool = releaseAppTool(client as unknown as ToolJetClient);
+    expect(z.object(tool.inputSchema).safeParse({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+    }).success).toBe(false);
+    client.releaseApp.mockResolvedValue({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      released: true,
+      current_version_id: '22222222-2222-4222-8222-222222222222',
+      published_for_release: true,
+      promoted_to_environments: ['staging', 'production'],
+    });
+
+    const result = await tool.handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      confirm: true,
+    });
+
+    expect(client.releaseApp).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222'
+    );
+    expect(textOf(result)).toMatchObject({ released: true, current_version_id: '22222222-2222-4222-8222-222222222222' });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('returns lifecycle failures as MCP errors', async () => {
+    const client = makeClient();
+    client.releaseApp.mockRejectedValue(new Error('promote to production first'));
+
+    const result = await releaseAppTool(client as unknown as ToolJetClient).handler({
+      app_id: '11111111-1111-4111-8111-111111111111',
+      version_id: '22222222-2222-4222-8222-222222222222',
+      confirm: true,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('promote to production first');
   });
 });
 
@@ -1780,6 +1880,7 @@ describe('add_components tool', () => {
 describe('validate_app tool', () => {
   it('fetches the summary and reports structural errors/warnings', async () => {
     const client = makeClient();
+    client.getAppSettings = vi.fn().mockResolvedValue({ global_settings: { canvasBackgroundColor: '#eef2ff' } });
     client.getAppSummary.mockResolvedValue({
       app_id: 'app1',
       name: 'App',
@@ -1789,8 +1890,9 @@ describe('validate_app tool', () => {
       events: [{ id: 'e1', name: 'run', sourceId: 'GONE', target: 'component', event: {} }],
     });
     const tool = validateAppTool(client as unknown as ToolJetClient);
-    const out = textOf(await tool.handler({ app_id: 'app1' })) as { ok: boolean; errors: string[]; warnings: string[] };
-    expect(client.getAppSummary).toHaveBeenCalledWith('app1');
+    const out = textOf(await tool.handler({ app_id: 'app1', version_id: 'v1' })) as { ok: boolean; errors: string[]; warnings: string[] };
+    expect(client.getAppSummary).toHaveBeenCalledWith('app1', 'v1');
+    expect(client.getAppSettings).toHaveBeenCalledWith('app1', 'v1');
     expect(out.ok).toBe(false); // dangling event source
     expect(out.errors.join(' ')).toMatch(/no longer exists/);
     expect(out.warnings.join(' ')).toMatch(/can clip at dashboard sizes/); // chart title lint

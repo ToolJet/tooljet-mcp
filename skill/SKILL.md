@@ -70,12 +70,12 @@ If a source is absent or a query fails, use its `datasources_url`, `settings_url
 - `references/components.md` — selective component palette and exact binding/rendering rules not covered by Table/Form references.
 - `references/themes.md` — workspace theme creation and management, the exact theme definition structure, app assignment, and token-backed component styling.
 
-Tool schemas, catalog responses, and returned warnings are authoritative. Do not preload every reference. Keep inspection results bounded: use `get_app_summary`'s structural default or exact field projections, and request `detail:"full"` only after narrowing the target. Reuse earlier catalog, schema, and summary results instead of repeating the same read.
+Tool schemas and warnings are authoritative. Load references as needed. Keep inspection bounded with `get_app_summary` structure or exact fields; use `detail:"full"` only after narrowing. Reuse results.
 
 ## Non-negotiable safety
 
 - Never author or execute `SELECT *` against an unfamiliar table. Count first when size is unknown; above 1,000 rows prefer server-side pagination. Large and billable reads require separate explicit approvals.
-- Never run mutations, AI, email, OAuth, or other side effects to validate a build.
+- Never run mutations, AI, email, OAuth, or other side effects merely to validate. Version changes require explicit intent: create only when asked, pin the returned `version_id`, and release only that exact version with `confirm:true`.
 - Seed writes are insert-only; omit generated serial keys. A duplicate-key failure is never permission to update existing rows.
 - Page/query/component/table/column deletion requires exact-target approval plus `confirm:true`, except for resources this build created itself (a diagnostic query, a scratch page): delete those before finishing rather than renaming or hiding them. Visibility is not authorization.
 - Keep app chrome controls distinct: `hide_header` hides the app header/banner; `navigation_position` places the separate generated navigation menu on the side or top; `navigation_hidden` hides that whole menu in either position; and `update_pages.hidden` hides only one non-Home page. Home cannot be hidden.
