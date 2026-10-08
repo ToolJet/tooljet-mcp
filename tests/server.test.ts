@@ -26,6 +26,9 @@ describe('buildServer', () => {
       for (const required of [
         'get_runtime_info',
         'create_app',
+        'create_app_version',
+        'switch_app_version',
+        'release_app',
         'get_app_settings',
         'list_app_themes',
         'update_app_settings',
@@ -48,6 +51,17 @@ describe('buildServer', () => {
         'drop_table',
         'generate_form_schema',
         'run_queries',
+        'get_workflow_node_catalog',
+        'get_workflow_capabilities',
+        'list_workflows',
+        'create_workflow',
+        'get_workflow',
+        'lint_workflow_spec',
+        'apply_workflow_spec',
+        'delete_workflow_node',
+        'validate_workflow',
+        'run_workflow',
+        'get_workflow_execution',
       ]) {
         expect(names).toContain(required);
       }

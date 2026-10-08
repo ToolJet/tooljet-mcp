@@ -13,6 +13,7 @@ import {
 import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafety.js';
 import { primitiveWriteBindingEntries } from './writeBindingShape.js';
 import { conditionalWriteWarning } from './arithmeticWriteContract.js';
+import { mongoArrayReplacementIssues } from './mongoWriteContract.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -273,11 +274,208 @@ export function runjsSyntaxError(code: string): string | undefined {
       if (loc && line !== undefined) {
         const from = Math.max(0, loc.column - 60);
         const excerpt = line.slice(from, loc.column + 20).trim();
-        return `${error.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? '…' : ''}${excerpt}`;
+        return `${error.message}, at line ${loc.line - 1} column ${loc.column + 1}: ${from > 0 ? '…' : ''}${excerpt}${bracketBalance(code)}`;
       }
     }
-    return error.message;
+    return `${error.message}${bracketBalance(code)}`;
   }
+}
+
+/** What the brackets of a query's code leave open or close wrongly, outside strings, template text and comments. A
+ *  figure missing its last brace failed as "Unexpected token ';'" at column 927, twice (2026-10-05). */
+function bracketBalance(code: string): string {
+  const stack: Array<{ ch: string; line: number; at: number }> = [];
+  const pairs: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+  const lines = code.split('\n');
+  const lineOf = (i: number) => code.slice(0, i).split('\n').length;
+  const snippet = (i: number) => { const l = lineOf(i); const start = code.lastIndexOf('\n', i - 1) + 1; const col = i - start;
+    return (lines[l - 1] ?? '').slice(Math.max(0, col - 30), col + 30).trim(); };
+  let quote: string | null = null;
+  for (let i = 0; i < code.length; i += 1) {
+    const ch = code[i]!;
+    if (quote) {
+      if (ch === '\\') { i += 1; continue; }
+      if (quote === '`' && ch === '$' && code[i + 1] === '{') { stack.push({ ch: '${', line: lineOf(i), at: i }); quote = null; i += 1; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '/' && code[i + 1] === '/') { const end = code.indexOf('\n', i); i = end === -1 ? code.length : end; continue; }
+    if (ch === '/' && code[i + 1] === '*') { const end = code.indexOf('*/', i + 2); i = end === -1 ? code.length : end + 1; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') stack.push({ ch, line: lineOf(i), at: i });
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      const top = stack.pop();
+      if (top?.ch === '${' && ch === '}') { quote = '`'; continue; }
+      if (!top || top.ch !== pairs[ch]) {
+        return top
+          ? ` A \`${ch}\` at line ${lineOf(i)} closes the \`${top.ch}\` opened at line ${top.line} (${snippet(top.at)}).`
+          : ` A \`${ch}\` at line ${lineOf(i)} closes nothing.`;
+      }
+    }
+  }
+  const open = stack.filter((s) => s.ch !== '${');
+  if (!open.length) return '';
+  const last = open[open.length - 1]!;
+  return ` ${open.length} bracket${open.length > 1 ? 's are' : ' is'} never closed; the last, \`${last.ch}\` opened at line ${last.line} ` +
+    `(${snippet(last.at)}), needs its \`${({ '(': ')', '[': ']', '{': '}' } as Record<string, string>)[last.ch]}\`.`;
+}
+
+/** Names a RunJS query may use without declaring: what ToolJet passes it (RUNJS_PARAMETERS, plus `parameters` when
+ *  the query has parameters and `input` in a module), JavaScript's own globals, and the browser's. A JavaScript
+ *  library added to the workspace also arrives as a parameter; agent-built apps add none, so it is not listed. */
+const RUNJS_KNOWN_NAMES = new Set([
+  ...RUNJS_PARAMETERS, 'parameters', 'input', 'arguments', 'undefined', 'NaN', 'Infinity', 'globalThis',
+  'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent',
+  'escape', 'unescape', 'Object', 'Function', 'Boolean', 'Symbol', 'Error', 'AggregateError', 'EvalError', 'RangeError',
+  'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'Number', 'BigInt', 'Math', 'Date', 'String', 'RegExp', 'Array',
+  'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array',
+  'Float64Array', 'BigInt64Array', 'BigUint64Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef', 'FinalizationRegistry',
+  'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Intl',
+  'window', 'self', 'document', 'navigator', 'location', 'history', 'screen', 'localStorage', 'sessionStorage', 'console',
+  'alert', 'confirm', 'prompt', 'fetch', 'Blob', 'File', 'FileReader', 'FormData', 'Headers', 'Request', 'Response', 'URL',
+  'URLSearchParams', 'AbortController', 'atob', 'btoa', 'crypto', 'performance', 'structuredClone', 'queueMicrotask',
+  'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame',
+  'TextEncoder', 'TextDecoder', 'DOMParser', 'XMLHttpRequest', 'WebSocket', 'Image', 'getComputedStyle', 'Event', 'CustomEvent',
+]);
+
+type AstNode = { type: string; [key: string]: unknown };
+const isNode = (value: unknown): value is AstNode => !!value && typeof value === 'object' && typeof (value as AstNode).type === 'string';
+
+/** Names a binding pattern declares: `a`, `{ a, b: c, ...d }`, `[e, = f]`. */
+function patternNames(node: unknown, out: Set<string>): void {
+  if (!isNode(node)) return;
+  if (node.type === 'Identifier') out.add(String(node.name));
+  else if (node.type === 'ObjectPattern') for (const p of node.properties as AstNode[]) patternNames(p.type === 'RestElement' ? p.argument : p.value, out);
+  else if (node.type === 'ArrayPattern') for (const e of node.elements as unknown[]) patternNames(e, out);
+  else if (node.type === 'RestElement') patternNames(node.argument, out);
+  else if (node.type === 'AssignmentPattern') patternNames(node.left, out);
+}
+
+/** Identifiers a RunJS query reads but never declares, in first-use order. A name counts as declared only inside the
+ *  function that declares it (its parameters, and its var/let/const/function/class declarations anywhere in its body,
+ *  so hoisting and block scope are not checked). This reports only names that cannot exist where they are read: a
+ *  ReferenceError the first time that line runs, which fails the query and empties what it feeds. Code that does not
+ *  parse returns [] (the syntax check reports it). */
+export function runjsUndeclaredNames(code: string): string[] {
+  return undeclaredNames(`async function __runjs__(){\n${code}\n}`, RUNJS_KNOWN_NAMES);
+}
+
+/** Names a {{ }} binding reads but never declares. Bindings get ToolJet's state (components, queries, variables,
+ *  globals, page, constants), moment and lodash, and the names some properties are evaluated with: a table column's
+ *  rowData/cellValue/currentRow, a list view's listItem, a Kanban card's cardData. */
+export function bindingUndeclaredNames(expression: string): string[] {
+  // A reference ToolJet saved by id (components.d883eafc-af1c-...) is resolved before evaluation; leave those alone.
+  if (/\b(components|queries)\.[0-9a-f]{8}-[0-9a-f]{4}-/i.test(expression)) return [];
+  return undeclaredNames(`(function __binding__(){ return (\n${expression}\n); })`, BINDING_KNOWN_NAMES);
+}
+
+/** Errors for every {{ }} in `value` (any nesting) that reads an undeclared name. Over 149,513 bindings in a local
+ *  workspace this flagged 15, all broken: a filter that lost its `r =>`, a query read without `queries.`, a cell
+ *  style reading `row` instead of `rowData`. */
+export function lintBindingNames(value: unknown, label: string, path = ''): string[] {
+  if (Array.isArray(value)) return value.flatMap((child, i) => lintBindingNames(child, label, `${path}[${i}]`));
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, child]) => lintBindingNames(child, label, path ? `${path}.${key}` : key));
+  }
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const names = [...new Set([...value.matchAll(/\{\{([\s\S]*?)\}\}/g)].flatMap((m) => bindingUndeclaredNames(m[1]!)))];
+  if (!names.length) return [];
+  const hints = names.map((n) => (/^[a-z_$][\w$]*$/i.test(n) && n.length > 2 && !['row', 'item', 'r', 'x', 'd', 'e'].includes(n)
+    ? `\`${n}\` (a query is read as queries.${n})` : `\`${n}\``));
+  return [`${label}${path ? ` ${path}` : ''}: the binding reads ${hints.join(', ')}, which nothing declares there, so it throws and ` +
+    'the component shows nothing. Declare it (a callback needs its parameter: `rows.filter(r => r.status === "Open")`), or use ' +
+    "ToolJet's names: components, queries, variables, globals, page, constants, and in a table column rowData/cellValue, in a " +
+    'list view listItem, on a Kanban card cardData.'];
+}
+
+const BINDING_KNOWN_NAMES = new Set([
+  ...RUNJS_KNOWN_NAMES, 'rowData', 'cellValue', 'currentRow', 'listItem', 'cardData', 'theme',
+]);
+
+const FUNCTION_TYPES = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ObjectMethod', 'ClassMethod', 'ClassPrivateMethod']);
+
+function undeclaredNames(source: string, known: Set<string>): string[] {
+  let ast: unknown;
+  try {
+    ast = babelParse(source, { sourceType: 'script', errorRecovery: false });
+  } catch {
+    return [];
+  }
+  /** Declarations that belong to this function body: not those inside nested functions (their own scope). */
+  const declaredIn = (body: unknown, into: Set<string>): void => {
+    const visit = (node: unknown): void => {
+      if (Array.isArray(node)) { node.forEach(visit); return; }
+      if (!isNode(node)) return;
+      if (node.type === 'VariableDeclarator') patternNames(node.id, into);
+      if ((node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') && isNode(node.id)) into.add(String(node.id.name));
+      if (node.type === 'CatchClause') patternNames(node.param, into);
+      if (FUNCTION_TYPES.has(node.type)) return;
+      for (const [k, v] of Object.entries(node)) if (k !== 'loc' && k !== 'extra' && !k.endsWith('Comments')) visit(v);
+    };
+    visit(body);
+  };
+  const used: string[] = [];
+  const scopes: Set<string>[] = [];
+  const isDeclared = (name: string) => scopes.some((scope) => scope.has(name));
+  const walk = (node: unknown, parent?: AstNode, key?: string): void => {
+    if (Array.isArray(node)) { for (const child of node) walk(child, parent, key); return; }
+    if (!isNode(node)) return;
+    if (node.type === 'Identifier') {
+      const p = parent?.type;
+      const notARead =
+        ((p === 'MemberExpression' || p === 'OptionalMemberExpression') && key === 'property' && !parent!.computed) ||
+        ((p === 'ObjectProperty' || p === 'ObjectMethod' || p === 'ClassMethod' || p === 'ClassProperty' || p === 'ClassPrivateProperty') &&
+          key === 'key' && !parent!.computed) ||
+        ((p === 'LabeledStatement' || p === 'BreakStatement' || p === 'ContinueStatement') && key === 'label') ||
+        (p === 'UnaryExpression' && parent!.operator === 'typeof') ||
+        p === 'MetaProperty' ||
+        // a declaration's own name, a parameter or a pattern binding is not a read
+        (p === 'VariableDeclarator' && key === 'id') || (p !== undefined && FUNCTION_TYPES.has(p) && (key === 'id' || key === 'params')) ||
+        ((p === 'ClassDeclaration' || p === 'ClassExpression') && key === 'id') || (p === 'CatchClause' && key === 'param');
+      const name = String(node.name);
+      if (!notARead && !isDeclared(name)) used.push(name);
+      return;
+    }
+    if (node.type === 'Program' || FUNCTION_TYPES.has(node.type)) {
+      const scope = new Set<string>();
+      if (FUNCTION_TYPES.has(node.type)) {
+        // A function expression's own name is visible inside it (a named recursive callback).
+        if (node.type === 'FunctionExpression' && isNode(node.id)) scope.add(String(node.id.name));
+        for (const param of (node.params as unknown[]) ?? []) patternNames(param, scope);
+        declaredIn(node.body, scope);
+      } else {
+        declaredIn(node.body, scope);
+      }
+      scopes.push(scope);
+      for (const [k, v] of Object.entries(node)) {
+        if (k === 'loc' || k === 'extra' || k.endsWith('Comments')) continue;
+        // Parameters: their default values are reads; the bound names themselves are not.
+        if (k === 'params') { for (const param of v as unknown[]) walkPatternDefaults(param); continue; }
+        walk(v, node, k);
+      }
+      scopes.pop();
+      return;
+    }
+    if (node.type === 'VariableDeclarator') { walkPatternDefaults(node.id); walk(node.init, node, 'init'); return; }
+    if (node.type === 'CatchClause') { walk(node.body, node, 'body'); return; }
+    for (const [k, v] of Object.entries(node)) {
+      if (k === 'loc' || k === 'start' || k === 'end' || k === 'extra' || k.endsWith('Comments')) continue;
+      walk(v, node, k);
+    }
+  };
+  /** In a binding pattern, only default values and computed keys are reads. */
+  const walkPatternDefaults = (pattern: unknown): void => {
+    if (!isNode(pattern)) return;
+    if (pattern.type === 'AssignmentPattern') { walkPatternDefaults(pattern.left); walk(pattern.right, pattern, 'right'); }
+    else if (pattern.type === 'ObjectPattern') for (const p of pattern.properties as AstNode[]) {
+      if (p.type === 'RestElement') walkPatternDefaults(p.argument);
+      else { if (p.computed) walk(p.key, p, 'computedKey'); walkPatternDefaults(p.value); }
+    }
+    else if (pattern.type === 'ArrayPattern') for (const e of pattern.elements as unknown[]) walkPatternDefaults(e);
+    else if (pattern.type === 'RestElement') walkPatternDefaults(pattern.argument);
+  };
+  walk(ast);
+  return [...new Set(used.filter((name) => !known.has(name) && name !== '__runjs__' && name !== '__binding__'))];
 }
 
 /* A transformation is three fields, not one. `transformations` / `transformation` carries the code,
@@ -347,7 +545,7 @@ function influxTransformWarnings(kind: string, options: Record<string, unknown>)
 /** Fields naming what a query acts on. */
 const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
 
-export function validateQueryOptions(kind: string, options: Record<string, unknown>): QueryValidationResult {
+export function validateQueryOptions(kind: string, options: Record<string, unknown>, executionContext: 'app' | 'workflow' = 'app'): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   errors.push(...queryToggleIssues(options));
   if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
@@ -359,7 +557,8 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
   const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
-  if (kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
+  if (kind === 'mongodb') errors.push(...mongoArrayReplacementIssues(options));
+  if (executionContext === 'app' && kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
     const syntax = runjsSyntaxError(options.code);
     if (syntax) {
       errors.push({
@@ -369,6 +568,18 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
           `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; ` +
           'fix the code before writing it.',
       });
+    } else {
+      const undeclared = runjsUndeclaredNames(options.code);
+      if (undeclared.length) {
+        errors.push({
+          code: 'runjs_undeclared_name',
+          path: 'code',
+          message:
+            `the JavaScript uses ${undeclared.map((n) => `\`${n}\``).join(', ')} but never declares ${undeclared.length > 1 ? 'them' : 'it'}. ` +
+            'The query throws a ReferenceError when that line runs, ToolJet marks it failed, and every component bound to its data stays ' +
+            'empty. Declare the value, or use the name you meant.',
+        });
+      }
     }
   }
   warnings.push(...transformationWarnings(options));

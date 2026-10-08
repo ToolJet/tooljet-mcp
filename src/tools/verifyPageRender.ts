@@ -197,6 +197,9 @@ async function loadPlaywright(): Promise<any | null> {
   }
 }
 
+/** A URL's path, without its query string (which can carry ids and tokens). */
+const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
+
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
@@ -230,6 +233,13 @@ export async function auditPages(
     const p = pages[index];
     let ctx: any;
     let blocked: RenderFinding | undefined;
+    // Every distinct block, for a page that ends up empty: the first one alone (a WebSocket) did not say why.
+    const blocks: string[] = [];
+    const block = (finding: RenderFinding, where: string) => {
+      blocked ??= finding;
+      const line = `${finding.reason}: ${where}`;
+      if (blocks.length < 4 && !blocks.includes(line)) blocks.push(line);
+    };
     try {
       ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: 'block' });
       if (!ctx.routeWebSocket) {
@@ -241,19 +251,20 @@ export async function auditPages(
         // Only the viewer's own origin gets the session, and every request to any other origin is aborted below.
         await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: new URL(p.url).origin }]);
       }
-      await ctx.routeWebSocket('**/*', (socket: any) => { blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }; socket.close(); });
+      await ctx.routeWebSocket('**/*', (socket: any) => { block({ kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }, `WebSocket ${pathOf(socket.url?.() ?? '')}`); socket.close(); });
       await ctx.route('**/*', async (route: any) => {
         const request = route.request();
         const url = request.url();
         if (!renderAuditUrlAllowed(url, origins)) {
-          blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A navigation or resource outside the configured audit origins was blocked' };
+          block({ kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A navigation or resource outside the configured audit origins was blocked' }, `${request.method()} ${new URL(url).origin}`);
           await route.abort();
           return;
         }
         try {
           const policy = renderAuditRequest(url, request.method(), options.savedQueries);
           if (!policy.allowed) {
-            blocked ??= { kind: 'unreachable', component: '-', reason: 'blocked_execution', detail: policy.detail! };
+            block({ kind: 'unreachable', component: '-', reason: 'blocked_execution',
+              detail: `${policy.detail!} (${request.method()} ${pathOf(url)})` }, `${request.method()} ${pathOf(url)}`);
             await route.abort();
             return;
           }
@@ -265,13 +276,13 @@ export async function auditPages(
             if (response.status() >= 300 && response.status() < 400 && response.headers().location) {
               const dest = new URL(response.headers().location, url);
               const signIn = renderAuditUrlAllowed(dest.href, origins) && /\/(?:login|sign-in|signin)\b/i.test(dest.pathname);
-              blocked ??= { kind: 'unreachable', component: '-', reason: signIn ? 'auth_required' : 'redirect_blocked',
-                detail: signIn ? 'The viewer requires sign-in; private app rendering was not verified' : 'An HTTP redirect was blocked. Configure the canonical viewer/resource URL and its trusted origin' };
+              block({ kind: 'unreachable', component: '-', reason: signIn ? 'auth_required' : 'redirect_blocked',
+                detail: signIn ? 'The viewer requires sign-in; private app rendering was not verified' : 'An HTTP redirect was blocked. Configure the canonical viewer/resource URL and its trusted origin' }, `${request.method()} ${pathOf(url)} redirected`);
               await route.abort();
             } else await route.fulfill({ response });
           } finally { await response.dispose(); }
         } catch {
-          blocked ??= { kind: 'unreachable', component: '-', reason: 'navigation_failed', detail: 'A viewer resource could not be loaded; the audit is incomplete' };
+          block({ kind: 'unreachable', component: '-', reason: 'navigation_failed', detail: 'A viewer resource could not be loaded; the audit is incomplete' }, `${request.method()} ${pathOf(url)}`);
           await route.abort().catch(() => {});
         }
       });
@@ -303,12 +314,18 @@ export async function auditPages(
         return;
       }
       const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
-      reports[index] = result.widgets === 0
+      // A page left empty after a blocked request names that request: a bare no_widgets hid why every page of
+      // every build read empty (compiler round 3, 2026-10-04).
+      reports[index] = result.widgets === 0 && blocked
+        ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join('; ')}` }] }
+        : result.widgets === 0
         ? unreachable(p, 'no_widgets', 'No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded')
         : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...(blocked ? [blocked] : [])] };
     } catch (err) {
-      reports[index] = blocked ? { ...p, widgets: 0, findings: [blocked] }
-        : unreachable(p, 'navigation_failed', 'Could not load or inspect the viewer page');
+      // What failed, first line only: "could not load" alone left an audit that never ran undiagnosable.
+      const why = String((err as Error)?.message ?? err).split('\n')[0]!.slice(0, 200);
+      reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join('; ')}` }] }
+        : unreachable(p, 'navigation_failed', `Could not load or inspect the viewer page: ${why}`);
     } finally {
       await ctx?.close().catch(() => {});
     }

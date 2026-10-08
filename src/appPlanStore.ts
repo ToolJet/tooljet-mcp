@@ -9,6 +9,8 @@ interface StoredPlan {
   spec: AppPlanInput;
   lint: AppSpecLintResult;
   expiresAt: number;
+  /** For a replace: the replaced pages' state at lint (pageReplace.replaceFingerprint), checked again at apply. */
+  replaceFingerprint?: string;
 }
 
 const plans = new Map<string, StoredPlan>();
@@ -18,7 +20,7 @@ function prune(now = Date.now()): void {
   while (plans.size >= MAX_PLANS) plans.delete(plans.keys().next().value!);
 }
 
-export function storeAppPlan(spec: AppPlanInput, lint: AppSpecLintResult): {
+export function storeAppPlan(spec: AppPlanInput, lint: AppSpecLintResult, replaceFingerprint?: string): {
   plan_token: string;
   expires_in_seconds: number;
 } {
@@ -28,6 +30,7 @@ export function storeAppPlan(spec: AppPlanInput, lint: AppSpecLintResult): {
     spec: structuredClone(spec),
     lint: structuredClone(lint),
     expiresAt: Date.now() + PLAN_TTL_MS,
+    ...(replaceFingerprint ? { replaceFingerprint } : {}),
   });
   return { plan_token: planToken, expires_in_seconds: PLAN_TTL_MS / 1000 };
 }

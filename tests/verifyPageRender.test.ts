@@ -149,6 +149,17 @@ describe('render audit network boundary and honest results', () => {
     expect(report.findings[0].reason).toBe(status === 401 || status === 403 ? 'auth_required' : 'navigation_failed');
   });
 
+  it('names what it blocked when a page then shows no widgets, instead of a bare no_widgets', async () => {
+    // Compiler round 3 (2026-10-04): every page of every build read "no widgets" and the blocked request that
+    // emptied them was dropped from the report.
+    const f = browserFixture({ resource: 'http://viewer.test/api/apps/app1/session', method: 'POST', duringSettle: true, widgets: 0 });
+    const [report] = await auditPages(target, {}, f.driver);
+    expect(report.widgets).toBe(0);
+    expect(report.findings[0].reason).toBe('blocked_execution');
+    expect(report.findings[0].detail).toMatch(/POST \/api\/apps\/app1\/session/);
+    expect(report.findings[0].detail).toMatch(/no widgets/i);
+  });
+
   it('distinguishes no widgets, sign-in and browser setup failure from a clean render', async () => {
     expect((await auditPages(target, {}, browserFixture({ widgets: 0 }).driver))[0].findings[0].reason).toBe('no_widgets');
     expect((await auditPages(target, {}, browserFixture({ landed: 'http://viewer.test/login' }).driver))[0].findings[0].reason).toBe('auth_required');

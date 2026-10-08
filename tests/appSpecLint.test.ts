@@ -563,3 +563,21 @@ describe('empty-page reuse guard', () => {
     expect(JSON.parse(reusing.content[0]!.text!).errors.filter((e: string) => e.includes('empty page'))).toEqual([]);
   });
 });
+
+// A point-of-sale build (2026-10-05): seed rows had subtotal and total written as null; the error said the rows
+// "omit" the columns, so the model looked for missing keys and renamed the columns twice. A null value says so.
+describe('a required seed column written as null', () => {
+  it('is reported as null, not omitted', async () => {
+    const client = {
+      listDatasources: vi.fn().mockResolvedValue([]),
+      listTables: vi.fn().mockResolvedValue([]),
+    } as unknown as ToolJetClient;
+    const result = await lintAppSpecTool(client).handler({
+      tables: [{ table_name: 'sales', columns: [{ name: 'id', type: 'serial', primaryKey: true }, { name: 'total', type: 'number', notNull: true }] }],
+      seed_data: [{ table_name: 'sales', rows: [{ total: null }, { total: 12 }] }],
+    });
+    const errors = textOf(result).errors.join(' ');
+    expect(errors).toMatch(/"total" is null in row\(s\) 1/);
+    expect(errors).not.toMatch(/omits/);
+  });
+});

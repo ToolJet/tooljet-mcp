@@ -38,12 +38,26 @@ export const plannedQuerySchema = z.object({
   /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
   table_ref: z.string().optional().describe('Actual table_name of a planned or existing ToolJet DB table, not a client_ref, alias, or UUID.'),
   options: z.record(z.string(), z.any()),
+  /** The app's query of this name is updated in place with this definition: see pageReplace.ts. */
+  update: z.boolean().optional().describe(
+    'true: when the app already has a query of this name, it is updated in place with this definition, keeping its id ' +
+      'and the events that run it, for every page that reads it (needs app_id). Without it, defining an existing name ' +
+      'again is refused unless the definition is identical (then the existing query is used) or a replaced page owns it.'
+  ),
 });
 export const plannedPageSchema = z.object({
   client_ref: z.string().optional(),
   name: z.string(),
   icon: pageIconSchema,
   hidden: z.boolean().optional(),
+  /** The existing page of this name is replaced whole: see pageReplace.ts. */
+  replace: z.boolean().optional().describe(
+    'true: the existing page of this name ends up holding exactly this plan\'s components and the events on them ' +
+      '(needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that ' +
+      'only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated ' +
+      'in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not ' +
+      'atomic: use it on draft or otherwise recoverable pages.'
+  ),
   components: z.array(componentInputSchema).optional(),
 });
 export const plannedEventSchema = z.object({

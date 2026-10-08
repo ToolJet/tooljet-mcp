@@ -1,3 +1,4 @@
+import { appVersionLifecycleTools } from './appVersionLifecycle.js';
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -6,6 +7,9 @@ import type { ToolDef } from './types.js';
 import { listWorkspacesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
+import { createAppVersionTool } from './createAppVersion.js';
+import { switchAppVersionTool } from './switchAppVersion.js';
+import { releaseAppTool } from './releaseApp.js';
 import { getAppSettingsTool } from './getAppSettings.js';
 import { listAppThemesTool } from './listAppThemes.js';
 import { updateAppSettingsTool } from './updateAppSettings.js';
@@ -69,6 +73,17 @@ import {
   listWorkspaceUsersTool,
   manageWorkspaceUsersTool,
 } from './workspaceUserManagement.js';
+import { getWorkflowNodeCatalogTool } from './getWorkflowNodeCatalog.js';
+import { getWorkflowCapabilitiesTool } from './getWorkflowCapabilities.js';
+import { listWorkflowsTool } from './listWorkflows.js';
+import { createWorkflowTool } from './createWorkflow.js';
+import { getWorkflowTool } from './getWorkflow.js';
+import { lintWorkflowSpecTool } from './lintWorkflowSpec.js';
+import { applyWorkflowSpecTool } from './applyWorkflowSpec.js';
+import { deleteWorkflowNodeTool } from './deleteWorkflowNode.js';
+import { validateWorkflowTool } from './validateWorkflow.js';
+import { runWorkflowTool } from './runWorkflow.js';
+import { getWorkflowExecutionTool } from './getWorkflowExecution.js';
 
 export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'create_table',
@@ -88,6 +103,17 @@ export function registerTools(
   runtime: RuntimeFreshnessMonitor = runtimeFreshness
 ): void {
   const tools: ToolDef[] = [
+    getWorkflowNodeCatalogTool(client),
+    getWorkflowCapabilitiesTool(client),
+    listWorkflowsTool(client),
+    createWorkflowTool(client),
+    getWorkflowTool(client),
+    lintWorkflowSpecTool(client),
+    applyWorkflowSpecTool(client),
+    deleteWorkflowNodeTool(client),
+    validateWorkflowTool(client),
+    runWorkflowTool(client),
+    getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
@@ -98,6 +124,10 @@ export function registerTools(
     listWorkspaceGroupsTool(client),
     manageWorkspaceGroupsTool(client),
     createAppTool(client),
+    createAppVersionTool(client),
+    ...appVersionLifecycleTools(client),
+    switchAppVersionTool(client),
+    releaseAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
     updateAppSettingsTool(client),

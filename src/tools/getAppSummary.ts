@@ -8,6 +8,7 @@ const fieldList = z.array(z.string()).min(1).optional();
 
 interface GetAppSummaryArgs {
   app_id: string;
+  version_id?: string;
   sections?: AppSummarySection[];
   detail?: 'structure' | 'full';
   include_components?: boolean;
@@ -38,8 +39,9 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      'Selective, bounded inspection of an app — use this instead of get_app. By default detail="structure" ' +
-      'returns page/component/query/event identity and layout but omits bulky component values, query options, ' +
+      'Selective, bounded inspection of an app — use this instead of get_app. Pass version_id after ' +
+      'create_app_version to inspect that exact version instead of the server\'s default editing version. ' +
+      'By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, ' +
       'and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted ' +
       'fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. ' +
       'Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never ' +
@@ -49,7 +51,11 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       'returns page metadata only.',
     inputSchema: {
       app_id: z.string(),
-      sections: z.array(z.enum(['pages', 'queries', 'events'])).optional(),
+      version_id: z.string().min(1).optional(),
+      // Components live in pages: "components" is read as pages (a build lost a call to it, 2026-10-05).
+      sections: z.preprocess((value) => (Array.isArray(value)
+        ? [...new Set(value.map((s) => (s === 'components' ? 'pages' : s)))] : value),
+      z.array(z.enum(['pages', 'queries', 'events']))).optional(),
       detail: z.enum(['structure', 'full']).optional(),
       include_components: z.boolean().optional(),
       page_ids: stringList,
@@ -78,7 +84,9 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
               'wildcards and dummy ids do not mean all resources. This is a filter error, not an empty app.');
           }
         }
-        const summary = await client.getAppSummary(args.app_id);
+        const summary = args.version_id
+          ? await client.getAppSummary(args.app_id, args.version_id)
+          : await client.getAppSummary(args.app_id);
         const selected = selectAppSummary(summary, {
             sections: args.sections,
             detail: args.detail,

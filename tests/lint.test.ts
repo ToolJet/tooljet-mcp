@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency } from '../src/lint.js';
+import { lintComponentSpec, detectOverlaps, lintComponents, lintUnrenderableHeights, lintDesktopCanvasCoverage, lintListviewChildren, lintModalChildren, lintOperationalViewport, minimumTextHeight, renderedHeight, validateAppStructure, lintStatTileConsistency, lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory } from '../src/lint.js';
 import type { AppSummary } from '../src/tooljetClient.js';
 import { getComponentSchema } from '../src/catalog.js';
 
@@ -874,7 +874,8 @@ describe('lintComponentSpec', () => {
       styles: { cellSize: { value: 'regular' } },
       layout: { top: 0, left: 0, width: 30, height: 460 },
     });
-    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 614px/i);
+    // 56 toolbar + 34 header + 46 footer + 2 border + 10 x 45 (calibrated in the viewer 2026-10-05)
+    expect(compact.warnings.join(' ')).toMatch(/height 460px.*10 regular rows.*inner scrollbar.*about 588px/i);
 
     const tall = lintComponentSpec({
       name: 'orders',
@@ -1073,7 +1074,7 @@ describe('lintModalChildren', () => {
 
   // Trace review 2026-09-25: five plans failed "title-like Text in the body" on a bold line naming the selected record
   // under the modal title ({row.product_name}). That is a record label, not a second title.
-  it('does not take a bold dynamic record label for a second title, and still flags a static bold heading', () => {
+  it('allows distinct static and dynamic record headings below an existing modal title', () => {
     const titleLike = (text: string, textSize?: number) => lintModalChildren([
       { name: 'changePrice', type: 'ModalV2', clientRef: 'modal', properties: { showHeader: { value: true } } },
       { name: 'modalHeader', type: 'Text', parentRef: 'modal', slotName: 'header', properties: { text: { value: 'Change price' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
@@ -1084,8 +1085,8 @@ describe('lintModalChildren', () => {
       },
     ]).join(' ').includes('title-like');
     expect(titleLike('{{components.tb.selectedRow?.product_name}}', 15)).toBe(false);
-    expect(titleLike('Edit this price', 15)).toBe(true);
-    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(true);
+    expect(titleLike('Edit this price', 15)).toBe(false);
+    expect(titleLike('{{components.tb.selectedRow?.product_name}}', 20)).toBe(false);
   });
 
   it('recognizes explicit and persisted header slots and keeps their geometry separate from the body', () => {
@@ -1221,6 +1222,15 @@ describe('lintListviewChildren', () => {
       },
     ]).join(' ');
     expect(warnings).toMatch(/only child on its row.*fresh 43-column local canvas.*left:0, width:43.*do not divide/i);
+  });
+
+  it('accepts a full-row child one column short of the edge', () => {
+    // ToolJet pads the Listview 7px but lays each row out on its full width, so a 43-column child loses its right edge;
+    // the page compiler places full-row children at width 42 (overnight site inspections, 2026-09-29).
+    expect(lintListviewChildren([
+      parent,
+      { name: 'card', type: 'Html', parentRef: 'fleet', layout: { top: 8, left: 0, width: 42, height: 120 } },
+    ])).toEqual([]);
   });
 
   it('allows intentional side-by-side composition inside the local item canvas', () => {
@@ -1973,5 +1983,59 @@ describe('lintUnrenderableHeights', () => {
     expect(
       lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
     ).toEqual([]);
+  });
+});
+
+describe('keys ToolJet stores from the inspector only', () => {
+  it('PhoneInput and CurrencyInput defaultCountry is not an unknown key', () => {
+    // The inspector writes properties.defaultCountry and the widgets read it, but the catalog does not list it; the
+    // page compiler sets it from a phone number's calling code (overnight site inspections, 2026-09-29).
+    for (const type of ['PhoneInput', 'CurrencyInput']) {
+      const r = lintComponentSpec({ name: 'x', type, properties: { label: { value: 'L' }, defaultCountry: { value: 'GB' } }, styles: { alignment: { value: 'top' } } } as never);
+      expect(r.warnings.join(' ')).not.toMatch(/defaultCountry/);
+    }
+  });
+});
+
+describe('modal header advice', () => {
+  // Overnight campaign (2026-09-29): six compiles in five apps failed on "title-like Text in the body" for a profile
+  // modal titled "Volunteer profile" with the person's name as a 20-26px heading. That is a design choice, not broken
+  // geometry: it is advice (a warning), while children outside the modal stay blocking.
+  const modal = [
+    { name: 'profile', type: 'ModalV2', clientRef: 'm', properties: { showHeader: { value: true } } },
+    { name: 'hdr', type: 'Text', parentRef: 'm', slotName: 'header', properties: { text: { value: 'Volunteer profile' } }, layout: { top: 0, left: 2, width: 30, height: 40 } },
+    { name: 'who', type: 'Text', parentRef: 'm', properties: { text: { value: '{{components.t.selectedRow?.name}}' } },
+      styles: { fontWeight: { value: 'bold' }, textSize: { value: 24 } }, layout: { top: 10, left: 2, width: 30, height: 40 } },
+  ];
+  it('does not warn about a distinct record heading or make it blocking', () => {
+    expect(lintRenderedGeometryBlocking(modal as never).join(' ')).not.toMatch(/title-like/);
+    expect(lintRenderedGeometryAdvisory(modal as never).join(' ')).not.toMatch(/title-like/);
+  });
+});
+
+// A volunteer-card build (2026-10-05): the card root had height:100%;box-sizing:border-box and a 44px avatar inside
+// it; the exemption's `100%\b` never matched ("%;" has no word boundary), so the rule failed two compiles in a row.
+describe('a repeated Html whose root fills its cell', () => {
+  it('may size an inner element in pixels', () => {
+    const parent = { name: 'directory', type: 'Listview', clientRef: 'dir', properties: { mode: { value: 'grid' } } };
+    expect(lintListviewChildren([
+      parent,
+      {
+        name: 'card', type: 'Html', parentRef: 'dir',
+        properties: { rawHtml: { value: "<div style='height:100%;box-sizing:border-box;padding:16px'><div style='width:44px;height:44px'>AB</div>{{listItem.name}}</div>" } },
+      },
+    ] as never)).toEqual([]);
+  });
+});
+
+// A labelling build (2026-10-05): placeholder={{ saved || "{\n  \"format\": \"coco\"\n}" }} was refused as a literal
+// backslash-n, but inside a binding's string \n is a line break when ToolJet evaluates it. Only text outside a binding
+// prints the two characters.
+describe('a backslash-n inside a binding', () => {
+  it('is not a literal', async () => {
+    const { lintRenderedText } = await import('../src/lint.js');
+    expect(lintRenderedText({ name: 'ed', type: 'CodeEditor', properties: { placeholder: { value: '{{ (queries.s.data || [])[0]?.cfg || "{\\n  \\"format\\": \\"coco\\"\\n}" }}' } } } as never)
+      .join(' ')).not.toMatch(/backslash-n/);
+    expect(lintRenderedText({ name: 't', type: 'Text', properties: { text: { value: 'TOTAL\\n8' } } } as never).join(' ')).toMatch(/backslash-n/);
   });
 });

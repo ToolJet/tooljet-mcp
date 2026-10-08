@@ -207,6 +207,9 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `manage_workspace_groups(...)` | Create/rename/delete/duplicate groups, remove members, update permission switches, and create/update/delete granular access; requires confirmation and ToolJet admin permissions |
 | `manage_workspace_users(...)` | Invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
+| `create_app_version(app_id, version_name, version_from_id, version_description?)` | Clone an existing version into a new draft and return its new `version_id` for continued editing |
+| `switch_app_version(app_id, version_id)` | Validate an exact app version and return metadata the ToolJet editor can use to select it |
+| `release_app(app_id, version_id, confirm:true)` | Publish and promote a specific version to production when needed, make it the live released version, and verify the change by reading the app back |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |
 | `inspect_datasource_schema({datasource_id, version_id, method, ...})` | Invoke one plugin-advertised read-only metadata method (schemas/tables/columns/collections) |
@@ -233,6 +236,22 @@ Permission updates change only supplied switches. New granular rules disable omi
 Workspace theme creation and management are exposed through `manage_theme`; applying a theme to an app remains part
 of `update_app_settings`. The definition structure and token-backed styling guidance are documented in
 [`docs/theme-api-tool.md`](docs/theme-api-tool.md).
+
+## Resources
+
+Read-only catalog data, for clients that validate or build plans locally and need the same catalog this server
+checks plans against. Each is `application/json`: `{ "mcp_version", "catalog_version", "data_version", "data" }`,
+where `data` is the data file as the server reads it and `data_version` is the first 12 hex characters of its SHA-256.
+`catalog_version` is the same kind of hash over all four parts together and is identical in each of them, so a client
+that reads the parts one at a time can confirm they form one coherent catalog (not a mix from two servers during a
+rolling deployment). The resource list carries both in each entry's `_meta`, so a client can skip a read it has cached.
+
+| URI | Data |
+|---|---|
+| `tooljet://catalog/components` | Component types: properties, styles, events, actions, sizing and authoring hints (`data/component-schemas.json`) |
+| `tooljet://catalog/component-compatibility` | Legacy component types and their replacements (`data/component-compatibility.json`) |
+| `tooljet://catalog/datasources` | Query contract of every datasource kind (`data/datasource-schemas.json`) |
+| `tooljet://catalog/page-icons` | Page icon package, version and names (`data/page-icons.json`) |
 
 ## Privacy Policy
 
