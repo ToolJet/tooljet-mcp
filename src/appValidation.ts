@@ -1,3 +1,4 @@
+import { htmlFedTextColumns, type HtmlFedQuery, type HtmlFedTable } from './htmlColumns.js';
 import type { AppSummary } from './tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from './eventValidation.js';
 import { validateAppStructure } from './lint.js';
@@ -58,6 +59,16 @@ export function validatePersistedAppSummary(summary: AppSummary): PersistedAppVa
   const eventValidation = validateEvents(summary, persistedEventSpecs(summary), { includePersistedChains: false });
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
+  for (const page of summary.pages ?? []) {
+    for (const component of (page.components ?? []) as HtmlFedTable[]) {
+      for (const col of htmlFedTextColumns(component, summary.queries as HtmlFedQuery[])) {
+        warnings.push(
+          `Table "${String(component.name)}" column "${String(col.key)}" is typed as text but its query returns HTML for it, ` +
+            'so it renders as raw text (<span ...>). Set that column\'s columnType "html", or return plain text.'
+        );
+      }
+    }
+  }
   for (const query of summary.queries) {
     const label = `Query "${query.name ?? query.id}"`;
     if (!query.kind || !query.options || typeof query.options !== 'object' || Array.isArray(query.options)) {

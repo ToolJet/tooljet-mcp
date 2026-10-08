@@ -11,6 +11,19 @@ describe('JavaScript query rules from round eight (2026-09-12)', () => {
     expect(r.errors.some((e) => e.code === 'runjs_syntax_error')).toBe(true);
   });
 
+  // ds-tower d1: `const actions = ...` parsed here and failed in the viewer ("Identifier 'actions' has already been
+  // declared"), emptying a view and three tables. ToolJet passes these names to every RunJS query.
+  it('refuses a top-level declaration of a name ToolJet passes the query', () => {
+    expect(runjsSyntaxError('const actions = [1, 2];\nreturn actions;')).toMatch(/declares `actions`.*Rename it/);
+    expect(runjsSyntaxError('{ const actions = [1, 2]; return actions; }')).toBeUndefined();
+    expect(runjsSyntaxError('const rows = queries.q.data; return rows;')).toBeUndefined();
+  });
+
+  it('says where a syntax error is: line, column and an excerpt', () => {
+    const message = runjsSyntaxError("const rows = queries.q.data || [];\nconst total = rows.reduce((s, r) => s + r.amount, 0;\nreturn total;");
+    expect(message).toMatch(/at line 2 column \d+: .*reduce/);
+  });
+
   it('rejects a chart query that reads another query on page load without being chained', () => {
     const spec = {
       queries: [

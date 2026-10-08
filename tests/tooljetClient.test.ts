@@ -160,10 +160,10 @@ describe('createClient', () => {
         );
 
       const client = createClient(auth, config);
-      const result = await client.createApp('Nordlicht Order Desk');
+      const result = await client.createApp('Coffee Order Desk');
       expect(result.app_id).toBe('app3');
       const names = auth.authedFetch.mock.calls.slice(0, 3).map(([, init]) => JSON.parse((init as RequestInit).body as string).name);
-      expect(names).toEqual(['Nordlicht Order Desk', 'Nordlicht Order Desk 2', 'Nordlicht Order Desk 3']);
+      expect(names).toEqual(['Coffee Order Desk', 'Coffee Order Desk 2', 'Coffee Order Desk 3']);
     });
 
     it('throws when the create call is non-2xx', async () => {
@@ -1388,6 +1388,16 @@ describe('createClient', () => {
       expect(result).toEqual({ table_id: 't1', table_name: 'people' });
     });
 
+    it('adds a serial id beside a business primary key (held-out reorder and fleet)', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't3', table_name: 'inventory' } } }));
+      const client = createClient(auth, config);
+      await client.createTable({ tableName: 'inventory', columns: [{ name: 'item_id', type: 'string', primaryKey: true }, { name: 'qty', type: 'number' }] });
+      const body = JSON.parse(auth.authedFetch.mock.calls[0][1].body);
+      expect(body.columns.map((c: { column_name: string }) => c.column_name)).toEqual(['item_id', 'qty', 'id']);
+      expect(body.columns[1]).toMatchObject({ data_type: 'double precision' });
+      expect(body.columns[2]).toMatchObject({ data_type: 'serial', constraints_type: { is_primary_key: false, is_unique: true } });
+    });
+
     it('preserves defaults/configurations and creates foreign-key relationships', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { result: { id: 't2', table_name: 'orders' } } }));
       const client = createClient(auth, config);
@@ -1861,6 +1871,25 @@ describe('createClient', () => {
       expect(path).toBe('/api/data-queries/q1/versions/ver1');
       expect(init.method).toBe('PATCH');
       expect(JSON.parse(init.body)).toEqual({ options: { a: 1 }, name: 'q' });
+    });
+
+    // The tools prepare options first; the client is the last line, so a caller that skipped the preparation step
+    // still cannot send a toggle ToolJet would read as on.
+    it.each([['{{false}}'], ['false'], [[]], [{}], [1], [null]])('refuses to send a non-boolean query toggle %j', async (value) => {
+      const client = createClient(auth, config);
+      await expect(client.updateQuery({ queryId: 'q1', versionId: 'ver1', options: { code: 'x', runOnPageLoad: value } }))
+        .rejects.toThrow(/runOnPageLoad/);
+      await expect(client.createQuery({ versionId: 'ver1', dataSourceId: 'ds', kind: 'runjs', name: 'q',
+        options: { code: 'x', showSuccessNotification: value } })).rejects.toThrow(/showSuccessNotification/);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
+
+    it('sends boolean and omitted toggles', async () => {
+      auth.authedFetch.mockResolvedValue(mockResponse({ status: 200, json: { id: 'q2', name: 'q' } }));
+      const client = createClient(auth, config);
+      await client.updateQuery({ queryId: 'q1', versionId: 'ver1', options: { code: 'x', runOnPageLoad: false } });
+      await client.createQuery({ versionId: 'ver1', dataSourceId: 'ds', kind: 'runjs', name: 'q', options: { code: 'x' } });
+      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
     });
 
     it('DELETEs a query with no body', async () => {
