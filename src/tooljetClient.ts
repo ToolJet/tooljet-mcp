@@ -1535,6 +1535,28 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     let publishedForRelease = false;
     const promotedToEnvironments: string[] = [];
 
+    const restoreDraftAfterDeniedRelease = async (response: Response, operation: string): Promise<never> => {
+      const errorText = await response.clone().text();
+      let restored = false;
+      if (publishedForRelease && (response.status === 401 || response.status === 403)) {
+        const restoreRes = await auth.authedFetch(
+          `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'DRAFT' }),
+          }
+        );
+        restored = restoreRes.ok;
+      }
+      const draftState = publishedForRelease
+        ? restored
+          ? ' The draft was restored after the permission denial.'
+          : ' The draft may already be published; ask an app releaser to continue.'
+        : '';
+      throw new Error(`ToolJet ${operation} failed (${response.status}): ${errorText}${draftState}`);
+    };
+
     if (version.status === 'DRAFT') {
       const publishRes = await auth.authedFetch(
         `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`,
@@ -1563,6 +1585,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const promotionRequired = releaseRes.status === 400
         && /only release when the version is promoted to production/i.test(releaseError);
       if (!promotionRequired) {
+        if (releaseRes.status === 401 || releaseRes.status === 403) {
+          await restoreDraftAfterDeniedRelease(releaseRes, 'releaseApp');
+        }
         const prepared = publishedForRelease ? ' The draft was already published; retry release instead of editing it.' : '';
         throw new Error(`ToolJet releaseApp failed (${releaseRes.status}): ${releaseError}${prepared}`);
       }
@@ -1611,6 +1636,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           }
         );
         if (!promoteRes.ok) {
+          if (promoteRes.status === 401 || promoteRes.status === 403) {
+            await restoreDraftAfterDeniedRelease(promoteRes, 'releaseApp promotion');
+          }
           const promoteError = await promoteRes.clone().text();
           throw new Error(
             `ToolJet releaseApp promotion from ${currentEnvironment.name} failed (${promoteRes.status}): ` +

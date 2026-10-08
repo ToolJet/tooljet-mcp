@@ -208,6 +208,7 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `manage_workspace_users(...)` | Invite/update/archive workspace users through PAT auth; mutations require confirmation and remain subject to ToolJet role checks |
 | `create_app(name)` | New app + version + Home page → ids, explicit editor/viewer links, and the workspace datasource-settings URL (`app_url` remains an editor alias) |
 | `create_app_version(app_id, version_name, version_from_id, version_description?)` | Clone an existing version into a new draft and return its new `version_id` for continued editing |
+| `switch_app_version(app_id, version_id)` | Validate an exact app version and return metadata the ToolJet editor can use to select it |
 | `release_app(app_id, version_id, confirm:true)` | Publish and promote a specific version to production when needed, make it the live released version, and verify the change by reading the app back |
 | `list_datasources(version_id)` | Workspace sources available automatically to new/existing apps, each with a direct settings URL; no per-app linking |
 | `get_datasource_query_schema({datasource_id, version_id, operation?, sections?})` | Fetch compact request contracts plus response shape/status when known; also supports kind lookup and batches |

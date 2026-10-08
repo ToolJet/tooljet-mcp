@@ -270,7 +270,7 @@ describe('createClient', () => {
     it('releases a version and verifies it through the app readback', async () => {
       auth.authedFetch
         .mockResolvedValueOnce(mockResponse({ json: {
-          versions: [{ id: 'version-2', status: 'PUBLISHED', current_environment_id: 'environment-production' }],
+          versions: [{ id: 'version-2', status: 'PUBLISHED', currentEnvironmentId: 'environment-production' }],
         } }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
         .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-2' } }));
@@ -299,7 +299,7 @@ describe('createClient', () => {
     it('publishes and releases from development without promotion when ToolJet permits it', async () => {
       auth.authedFetch
         .mockResolvedValueOnce(mockResponse({ json: {
-          versions: [{ id: 'version-2', status: 'DRAFT', current_environment_id: 'environment-dev' }],
+          versions: [{ id: 'version-2', status: 'DRAFT', currentEnvironmentId: 'environment-dev' }],
         } }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
@@ -322,7 +322,7 @@ describe('createClient', () => {
     it('publishes a draft and promotes it through every environment before release', async () => {
       auth.authedFetch
         .mockResolvedValueOnce(mockResponse({ json: {
-          versions: [{ id: 'version-2', status: 'DRAFT', current_environment_id: 'environment-dev' }],
+          versions: [{ id: 'version-2', status: 'DRAFT', currentEnvironmentId: 'environment-dev' }],
         } }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
         .mockResolvedValueOnce(mockResponse({ status: 400, text: 'You can only release when the version is promoted to production' }))
@@ -335,11 +335,11 @@ describe('createClient', () => {
         } }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
         .mockResolvedValueOnce(mockResponse({ json: {
-          versions: [{ id: 'version-2', status: 'PUBLISHED', current_environment_id: 'environment-stage' }],
+          versions: [{ id: 'version-2', status: 'PUBLISHED', currentEnvironmentId: 'environment-stage' }],
         } }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
         .mockResolvedValueOnce(mockResponse({ json: {
-          versions: [{ id: 'version-2', status: 'PUBLISHED', current_environment_id: 'environment-production' }],
+          versions: [{ id: 'version-2', status: 'PUBLISHED', currentEnvironmentId: 'environment-production' }],
         } }))
         .mockResolvedValueOnce(mockResponse({ status: 200 }))
         .mockResolvedValueOnce(mockResponse({ json: { id: 'app-1', current_version_id: 'version-2' } }));
@@ -400,6 +400,26 @@ describe('createClient', () => {
       await expect(client.releaseApp('app-1', 'version-new')).rejects.toThrow(
         'expected current version version-new, received version-old'
       );
+    });
+
+    it('restores a draft when release permission is denied after publishing', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: {
+          versions: [{ id: 'version-2', status: 'DRAFT', currentEnvironmentId: 'environment-dev' }],
+        } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }))
+        .mockResolvedValueOnce(mockResponse({ status: 403, text: 'Forbidden' }))
+        .mockResolvedValueOnce(mockResponse({ status: 200 }));
+      const client = createClient(auth, config);
+
+      await expect(client.releaseApp('app-1', 'version-2')).rejects.toThrow(
+        'The draft was restored after the permission denial'
+      );
+      expect(auth.authedFetch).toHaveBeenLastCalledWith('/api/v2/apps/app-1/versions/version-2', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'DRAFT' }),
+      });
     });
   });
 
