@@ -1089,6 +1089,27 @@ export function lintTableProjectionRender(spec: LintComponent, warnings: string[
 /** An empty-state message ("No users found", "Keine Nutzer gefunden.") with no visibility binding shows
  *  under a populated table (round nine, 2026-09-12). It must be bound to the data being empty. */
 const EMPTY_STATE_TEXT = /^(?:no\s+(?:\w+\s+){0,3}(?:found|available|yet|records?|results?|items?)|nothing\s+(?:found|available|yet)|keine?\s+\w+\s+gefunden)[.!\s]*$/i;
+/** A shadcn-look Table showing a state (status, stage, priority, severity) as plain text: advice to draw it as a chip.
+ *  Hotel, recruiting and construction builds (2026-10-10) listed "Occupied", "Delayed", "Critical" as bare words. */
+export function lintPlainStateColumns(spec: LintComponent): string[] {
+  if (spec.type !== 'Table') return [];
+  const look = propVal(spec.styles as Record<string, unknown> | undefined, 'tableLook');
+  if (look !== 'shadcn') return [];
+  const columns = propVal(spec.properties as Record<string, unknown> | undefined, 'columns');
+  if (!Array.isArray(columns)) return [];
+  const plain = columns
+    .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
+    .filter((c) => c.columnVisibility !== false && ['string', 'text', undefined].includes(c.columnType as string | undefined))
+    .filter((c) => /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.key ?? '').replace(/[_\s-]+/g, '')) ||
+      /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.name ?? '').trim()));
+  if (!plain.length) return [];
+  return [
+    `Table "${spec.name ?? '?'}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(', ')} show a state as plain text. ` +
+      'Draw it as a chip so it reads at a glance: an html column whose data maps each value to a tinted pill ' +
+      '(see the tint map in references/ui-layout.md).',
+  ];
+}
+
 export function lintUnboundEmptyState(spec: LintComponent): string[] {
   if (spec.type !== 'Text' && spec.type !== 'Html') return [];
   const key = spec.type === 'Html' ? 'rawHtml' : 'text';
@@ -3147,6 +3168,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintPlainStateColumns(c));
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));

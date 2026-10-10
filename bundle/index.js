@@ -67861,6 +67861,22 @@ function lintTableProjectionRender(spec, warnings = []) {
   return errors;
 }
 var EMPTY_STATE_TEXT = /^(?:no\s+(?:\w+\s+){0,3}(?:found|available|yet|records?|results?|items?)|nothing\s+(?:found|available|yet)|keine?\s+\w+\s+gefunden)[.!\s]*$/i;
+function lintPlainStateColumns(spec) {
+  if (spec.type !== "Table")
+    return [];
+  const look = propVal2(spec.styles, "tableLook");
+  if (look !== "shadcn")
+    return [];
+  const columns = propVal2(spec.properties, "columns");
+  if (!Array.isArray(columns))
+    return [];
+  const plain = columns.filter((c) => !!c && typeof c === "object").filter((c) => c.columnVisibility !== false && ["string", "text", void 0].includes(c.columnType)).filter((c) => /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.key ?? "").replace(/[_\s-]+/g, "")) || /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.name ?? "").trim()));
+  if (!plain.length)
+    return [];
+  return [
+    `Table "${spec.name ?? "?"}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(", ")} show a state as plain text. Draw it as a chip so it reads at a glance: an html column whose data maps each value to a tinted pill (see the tint map in references/ui-layout.md).`
+  ];
+}
 function lintUnboundEmptyState(spec) {
   if (spec.type !== "Text" && spec.type !== "Html")
     return [];
@@ -69172,6 +69188,7 @@ function lintComponents(components, options2 = {}) {
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintPlainStateColumns(c));
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
