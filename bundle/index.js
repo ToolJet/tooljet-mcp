@@ -67610,6 +67610,27 @@ function hasNestedBinding(value2) {
   }
   return false;
 }
+function lintStageTables(components) {
+  const byQuery = /* @__PURE__ */ new Map();
+  for (const component of components) {
+    if (component.type !== "Table" && component.type !== "ShadTable")
+      continue;
+    const data = propVal2(component.properties, "data");
+    if (typeof data !== "string" || !/\.filter\s*\(/.test(data))
+      continue;
+    const query2 = /queries\.([A-Za-z_$][\w$]*)/.exec(data)?.[1];
+    if (!query2)
+      continue;
+    byQuery.set(query2, [...byQuery.get(query2) ?? [], component.name ?? "?"]);
+  }
+  const warnings = [];
+  for (const [query2, names] of byQuery) {
+    if (names.length < 3)
+      continue;
+    warnings.push(`Tables ${names.slice(0, 5).map((n) => `"${n}"`).join(", ")} each show a filtered slice of queries.${query2}: if the slices are stages (status, stage, column), one ShadKanban board with statusField set to that field shows them side by side with drag between stages. Keep the tables if they are separate views on purpose.`);
+  }
+  return warnings;
+}
 function lintKanbanInteractions(components) {
   const warnings = [];
   const boards = components.filter((component) => component.type === "Kanban");
@@ -69161,6 +69182,7 @@ function lintComponents(components, options2 = {}) {
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintShadKanbanCards(components));
+  warnings.push(...lintStageTables(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components));
   errors.push(...lintUnusableTextGeometry(components));
@@ -69563,6 +69585,7 @@ function validateAppStructure(summary, options2 = {}) {
     warnings.push(...lintRenderedGeometryAdvisory(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
     warnings.push(...lintShadKanbanCards(p.components));
+    warnings.push(...lintStageTables(p.components));
   }
   warnings.push(...lintInnerPageBands(summary));
   const readiness = lintUntriggeredDataQueries(summary);
@@ -73452,6 +73475,7 @@ var PACK_CONCEPTS = [
   [/funnel|conversion/i, ["ShadFunnelChart"]],
   [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
   [/heat|matrix|grid|calendar/i, ["ShadHeatmapChart"]],
+  [/board|kanban|pipeline|stage|trello/i, ["ShadKanban"]],
   [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
   [/label|title|typography/i, ["ShadHeading", "ShadText"]],
   [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],

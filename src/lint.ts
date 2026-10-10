@@ -845,6 +845,30 @@ export function hasNestedBinding(value: string): boolean {
 }
 
 /** Cross-component Kanban checks that require seeing both the board and its card children. */
+/** Three or more tables reading one query, each filtered to its own value, are a board drawn as tables (a recruiting
+ *  pipeline drew a table per stage). Advice, not a rule: the board is one component with drag between stages. */
+export function lintStageTables(components: LintComponent[]): string[] {
+  const byQuery = new Map<string, string[]>();
+  for (const component of components) {
+    if (component.type !== 'Table' && component.type !== 'ShadTable') continue;
+    const data = propVal(component.properties as Record<string, unknown> | undefined, 'data');
+    if (typeof data !== 'string' || !/\.filter\s*\(/.test(data)) continue;
+    const query = /queries\.([A-Za-z_$][\w$]*)/.exec(data)?.[1];
+    if (!query) continue;
+    byQuery.set(query, [...(byQuery.get(query) ?? []), component.name ?? '?']);
+  }
+  const warnings: string[] = [];
+  for (const [query, names] of byQuery) {
+    if (names.length < 3) continue;
+    warnings.push(
+      `Tables ${names.slice(0, 5).map((n) => `"${n}"`).join(', ')} each show a filtered slice of queries.${query}: ` +
+        'if the slices are stages (status, stage, column), one ShadKanban board with statusField set to that field ' +
+        'shows them side by side with drag between stages. Keep the tables if they are separate views on purpose.'
+    );
+  }
+  return warnings;
+}
+
 export function lintKanbanInteractions(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const boards = components.filter((component) => component.type === 'Kanban');
@@ -3133,6 +3157,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintShadKanbanCards(components));
+  warnings.push(...lintStageTables(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
   errors.push(...lintUnusableTextGeometry(components));
@@ -3686,6 +3711,7 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     warnings.push(...lintRenderedGeometryAdvisory(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
     warnings.push(...lintShadKanbanCards(p.components as LintComponent[]));
+    warnings.push(...lintStageTables(p.components as LintComponent[]));
   }
   warnings.push(...lintInnerPageBands(summary));
   // Data-bound components whose query nothing runs render No data forever.
