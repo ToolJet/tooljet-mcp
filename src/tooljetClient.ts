@@ -2497,7 +2497,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       properties: spec.properties,
       styles: spec.styles ?? {},
       validation: spec.validation ?? {},
-      others: spec.others ?? {},
+      // Device visibility defaults, as a drag and drop sets them. The server fills these for its own widget types but
+      // not for types it has no defaults for, which then count as hidden on desktop.
+      others: { showOnDesktop: { value: '{{true}}' }, showOnMobile: { value: '{{false}}' }, ...(spec.others ?? {}) },
       // The editor always sends these two sections. For a widget type the server has no defaults for (for example
       // the Ant Design pack) an omitted section is stored as null, and one null section stops the page loading.
       general: {},

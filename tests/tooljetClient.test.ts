@@ -849,7 +849,9 @@ describe('createClient', () => {
       const dto = body.diff['component-uuid-1'];
       expect(dto.styles).toEqual({ textSize: { value: 24 }, fontWeight: { value: 'bold' } });
       expect(dto.validation).toEqual({ customRule: { value: null } });
-      expect(dto.others).toEqual({ showOnMobile: { value: '{{true}}' } });
+      // Device visibility defaults first (the server leaves them unset for widget types it has no defaults for); the
+      // caller's values win.
+      expect(dto.others).toEqual({ showOnDesktop: { value: '{{true}}' }, showOnMobile: { value: '{{true}}' } });
     });
 
     it('rejects style keys placed under properties (ToolJet silently drops them)', async () => {
