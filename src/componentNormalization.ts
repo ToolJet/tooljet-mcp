@@ -249,6 +249,9 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     // isDateSelectionEnabled:false thinking it means "read-only"; re-enable date selection so the value
     // displays. Only touches this exact blank-rendering combination.
     if (Array.isArray(columns)) {
+      const lookEntry = stylesValue.tableLook;
+      const shadcnLook =
+        (lookEntry && typeof lookEntry === 'object' ? (lookEntry as { value?: unknown }).value : lookEntry) === 'shadcn';
       let changedColumns = false;
       const repairedColumns = columns.map((column) => {
         if (options.stripUnknownKeys && column && typeof column === 'object' && !Array.isArray(column) &&
@@ -277,6 +280,16 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
               'datepicker column with both date selection and time disabled renders blank regardless of the data.'
           );
           return { ...entry, isDateSelectionEnabled: true };
+        }
+        // The shadcn look reads numbers right-aligned (shadcn's data table, and how money and counts scan down a
+        // column); a number column that sets no alignment gets right, which the inspector shows and can change.
+        if (
+          shadcnLook && column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'number' &&
+          (column as Record<string, unknown>).horizontalAlignment === undefined
+        ) {
+          changedColumns = true;
+          return { ...(column as Record<string, unknown>), horizontalAlignment: 'right' };
         }
         return column;
       });

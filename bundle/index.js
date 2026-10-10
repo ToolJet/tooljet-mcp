@@ -76915,6 +76915,8 @@ function normalizeComponentSpec(component, options2 = {}) {
       }
     }
     if (Array.isArray(columns)) {
+      const lookEntry = stylesValue.tableLook;
+      const shadcnLook = (lookEntry && typeof lookEntry === "object" ? lookEntry.value : lookEntry) === "shadcn";
       let changedColumns = false;
       const repairedColumns = columns.map((column) => {
         if (options2.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
@@ -76936,6 +76938,10 @@ function normalizeComponentSpec(component, options2 = {}) {
           const entry = column;
           warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
           return { ...entry, isDateSelectionEnabled: true };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && column.horizontalAlignment === void 0) {
+          changedColumns = true;
+          return { ...column, horizontalAlignment: "right" };
         }
         return column;
       });
