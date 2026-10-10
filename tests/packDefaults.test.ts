@@ -52,3 +52,17 @@ it('skips sample content defaults beside the caller\'s own data', async () => {
   expect(dto.properties.columns).toBeUndefined();
   expect(dto.properties.enablePagination.value).toBe('{{true}}');
 });
+
+it("does not name the sample data's fields on a chart given its own data", async () => {
+  // A Luna build bound a bar chart to rows with "amount"; the default yFields "revenue" came along and the chart drew
+  // nothing.
+  const auth = makeAuth();
+  await createClient(auth, config).createComponents({
+    appId: 'app1', versionId: 'v1', pageId: 'p1',
+    components: [{ name: 'spend', type: 'ShadBarChart', properties: { data: { value: '{{queries.q.data}}' }, xField: { value: 'category' } }, layout: { top: 0, left: 2, width: 20, height: 280 } }],
+  });
+  const dto = Object.values(posted(auth))[0] as { properties: Record<string, { value: unknown }> };
+  expect(dto.properties.xField.value).toBe('category');
+  expect(dto.properties.yFields).toBeUndefined();
+  expect(dto.properties.showLegend).toBeDefined();
+});
