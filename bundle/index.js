@@ -71428,7 +71428,9 @@ function createClient(auth, config2) {
       name: spec.name,
       type: spec.type,
       properties: spec.properties,
-      styles: spec.styles ?? {},
+      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'antCard', or a
+      // background or border). ToolJet's own default draws every row and column as a bordered box.
+      styles: spec.type === "FlexContainer" ? { backgroundColor: { value: "transparent" }, borderColor: { value: "transparent" }, ...spec.styles ?? {} } : spec.styles ?? {},
       validation: spec.validation ?? {},
       // Device visibility defaults, as a drag and drop sets them. The server fills these for its own widget types but
       // not for types it has no defaults for, which then count as hidden on desktop.
