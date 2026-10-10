@@ -121,7 +121,7 @@
      "value": "{{false}}"
     },
     "curve": {
-     "value": "natural"
+     "value": "monotone"
     },
     "loadingState": {
      "value": "{{false}}"

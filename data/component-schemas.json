@@ -20146,8 +20146,9 @@
         "key": "curve",
         "label": "Curve",
         "valueType": "string",
-        "default": "natural",
+        "default": "monotone",
         "allowedValues": [
+          "monotone",
           "natural",
           "linear",
           "step"
