@@ -30,7 +30,7 @@ describe('polishFlexRows: rows of labelled fields', () => {
       child('count', 'ShadBadge', 'filters', { text: { value: '300 planned flights' } }),
     ];
     const { components, warnings } = polishFlexRows(input);
-    expect(prop(components, 'filters', 'alignItems')).toBe('flex-end');
+    expect(prop(components, 'filters', 'alignItems')).toBe('last baseline');
     expect(warnings.join(' ')).toMatch(/filters/);
   });
 
@@ -41,7 +41,7 @@ describe('polishFlexRows: rows of labelled fields', () => {
       child('note', 'ShadText', 'filters', { text: { value: '5 confirmed meetings' } }),
       child('refresh', 'ShadButton', 'filters', { text: { value: 'Refresh' } }),
     ]);
-    expect(prop(components, 'filters', 'alignItems')).toBe('flex-end');
+    expect(prop(components, 'filters', 'alignItems')).toBe('last baseline');
   });
 
   it('leaves rows of unlabelled controls, and rows holding containers, alone', () => {

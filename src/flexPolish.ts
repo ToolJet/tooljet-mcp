@@ -3,8 +3,9 @@
    warning naming the row, so the model sees what changed; nothing here changes what the page shows, only how it
    lines up.
 
-   - A row of top-labelled fields with a badge, text or button beside them: the row's children align to the bottom
-     (alignItems flex-end), so the badge or button sits on the field boxes instead of centring on label + field.
+   - A row of top-labelled fields with a badge, text or button beside them: the row's children align on their last
+     text line (alignItems "last baseline"), so the badge, the note and the button's label sit level with the field's
+     value instead of centring on label + field.
    - A row of two or more cards (surfaced FlexContainers): alignItems stretch, so the cards share one height.
    - A header row whose action buttons come before the title: the actions move after the title block (to the right). */
 import type { ComponentSpec } from './tooljetClient.js';
@@ -111,12 +112,12 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       children.every((child) => INLINE_TYPES.has(child.type)) &&
       children.some(isLabelledField) &&
       children.some((child) => !isLabelledField(child)) &&
-      align !== 'flex-end'
+      align !== 'last baseline'
     ) {
-      setProp(container, 'alignItems', 'flex-end');
+      setProp(container, 'alignItems', 'last baseline');
       warnings.push(
-        `Row "${label}" has labelled fields beside other controls; its alignItems is now flex-end so those controls ` +
-          'line up with the field boxes instead of centring on label and field.'
+        `Row "${label}" has labelled fields beside other controls; its alignItems is now "last baseline" so their ` +
+          "text lines up with the fields' values instead of centring on label and field."
       );
     }
 
