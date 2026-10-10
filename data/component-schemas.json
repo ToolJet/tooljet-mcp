@@ -23367,5 +23367,768 @@
         "styles": "Every colour falls back to the app theme, so set only what the design needs to blend in: accentColor (selection outline, progress bars, drop line, hover borders); columns: columnBackgroundColor, columnBorderColor, columnBorderRadius (px), columnTitleColor, columnCountBackgroundColor, columnCountTextColor, columnGap (px); cards: cardBackgroundColor, cardBorderColor, cardBorderRadius (px), cardShadow (\"none\" | \"sm\" | \"md\" | \"lg\", default \"sm\"), cardTitleColor, cardTextColor (description, meta, progress label), progressColor (progress bars; else the accent). properties.badgeColors maps badge values to colours, e.g. { High: \"#dc2626\", Low: \"#16a34a\" } (tinted chip, coloured text); unnamed values keep the built-in colours. Take colours from the app theme or brand, never the defaults of another product."
       }
     }
+  },
+  "ShadListView": {
+    "type": "ShadListView",
+    "name": "ShadListView",
+    "description": "shadcn/ui list or grid: one canvas repeated per item of data; parent components to it and bind them to {{listItem.<field>}}. A click selects the item (selectedItem, onRowClicked); optional pagination (client or server side), dividers, hover and selected highlight. Items have a fixed height (rowHeight)",
+    "defaultSize": {
+      "width": 30,
+      "height": 400
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "List data",
+        "valueType": "array",
+        "default": "{{[{ id: 1, name: 'Ada Lovelace', role: 'Engineering' }, { id: 2, name: 'Alan Turing', role: 'Research' }, { id: 3, name: 'Grace Hopper', role: 'Platform' }]}}"
+      },
+      {
+        "key": "mode",
+        "label": "Layout",
+        "valueType": "string",
+        "default": "list",
+        "allowedValues": [
+          "list",
+          "grid"
+        ]
+      },
+      {
+        "key": "columns",
+        "label": "Grid columns",
+        "valueType": "number",
+        "default": "{{3}}"
+      },
+      {
+        "key": "rowHeight",
+        "label": "Item height (px)",
+        "valueType": "number",
+        "default": "{{72}}"
+      },
+      {
+        "key": "gap",
+        "label": "Gap between items (px)",
+        "valueType": "number",
+        "default": "{{8}}"
+      },
+      {
+        "key": "idField",
+        "label": "Id field (for selection across data changes)",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "showBorder",
+        "label": "Dividers between items (list)",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "highlightSelectedRow",
+        "label": "Highlight selected item",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "enablePagination",
+        "label": "Pagination",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "rowsPerPage",
+        "label": "Items per page",
+        "valueType": "number",
+        "default": "{{10}}"
+      },
+      {
+        "key": "serverSidePagination",
+        "label": "Server-side pagination (data is one page)",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "totalRecords",
+        "label": "Total items (server-side)",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty message",
+        "valueType": "string",
+        "default": "No items"
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent (selected outline, pagination)",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "List background",
+        "valueType": "string"
+      },
+      {
+        "key": "itemBackgroundColor",
+        "label": "Item background",
+        "valueType": "string"
+      },
+      {
+        "key": "itemHoverBackgroundColor",
+        "label": "Item hover background",
+        "valueType": "string"
+      },
+      {
+        "key": "selectedItemBackgroundColor",
+        "label": "Selected item background",
+        "valueType": "string"
+      },
+      {
+        "key": "itemBorderColor",
+        "label": "Item border color",
+        "valueType": "string"
+      },
+      {
+        "key": "dividerColor",
+        "label": "Divider color",
+        "valueType": "string"
+      },
+      {
+        "key": "itemBorderRadius",
+        "label": "Item radius",
+        "valueType": "union"
+      },
+      {
+        "key": "itemShadow",
+        "label": "Item shadow",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "sm",
+          "md",
+          "lg"
+        ]
+      },
+      {
+        "key": "padding",
+        "label": "Padding around the list (px)",
+        "valueType": "union"
+      },
+      {
+        "key": "emptyTextColor",
+        "label": "Empty message color",
+        "valueType": "string"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onRowClicked",
+        "label": "Row clicked"
+      },
+      {
+        "id": "onRecordClicked",
+        "label": "Record clicked"
+      },
+      {
+        "id": "onPageChanged",
+        "label": "Page changed"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "selectItem",
+        "displayName": "Select item",
+        "params": [
+          {
+            "handle": "id",
+            "displayName": "Item id (idField value)"
+          }
+        ]
+      },
+      {
+        "handle": "clearSelection",
+        "displayName": "Clear selection",
+        "params": []
+      },
+      {
+        "handle": "setPage",
+        "displayName": "Set page",
+        "params": [
+          {
+            "handle": "page",
+            "displayName": "Page (1-based)",
+            "defaultValue": "{{1}}"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "data",
+        "default": {}
+      },
+      {
+        "name": "children",
+        "default": {}
+      },
+      {
+        "name": "selectedItem",
+        "default": {}
+      },
+      {
+        "name": "selectedItemId",
+        "default": null
+      },
+      {
+        "name": "selectedRecord",
+        "default": {}
+      },
+      {
+        "name": "selectedRecordId",
+        "default": null
+      },
+      {
+        "name": "selectedRow",
+        "default": {}
+      },
+      {
+        "name": "selectedRowId",
+        "default": null
+      },
+      {
+        "name": "pageIndex",
+        "default": 1
+      }
+    ],
+    "authoringHints": {
+      "list": {
+        "content": "One canvas repeated per item: create the item components with parent_ref to the list (no slot) and bind them to {{listItem.<field>}}. Every item has the same height, properties.rowHeight in px: size it to the item content. mode \"grid\" with columns repeats items in a grid; each cell has its own 43-column canvas (a full-cell child is left 0, width 43).",
+        "selection": "A click selects the item: selectedItem (the data item) and selectedItemId (its idField value); selectedRecord / selectedRecordId / selectedRow / selectedRowId keep the native Listview meaning (the row's component values and its index). Events onRowClicked and onRecordClicked. A button in an item acts on that item through listItem.",
+        "paging": "enablePagination with rowsPerPage slices the data client side. With serverSidePagination the data is the current page: bind the query to components.<list>.pageIndex (1-based), set totalRecords for page numbers, and refetch on onPageChanged (fired by the pager, not by setPage).",
+        "styles": "Item background, hover, selected, border, radius and shadow, dividers (showBorder, list mode), list background and padding, accent: each falls back to the theme."
+      },
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
+  },
+  "ShadTabs": {
+    "type": "ShadTabs",
+    "name": "ShadTabs",
+    "description": "shadcn/ui tabs: a container with one canvas per tab (parent the tab content with slot_name tab-<id>). Variants: pills (shadcn default), underline, or steps (a wizard with Back/Next/Finish buttons)",
+    "defaultSize": {
+      "width": 30,
+      "height": 360
+    },
+    "properties": [
+      {
+        "key": "useDynamicOptions",
+        "label": "Dynamic options",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tabs",
+        "label": "Tabs",
+        "valueType": "array",
+        "default": "{{[{ id: 't0', title: 'Overview' }, { id: 't1', title: 'Activity' }, { id: 't2', title: 'Settings' }]}}"
+      },
+      {
+        "key": "defaultTab",
+        "label": "Default tab",
+        "valueType": "union",
+        "default": "t0"
+      },
+      {
+        "key": "variant",
+        "label": "Style",
+        "valueType": "string",
+        "default": "pills",
+        "allowedValues": [
+          "pills",
+          "underline",
+          "steps"
+        ]
+      },
+      {
+        "key": "tabsAlign",
+        "label": "Tab alignment",
+        "valueType": "string",
+        "default": "start",
+        "allowedValues": [
+          "start",
+          "center",
+          "stretch"
+        ]
+      },
+      {
+        "key": "hideTabs",
+        "label": "Hide tabs",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "renderOnlyActiveTab",
+        "label": "Render only active tab",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "scrollToTopOnTabSwitch",
+        "label": "Scroll to top on tab switch",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "showStepNav",
+        "label": "Wizard: Back and Next buttons",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "nextLabel",
+        "label": "Wizard: Next label",
+        "valueType": "string",
+        "default": "Next"
+      },
+      {
+        "key": "backLabel",
+        "label": "Wizard: Back label",
+        "valueType": "string",
+        "default": "Back"
+      },
+      {
+        "key": "finishLabel",
+        "label": "Wizard: Finish label",
+        "valueType": "string",
+        "default": "Finish"
+      },
+      {
+        "key": "linearSteps",
+        "label": "Wizard: steps in order only",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tabItems",
+        "default": [
+          {
+            "id": "t0",
+            "title": "Overview",
+            "icon": {
+              "value": "IconHome2"
+            },
+            "iconVisibility": {
+              "value": false
+            },
+            "loading": {
+              "value": false
+            },
+            "disable": {
+              "value": false
+            },
+            "visible": {
+              "value": true
+            },
+            "fieldBackgroundColor": {
+              "value": "var(--cc-surface1-surface)"
+            }
+          },
+          {
+            "id": "t1",
+            "title": "Activity",
+            "icon": {
+              "value": "IconHome2"
+            },
+            "iconVisibility": {
+              "value": false
+            },
+            "loading": {
+              "value": false
+            },
+            "disable": {
+              "value": false
+            },
+            "visible": {
+              "value": true
+            },
+            "fieldBackgroundColor": {
+              "value": "var(--cc-surface1-surface)"
+            }
+          },
+          {
+            "id": "t2",
+            "title": "Settings",
+            "icon": {
+              "value": "IconHome2"
+            },
+            "iconVisibility": {
+              "value": false
+            },
+            "loading": {
+              "value": false
+            },
+            "disable": {
+              "value": false
+            },
+            "visible": {
+              "value": true
+            },
+            "fieldBackgroundColor": {
+              "value": "var(--cc-surface1-surface)"
+            }
+          }
+        ]
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent (active step, focus ring)",
+        "valueType": "string"
+      },
+      {
+        "key": "tabListBackground",
+        "label": "Tab bar background",
+        "valueType": "string"
+      },
+      {
+        "key": "tabTextColor",
+        "label": "Tab text color",
+        "valueType": "string"
+      },
+      {
+        "key": "activeTabTextColor",
+        "label": "Active tab text color",
+        "valueType": "string"
+      },
+      {
+        "key": "activeTabBackground",
+        "label": "Active tab background (pills)",
+        "valueType": "string"
+      },
+      {
+        "key": "indicatorColor",
+        "label": "Active tab indicator (underline)",
+        "valueType": "string"
+      },
+      {
+        "key": "panelBackground",
+        "label": "Panel background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Radius",
+        "valueType": "union"
+      },
+      {
+        "key": "tabFontSize",
+        "label": "Tab font size",
+        "valueType": "union"
+      },
+      {
+        "key": "showBorder",
+        "label": "Border around tabs",
+        "valueType": "boolean",
+        "default": true
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onTabSwitch",
+        "label": "On tab switch"
+      },
+      {
+        "id": "onFinish",
+        "label": "On finish (wizard)"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setTab",
+        "displayName": "Set current tab",
+        "params": [
+          {
+            "handle": "id",
+            "displayName": "Id"
+          }
+        ]
+      },
+      {
+        "handle": "nextTab",
+        "displayName": "Next tab or step",
+        "params": []
+      },
+      {
+        "handle": "previousTab",
+        "displayName": "Previous tab or step",
+        "params": []
+      },
+      {
+        "handle": "setTabDisable",
+        "displayName": "Set tab disable",
+        "params": [
+          {
+            "handle": "tabId",
+            "displayName": "Tab"
+          },
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setTabLoading",
+        "displayName": "Set tab loading",
+        "params": [
+          {
+            "handle": "tabId",
+            "displayName": "Tab"
+          },
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setTabVisibility",
+        "displayName": "Set tab visibility",
+        "params": [
+          {
+            "handle": "tabId",
+            "displayName": "Tab"
+          },
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "currentTab",
+        "default": "t0"
+      },
+      {
+        "name": "currentTabTitle",
+        "default": "Overview"
+      },
+      {
+        "name": "currentStepIndex",
+        "default": 0
+      },
+      {
+        "name": "isFirstStep",
+        "default": true
+      },
+      {
+        "name": "isLastStep",
+        "default": false
+      }
+    ],
+    "authoringHints": {
+      "tabs": {
+        "items": "Author properties.tabItems as [{id:\"t0\", title:\"Profile\"}, {id:\"t1\", title:\"Billing\"}] (ids t0, t1, ...), or set useDynamicOptions \"{{true}}\" and bind tabs to [{id, title}]. The catalog default titles (Overview / Activity / Settings) are placeholders: replace them. defaultTab is a tab id.",
+        "content": "Each tab is its own canvas: create its components with parent_ref to the Tabs and slot_name \"tab-<id>\" (tab-t0, tab-t1). A tab without children renders an empty panel.",
+        "styles": "variant \"pills\" (shadcn default: a muted pill bar), \"underline\" (a bottom border with an accent indicator) or \"steps\" (a wizard: numbered steps, Back / Next / Finish buttons below, onFinish on the last step; linearSteps keeps steps in order). tabsAlign start | center | stretch. The tab strip is 50px; panels pad 8px; the wizard footer adds 56px. Style colours (accent, tab text, active tab, bar, panel, border, radius, font size) fall back to the theme.",
+        "actions": "setTab(id), nextTab, previousTab, setTabDisable / setTabLoading / setTabVisibility (tabId, value), setVisibility, setDisable, setLoading. Exposed: currentTab, currentTabTitle, currentStepIndex, isFirstStep, isLastStep."
+      },
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   }
 }

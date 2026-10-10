@@ -698,6 +698,23 @@ const AUTHORING_HINTS = {
       },
     },
   },
+  // 2026-10-10: shadcn/ui layout containers. Same contracts as the native Tabs and Listview.
+  ShadTabs: {
+    tabs: {
+      items: 'Author properties.tabItems as [{id:"t0", title:"Profile"}, {id:"t1", title:"Billing"}] (ids t0, t1, ...), or set useDynamicOptions "{{true}}" and bind tabs to [{id, title}]. The catalog default titles (Overview / Activity / Settings) are placeholders: replace them. defaultTab is a tab id.',
+      content: 'Each tab is its own canvas: create its components with parent_ref to the Tabs and slot_name "tab-<id>" (tab-t0, tab-t1). A tab without children renders an empty panel.',
+      styles: 'variant "pills" (shadcn default: a muted pill bar), "underline" (a bottom border with an accent indicator) or "steps" (a wizard: numbered steps, Back / Next / Finish buttons below, onFinish on the last step; linearSteps keeps steps in order). tabsAlign start | center | stretch. The tab strip is 50px; panels pad 8px; the wizard footer adds 56px. Style colours (accent, tab text, active tab, bar, panel, border, radius, font size) fall back to the theme.',
+      actions: 'setTab(id), nextTab, previousTab, setTabDisable / setTabLoading / setTabVisibility (tabId, value), setVisibility, setDisable, setLoading. Exposed: currentTab, currentTabTitle, currentStepIndex, isFirstStep, isLastStep.',
+    },
+  },
+  ShadListView: {
+    list: {
+      content: 'One canvas repeated per item: create the item components with parent_ref to the list (no slot) and bind them to {{listItem.<field>}}. Every item has the same height, properties.rowHeight in px: size it to the item content. mode "grid" with columns repeats items in a grid; each cell has its own 43-column canvas (a full-cell child is left 0, width 43).',
+      selection: 'A click selects the item: selectedItem (the data item) and selectedItemId (its idField value); selectedRecord / selectedRecordId / selectedRow / selectedRowId keep the native Listview meaning (the row\'s component values and its index). Events onRowClicked and onRecordClicked. A button in an item acts on that item through listItem.',
+      paging: 'enablePagination with rowsPerPage slices the data client side. With serverSidePagination the data is the current page: bind the query to components.<list>.pageIndex (1-based), set totalRecords for page numbers, and refetch on onPageChanged (fired by the pager, not by setPage).',
+      styles: 'Item background, hover, selected, border, radius and shadow, dividers (showBorder, list mode), list background and padding, accent: each falls back to the theme.',
+    },
+  },
   // 2026-10-10: the shadcn/ui board's editing contract. Its events fire for UI changes and for its actions alike.
   ShadKanban: {
     board: {

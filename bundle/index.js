@@ -3095,7 +3095,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref2];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve6.call(this, root, ref2);
+      let _sch = resolve7.call(this, root, ref2);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref2];
         const { schemaId } = this.opts;
@@ -3122,7 +3122,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve6(root, ref2) {
+    function resolve7(root, ref2) {
       let sch;
       while (typeof (sch = this.refs[ref2]) == "string")
         ref2 = sch;
@@ -3753,7 +3753,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve6(baseURI, relativeURI, options2) {
+    function resolve7(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -4037,7 +4037,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve6,
+      resolve: resolve7,
       resolveComponent,
       equal,
       serialize,
@@ -34223,7 +34223,7 @@ var require_moment = __commonJS({
 // dist/index.js
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
-import { fileURLToPath as fileURLToPath7 } from "node:url";
+import { fileURLToPath as fileURLToPath8 } from "node:url";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process3 from "node:process";
@@ -50368,12 +50368,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve6) => {
+    return new Promise((resolve7) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve6();
+        resolve7();
       } else {
-        this._stdout.once("drain", resolve6);
+        this._stdout.once("drain", resolve7);
       }
     });
   }
@@ -50801,7 +50801,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve6, reject) => {
+  const promise2 = new Promise((resolve7, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -50819,7 +50819,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error51 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve6(recovered);
+          resolve7(recovered);
         }
       });
       return true;
@@ -50831,7 +50831,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve6(buffer);
+        resolve7(buffer);
       });
     };
     const onError = (error51) => {
@@ -51356,7 +51356,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve6) => setTimeout(resolve6));
+            await new Promise((resolve7) => setTimeout(resolve7));
             maxReadCount = 3;
             continue;
           }
@@ -52036,9 +52036,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve6) => {
+        return new Promise((resolve7) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve6,
+            resolveJson: resolve7,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -58339,7 +58339,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
+        await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -58356,7 +58356,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve6, reject) => {
+    return new Promise((resolve7, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -58434,7 +58434,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve6(parseResult.data);
+            resolve7(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -58695,12 +58695,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve6, reject) => {
+    return new Promise((resolve7, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve6, interval);
+      const timeoutId = setTimeout(resolve7, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -59791,7 +59791,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
+      await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -60400,9 +60400,9 @@ var gatewayOriginCache = /* @__PURE__ */ new Map();
 var GATEWAY_CACHE_TTL_MS = 6e4;
 async function checkOriginWithGateway(customerId, origin) {
   const cacheKey2 = `${customerId} ${origin}`;
-  const cached4 = gatewayOriginCache.get(cacheKey2);
-  if (cached4 && cached4.expiresAt > Date.now())
-    return cached4.allowed;
+  const cached5 = gatewayOriginCache.get(cacheKey2);
+  if (cached5 && cached5.expiresAt > Date.now())
+    return cached5.allowed;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   if (!gatewayUrl || !gatewayToken)
@@ -60427,9 +60427,9 @@ async function checkOriginWithGateway(customerId, origin) {
 }
 var gatewayResolveCache = /* @__PURE__ */ new Map();
 async function resolveApiUrlFromGateway(customerId) {
-  const cached4 = gatewayResolveCache.get(customerId);
-  if (cached4 && cached4.expiresAt > Date.now())
-    return cached4.result;
+  const cached5 = gatewayResolveCache.get(customerId);
+  if (cached5 && cached5.expiresAt > Date.now())
+    return cached5.result;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   let result = { url: void 0, verified: false };
@@ -61165,7 +61165,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
       graph.nodes.push(node2);
     node_ids[input.ref] = id;
   }
-  const resolve6 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const resolve7 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
   const editedEdges = /* @__PURE__ */ new Set();
   for (const input of spec.edges) {
     const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
@@ -61175,7 +61175,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source2 = resolve6(input.from), target2 = resolve6(input.to);
+    const source2 = resolve7(input.from), target2 = resolve7(input.to);
     if (!source2 || !target2)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node2) => node2.id === source2);
@@ -62050,7 +62050,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve6 = (ref2) => typeof ref2 === "string" ? byId.get(ref2) ?? byName.get(ref2) : void 0;
+  const resolve7 = (ref2) => typeof ref2 === "string" ? byId.get(ref2) ?? byName.get(ref2) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options2 = q.options && typeof q.options === "object" ? q.options : {};
@@ -62062,7 +62062,7 @@ function queryTriggers(summary) {
     const payload2 = eventPayload(e.event);
     if (!payload2 || payload2.actionId !== "run-query")
       continue;
-    const target2 = resolve6(payload2.queryId ?? payload2.queryName);
+    const target2 = resolve7(payload2.queryId ?? payload2.queryName);
     if (!target2)
       continue;
     const entry = triggers.get(target2.id);
@@ -67046,6 +67046,9 @@ var TABLE_FOOTER_HEIGHT_PX = 46;
 var TABLE_BORDER_PX = 2;
 var TABLE_VISIBLE_COLUMN_WARN = 10;
 var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container", "Accordion"]);
+var TABS_TYPES = /* @__PURE__ */ new Set(["Tabs", "ShadTabs"]);
+var LIST_TYPES = /* @__PURE__ */ new Set(["Listview", "ShadListView"]);
+var SHAD_TABS_DEFAULT_TITLES = ["Overview", "Activity", "Settings"];
 var CANVAS_COLUMN_PX = 28;
 var CONTENT_COLUMNS = 39;
 var TABLE_UNSIZED_COLUMN_MIN_PX = 100;
@@ -67549,8 +67552,8 @@ function lintComponentSlots(components) {
       continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs2.get(placement.parentId) : void 0;
-    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? parent?.type === "Tabs" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
-    if (parent?.type === "Tabs" && isTabSlot(slotName) && !isTruthyBinding(propVal2(parent.properties, "useDynamicOptions"))) {
+    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
+    if (parent && TABS_TYPES.has(parent.type ?? "") && isTabSlot(slotName) && !isTruthyBinding(propVal2(parent.properties, "useDynamicOptions"))) {
       const items = propVal2(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
       if (ids && !ids.includes(slotName.slice("tab-".length))) {
@@ -67829,7 +67832,7 @@ function lintUnboundEmptyState(spec) {
 }
 function lintEmptyTabs(components) {
   const errors = [];
-  for (const tabs of components.filter((component) => component.type === "Tabs")) {
+  for (const tabs of components.filter((component) => TABS_TYPES.has(component.type ?? ""))) {
     const key4 = componentKey(tabs);
     if (!key4)
       continue;
@@ -67921,7 +67924,7 @@ function lintListviewChildren(components) {
   }
   for (const child of components.filter((component) => component.type === "Html")) {
     const parent = refs2.get(parentPlacement(child)?.parentId ?? "");
-    if (parent?.type !== "Listview")
+    if (!parent || !LIST_TYPES.has(parent.type ?? ""))
       continue;
     const rawHtml = propVal2(child.properties, "rawHtml");
     if (typeof rawHtml !== "string" || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml))
@@ -67987,18 +67990,19 @@ function lintRenderedText(spec) {
       errors.push(`Component "${label2}".properties.${key4} has JavaScript outside a {{ }} binding (${outside}); it renders as source text. Wrap the whole expression in one {{ }} or move it into a query.`);
     }
   }
-  if (spec.type === "Tabs") {
+  if (TABS_TYPES.has(spec.type ?? "")) {
     const dynamic = isTrueBinding(propVal2(props, "useDynamicOptions"));
     const tabs = propVal2(props, "tabs");
     const tabItems = propVal2(props, "tabItems");
-    const authoredItems = Array.isArray(tabItems) && tabItems.length > 0 && !tabItems.every((item) => /^Tab \d+$/.test(String(item?.title ?? "")));
+    const titles = Array.isArray(tabItems) ? tabItems.map((item) => String(item?.title ?? "")) : [];
+    const authoredItems = titles.length > 0 && !titles.every((title) => /^Tab \d+$/.test(title)) && !(spec.type === "ShadTabs" && titles.join("|") === SHAD_TABS_DEFAULT_TITLES.join("|"));
     if (dynamic && (tabs === void 0 || tabs === null || tabs === "")) {
       errors.push(`Tabs "${label2}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
     } else if (!dynamic && !authoredItems) {
       errors.push(`Tabs "${label2}": ToolJet renders properties.tabItems (default "Tab 1 / Tab 2 / Tab 3") unless useDynamicOptions is true; ` + (tabs !== void 0 ? "the authored properties.tabs is ignored. " : "") + 'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.');
     }
   }
-  const itemsKey = spec.type === "Tabs" ? void 0 : CONTAINER_ITEMS[spec.type ?? ""];
+  const itemsKey = TABS_TYPES.has(spec.type ?? "") ? void 0 : CONTAINER_ITEMS[spec.type ?? ""];
   if (itemsKey) {
     const dynamicSchema = isTruthyBinding(propVal2(props, "advanced")) ? propVal2(props, "schema") : void 0;
     const items = dynamicSchema ?? propVal2(props, itemsKey);
@@ -69557,6 +69561,23 @@ function lintInnerPageBands(summary) {
     }
   });
   return warnings;
+}
+
+// dist/packDefaults.js
+import { readFileSync as readFileSync4 } from "node:fs";
+import { dirname as dirname4, resolve as resolve3 } from "node:path";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+var cached4;
+function packDefaultDefinition(type) {
+  if (!cached4) {
+    try {
+      const path = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/pack-default-definitions.json");
+      cached4 = JSON.parse(readFileSync4(path, "utf8")).definitions ?? {};
+    } catch {
+      cached4 = {};
+    }
+  }
+  return cached4[type];
 }
 
 // dist/strictEntry.js
@@ -71341,7 +71362,7 @@ function createClient(auth, config2) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve6) => setTimeout(resolve6, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      await new Promise((resolve7) => setTimeout(resolve7, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
@@ -71403,8 +71424,8 @@ function createClient(auth, config2) {
   async function createQuery(params) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
-    const tail = new Promise((resolve6) => {
-      release = resolve6;
+    const tail = new Promise((resolve7) => {
+      release = resolve7;
     });
     queryCreateTails.set(params.versionId, tail);
     await previous;
@@ -71449,6 +71470,15 @@ function createClient(auth, config2) {
     const misplaced = Object.keys(spec.properties ?? {}).filter((k) => isMisplacedStyleKey(spec.type, k));
     if (misplaced.length) {
       throw new Error(`Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`);
+    }
+    const pack = packDefaultDefinition(spec.type);
+    if (pack) {
+      spec = {
+        ...spec,
+        properties: { ...pack.properties ?? {}, ...spec.properties ?? {} },
+        styles: { ...pack.styles ?? {}, ...spec.styles ?? {} },
+        others: { ...pack.others ?? {}, ...spec.others ?? {} }
+      };
     }
     const dto = {
       name: spec.name,
@@ -72260,9 +72290,9 @@ function useWorkspaceTool(client) {
 }
 
 // dist/tools/createApp.js
-import { existsSync, readFileSync as readFileSync4 } from "node:fs";
-import { dirname as dirname4, resolve as resolve3 } from "node:path";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { existsSync, readFileSync as readFileSync5 } from "node:fs";
+import { dirname as dirname5, resolve as resolve4 } from "node:path";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 
 // dist/tools/manageTheme.js
 var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
@@ -72440,10 +72470,10 @@ function manageThemeTool(client) {
 }
 
 // dist/tools/createApp.js
-var here = dirname4(fileURLToPath3(import.meta.url));
+var here = dirname5(fileURLToPath4(import.meta.url));
 var standardThemeCandidates = [
-  resolve3(here, "../../data/default-theme.json"),
-  resolve3(here, "../data/default-theme.json")
+  resolve4(here, "../../data/default-theme.json"),
+  resolve4(here, "../data/default-theme.json")
 ];
 var standardThemeCache;
 function loadStandardTheme() {
@@ -72452,7 +72482,7 @@ function loadStandardTheme() {
     if (!path) {
       throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
     }
-    standardThemeCache = JSON.parse(readFileSync4(path, "utf8"));
+    standardThemeCache = JSON.parse(readFileSync5(path, "utf8"));
   }
   return standardThemeCache;
 }
@@ -75019,7 +75049,7 @@ function unconditional(action) {
 }
 function queryEventCycleErrors(summary, additions, persisted) {
   const names = new Map(summary.queries.map((q) => [q.id, q.name ?? q.id]));
-  const resolve6 = (value2) => {
+  const resolve7 = (value2) => {
     if (typeof value2 !== "string")
       return void 0;
     if (names.has(value2))
@@ -75030,7 +75060,7 @@ function queryEventCycleErrors(summary, additions, persisted) {
   const edge = (event) => {
     if (event.sourceType !== "data_query" || !names.has(event.sourceId) || event.action.actionId !== "run-query" || !unconditional(event.action))
       return void 0;
-    const target2 = resolve6(event.action.queryId);
+    const target2 = resolve7(event.action.queryId);
     return target2 ? [event.sourceId, target2] : void 0;
   };
   const graph = /* @__PURE__ */ new Map();
@@ -78455,16 +78485,16 @@ function autoFitHtmlHeights(args) {
 
 // dist/pageReplaceInPlace.js
 import { randomUUID as randomUUID4 } from "node:crypto";
-import { readFileSync as readFileSync5 } from "node:fs";
-import { dirname as dirname5, resolve as resolve4 } from "node:path";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { readFileSync as readFileSync6 } from "node:fs";
+import { dirname as dirname6, resolve as resolve5 } from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
 var SECTIONS2 = ["properties", "styles", "validation", "others"];
 var bundled;
 function bundledDefinitions() {
   if (!bundled) {
-    const path = resolve4(dirname5(fileURLToPath4(import.meta.url)), "../data/component-default-definitions.json");
+    const path = resolve5(dirname6(fileURLToPath5(import.meta.url)), "../data/component-default-definitions.json");
     try {
-      bundled = JSON.parse(readFileSync5(path, "utf8")).definitions;
+      bundled = JSON.parse(readFileSync6(path, "utf8")).definitions;
     } catch {
       bundled = {};
     }
@@ -79082,7 +79112,7 @@ async function checkPlanReads(client, params) {
     };
     let result = await run();
     if (result.status === "failed" && CLOCK_SKEW.test(String(result.message ?? result.description ?? ""))) {
-      await new Promise((resolve6) => setTimeout(resolve6, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
+      await new Promise((resolve7) => setTimeout(resolve7, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
       result = await run();
     }
     check2.ran += 1;
@@ -79179,7 +79209,7 @@ async function waitForCreatedTables(client, tableNames) {
         const delay = TABLE_READY_DELAYS_MS[attempt];
         if (delay === void 0)
           break;
-        await new Promise((resolve6) => setTimeout(resolve6, delay));
+        await new Promise((resolve7) => setTimeout(resolve7, delay));
       }
     }
     throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
@@ -81239,7 +81269,7 @@ function deleteEventTool(client) {
 // dist/runtimeFreshness.js
 import { createHash as createHash2 } from "node:crypto";
 import { statSync } from "node:fs";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.8.0";
 function snapshot(path) {
   try {
@@ -81258,7 +81288,7 @@ var RuntimeFreshnessMonitor = class {
   artifactPath;
   loaded;
   startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  constructor(artifactPath = fileURLToPath5(import.meta.url)) {
+  constructor(artifactPath = fileURLToPath6(import.meta.url)) {
     this.artifactPath = artifactPath;
     this.loaded = snapshot(artifactPath);
   }
@@ -82232,9 +82262,9 @@ function registerTools(server, client, runtime = runtimeFreshness) {
 
 // dist/catalogResources.js
 import { createHash as createHash3 } from "node:crypto";
-import { readFileSync as readFileSync6 } from "node:fs";
-import { dirname as dirname6, resolve as resolve5 } from "node:path";
-import { fileURLToPath as fileURLToPath6 } from "node:url";
+import { readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname7, resolve as resolve6 } from "node:path";
+import { fileURLToPath as fileURLToPath7 } from "node:url";
 var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
 var CATALOG_RESOURCES = [
   {
@@ -82266,11 +82296,11 @@ var CATALOG_RESOURCES = [
     description: `${PREFACE}The icon package, its version and every icon name a page may use.`
   }
 ];
-var dataDir = resolve5(dirname6(fileURLToPath6(import.meta.url)), "../data");
+var dataDir = resolve6(dirname7(fileURLToPath7(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
 function readData(resource) {
-  const bytes = readFileSync6(resolve5(dataDir, resource.file));
+  const bytes = readFileSync7(resolve6(dataDir, resource.file));
   const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -82289,7 +82319,7 @@ var catalogVersionCache;
 function catalogVersion() {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file,
-    bytes: readFileSync6(resolve5(dataDir, resource.file))
+    bytes: readFileSync7(resolve6(dataDir, resource.file))
   })));
   return catalogVersionCache;
 }
@@ -82596,9 +82626,9 @@ async function serveHttp() {
   }
   const { server: httpServer, gatewayMode } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
-  await new Promise((resolve6, reject) => {
+  await new Promise((resolve7, reject) => {
     httpServer.once("error", reject);
-    httpServer.listen(port, host, resolve6);
+    httpServer.listen(port, host, resolve7);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
@@ -82622,7 +82652,7 @@ function isEntrypoint() {
   if (!invoked)
     return false;
   try {
-    return realpathSync(invoked) === realpathSync(fileURLToPath7(import.meta.url));
+    return realpathSync(invoked) === realpathSync(fileURLToPath8(import.meta.url));
   } catch {
     return false;
   }

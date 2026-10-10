@@ -7,6 +7,7 @@ import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { isMisplacedStyleKey } from './lint.js';
+import { packDefaultDefinition } from './packDefaults.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -2494,6 +2495,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         `Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, ` +
           `where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`
       );
+    }
+    // A component-pack widget is stored with its full default definition, the caller's entries winning: the server
+    // merges no defaults over pack types, so an omitted property would stay unset (and read as off in the inspector).
+    const pack = packDefaultDefinition(spec.type);
+    if (pack) {
+      spec = {
+        ...spec,
+        properties: { ...(pack.properties ?? {}), ...(spec.properties ?? {}) },
+        styles: { ...(pack.styles ?? {}), ...(spec.styles ?? {}) },
+        others: { ...(pack.others ?? {}), ...(spec.others ?? {}) },
+      };
     }
     const dto: Record<string, unknown> = {
       name: spec.name,

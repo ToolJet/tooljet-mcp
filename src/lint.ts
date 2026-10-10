@@ -188,6 +188,12 @@ const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
 const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container', 'Accordion']);
+// Widgets with the Tabs contract (tabItems, per-tab canvases, tab-<id> slots): the native Tabs and the shadcn/ui pack's.
+const TABS_TYPES = new Set(['Tabs', 'ShadTabs']);
+// Row-scoped lists that repeat one canvas per item (listItem): the native Listview and the shadcn/ui pack's.
+const LIST_TYPES = new Set(['Listview', 'ShadListView']);
+// The shadcn/ui Tabs' catalog default titles: left in place they mean the tabs were never authored.
+const SHAD_TABS_DEFAULT_TITLES = ['Overview', 'Activity', 'Settings'];
 /** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
  * primary action above this authored-canvas boundary when it follows an independently scrolling
  * Table/Listview, otherwise users must operate two nested vertical scroll regions. */
@@ -763,11 +769,11 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
-    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
+    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
     // with useDynamicOptions the ids come from a binding.
-    if (parent?.type === 'Tabs' && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
+    if (parent && TABS_TYPES.has(parent.type ?? '') && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
       const items = propVal(parent.properties, 'tabItems');
       const ids = Array.isArray(items) ? items.map((item) => String((item as Record<string, unknown>)?.id ?? '')) : undefined;
       if (ids && !ids.includes(slotName.slice('tab-'.length))) {
@@ -1054,7 +1060,7 @@ export function lintUnboundEmptyState(spec: LintComponent): string[] {
  *  panel on a round-nine docs page). Tab content is children placed with parent_ref and the tab's slot. */
 export function lintEmptyTabs(components: LintComponent[]): string[] {
   const errors: string[] = [];
-  for (const tabs of components.filter((component) => component.type === 'Tabs')) {
+  for (const tabs of components.filter((component) => TABS_TYPES.has(component.type ?? ''))) {
     const key = componentKey(tabs);
     if (!key) continue;
     // Tab children carry the tab index in their parent id ("<tabs>-0"), which the slot decoder leaves intact.
@@ -1131,6 +1137,7 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
   const childrenByParent = new Map<string, LintComponent[]>();
   for (const child of components) {
     const parentId = parentPlacement(child)?.parentId;
+    // Native Listview only: its 7px cell padding is what makes an inset child misplaced. shadcn grid cells have none.
     if (!parentId || refs.get(parentId)?.type !== 'Listview') continue;
     childrenByParent.set(parentId, [...(childrenByParent.get(parentId) ?? []), child]);
   }
@@ -1160,7 +1167,7 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
 
   for (const child of components.filter((component) => component.type === 'Html')) {
     const parent = refs.get(parentPlacement(child)?.parentId ?? '');
-    if (parent?.type !== 'Listview') continue;
+    if (!parent || !LIST_TYPES.has(parent.type ?? '')) continue;
     const rawHtml = propVal(child.properties, 'rawHtml');
     if (typeof rawHtml !== 'string' || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml)) continue;
     if (/\bheight\s*:\s*100%/i.test(rawHtml)) continue;
@@ -1332,12 +1339,13 @@ export function lintRenderedText(spec: LintComponent): string[] {
   // Tabs has two item surfaces: static tabItems (the default "Tab 1 / Tab 2 / Tab 3") and dynamic tabs, read
   // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three pages of an
   // inventory build on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
-  if (spec.type === 'Tabs') {
+  if (TABS_TYPES.has(spec.type ?? '')) {
     const dynamic = isTrueBinding(propVal(props, 'useDynamicOptions'));
     const tabs = propVal(props, 'tabs');
     const tabItems = propVal(props, 'tabItems');
-    const authoredItems = Array.isArray(tabItems) && tabItems.length > 0 &&
-      !tabItems.every((item) => /^Tab \d+$/.test(String((item as Record<string, unknown>)?.title ?? '')));
+    const titles = Array.isArray(tabItems) ? tabItems.map((item) => String((item as Record<string, unknown>)?.title ?? '')) : [];
+    const authoredItems = titles.length > 0 && !titles.every((title) => /^Tab \d+$/.test(title)) &&
+      !(spec.type === 'ShadTabs' && titles.join('|') === SHAD_TABS_DEFAULT_TITLES.join('|'));
     if (dynamic && (tabs === undefined || tabs === null || tabs === '')) {
       errors.push(`Tabs "${label}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
     } else if (!dynamic && !authoredItems) {
@@ -1348,7 +1356,7 @@ export function lintRenderedText(spec: LintComponent): string[] {
       );
     }
   }
-  const itemsKey = spec.type === 'Tabs' ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
+  const itemsKey = TABS_TYPES.has(spec.type ?? '') ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
   if (itemsKey) {
     // Steps (and the like) with advanced on render properties.schema instead (Steps.jsx reads advanced ? schema : steps).
     const dynamicSchema = isTruthyBinding(propVal(props, 'advanced')) ? propVal(props, 'schema') : undefined;
