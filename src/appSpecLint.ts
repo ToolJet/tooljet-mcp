@@ -1,3 +1,4 @@
+import { polishFlexRows } from './flexPolish.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
@@ -439,8 +440,12 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
     });
     warnings.push(...normalized.flatMap((item) => item.warnings));
-    const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
-    warnings.push(...expansion.warnings);
+    const materialized = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
+    warnings.push(...materialized.warnings);
+    // Row alignment polish (flexPolish.ts); prepareComponentBatch runs the same pass, so apply stores what lint saw.
+    const polished = polishFlexRows(materialized.components);
+    warnings.push(...polished.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    const expansion = { ...materialized, components: polished.components };
     const componentLint = lintComponents(expansion.components, {
       ...options,
       flexContainerIds: (existingPage?.components ?? []).filter((component) => component.type === 'FlexContainer').map((component) => component.id),

@@ -1,3 +1,4 @@
+import { polishFlexRows } from './flexPolish.js';
 import { suggestedHtmlHeight, type ReadinessComponent } from './renderReadiness.js';
 import { z } from 'zod';
 import { COMPONENT_SLOT_NAMES, componentSlotSchema } from './componentParent.js';
@@ -84,7 +85,10 @@ export function prepareComponentBatch(
         `Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`
     );
   }
-  const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  const materialized = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  // Row alignment polish (flexPolish.ts), the same pass lint_app_spec runs.
+  const polished = polishFlexRows(materialized.components);
+  const expanded = { ...materialized, components: polished.components, warnings: [...materialized.warnings, ...polished.warnings] };
   const lint = lintComponents(expanded.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) =>
     component.parent && containsListItemBinding({
