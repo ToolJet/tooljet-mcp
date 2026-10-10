@@ -66,3 +66,15 @@ it("does not name the sample data's fields on a chart given its own data", async
   expect(dto.properties.yFields).toBeUndefined();
   expect(dto.properties.showLegend).toBeDefined();
 });
+
+it("does not carry the sample axis titles or groups of a scatter given its own data", async () => {
+  const auth = makeAuth();
+  await createClient(auth, config).createComponents({
+    appId: 'app1', versionId: 'v1', pageId: 'p1',
+    components: [{ name: 'fit', type: 'ShadScatterChart', properties: { data: { value: '{{queries.q.data}}' }, xField: { value: 'tickets' }, yField: { value: 'csat' } }, layout: { top: 0, left: 2, width: 20, height: 300 } }],
+  });
+  const dto = Object.values(posted(auth))[0] as { properties: Record<string, { value: unknown }> };
+  expect(dto.properties.yField.value).toBe('csat');
+  for (const key of ['xLabel', 'yLabel', 'sizeField', 'groupField', 'nameField']) expect(dto.properties[key]).toBeUndefined();
+  expect(dto.properties.pointSize).toBeDefined();
+});

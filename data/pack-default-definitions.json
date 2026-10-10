@@ -3862,6 +3862,279 @@
      "value": "{{false}}"
     }
    }
+  },
+  "ShadComboChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ month: 'Jan', revenue: 42000, orders: 310, margin: 31 }, { month: 'Feb', revenue: 47500, orders: 342, margin: 33 }, { month: 'Mar', revenue: 45200, orders: 328, margin: 29 }, { month: 'Apr', revenue: 52800, orders: 371, margin: 34 }, { month: 'May', revenue: 58100, orders: 402, margin: 36 }, { month: 'Jun', revenue: 61400, orders: 425, margin: 35 }]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "barFields": {
+     "value": "{{['revenue']}}"
+    },
+    "lineFields": {
+     "value": "{{['margin']}}"
+    },
+    "rightAxisFields": {
+     "value": "{{['margin']}}"
+    },
+    "stackBars": {
+     "value": "{{false}}"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "showDots": {
+     "value": "{{true}}"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "yAxisFormat": {
+     "value": "currency"
+    },
+    "rightAxisFormat": {
+     "value": "percent"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{ revenue: 'Revenue', margin: 'Margin' }}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadFunnelChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ stage: 'Visited', count: 12480 }, { stage: 'Signed up', count: 3920 }, { stage: 'Activated', count: 2210 }, { stage: 'Trial', count: 1180 }, { stage: 'Paid', count: 412 }]}}"
+    },
+    "stageField": {
+     "value": "stage"
+    },
+    "valueField": {
+     "value": "count"
+    },
+    "showConversion": {
+     "value": "{{true}}"
+    },
+    "conversionBase": {
+     "value": "previous"
+    },
+    "align": {
+     "value": "center"
+    },
+    "colorByStage": {
+     "value": "{{false}}"
+    },
+    "yAxisFormat": {
+     "value": "number"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadScatterChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ account: 'Northwind', spend: 12, revenue: 48, seats: 40, segment: 'Mid-market' }, { account: 'Globex', spend: 30, revenue: 95, seats: 120, segment: 'Enterprise' }, { account: 'Initech', spend: 8, revenue: 21, seats: 15, segment: 'SMB' }, { account: 'Umbrella', spend: 26, revenue: 61, seats: 90, segment: 'Enterprise' }, { account: 'Hooli', spend: 18, revenue: 70, seats: 55, segment: 'Mid-market' }, { account: 'Vandelay', spend: 5, revenue: 14, seats: 10, segment: 'SMB' }, { account: 'Stark', spend: 34, revenue: 128, seats: 150, segment: 'Enterprise' }, { account: 'Wonka', spend: 14, revenue: 33, seats: 30, segment: 'SMB' }]}}"
+    },
+    "xField": {
+     "value": "spend"
+    },
+    "yField": {
+     "value": "revenue"
+    },
+    "sizeField": {
+     "value": "seats"
+    },
+    "groupField": {
+     "value": "segment"
+    },
+    "nameField": {
+     "value": "account"
+    },
+    "xLabel": {
+     "value": "Marketing spend ($k)"
+    },
+    "yLabel": {
+     "value": "Revenue ($k)"
+    },
+    "xAxisFormat": {
+     "value": "number"
+    },
+    "yAxisFormat": {
+     "value": "number"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "referenceX": {
+     "value": ""
+    },
+    "referenceY": {
+     "value": ""
+    },
+    "pointSize": {
+     "value": "{{6}}"
+    },
+    "fillOpacity": {
+     "value": ""
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
   }
  }
 }

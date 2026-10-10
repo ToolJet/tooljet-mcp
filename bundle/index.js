@@ -1287,14 +1287,14 @@ var require_util = __commonJS({
     function evaluatedPropsToName(gen, ps) {
       if (ps === true)
         return gen.var("props", true);
-      const props = gen.var("props", (0, codegen_1._)`{}`);
+      const props2 = gen.var("props", (0, codegen_1._)`{}`);
       if (ps !== void 0)
-        setEvaluated(gen, props, ps);
-      return props;
+        setEvaluated(gen, props2, ps);
+      return props2;
     }
     exports.evaluatedPropsToName = evaluatedPropsToName;
-    function setEvaluated(gen, props, ps) {
-      Object.keys(ps).forEach((p) => gen.assign((0, codegen_1._)`${props}${(0, codegen_1.getProperty)(p)}`, true));
+    function setEvaluated(gen, props2, ps) {
+      Object.keys(ps).forEach((p) => gen.assign((0, codegen_1._)`${props2}${(0, codegen_1.getProperty)(p)}`, true));
     }
     exports.setEvaluated = setEvaluated;
     var snippets = {};
@@ -1799,11 +1799,11 @@ var require_defaults = __commonJS({
       }
     }
     exports.assignDefaults = assignDefaults;
-    function assignDefault(it, prop2, defaultValue) {
+    function assignDefault(it, prop3, defaultValue) {
       const { gen, compositeRule, data, opts } = it;
       if (defaultValue === void 0)
         return;
-      const childData = (0, codegen_1._)`${data}${(0, codegen_1.getProperty)(prop2)}`;
+      const childData = (0, codegen_1._)`${data}${(0, codegen_1.getProperty)(prop3)}`;
       if (compositeRule) {
         (0, util_1.checkStrictMode)(it, `default is ignored for: ${childData}`);
         return;
@@ -1827,16 +1827,16 @@ var require_code2 = __commonJS({
     var util_1 = require_util();
     var names_1 = require_names();
     var util_2 = require_util();
-    function checkReportMissingProp(cxt, prop2) {
+    function checkReportMissingProp(cxt, prop3) {
       const { gen, data, it } = cxt;
-      gen.if(noPropertyInData(gen, data, prop2, it.opts.ownProperties), () => {
-        cxt.setParams({ missingProperty: (0, codegen_1._)`${prop2}` }, true);
+      gen.if(noPropertyInData(gen, data, prop3, it.opts.ownProperties), () => {
+        cxt.setParams({ missingProperty: (0, codegen_1._)`${prop3}` }, true);
         cxt.error();
       });
     }
     exports.checkReportMissingProp = checkReportMissingProp;
     function checkMissingProp({ gen, data, it: { opts } }, properties, missing) {
-      return (0, codegen_1.or)(...properties.map((prop2) => (0, codegen_1.and)(noPropertyInData(gen, data, prop2, opts.ownProperties), (0, codegen_1._)`${missing} = ${prop2}`)));
+      return (0, codegen_1.or)(...properties.map((prop3) => (0, codegen_1.and)(noPropertyInData(gen, data, prop3, opts.ownProperties), (0, codegen_1._)`${missing} = ${prop3}`)));
     }
     exports.checkMissingProp = checkMissingProp;
     function reportMissingProp(cxt, missing) {
@@ -2258,8 +2258,8 @@ var require_json_schema_traverse = __commonJS({
             }
           } else if (key4 in traverse.propsKeywords) {
             if (sch && typeof sch == "object") {
-              for (var prop2 in sch)
-                _traverse(opts, pre, post, sch[prop2], jsonPtr + "/" + key4 + "/" + escapeJsonPtr(prop2), rootSchema, jsonPtr, key4, schema, prop2);
+              for (var prop3 in sch)
+                _traverse(opts, pre, post, sch[prop3], jsonPtr + "/" + key4 + "/" + escapeJsonPtr(prop3), rootSchema, jsonPtr, key4, schema, prop3);
             }
           } else if (key4 in traverse.keywords || opts.allKeys && !(key4 in traverse.skipKeywords)) {
             _traverse(opts, pre, post, sch, jsonPtr + "/" + key4, rootSchema, jsonPtr, key4, schema);
@@ -2599,9 +2599,9 @@ var require_validate = __commonJS({
         gen.return((0, codegen_1._)`${names_1.default.errors} === 0`);
       }
     }
-    function assignEvaluated({ gen, evaluated, props, items }) {
-      if (props instanceof codegen_1.Name)
-        gen.assign((0, codegen_1._)`${evaluated}.props`, props);
+    function assignEvaluated({ gen, evaluated, props: props2, items }) {
+      if (props2 instanceof codegen_1.Name)
+        gen.assign((0, codegen_1._)`${evaluated}.props`, props2);
       if (items instanceof codegen_1.Name)
         gen.assign((0, codegen_1._)`${evaluated}.items`, items);
     }
@@ -3066,11 +3066,11 @@ var require_compile = __commonJS({
           validate.source = { validateName, validateCode, scopeValues: gen._values };
         }
         if (this.opts.unevaluated) {
-          const { props, items } = schemaCxt;
+          const { props: props2, items } = schemaCxt;
           validate.evaluated = {
-            props: props instanceof codegen_1.Name ? void 0 : props,
+            props: props2 instanceof codegen_1.Name ? void 0 : props2,
             items: items instanceof codegen_1.Name ? void 0 : items,
-            dynamicProps: props instanceof codegen_1.Name,
+            dynamicProps: props2 instanceof codegen_1.Name,
             dynamicItems: items instanceof codegen_1.Name
           };
           if (validate.source)
@@ -4452,7 +4452,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -4787,8 +4787,8 @@ var require_ref = __commonJS({
               it.props = util_1.mergeEvaluated.props(gen, schEvaluated.props, it.props);
             }
           } else {
-            const props = gen.var("props", (0, codegen_1._)`${source2}.evaluated.props`);
-            it.props = util_1.mergeEvaluated.props(gen, props, it.props, codegen_1.Name);
+            const props2 = gen.var("props", (0, codegen_1._)`${source2}.evaluated.props`);
+            it.props = util_1.mergeEvaluated.props(gen, props2, it.props, codegen_1.Name);
           }
         }
         if (it.items !== true) {
@@ -5042,10 +5042,10 @@ var require_required = __commonJS({
         else
           exitOnErrorMode();
         if (opts.strictRequired) {
-          const props = cxt.parentSchema.properties;
+          const props2 = cxt.parentSchema.properties;
           const { definedProperties } = cxt.it;
           for (const requiredKey of schema) {
-            if ((props === null || props === void 0 ? void 0 : props[requiredKey]) === void 0 && !definedProperties.has(requiredKey)) {
+            if ((props2 === null || props2 === void 0 ? void 0 : props2[requiredKey]) === void 0 && !definedProperties.has(requiredKey)) {
               const schemaPath = it.schemaEnv.baseId + it.errSchemaPath;
               const msg = `required property "${requiredKey}" is not defined at "${schemaPath}" (strictRequired)`;
               (0, util_1.checkStrictMode)(it, msg, it.opts.strictRequired);
@@ -5056,8 +5056,8 @@ var require_required = __commonJS({
           if (useLoop || $data) {
             cxt.block$data(codegen_1.nil, loopAllRequired);
           } else {
-            for (const prop2 of schema) {
-              (0, code_1.checkReportMissingProp)(cxt, prop2);
+            for (const prop3 of schema) {
+              (0, code_1.checkReportMissingProp)(cxt, prop3);
             }
           }
         }
@@ -5074,9 +5074,9 @@ var require_required = __commonJS({
           }
         }
         function loopAllRequired() {
-          gen.forOf("prop", schemaCode, (prop2) => {
-            cxt.setParams({ missingProperty: prop2 });
-            gen.if((0, code_1.noPropertyInData)(gen, data, prop2, opts.ownProperties), () => cxt.error());
+          gen.forOf("prop", schemaCode, (prop3) => {
+            cxt.setParams({ missingProperty: prop3 });
+            gen.if((0, code_1.noPropertyInData)(gen, data, prop3, opts.ownProperties), () => cxt.error());
           });
         }
         function loopUntilMissing(missing, valid) {
@@ -5621,13 +5621,13 @@ var require_dependencies = __commonJS({
       if (Object.keys(propertyDeps).length === 0)
         return;
       const missing = gen.let("missing");
-      for (const prop2 in propertyDeps) {
-        const deps = propertyDeps[prop2];
+      for (const prop3 in propertyDeps) {
+        const deps = propertyDeps[prop3];
         if (deps.length === 0)
           continue;
-        const hasProperty = (0, code_1.propertyInData)(gen, data, prop2, it.opts.ownProperties);
+        const hasProperty = (0, code_1.propertyInData)(gen, data, prop3, it.opts.ownProperties);
         cxt.setParams({
-          property: prop2,
+          property: prop3,
           depsCount: deps.length,
           deps: deps.join(", ")
         });
@@ -5648,13 +5648,13 @@ var require_dependencies = __commonJS({
     function validateSchemaDeps(cxt, schemaDeps = cxt.schema) {
       const { gen, data, keyword, it } = cxt;
       const valid = gen.name("valid");
-      for (const prop2 in schemaDeps) {
-        if ((0, util_1.alwaysValidSchema)(it, schemaDeps[prop2]))
+      for (const prop3 in schemaDeps) {
+        if ((0, util_1.alwaysValidSchema)(it, schemaDeps[prop3]))
           continue;
         gen.if(
-          (0, code_1.propertyInData)(gen, data, prop2, it.opts.ownProperties),
+          (0, code_1.propertyInData)(gen, data, prop3, it.opts.ownProperties),
           () => {
-            const schCxt = cxt.subschema({ keyword, schemaProp: prop2 }, valid);
+            const schCxt = cxt.subschema({ keyword, schemaProp: prop3 }, valid);
             cxt.mergeValidEvaluated(schCxt, valid);
           },
           () => gen.var(valid, true)
@@ -5739,13 +5739,13 @@ var require_additionalProperties = __commonJS({
         it.props = true;
         if (opts.removeAdditional !== "all" && (0, util_1.alwaysValidSchema)(it, schema))
           return;
-        const props = (0, code_1.allSchemaProperties)(parentSchema.properties);
+        const props2 = (0, code_1.allSchemaProperties)(parentSchema.properties);
         const patProps = (0, code_1.allSchemaProperties)(parentSchema.patternProperties);
         checkAdditionalProperties();
         cxt.ok((0, codegen_1._)`${errsCount} === ${names_1.default.errors}`);
         function checkAdditionalProperties() {
           gen.forIn("key", data, (key4) => {
-            if (!props.length && !patProps.length)
+            if (!props2.length && !patProps.length)
               additionalPropertyCode(key4);
             else
               gen.if(isAdditional(key4), () => additionalPropertyCode(key4));
@@ -5753,11 +5753,11 @@ var require_additionalProperties = __commonJS({
         }
         function isAdditional(key4) {
           let definedProp;
-          if (props.length > 8) {
+          if (props2.length > 8) {
             const propsSchema = (0, util_1.schemaRefOrVal)(it, parentSchema.properties, "properties");
             definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key4);
-          } else if (props.length) {
-            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key4} === ${p}`));
+          } else if (props2.length) {
+            definedProp = (0, codegen_1.or)(...props2.map((p) => (0, codegen_1._)`${key4} === ${p}`));
           } else {
             definedProp = codegen_1.nil;
           }
@@ -5836,8 +5836,8 @@ var require_properties = __commonJS({
           additionalProperties_1.default.code(new validate_1.KeywordCxt(it, additionalProperties_1.default, "additionalProperties"));
         }
         const allProps = (0, code_1.allSchemaProperties)(schema);
-        for (const prop2 of allProps) {
-          it.definedProperties.add(prop2);
+        for (const prop3 of allProps) {
+          it.definedProperties.add(prop3);
         }
         if (it.opts.unevaluated && allProps.length && it.props !== true) {
           it.props = util_1.mergeEvaluated.props(gen, (0, util_1.toHash)(allProps), it.props);
@@ -5846,27 +5846,27 @@ var require_properties = __commonJS({
         if (properties.length === 0)
           return;
         const valid = gen.name("valid");
-        for (const prop2 of properties) {
-          if (hasDefault(prop2)) {
-            applyPropertySchema(prop2);
+        for (const prop3 of properties) {
+          if (hasDefault(prop3)) {
+            applyPropertySchema(prop3);
           } else {
-            gen.if((0, code_1.propertyInData)(gen, data, prop2, it.opts.ownProperties));
-            applyPropertySchema(prop2);
+            gen.if((0, code_1.propertyInData)(gen, data, prop3, it.opts.ownProperties));
+            applyPropertySchema(prop3);
             if (!it.allErrors)
               gen.else().var(valid, true);
             gen.endIf();
           }
-          cxt.it.definedProperties.add(prop2);
+          cxt.it.definedProperties.add(prop3);
           cxt.ok(valid);
         }
-        function hasDefault(prop2) {
-          return it.opts.useDefaults && !it.compositeRule && schema[prop2].default !== void 0;
+        function hasDefault(prop3) {
+          return it.opts.useDefaults && !it.compositeRule && schema[prop3].default !== void 0;
         }
-        function applyPropertySchema(prop2) {
+        function applyPropertySchema(prop3) {
           cxt.subschema({
             keyword: "properties",
-            schemaProp: prop2,
-            dataProp: prop2
+            schemaProp: prop3,
+            dataProp: prop3
           }, valid);
         }
       }
@@ -5901,7 +5901,7 @@ var require_patternProperties = __commonJS({
         if (it.props !== true && !(it.props instanceof codegen_1.Name)) {
           it.props = (0, util_2.evaluatedPropsToName)(gen, it.props);
         }
-        const { props } = it;
+        const { props: props2 } = it;
         validatePatternProperties();
         function validatePatternProperties() {
           for (const pat of patterns) {
@@ -5917,9 +5917,9 @@ var require_patternProperties = __commonJS({
           }
         }
         function checkMatchingProperties(pat) {
-          for (const prop2 in checkProperties) {
-            if (new RegExp(pat).test(prop2)) {
-              (0, util_1.checkStrictMode)(it, `property ${prop2} matches pattern ${pat} (use allowMatchingProperties)`);
+          for (const prop3 in checkProperties) {
+            if (new RegExp(pat).test(prop3)) {
+              (0, util_1.checkStrictMode)(it, `property ${prop3} matches pattern ${pat} (use allowMatchingProperties)`);
             }
           }
         }
@@ -5935,8 +5935,8 @@ var require_patternProperties = __commonJS({
                   dataPropType: util_2.Type.Str
                 }, valid);
               }
-              if (it.opts.unevaluated && props !== true) {
-                gen.assign((0, codegen_1._)`${props}[${key4}]`, true);
+              if (it.opts.unevaluated && props2 !== true) {
+                gen.assign((0, codegen_1._)`${props2}[${key4}]`, true);
               } else if (!alwaysValid && !it.allErrors) {
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
               }
@@ -7751,8 +7751,8 @@ var require_lib = __commonJS({
         }
         return accessorPropertyNode;
       }
-      parseObjectProperty(prop2, startLoc, isPattern, refExpressionErrors) {
-        const node2 = super.parseObjectProperty(prop2, startLoc, isPattern, refExpressionErrors);
+      parseObjectProperty(prop3, startLoc, isPattern, refExpressionErrors) {
+        const node2 = super.parseObjectProperty(prop3, startLoc, isPattern, refExpressionErrors);
         if (node2) {
           node2.kind = "init";
           this.castNodeTo(node2, "Property");
@@ -7786,13 +7786,13 @@ var require_lib = __commonJS({
           super.toAssignable(node2, isLHS);
         }
       }
-      toAssignableObjectExpressionProp(prop2, isLast, isLHS) {
-        if (prop2.type === "Property" && (prop2.kind === "get" || prop2.kind === "set")) {
-          this.raise(Errors.PatternHasAccessor, prop2.key);
-        } else if (prop2.type === "Property" && prop2.method) {
-          this.raise(Errors.PatternHasMethod, prop2.key);
+      toAssignableObjectExpressionProp(prop3, isLast, isLHS) {
+        if (prop3.type === "Property" && (prop3.kind === "get" || prop3.kind === "set")) {
+          this.raise(Errors.PatternHasAccessor, prop3.key);
+        } else if (prop3.type === "Property" && prop3.method) {
+          this.raise(Errors.PatternHasMethod, prop3.key);
         } else {
-          super.toAssignableObjectExpressionProp(prop2, isLast, isLHS);
+          super.toAssignableObjectExpressionProp(prop3, isLast, isLHS);
         }
       }
       finishCallExpression(unfinished, optional2) {
@@ -10373,17 +10373,17 @@ var require_lib = __commonJS({
       parsePropertyNamePrefixOperator(node2) {
         node2.variance = this.flowParseVariance();
       }
-      parseObjPropValue(prop2, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors) {
-        if (prop2.variance) {
-          this.unexpected(prop2.variance.loc.start);
+      parseObjPropValue(prop3, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors) {
+        if (prop3.variance) {
+          this.unexpected(prop3.variance.loc.start);
         }
-        delete prop2.variance;
+        delete prop3.variance;
         let typeParameters;
         if (this.match(47) && !isAccessor) {
           typeParameters = this.flowParseTypeParameterDeclaration();
           if (!this.match(10)) this.unexpected();
         }
-        const result = super.parseObjPropValue(prop2, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors);
+        const result = super.parseObjPropValue(prop3, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors);
         if (typeParameters) {
           (result.value || result).typeParameters = typeParameters;
         }
@@ -14244,10 +14244,10 @@ var require_lib = __commonJS({
             this.castNodeTo(node2, "ObjectPattern");
             for (let i = 0, length = node2.properties.length, last = length - 1; i < length; i++) {
               var _node$extra2;
-              const prop2 = node2.properties[i];
+              const prop3 = node2.properties[i];
               const isLast = i === last;
-              this.toAssignableObjectExpressionProp(prop2, isLast, isLHS);
-              if (isLast && prop2.type === "RestElement" && (_node$extra2 = node2.extra) != null && _node$extra2.trailingCommaLoc) {
+              this.toAssignableObjectExpressionProp(prop3, isLast, isLHS);
+              if (isLast && prop3.type === "RestElement" && (_node$extra2 = node2.extra) != null && _node$extra2.trailingCommaLoc) {
                 this.raise(Errors.RestTrailingComma, node2.extra.trailingCommaLoc);
               }
             }
@@ -14286,19 +14286,19 @@ var require_lib = __commonJS({
             break;
         }
       }
-      toAssignableObjectExpressionProp(prop2, isLast, isLHS) {
-        if (prop2.type === "ObjectMethod") {
-          this.raise(prop2.kind === "get" || prop2.kind === "set" ? Errors.PatternHasAccessor : Errors.PatternHasMethod, prop2.key);
-        } else if (prop2.type === "SpreadElement") {
-          this.castNodeTo(prop2, "RestElement");
-          const arg = prop2.argument;
+      toAssignableObjectExpressionProp(prop3, isLast, isLHS) {
+        if (prop3.type === "ObjectMethod") {
+          this.raise(prop3.kind === "get" || prop3.kind === "set" ? Errors.PatternHasAccessor : Errors.PatternHasMethod, prop3.key);
+        } else if (prop3.type === "SpreadElement") {
+          this.castNodeTo(prop3, "RestElement");
+          const arg = prop3.argument;
           this.checkToRestConversion(arg, false);
           this.toAssignable(arg, isLHS);
           if (!isLast) {
-            this.raise(Errors.RestTrailingComma, prop2);
+            this.raise(Errors.RestTrailingComma, prop3);
           }
         } else {
-          this.toAssignable(prop2, isLHS);
+          this.toAssignable(prop3, isLHS);
         }
       }
       toAssignableList(exprList, trailingCommaLoc, isLHS) {
@@ -14338,8 +14338,8 @@ var require_lib = __commonJS({
             return true;
           case "ObjectExpression": {
             const last = node2.properties.length - 1;
-            return node2.properties.every((prop2, i) => {
-              return prop2.type !== "ObjectMethod" && (i === last || prop2.type !== "SpreadElement") && this.isAssignable(prop2);
+            return node2.properties.every((prop3, i) => {
+              return prop3.type !== "ObjectMethod" && (i === last || prop3.type !== "SpreadElement") && this.isAssignable(prop3);
             });
           }
           case "ObjectProperty":
@@ -14440,16 +14440,16 @@ var require_lib = __commonJS({
         }
         return elts;
       }
-      parseBindingRestProperty(prop2) {
+      parseBindingRestProperty(prop3) {
         this.next();
         if (this.hasPlugin("discardBinding") && this.match(88)) {
-          prop2.argument = this.parseVoidPattern(null);
-          this.raise(Errors.UnexpectedVoidPattern, prop2.argument);
+          prop3.argument = this.parseVoidPattern(null);
+          this.raise(Errors.UnexpectedVoidPattern, prop3.argument);
         } else {
-          prop2.argument = this.parseIdentifier();
+          prop3.argument = this.parseIdentifier();
         }
         this.checkCommaAfterRest(125);
-        return this.finishNode(prop2, "RestElement");
+        return this.finishNode(prop3, "RestElement");
       }
       parseBindingProperty() {
         const {
@@ -14459,16 +14459,16 @@ var require_lib = __commonJS({
         if (type === 21) {
           return this.parseBindingRestProperty(this.startNode());
         }
-        const prop2 = this.startNode();
+        const prop3 = this.startNode();
         if (type === 139) {
           this.expectPlugin("destructuringPrivate", startLoc);
           this.classScope.usePrivateName(this.state.value, startLoc);
-          prop2.key = this.parsePrivateName();
+          prop3.key = this.parsePrivateName();
         } else {
-          this.parsePropertyName(prop2);
+          this.parsePropertyName(prop3);
         }
-        prop2.method = false;
-        return this.parseObjPropValue(prop2, startLoc, false, false, true, false);
+        prop3.method = false;
+        return this.parseObjPropValue(prop3, startLoc, false, false, true, false);
       }
       parseBindingElement(flags, decorators) {
         const left = this.parseMaybeDefault();
@@ -16776,10 +16776,10 @@ var require_lib = __commonJS({
           node2.implements = this.tsParseHeritageClause("implements");
         }
       }
-      parseObjPropValue(prop2, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors) {
+      parseObjPropValue(prop3, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors) {
         const typeParameters = this.tsTryParseTypeParameters(this.tsParseConstModifier);
-        if (typeParameters) prop2.typeParameters = typeParameters;
-        return super.parseObjPropValue(prop2, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors);
+        if (typeParameters) prop3.typeParameters = typeParameters;
+        return super.parseObjPropValue(prop3, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors);
       }
       parseFunctionParams(node2, isConstructor) {
         const typeParameters = this.tsTryParseTypeParameters(this.tsParseConstModifier);
@@ -17765,11 +17765,11 @@ var require_lib = __commonJS({
     };
     var mixinPluginNames = Object.keys(mixinPlugins);
     var ExpressionParser = class extends LValParser {
-      checkProto(prop2, isRecord2, sawProto, refExpressionErrors) {
-        if (prop2.type === "SpreadElement" || this.isObjectMethod(prop2) || prop2.computed || prop2.shorthand) {
+      checkProto(prop3, isRecord2, sawProto, refExpressionErrors) {
+        if (prop3.type === "SpreadElement" || this.isObjectMethod(prop3) || prop3.computed || prop3.shorthand) {
           return sawProto;
         }
-        const key4 = prop2.key;
+        const key4 = prop3.key;
         const name2 = key4.type === "Identifier" ? key4.name : key4.value;
         if (name2 === "__proto__") {
           if (isRecord2) {
@@ -18859,20 +18859,20 @@ var require_lib = __commonJS({
               break;
             }
           }
-          let prop2;
+          let prop3;
           if (isPattern) {
-            prop2 = this.parseBindingProperty();
+            prop3 = this.parseBindingProperty();
           } else {
-            prop2 = this.parsePropertyDefinition(refExpressionErrors);
-            sawProto = this.checkProto(prop2, isRecord2, sawProto, refExpressionErrors);
+            prop3 = this.parsePropertyDefinition(refExpressionErrors);
+            sawProto = this.checkProto(prop3, isRecord2, sawProto, refExpressionErrors);
           }
-          if (isRecord2 && !this.isObjectProperty(prop2) && prop2.type !== "SpreadElement") {
-            this.raise(Errors.InvalidRecordProperty, prop2);
+          if (isRecord2 && !this.isObjectProperty(prop3) && prop3.type !== "SpreadElement") {
+            this.raise(Errors.InvalidRecordProperty, prop3);
           }
-          if (prop2.shorthand) {
-            this.addExtra(prop2, "shorthand", true);
+          if (prop3.shorthand) {
+            this.addExtra(prop3, "shorthand", true);
           }
-          node2.properties.push(prop2);
+          node2.properties.push(prop3);
         }
         this.next();
         this.state.inFSharpPipelineDirectBody = oldInFSharpPipelineDirectBody;
@@ -18888,8 +18888,8 @@ var require_lib = __commonJS({
         this.addExtra(node2, "trailingComma", this.state.lastTokStartLoc.index);
         this.addExtra(node2, "trailingCommaLoc", this.state.lastTokStartLoc, false);
       }
-      maybeAsyncOrAccessorProp(prop2) {
-        return !prop2.computed && prop2.key.type === "Identifier" && (this.isLiteralPropertyName() || this.match(0) || this.match(55));
+      maybeAsyncOrAccessorProp(prop3) {
+        return !prop3.computed && prop3.key.type === "Identifier" && (this.isLiteralPropertyName() || this.match(0) || this.match(55));
       }
       parsePropertyDefinition(refExpressionErrors) {
         let decorators = [];
@@ -18901,7 +18901,7 @@ var require_lib = __commonJS({
             decorators.push(this.parseDecorator());
           }
         }
-        const prop2 = this.startNode();
+        const prop3 = this.startNode();
         let isAsync2 = false;
         let isAccessor = false;
         let startLoc;
@@ -18910,32 +18910,32 @@ var require_lib = __commonJS({
           return this.parseSpread();
         }
         if (decorators.length) {
-          prop2.decorators = decorators;
+          prop3.decorators = decorators;
           decorators = [];
         }
-        prop2.method = false;
+        prop3.method = false;
         if (refExpressionErrors) {
           startLoc = this.state.startLoc;
         }
         let isGenerator = this.eat(55);
-        this.parsePropertyNamePrefixOperator(prop2);
+        this.parsePropertyNamePrefixOperator(prop3);
         const containsEsc = this.state.containsEsc;
-        this.parsePropertyName(prop2, refExpressionErrors);
-        if (!isGenerator && !containsEsc && this.maybeAsyncOrAccessorProp(prop2)) {
+        this.parsePropertyName(prop3, refExpressionErrors);
+        if (!isGenerator && !containsEsc && this.maybeAsyncOrAccessorProp(prop3)) {
           const {
             key: key4
-          } = prop2;
+          } = prop3;
           const keyName2 = key4.name;
           if (keyName2 === "async" && !this.hasPrecedingLineBreak()) {
             isAsync2 = true;
             this.resetPreviousNodeTrailingComments(key4);
             isGenerator = this.eat(55);
-            this.parsePropertyName(prop2);
+            this.parsePropertyName(prop3);
           }
           if (keyName2 === "get" || keyName2 === "set") {
             isAccessor = true;
             this.resetPreviousNodeTrailingComments(key4);
-            prop2.kind = keyName2;
+            prop3.kind = keyName2;
             if (this.match(55)) {
               isGenerator = true;
               this.raise(Errors.AccessorIsGenerator, this.state.curPosition(), {
@@ -18943,10 +18943,10 @@ var require_lib = __commonJS({
               });
               this.next();
             }
-            this.parsePropertyName(prop2);
+            this.parsePropertyName(prop3);
           }
         }
-        return this.parseObjPropValue(prop2, startLoc, isGenerator, isAsync2, false, isAccessor, refExpressionErrors);
+        return this.parseObjPropValue(prop3, startLoc, isGenerator, isAsync2, false, isAccessor, refExpressionErrors);
       }
       getGetterSetterExpectedParamCount(method) {
         return method.kind === "get" ? 0 : 1;
@@ -18965,29 +18965,29 @@ var require_lib = __commonJS({
           this.raise(Errors.BadSetterRestParameter, method);
         }
       }
-      parseObjectMethod(prop2, isGenerator, isAsync2, isPattern, isAccessor) {
+      parseObjectMethod(prop3, isGenerator, isAsync2, isPattern, isAccessor) {
         if (isAccessor) {
-          const finishedProp = this.parseMethod(prop2, isGenerator, false, false, false, "ObjectMethod");
+          const finishedProp = this.parseMethod(prop3, isGenerator, false, false, false, "ObjectMethod");
           this.checkGetterSetterParams(finishedProp);
           return finishedProp;
         }
         if (isAsync2 || isGenerator || this.match(10)) {
           if (isPattern) this.unexpected();
-          prop2.kind = "method";
-          prop2.method = true;
-          return this.parseMethod(prop2, isGenerator, isAsync2, false, false, "ObjectMethod");
+          prop3.kind = "method";
+          prop3.method = true;
+          return this.parseMethod(prop3, isGenerator, isAsync2, false, false, "ObjectMethod");
         }
       }
-      parseObjectProperty(prop2, startLoc, isPattern, refExpressionErrors) {
-        prop2.shorthand = false;
+      parseObjectProperty(prop3, startLoc, isPattern, refExpressionErrors) {
+        prop3.shorthand = false;
         if (this.eat(14)) {
-          prop2.value = isPattern ? this.parseMaybeDefault(this.state.startLoc) : this.parseMaybeAssignAllowInOrVoidPattern(8, refExpressionErrors);
-          return this.finishObjectProperty(prop2);
+          prop3.value = isPattern ? this.parseMaybeDefault(this.state.startLoc) : this.parseMaybeAssignAllowInOrVoidPattern(8, refExpressionErrors);
+          return this.finishObjectProperty(prop3);
         }
-        if (!prop2.computed && prop2.key.type === "Identifier") {
-          this.checkReservedWord(prop2.key.name, prop2.key.loc.start, true, false);
+        if (!prop3.computed && prop3.key.type === "Identifier") {
+          this.checkReservedWord(prop3.key.name, prop3.key.loc.start, true, false);
           if (isPattern) {
-            prop2.value = this.parseMaybeDefault(startLoc, this.cloneIdentifier(prop2.key));
+            prop3.value = this.parseMaybeDefault(startLoc, this.cloneIdentifier(prop3.key));
           } else if (this.match(29)) {
             const shorthandAssignLoc = this.state.startLoc;
             if (refExpressionErrors != null) {
@@ -18997,26 +18997,26 @@ var require_lib = __commonJS({
             } else {
               this.raise(Errors.InvalidCoverInitializedName, shorthandAssignLoc);
             }
-            prop2.value = this.parseMaybeDefault(startLoc, this.cloneIdentifier(prop2.key));
+            prop3.value = this.parseMaybeDefault(startLoc, this.cloneIdentifier(prop3.key));
           } else {
-            prop2.value = this.cloneIdentifier(prop2.key);
+            prop3.value = this.cloneIdentifier(prop3.key);
           }
-          prop2.shorthand = true;
-          return this.finishObjectProperty(prop2);
+          prop3.shorthand = true;
+          return this.finishObjectProperty(prop3);
         }
       }
       finishObjectProperty(node2) {
         return this.finishNode(node2, "ObjectProperty");
       }
-      parseObjPropValue(prop2, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors) {
-        const node2 = this.parseObjectMethod(prop2, isGenerator, isAsync2, isPattern, isAccessor) || this.parseObjectProperty(prop2, startLoc, isPattern, refExpressionErrors);
+      parseObjPropValue(prop3, startLoc, isGenerator, isAsync2, isPattern, isAccessor, refExpressionErrors) {
+        const node2 = this.parseObjectMethod(prop3, isGenerator, isAsync2, isPattern, isAccessor) || this.parseObjectProperty(prop3, startLoc, isPattern, refExpressionErrors);
         if (!node2) this.unexpected();
         return node2;
       }
-      parsePropertyName(prop2, refExpressionErrors) {
+      parsePropertyName(prop3, refExpressionErrors) {
         if (this.eat(0)) {
-          prop2.computed = true;
-          prop2.key = this.parseMaybeAssignAllowIn();
+          prop3.computed = true;
+          prop3.key = this.parseMaybeAssignAllowIn();
           this.expect(3);
         } else {
           const {
@@ -19057,9 +19057,9 @@ var require_lib = __commonJS({
                 this.unexpected();
             }
           }
-          prop2.key = key4;
+          prop3.key = key4;
           if (type !== 139) {
-            prop2.computed = false;
+            prop3.computed = false;
           }
         }
       }
@@ -19525,7 +19525,7 @@ var require_lib = __commonJS({
         }
         return this.parseMaybeAssignAllowIn(refExpressionErrors, afterLeftParse);
       }
-      parsePropertyNamePrefixOperator(prop2) {
+      parsePropertyNamePrefixOperator(prop3) {
       }
     };
     var loopLabel = {
@@ -20567,11 +20567,11 @@ var require_lib = __commonJS({
           this.pushClassMethod(classBody, method, false, false, false, false);
           return true;
         } else if (this.isClassProperty()) {
-          const prop2 = member5;
-          prop2.computed = false;
-          prop2.key = key4;
-          prop2.static = false;
-          classBody.body.push(this.parseClassProperty(prop2));
+          const prop3 = member5;
+          prop3.computed = false;
+          prop3.key = key4;
+          prop3.static = false;
+          classBody.body.push(this.parseClassProperty(prop3));
           return true;
         }
         this.resetPreviousNodeTrailingComments(key4);
@@ -20730,22 +20730,22 @@ var require_lib = __commonJS({
           this.raise(Errors.DecoratorStaticBlock, member5);
         }
       }
-      pushClassProperty(classBody, prop2) {
-        if (!prop2.computed && this.nameIsConstructor(prop2.key)) {
-          this.raise(Errors.ConstructorClassField, prop2.key);
+      pushClassProperty(classBody, prop3) {
+        if (!prop3.computed && this.nameIsConstructor(prop3.key)) {
+          this.raise(Errors.ConstructorClassField, prop3.key);
         }
-        classBody.body.push(this.parseClassProperty(prop2));
+        classBody.body.push(this.parseClassProperty(prop3));
       }
-      pushClassPrivateProperty(classBody, prop2) {
-        const node2 = this.parseClassPrivateProperty(prop2);
+      pushClassPrivateProperty(classBody, prop3) {
+        const node2 = this.parseClassPrivateProperty(prop3);
         classBody.body.push(node2);
         this.classScope.declarePrivateName(this.getPrivateNameSV(node2.key), 0, node2.key.loc.start);
       }
-      pushClassAccessorProperty(classBody, prop2, isPrivate) {
-        if (!isPrivate && !prop2.computed && this.nameIsConstructor(prop2.key)) {
-          this.raise(Errors.ConstructorClassField, prop2.key);
+      pushClassAccessorProperty(classBody, prop3, isPrivate) {
+        if (!isPrivate && !prop3.computed && this.nameIsConstructor(prop3.key)) {
+          this.raise(Errors.ConstructorClassField, prop3.key);
         }
-        const node2 = this.parseClassAccessorProperty(prop2);
+        const node2 = this.parseClassAccessorProperty(prop3);
         classBody.body.push(node2);
         if (isPrivate) {
           this.classScope.declarePrivateName(this.getPrivateNameSV(node2.key), 0, node2.key.loc.start);
@@ -21080,8 +21080,8 @@ var require_lib = __commonJS({
         if (node2.type === "Identifier") {
           this.checkDuplicateExports(node2, node2.name);
         } else if (node2.type === "ObjectPattern") {
-          for (const prop2 of node2.properties) {
-            this.checkDeclaration(prop2);
+          for (const prop3 of node2.properties) {
+            this.checkDeclaration(prop3);
           }
         } else if (node2.type === "ArrayPattern") {
           for (const elem of node2.elements) {
@@ -22578,14 +22578,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text2, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text;
+        return text2;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text.length <= endStep)
-        return text;
+      if (text2.length <= endStep)
+        return text2;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -22602,14 +22602,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text, i, indent.length);
+        i = consumeMoreIndentedLines(text2, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text[i += 1]; ) {
+      for (let ch; ch = text2[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text[i + 1]) {
+          switch (text2[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -22626,12 +22626,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text, i, indent.length);
+            i = consumeMoreIndentedLines(text2, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text[i + 1];
+            const next = text2[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -22643,12 +22643,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text[i += 1];
+                ch = text2[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text;
+                return text2;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -22663,39 +22663,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text;
+        return text2;
       if (onFold)
         onFold();
-      let res = text.slice(0, folds[0]);
+      let res = text2.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text.length;
+        const end2 = folds[i2 + 1] || text2.length;
         if (fold === 0)
           res = `
-${indent}${text.slice(0, end2)}`;
+${indent}${text2.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text[fold]}\\`;
+            res += `${text2[fold]}\\`;
           res += `
-${indent}${text.slice(fold + 1, end2)}`;
+${indent}${text2.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text, i, indent) {
+    function consumeMoreIndentedLines(text2, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text[start];
+      let ch = text2[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text[++i];
+          ch = text2[++i];
         } else {
           do {
-            ch = text[++i];
+            ch = text2[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text[start];
+          ch = text2[start];
         }
       }
       return end;
@@ -23070,16 +23070,16 @@ var require_stringify = __commonJS({
     function stringifyProps(node2, tagObj, { anchors: anchors$1, doc }) {
       if (!doc.directives)
         return "";
-      const props = [];
+      const props2 = [];
       const anchor = (identity.isScalar(node2) || identity.isCollection(node2)) && node2.anchor;
       if (anchor && anchors.anchorIsValid(anchor)) {
         anchors$1.add(anchor);
-        props.push(`&${anchor}`);
+        props2.push(`&${anchor}`);
       }
       const tag = node2.tag ?? (tagObj.default ? null : tagObj.tag);
       if (tag)
-        props.push(doc.directives.tagString(tag));
-      return props.join(" ");
+        props2.push(doc.directives.tagString(tag));
+      return props2.join(" ");
     }
     function stringify(item, ctx, onComment, onChompKeep) {
       if (identity.isPair(item))
@@ -23100,13 +23100,13 @@ var require_stringify = __commonJS({
       let tagObj = void 0;
       const node2 = identity.isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
       tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node2));
-      const props = stringifyProps(node2, tagObj, ctx);
-      if (props.length > 0)
-        ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
+      const props2 = stringifyProps(node2, tagObj, ctx);
+      if (props2.length > 0)
+        ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props2.length + 1;
       const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
-      if (!props)
+      if (!props2)
         return str2;
-      return identity.isScalar(node2) || str2[0] === "{" || str2[0] === "[" ? `${props} ${str2}` : `${props}
+      return identity.isScalar(node2) || str2[0] === "{" || str2[0] === "[" ? `${props2} ${str2}` : `${props2}
 ${ctx.indent}${str2}`;
     }
     exports.createStringifyContext = createStringifyContext;
@@ -25680,7 +25680,7 @@ var require_resolve_block_seq = __commonJS({
       let offset = bs.offset;
       let commentEnd = null;
       for (const { start, value: value2 } of bs.items) {
-        const props = resolveProps.resolveProps(start, {
+        const props2 = resolveProps.resolveProps(start, {
           indicator: "seq-item-ind",
           next: value2,
           offset,
@@ -25688,20 +25688,20 @@ var require_resolve_block_seq = __commonJS({
           parentIndent: bs.indent,
           startOnNewline: true
         });
-        if (!props.found) {
-          if (props.anchor || props.tag || value2) {
+        if (!props2.found) {
+          if (props2.anchor || props2.tag || value2) {
             if (value2?.type === "block-seq")
-              onError(props.end, "BAD_INDENT", "All sequence items must start at the same column");
+              onError(props2.end, "BAD_INDENT", "All sequence items must start at the same column");
             else
               onError(offset, "MISSING_CHAR", "Sequence item without - indicator");
           } else {
-            commentEnd = props.end;
-            if (props.comment)
-              seq.comment = props.comment;
+            commentEnd = props2.end;
+            if (props2.comment)
+              seq.comment = props2.comment;
             continue;
           }
         }
-        const node2 = value2 ? composeNode(ctx, value2, props, onError) : composeEmptyNode(ctx, props.end, start, null, props, onError);
+        const node2 = value2 ? composeNode(ctx, value2, props2, onError) : composeEmptyNode(ctx, props2.end, start, null, props2, onError);
         if (ctx.schema.compat)
           utilFlowIndentCheck.flowIndentCheck(bs.indent, value2, onError);
         offset = node2.range[2];
@@ -25786,7 +25786,7 @@ var require_resolve_flow_collection = __commonJS({
       for (let i = 0; i < fc.items.length; ++i) {
         const collItem = fc.items[i];
         const { start, key: key4, sep, value: value2 } = collItem;
-        const props = resolveProps.resolveProps(start, {
+        const props2 = resolveProps.resolveProps(start, {
           flow: fcName,
           indicator: "explicit-key-ind",
           next: key4 ?? sep?.[0],
@@ -25795,19 +25795,19 @@ var require_resolve_flow_collection = __commonJS({
           parentIndent: fc.indent,
           startOnNewline: false
         });
-        if (!props.found) {
-          if (!props.anchor && !props.tag && !sep && !value2) {
-            if (i === 0 && props.comma)
-              onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
+        if (!props2.found) {
+          if (!props2.anchor && !props2.tag && !sep && !value2) {
+            if (i === 0 && props2.comma)
+              onError(props2.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
             else if (i < fc.items.length - 1)
-              onError(props.start, "UNEXPECTED_TOKEN", `Unexpected empty item in ${fcName}`);
-            if (props.comment) {
+              onError(props2.start, "UNEXPECTED_TOKEN", `Unexpected empty item in ${fcName}`);
+            if (props2.comment) {
               if (coll.comment)
-                coll.comment += "\n" + props.comment;
+                coll.comment += "\n" + props2.comment;
               else
-                coll.comment = props.comment;
+                coll.comment = props2.comment;
             }
-            offset = props.end;
+            offset = props2.end;
             continue;
           }
           if (!isMap && ctx.options.strict && utilContainsNewline.containsNewline(key4))
@@ -25819,12 +25819,12 @@ var require_resolve_flow_collection = __commonJS({
             );
         }
         if (i === 0) {
-          if (props.comma)
-            onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
+          if (props2.comma)
+            onError(props2.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
         } else {
-          if (!props.comma)
-            onError(props.start, "MISSING_CHAR", `Missing , between ${fcName} items`);
-          if (props.comment) {
+          if (!props2.comma)
+            onError(props2.start, "MISSING_CHAR", `Missing , between ${fcName} items`);
+          if (props2.comment) {
             let prevItemComment = "";
             loop: for (const st of start) {
               switch (st.type) {
@@ -25846,20 +25846,20 @@ var require_resolve_flow_collection = __commonJS({
                 prev.comment += "\n" + prevItemComment;
               else
                 prev.comment = prevItemComment;
-              props.comment = props.comment.substring(prevItemComment.length + 1);
+              props2.comment = props2.comment.substring(prevItemComment.length + 1);
             }
           }
         }
-        if (!isMap && !sep && !props.found) {
-          const valueNode = value2 ? composeNode(ctx, value2, props, onError) : composeEmptyNode(ctx, props.end, sep, null, props, onError);
+        if (!isMap && !sep && !props2.found) {
+          const valueNode = value2 ? composeNode(ctx, value2, props2, onError) : composeEmptyNode(ctx, props2.end, sep, null, props2, onError);
           coll.items.push(valueNode);
           offset = valueNode.range[2];
           if (isBlock(value2))
             onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
         } else {
           ctx.atKey = true;
-          const keyStart = props.end;
-          const keyNode = key4 ? composeNode(ctx, key4, props, onError) : composeEmptyNode(ctx, keyStart, start, null, props, onError);
+          const keyStart = props2.end;
+          const keyNode = key4 ? composeNode(ctx, key4, props2, onError) : composeEmptyNode(ctx, keyStart, start, null, props2, onError);
           if (isBlock(key4))
             onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
           ctx.atKey = false;
@@ -25873,7 +25873,7 @@ var require_resolve_flow_collection = __commonJS({
             startOnNewline: false
           });
           if (valueProps.found) {
-            if (!isMap && !props.found && ctx.options.strict) {
+            if (!isMap && !props2.found && ctx.options.strict) {
               if (sep)
                 for (const st of sep) {
                   if (st === valueProps.found)
@@ -25883,7 +25883,7 @@ var require_resolve_flow_collection = __commonJS({
                     break;
                   }
                 }
-              if (props.start < valueProps.found.offset - 1024)
+              if (props2.start < valueProps.found.offset - 1024)
                 onError(valueProps.found, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit flow sequence key");
             }
           } else if (value2) {
@@ -25973,11 +25973,11 @@ var require_compose_collection = __commonJS({
         coll.tag = tagName;
       return coll;
     }
-    function composeCollection(CN, ctx, token, props, onError) {
-      const tagToken = props.tag;
+    function composeCollection(CN, ctx, token, props2, onError) {
+      const tagToken = props2.tag;
       const tagName = !tagToken ? null : ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg));
       if (token.type === "block-seq") {
-        const { anchor, newlineAfterProp: nl } = props;
+        const { anchor, newlineAfterProp: nl } = props2;
         const lastProp = anchor && tagToken ? anchor.offset > tagToken.offset ? anchor : tagToken : anchor ?? tagToken;
         if (lastProp && (!nl || nl.offset < lastProp.offset)) {
           const message = "Missing newline after block sequence props";
@@ -26125,12 +26125,12 @@ var require_resolve_block_scalar = __commonJS({
       const end = start + header.length + scalar.source.length;
       return { value: value2, type, comment: header.comment, range: [start, end, end] };
     }
-    function parseBlockScalarHeader({ offset, props }, strict, onError) {
-      if (props[0].type !== "block-scalar-header") {
-        onError(props[0], "IMPOSSIBLE", "Block scalar header not found");
+    function parseBlockScalarHeader({ offset, props: props2 }, strict, onError) {
+      if (props2[0].type !== "block-scalar-header") {
+        onError(props2[0], "IMPOSSIBLE", "Block scalar header not found");
         return null;
       }
-      const { source: source2 } = props[0];
+      const { source: source2 } = props2[0];
       const mode = source2[0];
       let indent = 0;
       let chomp = "";
@@ -26152,8 +26152,8 @@ var require_resolve_block_scalar = __commonJS({
       let hasSpace = false;
       let comment = "";
       let length = source2.length;
-      for (let i = 1; i < props.length; ++i) {
-        const token = props[i];
+      for (let i = 1; i < props2.length; ++i) {
+        const token = props2[i];
         switch (token.type) {
           case "space":
             hasSpace = true;
@@ -26541,9 +26541,9 @@ var require_compose_node = __commonJS({
     var resolveEnd = require_resolve_end();
     var utilEmptyScalarPosition = require_util_empty_scalar_position();
     var CN = { composeNode, composeEmptyNode };
-    function composeNode(ctx, token, props, onError) {
+    function composeNode(ctx, token, props2, onError) {
       const atKey = ctx.atKey;
-      const { spaceBefore, comment, anchor, tag } = props;
+      const { spaceBefore, comment, anchor, tag } = props2;
       let node2;
       let isSrcToken = true;
       switch (token.type) {
@@ -26564,7 +26564,7 @@ var require_compose_node = __commonJS({
         case "block-seq":
         case "flow-collection":
           try {
-            node2 = composeCollection.composeCollection(CN, ctx, token, props, onError);
+            node2 = composeCollection.composeCollection(CN, ctx, token, props2, onError);
             if (anchor)
               node2.anchor = anchor.source.substring(1);
           } catch (error51) {
@@ -26578,7 +26578,7 @@ var require_compose_node = __commonJS({
           isSrcToken = false;
         }
       }
-      node2 ?? (node2 = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
+      node2 ?? (node2 = composeEmptyNode(ctx, token.offset, void 0, null, props2, onError));
       if (anchor && node2.anchor === "")
         onError(anchor, "BAD_ALIAS", "Anchor cannot be an empty string");
       if (atKey && ctx.options.stringKeys && (!identity.isScalar(node2) || typeof node2.value !== "string" || node2.tag && node2.tag !== "tag:yaml.org,2002:str")) {
@@ -26654,7 +26654,7 @@ var require_compose_doc = __commonJS({
         options: doc.options,
         schema: doc.schema
       };
-      const props = resolveProps.resolveProps(start, {
+      const props2 = resolveProps.resolveProps(start, {
         indicator: "doc-start",
         next: value2 ?? end?.[0],
         offset,
@@ -26662,12 +26662,12 @@ var require_compose_doc = __commonJS({
         parentIndent: 0,
         startOnNewline: true
       });
-      if (props.found) {
+      if (props2.found) {
         doc.directives.docStart = true;
-        if (value2 && (value2.type === "block-map" || value2.type === "block-seq") && !props.hasNewline)
-          onError(props.end, "MISSING_CHAR", "Block collection cannot start on same line with directives-end marker");
+        if (value2 && (value2.type === "block-map" || value2.type === "block-seq") && !props2.hasNewline)
+          onError(props2.end, "MISSING_CHAR", "Block collection cannot start on same line with directives-end marker");
       }
-      doc.contents = value2 ? composeNode.composeNode(ctx, value2, props, onError) : composeNode.composeEmptyNode(ctx, props.end, start, null, props, onError);
+      doc.contents = value2 ? composeNode.composeNode(ctx, value2, props2, onError) : composeNode.composeEmptyNode(ctx, props2.end, start, null, props2, onError);
       const contentEnd = doc.contents.range[2];
       const re = resolveEnd.resolveEnd(end, contentEnd, false, onError);
       if (re.comment)
@@ -26932,12 +26932,12 @@ var require_cst_scalar = __commonJS({
           const he = source2.indexOf("\n");
           const head = source2.substring(0, he);
           const body = source2.substring(he + 1) + "\n";
-          const props = [
+          const props2 = [
             { type: "block-scalar-header", offset, indent, source: head }
           ];
-          if (!addEndtoBlockProps(props, end))
-            props.push({ type: "newline", offset: -1, indent, source: "\n" });
-          return { type: "block-scalar", offset, indent, props, source: body };
+          if (!addEndtoBlockProps(props2, end))
+            props2.push({ type: "newline", offset: -1, indent, source: "\n" });
+          return { type: "block-scalar", offset, indent, props: props2, source: body };
         }
         case '"':
           return { type: "double-quoted-scalar", offset, indent, source: source2, end };
@@ -27004,27 +27004,27 @@ var require_cst_scalar = __commonJS({
       } else {
         const { offset } = token;
         const indent = "indent" in token ? token.indent : -1;
-        const props = [
+        const props2 = [
           { type: "block-scalar-header", offset, indent, source: head }
         ];
-        if (!addEndtoBlockProps(props, "end" in token ? token.end : void 0))
-          props.push({ type: "newline", offset: -1, indent, source: "\n" });
+        if (!addEndtoBlockProps(props2, "end" in token ? token.end : void 0))
+          props2.push({ type: "newline", offset: -1, indent, source: "\n" });
         for (const key4 of Object.keys(token))
           if (key4 !== "type" && key4 !== "offset")
             delete token[key4];
-        Object.assign(token, { type: "block-scalar", indent, props, source: body });
+        Object.assign(token, { type: "block-scalar", indent, props: props2, source: body });
       }
     }
-    function addEndtoBlockProps(props, end) {
+    function addEndtoBlockProps(props2, end) {
       if (end)
         for (const st of end)
           switch (st.type) {
             case "space":
             case "comment":
-              props.push(st);
+              props2.push(st);
               break;
             case "newline":
-              props.push(st);
+              props2.push(st);
               return true;
           }
       return false;
@@ -28986,8 +28986,8 @@ var require_parse = __commonJS({
     var token;
     var key4;
     var root;
-    module.exports = function parse5(text, reviver) {
-      source2 = String(text);
+    module.exports = function parse5(text2, reviver) {
+      source2 = String(text2);
       parseState = "start";
       stack = [];
       pos = 0;
@@ -30192,7 +30192,7 @@ var require_moment = __commonJS({
       }
       var momentProperties = hooks.momentProperties = [], updateInProgress = false;
       function copyConfig(to2, from2) {
-        var i, prop2, val, momentPropertiesLen = momentProperties.length;
+        var i, prop3, val, momentPropertiesLen = momentProperties.length;
         if (!isUndefined(from2._isAMomentObject)) {
           to2._isAMomentObject = from2._isAMomentObject;
         }
@@ -30225,10 +30225,10 @@ var require_moment = __commonJS({
         }
         if (momentPropertiesLen > 0) {
           for (i = 0; i < momentPropertiesLen; i++) {
-            prop2 = momentProperties[i];
-            val = from2[prop2];
+            prop3 = momentProperties[i];
+            val = from2[prop3];
             if (!isUndefined(val)) {
-              to2[prop2] = val;
+              to2[prop3] = val;
             }
           }
         }
@@ -30354,12 +30354,12 @@ var require_moment = __commonJS({
         return typeof units === "string" ? aliases[units] || aliases[units.toLowerCase()] : void 0;
       }
       function normalizeObjectUnits(inputObject) {
-        var normalizedInput = {}, normalizedProp, prop2;
-        for (prop2 in inputObject) {
-          if (hasOwnProp(inputObject, prop2)) {
-            normalizedProp = normalizeUnits(prop2);
+        var normalizedInput = {}, normalizedProp, prop3;
+        for (prop3 in inputObject) {
+          if (hasOwnProp(inputObject, prop3)) {
+            normalizedProp = normalizeUnits(prop3);
             if (normalizedProp) {
-              normalizedInput[normalizedProp] = inputObject[prop2];
+              normalizedInput[normalizedProp] = inputObject[prop3];
             }
           }
         }
@@ -30738,11 +30738,11 @@ var require_moment = __commonJS({
         "monthsShortStrictRegex"
       ];
       function clearMonthsParseCache(locale2, config2) {
-        var i, prop2;
+        var i, prop3;
         for (i = 0; i < monthsParseProperties.length; i++) {
-          prop2 = monthsParseProperties[i];
-          if (!hasOwnProp(config2, prop2)) {
-            delete locale2["_" + prop2];
+          prop3 = monthsParseProperties[i];
+          if (!hasOwnProp(config2, prop3)) {
+            delete locale2["_" + prop3];
           }
         }
       }
@@ -31007,11 +31007,11 @@ var require_moment = __commonJS({
         "weekdaysMinStrictRegex"
       ];
       function clearWeekdaysParseCache(locale2, config2) {
-        var i, prop2;
+        var i, prop3;
         for (i = 0; i < weekdaysParseProperties.length; i++) {
-          prop2 = weekdaysParseProperties[i];
-          if (!hasOwnProp(config2, prop2)) {
-            delete locale2["_" + prop2];
+          prop3 = weekdaysParseProperties[i];
+          if (!hasOwnProp(config2, prop3)) {
+            delete locale2["_" + prop3];
           }
         }
       }
@@ -31253,16 +31253,16 @@ var require_moment = __commonJS({
         );
       }
       function set2(config2) {
-        var prop2, i;
+        var prop3, i;
         clearMonthsParseCache(this, config2);
         clearWeekdaysParseCache(this, config2);
         for (i in config2) {
           if (hasOwnProp(config2, i)) {
-            prop2 = config2[i];
-            if (isFunction(prop2)) {
-              this[i] = prop2;
+            prop3 = config2[i];
+            if (isFunction(prop3)) {
+              this[i] = prop3;
             } else {
-              this["_" + i] = prop2;
+              this["_" + i] = prop3;
             }
           }
         }
@@ -31272,23 +31272,23 @@ var require_moment = __commonJS({
         );
       }
       function mergeConfigs(parentConfig, childConfig) {
-        var res = extend2({}, parentConfig), prop2;
-        for (prop2 in childConfig) {
-          if (hasOwnProp(childConfig, prop2)) {
-            if (isObject3(parentConfig[prop2]) && isObject3(childConfig[prop2])) {
-              res[prop2] = {};
-              extend2(res[prop2], parentConfig[prop2]);
-              extend2(res[prop2], childConfig[prop2]);
-            } else if (childConfig[prop2] != null) {
-              res[prop2] = childConfig[prop2];
+        var res = extend2({}, parentConfig), prop3;
+        for (prop3 in childConfig) {
+          if (hasOwnProp(childConfig, prop3)) {
+            if (isObject3(parentConfig[prop3]) && isObject3(childConfig[prop3])) {
+              res[prop3] = {};
+              extend2(res[prop3], parentConfig[prop3]);
+              extend2(res[prop3], childConfig[prop3]);
+            } else if (childConfig[prop3] != null) {
+              res[prop3] = childConfig[prop3];
             } else {
-              delete res[prop2];
+              delete res[prop3];
             }
           }
         }
-        for (prop2 in parentConfig) {
-          if (hasOwnProp(parentConfig, prop2) && !hasOwnProp(childConfig, prop2) && isObject3(parentConfig[prop2])) {
-            res[prop2] = extend2({}, res[prop2]);
+        for (prop3 in parentConfig) {
+          if (hasOwnProp(parentConfig, prop3) && !hasOwnProp(childConfig, prop3) && isObject3(parentConfig[prop3])) {
+            res[prop3] = extend2({}, res[prop3]);
           }
         }
         return res;
@@ -33992,7 +33992,7 @@ var require_moment = __commonJS({
           return this.as(alias);
         };
       }
-      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf2 = asMilliseconds;
+      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf3 = asMilliseconds;
       function clone2() {
         return createDuration(this);
       }
@@ -34133,7 +34133,7 @@ var require_moment = __commonJS({
       proto.asMonths = asMonths;
       proto.asQuarters = asQuarters;
       proto.asYears = asYears;
-      proto.valueOf = valueOf2;
+      proto.valueOf = valueOf3;
       proto._bubble = bubble;
       proto.clone = clone2;
       proto.get = get;
@@ -34975,8 +34975,8 @@ function defineLazy(object4, key4, getter) {
 function objectClone(obj3) {
   return Object.create(Object.getPrototypeOf(obj3), Object.getOwnPropertyDescriptors(obj3));
 }
-function assignProp(target2, prop2, value2) {
-  Object.defineProperty(target2, prop2, {
+function assignProp(target2, prop3, value2) {
+  Object.defineProperty(target2, prop3, {
     value: value2,
     writable: true,
     enumerable: true,
@@ -35161,33 +35161,33 @@ function normalizeParams(_params) {
 function createTransparentProxy(getter) {
   let target2;
   return new Proxy({}, {
-    get(_, prop2, receiver) {
+    get(_, prop3, receiver) {
       target2 ?? (target2 = getter());
-      return Reflect.get(target2, prop2, receiver);
+      return Reflect.get(target2, prop3, receiver);
     },
-    set(_, prop2, value2, receiver) {
+    set(_, prop3, value2, receiver) {
       target2 ?? (target2 = getter());
-      return Reflect.set(target2, prop2, value2, receiver);
+      return Reflect.set(target2, prop3, value2, receiver);
     },
-    has(_, prop2) {
+    has(_, prop3) {
       target2 ?? (target2 = getter());
-      return Reflect.has(target2, prop2);
+      return Reflect.has(target2, prop3);
     },
-    deleteProperty(_, prop2) {
+    deleteProperty(_, prop3) {
       target2 ?? (target2 = getter());
-      return Reflect.deleteProperty(target2, prop2);
+      return Reflect.deleteProperty(target2, prop3);
     },
     ownKeys(_) {
       target2 ?? (target2 = getter());
       return Reflect.ownKeys(target2);
     },
-    getOwnPropertyDescriptor(_, prop2) {
+    getOwnPropertyDescriptor(_, prop3) {
       target2 ?? (target2 = getter());
-      return Reflect.getOwnPropertyDescriptor(target2, prop2);
+      return Reflect.getOwnPropertyDescriptor(target2, prop3);
     },
-    defineProperty(_, prop2, descriptor) {
+    defineProperty(_, prop3, descriptor) {
       target2 ?? (target2 = getter());
-      return Reflect.defineProperty(target2, prop2, descriptor);
+      return Reflect.defineProperty(target2, prop3, descriptor);
     }
   });
 }
@@ -41866,8 +41866,8 @@ function ko_default() {
 }
 
 // node_modules/zod/v4/locales/lt.js
-var capitalizeFirstCharacter = (text) => {
-  return text.charAt(0).toUpperCase() + text.slice(1);
+var capitalizeFirstCharacter = (text2) => {
+  return text2.charAt(0).toUpperCase() + text2.slice(1);
 };
 function getUnitTypeFromNumber(number4) {
   const abs = Math.abs(number4);
@@ -61266,8 +61266,8 @@ function createWorkflowClient(auth, config2, queries) {
     }
     if (response.status === 204)
       return {};
-    const text = await response.text();
-    return text ? JSON.parse(text) : {};
+    const text2 = await response.text();
+    return text2 ? JSON.parse(text2) : {};
   }
   const versionPath = (id, version2) => `/api/v2/apps/${encodeURIComponent(id)}/versions/${encodeURIComponent(version2)}`;
   async function get(workflowId, versionId) {
@@ -61542,11 +61542,11 @@ function replaceBalanced(src, open, close, fn) {
   }
   return out;
 }
-function parseStyle(text) {
+function parseStyle(text2) {
   const style = {};
-  if (!text)
+  if (!text2)
     return style;
-  for (const decl of text.split(";")) {
+  for (const decl of text2.split(";")) {
     const idx = decl.indexOf(":");
     if (idx < 0)
       continue;
@@ -61557,11 +61557,11 @@ function parseStyle(text) {
   }
   return style;
 }
-function parseAttrs(text) {
+function parseAttrs(text2) {
   const attrs = {};
   const re = /([a-zA-Z_:][-\w:.]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
   let m;
-  while (m = re.exec(text)) {
+  while (m = re.exec(text2)) {
     attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? "";
   }
   return attrs;
@@ -61600,16 +61600,16 @@ function parseHtml(html) {
       continue;
     }
     if (m[5] !== void 0) {
-      const text = decodeEntities(m[5]);
-      if (text.trim() || /\s/.test(text)) {
-        stack[stack.length - 1].children.push({ tag: "#text", style: {}, attrs: {}, children: [], text });
+      const text2 = decodeEntities(m[5]);
+      if (text2.trim() || /\s/.test(text2)) {
+        stack[stack.length - 1].children.push({ tag: "#text", style: {}, attrs: {}, children: [], text: text2 });
       }
     }
   }
   return root;
 }
-function decodeEntities(text) {
-  return text.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
+function decodeEntities(text2) {
+  return text2.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
 }
 function px(value2, fontSize, base2 = 0) {
   if (value2 === void 0)
@@ -61635,10 +61635,10 @@ function px(value2, fontSize, base2 = 0) {
       return void 0;
   }
 }
-function vertical(style, prop2, fontSize) {
+function vertical(style, prop3, fontSize) {
   let top = 0;
   let bottom = 0;
-  const shorthand = style[prop2];
+  const shorthand = style[prop3];
   if (shorthand) {
     const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
     if (parts.length === 1)
@@ -61651,18 +61651,18 @@ function vertical(style, prop2, fontSize) {
       bottom = parts[2];
     }
   }
-  const t = px(style[`${prop2}-top`], fontSize);
-  const b = px(style[`${prop2}-bottom`], fontSize);
+  const t = px(style[`${prop3}-top`], fontSize);
+  const b = px(style[`${prop3}-bottom`], fontSize);
   if (t !== void 0)
     top = t;
   if (b !== void 0)
     bottom = b;
   return [top, bottom];
 }
-function horizontal(style, prop2, fontSize) {
+function horizontal(style, prop3, fontSize) {
   let left = 0;
   let right = 0;
-  const shorthand = style[prop2];
+  const shorthand = style[prop3];
   if (shorthand) {
     const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
     if (parts.length === 1)
@@ -61674,8 +61674,8 @@ function horizontal(style, prop2, fontSize) {
       left = parts[3];
     }
   }
-  const l = px(style[`${prop2}-left`], fontSize);
-  const r = px(style[`${prop2}-right`], fontSize);
+  const l = px(style[`${prop3}-left`], fontSize);
+  const r = px(style[`${prop3}-right`], fontSize);
   if (l !== void 0)
     left = l;
   if (r !== void 0)
@@ -61791,13 +61791,13 @@ function inlineRunHeight(run, ctx) {
   walk4(run, ctx);
   let lines = 0;
   for (const segment of segments) {
-    const text = segment.replace(/\s+/g, " ").trim();
-    if (!text) {
+    const text2 = segment.replace(/\s+/g, " ").trim();
+    if (!text2) {
       if (segments.length > 1)
         lines += 1;
       continue;
     }
-    const textWidth = text.length * ctx.fontSize * GLYPH_WIDTH_FACTOR;
+    const textWidth = text2.length * ctx.fontSize * GLYPH_WIDTH_FACTOR;
     lines += Math.max(1, Math.ceil(textWidth / Math.max(ctx.width, 40)));
   }
   if (lines === 0)
@@ -61971,8 +61971,8 @@ function estimateHtmlHeight(rawHtml, widthPx) {
 
 // dist/renderReadiness.js
 var GRID_COLUMNS = 43;
-function propVal(props, key4) {
-  const p = props?.[key4];
+function propVal(props2, key4) {
+  const p = props2?.[key4];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
 function truthy(v) {
@@ -62011,21 +62011,21 @@ var MARKDOWN_SIGNS = /(^|\n)\s*#{1,6}\s+\S|\*\*[^*\n]+\*\*|(^|\n)\s*[-*]\s+\S|\[
 function lintTextFormat(c) {
   if (c.type !== "Text")
     return [];
-  const text = propVal(c.properties, "text");
-  if (typeof text !== "string")
+  const text2 = propVal(c.properties, "text");
+  if (typeof text2 !== "string")
     return [];
   const format = propVal(c.properties, "textFormat");
   const effective = typeof format === "string" && format ? format : "html";
   if (effective === "markdown")
     return [];
-  const literal3 = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  const literal3 = text2.replace(/\{\{[\s\S]*?\}\}/g, " ");
   if (!MARKDOWN_SIGNS.test(literal3))
     return [];
   return [
     `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
   ];
 }
-var WIDTH_EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "Drawer"]);
+var WIDTH_EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "ShadDialog", "Drawer"]);
 function lintOversizedWidths(components) {
   const errors = [];
   for (const c of components) {
@@ -62299,7 +62299,7 @@ var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)
 function chartExpressionSurface(source2) {
   const stack = [];
   let quote2 = "";
-  let text = "";
+  let text2 = "";
   let lastGroupStart = -1;
   for (let i = 0; i < source2.length; i++) {
     const ch = source2[i];
@@ -62315,12 +62315,12 @@ function chartExpressionSurface(source2) {
     if (ch === "'" || ch === '"') {
       quote2 = ch;
       if (!stack.length)
-        text += "?";
+        text2 += "?";
       continue;
     }
     if ("([{".includes(ch)) {
       if (!stack.length) {
-        text += ch;
+        text2 += ch;
         lastGroupStart = i;
       }
       stack.push(ch);
@@ -62328,11 +62328,11 @@ function chartExpressionSurface(source2) {
       if (stack.pop() !== { ")": "(", "]": "[", "}": "{" }[ch])
         return void 0;
       if (!stack.length)
-        text += ch;
+        text2 += ch;
     } else if (!stack.length)
-      text += ch;
+      text2 += ch;
   }
-  return quote2 || stack.length ? void 0 : { text, lastGroupStart };
+  return quote2 || stack.length ? void 0 : { text: text2, lastGroupStart };
 }
 function finalChartPointKeys(value2) {
   const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value2);
@@ -62367,10 +62367,10 @@ var BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\?
 function lintChartDataShape(c) {
   if (c.type !== "Chart")
     return [];
-  const props = c.properties ?? {};
-  if (truthy(propVal(props, "plotFromJson")))
+  const props2 = c.properties ?? {};
+  if (truthy(propVal(props2, "plotFromJson")))
     return [];
-  const value2 = propVal(props, "data");
+  const value2 = propVal(props2, "data");
   if (typeof value2 !== "string" || !value2.includes("{{"))
     return [];
   const keys = finalChartPointKeys(value2);
@@ -62417,11 +62417,11 @@ ${expr}
 function lintUnguardedComponentRefs(c) {
   if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type))
     return [];
-  const props = c.properties ?? {};
+  const props2 = c.properties ?? {};
   const keys = c.type === "Html" ? ["rawHtml"] : c.type === "Text" ? ["text"] : ["data"];
   const errors = [];
   for (const key4 of keys) {
-    const value2 = propVal(props, key4);
+    const value2 = propVal(props2, key4);
     if (typeof value2 !== "string" || !value2.includes("components"))
       continue;
     const bad = /* @__PURE__ */ new Set();
@@ -62879,22 +62879,22 @@ function lintComponentStateBindings(value2, components, path) {
       return;
     if (node2.type === "VariableDeclarator" && bindsComponents(node2.id) || /^(Function|Class)(Declaration|Expression)$/.test(node2.type) && bindsComponents(node2.id) || Array.isArray(node2.params) && node2.params.some(bindsComponents) || node2.type === "CatchClause" && bindsComponents(node2.param) || node2.type === "WithStatement" || node2.type === "CallExpression" && isNode2(node2.callee) && node2.callee.type === "Identifier" && node2.callee.name === "eval")
       shadowed = true;
-    const prop2 = isMember(node2) ? memberName(node2) : void 0;
-    if (prop2 && isMember(node2.object)) {
+    const prop3 = isMember(node2) ? memberName(node2) : void 0;
+    if (prop3 && isMember(node2.object)) {
       const owner = node2.object;
       if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
         const name2 = memberName(owner);
         const type = name2 ? components.find((c) => c.name === name2)?.type : void 0;
-        if (name2 && type && WRONG_ALIASES[type]?.[prop2])
-          wrongNames.add(`${name2}\0${type}\0${prop2}`);
+        if (name2 && type && WRONG_ALIASES[type]?.[prop3])
+          wrongNames.add(`${name2}\0${type}\0${prop3}`);
       }
     }
     Object.values(node2).forEach(visit);
   };
   visit(root);
   return shadowed ? [] : [...wrongNames].map((key4) => {
-    const [name2, type, prop2] = key4.split("\0");
-    return `${path}: ${WRONG_ALIASES[type][prop2](name2)}`;
+    const [name2, type, prop3] = key4.split("\0");
+    return `${path}: ${WRONG_ALIASES[type][prop3](name2)}`;
   });
 }
 var WRONG_ALIASES = {
@@ -63309,8 +63309,8 @@ var SEARCH_STOPWORDS = /* @__PURE__ */ new Set([
   "api",
   "endpoint"
 ]);
-function tokenize(text) {
-  return text.replace(/([a-z\d])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z\d]+/).filter((token) => token.length > 1 && !SEARCH_STOPWORDS.has(token)).map((token) => token.length > 3 && token.endsWith("s") && !token.endsWith("ss") ? token.slice(0, -1) : token);
+function tokenize(text2) {
+  return text2.replace(/([a-z\d])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z\d]+/).filter((token) => token.length > 1 && !SEARCH_STOPWORDS.has(token)).map((token) => token.length > 3 && token.endsWith("s") && !token.endsWith("ss") ? token.slice(0, -1) : token);
 }
 var DESCRIPTION_WEIGHT = 0.2;
 var NAME_COVERAGE_BONUS = 4;
@@ -63396,12 +63396,12 @@ var serverCache = /* @__PURE__ */ new Map();
 var TTL_MS = 60 * 60 * 1e3;
 function readSpec(client, kind, ref2) {
   return (async () => {
-    const text = ref2.location === "remote" ? await fetch(ref2.ref, { signal: AbortSignal.timeout(6e4) }).then((res) => {
+    const text2 = ref2.location === "remote" ? await fetch(ref2.ref, { signal: AbortSignal.timeout(6e4) }).then((res) => {
       if (!res.ok)
         throw new Error(`HTTP ${res.status}`);
       return res.text();
     }) : await client.getPluginSpec(ref2.plugin, ref2.name);
-    const parsed = extractSpec({ spec: text });
+    const parsed = extractSpec({ spec: text2 });
     if (!parsed)
       throw new Error("not an OpenAPI document");
     return parsed;
@@ -63890,8 +63890,8 @@ function resolveStaticBindings(options2) {
   visit(options2);
   return { resolved, unresolved };
 }
-function resolveString(text) {
-  const matches2 = [...text.matchAll(SERVER_BINDING)];
+function resolveString(text2) {
+  const matches2 = [...text2.matchAll(SERVER_BINDING)];
   if (!matches2.length)
     return { ok: false };
   const parts = [];
@@ -63901,10 +63901,10 @@ function resolveString(text) {
       return { ok: false };
     parts.push([m[0], result.value]);
   }
-  if (matches2.length === 1 && matches2[0][0] === text.trim())
+  if (matches2.length === 1 && matches2[0][0] === text2.trim())
     return { ok: true, value: parts[0][1], parts: [] };
   let i = 0;
-  return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
+  return { ok: true, value: text2.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
 }
 function evaluate(expression2) {
   if (expression2.length > MAX_EXPRESSION_CHARS)
@@ -64634,12 +64634,12 @@ function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
 function sqlStatementText(sql, backslashEscapes) {
-  let text = "";
+  let text2 = "";
   for (let i = 0; i < sql.length; i++) {
     const char = sql[i];
     if (char === "'" || char === '"' || char === "`") {
       const quote2 = char;
-      text += quote2 + quote2;
+      text2 += quote2 + quote2;
       let closed = false;
       while (++i < sql.length) {
         if (sql[i] === "\\" && backslashEscapes) {
@@ -64660,7 +64660,7 @@ function sqlStatementText(sql, backslashEscapes) {
     } else if (char === "-" && sql[i + 1] === "-") {
       while (i < sql.length && sql[i] !== "\n")
         i++;
-      text += " ";
+      text2 += " ";
     } else if (char === "/" && sql[i + 1] === "*") {
       if (sql[i + 2] === "!")
         return void 0;
@@ -64668,11 +64668,11 @@ function sqlStatementText(sql, backslashEscapes) {
       if (end < 0)
         return void 0;
       i = end + 1;
-      text += " ";
+      text2 += " ";
     } else
-      text += char;
+      text2 += char;
   }
-  return text.trim().replace(/;\s*$/, "").trim();
+  return text2.trim().replace(/;\s*$/, "").trim();
 }
 function normalizeSqlTable(raw) {
   return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
@@ -66564,8 +66564,8 @@ function projectedFields(c) {
   if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
     return;
   const keys = /* @__PURE__ */ new Map();
-  for (const prop2 of body.properties) {
-    const p = node(prop2);
+  for (const prop3 of body.properties) {
+    const p = node(prop3);
     if (p?.type !== "ObjectProperty" || p.computed)
       return;
     const name2 = key2(p);
@@ -66921,6 +66921,10 @@ var SAFE_GENERATED_FORM_FIELD_TYPES = [
 ];
 var SAFE_GENERATED_FORM_FIELD_TYPE_SET = new Set(SAFE_GENERATED_FORM_FIELD_TYPES);
 
+// dist/modalTypes.js
+var MODAL_V2_TYPES = /* @__PURE__ */ new Set(["ModalV2", "ShadDialog"]);
+var isModalV2Type = (type) => MODAL_V2_TYPES.has(type ?? "");
+
 // dist/lint.js
 var STYLE_KEYS_IN_PROPERTIES = /* @__PURE__ */ new Set([
   "styles",
@@ -67045,7 +67049,7 @@ var TABLE_TOOLBAR_HEIGHT_PX = 56;
 var TABLE_FOOTER_HEIGHT_PX = 46;
 var TABLE_BORDER_PX = 2;
 var TABLE_VISIBLE_COLUMN_WARN = 10;
-var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "Form", "Container", "Accordion"]);
+var SLOT_PARENT_TYPES = /* @__PURE__ */ new Set(["ModalV2", "ShadDialog", "Form", "Container", "Accordion"]);
 var TABS_TYPES = /* @__PURE__ */ new Set(["Tabs", "ShadTabs"]);
 var LIST_TYPES = /* @__PURE__ */ new Set(["Listview", "ShadListView"]);
 var SHAD_TABS_DEFAULT_TITLES = ["Overview", "Activity", "Settings"];
@@ -67080,8 +67084,8 @@ var MONEY_COLUMN_NAME = /\b(amount|price|cost|spend|revenue|budget|salary|fee)\b
 var NAME_COLUMN_NAME = /\b(email|contact|customer|vendor|product|title|subject|description|address|category)\b/i;
 var columnWords = (value2) => value2.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ");
 var BUTTON_PADDING_PX = 32;
-function propVal2(props, key4) {
-  const p = props?.[key4];
+function propVal2(props2, key4) {
+  const p = props2?.[key4];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
 function editDistance(left, right) {
@@ -67561,7 +67565,7 @@ function lintComponentSlots(components) {
       }
     }
     if (parent && !validParent) {
-      errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`);
+      errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`);
     }
   }
   return errors;
@@ -67582,6 +67586,16 @@ function lintShadKanbanCards(components) {
     }
   }
   return warnings;
+}
+function hasUnclosedBinding(value2) {
+  let at = value2.indexOf("{{");
+  while (at !== -1) {
+    const close = value2.indexOf("}}", at + 2);
+    if (close === -1)
+      return true;
+    at = value2.indexOf("{{", close + 2);
+  }
+  return false;
 }
 function hasNestedBinding(value2) {
   let at = value2.indexOf("{{");
@@ -67721,14 +67735,14 @@ function lintTableProjectionRender(spec, warnings = []) {
     if (node2.type === "TemplateLiteral" && node2.expressions.length === 0)
       return [node2.quasis[0].value.cooked];
     if (["MemberExpression", "OptionalMemberExpression"].includes(node2.type) && node2.object?.type === "ObjectExpression") {
-      const props = node2.object.properties;
-      if (props.length > 15 || props.some((p) => p.type !== "ObjectProperty" || p.computed || p.method || (p.key.name ?? p.key.value) === "__proto__"))
+      const props2 = node2.object.properties;
+      if (props2.length > 15 || props2.some((p) => p.type !== "ObjectProperty" || p.computed || p.method || (p.key.name ?? p.key.value) === "__proto__"))
         return null;
       const key4 = node2.computed ? ["StringLiteral", "NumericLiteral"].includes(node2.property?.type) ? String(node2.property.value) : void 0 : node2.property?.name;
       if (key4 === void 0)
         return null;
-      const prop2 = [...props].reverse().find((p) => String(p.key.name ?? p.key.value) === key4);
-      return prop2 ? variants(prop2.value, depth + 1) : null;
+      const prop3 = [...props2].reverse().find((p) => String(p.key.name ?? p.key.value) === key4);
+      return prop3 ? variants(prop3.value, depth + 1) : null;
     }
     return null;
   };
@@ -67743,13 +67757,13 @@ function lintTableProjectionRender(spec, warnings = []) {
       return node2.quasis.map((q) => q.value.cooked ?? "").join("?");
     return "?";
   };
-  const unfinishedTag = (text) => {
+  const unfinishedTag = (text2) => {
     const start = /<[A-Za-z][\w:-]*(?=[\s/>]|$)/g;
     let match;
-    while (match = start.exec(text)) {
+    while (match = start.exec(text2)) {
       let quote2 = "", closed = false;
-      for (let i = start.lastIndex; i < text.length; i++) {
-        const c = text[i];
+      for (let i = start.lastIndex; i < text2.length; i++) {
+        const c = text2[i];
         if (quote2) {
           if (c === quote2)
             quote2 = "";
@@ -67805,16 +67819,16 @@ function lintTableProjectionRender(spec, warnings = []) {
     if (["CallExpression", "OptionalCallExpression"].includes(node2.type) && ["MemberExpression", "OptionalMemberExpression"].includes(callee?.type) && (callee.computed ? callee.property?.value === "map" : callee.property?.name === "map") && node2.arguments?.[0]?.type === "ArrowFunctionExpression" && node2.arguments[0].body.type === "ObjectExpression") {
       const seen = /* @__PURE__ */ new Set();
       let unknownOverride = false;
-      for (const prop2 of [...node2.arguments[0].body.properties].reverse()) {
-        if (prop2.type !== "ObjectProperty" || prop2.computed && prop2.key.type !== "StringLiteral") {
+      for (const prop3 of [...node2.arguments[0].body.properties].reverse()) {
+        if (prop3.type !== "ObjectProperty" || prop3.computed && prop3.key.type !== "StringLiteral") {
           unknownOverride = true;
           continue;
         }
-        const key4 = String(prop2.key.name ?? prop2.key.value);
+        const key4 = String(prop3.key.name ?? prop3.key.value);
         if (seen.has(key4))
           continue;
         seen.add(key4);
-        inspect(prop2.value, key4, 0, node2 === root && !unknownOverride);
+        inspect(prop3.value, key4, 0, node2 === root && !unknownOverride);
       }
     }
     for (const child of Object.values(node2))
@@ -67830,17 +67844,17 @@ function lintUnboundEmptyState(spec) {
   if (spec.type !== "Text" && spec.type !== "Html")
     return [];
   const key4 = spec.type === "Html" ? "rawHtml" : "text";
-  const text = propVal2(spec.properties ?? {}, key4);
-  if (typeof text !== "string" || text.includes("{{"))
+  const text2 = propVal2(spec.properties ?? {}, key4);
+  if (typeof text2 !== "string" || text2.includes("{{"))
     return [];
   const name2 = spec.name ?? "";
-  if (!EMPTY_STATE_TEXT.test(text.replace(/<[^>]*>/g, "").trim()) && !/empty/i.test(name2))
+  if (!EMPTY_STATE_TEXT.test(text2.replace(/<[^>]*>/g, "").trim()) && !/empty/i.test(name2))
     return [];
   const visibility = propVal2(spec.properties ?? {}, "visibility") ?? propVal2(spec.styles ?? {}, "visibility");
   if (typeof visibility === "string" && visibility.includes("{{") && !/^\{\{\s*(true|false)\s*\}\}$/.test(visibility.trim()))
     return [];
   return [
-    `${spec.type} "${name2 || spec.id || spec.type}": the empty-state message "${text.trim().slice(0, 40)}" has no visibility binding, so it shows under a populated table. Bind visibility to the data being empty ({{(queries.<q>.data || []).length === 0}}), or drop the component: a Table shows its own empty message.`
+    `${spec.type} "${name2 || spec.id || spec.type}": the empty-state message "${text2.trim().slice(0, 40)}" has no visibility binding, so it shows under a populated table. Bind visibility to the data being empty ({{(queries.<q>.data || []).length === 0}}), or drop the component: a Table shows its own empty message.`
   ];
 }
 function lintEmptyTabs(components) {
@@ -67865,11 +67879,11 @@ function lintDefaultInputLabel(spec) {
   if (!LABELLED_INPUT_TYPES.has(spec.type ?? ""))
     return [];
   const label2 = propVal2(spec.properties ?? {}, "label");
-  const text = typeof label2 === "string" ? label2.trim() : label2;
-  if (text !== void 0 && text !== "" && text !== "Label")
+  const text2 = typeof label2 === "string" ? label2.trim() : label2;
+  if (text2 !== void 0 && text2 !== "" && text2 !== "Label")
     return [];
   return [
-    `${spec.type} "${spec.name ?? spec.id ?? spec.type}": ${text === void 0 ? "no label" : "an empty label"} renders the catalog's literal "Label" caption above the box. Give it the field's name ("Search", "Warehouse name"); a search box is labelled Search.`
+    `${spec.type} "${spec.name ?? spec.id ?? spec.type}": ${text2 === void 0 ? "no label" : "an empty label"} renders the catalog's literal "Label" caption above the box. Give it the field's name ("Search", "Warehouse name"); a search box is labelled Search.`
   ];
 }
 var DISABLED_SURFACE_TYPES = /* @__PURE__ */ new Set(["Kanban", "Table", "Listview", "Chart", "Form", "Tabs", "Container"]);
@@ -67887,18 +67901,18 @@ function lintStaticDisabledSurface(spec) {
 function lintButtonLabelWidth(spec) {
   if (spec.type !== "Button" || parentPlacement(spec)?.parentId)
     return [];
-  const text = propVal2(spec.properties ?? {}, "text");
-  if (typeof text !== "string" || text.includes("{{") || !text.trim())
+  const text2 = propVal2(spec.properties ?? {}, "text");
+  if (typeof text2 !== "string" || text2.includes("{{") || !text2.trim())
     return [];
   const width = (spec.layouts?.desktop ?? spec.layout)?.width;
   if (typeof width !== "number" || width <= 0)
     return [];
-  const neededPx = Math.ceil(text.trim().length * BUTTON_CHAR_PX + BUTTON_PADDING_PX);
+  const neededPx = Math.ceil(text2.trim().length * BUTTON_CHAR_PX + BUTTON_PADDING_PX);
   const px2 = Math.round(width * CANVAS_COLUMN_PX);
   if (px2 >= neededPx)
     return [];
   return [
-    `Button "${spec.name ?? spec.id ?? "Button"}": the label "${text.trim()}" needs about ${neededPx}px but the button is ${width} columns, about ${px2}px, so the label wraps or is cut. Use at least ${Math.ceil(neededPx / CANVAS_COLUMN_PX)} columns.`
+    `Button "${spec.name ?? spec.id ?? "Button"}": the label "${text2.trim()}" needs about ${neededPx}px but the button is ${width} columns, about ${px2}px, so the label wraps or is cut. Use at least ${Math.ceil(neededPx / CANVAS_COLUMN_PX)} columns.`
   ];
 }
 function lintListviewChildren(components) {
@@ -67951,7 +67965,7 @@ function lintListviewChildren(components) {
 function lintCanvasSideGutter(components) {
   const MIN_LEFT = 2;
   const MAX_RIGHT = 41;
-  const EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "Drawer"]);
+  const EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "ShadDialog", "Drawer"]);
   const roots = components.filter((component) => !parentPlacement(component) && !EXEMPT.has(component.type ?? ""));
   if (roots.length < 3)
     return [];
@@ -67990,9 +68004,9 @@ var CONTAINER_ITEMS = { Tabs: "tabs", Steps: "steps", Timeline: "data" };
 function lintRenderedText(spec) {
   const errors = [];
   const label2 = spec.name ?? spec.type ?? "component";
-  const props = spec.properties ?? {};
+  const props2 = spec.properties ?? {};
   for (const key4 of RENDERED_TEXT_KEYS) {
-    const value2 = propVal2(props, key4);
+    const value2 = propVal2(props2, key4);
     if (typeof value2 !== "string" || !value2)
       continue;
     if (value2.replace(/\{\{[\s\S]*?\}\}/g, "").includes("\\n")) {
@@ -68004,21 +68018,22 @@ function lintRenderedText(spec) {
     }
   }
   if (TABS_TYPES.has(spec.type ?? "")) {
-    const dynamic = isTrueBinding(propVal2(props, "useDynamicOptions"));
-    const tabs = propVal2(props, "tabs");
-    const tabItems = propVal2(props, "tabItems");
+    const dynamic = isTrueBinding(propVal2(props2, "useDynamicOptions"));
+    const tabs = propVal2(props2, "tabs");
+    const tabItems = propVal2(props2, "tabItems");
     const titles = Array.isArray(tabItems) ? tabItems.map((item) => String(item?.title ?? "")) : [];
     const authoredItems = titles.length > 0 && !titles.every((title) => /^Tab \d+$/.test(title)) && !(spec.type === "ShadTabs" && titles.join("|") === SHAD_TABS_DEFAULT_TITLES.join("|"));
     if (dynamic && (tabs === void 0 || tabs === null || tabs === "")) {
       errors.push(`Tabs "${label2}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
     } else if (!dynamic && !authoredItems) {
-      errors.push(`Tabs "${label2}": ToolJet renders properties.tabItems (default "Tab 1 / Tab 2 / Tab 3") unless useDynamicOptions is true; ` + (tabs !== void 0 ? "the authored properties.tabs is ignored. " : "") + 'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.');
+      const placeholder = spec.type === "ShadTabs" ? SHAD_TABS_DEFAULT_TITLES.join(" / ") : "Tab 1 / Tab 2 / Tab 3";
+      errors.push(`${spec.type} "${label2}": it renders properties.tabItems (default "${placeholder}") unless useDynamicOptions is true; ` + (tabs !== void 0 ? "the authored properties.tabs is ignored. " : "") + 'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.');
     }
   }
   const itemsKey = TABS_TYPES.has(spec.type ?? "") ? void 0 : CONTAINER_ITEMS[spec.type ?? ""];
   if (itemsKey) {
-    const dynamicSchema = isTruthyBinding(propVal2(props, "advanced")) ? propVal2(props, "schema") : void 0;
-    const items = dynamicSchema ?? propVal2(props, itemsKey);
+    const dynamicSchema = isTruthyBinding(propVal2(props2, "advanced")) ? propVal2(props2, "schema") : void 0;
+    const items = dynamicSchema ?? propVal2(props2, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === "string" && items.includes("{{");
     if (!authored) {
       errors.push(`${spec.type} "${label2}" has no properties.${itemsKey}: it renders ToolJet's placeholder items ("Tab 1 / Tab 2 / Tab 3"). Author ${itemsKey} with the real titles, or use a different component.`);
@@ -68032,21 +68047,21 @@ function expressionOutsideBinding(value2) {
   return match ? JSON.stringify(match[0].trim().slice(0, 60)) : null;
 }
 var WRAP_REQUIRED_COLUMNS = 5;
-function estimateTextHeight(text, baseSize, options2 = {}) {
-  const dynamic = text.includes("{{");
+function estimateTextHeight(text2, baseSize, options2 = {}) {
+  const dynamic = text2.includes("{{");
   if (dynamic) {
     const literals = [];
     let from = 0;
-    for (const span of bindingSpans(text)) {
-      literals.push(text.slice(from, span.start));
+    for (const span of bindingSpans(text2)) {
+      literals.push(text2.slice(from, span.start));
       from = span.end;
     }
-    literals.push(text.slice(from));
+    literals.push(text2.slice(from));
     const standIn = options2.bindingLines && literals.some((part) => part.replace(/<[^>]+>/g, "").trim() || /<br\s*\/?>/i.test(part)) ? "x" : " ";
-    text = literals.join(standIn).split("{{", 1)[0];
+    text2 = literals.join(standIn).split("{{", 1)[0];
   }
-  const blankLines = (text.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
-  const rawParts = text.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
+  const blankLines = (text2.match(/<br\s*\/?>\s*<br\s*\/?>/gi) ?? []).length;
+  const rawParts = text2.split(/<br\s*\/?>|<\/(?:div|p|h[1-6]|li)>|\n/i);
   const parts = rawParts.map((part) => part.replace(/<[^>]+>/g, "").trim() === "" ? null : part).filter((part) => part !== null);
   const sizes = parts.map((part) => {
     const found = [...part.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((m) => Number(m[1]));
@@ -68070,14 +68085,14 @@ function lintChartHouseStyle(spec, warnings = []) {
   if (spec.type !== "Chart")
     return [];
   const label2 = spec.name ?? spec.type;
-  const props = spec.properties ?? {};
-  const fromJson = propVal2(props, "plotFromJson");
+  const props2 = spec.properties ?? {};
+  const fromJson = propVal2(props2, "plotFromJson");
   if (!isTrueBinding(fromJson)) {
-    const kind = String(propVal2(props, "type") ?? "bar");
+    const kind = String(propVal2(props2, "type") ?? "bar");
     warnings.push(`Chart "${label2}": native type "${kind}" renders Plotly's defaults (Verdana labels, grey grid, flat unlabeled bars, the rainbow pie). Set properties.plotFromJson to "{{true}}" and write properties.jsonDescription as the house chart from references/ui-layout.md for finer control, or retain native rendering when its themed presentation is verified.`);
     return [];
   }
-  const raw = propVal2(props, "jsonDescription");
+  const raw = propVal2(props2, "jsonDescription");
   const description = typeof raw === "string" ? raw : raw && typeof raw === "object" ? JSON.stringify(raw) : "";
   if (!description.trim()) {
     return [`Chart "${label2}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
@@ -68134,19 +68149,40 @@ var INSPECTOR_ONLY_PROPERTIES = {
 function lintComponentSpec(spec, context = {}) {
   const errors = [];
   const warnings = [];
-  const props = spec.properties ?? {};
+  const props2 = spec.properties ?? {};
   const label2 = spec.name ?? spec.type ?? "component";
-  if (spec.type === "Text" && propVal2(props, "text") === void 0) {
+  if (spec.type === "Text" && propVal2(props2, "text") === void 0) {
     warnings.push(`Text "${label2}" has no properties.text and will render ToolJet's default greeting. Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. Do not invent replacement copy or change its layout.`);
   }
-  for (const key4 of Object.keys(props)) {
-    const value2 = propVal2(props, key4);
+  for (const key4 of Object.keys(props2)) {
+    const value2 = propVal2(props2, key4);
+    if (typeof value2 === "string" && hasUnclosedBinding(value2)) {
+      errors.push(`Component "${label2}".properties.${key4} opens a {{ binding that never closes, so ToolJet shows the expression as text. End it with "}}" (an array or object literal needs its own closing bracket and brace before the final "}}").`);
+    }
     if (typeof value2 === "string" && hasNestedBinding(value2)) {
       errors.push(`Component "${label2}".properties.${key4} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` + (spec.type === "ShadTable" ? "For per-row styling use the column's conditionalStyles ([{ condition, value, textColor, backgroundColor }]) and a button's disabledWhen / hiddenWhen ({ key, condition, value }) instead of bindings." : "Compute the inner value in the outer expression, or in a JavaScript query."));
     }
   }
+  if (spec.type === "ShadTable") {
+    warnings.push(`ShadTable "${label2}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" (ToolJet's own Table in the shadcn/ui look, with its columns, row action buttons, events and inspector).`);
+  }
+  if (spec.type === "ShadTable" && isFalseBinding(propVal2(props2, "dynamicHeight"))) {
+    const height = Number(spec.layout?.height);
+    const paginated = !isFalseBinding(propVal2(props2, "enablePagination"));
+    const rows = Number(String(propVal2(props2, "rowsPerPage") ?? "10").replace(/[{}\s]/g, "")) || 10;
+    if (paginated && Number.isFinite(height) && height > 0) {
+      const off = (key4) => isFalseBinding(propVal2(props2, key4));
+      const on = (key4) => isTrueBinding(propVal2(props2, key4));
+      const toolbar = !off("displaySearchBox") || !off("showFilterButton") || !on("hideColumnSelectorButton") || on("showDownloadButton") || on("showRefreshButton");
+      const rowHeight2 = { condensed: 36, spacious: 56 }[String(propVal2(props2, "cellSize"))] ?? 44;
+      const needed = (toolbar ? 56 : 0) + 52 + 41 + rows * rowHeight2;
+      if (height < needed) {
+        errors.push(`ShadTable "${label2}" has dynamicHeight off and height ${height}px, but ${rows} rows per page needs at least ${needed}px, so rows are cut off inside it. Remove dynamicHeight:false (the table then fits its rows), raise the height to ${needed}, or lower rowsPerPage.`);
+      }
+    }
+  }
   if (spec.type === "Table") {
-    const columns = propVal2(props, "columns");
+    const columns = propVal2(props2, "columns");
     if (Array.isArray(columns)) {
       const hasClockFormat = (c) => typeof c.dateFormat === "string" && !c.dateFormat.includes("{{") && /[Hhms]/.test(c.dateFormat.replace(/\[[^\]]*\]/g, ""));
       const timed = columns.filter((c) => c && typeof c === "object" && c.columnType === "datepicker" && (isTrueBinding(c.isTimeChecked) || hasClockFormat(c)) && c.columnVisibility !== false && c.columnVisibility !== "{{false}}");
@@ -68166,50 +68202,50 @@ function lintComponentSpec(spec, context = {}) {
   }
   if (spec.type === "NumberInput") {
     for (const key4 of ["minValue", "maxValue"]) {
-      const value2 = propVal2(props, key4);
+      const value2 = propVal2(props2, key4);
       if (value2 == null || typeof value2 === "string" && value2.trim() === "")
         continue;
       errors.push(`NumberInput "${label2}": properties.${key4} is ignored by the renderer. Move the limit to top-level validation.${key4}: {value: ...} and clear the legacy property. Gate standalone submit actions on field validity and the intended numeric range; truthiness accepts negative values.`);
     }
   }
-  errors.push(...lintBindingSyntax(props, `Component "${label2}".properties`));
+  errors.push(...lintBindingSyntax(props2, `Component "${label2}".properties`));
   errors.push(...lintBindingSyntax(spec.styles, `Component "${label2}".styles`));
   errors.push(...lintRenderedText(spec));
   errors.push(...lintChartHouseStyle(spec, warnings));
   if (spec.type === "Text") {
-    const text = propVal2(props, "text");
+    const text2 = propVal2(props2, "text");
     const height = (spec.layouts?.desktop ?? spec.layout)?.height;
-    if (typeof text === "string" && typeof height === "number") {
-      const needed = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
+    if (typeof text2 === "string" && typeof height === "number") {
+      const needed = estimateTextHeight(text2, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
       if (needed.lines > 1 && needed.px > height + 6) {
         errors.push(`Text "${label2}": its ${needed.lines}${needed.dynamic ? " static" : ""} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
       } else if (needed.dynamic) {
-        const likely = estimateTextHeight(text, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14, { bindingLines: true });
+        const likely = estimateTextHeight(text2, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14, { bindingLines: true });
         if (likely.lines > 1 && likely.px > height + 6) {
           warnings.push(`Text "${label2}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`);
         }
       }
     }
   }
-  if (spec.type === "ModalV2" && !isFalseBinding(propVal2(props, "useDefaultButton"))) {
+  if (isModalV2Type(spec.type) && !isFalseBinding(propVal2(props2, "useDefaultButton"))) {
     const top = (spec.layouts?.desktop ?? spec.layout)?.top;
-    errors.push(`ModalV2 "${label2}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger button at the modal's own coordinates${typeof top === "number" ? ` (top ${top})` : ""} as a stray block on the page. Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.`);
+    errors.push(`${spec.type} "${label2}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger button at the modal's own coordinates${typeof top === "number" ? ` (top ${top})` : ""} as a stray block on the page. Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.`);
   }
-  if ((spec.type === "DropdownV2" || spec.type === "MultiselectV2") && !differsFromCatalogDefault(spec.type, "placeholder", propVal2(props, "placeholder"))) {
-    const labelText = propVal2(props, "label");
+  if ((spec.type === "DropdownV2" || spec.type === "MultiselectV2") && !differsFromCatalogDefault(spec.type, "placeholder", propVal2(props2, "placeholder"))) {
+    const labelText = propVal2(props2, "label");
     if (typeof labelText === "string" && labelText.trim()) {
       warnings.push(`${spec.type} "${label2}": placeholder is the catalog default, so the control reads "Select" until a value is chosen. Set properties.placeholder to the neutral choice for "${labelText.trim()}" (for example "All ${labelText.trim().toLowerCase()}") or give it a default value.`);
     }
   }
   for (const key4 of ["disabledState", "loadingState", "visibility", "collapseWhenHidden"]) {
     const path = `Component "${label2}".properties.${key4}`;
-    for (const error51 of lintBindingSyntax(props[key4], path, true)) {
+    for (const error51 of lintBindingSyntax(props2[key4], path, true)) {
       if (!errors.includes(error51))
         errors.push(error51);
     }
   }
-  if (["DropdownV2", "MultiselectV2"].includes(spec.type ?? "") && isTruthyBinding(propVal2(props, "advanced"))) {
-    for (const error51 of lintBindingSyntax(props.schema, `Component "${label2}".properties.schema`, true)) {
+  if (["DropdownV2", "MultiselectV2"].includes(spec.type ?? "") && isTruthyBinding(propVal2(props2, "advanced"))) {
+    for (const error51 of lintBindingSyntax(props2.schema, `Component "${label2}".properties.schema`, true)) {
       if (!errors.includes(error51))
         errors.push(error51);
     }
@@ -68222,7 +68258,7 @@ function lintComponentSpec(spec, context = {}) {
       errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
     }
   }
-  const misplaced = Object.keys(props).filter((k) => isMisplacedStyleKey(spec.type, k));
+  const misplaced = Object.keys(props2).filter((k) => isMisplacedStyleKey(spec.type, k));
   if (misplaced.length) {
     errors.push(`Component "${label2}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
@@ -68281,14 +68317,14 @@ function lintComponentSpec(spec, context = {}) {
     }
   }
   if (spec.type === "Chart") {
-    const title = propVal2(props, "title");
+    const title = propVal2(props2, "title");
     if (title === void 0) {
       warnings.push(`Chart "${label2}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
     } else if (typeof title === "string" && title.trim() !== "") {
       warnings.push(`Chart "${label2}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
     }
-    const plotFromJson = propVal2(props, "plotFromJson");
-    const jsonDescription = propVal2(props, "jsonDescription");
+    const plotFromJson = propVal2(props2, "plotFromJson");
+    const jsonDescription = propVal2(props2, "jsonDescription");
     if (isTruthyBinding(plotFromJson)) {
       if (jsonDescription === void 0) {
         errors.push(`Chart "${label2}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
@@ -68313,31 +68349,31 @@ function lintComponentSpec(spec, context = {}) {
       }
     }
   }
-  if (spec.type === "Html" && nestedMapInValue(propVal2(props, "rawHtml"))) {
+  if (spec.type === "Html" && nestedMapInValue(propVal2(props2, "rawHtml"))) {
     warnings.push(`Html "${label2}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
   }
   if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
     warnings.push(`Component "${label2}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
   }
   if (spec.type === "Statistics") {
-    const secondaryValue = propVal2(props, "secondaryValue");
+    const secondaryValue = propVal2(props2, "secondaryValue");
     if (typeof secondaryValue === "string" && !secondaryValue.includes("{{") && /[A-Za-z]/.test(secondaryValue)) {
       warnings.push(`Statistics "${label2}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
     }
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
-    const secondaryHidden = isTruthyBinding(propVal2(props, "hideSecondary"));
+    const secondaryHidden = isTruthyBinding(propVal2(props2, "hideSecondary"));
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
       warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than four tiles per content row." : `Use a two-column KPI grid, or set hideSecondary:true and use at least ${STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS} columns.`}`);
     }
-    const iconName = catalogValue("Statistics", props, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props, "iconVisibility") !== false && propVal2(props, "iconVisibility") !== "{{false}}";
+    const iconName = catalogValue("Statistics", props2, "icon");
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props2, "iconVisibility") !== false && propVal2(props2, "iconVisibility") !== "{{false}}";
     const valueFontPx = optionalStaticNumber(catalogValue("Statistics", spec.styles, "primaryValueSize", "styles"));
     const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
       errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
-    const primaryLabel = catalogValue("Statistics", props, "primaryValueLabel");
+    const primaryLabel = catalogValue("Statistics", props2, "primaryValueLabel");
     if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && // About 25px a column at laptop widths and 7-8px a label character: two characters a column stay on one
     // line (a 13-column tile is ~325px; the old 12-character limit flagged "Arrived / waiting", vet n1).
     primaryLabel.trim().length > width * 2) {
@@ -68346,13 +68382,13 @@ function lintComponentSpec(spec, context = {}) {
   }
   if (spec.type === "DropdownV2") {
     for (const key4 of ["value", "defaultValue"]) {
-      if (Object.prototype.hasOwnProperty.call(props, key4)) {
+      if (Object.prototype.hasOwnProperty.call(props2, key4)) {
         errors.push(`DropdownV2 "${label2}": properties.${key4} is not a supported preselection property. Set visible:true and default:true on the matching option; for an edit form use advanced:true and a schema binding whose option.default compares its value with the raw selected record ID/field. Preserve ID types. Remove this unsupported property after wiring the selection; silently dropping it can clear saved relationships.`);
       }
     }
-    const advanced = propVal2(props, "advanced");
-    const schema = propVal2(props, "schema");
-    const options2 = propVal2(props, "options");
+    const advanced = propVal2(props2, "advanced");
+    const schema = propVal2(props2, "schema");
+    const options2 = propVal2(props2, "options");
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
     const customOptions = differsFromCatalogDefault("DropdownV2", "options", options2);
     if (isTruthyBinding(advanced)) {
@@ -68383,8 +68419,8 @@ function lintComponentSpec(spec, context = {}) {
     }
   }
   if (spec.type === "DatePickerV2") {
-    const defaultValue = propVal2(props, "defaultValue");
-    const dateFormat = catalogValue("DatePickerV2", props, "dateFormat");
+    const defaultValue = propVal2(props2, "defaultValue");
+    const dateFormat = catalogValue("DatePickerV2", props2, "dateFormat");
     const literal3 = typeof defaultValue === "string" ? defaultValue.trim().replace(/^\{\{\s*(['"])([^'"]+)\1\s*\}\}$/, "$2") : void 0;
     const yearLastFormat = typeof dateFormat === "string" && /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(dateFormat);
     if (literal3 && /^\d{4}-\d{2}-\d{2}$/.test(literal3) && yearLastFormat) {
@@ -68402,8 +68438,8 @@ function lintComponentSpec(spec, context = {}) {
     }
   }
   if (spec.type === "KeyValuePair") {
-    const data = propVal2(props, "data");
-    const fields = propVal2(props, "fields");
+    const data = propVal2(props2, "data");
+    const fields = propVal2(props2, "fields");
     if (data !== void 0 && Array.isArray(fields) && fields.length > 0) {
       const declaredKeys = new Set(fields.flatMap((field) => {
         const key4 = recordValue(field)?.key;
@@ -68426,7 +68462,7 @@ function lintComponentSpec(spec, context = {}) {
           }
         }
       }
-      const deletionHistoryValue = propVal2(props, "fieldDeletionHistory");
+      const deletionHistoryValue = propVal2(props2, "fieldDeletionHistory");
       const deletionHistory = new Set(Array.isArray(deletionHistoryValue) ? deletionHistoryValue.filter((key4) => typeof key4 === "string") : []);
       const hasCustomField = fields.some((field) => {
         const id = recordValue(field)?.id;
@@ -68458,20 +68494,20 @@ function lintComponentSpec(spec, context = {}) {
   warnings.push(...lintSurfaceInsets(spec));
   if (spec.type === "Table") {
     errors.push(...lintTableColumnsShape(spec));
-    const data = propVal2(props, "data");
-    const selector = propVal2(props, "dataSourceSelector");
-    const autogen = propVal2(props, "autogenerateColumns");
-    const columns = propVal2(props, "columns");
+    const data = propVal2(props2, "data");
+    const selector = propVal2(props2, "dataSourceSelector");
+    const autogen = propVal2(props2, "autogenerateColumns");
+    const columns = propVal2(props2, "columns");
     const hasColumns = Array.isArray(columns);
     const projectedDataKeys = projectedTableDataKeys(data);
     const projectsDataKeys = projectedDataKeys !== void 0;
     const desktopHeight = (spec.layouts?.desktop ?? spec.layout)?.height;
-    const dynamicHeight = catalogValue("Table", props, "dynamicHeight");
+    const dynamicHeight = catalogValue("Table", props2, "dynamicHeight");
     const contentWrap = catalogValue("Table", spec.styles, "contentWrap", "styles");
-    const expandableRows = catalogValue("Table", props, "enableExpandableRows");
-    const paginationEnabled = catalogValue("Table", props, "enablePagination");
-    const serverSide = catalogValue("Table", props, "serverSidePagination");
-    const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props, "serverSideRowsPerPage") : catalogValue("Table", props, "rowsPerPage"));
+    const expandableRows = catalogValue("Table", props2, "enableExpandableRows");
+    const paginationEnabled = catalogValue("Table", props2, "enablePagination");
+    const serverSide = catalogValue("Table", props2, "serverSidePagination");
+    const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props2, "serverSideRowsPerPage") : catalogValue("Table", props2, "rowsPerPage"));
     if (functionStyleTableMap(data)) {
       errors.push(`Table "${label2}": the projection checker cannot certify a function-style .map() callback. Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.`);
     } else if (statementBodyMapInValue(data) && typeof data === "string" && data.trim().slice(2, -2).includes("}}")) {
@@ -68486,7 +68522,7 @@ function lintComponentSpec(spec, context = {}) {
       });
       const baseRowHeight = hasVisibleChips ? Math.max(49, textRowHeight) : textRowHeight;
       const rowHeight2 = Math.max(baseRowHeight, isTruthyBinding(contentWrap) ? textRowHeight + 4 : textRowHeight);
-      const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props, key4)));
+      const toolbarVisible = ["displaySearchBox", "showFilterButton", "showDownloadButton", "showAddNewRowButton", "showBulkUpdateActions"].some((key4) => isTruthyBinding(catalogValue("Table", props2, key4)));
       const chromeHeight = (toolbarVisible ? TABLE_TOOLBAR_HEIGHT_PX : 0) + TABLE_COLUMN_HEADER_HEIGHT_PX + TABLE_FOOTER_HEIGHT_PX + TABLE_BORDER_PX;
       const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
       const estimatedHeight = chromeHeight + rowsPerPage * rowHeight2;
@@ -68595,7 +68631,7 @@ function lintComponentSpec(spec, context = {}) {
         }
         if (c?.columnType === "string" && // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
         c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
-        (typeof c.key === "string" && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) && !authorComputesKey(props?.data, c.key)) {
+        (typeof c.key === "string" && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) && !authorComputesKey(props2?.data, c.key)) {
           warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
@@ -68626,26 +68662,26 @@ function lintComponentSpec(spec, context = {}) {
         warnings.push(`Table "${label2}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
       }
     }
-    const legacyActions = propVal2(props, "actions");
+    const legacyActions = propVal2(props2, "actions");
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
       warnings.push(`Table "${label2}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
     }
-    if (isTruthyBinding(propVal2(props, "serverSidePagination"))) {
-      if (propVal2(props, "serverSideRowsPerPage") === void 0) {
+    if (isTruthyBinding(propVal2(props2, "serverSidePagination"))) {
+      if (propVal2(props2, "serverSideRowsPerPage") === void 0) {
         warnings.push(`Table "${label2}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
       }
-      if (propVal2(props, "totalRecords") === void 0) {
+      if (propVal2(props2, "totalRecords") === void 0) {
         warnings.push(`Table "${label2}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
       }
     }
   }
   if (spec.type === "Form") {
-    const mode = propVal2(props, "generateFormFrom");
-    const schemaValue = propVal2(props, "newJsonSchema");
+    const mode = propVal2(props2, "generateFormFrom");
+    const schemaValue = propVal2(props2, "newJsonSchema");
     if (mode === "jsonSchema" && schemaValue === void 0) {
       warnings.push(`Form "${label2}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
     }
-    if (mode === "rawJson" && propVal2(props, "JSONData") === void 0) {
+    if (mode === "rawJson" && propVal2(props2, "JSONData") === void 0) {
       warnings.push(`Form "${label2}": generateFormFrom is "rawJson" but JSONData is missing.`);
     }
     const fields = recordValue(recordValue(schemaValue)?.properties);
@@ -68712,7 +68748,7 @@ function flexPlacementKeys(components, context = {}) {
 function detectOverlaps(components, context = {}) {
   const warnings = [];
   const flexBodies = flexPlacementKeys(components, context);
-  const items = components.filter((c) => !(c.type === "ModalV2" && isFalseBinding(propVal2(c.properties, "useDefaultButton")))).map((c) => ({
+  const items = components.filter((c) => !(isModalV2Type(c.type) && isFalseBinding(propVal2(c.properties, "useDefaultButton")))).map((c) => ({
     component: c,
     name: c.name ?? c.type ?? "?",
     r: c.layouts?.desktop ?? c.layout,
@@ -68740,7 +68776,7 @@ function lintHiddenModalHitTargets(components) {
   const interactive = /* @__PURE__ */ new Set(["Button", "ButtonGroup", "ButtonGroupV2", "Table", "Kanban", "Calendar", "Map", ...FORM_INPUT_TYPES]);
   const warnings = [];
   for (const modal of components) {
-    if (modal.type !== "ModalV2" || !isFalseBinding(propVal2(modal.properties, "useDefaultButton")))
+    if (!isModalV2Type(modal.type) || !isFalseBinding(propVal2(modal.properties, "useDefaultButton")))
       continue;
     const a = modal.layouts?.desktop ?? modal.layout;
     if (!a)
@@ -68757,7 +68793,7 @@ function lintHiddenModalHitTargets(components) {
       }
     }
     if (targets.length)
-      warnings.push(`ModalV2 "${modal.name ?? "?"}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map((n) => `"${n}"`).join(", ")}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
+      warnings.push(`${modal.type} "${modal.name ?? "?"}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map((n) => `"${n}"`).join(", ")}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
   }
   return warnings;
 }
@@ -68800,7 +68836,7 @@ function modalTitleText(component) {
   const value2 = propVal2(component.properties, "text");
   if (typeof value2 !== "string")
     return void 0;
-  let text = "";
+  let text2 = "";
   let from = 0;
   for (const span of bindingSpans(value2)) {
     let literal3;
@@ -68811,13 +68847,13 @@ function modalTitleText(component) {
     }
     if (literal3.type !== "StringLiteral" && !(literal3.type === "TemplateLiteral" && literal3.expressions.length === 0))
       return void 0;
-    text += value2.slice(from, span.start) + (literal3.type === "StringLiteral" ? literal3.value : literal3.quasis[0]?.value.cooked ?? "");
+    text2 += value2.slice(from, span.start) + (literal3.type === "StringLiteral" ? literal3.value : literal3.quasis[0]?.value.cooked ?? "");
     from = span.end;
   }
-  text += value2.slice(from);
-  if (text.includes("{{"))
+  text2 += value2.slice(from);
+  if (text2.includes("{{"))
     return void 0;
-  return text.replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|#160|#x0*a0);/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
+  return text2.replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|#160|#x0*a0);/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
 }
 function isTitleLikeText(component, headerChildren) {
   if (component.type !== "Text")
@@ -68825,12 +68861,12 @@ function isTitleLikeText(component, headerChildren) {
   const top = (component.layouts?.desktop ?? component.layout)?.top ?? 0;
   if (top > 100)
     return false;
-  const text = modalTitleText(component);
-  if (!text)
+  const text2 = modalTitleText(component);
+  if (!text2)
     return false;
   if (headerChildren.length)
-    return headerChildren.some((header) => modalTitleText(header) === text);
-  if (text.length > 80 || text.split(" ").length > 8 || /[.!?;…]/.test(text) || /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text) || /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text) || /\b(?:below|above|to continue|to get started)\b/.test(text))
+    return headerChildren.some((header) => modalTitleText(header) === text2);
+  if (text2.length > 80 || text2.split(" ").length > 8 || /[.!?;…]/.test(text2) || /^(?:please|enter|select|choose|use|fill|provide)\b/.test(text2) || /^(?:add|create|edit|update)\s+(?:the|your)\b/.test(text2) || /\b(?:below|above|to continue|to get started)\b/.test(text2))
     return false;
   const fontWeight = propVal2(component.styles, "fontWeight");
   const textSize = optionalStaticNumber(propVal2(component.styles, "textSize"));
@@ -68847,7 +68883,7 @@ function lintModalChildren(components) {
   const parentOf = (component) => refs2.get(parentPlacement(component)?.parentId ?? "");
   const modalChildren = components.filter((component) => {
     const parent = parentOf(component);
-    return parent?.type === "ModalV2" || parent?.type === "Modal";
+    return isModalV2Type(parent?.type) || parent?.type === "Modal";
   });
   const bodyChildren = modalChildren.filter((component) => parentPlacement(component)?.slotName === "body");
   for (const child of bodyChildren) {
@@ -68878,12 +68914,12 @@ function lintModalChildren(components) {
       }
     }
   }
-  for (const modal of components.filter((component) => component.type === "ModalV2" || component.type === "Modal")) {
+  for (const modal of components.filter((component) => isModalV2Type(component.type) || component.type === "Modal")) {
     const key4 = componentKey(modal);
     if (!key4)
       continue;
     const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key4);
-    if (modal.type === "ModalV2" && !isFalseBinding(propVal2(modal.properties, "showHeader"))) {
+    if (isModalV2Type(modal.type) && !isFalseBinding(propVal2(modal.properties, "showHeader"))) {
       const headerChildren = modalChildren.filter((child) => {
         const placement = parentPlacement(child);
         return placement?.parentId === key4 && placement.slotName === "header";
@@ -68903,7 +68939,7 @@ function lintModalChildren(components) {
       continue;
     const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
     const modalHeight = staticNumber(propVal2(modal.properties, "modalHeight"), 400);
-    const isV2 = modal.type === "ModalV2";
+    const isV2 = isModalV2Type(modal.type);
     const headerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showHeader")) ? 0 : staticNumber(propVal2(modal.properties, "headerHeight"), 80);
     const footerHeight = !isV2 || isFalseBinding(propVal2(modal.properties, "showFooter")) ? 0 : staticNumber(propVal2(modal.properties, "footerHeight"), 80);
     const bottomSlack = 20;
@@ -68980,8 +69016,8 @@ function lintRenderedGeometry(components, context = {}) {
 }
 var FLEX_ANT_CARD_HEADER_PX = 56;
 function flexNumber(value2, fallback) {
-  const text = typeof value2 === "string" ? value2.replace(/[{}\s]/g, "").replace(/px$/, "") : value2;
-  const n = typeof text === "number" ? text : typeof text === "string" && text !== "" ? Number(text) : NaN;
+  const text2 = typeof value2 === "string" ? value2.replace(/[{}\s]/g, "").replace(/px$/, "") : value2;
+  const n = typeof text2 === "number" ? text2 : typeof text2 === "string" && text2 !== "" ? Number(text2) : NaN;
   return Number.isFinite(n) ? n : fallback;
 }
 function lintFlexContainerFit(components) {
@@ -68996,18 +69032,18 @@ function lintFlexContainerFit(components) {
     const children = components.filter((child) => child !== container && keys.has(placementKey(child)));
     if (!children.length)
       continue;
-    const props = container.properties;
-    const dynamic = propVal2(props, "dynamicHeight");
+    const props2 = container.properties;
+    const dynamic = propVal2(props2, "dynamicHeight");
     if (dynamic === void 0 || isTruthyBinding(dynamic))
       continue;
-    if (["antCard", "shadcnCard"].includes(String(propVal2(props, "cardStyle") ?? "")))
+    if (["antCard", "shadcnCard"].includes(String(propVal2(props2, "cardStyle") ?? "")))
       continue;
-    const padding = flexNumber(propVal2(props, "padding"), 12);
-    const gap = flexNumber(propVal2(props, "gap"), 12);
-    const direction = String(propVal2(props, "direction") ?? "column");
+    const padding = flexNumber(propVal2(props2, "padding"), 12);
+    const gap = flexNumber(propVal2(props2, "gap"), 12);
+    const direction = String(propVal2(props2, "direction") ?? "column");
     if (direction === "row")
       continue;
-    const card = propVal2(props, "cardStyle") === "antCard" && (Boolean(propVal2(props, "cardTitle")) || Boolean(propVal2(props, "cardExtra")));
+    const card = propVal2(props2, "cardStyle") === "antCard" && (Boolean(propVal2(props2, "cardTitle")) || Boolean(propVal2(props2, "cardExtra")));
     const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
     const content = direction === "column" ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1) : Math.max(...heights);
     const needed = Math.ceil(content + 2 * padding + (card ? FLEX_ANT_CARD_HEADER_PX : 0) + 2);
@@ -69017,7 +69053,7 @@ function lintFlexContainerFit(components) {
   }
   return warnings;
 }
-var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "Modal", "Icon"]);
+var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "ShadDialog", "Modal", "Icon"]);
 var MIN_RENDERABLE_HEIGHT = 24;
 function lintUnrenderableHeights(components) {
   const errors = [];
@@ -69034,22 +69070,22 @@ function lintUnrenderableHeights(components) {
 function lintWidgetContracts(c) {
   const errors = [];
   const label2 = `${c.type} "${c.name ?? c.id ?? c.type}"`;
-  const props = c.properties;
+  const props2 = c.properties;
   const rect2 = c.layouts?.desktop ?? c.layout;
   const nested = Boolean(c.parentRef ?? c.parent);
   const wrappedTrue = (v) => Boolean(v && typeof v === "object" && v.value);
-  if (c.type === "RadioButtonV2" && !isTruthyBinding(propVal2(props, "advanced"))) {
-    const options2 = propVal2(props, "options");
+  if (c.type === "RadioButtonV2" && !isTruthyBinding(propVal2(props2, "advanced"))) {
+    const options2 = propVal2(props2, "options");
     if (Array.isArray(options2) && options2.some((o) => wrappedTrue(o?.default))) {
       errors.push(`${label2}: a static option marked default:{value:true} is never preselected (RadioButtonV2 checks default === true). Set advanced to "{{true}}" and give schema as [{label, value, default: true, visible: true}] with plain booleans.`);
     }
   }
-  if (c.type === "TreeSelect" && !isTruthyBinding(propVal2(props, "advanced"))) {
+  if (c.type === "TreeSelect" && !isTruthyBinding(propVal2(props2, "advanced"))) {
     const hasWrapped = (nodes) => Array.isArray(nodes) && nodes.some((n) => {
       const o = n ?? {};
       return ["visible", "disable", "selected", "expanded"].some((k) => o[k] && typeof o[k] === "object") || hasWrapped(o.children);
     });
-    const options2 = propVal2(props, "options");
+    const options2 = propVal2(props2, "options");
     if (Array.isArray(options2) && options2.some((o) => hasWrapped(o?.children))) {
       errors.push(`${label2}: nested options keep their flags wrapped as {value}, and a wrapped false is truthy (a hidden child shows, an unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.`);
     }
@@ -69060,18 +69096,18 @@ function lintWidgetContracts(c) {
       const f = o.visible && typeof o.visible === "object" ? o.visible.value : o.visible;
       return f === true || f === "true" || f === "{{true}}" || shownAsTrue(o.children);
     });
-    if (shownAsTrue(propVal2(props, "menuItems"))) {
+    if (shownAsTrue(propVal2(props2, "menuItems"))) {
       errors.push(`${label2}: an item with visible true is HIDDEN (Navigation stores "hidden" under visible). Write visible:{value:"{{false}}"} for an item that shows, and {value:"{{true}}"} only to hide one.`);
     }
   }
-  if (c.type === "Timer" && propVal2(props, "type") === "countDown" && /^[0:]*$/.test(String(propVal2(props, "value") ?? ""))) {
+  if (c.type === "Timer" && propVal2(props2, "type") === "countDown" && /^[0:]*$/.test(String(propVal2(props2, "value") ?? ""))) {
     errors.push(`${label2}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
   }
-  const pages = propVal2(props, "numberOfPages");
+  const pages = propVal2(props2, "numberOfPages");
   if (c.type === "Pagination" && typeof pages === "string" && !pages.includes("{{")) {
     errors.push(`${label2}: numberOfPages "${pages}" is text, so the last page never matches and next stays enabled; write "{{${pages}}}".`);
   }
-  const twoHandle = propVal2(props, "enableTwoHandle");
+  const twoHandle = propVal2(props2, "enableTwoHandle");
   if (c.type === "RangeSliderV2" && twoHandle !== void 0 && !["slider", "rangeSlider"].includes(String(twoHandle))) {
     errors.push(`${label2}: enableTwoHandle is "slider" or "rangeSlider" (two handles read startValue/endValue), not ${JSON.stringify(twoHandle)}.`);
   }
@@ -69385,10 +69421,10 @@ function validateAppStructure(summary, options2 = {}) {
   for (const component of allComponents) {
     if (component.type !== "Chart")
       continue;
-    const props = component.properties ?? {};
-    if (isTruthyBinding(propVal2(props, "plotFromJson")))
+    const props2 = component.properties ?? {};
+    if (isTruthyBinding(propVal2(props2, "plotFromJson")))
       continue;
-    const data = propVal2(props, "data");
+    const data = propVal2(props2, "data");
     const m = typeof data === "string" ? data.trim().match(BARE_QUERY_DATA_BINDING) : null;
     if (!m)
       continue;
@@ -70107,12 +70143,12 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
   }
 }
 function condenseErrorBody(detail, limit = 600) {
-  const text = String(detail ?? "");
-  if (/<!doctype html|<html[\s>]/i.test(text)) {
-    const title = /<title>([^<]*)<\/title>/i.exec(text)?.[1]?.trim();
+  const text2 = String(detail ?? "");
+  if (/<!doctype html|<html[\s>]/i.test(text2)) {
+    const title = /<title>([^<]*)<\/title>/i.exec(text2)?.[1]?.trim();
     return `${title || "HTML error page"} (HTML error page from the proxy, markup omitted)`;
   }
-  return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
+  return text2.length > limit ? `${text2.slice(0, limit)} \u2026[${text2.length - limit} more chars]` : text2;
 }
 var ToolJetHttpError = class extends Error {
   status;
@@ -71497,7 +71533,24 @@ function createClient(auth, config2) {
         const value2 = entry?.value;
         return typeof value2 === "string" && /^\{\{\s*[[{]/.test(value2);
       };
-      const packProperties = Object.fromEntries(Object.entries(pack.properties ?? {}).filter(([, entry]) => !(ownData && sample(entry))));
+      const sampleField = (key4) => /Chart$|^ShadSparkline$/.test(spec.type) && [
+        "xField",
+        "yFields",
+        "categoryField",
+        "valueField",
+        "nameField",
+        "barFields",
+        "lineFields",
+        "rightAxisFields",
+        "yField",
+        "sizeField",
+        "groupField",
+        "stageField",
+        "xLabel",
+        "yLabel",
+        "seriesLabels"
+      ].includes(key4);
+      const packProperties = Object.fromEntries(Object.entries(pack.properties ?? {}).filter(([key4, entry]) => !(ownData && (sample(entry) || sampleField(key4)))));
       spec = {
         ...spec,
         properties: { ...packProperties, ...spec.properties ?? {} },
@@ -71975,14 +72028,14 @@ function ok(value2) {
 function fail(err) {
   const message = err instanceof Error ? err.message : String(err);
   const quota = tableQuotaError(err);
-  const text = quota ? JSON.stringify({ error: {
+  const text2 = quota ? JSON.stringify({ error: {
     code: quota.code,
     status: quota.status,
     retryable: quota.retryable,
     message: quota.message,
     details: message
   } }) : `Error: ${message}`;
-  return { content: [{ type: "text", text }], isError: true };
+  return { content: [{ type: "text", text: text2 }], isError: true };
 }
 
 // dist/tools/appVersionLifecycle.js
@@ -73386,6 +73439,28 @@ function resolveCatalogType(requestedType) {
   const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
   return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
 }
+var PACK_CONCEPTS = [
+  [/table|grid|datatable/i, ["ShadTable"]],
+  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline"]],
+  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")']],
+  [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
+  [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
+  [/list/i, ["ShadListView", "ShadKeyValue"]],
+  [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart"]],
+  [/funnel|conversion/i, ["ShadFunnelChart"]],
+  [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
+  [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
+  [/label|title|typography/i, ["ShadHeading", "ShadText"]],
+  [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
+  [/toast|notification|banner/i, ["ShadAlert"]],
+  [/divider/i, ["ShadSeparator"]]
+];
+function packSuggestions(requestedType) {
+  if (!/^Shad[A-Z]/.test(requestedType))
+    return [];
+  const rest = requestedType.slice(4);
+  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
+}
 function nearbyTypes(requestedType) {
   const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
   return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
@@ -73492,7 +73567,8 @@ function getComponentCatalogTool(client) {
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
             const near = nearbyTypes(singleType);
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...near.length ? { did_you_mean: near } : {} });
+            const suggested = [.../* @__PURE__ */ new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
+            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...suggested.length ? { did_you_mean: suggested } : {} });
           }
           return ok({
             ...selectSchema(schema, args),
@@ -73549,7 +73625,14 @@ function getComponentCatalogTool(client) {
           components.push(component);
           componentByResolvedType.set(resolved.type, component);
         }
-        return ok({ components, unknown_types: unknownTypes });
+        const suggestions = Object.fromEntries(unknownTypes.map((type) => [type, [.../* @__PURE__ */ new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)]).filter(([, near]) => near.length));
+        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
+        return ok({
+          components,
+          unknown_types: unknownTypes,
+          ...Object.keys(suggestions).length ? { suggestions } : {},
+          ...guessedPack ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) } : {}
+        });
       } catch (err) {
         return fail(err);
       }
@@ -73854,8 +73937,8 @@ function inspectDatasourceSchemaTool(client) {
             if (!selected)
               throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
             if (!hubspotDocuments.has(selected.name)) {
-              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
-                const spec = extractSpec({ spec: text });
+              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text2) => {
+                const spec = extractSpec({ spec: text2 });
                 if (!spec)
                   throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
                 return spec;
@@ -74919,7 +75002,7 @@ function getComponentTool(client) {
 }
 
 // dist/htmlColumns.js
-var valueOf = (prop2) => prop2 && typeof prop2 === "object" && "value" in prop2 ? prop2.value : prop2;
+var valueOf = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
 function htmlFedTextColumns(table, queries) {
   if (table.type !== "Table")
     return [];
@@ -75409,8 +75492,8 @@ function validateEvents(summary, events, options2 = {}) {
       const target2 = typeof modal === "string" ? components.get(modal) : void 0;
       if (!target2) {
         errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
-      } else if (!["Modal", "ModalV2"].includes(target2.type ?? "")) {
-        errors.push(`${label2}: ${actionId} target must be a Modal or ModalV2, not ${target2.type ?? "unknown"} "${target2.name ?? target2.id}".`);
+      } else if (target2.type !== "Modal" && !isModalV2Type(target2.type)) {
+        errors.push(`${label2}: ${actionId} target must be a Modal, ModalV2 or ShadDialog, not ${target2.type ?? "unknown"} "${target2.name ?? target2.id}".`);
       }
     }
     if (actionId === "control-component") {
@@ -75537,8 +75620,8 @@ function validateEvents(summary, events, options2 = {}) {
         const parent = components.get(decodeComponentParent(child.parent).parentId);
         if (!parent)
           break;
-        if (parent.type === "ModalV2" && chain.slice(index + 1).some(({ event: later2 }) => later2.action.actionId === "show-modal" && later2.action.modal === parent.id)) {
-          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" before show-modal. Closed modal children are not mounted; these values can be lost. Bind input defaults to the selected record, or initialize after the modal opens.`);
+        if (isModalV2Type(parent.type) && chain.slice(index + 1).some(({ event: later2 }) => later2.action.actionId === "show-modal" && later2.action.modal === parent.id)) {
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ${parent.type} "${parent.name ?? parent.id}" before show-modal. Closed modal children are not mounted; these values can be lost. Bind input defaults to the selected record, or initialize after the modal opens.`);
           break;
         }
         child = parent;
@@ -75818,14 +75901,14 @@ function auditScript() {
     if (seenNames.has(cy))
       continue;
     seenNames.add(cy);
-    const text = (el.innerText || "").trim();
+    const text2 = (el.innerText || "").trim();
     boxes.push({ name: name2, x: r.x, y: r.y, w: r.width, h: r.height, el });
     const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name2);
     const emptyStateByName = /empty|placeholder|no_?data|nothing/i.test(cy);
-    if (textual && text.length === 0 && r.height > 30 && !emptyStateByName) {
+    if (textual && text2.length === 0 && r.height > 30 && !emptyStateByName) {
       findings.push({ kind: "empty_render", component: name2, detail: `${Math.round(r.width)}x${Math.round(r.height)}px box renders no text (a multi-line binding or a broken expression)` });
     }
-    const m = text.match(bad);
+    const m = text2.match(bad);
     if (m)
       findings.push({ kind: "placeholder_text", component: name2, detail: `rendered text contains "${m[0]}"` });
     let clippedHere = false;
@@ -75905,8 +75988,8 @@ function auditScript() {
     if (!clippedHere && /^Table:/.test(name2)) {
       const cut = [];
       for (const cell of Array.from(el.querySelectorAll('td, [role="cell"], .td'))) {
-        const text2 = (cell.innerText || "").trim();
-        if (!text2)
+        const text3 = (cell.innerText || "").trim();
+        if (!text3)
           continue;
         const cellRect = cell.getBoundingClientRect();
         const spill = Array.from(cell.querySelectorAll("*")).find((node2) => {
@@ -75916,7 +75999,7 @@ function auditScript() {
           return nr.width > 0 && (nr.right > cellRect.right + 2 || nr.left < cellRect.left - 2);
         });
         if (spill) {
-          cut.push(text2.slice(0, 24));
+          cut.push(text3.slice(0, 24));
           if (cut.length >= 3)
             break;
           continue;
@@ -75924,7 +76007,7 @@ function auditScript() {
         for (const node2 of [cell, ...Array.from(cell.querySelectorAll("*"))]) {
           const cs = getComputedStyle(node2);
           if ((cs.overflow === "hidden" || cs.overflowX === "hidden") && cs.textOverflow !== "ellipsis" && node2.scrollWidth > node2.clientWidth + 4 && node2.clientWidth > 20) {
-            cut.push(text2.slice(0, 24));
+            cut.push(text3.slice(0, 24));
             break;
           }
         }
@@ -75933,7 +76016,7 @@ function auditScript() {
       }
       if (cut.length)
         findings.push({ kind: "clipped", component: name2, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
-      const rawHeaders = Array.from(el.querySelectorAll('th, [role="columnheader"], .th')).map((h) => (h.innerText || "").trim()).filter((text2) => /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(text2));
+      const rawHeaders = Array.from(el.querySelectorAll('th, [role="columnheader"], .th')).map((h) => (h.innerText || "").trim()).filter((text3) => /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(text3));
       if (rawHeaders.length)
         findings.push({ kind: "placeholder_text", component: name2, detail: `${rawHeaders.length} column header(s) are raw field names (e.g. "${rawHeaders[0]}"); author the columns with readable names instead of letting ToolJet generate them` });
       const scroller = Array.from(el.querySelectorAll("*")).find((node2) => node2.scrollWidth > node2.clientWidth + 12 && node2.clientWidth > 200 && /table/i.test(node2.className.toString()));
@@ -75956,7 +76039,7 @@ function auditScript() {
     for (let j = i + 1; j < boxes.length; j++) {
       const a = boxes[i];
       const b = boxes[j];
-      if (a.name.startsWith("ModalV2:") || b.name.startsWith("ModalV2:"))
+      if (/^(ModalV2|ShadDialog):/.test(a.name) || /^(ModalV2|ShadDialog):/.test(b.name))
         continue;
       if (a.name.split(":")[1] === b.name.split(":")[1])
         continue;
@@ -76176,6 +76259,158 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
   };
 }
 
+// dist/flexPolish.js
+var FIELD_TYPES = /* @__PURE__ */ new Set([
+  "ShadInput",
+  "ShadSelect",
+  "ShadDatePicker",
+  "ShadDateTimePicker",
+  "ShadTimePicker",
+  "ShadCombobox",
+  "ShadMultiselect",
+  "ShadNumberInput",
+  "ShadCurrencyInput",
+  "ShadPhoneInput",
+  "ShadPasswordInput",
+  "ShadTagsInput",
+  "ShadColorPicker",
+  "ShadSlider"
+]);
+var ACTION_TYPES = /* @__PURE__ */ new Set(["ShadButton", "ShadButtonGroup", "ShadDropdownMenu"]);
+var INLINE_TYPES = /* @__PURE__ */ new Set([
+  ...FIELD_TYPES,
+  ...ACTION_TYPES,
+  "ShadBadge",
+  "ShadText",
+  "ShadToggleGroup",
+  "ShadSwitch",
+  "ShadCheckbox",
+  "ShadLink",
+  "ShadIcon",
+  "ShadTags",
+  "ShadSpinner"
+]);
+var valueOf2 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+var text = (entry) => {
+  const v = valueOf2(entry);
+  return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
+};
+var props = (component) => component.properties && typeof component.properties === "object" ? component.properties : {};
+var prop2 = (component, key4) => props(component)[key4];
+var styleText = (component, key4) => text(component.styles && typeof component.styles === "object" ? component.styles[key4] : void 0);
+var refOf = (component) => component.clientRef ?? component.name;
+var setProp = (component, key4, value2) => {
+  const current = props(component)[key4];
+  component.properties = {
+    ...props(component),
+    [key4]: current && typeof current === "object" && !Array.isArray(current) ? { ...current, value: value2 } : { value: value2 }
+  };
+};
+var isRow = (component) => component.type === "FlexContainer" && text(prop2(component, "direction")) === "row";
+var isLabelledField = (component) => FIELD_TYPES.has(component.type) && text(prop2(component, "label")) !== "";
+var isSurface = (component) => {
+  if (component.type !== "FlexContainer")
+    return false;
+  if (["shadcnCard", "antCard"].includes(text(prop2(component, "cardStyle"))))
+    return true;
+  const background = styleText(component, "backgroundColor").toLowerCase();
+  return background !== "" && background !== "transparent" && !/^#[0-9a-f]{6}00$/.test(background);
+};
+var isTitle = (component, children) => component.type === "ShadHeading" || component.type === "FlexContainer" && !isRow(component) && children(refOf(component) ?? "").some((inner) => inner.type === "ShadHeading");
+var HEADING_PX = { h1: 36, h2: 30, h3: 24, h4: 20 };
+var headingLineWidth = (component) => {
+  const raw = text(prop2(component, "text"));
+  if (!raw || raw.includes("{{"))
+    return null;
+  const size2 = HEADING_PX[text(prop2(component, "level"))] ?? HEADING_PX.h2;
+  return Math.ceil(raw.length * size2 * (size2 >= 36 ? 0.6 : 0.56) + 8);
+};
+var fixedRects = (component) => [component.layout, component.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth === false && typeof rect2.widthPx === "number");
+var META_TYPES = /* @__PURE__ */ new Set(["ShadText", "ShadBadge", "ShadTags"]);
+function polishFlexRows(input) {
+  const warnings = [];
+  if (!Array.isArray(input) || !input.length)
+    return { components: Array.isArray(input) ? [...input] : [], warnings };
+  const components = input.map((component) => component && typeof component === "object" ? {
+    ...component,
+    properties: { ...props(component) },
+    ...component.layout ? { layout: { ...component.layout } } : {},
+    ...component.layouts ? {
+      layouts: {
+        ...component.layouts,
+        ...component.layouts.desktop ? { desktop: { ...component.layouts.desktop } } : {}
+      }
+    } : {}
+  } : component);
+  const childrenOf = (ref2) => components.filter((component) => component && component.parentRef === ref2 && !component.slotName);
+  for (const container of components) {
+    if (!container || !isRow(container))
+      continue;
+    const ref2 = refOf(container);
+    if (!ref2)
+      continue;
+    const children = childrenOf(ref2);
+    if (children.length < 2)
+      continue;
+    const align = text(prop2(container, "alignItems"));
+    const label2 = container.name ?? ref2;
+    if (children.every((child) => INLINE_TYPES.has(child.type)) && children.some(isLabelledField) && children.some((child) => !isLabelledField(child)) && align !== "last baseline") {
+      setProp(container, "alignItems", "last baseline");
+      warnings.push(`Row "${label2}" has labelled fields beside other controls; its alignItems is now "last baseline" so their text lines up with the fields' values instead of centring on label and field.`);
+    }
+    if (children.length >= 2 && children.every(isSurface) && (align === "" || align === "flex-start")) {
+      setProp(container, "alignItems", "stretch");
+      warnings.push(`Row "${label2}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
+    }
+    for (const child of children) {
+      if (child.type !== "ShadHeading")
+        continue;
+      const needed = headingLineWidth(child);
+      if (!needed)
+        continue;
+      const rects = fixedRects(child);
+      if (!rects.length || rects.every((rect2) => (rect2.widthPx ?? 0) >= needed))
+        continue;
+      rects.forEach((rect2) => {
+        rect2.widthPx = Math.max(rect2.widthPx ?? 0, needed);
+      });
+      warnings.push(`Heading "${child.name}" in row "${label2}" was too narrow for one line of its text; its widthPx is now ${needed}.`);
+    }
+    if (children.some((child) => child.type === "ShadHeading") && children.some((child) => META_TYPES.has(child.type)) && children.every((child) => child.type === "ShadHeading" || META_TYPES.has(child.type)) && ["", "center", "flex-start"].includes(align)) {
+      setProp(container, "alignItems", "last baseline");
+      warnings.push(`Row "${label2}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
+    }
+    const authored = valueOf2(prop2(container, "childOrder"));
+    const authoredOrder = Array.isArray(authored) ? authored.filter((entry) => typeof entry === "string") : null;
+    const ordered = authoredOrder?.length ? [
+      ...authoredOrder.map((name2) => children.find((child) => refOf(child) === name2 || child.name === name2)).filter((child) => !!child),
+      ...children.filter((child) => !authoredOrder.includes(refOf(child) ?? "") && !authoredOrder.includes(child.name))
+    ] : children;
+    const titleIndex = ordered.findIndex((child) => isTitle(child, childrenOf));
+    if (titleIndex <= 0)
+      continue;
+    const before = ordered.slice(0, titleIndex);
+    const leadingActions = before.filter((child) => ACTION_TYPES.has(child.type));
+    if (!leadingActions.length)
+      continue;
+    const next = [
+      ...before.filter((child) => !ACTION_TYPES.has(child.type)),
+      ...ordered.slice(titleIndex),
+      ...leadingActions
+    ];
+    if (authoredOrder?.length) {
+      setProp(container, "childOrder", next.map((child) => authoredOrder.includes(child.name) ? child.name : refOf(child)));
+    } else {
+      const slots = components.map((component, index) => component && component.parentRef === ref2 && !component.slotName ? index : -1).filter((index) => index >= 0);
+      slots.forEach((slot, i) => {
+        components[slot] = next[i];
+      });
+    }
+    warnings.push(`Row "${label2}": ${leadingActions.map((child) => `"${child.name}"`).join(", ")} came before the title; moved after it so the page action sits at the right of the header.`);
+  }
+  return { components, warnings };
+}
+
 // dist/defaultChildren.js
 var AUTO_MATERIALIZE_DEFAULTS = /* @__PURE__ */ new Set(["Kanban"]);
 var TOOLJET_DESKTOP_GRID_COLUMNS = 43;
@@ -76257,7 +76492,7 @@ function matchPlannedPage(pages, name2, plannedNames, claimed = /* @__PURE__ */ 
 // dist/queryPersistence.js
 function prepareQueryOptionsForWrite(kind, raw, subject) {
   const prefix = subject ? `${subject}: ` : "";
-  const line = (text) => subject ? `${prefix}${text}` : text.charAt(0).toUpperCase() + text.slice(1);
+  const line = (text2) => subject ? `${prefix}${text2}` : text2.charAt(0).toUpperCase() + text2.slice(1);
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return { options: raw, errors: [line("options must be an object.")], warnings: [] };
   }
@@ -76333,7 +76568,7 @@ function expandQueryLifecycles(summary, lifecycles) {
       const modal = components.get(lifecycle.closeModalId);
       if (!modal)
         throw new Error(`Query "${sourceName}" lifecycle modal "${lifecycle.closeModalId}" does not exist.`);
-      if (!["Modal", "ModalV2"].includes(modal.type ?? "")) {
+      if (modal.type !== "Modal" && !isModalV2Type(modal.type)) {
         throw new Error(`Query "${sourceName}" lifecycle close target "${modal.name ?? modal.id}" is ${modal.type ?? "unknown"}, not a Modal.`);
       }
       events.push({
@@ -76418,13 +76653,13 @@ function invalidPlannedGeneratedPrimaryKeySeeds(columns, rows) {
 }
 
 // dist/bindingBraces.js
-function separateAdjacentClosingBraces(text) {
+function separateAdjacentClosingBraces(text2) {
   let out = "";
   let i = 0;
-  const n = text.length;
+  const n = text2.length;
   while (i < n) {
-    if (!text.startsWith("{{", i)) {
-      out += text[i];
+    if (!text2.startsWith("{{", i)) {
+      out += text2[i];
       i += 1;
       continue;
     }
@@ -76434,11 +76669,11 @@ function separateAdjacentClosingBraces(text) {
     let expr = "";
     let terminated = false;
     while (j < n) {
-      const c = text[j];
+      const c = text2[j];
       if (quote2) {
         expr += c;
         if (c === "\\" && j + 1 < n) {
-          expr += text[j + 1];
+          expr += text2[j + 1];
           j += 2;
           continue;
         }
@@ -76460,13 +76695,13 @@ function separateAdjacentClosingBraces(text) {
         continue;
       }
       if (c === "}") {
-        if (depth === 0 && text[j + 1] === "}") {
+        if (depth === 0 && text2[j + 1] === "}") {
           terminated = true;
           break;
         }
         depth = Math.max(depth - 1, 0);
         expr += c;
-        if (text[j + 1] === "}")
+        if (text2[j + 1] === "}")
           expr += " ";
         j += 1;
         continue;
@@ -76475,7 +76710,7 @@ function separateAdjacentClosingBraces(text) {
       j += 1;
     }
     if (!terminated) {
-      out += text.slice(i);
+      out += text2.slice(i);
       break;
     }
     out += `{{${expr}}}`;
@@ -76786,6 +77021,25 @@ function normalizeComponentSpec(component, options2 = {}) {
   }
   if (braceFixedKeys.length) {
     warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
+  }
+  const booleanKeys = /* @__PURE__ */ new Set(["loadingState", "visibility", "disabledState"]);
+  for (const entry of schema?.properties ?? [])
+    if (entry.valueType === "boolean")
+      booleanKeys.add(entry.key);
+  const BARE_EXPRESSION = /^\s*!?\s*\(?\s*(queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const wrappedKeys = [];
+  for (const key4 of booleanKeys) {
+    const current = propValue(properties, key4);
+    if (typeof current !== "string" || current.includes("{{") || !BARE_EXPRESSION.test(current))
+      continue;
+    const entry = properties[key4];
+    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}`, fxActive: true };
+    properties[key4] = wrapped;
+    propertyPatch[key4] = wrapped;
+    wrappedKeys.push(key4);
+  }
+  if (wrappedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(", ")} in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).`);
   }
   const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
     const envelopePatch = normalizedSections[section].patch ?? {};
@@ -77173,8 +77427,11 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
       return { component: geometry.component, warnings: [...definition2.warnings, ...geometry.warnings] };
     });
     warnings.push(...normalized2.flatMap((item) => item.warnings));
-    const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
-    warnings.push(...expansion.warnings);
+    const materialized = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
+    warnings.push(...materialized.warnings);
+    const polished = polishFlexRows(materialized.components);
+    warnings.push(...polished.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    const expansion = { ...materialized, components: polished.components };
     const componentLint = lintComponents(expansion.components, {
       ...options2,
       flexContainerIds: (existingPage?.components ?? []).filter((component) => component.type === "FlexContainer").map((component) => component.id)
@@ -77505,7 +77762,9 @@ function prepareComponentBatch(inputs, options2 = {}) {
         rect2.height = fix.to;
     heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
   }
-  const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
+  const materialized = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
+  const polished = polishFlexRows(materialized.components);
+  const expanded = { ...materialized, components: polished.components, warnings: [...materialized.warnings, ...polished.warnings] };
   const lint2 = lintComponents(expanded.components, options2);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
@@ -77803,15 +78062,15 @@ function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PUR
 // dist/pageReplace.js
 var escapeRegExp2 = (value2) => value2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 var idPattern = (ids) => new RegExp(`(?<![\\w-])(?:${[...ids].sort((a, b) => b.length - a.length).map(escapeRegExp2).join("|")})(?![\\w-])`, "g");
-function mentionsId(text, id) {
-  return idPattern([id]).test(text);
+function mentionsId(text2, id) {
+  return idPattern([id]).test(text2);
 }
-function replaceIds(text, newIds) {
+function replaceIds(text2, newIds) {
   const ids = [...newIds.keys()];
   if (!ids.length)
-    return { text, missing: [] };
+    return { text: text2, missing: [] };
   const missing = /* @__PURE__ */ new Set();
-  const replaced = text.replace(idPattern(ids), (id) => {
+  const replaced = text2.replace(idPattern(ids), (id) => {
     const next = newIds.get(id);
     if (next)
       return next;
@@ -77820,9 +78079,9 @@ function replaceIds(text, newIds) {
   });
   return { text: replaced, missing: [...missing] };
 }
-var readsQuery = (text, name2) => {
+var readsQuery = (text2, name2) => {
   const escaped = name2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`queries\\s*(?:\\?\\.|\\.)\\s*${escaped}(?![\\w$])|queries\\s*\\[\\s*['"]${escaped}['"]\\s*\\]`).test(text);
+  return new RegExp(`queries\\s*(?:\\?\\.|\\.)\\s*${escaped}(?![\\w$])|queries\\s*\\[\\s*['"]${escaped}['"]\\s*\\]`).test(text2);
 };
 function replaceView(summary, plan) {
   const replacedNames = new Set((plan.pages ?? []).filter((page) => page.replace).map((page) => page.name));
@@ -77849,7 +78108,7 @@ function replaceView(summary, plan) {
   const planQueryIds = new Set(summary.queries.filter((query2) => query2.name && planQueryNames.has(query2.name)).map((query2) => query2.id));
   const pageOwns = (query2) => replacedComponents.some((component) => readsQuery(componentText(component), query2.name)) || summary.events.some((event) => event.sourceId && removedSources.has(event.sourceId) && runsQuery(event, query2.id));
   const usedElsewhere = (query2) => otherComponents.some((component) => readsQuery(componentText(component), query2.name)) || summary.events.some((event) => event.sourceId !== query2.id && !(event.sourceId && removedSources.has(event.sourceId)) && !(event.sourceId && planQueryIds.has(event.sourceId)) && runsQuery(event, query2.id)) || summary.queries.some((other) => other.id !== query2.id && !planQueryIds.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query2.name));
-  const readsOf = (text) => summary.queries.filter((q) => q.name && readsQuery(text, q.name)).map((q) => q.id);
+  const readsOf = (text2) => summary.queries.filter((q) => q.name && readsQuery(text2, q.name)).map((q) => q.id);
   const reachedElsewhere = /* @__PURE__ */ new Set([
     ...otherComponents.flatMap((component) => readsOf(componentText(component))),
     ...summary.events.filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId)))).flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id))
@@ -77939,8 +78198,8 @@ function replaceView(summary, plan) {
     }
     if (!event.sourceId || !redefinedIds.has(event.sourceId))
       return false;
-    const text = JSON.stringify(action);
-    if (replacedComponentIds.some((id) => mentionsId(text, id)))
+    const text2 = JSON.stringify(action);
+    if (replacedComponentIds.some((id) => mentionsId(text2, id)))
       return true;
     if (replannedFrom(`q:${queryNameById.get(event.sourceId)}`, action))
       return true;
@@ -77955,8 +78214,8 @@ function replaceView(summary, plan) {
   const eventsToRetarget = summary.events.filter((event) => {
     if (deleted.has(event.id))
       return false;
-    const text = JSON.stringify(event.event ?? {});
-    return [...replacedComponentNames.keys()].some((id) => mentionsId(text, id));
+    const text2 = JSON.stringify(event.event ?? {});
+    return [...replacedComponentNames.keys()].some((id) => mentionsId(text2, id));
   });
   const retargeted = new Set(eventsToRetarget.map((event) => event.id));
   return {
@@ -77983,12 +78242,12 @@ function danglingAfterReplace(summary, view, plan) {
   if (!dropped.length)
     return [];
   const errors = [];
-  const reads = (text, name2) => new RegExp(`components\\s*(?:\\?\\.|\\.)\\s*${name2.replace(/[$]/g, "\\$")}\\b|components\\s*\\[\\s*['"]${name2.replace(/[$]/g, "\\$")}['"]\\s*\\]`).test(text);
+  const reads = (text2, name2) => new RegExp(`components\\s*(?:\\?\\.|\\.)\\s*${name2.replace(/[$]/g, "\\$")}\\b|components\\s*\\[\\s*['"]${name2.replace(/[$]/g, "\\$")}['"]\\s*\\]`).test(text2);
   for (const page of summary.pages.filter((p) => !view.replacedPageIds.includes(p.id))) {
     for (const component of page.components) {
-      const text = JSON.stringify([component.properties ?? {}, component.styles ?? {}]);
+      const text2 = JSON.stringify([component.properties ?? {}, component.styles ?? {}]);
       for (const name2 of dropped) {
-        if (reads(text, name2))
+        if (reads(text2, name2))
           errors.push(`Page "${page.name}": "${component.name ?? component.id}" reads components.${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or change "${page.name}" first.`);
       }
     }
@@ -77996,9 +78255,9 @@ function danglingAfterReplace(summary, view, plan) {
   const droppedIds = [...view.replacedComponentNames].filter(([, name2]) => dropped.includes(name2));
   const sourceName = new Map(summary.pages.flatMap((p) => p.components.map((c) => [c.id, `${c.name ?? c.id}" on page "${p.name}`])));
   for (const event of view.eventsToRetarget) {
-    const text = JSON.stringify(event.event ?? {});
+    const text2 = JSON.stringify(event.event ?? {});
     for (const [id, name2] of droppedIds) {
-      if (!mentionsId(text, id))
+      if (!mentionsId(text2, id))
         continue;
       const source2 = event.sourceId ? sourceName.get(event.sourceId) ?? event.sourceId : "the app";
       errors.push(`"${source2}" has an event that acts on ${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or change that event first.`);
@@ -78006,9 +78265,9 @@ function danglingAfterReplace(summary, view, plan) {
   }
   const redefined = new Set(view.queriesToUpdate.values());
   for (const query2 of summary.queries.filter((q) => !redefined.has(q.id))) {
-    const text = JSON.stringify(query2.options ?? {});
+    const text2 = JSON.stringify(query2.options ?? {});
     for (const name2 of dropped) {
-      if (reads(text, name2))
+      if (reads(text2, name2))
         errors.push(`Query "${query2.name}" reads components.${name2}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name2} in that page's plan, or redefine "${query2.name}" in this same plan without it (in page markup: write the whole <Query name="${query2.name}" ...> in the same document as the page).`);
     }
   }
@@ -79643,13 +79902,13 @@ function applyAppPhaseTool(client) {
             const newIds = new Map([...replacing.replacedComponentNames].map(([oldId, name2]) => [oldId, newIdByName.get(name2)]));
             const original = JSON.stringify(event.event ?? {});
             const swapped = replaceIds(original, newIds);
-            const text = swapped.text;
+            const text2 = swapped.text;
             const missing = swapped.missing.map((id) => replacing.replacedComponentNames.get(id) ?? id);
             if (missing.length) {
               missingTargets.push(`"${event.name ?? event.id}" (${missing.join(", ")})`);
               warnings.push(`Event "${event.name ?? event.id}" targets ${missing.map((n) => `"${n}"`).join(", ")}, which the replaced page no longer has; it was left as it was.`);
-            } else if (text !== original) {
-              updates.push({ eventId: event.id, ...event.name ? { name: event.name } : {}, event: JSON.parse(text) });
+            } else if (text2 !== original) {
+              updates.push({ eventId: event.id, ...event.name ? { name: event.name } : {}, event: JSON.parse(text2) });
             }
           }
           if (updates.length)
@@ -82363,14 +82622,14 @@ function listedVersion(resource) {
   }
 }
 function payload(resource) {
-  let text = payloads.get(resource.file);
-  if (text === void 0) {
+  let text2 = payloads.get(resource.file);
+  if (text2 === void 0) {
     const { bytes, dataVersion } = readData(resource);
     const data = JSON.parse(bytes.toString("utf8"));
-    text = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
-    payloads.set(resource.file, text);
+    text2 = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
+    payloads.set(resource.file, text2);
   }
-  return text;
+  return text2;
 }
 function registerCatalogResources(server) {
   const catalog = listedCatalogVersion();

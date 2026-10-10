@@ -2510,7 +2510,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       // A chart's field-name defaults name the sample rows' fields (month, revenue, type, value): beside the caller's
       // data they plot nothing (a bar chart kept "revenue" against rows with "amount", 2026-10-10).
       const sampleField = (key: string) =>
-        /Chart$|^ShadSparkline$/.test(spec.type) && ['xField', 'yFields', 'categoryField', 'valueField', 'nameField'].includes(key);
+        /Chart$|^ShadSparkline$/.test(spec.type) && [
+          'xField',
+          'yFields',
+          'categoryField',
+          'valueField',
+          'nameField',
+          'barFields',
+          'lineFields',
+          'rightAxisFields',
+          'yField',
+          'sizeField',
+          'groupField',
+          'stageField',
+          'xLabel',
+          'yLabel',
+          'seriesLabels',
+        ].includes(key);
       const packProperties = Object.fromEntries(
         Object.entries(pack.properties ?? {}).filter(([key, entry]) => !(ownData && (sample(entry) || sampleField(key))))
       );
