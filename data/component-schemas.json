@@ -19789,6 +19789,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -19944,6 +19960,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -20138,6 +20170,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -20283,6 +20331,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -20416,6 +20480,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -20594,6 +20674,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -20727,6 +20823,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -20877,6 +20989,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -21023,6 +21151,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -21190,6 +21334,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -21367,6 +21527,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -21529,6 +21705,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -21675,6 +21867,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -21895,6 +22103,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22045,6 +22269,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22198,6 +22438,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22366,6 +22622,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22542,6 +22814,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22662,6 +22950,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22801,6 +23105,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -22975,6 +23295,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -23131,6 +23467,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -23462,12 +23814,6 @@
         "default": ""
       },
       {
-        "key": "tooltip",
-        "label": "Tooltip",
-        "valueType": "string",
-        "default": ""
-      },
-      {
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
@@ -23490,6 +23836,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -23933,6 +24295,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -24066,6 +24444,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -24246,6 +24640,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -24536,6 +24946,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -24910,12 +25336,6 @@
         "default": "No items"
       },
       {
-        "key": "tooltip",
-        "label": "Tooltip",
-        "valueType": "string",
-        "default": ""
-      },
-      {
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
@@ -24938,6 +25358,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       }
     ],
     "styles": [
@@ -25251,12 +25687,6 @@
         "default": "{{true}}"
       },
       {
-        "key": "tooltip",
-        "label": "Tooltip",
-        "valueType": "string",
-        "default": ""
-      },
-      {
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
@@ -25279,6 +25709,22 @@
         "label": "Disable",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       },
       {
         "key": "tabItems",

@@ -22,6 +22,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -60,6 +66,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -119,6 +131,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -154,6 +172,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -186,6 +210,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -242,6 +272,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -271,6 +307,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -309,6 +351,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -344,6 +392,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -388,6 +442,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -423,6 +483,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -458,6 +524,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -502,6 +574,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -603,6 +681,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -663,9 +747,6 @@
     "emptyText": {
      "value": "No items"
     },
-    "tooltip": {
-     "value": ""
-    },
     "dynamicHeight": {
      "value": "{{true}}"
     },
@@ -677,6 +758,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -733,6 +820,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -768,6 +861,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -809,6 +908,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -850,6 +955,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -879,6 +990,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -911,6 +1028,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -955,6 +1078,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1002,6 +1131,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1037,6 +1172,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1160,9 +1301,6 @@
     "emptyDescription": {
      "value": ""
     },
-    "tooltip": {
-     "value": ""
-    },
     "dynamicHeight": {
      "value": "{{true}}"
     },
@@ -1174,6 +1312,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1307,9 +1451,6 @@
     "linearSteps": {
      "value": "{{true}}"
     },
-    "tooltip": {
-     "value": ""
-    },
     "dynamicHeight": {
      "value": "{{true}}"
     },
@@ -1321,6 +1462,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1359,6 +1506,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1400,6 +1553,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
@@ -1435,6 +1594,12 @@
     },
     "disabledState": {
      "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
     }
    },
    "styles": {
