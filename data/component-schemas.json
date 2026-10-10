@@ -19830,7 +19830,44 @@
         "label": "On change"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -19948,7 +19985,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20105,7 +20179,44 @@
         "label": "On click"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20203,7 +20314,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20304,7 +20452,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20450,7 +20635,44 @@
         "label": "On click"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20536,7 +20758,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20664,7 +20923,44 @@
         "label": "On click"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20768,7 +21064,44 @@
         "label": "On change"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -20922,6 +21255,42 @@
       {
         "handle": "clear",
         "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
       }
     ],
     "exposedVariables": [
@@ -21054,7 +21423,44 @@
         "label": "On action"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -21150,7 +21556,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -21312,6 +21755,42 @@
       {
         "handle": "clear",
         "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
       }
     ],
     "exposedVariables": [
@@ -21462,7 +21941,44 @@
         "label": "On click"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -21570,7 +22086,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -21695,6 +22248,42 @@
             "handle": "value",
             "displayName": "Value",
             "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
           }
         ]
       }
@@ -21853,6 +22442,42 @@
       {
         "handle": "clear",
         "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
       }
     ],
     "exposedVariables": [
@@ -21943,7 +22568,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -22021,7 +22683,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -22143,7 +22842,44 @@
         "label": "On change (on release)"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -22295,7 +23031,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -22399,7 +23172,44 @@
         "label": "On change"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -23150,7 +23960,44 @@
       }
     ],
     "events": [],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -23295,6 +24142,42 @@
       {
         "handle": "clear",
         "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
       }
     ],
     "exposedVariables": [
@@ -23409,7 +24292,44 @@
         "label": "On change"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -23796,6 +24716,42 @@
             "handle": "id",
             "displayName": "Card id",
             "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
           }
         ]
       }
