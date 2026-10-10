@@ -132,8 +132,25 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     if (!container || !isRow(container)) continue;
     const ref = refOf(container);
     if (!ref) continue;
-    const children = childrenOf(ref);
+    let children = childrenOf(ref);
     const label0 = container.name ?? ref;
+
+    // 00. A titled card left empty with a lone widget placed right after it in the same row: the widget was meant to
+    //     be inside the card (a backlog chart parented to the row drew outside its empty "Open backlog trend" card).
+    children.forEach((card, i) => {
+      const next = children[i + 1];
+      if (!next || !isSurface(card) || !text(prop(card, 'cardTitle'))) return;
+      const cardRef = refOf(card);
+      if (!cardRef || childrenOf(cardRef).length) return;
+      if (next.type === 'FlexContainer' || ACTION_TYPES.has(next.type)) return;
+      next.parentRef = cardRef;
+      const order = valueOf(prop(container, 'childOrder'));
+      if (Array.isArray(order)) {
+        setProp(container, 'childOrder', order.filter((entry) => entry !== refOf(next) && entry !== next.name));
+      }
+      warnings.push(`"${next.name}" sat beside the empty card "${card.name}" in row "${label0}"; it is now inside the card.`);
+    });
+    children = childrenOf(ref);
 
     // 0. A plain row is at least as tall as its tallest child plus its chrome (padding, the widget's 2px box padding
     //    and the canvas border, 6px in all). The editor draws the authored height, so a 36px button in a 40px row

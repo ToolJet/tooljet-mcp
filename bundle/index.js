@@ -76356,8 +76356,25 @@ function polishFlexRows(input) {
     const ref2 = refOf(container);
     if (!ref2)
       continue;
-    const children = childrenOf(ref2);
+    let children = childrenOf(ref2);
     const label0 = container.name ?? ref2;
+    children.forEach((card, i) => {
+      const next2 = children[i + 1];
+      if (!next2 || !isSurface(card) || !text(prop2(card, "cardTitle")))
+        return;
+      const cardRef = refOf(card);
+      if (!cardRef || childrenOf(cardRef).length)
+        return;
+      if (next2.type === "FlexContainer" || ACTION_TYPES.has(next2.type))
+        return;
+      next2.parentRef = cardRef;
+      const order = valueOf2(prop2(container, "childOrder"));
+      if (Array.isArray(order)) {
+        setProp(container, "childOrder", order.filter((entry) => entry !== refOf(next2) && entry !== next2.name));
+      }
+      warnings.push(`"${next2.name}" sat beside the empty card "${card.name}" in row "${label0}"; it is now inside the card.`);
+    });
+    children = childrenOf(ref2);
     if (!isSurface(container) && !text(prop2(container, "cardTitle"))) {
       const rects = [container.layout, container.layouts?.desktop].filter((rect2) => !!rect2 && typeof rect2.height === "number");
       const tallest = Math.max(0, ...children.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? 0)).filter(Number.isFinite));

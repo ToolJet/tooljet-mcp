@@ -249,3 +249,29 @@ describe('polishFlexRows: a button in a row keeps its own width', () => {
     expect(warnings.join(' ')).toMatch(/assign/);
   });
 });
+
+describe('polishFlexRows: an empty card takes the widget placed beside it', () => {
+  it('moves a chart parented to the row into the empty titled card before it (the card drew empty)', () => {
+    const input = [
+      row('serviceAndBacklog'),
+      { ...child('serviceCard', 'FlexContainer', 'serviceAndBacklog', { cardStyle: { value: 'shadcnCard' }, cardTitle: { value: 'Response times' }, direction: { value: 'column' } }) },
+      child('serviceTrend', 'ShadAreaChart', 'serviceCard'),
+      { ...child('backlogCard', 'FlexContainer', 'serviceAndBacklog', { cardStyle: { value: 'shadcnCard' }, cardTitle: { value: 'Open backlog trend' }, direction: { value: 'column' } }) },
+      child('backlogTrend', 'ShadAreaChart', 'serviceAndBacklog'),
+    ];
+    const { components, warnings } = polishFlexRows(input);
+    expect(components.find((c) => c.clientRef === 'backlogTrend')!.parentRef).toBe('backlogCard');
+    expect(components.find((c) => c.clientRef === 'serviceTrend')!.parentRef).toBe('serviceCard');
+    expect(warnings.join(' ')).toMatch(/backlogTrend/);
+  });
+
+  it('leaves a row of plain widgets and a card with content alone', () => {
+    const input = [
+      row('r'),
+      { ...child('card', 'FlexContainer', 'r', { cardStyle: { value: 'shadcnCard' }, cardTitle: { value: 'A' } }) },
+      child('inside', 'ShadText', 'card'),
+      child('chart', 'ShadBarChart', 'r'),
+    ];
+    expect(polishFlexRows(input).components.find((c) => c.clientRef === 'chart')!.parentRef).toBe('r');
+  });
+});
