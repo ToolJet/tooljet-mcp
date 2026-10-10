@@ -20604,7 +20604,7 @@
   "ShadBarChart": {
     "type": "ShadBarChart",
     "name": "ShadBarChart",
-    "description": "shadcn/ui bar chart, vertical or horizontal, grouped or stacked",
+    "description": "shadcn/ui bar chart, vertical or horizontal, grouped or stacked. highlight emphasises categories (an x value, a list, or 'first', 'last', 'max', 'min') and draws the other bars muted",
     "defaultSize": {
       "width": 20,
       "height": 280
@@ -20677,6 +20677,12 @@
         "default": "{{false}}"
       },
       {
+        "key": "highlight",
+        "label": "Highlight (category values, or first, last, max, min)",
+        "valueType": "union",
+        "default": ""
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -20736,6 +20742,16 @@
       {
         "key": "legendTextColor",
         "label": "Legend text color",
+        "valueType": "string"
+      },
+      {
+        "key": "highlightColor",
+        "label": "Highlighted bar color (default: the series color)",
+        "valueType": "string"
+      },
+      {
+        "key": "mutedColor",
+        "label": "Other bars color when highlighting (default: the series color, faded)",
         "valueType": "string"
       },
       {
@@ -21713,7 +21729,7 @@
   "ShadHeading": {
     "type": "ShadHeading",
     "name": "ShadHeading",
-    "description": "shadcn/ui heading (h1 to h4)",
+    "description": "shadcn/ui heading (h1 to h4). Typeface styles: fontFamily ('theme', 'sans', 'serif', 'display' or 'mono'), fontWeight (400 to 800), fontSize (px), letterSpacing (px or em) and textTransform ('uppercase' for an eyebrow)",
     "defaultSize": {
       "width": 16,
       "height": 36
@@ -21795,6 +21811,55 @@
         "label": "Text alignment (left, center, right)",
         "valueType": "string",
         "default": "left"
+      },
+      {
+        "key": "fontFamily",
+        "label": "Typeface",
+        "valueType": "string",
+        "default": "theme",
+        "allowedValues": [
+          "theme",
+          "sans",
+          "serif",
+          "display",
+          "mono"
+        ]
+      },
+      {
+        "key": "fontWeight",
+        "label": "Weight",
+        "valueType": "string",
+        "default": "",
+        "allowedValues": [
+          "",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800"
+        ]
+      },
+      {
+        "key": "letterSpacing",
+        "label": "Letter spacing (px, or em like 0.12em)",
+        "valueType": "union"
+      },
+      {
+        "key": "textTransform",
+        "label": "Casing",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "uppercase",
+          "lowercase",
+          "capitalize"
+        ]
+      },
+      {
+        "key": "fontSize",
+        "label": "Font size (px; default from the level)",
+        "valueType": "union"
       },
       {
         "key": "cssClass",
@@ -23338,7 +23403,7 @@
   "ShadStat": {
     "type": "ShadStat",
     "name": "ShadStat",
-    "description": "shadcn/ui dashboard figure: label, value, change badge and footnote",
+    "description": "shadcn/ui dashboard figure: label, value, change badge and footnote. Styles valueFontFamily ('serif', 'display', 'mono', ...), labelTextTransform ('uppercase') and labelLetterSpacing ('0.1em') set the figure's typeface and a small-caps label",
     "defaultSize": {
       "width": 10,
       "height": 120
@@ -23472,6 +23537,36 @@
         "key": "negativeColor",
         "label": "Change color when trend is down",
         "valueType": "string"
+      },
+      {
+        "key": "valueFontFamily",
+        "label": "Value typeface",
+        "valueType": "string",
+        "default": "theme",
+        "allowedValues": [
+          "theme",
+          "sans",
+          "serif",
+          "display",
+          "mono"
+        ]
+      },
+      {
+        "key": "labelTextTransform",
+        "label": "Label casing",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "uppercase",
+          "lowercase",
+          "capitalize"
+        ]
+      },
+      {
+        "key": "labelLetterSpacing",
+        "label": "Label letter spacing (px, or em like 0.12em)",
+        "valueType": "union"
       },
       {
         "key": "cssClass",
@@ -24360,7 +24455,7 @@
   "ShadText": {
     "type": "ShadText",
     "name": "ShadText",
-    "description": "shadcn/ui paragraph, lead, muted or small text",
+    "description": "shadcn/ui paragraph, lead, muted or small text. Typeface styles: fontFamily ('theme', 'sans', 'serif', 'display' or 'mono'), fontWeight, fontSize (px), letterSpacing (px or em) and textTransform (a small uppercase eyebrow: tone small, textTransform 'uppercase', letterSpacing '0.12em')",
     "defaultSize": {
       "width": 16,
       "height": 24
@@ -24443,6 +24538,55 @@
         "label": "Text alignment (left, center, right)",
         "valueType": "string",
         "default": "left"
+      },
+      {
+        "key": "fontFamily",
+        "label": "Typeface",
+        "valueType": "string",
+        "default": "theme",
+        "allowedValues": [
+          "theme",
+          "sans",
+          "serif",
+          "display",
+          "mono"
+        ]
+      },
+      {
+        "key": "fontWeight",
+        "label": "Weight",
+        "valueType": "string",
+        "default": "",
+        "allowedValues": [
+          "",
+          "400",
+          "500",
+          "600",
+          "700",
+          "800"
+        ]
+      },
+      {
+        "key": "letterSpacing",
+        "label": "Letter spacing (px, or em like 0.12em)",
+        "valueType": "union"
+      },
+      {
+        "key": "textTransform",
+        "label": "Casing",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "uppercase",
+          "lowercase",
+          "capitalize"
+        ]
+      },
+      {
+        "key": "fontSize",
+        "label": "Font size (px)",
+        "valueType": "union"
       },
       {
         "key": "cssClass",

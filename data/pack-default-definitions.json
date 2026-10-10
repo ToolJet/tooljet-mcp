@@ -273,6 +273,9 @@
     "stack": {
      "value": "{{false}}"
     },
+    "highlight": {
+     "value": ""
+    },
     "loadingState": {
      "value": "{{false}}"
     },
@@ -1337,6 +1340,15 @@
     },
     "textAlign": {
      "value": "left"
+    },
+    "fontFamily": {
+     "value": "theme"
+    },
+    "fontWeight": {
+     "value": ""
+    },
+    "textTransform": {
+     "value": "none"
     }
    },
    "others": {
@@ -3043,6 +3055,12 @@
    "styles": {
     "boxShadow": {
      "value": "0px 0px 0px 0px #00000040"
+    },
+    "valueFontFamily": {
+     "value": "theme"
+    },
+    "labelTextTransform": {
+     "value": "none"
     }
    },
    "others": {
@@ -3595,6 +3613,15 @@
     },
     "textAlign": {
      "value": "left"
+    },
+    "fontFamily": {
+     "value": "theme"
+    },
+    "fontWeight": {
+     "value": ""
+    },
+    "textTransform": {
+     "value": "none"
     }
    },
    "others": {
