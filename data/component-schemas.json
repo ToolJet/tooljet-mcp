@@ -27037,10 +27037,34 @@
         ]
       },
       {
+        "key": "collapsedHeight",
+        "label": "Collapsed card height (px, empty: show all)",
+        "valueType": "union",
+        "default": ""
+      },
+      {
+        "key": "columnWidth",
+        "label": "Column width (px, empty: fill the board)",
+        "valueType": "union",
+        "default": ""
+      },
+      {
         "key": "showCount",
         "label": "Card count on columns",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapsibleColumns",
+        "label": "Collapsible columns",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "collapsedColumns",
+        "label": "Columns collapsed at start (ids)",
+        "valueType": "array",
+        "default": "{{[]}}"
       },
       {
         "key": "allowDrag",
@@ -27262,6 +27286,10 @@
         "default": ""
       },
       {
+        "name": "collapsedColumns",
+        "default": []
+      },
+      {
         "name": "lastAddedCard",
         "default": {}
       },
@@ -27277,6 +27305,7 @@
     "authoringHints": {
       "board": {
         "customCards": "For card content the fields cannot express (buttons on a card, a custom layout), set cardLayout \"custom\" and cardHeight (px, the same for every card), then add child components with parent_ref to the board (no slot_name, or \"body\"). They are laid out on the card canvas: 43 grid columns across the card width (about 7px each on a 3-column board), top in px from the card top. Bind them to {{cardData.<field>}}; every card renders the same children with its own row. A button on a card can act on that card with cardData.id. Children of a board left on Fields content are never shown. Prefer Fields when the mapped fields fit: they need no layout and look right by default.",
+        "sizing": "collapsedHeight (px of card content): taller cards show only that top part with a Show more toggle; put what must always be visible above it (title, owner, status) and details below. Empty shows every card whole; the Show more toggle appears on hover. Columns fold to a narrow strip from a chevron in their header (collapsibleColumns, on by default) and still take dropped cards; collapsedColumns lists column ids folded at start (e.g. a Done or Closed column on a long-running board); components.<name>.collapsedColumns is the current list. columnWidth (px) fixes every column, and the board scrolls sideways when they do not fit; empty shares the board width (at least 240px each).",
         "content": "A card shows only the fields you map: titleField, descriptionField, badgeField (priority words colour the badge), tagsField (an array or a comma list), progressField (0 to 100), metaField (a short date or count), avatarField (a name, shown as initials). Map what the job needs; leave the rest empty. density \"compact\" for long boards.",
         "saving": "Every change shows on the board at once and fires an event with its payload: onCardMoved (movedCard, lastMove), onCardAdded (lastAddedCard), onCardUpdated (lastUpdatedCard), onCardRemoved (lastRemovedCard); components.<name>.cards is the whole board. Save in that event handler with a query. The actions (addCard, updateCard, moveCard, deleteCard) fire the same events, so either call an action and save in its event, or save with a query and refresh the data; never both, or the save runs twice.",
         "addFlow": "allowAdd shows an Add card button under each column: it sets addCardColumn and fires onAddCardClick. Open a modal form there; on submit run the insert with status components.<name>.addCardColumn, then refresh the data query (or call addCard without a separate insert).",
