@@ -72,6 +72,25 @@ describe('manage_theme create applied to an app in the same call', () => {
     expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'dark' });
   });
 
+  it('opens the app in the asked mode: a dark request on a light/dark theme pair', async () => {
+    // A "dark, focused" SaaS dashboard (2026-10-10) got a proper light/dark theme but stayed in light mode, and the
+    // build painted every card dark by hand; the Table and inputs then drew light-mode chrome on dark cards.
+    const c = client();
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Metrics theme', definition, app_id: 'a1', version_id: 'v1', app_mode: 'dark' } as never));
+    expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: expect.objectContaining({ appMode: 'dark' }) }));
+    expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'dark' });
+  });
+
+  it('keeps light mode when asked, even for a dark light-mode canvas', async () => {
+    const c = client();
+    const dark = { ...definition, surface: { colors: { ...definition.surface.colors, appBackground: { light: '#0B1020', dark: '#0B1020' } } } };
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Console theme', definition: dark, app_id: 'a1', version_id: 'v1', app_mode: 'light' } as never));
+    expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: expect.objectContaining({ appMode: 'light' }) }));
+    expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'light' });
+  });
+
   it('applies a reused theme of the same name too', async () => {
     const c = client();
     c.listAppThemes.mockResolvedValue([{ id: 'old', name: 'Warm Foyer theme', definition }]);

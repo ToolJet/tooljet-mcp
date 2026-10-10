@@ -72425,13 +72425,13 @@ var themeDefinition = external_exports.object({
 async function applyToApp(client, theme, args, definition2) {
   if (!args.app_id || !args.version_id)
     return void 0;
-  const dark = paintsDarkCanvasInLightMode(definition2);
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition2) ? "dark" : void 0);
   await client.updateAppSettings({
     appId: args.app_id,
     versionId: args.version_id,
-    globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
+    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
   });
-  return { app_id: args.app_id, version_id: args.version_id, ...dark ? { app_mode: "dark" } : {} };
+  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
 }
 function requireValue(value2, label2) {
   if (value2 === void 0)
@@ -72454,7 +72454,7 @@ function manageThemeTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
       theme_id: external_exports.string().uuid().optional(),
@@ -72464,7 +72464,8 @@ function manageThemeTool(client) {
       confirm: external_exports.boolean().optional(),
       include_definitions: external_exports.boolean().optional(),
       app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to")
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
     },
     async handler(args) {
       try {
@@ -72607,7 +72608,8 @@ function createAppTool(client) {
     description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
     inputSchema: {
       name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional()
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app.")
     },
     async handler(args) {
       try {
@@ -72621,14 +72623,14 @@ function createAppTool(client) {
         const label2 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
-          const dark = typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition);
+          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
+            globalSettings: { theme, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          result.theme = { mode, id: theme.id, name: theme.name, ...dark ? { app_mode: "dark" } : {} };
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {} };
         } catch (themeErr) {
           result.theme = {
             mode: "workspace_default",

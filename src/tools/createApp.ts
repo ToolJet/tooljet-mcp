@@ -46,7 +46,7 @@ export interface CreateAppToolResult extends CreateAppResult {
     id?: string;
     name?: string;
     /** "dark" when the app was opened in dark mode because the derived theme's canvas is dark in light mode. */
-    app_mode?: 'dark';
+    app_mode?: 'light' | 'dark';
     /** Set when the requested theme could not be applied; the app still exists and uses the workspace default. */
     warning?: string;
   };
@@ -107,8 +107,11 @@ export function createAppTool(client: ToolJetClient): ToolDef {
     inputSchema: {
       name: z.string().min(1),
       theme: z.union([z.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: z.enum(['light', 'dark']).optional().describe(
+        "Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint " +
+        'every surface; never paint dark backgrounds by hand on a light-mode app.'),
     },
-    async handler(args: { name: string; theme?: string | DerivedTheme }) {
+    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark' }) {
       try {
         // Internal callers can bypass MCP input validation. Reject incomplete themes before creating
         // even an empty app; a theme name alone does not prove that its requested palette was applied.
@@ -120,14 +123,16 @@ export function createAppTool(client: ToolJetClient): ToolDef {
         const label = typeof choice === 'object' ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
-          const dark = typeof choice === 'object' && paintsDarkCanvasInLightMode(choice.definition);
+          const appMode =
+            args.app_mode ??
+            (typeof choice === 'object' && paintsDarkCanvasInLightMode(choice.definition) ? 'dark' : undefined);
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, ...(dark ? { appMode: 'dark' as const } : {}) },
+            globalSettings: { theme, ...(appMode ? { appMode } : {}) },
           });
           const mode = choice === 'standard' ? 'standard' : typeof choice === 'object' ? 'derived' : 'named';
-          result.theme = { mode, id: theme.id, name: theme.name, ...(dark ? { app_mode: 'dark' as const } : {}) };
+          result.theme = { mode, id: theme.id, name: theme.name, ...(appMode ? { app_mode: appMode } : {}) };
         } catch (themeErr) {
           result.theme = {
             mode: 'workspace_default',

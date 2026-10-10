@@ -68,15 +68,16 @@ type Args = {
   include_definitions?: boolean;
   app_id?: string;
   version_id?: string;
+  app_mode?: 'light' | 'dark';
 };
 
 /** Sets the theme on an app version, in dark mode when the theme's light-mode canvas is dark (as create_app does). */
 async function applyToApp(client: ToolJetClient, theme: AppTheme, args: Args, definition: unknown) {
   if (!args.app_id || !args.version_id) return undefined;
-  const dark = paintsDarkCanvasInLightMode(definition);
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition) ? 'dark' : undefined);
   await client.updateAppSettings({ appId: args.app_id, versionId: args.version_id,
-    globalSettings: { theme, ...(dark ? { appMode: 'dark' as const } : {}) } });
-  return { app_id: args.app_id, version_id: args.version_id, ...(dark ? { app_mode: 'dark' as const } : {}) };
+    globalSettings: { theme, ...(mode ? { appMode: mode } : {}) } });
+  return { app_id: args.app_id, version_id: args.version_id, ...(mode ? { app_mode: mode } : {}) };
 }
 
 function requireValue<T>(value: T | undefined, label: string): T {
@@ -103,8 +104,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
     description:
       'Manage workspace theme objects through ToolJet\'s typed theme API. Actions: list, create, set_default, ' +
       'update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens ' +
-      'with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when ' +
-      'its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same ' +
+      'with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else ' +
+      'in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same ' +
       'name, so there is no need to list themes first. ' +
       'Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass ' +
       'include_definitions:true (or theme_id) to get a definition.',
@@ -118,6 +119,10 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       include_definitions: z.boolean().optional(),
       app_id: z.string().uuid().optional().describe('create only: apply the theme to this app as well'),
       version_id: z.string().uuid().optional().describe('create only, with app_id: the app version to apply it to'),
+      app_mode: z.enum(['light', 'dark']).optional().describe(
+        "create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the " +
+        "theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never " +
+        'paint dark backgrounds by hand on a light-mode app.'),
     },
     async handler(args: Args) {
       try {
