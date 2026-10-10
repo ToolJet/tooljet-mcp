@@ -69,3 +69,16 @@ it('refuses a fixed-height shadcn Table too short for a page of rows', async () 
   const lean = table(420, { cellSize: { value: 'condensed' }, displaySearchBox: { value: '{{false}}' }, showFilterButton: { value: '{{false}}' }, hideColumnSelectorButton: { value: '{{true}}' } });
   expect(lintComponentSpec(lean).errors.join(' ')).toMatch(/needs at least 453px/);
 });
+
+it('warns toward Table with styles.tableLook shadcn for a new ShadTable', async () => {
+  const { lintComponentSpec } = await import('../src/lint.js');
+  const result = lintComponentSpec({ name: 'orders', type: 'ShadTable', properties: {} });
+  expect(result.warnings.join(' ')).toMatch(/tableLook "shadcn"/);
+});
+
+it('accepts the Look style on the native Table', async () => {
+  const { lintComponentSpec } = await import('../src/lint.js');
+  const result = lintComponentSpec({ name: 'orders', type: 'Table', properties: {}, styles: { tableLook: { value: 'shadcn' } } });
+  expect(result.warnings.join(' ')).not.toMatch(/unknown style key "tableLook"/);
+  expect(result.errors.join(' ')).not.toMatch(/tableLook/);
+});

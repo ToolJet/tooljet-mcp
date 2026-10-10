@@ -16261,6 +16261,16 @@
     ],
     "styles": [
       {
+        "key": "tableLook",
+        "label": "Look",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "shadcn"
+        ]
+      },
+      {
         "key": "columnTitleColor",
         "label": "Column title",
         "valueType": "string",
@@ -16731,6 +16741,7 @@
       }
     },
     "authoringHints": {
+      "look": "styles.tableLook \"shadcn\" draws this Table like shadcn/ui's data table (card frame, search-first toolbar, quiet header, hairline rows, shadcn buttons and pagination); use it for tables in apps built with the shadcn/ui pack. Properties, columns, row action buttons, events and exposed values are the Table's own in both looks.",
       "serverSideDataFlow": {
         "exposedVariables": {
           "pageIndex": "1-based number",
@@ -23798,7 +23809,7 @@
   "ShadTable": {
     "type": "ShadTable",
     "name": "ShadTable",
-    "description": "shadcn/ui data table: typed columns (text, number, currency, date, badge, tags, boolean, link, image, avatar, progress, buttons), search, sort, filters, pagination (client or server side), single or bulk selection, inline editing with save/discard, CSV export, column chooser. Native Table conventions",
+    "description": "Superseded for new builds: use Table with styles.tableLook \"shadcn\" (ToolJet's own Table drawn in the shadcn/ui look, with every Table feature and convention). Kept so existing apps keep working. shadcn/ui data table: typed columns (text, number, currency, date, badge, tags, boolean, link, image, avatar, progress, buttons), search, sort, filters, pagination (client or server side), single or bulk selection, inline editing with save/discard, CSV export, column chooser. Native Table conventions",
     "defaultSize": {
       "width": 30,
       "height": 440

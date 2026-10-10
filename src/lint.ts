@@ -1584,6 +1584,15 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
     }
   }
 
+  // The shadcn/ui pack's table is ToolJet's own Table in its shadcn look (styles.tableLook), with every Table feature
+  // and convention; ShadTable stays registered only so existing apps keep working.
+  if (spec.type === 'ShadTable') {
+    warnings.push(
+      `ShadTable "${label}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" ` +
+        "(ToolJet's own Table in the shadcn/ui look, with its columns, row action buttons, events and inspector)."
+    );
+  }
+
   // A shadcn Table with dynamic height off scrolls inside its drawn height (ShadTable.jsx: toolbar 56px, footer
   // 52px, header ~41px, rows 36/44/56px by cellSize). Drawn too short, it shows part of a page of rows with the
   // cut-off row at the edge (a Luna build showed 5.5 of 10 rows, 2026-10-10).

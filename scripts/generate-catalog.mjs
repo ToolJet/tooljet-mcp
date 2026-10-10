@@ -761,6 +761,7 @@ const AUTHORING_HINTS = {
     },
   },
   Table: {
+    look: "styles.tableLook \"shadcn\" draws this Table like shadcn/ui's data table (card frame, search-first toolbar, quiet header, hairline rows, shadcn buttons and pagination); use it for tables in apps built with the shadcn/ui pack. Properties, columns, row action buttons, events and exposed values are the Table's own in both looks.",
     serverSideDataFlow: {
       exposedVariables: {
         pageIndex: '1-based number',
