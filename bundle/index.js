@@ -69551,6 +69551,8 @@ function hasNonEmptyDefinition(definition2) {
 var FLEX_CONTAINER_TYPE = "FlexContainer";
 var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
 var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
+var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
+var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
 function isFlexContainerType(type) {
   return type === FLEX_CONTAINER_TYPE;
 }
@@ -77371,7 +77373,9 @@ var layoutSchema = external_exports.object({
   width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
   height: external_exports.number(),
   fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
-  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION)
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
 });
 var componentInputSchema = external_exports.object({
   name: componentNameSchema,
@@ -78500,7 +78504,7 @@ function differingKey(type, section, planned, stored, definitions) {
   return void 0;
 }
 var RECT_KEYS = ["top", "left", "width", "height"];
-var FLEX_LAYOUT_KEYS = ["fillWidth", "widthPx"];
+var FLEX_LAYOUT_KEYS = ["fillWidth", "widthPx", "grow", "minWidthPx"];
 var sameRect = (planned, stored) => {
   if (!planned)
     return true;
@@ -80588,7 +80592,9 @@ var rect = external_exports.object({
   width: external_exports.number(),
   height: external_exports.number(),
   fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
-  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION)
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
 });
 var RECT_KEYS2 = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
 var layoutEntrySchema = strictEntry({

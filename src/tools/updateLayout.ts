@@ -19,6 +19,8 @@ import {
   appendedChildOrders,
   childOrderProperty,
   FLEX_FILL_WIDTH_DESCRIPTION,
+  FLEX_GROW_DESCRIPTION,
+  FLEX_MIN_WIDTH_PX_DESCRIPTION,
   FLEX_WIDTH_PX_DESCRIPTION,
   reparentAdditions,
 } from '../flexContainer.js';
@@ -30,6 +32,8 @@ const rect = z.object({
   height: z.number(),
   fillWidth: z.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
   widthPx: z.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: z.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: z.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION),
 });
 type LayoutRect = z.infer<typeof rect>;
 

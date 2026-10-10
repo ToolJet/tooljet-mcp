@@ -14,6 +14,10 @@ export const FLEX_FILL_WIDTH_DESCRIPTION =
   'FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.';
 export const FLEX_WIDTH_PX_DESCRIPTION =
   'FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.';
+export const FLEX_GROW_DESCRIPTION =
+  'FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.';
+export const FLEX_MIN_WIDTH_PX_DESCRIPTION =
+  'FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.';
 
 export function isFlexContainerType(type: unknown): boolean {
   return type === FLEX_CONTAINER_TYPE;

@@ -7,7 +7,7 @@ import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { componentNameSchema } from './componentName.js';
-import { FLEX_FILL_WIDTH_DESCRIPTION, FLEX_WIDTH_PX_DESCRIPTION } from './flexContainer.js';
+import { FLEX_FILL_WIDTH_DESCRIPTION, FLEX_GROW_DESCRIPTION, FLEX_MIN_WIDTH_PX_DESCRIPTION, FLEX_WIDTH_PX_DESCRIPTION } from './flexContainer.js';
 
 const layoutSchema = z.object({
   top: z.number(),
@@ -16,6 +16,8 @@ const layoutSchema = z.object({
   height: z.number(),
   fillWidth: z.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
   widthPx: z.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: z.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: z.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION),
 });
 
 export const componentInputSchema = z.object({

@@ -248,6 +248,10 @@ export interface ComponentLayout {
   fillWidth?: boolean;
   /** FlexContainer child only: fixed width in pixels, used when fillWidth is false. */
   widthPx?: number;
+  /** FlexContainer row child only: share of the free width among fill children (default 1). */
+  grow?: number;
+  /** FlexContainer row child only: narrowest width before a wrapping row moves the child down. */
+  minWidthPx?: number;
 }
 
 export interface CreateComponentParams {

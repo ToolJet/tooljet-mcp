@@ -528,11 +528,12 @@ const RENDERING_HINTS = {
   // Verified in Widgets/FlexContainer (FlexContainer.jsx, flexContainer.utils.js, useFlexWidgetLayout.js).
   FlexContainer: {
     childOrder: 'Children render in the order of properties.childOrder (an array of child component ids); grid top/left of a child are ignored. A child missing from childOrder lands after the listed ones in an arbitrary order. MCP writes childOrder: request order when the container and its children are created together, appended for a child added or reparented later.',
-    childWidth: 'A child fills the free main-axis width by default (layouts.desktop.fillWidth true). For a fixed width set layouts.desktop.fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.',
+    childWidth: 'A child fills the free main-axis width by default (layouts.desktop.fillWidth true). Fill children in a row share the line: equally by default, or by layouts.desktop.grow (grow 2 beside grow 1 takes two thirds). layouts.desktop.minWidthPx is the narrowest a fill child may get; in a row with properties.flexWrap {{true}} a child that would go narrower wraps to the next line (a responsive card grid). For a fixed width set fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.',
     childHeight: 'A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode).',
     containerHeight: 'With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.',
     antCard: "cardStyle 'antCard' draws an Ant Design card: a light surface with an 8px radius and a 1px border, plus a 56px header with cardTitle on the left and cardExtra on the right. The header appears only when cardTitle or cardExtra is set and takes its 56px from the body. In that mode backgroundColor, borderColor and borderRadius styles are ignored.",
     spacing: 'padding and gap are properties in px, not styles.',
+    surface: "A FlexContainer is pure layout and is created transparent (no background, no border) unless you give it a surface: cardStyle 'antCard' (an Ant Design card with optional cardTitle/cardExtra header) or your own backgroundColor/borderColor. Add a surface only where you want one; rows and columns used for layout stay invisible.",
   },
   KeyValuePair: {
     currentPaddingBehavior: 'In the current ToolJet renderer, styles.padding values "default" and "none" do not add a visible content inset. Do not rely on this property to create card padding.',

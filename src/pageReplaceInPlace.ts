@@ -127,7 +127,7 @@ function differingKey(type: string, section: Section, planned: Record<string, un
 
 const RECT_KEYS = ['top', 'left', 'width', 'height'] as const;
 // FlexContainer children size by these instead of the grid rect; compared only when the plan sets them.
-const FLEX_LAYOUT_KEYS = ['fillWidth', 'widthPx'] as const;
+const FLEX_LAYOUT_KEYS = ['fillWidth', 'widthPx', 'grow', 'minWidthPx'] as const;
 const sameRect = (planned: ComponentLayout | undefined, stored: unknown): boolean => {
   if (!planned) return true;
   if (!stored || typeof stored !== 'object') return false;
