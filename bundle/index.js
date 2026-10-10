@@ -76974,9 +76974,14 @@ function normalizeComponentSpec(component, options2 = {}) {
           warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
           return { ...entry, isDateSelectionEnabled: true };
         }
-        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && column.horizontalAlignment === void 0) {
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && (column.horizontalAlignment === void 0 || column.thousandSeparator === void 0)) {
           changedColumns = true;
-          return { ...column, horizontalAlignment: "right" };
+          const entry = column;
+          return {
+            ...entry,
+            horizontalAlignment: entry.horizontalAlignment ?? "right",
+            thousandSeparator: entry.thousandSeparator ?? true
+          };
         }
         return column;
       });

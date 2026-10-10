@@ -283,13 +283,20 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
         // The shadcn look reads numbers right-aligned (shadcn's data table, and how money and counts scan down a
         // column); a number column that sets no alignment gets right, which the inspector shows and can change.
+        // It also groups thousands (100000 reads 100,000) unless the column says otherwise.
         if (
           shadcnLook && column && typeof column === 'object' && !Array.isArray(column) &&
           (column as Record<string, unknown>).columnType === 'number' &&
-          (column as Record<string, unknown>).horizontalAlignment === undefined
+          ((column as Record<string, unknown>).horizontalAlignment === undefined ||
+            (column as Record<string, unknown>).thousandSeparator === undefined)
         ) {
           changedColumns = true;
-          return { ...(column as Record<string, unknown>), horizontalAlignment: 'right' };
+          const entry = column as Record<string, unknown>;
+          return {
+            ...entry,
+            horizontalAlignment: entry.horizontalAlignment ?? 'right',
+            thousandSeparator: entry.thousandSeparator ?? true,
+          };
         }
         return column;
       });

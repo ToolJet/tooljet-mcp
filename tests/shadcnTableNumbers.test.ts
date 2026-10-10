@@ -19,11 +19,13 @@ describe('shadcn-look Table numbers', () => {
     );
     const columns = (result.component.properties?.columns as { value: Record<string, unknown>[] }).value;
     expect(columns.map((c) => c.horizontalAlignment)).toEqual([undefined, 'right', 'center']);
+    expect(columns.map((c) => c.thousandSeparator)).toEqual([undefined, true, true]);
   });
 
   it('leaves the ToolJet look as it is', () => {
     const result = normalizeComponentSpec(table(undefined, [{ id: 'b', key: 'total', name: 'Total', columnType: 'number' }]));
     const columns = (result.component.properties?.columns as { value: Record<string, unknown>[] }).value;
     expect(columns[0]!.horizontalAlignment).toBeUndefined();
+    expect(columns[0]!.thousandSeparator).toBeUndefined();
   });
 });
