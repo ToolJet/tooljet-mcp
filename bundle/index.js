@@ -76417,6 +76417,29 @@ function polishFlexRows(input) {
       setProp(container, "alignItems", "stretch");
       warnings.push(`Row "${label2}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
     }
+    if (children.length >= 2 && children.every(isSurface) && text(prop2(container, "alignItems")) === "stretch") {
+      const contentOf = (card) => {
+        const inner = childrenOf(refOf(card) ?? "");
+        const heights = inner.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN));
+        if (!inner.length || heights.some((h) => !Number.isFinite(h)))
+          return { height: NaN };
+        const rawGap = text(prop2(card, "gap"));
+        const gap = rawGap === "" ? 8 : Number(rawGap) || 0;
+        return { height: heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1), last: inner[inner.length - 1] };
+      };
+      const contents = children.map(contentOf);
+      const tallest = Math.max(...contents.map((c) => Number.isFinite(c.height) ? c.height : 0));
+      contents.forEach(({ height, last }) => {
+        if (!last || !Number.isFinite(height) || tallest - height < 24 || !/Chart$/.test(last.type))
+          return;
+        const grow = tallest - height;
+        [last.layout, last.layouts?.desktop].forEach((rect2) => {
+          if (rect2 && typeof rect2.height === "number")
+            rect2.height += grow;
+        });
+        warnings.push(`Chart "${last.name}" grows by ${grow}px to fill its card, which is stretched to the tallest card in row "${label2}".`);
+      });
+    }
     for (const child of children) {
       if (child.type !== "ShadHeading")
         continue;

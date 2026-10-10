@@ -217,6 +217,30 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       warnings.push(`Row "${label}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
     }
 
+    // 2b. In a stretched row of cards, a card whose last widget is a chart and whose content is shorter than the
+    //     tallest card's grows that chart by the difference: stretched, the card otherwise kept an empty band under
+    //     the chart (an MRR trend beside a donut and its table).
+    if (children.length >= 2 && children.every(isSurface) && text(prop(container, 'alignItems')) === 'stretch') {
+      const contentOf = (card: ComponentSpec): { height: number; last?: ComponentSpec } => {
+        const inner = childrenOf(refOf(card) ?? '');
+        const heights = inner.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN));
+        if (!inner.length || heights.some((h) => !Number.isFinite(h))) return { height: NaN };
+        const rawGap = text(prop(card, 'gap'));
+        const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+        return { height: heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1), last: inner[inner.length - 1] };
+      };
+      const contents = children.map(contentOf);
+      const tallest = Math.max(...contents.map((c) => (Number.isFinite(c.height) ? c.height : 0)));
+      contents.forEach(({ height, last }) => {
+        if (!last || !Number.isFinite(height) || tallest - height < 24 || !/Chart$/.test(last.type)) return;
+        const grow = tallest - height;
+        [last.layout, last.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.height === 'number') rect.height += grow;
+        });
+        warnings.push(`Chart "${last.name}" grows by ${grow}px to fill its card, which is stretched to the tallest card in row "${label}".`);
+      });
+    }
+
     // 3. A fixed-width heading too narrow for one line of its text is widened to fit (it wrapped onto two lines).
     for (const child of children) {
       if (child.type !== 'ShadHeading') continue;

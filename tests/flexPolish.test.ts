@@ -275,3 +275,37 @@ describe('polishFlexRows: an empty card takes the widget placed beside it', () =
     expect(polishFlexRows(input).components.find((c) => c.clientRef === 'chart')!.parentRef).toBe('r');
   });
 });
+
+describe('polishFlexRows: a chart in the shorter of two stretched cards fills it', () => {
+  const card = (ref: string, parentRef: string) =>
+    child(ref, 'FlexContainer', parentRef, { cardStyle: { value: 'shadcnCard' }, direction: { value: 'column' }, gap: { value: 8 } });
+  const sized = (c: ComponentSpec, height: number) => ({ ...c, layout: { top: 0, left: 0, width: 10, height } });
+  it('grows the chart by the difference so no band is left under it', () => {
+    const input = [
+      row('row', { alignItems: { value: 'stretch' } }),
+      card('trendCard', 'row'),
+      sized(child('trend', 'ShadAreaChart', 'trendCard'), 300),
+      card('mixCard', 'row'),
+      sized(child('donut', 'ShadPieChart', 'mixCard'), 200),
+      sized(child('mixTable', 'Table', 'mixCard'), 300),
+    ];
+    const { components, warnings } = polishFlexRows(input);
+    // mixCard content: 200 + 8 + 300 = 508; trendCard: 300. The trend chart grows by 208.
+    expect(components.find((c) => c.clientRef === 'trend')!.layout!.height).toBe(508);
+    expect(components.find((c) => c.clientRef === 'donut')!.layout!.height).toBe(200);
+    expect(warnings.join(' ')).toMatch(/trend/);
+  });
+
+  it('leaves a card whose last widget is not a chart, and near-equal cards, alone', () => {
+    const input = [
+      row('row', { alignItems: { value: 'stretch' } }),
+      card('a', 'row'),
+      sized(child('t', 'Table', 'a'), 300),
+      card('b', 'row'),
+      sized(child('c', 'ShadBarChart', 'b'), 290),
+    ];
+    const { components } = polishFlexRows(input);
+    expect(components.find((c) => c.clientRef === 't')!.layout!.height).toBe(300);
+    expect(components.find((c) => c.clientRef === 'c')!.layout!.height).toBe(290);
+  });
+});
