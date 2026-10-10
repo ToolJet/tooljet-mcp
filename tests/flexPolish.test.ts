@@ -207,3 +207,29 @@ describe('polishFlexRows: headings in rows', () => {
     expect(prop(components, 'header', 'alignItems')).toBe('center');
   });
 });
+
+describe('polishFlexRows: a plain row fits its tallest child', () => {
+  const h = (components: ComponentSpec[], ref: string) => components.find((c) => c.clientRef === ref)?.layout?.height;
+  it('raises a button row drawn at its button height (the editor clipped and scrolled the button by 2px)', () => {
+    const input = [
+      row('actions', { padding: { value: 0 } }, { layout: { top: 0, left: 0, width: 10, height: 40 } }),
+      { ...child('newBtn', 'ShadButton', 'actions'), layout: { top: 0, left: 0, width: 6, height: 36 } },
+    ];
+    const { components, warnings } = polishFlexRows(input);
+    expect(h(components, 'actions')).toBe(42);
+    expect(warnings.join(' ')).toMatch(/actions/);
+  });
+
+  it('counts the row padding and leaves a tall enough row and a card alone', () => {
+    const padded = polishFlexRows([
+      row('bar', { padding: { value: 8 } }, { layout: { top: 0, left: 0, width: 10, height: 60 } }),
+      { ...child('b', 'ShadButton', 'bar'), layout: { top: 0, left: 0, width: 6, height: 36 } },
+    ]).components;
+    expect(h(padded, 'bar')).toBe(60);
+    const card = polishFlexRows([
+      row('card', { cardStyle: { value: 'shadcnCard' }, padding: { value: 0 } }, { layout: { top: 0, left: 0, width: 10, height: 30 } }),
+      { ...child('b', 'ShadButton', 'card'), layout: { top: 0, left: 0, width: 6, height: 36 } },
+    ]).components;
+    expect(h(card, 'card')).toBe(30);
+  });
+});

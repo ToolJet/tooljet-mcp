@@ -76352,6 +76352,20 @@ function polishFlexRows(input) {
     if (!ref2)
       continue;
     const children = childrenOf(ref2);
+    const label0 = container.name ?? ref2;
+    if (!isSurface(container) && !text(prop2(container, "cardTitle"))) {
+      const rects = [container.layout, container.layouts?.desktop].filter((rect2) => !!rect2 && typeof rect2.height === "number");
+      const tallest = Math.max(0, ...children.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? 0)).filter(Number.isFinite));
+      const rawPadding = text(prop2(container, "padding"));
+      const padding = rawPadding === "" ? 12 : Number(rawPadding) || 0;
+      const needed = tallest > 0 ? tallest + padding * 2 + 6 : 0;
+      if (needed && rects.length && rects.some((rect2) => rect2.height < needed)) {
+        rects.forEach((rect2) => {
+          rect2.height = Math.max(rect2.height, needed);
+        });
+        warnings.push(`Row "${label0}" was shorter than its tallest child; its height is now ${needed}.`);
+      }
+    }
     if (children.length < 2)
       continue;
     const align = text(prop2(container, "alignItems"));

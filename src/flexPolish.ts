@@ -133,6 +133,30 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     const ref = refOf(container);
     if (!ref) continue;
     const children = childrenOf(ref);
+    const label0 = container.name ?? ref;
+
+    // 0. A plain row is at least as tall as its tallest child plus its chrome (padding, the widget's 2px box padding
+    //    and the canvas border, 6px in all). The editor draws the authored height, so a 36px button in a 40px row
+    //    was clipped and its row scrolled by 2px under the pointer.
+    if (!isSurface(container) && !text(prop(container, 'cardTitle'))) {
+      const rects = [container.layout, container.layouts?.desktop].filter(
+        (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && typeof rect.height === 'number'
+      );
+      const tallest = Math.max(
+        0,
+        ...children.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? 0)).filter(Number.isFinite)
+      );
+      // An unset padding is the FlexContainer's default, 12px.
+      const rawPadding = text(prop(container, 'padding'));
+      const padding = rawPadding === '' ? 12 : Number(rawPadding) || 0;
+      const needed = tallest > 0 ? tallest + padding * 2 + 6 : 0;
+      if (needed && rects.length && rects.some((rect) => (rect.height as number) < needed)) {
+        rects.forEach((rect) => {
+          rect.height = Math.max(rect.height as number, needed);
+        });
+        warnings.push(`Row "${label0}" was shorter than its tallest child; its height is now ${needed}.`);
+      }
+    }
     if (children.length < 2) continue;
     const align = text(prop(container, 'alignItems'));
     const label = container.name ?? ref;
