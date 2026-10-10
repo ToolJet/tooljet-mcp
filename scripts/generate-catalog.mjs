@@ -866,6 +866,24 @@ for (const [type, schema] of Object.entries(schemas)) {
   };
 }
 
+// 2026-10-10: the pack's inputs validate like the native ones (RenderWidget runs the definition's validation section).
+const SHAD_VALIDATION_RULE =
+  'customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes("@") ? "" : "Enter an email"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them.';
+const SHAD_VALIDATION = {
+  text: `Top-level validation (not properties), each key as {value}: mandatory ("{{true}}"), regex, minLength, maxLength, customRule. ${SHAD_VALIDATION_RULE}`,
+  choice: `Top-level validation (not properties), each key as {value}: mandatory ("{{true}}": a value must be picked, or the checkbox checked) and customRule. ${SHAD_VALIDATION_RULE}`,
+};
+for (const [type, kind] of Object.entries({
+  ShadInput: 'text',
+  ShadTextarea: 'text',
+  ShadSelect: 'choice',
+  ShadDatePicker: 'choice',
+  ShadCheckbox: 'choice',
+  ShadRadioGroup: 'choice',
+})) {
+  if (schemas[type]) schemas[type].authoringHints = { ...schemas[type].authoringHints, validation: SHAD_VALIDATION[kind] };
+}
+
 // Also deliver these contracts in selective authoringHints reads, which intentionally omit
 // overview and exposedVariables. Do not expand every compact property response globally.
 if (schemas.Calendar) {

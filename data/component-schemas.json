@@ -21197,6 +21197,11 @@
         "valueType": "string"
       },
       {
+        "key": "errorColor",
+        "label": "Error color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21206,6 +21211,14 @@
       {
         "id": "onChange",
         "label": "On change"
+      },
+      {
+        "id": "onCheck",
+        "label": "On check"
+      },
+      {
+        "id": "onUnCheck",
+        "label": "On uncheck"
       }
     ],
     "actions": [
@@ -21260,12 +21273,21 @@
         "default": false
       },
       {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
         "name": "value",
         "default": false
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px.",
+      "validation": "Top-level validation (not properties), each key as {value}: mandatory (\"{{true}}\": a value must be picked, or the checkbox checked) and customRule. customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes(\"@\") ? \"\" : \"Enter an email\"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them."
     }
   },
   "ShadDatePicker": {
@@ -21395,6 +21417,11 @@
         "valueType": "string"
       },
       {
+        "key": "errorColor",
+        "label": "Error color (message and border)",
+        "valueType": "string"
+      },
+      {
         "key": "borderRadius",
         "label": "Field radius",
         "valueType": "union"
@@ -21467,6 +21494,14 @@
         "default": false
       },
       {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
         "name": "value",
         "default": ""
       },
@@ -21480,7 +21515,8 @@
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring and the calendar's selected days."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring and the calendar's selected days.",
+      "validation": "Top-level validation (not properties), each key as {value}: mandatory (\"{{true}}\": a value must be picked, or the checkbox checked) and customRule. customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes(\"@\") ? \"\" : \"Enter an email\"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them."
     }
   },
   "ShadEmpty": {
@@ -21928,6 +21964,11 @@
         "valueType": "string"
       },
       {
+        "key": "errorColor",
+        "label": "Error color (message and border)",
+        "valueType": "string"
+      },
+      {
         "key": "borderRadius",
         "label": "Field radius",
         "valueType": "union"
@@ -21939,6 +21980,14 @@
       }
     ],
     "events": [
+      {
+        "id": "onFocus",
+        "label": "On focus"
+      },
+      {
+        "id": "onBlur",
+        "label": "On blur"
+      },
       {
         "id": "onChange",
         "label": "On change"
@@ -21963,6 +22012,14 @@
       {
         "handle": "clear",
         "displayName": "Clear"
+      },
+      {
+        "handle": "setFocus",
+        "displayName": "Set focus"
+      },
+      {
+        "handle": "setBlur",
+        "displayName": "Set blur"
       },
       {
         "handle": "setVisibility",
@@ -22015,12 +22072,21 @@
         "default": false
       },
       {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
         "name": "value",
         "default": ""
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring.",
+      "validation": "Top-level validation (not properties), each key as {value}: mandatory (\"{{true}}\"), regex, minLength, maxLength, customRule. customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes(\"@\") ? \"\" : \"Enter an email\"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them."
     }
   },
   "ShadPieChart": {
@@ -22484,6 +22550,11 @@
         "valueType": "string"
       },
       {
+        "key": "errorColor",
+        "label": "Error color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -22558,12 +22629,21 @@
         "default": false
       },
       {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
         "name": "value",
         "default": ""
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px.",
+      "validation": "Top-level validation (not properties), each key as {value}: mandatory (\"{{true}}\": a value must be picked, or the checkbox checked) and customRule. customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes(\"@\") ? \"\" : \"Enter an email\"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them."
     }
   },
   "ShadSelect": {
@@ -22683,6 +22763,11 @@
         "valueType": "string"
       },
       {
+        "key": "errorColor",
+        "label": "Error color (message and border)",
+        "valueType": "string"
+      },
+      {
         "key": "borderRadius",
         "label": "Field radius",
         "valueType": "union"
@@ -22766,6 +22851,14 @@
         "default": false
       },
       {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
         "name": "value",
         "default": ""
       },
@@ -22775,7 +22868,8 @@
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring.",
+      "validation": "Top-level validation (not properties), each key as {value}: mandatory (\"{{true}}\": a value must be picked, or the checkbox checked) and customRule. customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes(\"@\") ? \"\" : \"Enter an email\"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them."
     }
   },
   "ShadSeparator": {
@@ -24505,6 +24599,11 @@
         "valueType": "string"
       },
       {
+        "key": "errorColor",
+        "label": "Error color (message and border)",
+        "valueType": "string"
+      },
+      {
         "key": "borderRadius",
         "label": "Field radius",
         "valueType": "union"
@@ -24516,6 +24615,14 @@
       }
     ],
     "events": [
+      {
+        "id": "onFocus",
+        "label": "On focus"
+      },
+      {
+        "id": "onBlur",
+        "label": "On blur"
+      },
       {
         "id": "onChange",
         "label": "On change"
@@ -24536,6 +24643,14 @@
       {
         "handle": "clear",
         "displayName": "Clear"
+      },
+      {
+        "handle": "setFocus",
+        "displayName": "Set focus"
+      },
+      {
+        "handle": "setBlur",
+        "displayName": "Set blur"
       },
       {
         "handle": "setVisibility",
@@ -24588,12 +24703,21 @@
         "default": false
       },
       {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      },
+      {
         "name": "value",
         "default": ""
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring.",
+      "validation": "Top-level validation (not properties), each key as {value}: mandatory (\"{{true}}\"), regex, minLength, maxLength, customRule. customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes(\"@\") ? \"\" : \"Enter an email\"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them."
     }
   },
   "ShadToggleGroup": {
