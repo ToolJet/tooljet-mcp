@@ -69,6 +69,26 @@ function resolveCatalogType(requestedType: string): {
     : { type: requestedType };
 }
 
+/** Names models reach for from shadcn/ui and other kits, mapped to the pack's types (or how to compose them). */
+const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
+  [/table|grid|datatable/i, ['ShadTable']],
+  [/metric|stat|kpi/i, ['ShadStat', 'ShadSparkline']],
+  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")']],
+  [/modal|dialog|sheet|drawer/i, ['ShadDialog']],
+  [/dropdown|menu/i, ['ShadDropdownMenu', 'ShadSelect', 'ShadCombobox']],
+  [/list/i, ['ShadListView', 'ShadKeyValue']],
+  [/chart|graph/i, ['ShadBarChart', 'ShadLineChart', 'ShadAreaChart', 'ShadPieChart']],
+  [/label|title|typography/i, ['ShadHeading', 'ShadText']],
+  [/date/i, ['ShadDatePicker', 'ShadDateTimePicker', 'ShadCalendar']],
+  [/toast|notification|banner/i, ['ShadAlert']],
+  [/divider/i, ['ShadSeparator']],
+];
+function packSuggestions(requestedType: string): string[] {
+  if (!/^Shad[A-Z]/.test(requestedType)) return [];
+  const rest = requestedType.slice(4);
+  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
+}
+
 /** Catalog types whose name shares a word with an unknown one, for the error that names it. */
 function nearbyTypes(requestedType: string): string[] {
   const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
@@ -204,7 +224,8 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
             const near = nearbyTypes(singleType);
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...(near.length ? { did_you_mean: near } : {}) });
+            const suggested = [...new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
+            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...(suggested.length ? { did_you_mean: suggested } : {}) });
           }
           return ok({
             ...selectSchema(schema, args),
@@ -270,7 +291,20 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
           components.push(component);
           componentByResolvedType.set(resolved.type, component);
         }
-        return ok({ components, unknown_types: unknownTypes });
+        const suggestions = Object.fromEntries(
+          unknownTypes
+            .map((type) => [type, [...new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)] as const)
+            .filter(([, near]) => near.length)
+        );
+        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
+        return ok({
+          components,
+          unknown_types: unknownTypes,
+          ...(Object.keys(suggestions).length ? { suggestions } : {}),
+          ...(guessedPack
+            ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) }
+            : {}),
+        });
       } catch (err) {
         return fail(err);
       }

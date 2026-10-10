@@ -834,6 +834,18 @@ describe('get_component_catalog tool', () => {
     expect(body.unknown_types).toEqual(['NotAComponent']);
   });
 
+  it('suggests pack types for guessed shadcn names', async () => {
+    // A Luna build asked for ShadDataTable, ShadMetric and ShadCard, which do not exist, and got no guidance.
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const body = textOf(await tool.handler({ types: ['ShadDataTable', 'ShadMetric', 'ShadCard', 'ShadButton'] })) as any;
+    expect(body.unknown_types).toEqual(['ShadDataTable', 'ShadMetric', 'ShadCard']);
+    expect(body.suggestions.ShadDataTable).toContain('ShadTable');
+    expect(body.suggestions.ShadMetric).toContain('ShadStat');
+    expect(body.suggestions.ShadCard.join(' ')).toMatch(/FlexContainer/);
+    expect(body.pack_types).toContain('ShadDialog');
+  });
+
   it('defaults typed reads to compact authoring contracts and preserves exact key lookups', async () => {
     const client = makeClient();
     const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
