@@ -71430,7 +71430,11 @@ function createClient(auth, config2) {
       properties: spec.properties,
       styles: spec.styles ?? {},
       validation: spec.validation ?? {},
-      others: spec.others ?? {}
+      others: spec.others ?? {},
+      // The editor always sends these two sections. For a widget type the server has no defaults for (for example
+      // the Ant Design pack) an omitted section is stored as null, and one null section stops the page loading.
+      general: {},
+      generalStyles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } }
     };
     const desktop = spec.layouts?.desktop ?? spec.layout;
     const mobile = spec.layouts?.mobile ?? spec.layout;

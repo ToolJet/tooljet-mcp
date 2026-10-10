@@ -2498,6 +2498,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       styles: spec.styles ?? {},
       validation: spec.validation ?? {},
       others: spec.others ?? {},
+      // The editor always sends these two sections. For a widget type the server has no defaults for (for example
+      // the Ant Design pack) an omitted section is stored as null, and one null section stops the page loading.
+      general: {},
+      generalStyles: { boxShadow: { value: '0px 0px 0px 0px #00000040' } },
     };
     // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...} returns 422
     // "invalid input value for enum layout_type". Explicit per-resolution `layouts` wins; otherwise
