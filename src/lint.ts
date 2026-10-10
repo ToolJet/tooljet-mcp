@@ -806,7 +806,7 @@ export function lintKanbanInteractions(components: LintComponent[]): string[] {
       `Kanban "${board.name ?? board.id ?? 'Kanban'}" enables the native card modal but has no modal children. ` +
         'Cards (including custom Html) can look correct while a blank built-in modal covers page-level detail controls. ' +
         'Parent the detail controls to this Kanban with slot_name:"modal"; ordinary body children only populate cards. ' +
-        'For a board without card selection use openModalOnCardClick:false and omit onCardSelected; with skin:"shadcn" a card click still selects the card (onCardSelected, lastSelectedCard) without the modal. Never merely enable the modal to satisfy the event lint without giving it content.'
+        'For a board without card selection use openModalOnCardClick:false and omit onCardSelected. Never merely enable the modal to satisfy the event lint without giving it content.'
     );
   }
   return warnings;

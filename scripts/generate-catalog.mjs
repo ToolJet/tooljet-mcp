@@ -690,20 +690,12 @@ const AUTHORING_HINTS = {
         rule: 'Nested Text clips to one line; use one Html child with normal wrapping/overflow-wrap CSS for multi-line title and description content.',
         bindingContext: ['cardData'],
       },
-      widthRule: 'cardWidth is the card canvas width in px; each column is cardWidth + 48px wide. Size Html card content to cardWidth (minus your own padding) and set cardHeight to the content height.',
+      widthRule: 'Do not infer the rendered Kanban column width from cardWidth. Pin the Html content width/max-width explicitly in CSS and verify it in the viewer; current columns can retain a wider minimum than the card canvas.',
       interactionRule: {
-        selectionDependency: 'onCardSelected fires only when openModalOnCardClick is true, unless properties.skin is "shadcn"; with the default style ToolJet returns before setting lastSelectedCard or firing the event when the modal is off, and MCP rejects that dead event binding. With skin "shadcn" any click inside a card (buttons in it included) selects it, sets lastSelectedCard and fires onCardSelected, modal on or off, and the selected card is outlined.',
+        selectionDependency: 'onCardSelected fires only when openModalOnCardClick is true; ToolJet returns before setting lastSelectedCard or firing the event when it is false. MCP rejects that dead event binding.',
         selectedRecord: 'Read components.<board>.lastSelectedCard (not selectedCard) in onCardSelected. Preserve its id and raw fields before switching pages; use the id to find the source query record when cards contain display projections.',
         customHtmlModal: 'Card children (native or Html) do not populate the card-click modal. Author its detail/edit controls with parent_ref pointing to the Kanban and slot_name:"modal"; bind cardData or lastSelectedCard. Page-root controls remain behind the modal backdrop. For a board without selection, disable openModalOnCardClick and omit onCardSelected.',
       },
-    },
-    // 2026-10-10: the shadcn/ui look for the native board, and the style properties worth setting. Several native
-    // properties make little sense to set; the hint names them so a model leaves them at their defaults.
-    look: {
-      skin: 'properties.skin "shadcn" draws shadcn/ui columns and cards from the app theme (muted columns with a count badge, bordered cards, a delete zone shown only while dragging, a selected-card outline). Same card template, modal, actions and events as the default style. Use it in apps built with the shadcn/ui pack (Shad* components).',
-      styles: 'Optional, all fall back to the chosen style: columnBackgroundColor, columnBorderColor, columnBorderRadius (px number), columnTitleColor, cardBackgroundColor, cardBorderColor, cardBorderRadius (px number), cardBoxShadow ("default" | "none" | "sm" | "md" | "lg"). Set them from the app theme only when the design calls for it; the shadcn style is complete without them.',
-      leaveAlone: 'accentColor applies only to the default style. size and modalHeight matter only with the modal on. tooltip, tooltipFormat and collapseWhenHidden are rarely useful on a board; leave them unset.',
-      modalDefault: 'openModalOnCardClick defaults to true and then opens an empty dialog on every card click. Set it to "{{false}}" unless you also author modal children (slot_name:"modal").',
     },
   },
   Listview: {
