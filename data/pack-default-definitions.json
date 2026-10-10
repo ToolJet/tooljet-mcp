@@ -3027,8 +3027,35 @@
     "trend": {
      "value": "up"
     },
+    "changeLabel": {
+     "value": ""
+    },
     "footnote": {
      "value": ""
+    },
+    "icon": {
+     "value": ""
+    },
+    "iconPosition": {
+     "value": "right"
+    },
+    "iconStyle": {
+     "value": "square"
+    },
+    "trendData": {
+     "value": ""
+    },
+    "sparklineType": {
+     "value": "area"
+    },
+    "progress": {
+     "value": ""
+    },
+    "progressLabel": {
+     "value": ""
+    },
+    "size": {
+     "value": "default"
     },
     "card": {
      "value": "{{true}}"
@@ -3038,6 +3065,9 @@
     },
     "loadingState": {
      "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
     },
     "visibility": {
      "value": "{{true}}"

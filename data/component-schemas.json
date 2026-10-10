@@ -23417,7 +23417,7 @@
   "ShadStat": {
     "type": "ShadStat",
     "name": "ShadStat",
-    "description": "shadcn/ui dashboard figure: label, value, change badge and footnote. Styles valueFontFamily ('serif', 'display', 'mono', ...), labelTextTransform ('uppercase') and labelLetterSpacing ('0.1em') set the figure's typeface and a small-caps label",
+    "description": "shadcn/ui dashboard figure, from a single number to a full KPI card: label, value, change badge (change, trend) with a context line (changeLabel, e.g. 'vs last month'), footnote; optional icon (any lucide name, iconPosition right, left or top, iconStyle square, circle or none), trendData for a small trend line under the figure (numbers or [{ x, y }]), progress (0 to 100) with progressLabel for a target bar, and size sm, default or lg. Each part shows only when set. Styles valueFontFamily ('serif', 'display', 'mono', ...), labelTextTransform ('uppercase') and labelLetterSpacing ('0.1em') set the figure's typeface and a small-caps label",
     "defaultSize": {
       "width": 10,
       "height": 120
@@ -23453,10 +23453,83 @@
         ]
       },
       {
+        "key": "changeLabel",
+        "label": "Change context (e.g. vs last month)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
         "key": "footnote",
         "label": "Footnote",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "icon",
+        "label": "Icon (lucide name, e.g. wallet)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "iconPosition",
+        "label": "Icon position",
+        "valueType": "string",
+        "default": "right",
+        "allowedValues": [
+          "right",
+          "left",
+          "top"
+        ]
+      },
+      {
+        "key": "iconStyle",
+        "label": "Icon style",
+        "valueType": "string",
+        "default": "square",
+        "allowedValues": [
+          "square",
+          "circle",
+          "none"
+        ]
+      },
+      {
+        "key": "trendData",
+        "label": "Trend data (numbers or [{ x, y }])",
+        "valueType": "union",
+        "default": ""
+      },
+      {
+        "key": "sparklineType",
+        "label": "Trend line",
+        "valueType": "string",
+        "default": "area",
+        "allowedValues": [
+          "area",
+          "line"
+        ]
+      },
+      {
+        "key": "progress",
+        "label": "Progress (0 to 100)",
+        "valueType": "union",
+        "default": ""
+      },
+      {
+        "key": "progressLabel",
+        "label": "Progress label",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "sm",
+          "default",
+          "lg"
+        ]
       },
       {
         "key": "card",
@@ -23475,6 +23548,16 @@
         "label": "Loading state",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
       },
       {
         "key": "visibility",
@@ -23550,6 +23633,26 @@
       {
         "key": "negativeColor",
         "label": "Change color when trend is down",
+        "valueType": "string"
+      },
+      {
+        "key": "iconColor",
+        "label": "Icon color",
+        "valueType": "string"
+      },
+      {
+        "key": "chipColor",
+        "label": "Icon tile color",
+        "valueType": "string"
+      },
+      {
+        "key": "sparklineColor",
+        "label": "Trend line color",
+        "valueType": "string"
+      },
+      {
+        "key": "progressColor",
+        "label": "Progress color",
         "valueType": "string"
       },
       {
