@@ -41,3 +41,15 @@ it('treats the shadcn Dialog as a ModalV2: header and footer slots, and a show-m
   expect(isModalV2Type('ShadDialog')).toBe(true);
   expect(isModalV2Type('ShadCard')).toBe(false);
 });
+
+it('refuses a binding that never closes', async () => {
+  // A Luna build wrote "{{[{ label: ..., type: 'number' }]}" (one brace short): ToolJet showed the expression as
+  // text and three KPI tiles read "No details".
+  const { lintComponentSpec, hasUnclosedBinding } = await import('../src/lint.js');
+  expect(hasUnclosedBinding('{{[{ a: 1 }]}')).toBe(true);
+  expect(hasUnclosedBinding('Total {{a}} of {{b')).toBe(true);
+  expect(hasUnclosedBinding('{{[{ a: 1 } ]}}')).toBe(false);
+  expect(hasUnclosedBinding('plain {text}')).toBe(false);
+  const result = lintComponentSpec({ name: 'k', type: 'ShadKeyValue', properties: { data: { value: '{{[{ label: "A", value: 1 }]}' } } });
+  expect(result.errors.join(' ')).toMatch(/properties\.data .*never closes/);
+});

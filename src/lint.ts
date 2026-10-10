@@ -820,6 +820,17 @@ export function lintShadKanbanCards(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Whether a string opens a {{ binding that no }} closes: ToolJet then shows the whole expression as text. */
+export function hasUnclosedBinding(value: string): boolean {
+  let at = value.indexOf('{{');
+  while (at !== -1) {
+    const close = value.indexOf('}}', at + 2);
+    if (close === -1) return true;
+    at = value.indexOf('{{', close + 2);
+  }
+  return false;
+}
+
 /** Whether a string opens a second {{ before the first binding's }} closes. */
 export function hasNestedBinding(value: string): boolean {
   let at = value.indexOf('{{');
@@ -1557,6 +1568,12 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
   // 2026-10-10).
   for (const key of Object.keys(props)) {
     const value = propVal(props, key);
+    if (typeof value === 'string' && hasUnclosedBinding(value)) {
+      errors.push(
+        `Component "${label}".properties.${key} opens a {{ binding that never closes, so ToolJet shows the expression as text. ` +
+          'End it with "}}" (an array or object literal needs its own closing bracket and brace before the final "}}").'
+      );
+    }
     if (typeof value === 'string' && hasNestedBinding(value)) {
       errors.push(
         `Component "${label}".properties.${key} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` +
