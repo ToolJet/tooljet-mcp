@@ -27091,6 +27091,12 @@
         "default": "No cards"
       },
       {
+        "key": "badgeColors",
+        "label": "Badge colours by value",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
@@ -27123,9 +27129,39 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "accentColor",
+        "label": "Accent (selection, progress, drop line)",
+        "valueType": "string"
+      },
+      {
         "key": "columnBackgroundColor",
         "label": "Column background",
         "valueType": "string"
+      },
+      {
+        "key": "columnBorderColor",
+        "label": "Column border color",
+        "valueType": "string"
+      },
+      {
+        "key": "columnTitleColor",
+        "label": "Column title color",
+        "valueType": "string"
+      },
+      {
+        "key": "columnCountBackgroundColor",
+        "label": "Column count background",
+        "valueType": "string"
+      },
+      {
+        "key": "columnCountTextColor",
+        "label": "Column count text color",
+        "valueType": "string"
+      },
+      {
+        "key": "columnGap",
+        "label": "Gap between columns",
+        "valueType": "union"
       },
       {
         "key": "columnBorderRadius",
@@ -27140,6 +27176,21 @@
       {
         "key": "cardBorderColor",
         "label": "Card border color",
+        "valueType": "string"
+      },
+      {
+        "key": "cardTitleColor",
+        "label": "Card title color",
+        "valueType": "string"
+      },
+      {
+        "key": "cardTextColor",
+        "label": "Card secondary text color",
+        "valueType": "string"
+      },
+      {
+        "key": "progressColor",
+        "label": "Progress color (else the accent)",
         "valueType": "string"
       },
       {
@@ -27310,7 +27361,7 @@
         "saving": "Every change shows on the board at once and fires an event with its payload: onCardMoved (movedCard, lastMove), onCardAdded (lastAddedCard), onCardUpdated (lastUpdatedCard), onCardRemoved (lastRemovedCard); components.<name>.cards is the whole board. Save in that event handler with a query. The actions (addCard, updateCard, moveCard, deleteCard) fire the same events, so either call an action and save in its event, or save with a query and refresh the data; never both, or the save runs twice.",
         "addFlow": "allowAdd shows an Add card button under each column: it sets addCardColumn and fires onAddCardClick. Open a modal form there; on submit run the insert with status components.<name>.addCardColumn, then refresh the data query (or call addCard without a separate insert).",
         "deleteFlow": "allowDelete shows a delete button on card hover: the card leaves the board and onCardRemoved fires with lastRemovedCard; delete the row in that handler.",
-        "styles": "Optional, each falls back to the app theme: columnBackgroundColor, columnBorderRadius (px), cardBackgroundColor, cardBorderColor, cardBorderRadius (px), cardShadow (\"none\" | \"sm\" | \"md\" | \"lg\", default \"sm\"). Set them only when the design calls for it."
+        "styles": "Every colour falls back to the app theme, so set only what the design needs to blend in: accentColor (selection outline, progress bars, drop line, hover borders); columns: columnBackgroundColor, columnBorderColor, columnBorderRadius (px), columnTitleColor, columnCountBackgroundColor, columnCountTextColor, columnGap (px); cards: cardBackgroundColor, cardBorderColor, cardBorderRadius (px), cardShadow (\"none\" | \"sm\" | \"md\" | \"lg\", default \"sm\"), cardTitleColor, cardTextColor (description, meta, progress label), progressColor (progress bars; else the accent). properties.badgeColors maps badge values to colours, e.g. { High: \"#dc2626\", Low: \"#16a34a\" } (tinted chip, coloured text); unnamed values keep the built-in colours. Take colours from the app theme or brand, never the defaults of another product."
       }
     }
   }
